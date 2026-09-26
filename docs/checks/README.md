@@ -106,15 +106,16 @@ ambiguous there — mobium refuses it rather than tapping the first, which is th
 rule working, not a limitation. The iOS branch narrows by `,role=button`.
 
 **One assertion is opt-in.** Every "Learn more" in MobiumApp is a real link to
-`https://github.com/lana-20`, and the check asserts the *target* by asking the
+`https://github.com/mobiumdev`, and the check asserts the *target* by asking the
 page (`document.querySelector('a#link').href`) rather than by following it. The
 href is a property of the app and is true whether or not anything is served at
 the other end; following it depends on DNS, a certificate and somebody keeping
 a server running.
 
 `MOBIUM_NETWORK_TESTS=1` follows it, and then asserts the host, the path and
-the title — verified on both platforms on 2026-09-18, landing on
-`github.com/lana-20`. The title is matched on the **handle** rather than the
+the title. It was verified on both platforms when the link pointed at the
+author's GitHub profile; the move to `github.com/mobiumdev` has not been
+followed on a device yet. The title is matched on the **handle** rather than the
 display name: one is part of the URL and stable, the other is a profile field
 anybody can edit.
 

@@ -217,20 +217,14 @@ echo "    map            found the page's link                           ok"
 # property of the app and is true whether or not anything is served at the
 # other end; the navigation depends on DNS, a certificate and somebody keeping
 # a server running, none of which this repository controls.
-#
-# That distinction is not academic. The link pointed at mobium.ai first, and
-# mobium.ai serves nothing: it resolves to a registrar parking page on plain
-# http and times out on https, which iOS blocks. The href assertion passed
-# throughout; only the following of it could not. The link now points
-# somewhere that exists, and both halves work.
 HREF=$($M eval "document.querySelector('a#link') && document.querySelector('a#link').href" 2>/dev/null | tr -d '"')
 case "$HREF" in
-  https://github.com/lana-20|https://github.com/lana-20/) ;;
-  *) fail "the Learn more link points at '$HREF', not https://github.com/lana-20" ;;
+  https://github.com/mobiumdev|https://github.com/mobiumdev/) ;;
+  *) fail "the Learn more link points at '$HREF', not https://github.com/mobiumdev" ;;
 esac
 TAG=$($M eval "document.querySelector('a#link').tagName" 2>/dev/null | tr -d '"')
 [ "$TAG" = "A" ] || fail "the Learn more element is a <$TAG>, so it is not a link"
-echo "    link target    an <a> to https://github.com/lana-20            ok"
+echo "    link target    an <a> to https://github.com/mobiumdev          ok"
 
 # The assertion this whole app exists for. In Safari this refuses, correctly,
 # because the host element is not the content. Here the WebView's frame equals
@@ -269,13 +263,13 @@ the page never navigated: check the device has a network and that the target \
 still serves over https"
   fi
   PATHNAME=$($M eval "location.pathname" 2>/dev/null | tr -d '"')
-  [ "$PATHNAME" = "/lana-20" ] || fail "landed on github.com$PATHNAME, not /lana-20"
+  [ "$PATHNAME" = "/mobiumdev" ] || fail "landed on github.com$PATHNAME, not /mobiumdev"
   # The title is asserted on the handle, not the display name: one is part of
   # the URL and stable, the other is a profile field somebody can edit.
   TITLE=$($M eval "document.title" 2>/dev/null | tr -d '"')
   case "$TITLE" in
-    *lana-20*) ;;
-    *) fail "the page title is \"$TITLE\", which does not name lana-20" ;;
+    *mobiumdev*) ;;
+    *) fail "the page title is \"$TITLE\", which does not name mobiumdev" ;;
   esac
   echo "    followed       landed on $HOST$PATHNAME, titled \"$TITLE\""
 else
