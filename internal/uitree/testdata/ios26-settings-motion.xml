@@ -1,0 +1,126 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<XCUIElementTypeApplication type="XCUIElementTypeApplication" name="Settings" label="Settings" enabled="true" visible="true" accessible="false" x="0" y="0" width="402" height="874" index="0" traits="" processId="53463" bundleId="com.apple.Preferences">
+  <XCUIElementTypeWindow type="XCUIElementTypeWindow" enabled="true" visible="true" accessible="false" x="0" y="0" width="402" height="874" index="0" traits="">
+    <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="0" y="0" width="402" height="874" index="0" traits="">
+      <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="0" y="0" width="402" height="874" index="0" traits="">
+        <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="0" y="0" width="402" height="874" index="0" traits="">
+          <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="0" y="0" width="402" height="874" index="0" traits="">
+            <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="0" y="0" width="402" height="874" index="0" traits="">
+              <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="0" y="0" width="402" height="874" index="0" traits="">
+                <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="0" y="0" width="402" height="874" index="0" traits="">
+                  <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="0" y="0" width="402" height="874" index="0" traits="">
+                    <XCUIElementTypeNavigationBar type="XCUIElementTypeNavigationBar" name="Motion" enabled="true" visible="true" accessible="false" x="0" y="62" width="402" height="54" index="0" traits="">
+                      <XCUIElementTypeButton type="XCUIElementTypeButton" name="BackButton" label="Accessibility" enabled="true" visible="true" accessible="true" x="16" y="62" width="44" height="44" index="0" traits="Button"/>
+                      <XCUIElementTypeStaticText type="XCUIElementTypeStaticText" value="Motion" name="Motion" label="Motion" enabled="true" visible="true" accessible="true" x="173" y="73" width="56" height="22" index="1" traits="Header"/>
+                    </XCUIElementTypeNavigationBar>
+                    <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="0" y="0" width="402" height="874" index="1" traits="">
+                      <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="0" y="0" width="402" height="874" index="0" traits="">
+                        <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="0" y="0" width="402" height="874" index="0" traits="">
+                          <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="0" y="0" width="402" height="874" index="0" traits="">
+                            <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="0" y="116" width="402" height="724" index="0" traits="">
+                              <XCUIElementTypeTable type="XCUIElementTypeTable" enabled="true" visible="true" accessible="false" x="0" y="0" width="402" height="874" index="0" traits="">
+                                <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="0" y="116" width="402" height="18" index="0" traits=""/>
+                                <XCUIElementTypeCell type="XCUIElementTypeCell" name="REDUCE_MOTION" enabled="true" visible="true" accessible="false" x="20" y="133" width="362" height="54" index="1" traits="">
+                                  <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="20" y="133" width="362" height="54" index="0" traits="">
+                                    <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="20" y="133" width="362" height="54" index="0" traits="">
+                                      <XCUIElementTypeSwitch type="XCUIElementTypeSwitch" value="0" name="REDUCE_MOTION" label="Reduce Motion" enabled="true" visible="true" accessible="true" x="36" y="146" width="330" height="29" index="0" traits="ToggleButton, StaticText, Button">
+                                        <XCUIElementTypeButton type="XCUIElementTypeButton" name="REDUCE_MOTION" label="Reduce Motion" enabled="true" visible="true" accessible="false" x="36" y="149" width="115" height="22" index="0" traits="StaticText, Button"/>
+                                        <XCUIElementTypeSwitch type="XCUIElementTypeSwitch" value="0" enabled="true" visible="true" accessible="false" x="305" y="146" width="63" height="29" index="1" traits="ToggleButton, Button"/>
+                                      </XCUIElementTypeSwitch>
+                                    </XCUIElementTypeOther>
+                                  </XCUIElementTypeOther>
+                                </XCUIElementTypeCell>
+                                <XCUIElementTypeOther type="XCUIElementTypeOther" name="Reduce the motion of the user interface, including the parallax effect of icons." enabled="true" visible="true" accessible="false" x="0" y="186" width="402" height="47" index="2" traits="">
+                                  <XCUIElementTypeOther type="XCUIElementTypeOther" name="Reduce the motion of the user interface, including the parallax effect of icons." label="Reduce the motion of the user interface, including the parallax effect of icons." enabled="true" visible="true" accessible="true" x="20" y="186" width="362" height="47" index="0" traits=""/>
+                                </XCUIElementTypeOther>
+                                <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="0" y="232" width="402" height="19" index="3" traits=""/>
+                                <XCUIElementTypeCell type="XCUIElementTypeCell" name="REDUCE_MOTION_AUTOPLAY_ANIMATED_IMAGES" enabled="true" visible="true" accessible="false" x="20" y="250" width="362" height="54" index="4" traits="">
+                                  <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="20" y="250" width="362" height="54" index="0" traits="">
+                                    <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="20" y="250" width="362" height="54" index="0" traits="">
+                                      <XCUIElementTypeSwitch type="XCUIElementTypeSwitch" value="1" name="REDUCE_MOTION_AUTOPLAY_ANIMATED_IMAGES" label="Auto-Play Animated Images" enabled="true" visible="true" accessible="true" x="36" y="263" width="330" height="28" index="0" traits="ToggleButton, StaticText, Button">
+                                        <XCUIElementTypeButton type="XCUIElementTypeButton" name="REDUCE_MOTION_AUTOPLAY_ANIMATED_IMAGES" label="Auto-Play Animated Images" enabled="true" visible="true" accessible="false" x="36" y="266" width="211" height="21" index="0" traits="StaticText, Button"/>
+                                        <XCUIElementTypeSwitch type="XCUIElementTypeSwitch" value="1" enabled="true" visible="true" accessible="false" x="305" y="262" width="63" height="29" index="1" traits="ToggleButton, Button"/>
+                                      </XCUIElementTypeSwitch>
+                                    </XCUIElementTypeOther>
+                                  </XCUIElementTypeOther>
+                                </XCUIElementTypeCell>
+                                <XCUIElementTypeCell type="XCUIElementTypeCell" name="REDUCE_MOTION_AUTOPLAY_VIDEO_PREVIEWS" enabled="true" visible="true" accessible="false" x="20" y="303" width="362" height="54" index="5" traits="">
+                                  <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="20" y="303" width="362" height="54" index="0" traits="">
+                                    <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="20" y="303" width="362" height="54" index="0" traits="">
+                                      <XCUIElementTypeSwitch type="XCUIElementTypeSwitch" value="1" name="REDUCE_MOTION_AUTOPLAY_VIDEO_PREVIEWS" label="Auto-Play Video Previews" enabled="true" visible="true" accessible="true" x="36" y="316" width="330" height="28" index="0" traits="ToggleButton, StaticText, Button">
+                                        <XCUIElementTypeButton type="XCUIElementTypeButton" name="REDUCE_MOTION_AUTOPLAY_VIDEO_PREVIEWS" label="Auto-Play Video Previews" enabled="true" visible="true" accessible="false" x="36" y="319" width="196" height="21" index="0" traits="StaticText, Button"/>
+                                        <XCUIElementTypeSwitch type="XCUIElementTypeSwitch" value="1" enabled="true" visible="true" accessible="false" x="305" y="315" width="63" height="29" index="1" traits="ToggleButton, Button"/>
+                                      </XCUIElementTypeSwitch>
+                                    </XCUIElementTypeOther>
+                                  </XCUIElementTypeOther>
+                                </XCUIElementTypeCell>
+                                <XCUIElementTypeCell type="XCUIElementTypeCell" name="ReduceMotionAutoplayMessagesEffects" enabled="true" visible="true" accessible="false" x="20" y="356" width="362" height="54" index="6" traits="">
+                                  <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="20" y="356" width="362" height="54" index="0" traits="">
+                                    <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="20" y="356" width="362" height="54" index="0" traits="">
+                                      <XCUIElementTypeSwitch type="XCUIElementTypeSwitch" value="1" name="ReduceMotionAutoplayMessagesEffects" label="Auto-Play Message Effects" enabled="true" visible="true" accessible="true" x="36" y="369" width="330" height="28" index="0" traits="ToggleButton, StaticText, Button">
+                                        <XCUIElementTypeButton type="XCUIElementTypeButton" name="ReduceMotionAutoplayMessagesEffects" label="Auto-Play Message Effects" enabled="true" visible="true" accessible="false" x="36" y="372" width="206" height="21" index="0" traits="StaticText, Button"/>
+                                        <XCUIElementTypeSwitch type="XCUIElementTypeSwitch" value="1" enabled="true" visible="true" accessible="false" x="305" y="368" width="63" height="29" index="1" traits="ToggleButton, Button"/>
+                                      </XCUIElementTypeSwitch>
+                                    </XCUIElementTypeOther>
+                                  </XCUIElementTypeOther>
+                                </XCUIElementTypeCell>
+                                <XCUIElementTypeOther type="XCUIElementTypeOther" name="Control if videos, animated images, and full screen effects in messages play automatically." enabled="true" visible="true" accessible="false" x="0" y="409" width="402" height="47" index="7" traits="">
+                                  <XCUIElementTypeOther type="XCUIElementTypeOther" name="Control if videos, animated images, and full screen effects in messages play automatically." label="Control if videos, animated images, and full screen effects in messages play automatically." enabled="true" visible="true" accessible="true" x="20" y="409" width="362" height="47" index="0" traits=""/>
+                                </XCUIElementTypeOther>
+                                <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="0" y="455" width="402" height="18" index="8" traits=""/>
+                                <XCUIElementTypeCell type="XCUIElementTypeCell" name="PREFER_NONBLINKING_CURSOR" enabled="true" visible="true" accessible="false" x="20" y="472" width="362" height="54" index="9" traits="">
+                                  <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="20" y="472" width="362" height="54" index="0" traits="">
+                                    <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="20" y="472" width="362" height="54" index="0" traits="">
+                                      <XCUIElementTypeSwitch type="XCUIElementTypeSwitch" value="0" name="PREFER_NONBLINKING_CURSOR" label="Prefer Non-Blinking Cursor" enabled="true" visible="true" accessible="true" x="36" y="485" width="330" height="29" index="0" traits="ToggleButton, StaticText, Button">
+                                        <XCUIElementTypeButton type="XCUIElementTypeButton" name="PREFER_NONBLINKING_CURSOR" label="Prefer Non-Blinking Cursor" enabled="true" visible="true" accessible="false" x="36" y="489" width="205" height="21" index="0" traits="StaticText, Button"/>
+                                        <XCUIElementTypeSwitch type="XCUIElementTypeSwitch" value="0" enabled="true" visible="true" accessible="false" x="305" y="485" width="63" height="29" index="1" traits="ToggleButton, Button"/>
+                                      </XCUIElementTypeSwitch>
+                                    </XCUIElementTypeOther>
+                                  </XCUIElementTypeOther>
+                                </XCUIElementTypeCell>
+                                <XCUIElementTypeOther type="XCUIElementTypeOther" name="Prefer the cursor indicator in text does not blink." enabled="true" visible="true" accessible="false" x="0" y="525" width="402" height="31" index="10" traits="">
+                                  <XCUIElementTypeOther type="XCUIElementTypeOther" name="Prefer the cursor indicator in text does not blink." label="Prefer the cursor indicator in text does not blink." enabled="true" visible="true" accessible="true" x="20" y="525" width="362" height="31" index="0" traits=""/>
+                                </XCUIElementTypeOther>
+                                <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="0" y="555" width="402" height="19" index="11" traits=""/>
+                                <XCUIElementTypeCell type="XCUIElementTypeCell" name="REFRESH_RATE" enabled="true" visible="true" accessible="false" x="20" y="573" width="362" height="54" index="12" traits="">
+                                  <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="20" y="573" width="362" height="54" index="0" traits="">
+                                    <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="20" y="573" width="362" height="54" index="0" traits="">
+                                      <XCUIElementTypeSwitch type="XCUIElementTypeSwitch" value="0" name="REFRESH_RATE" label="Limit Frame Rate" enabled="true" visible="true" accessible="true" x="36" y="586" width="330" height="29" index="0" traits="ToggleButton, StaticText, Button">
+                                        <XCUIElementTypeButton type="XCUIElementTypeButton" name="REFRESH_RATE" label="Limit Frame Rate" enabled="true" visible="true" accessible="false" x="36" y="589" width="129" height="22" index="0" traits="StaticText, Button"/>
+                                        <XCUIElementTypeSwitch type="XCUIElementTypeSwitch" value="0" enabled="true" visible="true" accessible="false" x="305" y="586" width="63" height="29" index="1" traits="ToggleButton, Button"/>
+                                      </XCUIElementTypeSwitch>
+                                    </XCUIElementTypeOther>
+                                  </XCUIElementTypeOther>
+                                </XCUIElementTypeCell>
+                                <XCUIElementTypeOther type="XCUIElementTypeOther" name="Sets the maximum frame rate of the display to 60 frames per second." enabled="true" visible="true" accessible="false" x="0" y="626" width="402" height="47" index="13" traits="">
+                                  <XCUIElementTypeOther type="XCUIElementTypeOther" name="Sets the maximum frame rate of the display to 60 frames per second." label="Sets the maximum frame rate of the display to 60 frames per second." enabled="true" visible="true" accessible="true" x="20" y="626" width="362" height="47" index="0" traits=""/>
+                                </XCUIElementTypeOther>
+                                <XCUIElementTypeOther type="XCUIElementTypeOther" value="0%" name="Vertical scroll bar, 1 page" label="Vertical scroll bar, 1 page" enabled="true" visible="false" accessible="false" x="369" y="116" width="30" height="696" index="14" traits="Adjustable">
+                                  <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="false" accessible="false" x="396" y="266" width="3" height="543" index="0" traits=""/>
+                                </XCUIElementTypeOther>
+                                <XCUIElementTypeOther type="XCUIElementTypeOther" value="0%" name="Horizontal scroll bar, 1 page" label="Horizontal scroll bar, 1 page" enabled="true" visible="false" accessible="false" x="62" y="841" width="278" height="30" index="15" traits="Adjustable">
+                                  <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="false" accessible="false" x="65" y="868" width="272" height="3" index="0" traits=""/>
+                                </XCUIElementTypeOther>
+                              </XCUIElementTypeTable>
+                            </XCUIElementTypeOther>
+                          </XCUIElementTypeOther>
+                        </XCUIElementTypeOther>
+                      </XCUIElementTypeOther>
+                    </XCUIElementTypeOther>
+                    <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="false" accessible="false" x="0" y="0" width="402" height="874" index="2" traits="">
+                      <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="false" accessible="false" x="0" y="0" width="402" height="874" index="0" traits=""/>
+                    </XCUIElementTypeOther>
+                  </XCUIElementTypeOther>
+                </XCUIElementTypeOther>
+              </XCUIElementTypeOther>
+              <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="0" y="0" width="402" height="874" index="1" traits="">
+                <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="0" y="0" width="402" height="874" index="0" traits=""/>
+              </XCUIElementTypeOther>
+            </XCUIElementTypeOther>
+          </XCUIElementTypeOther>
+        </XCUIElementTypeOther>
+      </XCUIElementTypeOther>
+    </XCUIElementTypeOther>
+  </XCUIElementTypeWindow>
+</XCUIElementTypeApplication>
+

@@ -1,0 +1,661 @@
+{
+  "tools": [
+    {
+      "n": 1,
+      "tool": "app_alert",
+      "cli": "alert",
+      "clients": {
+        "dotnet": "Alert",
+        "go": "Alert",
+        "java": "alert",
+        "javascript": "alert",
+        "python": "alert"
+      }
+    },
+    {
+      "n": 2,
+      "tool": "app_appearance",
+      "cli": "appearance",
+      "clients": {
+        "dotnet": "Appearance",
+        "go": "Appearance",
+        "java": "appearance",
+        "javascript": "appearance",
+        "python": "appearance"
+      }
+    },
+    {
+      "n": 3,
+      "tool": "app_call",
+      "cli": "call",
+      "clients": {
+        "dotnet": "IncomingCall",
+        "go": "IncomingCall",
+        "java": "incomingCall",
+        "javascript": "incomingCall",
+        "python": "incoming_call"
+      }
+    },
+    {
+      "n": 4,
+      "tool": "app_check",
+      "cli": "check, uncheck",
+      "clients": {
+        "dotnet": "Check",
+        "go": "Check",
+        "java": "check",
+        "javascript": "check",
+        "python": "check"
+      }
+    },
+    {
+      "n": 5,
+      "tool": "app_clear_data",
+      "cli": "clear-data",
+      "clients": {
+        "dotnet": "ClearData",
+        "go": "ClearData",
+        "java": "clearData",
+        "javascript": "clearData",
+        "python": "clear_data"
+      }
+    },
+    {
+      "n": 6,
+      "tool": "app_clipboard",
+      "cli": "clipboard",
+      "clients": {
+        "dotnet": "Clipboard",
+        "go": "Clipboard",
+        "java": "clipboard",
+        "javascript": "clipboard",
+        "python": "clipboard"
+      }
+    },
+    {
+      "n": 7,
+      "tool": "app_context",
+      "cli": "context",
+      "clients": {
+        "dotnet": "Context",
+        "go": "Context",
+        "java": "context",
+        "javascript": "context",
+        "python": "context"
+      }
+    },
+    {
+      "n": 8,
+      "tool": "app_contexts",
+      "cli": "contexts",
+      "clients": {
+        "dotnet": "Contexts",
+        "go": "Contexts",
+        "java": "contexts",
+        "javascript": "contexts",
+        "python": "contexts"
+      }
+    },
+    {
+      "n": 9,
+      "tool": "app_crashes",
+      "cli": "crashes",
+      "clients": {
+        "dotnet": "Crashes",
+        "go": "Crashes",
+        "java": "crashes",
+        "javascript": "crashes",
+        "python": "crashes"
+      }
+    },
+    {
+      "n": 10,
+      "tool": "app_current",
+      "cli": "current",
+      "clients": {
+        "dotnet": "Current",
+        "go": "Current",
+        "java": "current",
+        "javascript": "current",
+        "python": "current"
+      }
+    },
+    {
+      "n": 11,
+      "tool": "app_devices",
+      "cli": "devices",
+      "clients": {
+        "dotnet": "Devices",
+        "go": "Devices",
+        "java": "devices",
+        "javascript": "devices",
+        "python": "devices"
+      }
+    },
+    {
+      "n": 12,
+      "tool": "app_dialogs",
+      "cli": "dialogs",
+      "clients": {
+        "dotnet": "AddDialogRule",
+        "go": "AddDialogRule",
+        "java": "addDialogRule",
+        "javascript": "addDialogRule",
+        "python": "add_dialog_rule"
+      }
+    },
+    {
+      "n": 13,
+      "tool": "app_doctor",
+      "cli": "doctor",
+      "clients": {
+        "dotnet": "Doctor",
+        "go": "Doctor",
+        "java": "doctor",
+        "javascript": "doctor",
+        "python": "doctor"
+      }
+    },
+    {
+      "n": 14,
+      "tool": "app_drag",
+      "cli": "drag",
+      "clients": {
+        "dotnet": "Drag",
+        "go": "Drag",
+        "java": "drag",
+        "javascript": "drag",
+        "python": "drag"
+      }
+    },
+    {
+      "n": 15,
+      "tool": "app_eval",
+      "cli": "eval",
+      "clients": {
+        "dotnet": "Eval",
+        "go": "Eval",
+        "java": "eval",
+        "javascript": "eval",
+        "python": "eval"
+      }
+    },
+    {
+      "n": 16,
+      "tool": "app_find",
+      "cli": "find",
+      "clients": {
+        "dotnet": "Find",
+        "go": "Find",
+        "java": "find",
+        "javascript": "find",
+        "python": "find"
+      }
+    },
+    {
+      "n": 17,
+      "tool": "app_grant",
+      "cli": "grant",
+      "clients": {
+        "dotnet": "Grant",
+        "go": "Grant",
+        "java": "grant",
+        "javascript": "grant",
+        "python": "grant"
+      }
+    },
+    {
+      "n": 18,
+      "tool": "app_install",
+      "cli": "install",
+      "clients": {
+        "dotnet": "Install",
+        "go": "Install",
+        "java": "install",
+        "javascript": "install",
+        "python": "install"
+      }
+    },
+    {
+      "n": 19,
+      "tool": "app_keyboard",
+      "cli": "keyboard",
+      "clients": {
+        "dotnet": "Keyboard",
+        "go": "Keyboard",
+        "java": "keyboard",
+        "javascript": "keyboard",
+        "python": "keyboard"
+      }
+    },
+    {
+      "n": 20,
+      "tool": "app_launch",
+      "cli": "launch",
+      "clients": {
+        "dotnet": "Launch",
+        "go": "Launch",
+        "java": "launch",
+        "javascript": "launch",
+        "python": "launch"
+      }
+    },
+    {
+      "n": 21,
+      "tool": "app_list_apps",
+      "cli": "apps",
+      "clients": {
+        "dotnet": "Apps",
+        "go": "Apps",
+        "java": "apps",
+        "javascript": "apps",
+        "python": "apps"
+      }
+    },
+    {
+      "n": 22,
+      "tool": "app_locale",
+      "cli": "locale",
+      "clients": {
+        "dotnet": "AppLocale",
+        "go": "AppLocale",
+        "java": "appLocale",
+        "javascript": "appLocale",
+        "python": "app_locale"
+      }
+    },
+    {
+      "n": 23,
+      "tool": "app_location",
+      "cli": "location",
+      "clients": {
+        "dotnet": "Location",
+        "go": "Location",
+        "java": "location",
+        "javascript": "location",
+        "python": "location"
+      }
+    },
+    {
+      "n": 24,
+      "tool": "app_lock",
+      "cli": "lock",
+      "clients": {
+        "dotnet": "ScreenLocked",
+        "go": "ScreenLocked",
+        "java": "screenLocked",
+        "javascript": "screenLocked",
+        "python": "screen_locked"
+      }
+    },
+    {
+      "n": 25,
+      "tool": "app_logs",
+      "cli": "logs",
+      "clients": {
+        "dotnet": "Logs",
+        "go": "Logs",
+        "java": "logs",
+        "javascript": "logs",
+        "python": "logs"
+      }
+    },
+    {
+      "n": 26,
+      "tool": "app_long_press",
+      "cli": "long-press",
+      "clients": {
+        "dotnet": "LongPress",
+        "go": "LongPress",
+        "java": "longPress",
+        "javascript": "longPress",
+        "python": "long_press"
+      }
+    },
+    {
+      "n": 27,
+      "tool": "app_map",
+      "cli": "map",
+      "clients": {
+        "dotnet": "Map",
+        "go": "Map",
+        "java": "map",
+        "javascript": "map",
+        "python": "map"
+      }
+    },
+    {
+      "n": 28,
+      "tool": "app_notifications",
+      "cli": "notifications",
+      "clients": {
+        "dotnet": "Notifications",
+        "go": "Notifications",
+        "java": "notifications",
+        "javascript": "notifications",
+        "python": "notifications"
+      }
+    },
+    {
+      "n": 29,
+      "tool": "app_open_url",
+      "cli": "open",
+      "clients": {
+        "dotnet": "OpenUrl",
+        "go": "OpenURL",
+        "java": "openUrl",
+        "javascript": "openUrl",
+        "python": "open_url"
+      }
+    },
+    {
+      "n": 30,
+      "tool": "app_orientation",
+      "cli": "orientation",
+      "clients": {
+        "dotnet": "Orientation",
+        "go": "Orientation",
+        "java": "orientation",
+        "javascript": "orientation",
+        "python": "orientation"
+      }
+    },
+    {
+      "n": 31,
+      "tool": "app_press",
+      "cli": "press",
+      "clients": {
+        "dotnet": "Press",
+        "go": "Press",
+        "java": "press",
+        "javascript": "press",
+        "python": "press"
+      }
+    },
+    {
+      "n": 32,
+      "tool": "app_press_drag",
+      "cli": "press-drag",
+      "clients": {
+        "dotnet": "PressDrag",
+        "go": "PressDrag",
+        "java": "pressDrag",
+        "javascript": "pressDrag",
+        "python": "press_drag"
+      }
+    },
+    {
+      "n": 33,
+      "tool": "app_press_tap",
+      "cli": "press-tap",
+      "clients": {
+        "dotnet": "PressTap",
+        "go": "PressTap",
+        "java": "pressTap",
+        "javascript": "pressTap",
+        "python": "press_tap"
+      }
+    },
+    {
+      "n": 34,
+      "tool": "app_record",
+      "cli": "record",
+      "clients": {
+        "dotnet": "Record",
+        "go": "Record",
+        "java": "record",
+        "javascript": "record",
+        "python": "record"
+      }
+    },
+    {
+      "n": 35,
+      "tool": "app_reset_permissions",
+      "cli": "reset-permissions",
+      "clients": {
+        "dotnet": "ResetPermissions",
+        "go": "ResetPermissions",
+        "java": "resetPermissions",
+        "javascript": "resetPermissions",
+        "python": "reset_permissions"
+      }
+    },
+    {
+      "n": 36,
+      "tool": "app_revoke",
+      "cli": "revoke",
+      "clients": {
+        "dotnet": "Revoke",
+        "go": "Revoke",
+        "java": "revoke",
+        "javascript": "revoke",
+        "python": "revoke"
+      }
+    },
+    {
+      "n": 37,
+      "tool": "app_rotate",
+      "cli": "rotate",
+      "clients": {
+        "dotnet": "Rotate",
+        "go": "Rotate",
+        "java": "rotate",
+        "javascript": "rotate",
+        "python": "rotate"
+      }
+    },
+    {
+      "n": 38,
+      "tool": "app_screen",
+      "cli": "screen",
+      "clients": {
+        "dotnet": "Screen",
+        "go": "Screen",
+        "java": "screen",
+        "javascript": "screen",
+        "python": "screen"
+      }
+    },
+    {
+      "n": 39,
+      "tool": "app_screenshot",
+      "cli": "screenshot",
+      "clients": {
+        "dotnet": "Screenshot",
+        "go": "Screenshot",
+        "java": "screenshot",
+        "javascript": "screenshot",
+        "python": "screenshot"
+      }
+    },
+    {
+      "n": 40,
+      "tool": "app_scroll_to",
+      "cli": "scroll-to",
+      "clients": {
+        "dotnet": "ScrollTo",
+        "go": "ScrollTo",
+        "java": "scrollTo",
+        "javascript": "scrollTo",
+        "python": "scroll_to"
+      }
+    },
+    {
+      "n": 41,
+      "tool": "app_sms",
+      "cli": "sms",
+      "clients": {
+        "dotnet": "Sms",
+        "go": "SendSMS",
+        "java": "sms",
+        "javascript": "sms",
+        "python": "sms"
+      }
+    },
+    {
+      "n": 42,
+      "tool": "app_source",
+      "cli": "source",
+      "clients": {
+        "dotnet": "Source",
+        "go": "Source",
+        "java": "source",
+        "javascript": "source",
+        "python": "source"
+      }
+    },
+    {
+      "n": 43,
+      "tool": "app_swipe",
+      "cli": "swipe",
+      "clients": {
+        "dotnet": "Swipe",
+        "go": "Swipe",
+        "java": "swipe",
+        "javascript": "swipe",
+        "python": "swipe"
+      }
+    },
+    {
+      "n": 44,
+      "tool": "app_tap",
+      "cli": "tap, double-tap, double-tap",
+      "clients": {
+        "dotnet": "Tap",
+        "go": "Tap",
+        "java": "tap",
+        "javascript": "tap",
+        "python": "tap"
+      }
+    },
+    {
+      "n": 45,
+      "tool": "app_terminate",
+      "cli": "terminate",
+      "clients": {
+        "dotnet": "Terminate",
+        "go": "Terminate",
+        "java": "terminate",
+        "javascript": "terminate",
+        "python": "terminate"
+      }
+    },
+    {
+      "n": 46,
+      "tool": "app_text",
+      "cli": "text",
+      "clients": {
+        "dotnet": "Text",
+        "go": "Text",
+        "java": "text",
+        "javascript": "text",
+        "python": "text"
+      }
+    },
+    {
+      "n": 47,
+      "tool": "app_timezone",
+      "cli": "timezone",
+      "clients": {
+        "dotnet": "Timezone",
+        "go": "Timezone",
+        "java": "timezone",
+        "javascript": "timezone",
+        "python": "timezone"
+      }
+    },
+    {
+      "n": 48,
+      "tool": "app_type",
+      "cli": "type",
+      "clients": {
+        "dotnet": "Type",
+        "go": "Type",
+        "java": "type",
+        "javascript": "type",
+        "python": "type"
+      }
+    },
+    {
+      "n": 49,
+      "tool": "app_uninstall",
+      "cli": "uninstall",
+      "clients": {
+        "dotnet": "Uninstall",
+        "go": "Uninstall",
+        "java": "uninstall",
+        "javascript": "uninstall",
+        "python": "uninstall"
+      }
+    },
+    {
+      "n": 50,
+      "tool": "app_wait_for",
+      "cli": "wait",
+      "clients": {
+        "dotnet": "WaitFor",
+        "go": "WaitFor",
+        "java": "waitFor",
+        "javascript": "waitFor",
+        "python": "wait_for"
+      }
+    },
+    {
+      "n": 51,
+      "tool": "app_zoom",
+      "cli": "zoom",
+      "clients": {
+        "dotnet": "Zoom",
+        "go": "Zoom",
+        "java": "zoom",
+        "javascript": "zoom",
+        "python": "zoom"
+      }
+    }
+  ],
+  "clients": [
+    {
+      "language": "go",
+      "file": "clients/go/mobium.go",
+      "covers": 51
+    },
+    {
+      "language": "python",
+      "file": "clients/python/mobium/_device.py",
+      "covers": 51
+    },
+    {
+      "language": "javascript",
+      "file": "clients/javascript/index.js",
+      "covers": 51
+    },
+    {
+      "language": "java",
+      "file": "clients/java/src/main/java/dev/mobium/Mobium.java",
+      "covers": 51
+    },
+    {
+      "language": "dotnet",
+      "file": "clients/dotnet/Mobium/Device.cs",
+      "covers": 51
+    }
+  ],
+  "counts": {
+    "tools": 51,
+    "cliRegistered": 56,
+    "cliVisible": 55,
+    "cliHidden": [
+      "pipe"
+    ],
+    "cliConstructors": 59,
+    "clients": 5
+  },
+  "cliWithoutTool": [
+    "daemon",
+    "mcp",
+    "pipe",
+    "start",
+    "status",
+    "stop"
+  ]
+}

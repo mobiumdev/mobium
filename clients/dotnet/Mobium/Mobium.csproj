@@ -1,0 +1,45 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    netstandard2.0 on purpose. It is the target that reaches .NET Framework
+    4.6.1+, .NET Core 2+, modern .NET, Xamarin and Unity from one build, and
+    a large share of the mobile-testing audience is still on .NET Framework.
+
+    The cost is that System.Text.Json is a NuGet package there rather than
+    part of the framework, so Json.cs is hand-written. That is the same trade
+    the Java client makes against Jackson, for the same reason: a client
+    library that drives a phone should not hand its consumer a dependency
+    graph. This package has none.
+  -->
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <AssemblyName>Mobium</AssemblyName>
+    <RootNamespace>Mobium</RootNamespace>
+
+    <!-- Warnings are errors here for the same reason javac runs with
+         -Xlint:all -Werror for the Java client: a client nobody has a test
+         device for is held up by the compiler or by nothing. -->
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <AnalysisLevel>latest</AnalysisLevel>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+
+    <PackageId>Mobium</PackageId>
+    <Version>0.1.0</Version>
+    <Authors>Mobium</Authors>
+    <Description>Drives native apps on Android emulators, Android phones and iOS simulators, over the mobium CLI. No dependencies.</Description>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <RepositoryUrl>https://github.com/mobiumdev/mobium</RepositoryUrl>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- The tests exercise Json and Connection.FindBinary, which are internal
+         because they are not API. The Java client's tests see the same things
+         by living in the same package. -->
+    <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleToAttribute">
+      <_Parameter1>Mobium.Tests</_Parameter1>
+    </AssemblyAttribute>
+  </ItemGroup>
+
+</Project>

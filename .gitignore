@@ -1,0 +1,12 @@
+bin/
+# Screenshots land here constantly during device work, so PNGs are ignored by
+# default and the branding is excepted rather than the rule loosened.
+*.png
+!assets/branding/*.png
+*.zip
+.DS_Store
+clients/java/target/
+
+# .NET build output. bin/ at the top of this file already covers
+# clients/dotnet/*/bin, but obj/ holds the restore and codegen caches.
+clients/dotnet/**/obj/

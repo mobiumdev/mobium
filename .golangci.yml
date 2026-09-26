@@ -1,0 +1,131 @@
+version: "2"
+
+# What this is for
+#
+# Run with `make lint`; `make ci` runs it too, so a green local run is a green
+# build. Installing it is `make lint-install`, which pins a version and
+# verifies the download against the release's published checksum.
+#
+# The first full run over ~27,000 lines produced exactly one real finding — a
+# function left dead by a refactor. That is the useful thing to know about
+# this file: it is here to stop regressions, not because there was a backlog.
+# Most of what the default set flagged was this codebase deliberately doing
+# the right thing, with a comment saying why. Where that happened the linter
+# is turned off *here*, with the reason, rather than silenced at each site
+# with a //nolint that the next reader has to reconstruct.
+
+linters:
+  default: standard        # errcheck, govet, ineffassign, staticcheck, unused
+  enable:
+    # The UiAutomator2 and CDP backends both speak HTTP. A leaked response
+    # body is invisible until a long session runs out of file descriptors,
+    # which is exactly the kind of defect this project only finds on a device.
+    - bodyclose
+    # Docs are a large part of what ships here, and misspell reads comments.
+    - misspell
+
+  # Linters considered and rejected, with the reason. A linter that is off
+  # for a thought-through reason is worth as much as one that is on, and
+  # without this list the next person re-runs the same experiment.
+  #
+  #   nilerr    — fires on the two places that swallow a snapshot error to
+  #               retry. That is defect 51's fix: UiAutomator2 fails while the
+  #               screen animates and succeeds a moment later. Both sites are
+  #               commented. The linter is right in general and wrong here.
+  #   makezero  — fires on `head := make([]byte, 4)` followed by
+  #               `append(head, body...)`. That is a length prefix, which is
+  #               what the Remote Web Inspector protocol asks for.
+  #   noctx     — would rewrite every exec.Command and net.Listen. The device
+  #               commands carry their own timeouts and the daemon's listener
+  #               has nothing to cancel. Seven findings, none of them a bug.
+  #   errorlint — six findings, all of them `err == io.EOF` from
+  #               xml.Decoder.Token and bufio.Reader.ReadBytes, which return
+  #               io.EOF bare by contract, plus one deliberate `%v` for a
+  #               secondary error next to a `%w` for the primary one.
+
+  settings:
+    errcheck:
+      # Cleanup and diagnostic calls whose error nothing can act on. Closing a
+      # reader, removing a socket during shutdown, or failing to print to a
+      # terminal that has gone away are all cases where the only honest
+      # handling is to carry on. Anything that *writes* a file is absent from
+      # this list on purpose: dropping a Close error there loses data, and the
+      # one place it matters — the APK download in internal/device — checks it.
+      exclude-functions:
+        - os.Remove
+        - fmt.Fprint
+        - fmt.Fprintf
+        - fmt.Fprintln
+
+    staticcheck:
+      checks:
+        - all
+        # ST1005 wants error strings uncapitalised and without trailing
+        # punctuation. This project requires the opposite: an
+        # error that suggests a remedy must suggest one that can work, and
+        # several errors here are multi-line prose telling the reader what to
+        # do about a missing Xcode or a checksum mismatch. Sentences need
+        # capitals and full stops. This is a real disagreement with the linter
+        # rather than a convenience, so it is disabled rather than worked
+        # around.
+        - "-ST1005"
+        # QF1001 suggests applying De Morgan's law. `!(focusable && input)`
+        # says "not an editable field", which is the thing being tested. The
+        # rewrite is shorter and means less.
+        - "-QF1001"
+        # QF1002 suggests a tagged switch where a `switch { case x == "a": }`
+        # is used. The untagged form is what the fake server in the Go client's
+        # tests uses, and it reads the same as the cases around it that are not
+        # equality tests. A mechanical rewrite for its own sake.
+        - "-QF1002"
+
+  exclusions:
+    # generated: the API surface doc and its JSON are produced by
+    # internal/apisurface/generate; nothing there is hand-written.
+    generated: lax
+    rules:
+      # Test helpers close things they opened and print diagnostics. The
+      # failure mode a dropped error would cause in a test is a test that
+      # fails, which is the point.
+      - path: _test\.go
+        linters:
+          - errcheck
+
+      # Teardown and diagnostics. Closing a connection, tearing down an adb
+      # port forward, setting a deadline on a socket that is already going
+      # away, reaping a detached child — in each of these the caller is on its
+      # way out and has nothing it could do with the error. Matched by name
+      # rather than by type because errcheck resolves the concrete receiver,
+      # which differs at every one of these sites.
+      #
+      # Deliberately NOT here: anything that writes a file. Dropping a Close
+      # error there loses data, and the one place it matters — the pinned APK
+      # download in internal/device — checks it.
+      - linters:
+          - errcheck
+        text: "Error return value of `[^`]*\\.(Close|RemoveForward|SetReadDeadline|SetWriteDeadline|Wait|TerminateApp)` is not checked"
+
+      # closeSession sends DELETE /session and does not wait to hear back:
+      # the session is being abandoned either way, and on a device that has
+      # already gone the request cannot succeed.
+      - path: internal/mobiumdriver/w3c\.go
+        linters:
+          - errcheck
+        text: "c\\.do"
+
+      # Sscanf into a pre-initialized index. The segments come from mobium's
+      # own tree and are always numeric, so a parse failure would mean the
+      # tree was malformed rather than the input being unusual.
+      - linters:
+          - errcheck
+        text: "fmt\\.Sscanf"
+
+      # RemovePID during shutdown, via a deferred closure so errcheck cannot
+      # name it.
+      - path: "internal/daemon/(daemon|pidfile)\\.go"
+        linters:
+          - errcheck
+
+formatters:
+  enable:
+    - gofmt

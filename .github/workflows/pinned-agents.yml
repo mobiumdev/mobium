@@ -1,0 +1,37 @@
+# Checks that the pinned device-side agents are still where we think they are.
+#
+# Deliberately NOT part of CI. These tests download UiAutomator2 and
+# WebDriverAgent from their upstream GitHub releases, so they fail when
+# GitHub, Appium or the WebDriverAgent project has a bad day — none of which
+# is a reason to block a pull request. Failing here means "go look", not
+# "the change is wrong".
+#
+# Weekly is often enough to notice a release being retagged or withdrawn
+# before a user does, which is the thing this is actually guarding against.
+
+name: Pinned agents
+
+on:
+  schedule:
+    # Mondays, 06:00 UTC. Early enough in the week to act on.
+    - cron: '0 6 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  downloads:
+    name: Upstream releases still match their checksums
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+          cache-dependency-path: go.sum
+
+      - name: Re-check the pinned downloads
+        env:
+          MOBIUM_NETWORK_TESTS: '1'
+        run: go test ./internal/device/ -run Network -v

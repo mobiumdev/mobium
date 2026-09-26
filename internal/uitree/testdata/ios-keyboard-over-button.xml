@@ -1,0 +1,164 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<XCUIElementTypeApplication type="XCUIElementTypeApplication" name="MobiumApp" label="MobiumApp" enabled="true" visible="true" accessible="false" x="0" y="0" width="402" height="874" index="0" traits="" processId="78854" bundleId="dev.mobium.mobiumapp">
+  <XCUIElementTypeWindow type="XCUIElementTypeWindow" enabled="true" visible="true" accessible="false" x="0" y="0" width="402" height="874" index="0" traits="">
+    <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="0" y="0" width="402" height="874" index="0" traits="">
+      <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="0" y="0" width="402" height="874" index="0" traits="">
+        <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="0" y="0" width="402" height="874" index="0" traits="">
+          <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="0" y="0" width="402" height="874" index="0" traits="">
+            <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="0" y="0" width="402" height="874" index="0" traits="">
+              <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="0" y="0" width="402" height="874" index="0" traits="">
+                <XCUIElementTypeButton type="XCUIElementTypeButton" name="backBtn" label="Back" enabled="true" visible="true" accessible="true" x="16" y="78" width="370" height="48" index="0" traits="Button">
+                  <XCUIElementTypeStaticText type="XCUIElementTypeStaticText" value="Back" name="Back" label="Back" enabled="true" visible="true" accessible="false" x="30" y="92" width="342" height="20" index="0" traits="StaticText">
+                    <XCUIElementTypeStaticText type="XCUIElementTypeStaticText" value="Back" name="Back" label="Back" enabled="true" visible="true" accessible="false" x="30" y="92" width="342" height="20" index="0" traits="StaticText"/>
+                  </XCUIElementTypeStaticText>
+                </XCUIElementTypeButton>
+                <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="0" y="135" width="402" height="706" index="1" traits="">
+                  <XCUIElementTypeScrollView type="XCUIElementTypeScrollView" enabled="true" visible="true" accessible="false" x="0" y="135" width="402" height="706" index="0" traits="">
+                    <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="0" y="-360" width="402" height="1201" index="0" traits="">
+                      <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="0" y="-360" width="402" height="1201" index="0" traits="">
+                        <XCUIElementTypeStaticText type="XCUIElementTypeStaticText" value="Dialogs" name="Dialogs" label="Dialogs" enabled="true" visible="false" accessible="false" x="16" y="-344" width="370" height="27" index="0" traits="StaticText">
+                          <XCUIElementTypeStaticText type="XCUIElementTypeStaticText" value="Dialogs" name="Dialogs" label="Dialogs" enabled="true" visible="false" accessible="true" x="16" y="-344" width="370" height="27" index="0" traits="StaticText"/>
+                        </XCUIElementTypeStaticText>
+                        <XCUIElementTypeStaticText type="XCUIElementTypeStaticText" value="Each button raises a dialog. Answer it, and the line below says what the app received." name="Each button raises a dialog. Answer it, and the line below says what the app received." label="Each button raises a dialog. Answer it, and the line below says what the app received." enabled="true" visible="false" accessible="false" x="16" y="-302" width="370" height="43" index="1" traits="StaticText">
+                          <XCUIElementTypeStaticText type="XCUIElementTypeStaticText" value="Each button raises a dialog. Answer it, and the line below says what the app received." name="Each button raises a dialog. Answer it, and the line below says what the app received." label="Each button raises a dialog. Answer it, and the line below says what the app received." enabled="true" visible="false" accessible="true" x="16" y="-302" width="370" height="43" index="0" traits="StaticText"/>
+                        </XCUIElementTypeStaticText>
+                        <XCUIElementTypeStaticText type="XCUIElementTypeStaticText" value="nothing yet" name="dialogOutcome" label="nothing yet" enabled="true" visible="false" accessible="false" x="16" y="-244" width="370" height="20" index="2" traits="StaticText">
+                          <XCUIElementTypeStaticText type="XCUIElementTypeStaticText" value="nothing yet" name="nothing yet" label="nothing yet" enabled="true" visible="false" accessible="true" x="16" y="-244" width="370" height="20" index="0" traits="StaticText"/>
+                        </XCUIElementTypeStaticText>
+                        <XCUIElementTypeStaticText type="XCUIElementTypeStaticText" value="The app's own" name="The app's own" label="The app's own" enabled="true" visible="false" accessible="false" x="16" y="-209" width="370" height="18" index="3" traits="StaticText">
+                          <XCUIElementTypeStaticText type="XCUIElementTypeStaticText" value="The app's own" name="The app's own" label="The app's own" enabled="true" visible="false" accessible="true" x="16" y="-209" width="370" height="18" index="0" traits="StaticText"/>
+                        </XCUIElementTypeStaticText>
+                        <XCUIElementTypeButton type="XCUIElementTypeButton" name="oneButtonBtn" label="One-button alert" enabled="true" visible="false" accessible="true" x="16" y="-188" width="370" height="49" index="4" traits="Button"/>
+                        <XCUIElementTypeButton type="XCUIElementTypeButton" name="twoButtonBtn" label="Two-button alert" enabled="true" visible="false" accessible="true" x="16" y="-130" width="370" height="48" index="5" traits="Button"/>
+                        <XCUIElementTypeButton type="XCUIElementTypeButton" name="threeButtonBtn" label="Three-button alert" enabled="true" visible="false" accessible="true" x="16" y="-73" width="370" height="48" index="6" traits="Button"/>
+                        <XCUIElementTypeButton type="XCUIElementTypeButton" name="lateAlertBtn" label="Alert in 2 seconds" enabled="true" visible="false" accessible="true" x="16" y="-16" width="370" height="48" index="7" traits="Button"/>
+                        <XCUIElementTypeButton type="XCUIElementTypeButton" name="actionSheetBtn" label="Action sheet" enabled="true" visible="false" accessible="true" x="16" y="42" width="370" height="48" index="8" traits="Button"/>
+                        <XCUIElementTypeStaticText type="XCUIElementTypeStaticText" value="The system's" name="The system's" label="The system's" enabled="true" visible="false" accessible="false" x="16" y="99" width="370" height="18" index="9" traits="StaticText">
+                          <XCUIElementTypeStaticText type="XCUIElementTypeStaticText" value="The system's" name="The system's" label="The system's" enabled="true" visible="false" accessible="true" x="16" y="99" width="370" height="18" index="0" traits="StaticText"/>
+                        </XCUIElementTypeStaticText>
+                        <XCUIElementTypeButton type="XCUIElementTypeButton" name="shareBtn" label="Share sheet" enabled="true" visible="true" accessible="true" x="16" y="120" width="370" height="48" index="10" traits="Button"/>
+                        <XCUIElementTypeButton type="XCUIElementTypeButton" name="locationBtn" label="Location permission" enabled="true" visible="true" accessible="true" x="16" y="177" width="370" height="49" index="11" traits="Button"/>
+                        <XCUIElementTypeButton type="XCUIElementTypeButton" name="notificationsBtn" label="Notification permission" enabled="true" visible="true" accessible="true" x="16" y="235" width="370" height="48" index="12" traits="Button"/>
+                        <XCUIElementTypeButton type="XCUIElementTypeButton" name="cameraBtn" label="Camera permission" enabled="true" visible="true" accessible="true" x="16" y="292" width="370" height="48" index="13" traits="Button"/>
+                        <XCUIElementTypeButton type="XCUIElementTypeButton" name="trackingBtn" label="Tracking permission (App Tracking Transparency)" enabled="true" visible="true" accessible="true" x="16" y="349" width="370" height="68" index="14" traits="Button"/>
+                        <XCUIElementTypeStaticText type="XCUIElementTypeStaticText" value="Save Password (iOS offers it after this form)" name="Save Password (iOS offers it after this form)" label="Save Password (iOS offers it after this form)" enabled="true" visible="true" accessible="false" x="16" y="425" width="370" height="18" index="15" traits="StaticText">
+                          <XCUIElementTypeStaticText type="XCUIElementTypeStaticText" value="Save Password (iOS offers it after this form)" name="Save Password (iOS offers it after this form)" label="Save Password (iOS offers it after this form)" enabled="true" visible="true" accessible="true" x="16" y="425" width="370" height="18" index="0" traits="StaticText"/>
+                        </XCUIElementTypeStaticText>
+                        <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="16" y="447" width="370" height="46" index="16" traits="">
+                          <XCUIElementTypeTextField type="XCUIElementTypeTextField" value="any username" name="saveUser" label="save username" enabled="true" visible="true" accessible="true" x="17" y="448" width="368" height="44" index="0" placeholderValue="any username" traits=""/>
+                        </XCUIElementTypeOther>
+                        <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="16" y="502" width="370" height="46" index="17" traits="">
+                          <XCUIElementTypeSecureTextField type="XCUIElementTypeSecureTextField" value="any password" name="savePass" label="save password" enabled="true" visible="true" accessible="true" x="17" y="503" width="368" height="44" index="0" placeholderValue="any password" traits=""/>
+                        </XCUIElementTypeOther>
+                        <XCUIElementTypeButton type="XCUIElementTypeButton" name="saveSubmitBtn" label="Sign In" enabled="true" visible="true" accessible="true" x="16" y="557" width="370" height="49" index="18" traits="Button"/>
+                        <XCUIElementTypeStaticText type="XCUIElementTypeStaticText" value="Under the keyboard" name="Under the keyboard" label="Under the keyboard" enabled="true" visible="false" accessible="false" x="16" y="614" width="370" height="18" index="19" traits="StaticText">
+                          <XCUIElementTypeStaticText type="XCUIElementTypeStaticText" value="Under the keyboard" name="Under the keyboard" label="Under the keyboard" enabled="true" visible="false" accessible="true" x="16" y="614" width="370" height="18" index="0" traits="StaticText"/>
+                        </XCUIElementTypeStaticText>
+                        <XCUIElementTypeStaticText type="XCUIElementTypeStaticText" value="Type in this field, and the keyboard covers the button pinned to the bottom of the screen. iOS still reports it as visible; Android leaves it out of what an automation tool can see." name="Type in this field, and the keyboard covers the button pinned to the bottom of the screen. iOS still reports it as visible; Android leaves it out of what an automation tool can see." label="Type in this field, and the keyboard covers the button pinned to the bottom of the screen. iOS still reports it as visible; Android leaves it out of what an automation tool can see." enabled="true" visible="false" accessible="false" x="16" y="641" width="370" height="48" index="20" traits="StaticText">
+                          <XCUIElementTypeStaticText type="XCUIElementTypeStaticText" value="Type in this field, and the keyboard covers the button pinned to the bottom of the screen. iOS still reports it as visible; Android leaves it out of what an automation tool can see." name="Type in this field, and the keyboard covers the button pinned to the bottom of the screen. iOS still reports it as visible; Android leaves it out of what an automation tool can see." label="Type in this field, and the keyboard covers the button pinned to the bottom of the screen. iOS still reports it as visible; Android leaves it out of what an automation tool can see." enabled="true" visible="false" accessible="true" x="16" y="641" width="370" height="48" index="0" traits="StaticText"/>
+                        </XCUIElementTypeStaticText>
+                        <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="false" accessible="false" x="16" y="688" width="370" height="46" index="21" traits="">
+                          <XCUIElementTypeTextField type="XCUIElementTypeTextField" value="type here" name="coverField" label="cover field" enabled="true" visible="false" accessible="true" x="17" y="689" width="368" height="44" index="0" placeholderValue="type here" traits=""/>
+                        </XCUIElementTypeOther>
+                      </XCUIElementTypeOther>
+                    </XCUIElementTypeOther>
+                    <XCUIElementTypeOther type="XCUIElementTypeOther" value="100%" name="Vertical scroll bar, 2 pages" label="Vertical scroll bar, 2 pages" enabled="true" visible="true" accessible="false" x="369" y="146" width="30" height="666" index="1" traits="Adjustable">
+                      <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="396" y="421" width="3" height="389" index="0" traits=""/>
+                    </XCUIElementTypeOther>
+                    <XCUIElementTypeOther type="XCUIElementTypeOther" value="0%" name="Horizontal scroll bar, 1 page" label="Horizontal scroll bar, 1 page" enabled="true" visible="false" accessible="false" x="28" y="807" width="346" height="31" index="2" traits="Adjustable">
+                      <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="false" accessible="false" x="30" y="834" width="341" height="4" index="0" traits=""/>
+                    </XCUIElementTypeOther>
+                    <XCUIElementTypeOther type="XCUIElementTypeOther" value="100%" name="Vertical scroll bar, 2 pages" label="Vertical scroll bar, 2 pages" enabled="true" visible="true" accessible="false" x="369" y="146" width="30" height="666" index="3" traits="Adjustable">
+                      <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="396" y="421" width="3" height="389" index="0" traits=""/>
+                    </XCUIElementTypeOther>
+                    <XCUIElementTypeOther type="XCUIElementTypeOther" value="0%" name="Horizontal scroll bar, 1 page" label="Horizontal scroll bar, 1 page" enabled="true" visible="false" accessible="false" x="28" y="807" width="346" height="31" index="4" traits="Adjustable">
+                      <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="false" accessible="false" x="30" y="834" width="341" height="4" index="0" traits=""/>
+                    </XCUIElementTypeOther>
+                  </XCUIElementTypeScrollView>
+                </XCUIElementTypeOther>
+                <XCUIElementTypeButton type="XCUIElementTypeButton" name="coveredBtn" label="Pinned to the bottom" enabled="true" visible="false" accessible="true" x="16" y="766" width="370" height="48" index="2" traits="Button"/>
+              </XCUIElementTypeOther>
+            </XCUIElementTypeOther>
+          </XCUIElementTypeOther>
+        </XCUIElementTypeOther>
+      </XCUIElementTypeOther>
+    </XCUIElementTypeOther>
+  </XCUIElementTypeWindow>
+  <XCUIElementTypeWindow type="XCUIElementTypeWindow" enabled="true" visible="false" accessible="false" x="0" y="0" width="402" height="874" index="1" traits="">
+    <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="false" accessible="false" x="0" y="0" width="402" height="874" index="0" traits="">
+      <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="false" accessible="false" x="0" y="0" width="402" height="874" index="0" traits=""/>
+      <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="false" accessible="false" x="0" y="566" width="402" height="308" index="1" traits="">
+        <XCUIElementTypeOther type="XCUIElementTypeOther" name="inputView" enabled="true" visible="false" accessible="false" x="0" y="566" width="402" height="308" index="0" traits=""/>
+      </XCUIElementTypeOther>
+    </XCUIElementTypeOther>
+  </XCUIElementTypeWindow>
+  <XCUIElementTypeWindow type="XCUIElementTypeWindow" enabled="true" visible="true" accessible="false" x="0" y="0" width="402" height="874" index="2" traits="">
+    <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="0" y="0" width="402" height="874" index="0" traits="">
+      <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="0" y="566" width="402" height="308" index="0" traits="">
+        <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="0" y="566" width="402" height="308" index="0" traits="">
+          <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="0" y="566" width="402" height="308" index="0" traits="">
+            <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="0" y="566" width="402" height="308" index="0" traits=""/>
+          </XCUIElementTypeOther>
+        </XCUIElementTypeOther>
+        <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="0" y="583" width="402" height="233" index="1" traits="">
+          <XCUIElementTypeKeyboard type="XCUIElementTypeKeyboard" enabled="true" visible="true" accessible="false" x="0" y="583" width="402" height="233" index="0" traits="">
+            <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="0" y="583" width="402" height="233" index="0" traits="">
+              <XCUIElementTypeOther type="XCUIElementTypeOther" name="UIKeyboardLayoutStar Preview" enabled="true" visible="true" accessible="false" x="0" y="583" width="402" height="233" index="0" traits="">
+                <XCUIElementTypeKey type="XCUIElementTypeKey" name="Padding-Left" label="Padding-Left" enabled="true" visible="false" accessible="false" x="0" y="583" width="0" height="0" index="0" traits="PlaysSound, KeyboardKey"/>
+                <XCUIElementTypeKey type="XCUIElementTypeKey" name="Q" label="Q" enabled="true" visible="true" accessible="true" x="4" y="590" width="40" height="54" index="1" traits="PlaysSound, KeyboardKey"/>
+                <XCUIElementTypeKey type="XCUIElementTypeKey" name="W" label="W" enabled="true" visible="true" accessible="true" x="44" y="590" width="40" height="54" index="2" traits="PlaysSound, KeyboardKey"/>
+                <XCUIElementTypeKey type="XCUIElementTypeKey" name="E" label="E" enabled="true" visible="true" accessible="true" x="83" y="590" width="40" height="54" index="3" traits="PlaysSound, KeyboardKey"/>
+                <XCUIElementTypeKey type="XCUIElementTypeKey" name="R" label="R" enabled="true" visible="true" accessible="true" x="122" y="590" width="41" height="54" index="4" traits="PlaysSound, KeyboardKey"/>
+                <XCUIElementTypeKey type="XCUIElementTypeKey" name="T" label="T" enabled="true" visible="true" accessible="true" x="162" y="590" width="40" height="54" index="5" traits="PlaysSound, KeyboardKey"/>
+                <XCUIElementTypeKey type="XCUIElementTypeKey" name="Y" label="Y" enabled="true" visible="true" accessible="true" x="202" y="590" width="40" height="54" index="6" traits="PlaysSound, KeyboardKey"/>
+                <XCUIElementTypeKey type="XCUIElementTypeKey" name="U" label="U" enabled="true" visible="true" accessible="true" x="241" y="590" width="40" height="54" index="7" traits="PlaysSound, KeyboardKey"/>
+                <XCUIElementTypeKey type="XCUIElementTypeKey" name="I" label="I" enabled="true" visible="true" accessible="true" x="281" y="590" width="40" height="54" index="8" traits="PlaysSound, KeyboardKey"/>
+                <XCUIElementTypeKey type="XCUIElementTypeKey" name="O" label="O" enabled="true" visible="true" accessible="true" x="320" y="590" width="40" height="54" index="9" traits="PlaysSound, KeyboardKey"/>
+                <XCUIElementTypeKey type="XCUIElementTypeKey" name="P" label="P" enabled="true" visible="true" accessible="true" x="360" y="590" width="40" height="54" index="10" traits="PlaysSound, KeyboardKey"/>
+                <XCUIElementTypeKey type="XCUIElementTypeKey" name="Padding-Right" label="Padding-Right" enabled="true" visible="false" accessible="false" x="0" y="583" width="0" height="0" index="11" traits="PlaysSound, KeyboardKey"/>
+                <XCUIElementTypeKey type="XCUIElementTypeKey" name="Padding-Left" label="Padding-Left" enabled="true" visible="false" accessible="false" x="0" y="583" width="0" height="0" index="12" traits="PlaysSound, KeyboardKey"/>
+                <XCUIElementTypeKey type="XCUIElementTypeKey" name="A" label="A" enabled="true" visible="true" accessible="true" x="24" y="644" width="40" height="54" index="13" traits="PlaysSound, KeyboardKey"/>
+                <XCUIElementTypeKey type="XCUIElementTypeKey" name="S" label="S" enabled="true" visible="true" accessible="true" x="63" y="644" width="41" height="54" index="14" traits="PlaysSound, KeyboardKey"/>
+                <XCUIElementTypeKey type="XCUIElementTypeKey" name="D" label="D" enabled="true" visible="true" accessible="true" x="103" y="644" width="40" height="54" index="15" traits="PlaysSound, KeyboardKey"/>
+                <XCUIElementTypeKey type="XCUIElementTypeKey" name="F" label="F" enabled="true" visible="true" accessible="true" x="142" y="644" width="41" height="54" index="16" traits="PlaysSound, KeyboardKey"/>
+                <XCUIElementTypeKey type="XCUIElementTypeKey" name="G" label="G" enabled="true" visible="true" accessible="true" x="182" y="644" width="40" height="54" index="17" traits="PlaysSound, KeyboardKey"/>
+                <XCUIElementTypeKey type="XCUIElementTypeKey" name="H" label="H" enabled="true" visible="true" accessible="true" x="221" y="644" width="41" height="54" index="18" traits="PlaysSound, KeyboardKey"/>
+                <XCUIElementTypeKey type="XCUIElementTypeKey" name="J" label="J" enabled="true" visible="true" accessible="true" x="261" y="644" width="40" height="54" index="19" traits="PlaysSound, KeyboardKey"/>
+                <XCUIElementTypeKey type="XCUIElementTypeKey" name="K" label="K" enabled="true" visible="true" accessible="true" x="300" y="644" width="41" height="54" index="20" traits="PlaysSound, KeyboardKey"/>
+                <XCUIElementTypeKey type="XCUIElementTypeKey" name="L" label="L" enabled="true" visible="true" accessible="true" x="340" y="644" width="40" height="54" index="21" traits="PlaysSound, KeyboardKey"/>
+                <XCUIElementTypeKey type="XCUIElementTypeKey" name="Padding-Right" label="Padding-Right" enabled="true" visible="false" accessible="false" x="0" y="583" width="0" height="0" index="22" traits="PlaysSound, KeyboardKey"/>
+                <XCUIElementTypeButton type="XCUIElementTypeButton" value="1" name="shift" label="shift" enabled="true" visible="true" accessible="true" x="4" y="698" width="52" height="54" index="23" traits="Selected, PlaysSound, KeyboardKey, Button"/>
+                <XCUIElementTypeKey type="XCUIElementTypeKey" name="Padding-Left" label="Padding-Left" enabled="true" visible="false" accessible="false" x="0" y="583" width="0" height="0" index="24" traits="PlaysSound, KeyboardKey"/>
+                <XCUIElementTypeKey type="XCUIElementTypeKey" name="Z" label="Z" enabled="true" visible="true" accessible="true" x="63" y="698" width="41" height="54" index="25" traits="PlaysSound, KeyboardKey"/>
+                <XCUIElementTypeKey type="XCUIElementTypeKey" name="X" label="X" enabled="true" visible="true" accessible="true" x="103" y="698" width="40" height="54" index="26" traits="PlaysSound, KeyboardKey"/>
+                <XCUIElementTypeKey type="XCUIElementTypeKey" name="C" label="C" enabled="true" visible="true" accessible="true" x="142" y="698" width="41" height="54" index="27" traits="PlaysSound, KeyboardKey"/>
+                <XCUIElementTypeKey type="XCUIElementTypeKey" name="V" label="V" enabled="true" visible="true" accessible="true" x="182" y="698" width="40" height="54" index="28" traits="PlaysSound, KeyboardKey"/>
+                <XCUIElementTypeKey type="XCUIElementTypeKey" name="B" label="B" enabled="true" visible="true" accessible="true" x="221" y="698" width="41" height="54" index="29" traits="PlaysSound, KeyboardKey"/>
+                <XCUIElementTypeKey type="XCUIElementTypeKey" name="N" label="N" enabled="true" visible="true" accessible="true" x="261" y="698" width="40" height="54" index="30" traits="PlaysSound, KeyboardKey"/>
+                <XCUIElementTypeKey type="XCUIElementTypeKey" name="M" label="M" enabled="true" visible="true" accessible="true" x="300" y="698" width="41" height="54" index="31" traits="PlaysSound, KeyboardKey"/>
+                <XCUIElementTypeKey type="XCUIElementTypeKey" name="Padding-Right" label="Padding-Right" enabled="true" visible="false" accessible="false" x="0" y="583" width="0" height="0" index="32" traits="PlaysSound, KeyboardKey"/>
+                <XCUIElementTypeKey type="XCUIElementTypeKey" name="delete" label="delete" enabled="true" visible="true" accessible="true" x="348" y="698" width="52" height="54" index="33" traits="PlaysSound, KeyboardKey"/>
+                <XCUIElementTypeKey type="XCUIElementTypeKey" name="more" label="numbers" enabled="true" visible="true" accessible="true" x="4" y="752" width="50" height="54" index="34" traits="PlaysSound, KeyboardKey"/>
+                <XCUIElementTypeButton type="XCUIElementTypeButton" name="emoji" label="Emoji" enabled="true" visible="true" accessible="true" x="53" y="752" width="51" height="54" index="35" traits="PlaysSound, KeyboardKey, Button"/>
+                <XCUIElementTypeKey type="XCUIElementTypeKey" name="space" label=" " enabled="true" visible="true" accessible="true" x="103" y="752" width="198" height="54" index="36" traits="PlaysSound, KeyboardKey"/>
+                <XCUIElementTypeButton type="XCUIElementTypeButton" name="Return" label="return" enabled="true" visible="true" accessible="true" x="300" y="752" width="100" height="54" index="37" traits="PlaysSound, KeyboardKey, Button"/>
+              </XCUIElementTypeOther>
+            </XCUIElementTypeOther>
+          </XCUIElementTypeKeyboard>
+        </XCUIElementTypeOther>
+        <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="false" accessible="true" x="0" y="583" width="402" height="291" index="2" traits="">
+          <XCUIElementTypeButton type="XCUIElementTypeButton" value="Русская" name="Next keyboard" label="Next keyboard" enabled="true" visible="true" accessible="false" x="8" y="805" width="69" height="70" index="0" traits="KeyboardKey, Button">
+            <XCUIElementTypeStaticText type="XCUIElementTypeStaticText" enabled="true" visible="false" accessible="false" x="8" y="805" width="1" height="1" index="0" traits="StaticText"/>
+          </XCUIElementTypeButton>
+          <XCUIElementTypeButton type="XCUIElementTypeButton" name="dictation" label="Dictate" enabled="true" visible="true" accessible="false" x="325" y="805" width="69" height="70" index="1" traits="KeyboardKey, Button">
+            <XCUIElementTypeStaticText type="XCUIElementTypeStaticText" enabled="true" visible="false" accessible="false" x="325" y="805" width="1" height="1" index="0" traits="StaticText"/>
+          </XCUIElementTypeButton>
+          <XCUIElementTypeButton type="XCUIElementTypeButton" name="dictation" label="Dictate" enabled="true" visible="true" accessible="false" x="325" y="805" width="69" height="70" index="2" traits="KeyboardKey, Button">
+            <XCUIElementTypeStaticText type="XCUIElementTypeStaticText" enabled="true" visible="false" accessible="false" x="325" y="805" width="1" height="1" index="0" traits="StaticText"/>
+          </XCUIElementTypeButton>
+        </XCUIElementTypeOther>
+      </XCUIElementTypeOther>
+    </XCUIElementTypeOther>
+  </XCUIElementTypeWindow>
+</XCUIElementTypeApplication>
+

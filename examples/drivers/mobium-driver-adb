@@ -1,0 +1,356 @@
+#!/usr/bin/env python3
+"""A reference Mobium driver, written the way a third party would write one.
+
+It drives Android through plain `adb` and `uiautomator dump` — deliberately the
+same ground the built-in `uiautomator` backend covers, so its output can be
+compared against a known-good implementation on the same screen. That
+comparison is the point: it is how you tell a driver that works from a driver
+that returns something plausible.
+
+It exists to prove three claims in
+docs/decisions/0003-drivers-are-processes-not-plugins.md:
+
+  1. A driver needs nothing from the Mobium codebase. This file imports the
+     Python standard library and nothing else, and was written from the
+     decision record alone.
+  2. A driver need not be written in Go. This one is Python, and Mobium is
+     still a single static binary with no runtime dependencies — Python is
+     needed only by whoever chose to install this driver.
+  3. Capability negotiation is real. This driver does not advertise `text`,
+     for the same reason the built-in dump backend refuses it: `adb shell
+     input text` mangles quotes and non-ASCII and reports success anyway.
+     Mobium must therefore never ask it to type.
+
+Install it by putting it on your PATH under this name, then:
+
+    mobium map --backend adb
+
+Or, without installing:
+
+    MOBIUM_DRIVER_ADB=./examples/drivers/mobium-driver-adb mobium map --backend adb
+"""
+
+import base64
+import json
+import os
+import subprocess
+import sys
+import xml.etree.ElementTree as ET
+
+PROTOCOL_VERSION = "1"
+
+# Everything this driver can do beyond snapshot/screenshot/tap, which are
+# mandatory and so are not capabilities. `text` is absent on purpose.
+CAPABILITIES = ["gestures", "apps", "inventory", "health"]
+
+DUMP_PATH = "/data/local/tmp/mobium-driver-adb.xml"
+
+
+def log(message):
+    """stderr is the log. Anything printed to stdout that is not JSON-RPC
+    corrupts the channel — this is the one rule that matters."""
+    print(message, file=sys.stderr, flush=True)
+
+
+class DriverError(Exception):
+    """A failure to report to the user. The message is shown verbatim, so it
+    is written for a person."""
+
+
+class Adb:
+    def __init__(self, serial):
+        self.serial = serial
+
+    def run(self, *args, binary=False):
+        """Run adb and return stdout. Both streams are read.
+
+        Every command in this family reports at least some failures while
+        exiting 0, and there is no convention about which stream: `adb` writes
+        `error:` to stderr with exit 0, `am start` writes `Error:` to stdout
+        with exit 0, `uiautomator dump` splits one failure across both, and
+        `adb uninstall` writes to stdout and exits 1. A driver that checks only
+        the exit code will report success while doing nothing.
+        """
+        out, _ = self.run2(*args, binary=binary)
+        return out
+
+    def run2(self, *args, binary=False):
+        """As run, but hands back stderr too, for callers that need it."""
+        cmd = ["adb"]
+        if self.serial:
+            cmd += ["-s", self.serial]
+        cmd += list(args)
+        proc = subprocess.run(cmd, capture_output=True)
+        out = proc.stdout if binary else proc.stdout.decode("utf-8", "replace")
+        err = proc.stderr.decode("utf-8", "replace").strip()
+        if proc.returncode != 0:
+            raise DriverError(f"adb {' '.join(args)} failed: {err or 'no output'}")
+        if err.startswith("error:"):
+            raise DriverError(f"adb {' '.join(args)}: {err}")
+        return out, err
+
+    def shell(self, *args):
+        return self.run("shell", *args)
+
+    def shell2(self, *args):
+        return self.run2("shell", *args)
+
+
+def parse_bounds(text):
+    """'[0,100][400,200]' -> [0, 100, 400, 200]"""
+    if not text:
+        return [0, 0, 0, 0]
+    nums, current, digits = [], "", "0123456789-"
+    for ch in text:
+        if ch in digits:
+            current += ch
+        elif current:
+            nums.append(int(current))
+            current = ""
+    if current:
+        nums.append(int(current))
+    return (nums + [0, 0, 0, 0])[:4]
+
+
+def to_wire(element):
+    """One uiautomator XML element as a Mobium wire node.
+
+    Only what the platform said. depth, index, path and the parent link are
+    Mobium's bookkeeping and it rebuilds them on arrival, so sending them would
+    only be a chance to get them wrong.
+    """
+    get = element.get
+    node = {
+        "class": get("class") or element.tag,
+        "bounds": parse_bounds(get("bounds")),
+    }
+    for key, attribute in (
+        ("text", "text"),
+        ("label", "content-desc"),
+        ("testid", "resource-id"),
+        ("package", "package"),
+    ):
+        value = get(attribute)
+        if value:
+            node[key] = value
+    for key, attribute in (
+        ("clickable", "clickable"),
+        ("longClickable", "long-clickable"),
+        ("checkable", "checkable"),
+        ("checked", "checked"),
+        ("scrollable", "scrollable"),
+        ("focusable", "focusable"),
+        ("enabled", "enabled"),
+        ("selected", "selected"),
+        ("password", "password"),
+    ):
+        if get(attribute) == "true":
+            node[key] = True
+    # The dump format has no visibility attribute. Absent means "assume
+    # displayed", which is what Mobium does with it too.
+    children = [to_wire(child) for child in element]
+    if children:
+        node["children"] = children
+    return node
+
+
+class Driver:
+    def __init__(self):
+        self.adb = None
+
+    def initialize(self, params):
+        if params.get("protocolVersion") != PROTOCOL_VERSION:
+            raise DriverError(
+                f"this driver speaks protocol version {PROTOCOL_VERSION}, "
+                f"and mobium asked for {params.get('protocolVersion')!r}"
+            )
+        serial = params.get("device") or ""
+        self.adb = Adb(serial)
+        # Fail here rather than on the first snapshot: a driver that starts
+        # successfully and then cannot do anything is the worst shape.
+        state = self.adb.run("get-state").strip()
+        if state != "device":
+            raise DriverError(
+                f"the device is in state {state!r}, not 'device' — "
+                "check `adb devices` and that USB debugging is authorized"
+            )
+        log(f"attached to {serial or 'the only device'} ({state})")
+        return {
+            "protocolVersion": PROTOCOL_VERSION,
+            "name": "adb/uiautomator (reference driver)",
+            "capabilities": CAPABILITIES,
+        }
+
+    def snapshot(self, params):
+        # uiautomator splits its own failures across both streams: "killed"
+        # goes to stdout, "ERROR: could not get idle state." to stderr, and it
+        # exits 0 either way. Reading only stdout turns a diagnosable failure
+        # into "no output".
+        out, err = self.adb.shell2("uiautomator", "dump", DUMP_PATH)
+        if DUMP_PATH not in out:
+            reason = " ".join(x for x in (out.strip(), err) if x) or "no output"
+            if "idle state" in reason:
+                raise DriverError(
+                    "uiautomator dump gave up waiting for the screen to stop changing "
+                    f"({reason}) — something on it animates or updates continuously, "
+                    "such as the uptime counter on Settings > About. This driver "
+                    "cannot read such a screen at all; mobium's built-in "
+                    "--backend uiautomator2 does not wait for idle and can."
+                )
+            raise DriverError(f"uiautomator dump produced no file: {reason}")
+        xml = self.adb.run("exec-out", "cat", DUMP_PATH, binary=True)
+        # Leave nothing on the device: this file is a copy of whatever was on
+        # screen, and on somebody's phone that is their data.
+        self.adb.shell("rm", "-f", DUMP_PATH)
+        if not xml.strip():
+            raise DriverError("uiautomator dump wrote an empty hierarchy")
+        root = ET.fromstring(xml)
+        # <hierarchy> is uiautomator's own wrapper; mobium adds its own, so
+        # send the app's root rather than nesting two.
+        children = list(root)
+        if not children:
+            raise DriverError("the hierarchy has no elements in it")
+        return to_wire(children[0])
+
+    def screenshot(self, params):
+        png = self.adb.run("exec-out", "screencap", "-p", binary=True)
+        if not png.startswith(b"\x89PNG\r\n\x1a\n"):
+            raise DriverError(f"screencap returned {len(png)} bytes that are not a PNG")
+        return {"png": base64.b64encode(png).decode("ascii")}
+
+    def tap(self, params):
+        self.adb.shell("input", "tap", str(params["x"]), str(params["y"]))
+        return {}
+
+    def swipe(self, params):
+        self.adb.shell(
+            "input", "swipe",
+            str(params["x1"]), str(params["y1"]),
+            str(params["x2"]), str(params["y2"]),
+            str(params.get("durationMs", 300)),
+        )
+        return {}
+
+    def longPress(self, params):
+        duration = str(params.get("durationMs", 800))
+        x, y = str(params["x"]), str(params["y"])
+        # `input` has no press-and-hold; a swipe that does not move is one.
+        self.adb.shell("input", "swipe", x, y, x, y, duration)
+        return {}
+
+    def launch(self, params):
+        app = params["appId"]
+        # `monkey -p` is the tempting one-liner and it is wrong: it prints
+        # chatter like "** SYS_KEYS has no physical keys" on stdout, exits 0
+        # when the package does not exist, and is a fuzzer rather than a
+        # launcher. Resolve the activity and start it, the way mobium's own
+        # backend does.
+        resolved = self.adb.shell("cmd", "package", "resolve-activity", "--brief", app)
+        component = ""
+        for line in resolved.strip().splitlines():
+            line = line.strip()
+            if "/" in line and not line.startswith("No "):
+                component = line
+        if not component:
+            raise DriverError(f"{app} has no launchable activity (is it installed?)")
+        out = self.adb.shell("am", "start", "-n", component)
+        # `am start` prints Error: on stdout and exits 0.
+        if "Error:" in out:
+            raise DriverError(f"could not launch {app}: {out.strip().splitlines()[0]}")
+        # Not waited for here on purpose: `am start` reports dispatch, not
+        # foreground, and mobium waits for the app to actually appear before
+        # answering. That wait is in the tool layer, so every driver gets it.
+        return {}
+
+    def terminate(self, params):
+        self.adb.shell("am", "force-stop", params["appId"])
+        return {}
+
+    def install(self, params):
+        out = self.adb.run("install", "-r", params["path"])
+        if "Success" not in out:
+            raise DriverError(f"install failed: {out.strip()}")
+        return {}
+
+    def openUrl(self, params):
+        out = self.adb.shell("am", "start", "-a", "android.intent.action.VIEW",
+                             "-d", params["url"])
+        # `am start` prints Error: on stdout and exits 0.
+        if "Error:" in out:
+            raise DriverError(out.strip())
+        return {}
+
+    def listApps(self, params):
+        args = ["pm", "list", "packages", "--show-versioncode"]
+        if not params.get("includeSystem"):
+            args.append("-3")
+        apps = []
+        for line in self.adb.shell(*args).splitlines():
+            line = line.strip()
+            if not line.startswith("package:"):
+                continue
+            fields = line[len("package:"):].split()
+            entry = {"id": fields[0], "system": bool(params.get("includeSystem"))}
+            for field in fields[1:]:
+                if field.startswith("versionCode:"):
+                    entry["version"] = field.split(":", 1)[1]
+            apps.append(entry)
+        return {"apps": apps}
+
+    def uninstall(self, params):
+        # `adb uninstall` reports failure on stdout with exit 1, and reports
+        # Success when all it removed was the updates to a system app.
+        out = self.adb.run("uninstall", params["appId"])
+        if "Success" not in out:
+            raise DriverError(f"uninstall failed: {out.strip()}")
+        return {}
+
+    def health(self, params):
+        try:
+            return {"healthy": self.adb.run("get-state").strip() == "device"}
+        except DriverError:
+            return {"healthy": False}
+
+    def shutdown(self, params):
+        return {}
+
+
+def main():
+    driver = Driver()
+    for line in sys.stdin:
+        line = line.strip()
+        if not line:
+            continue
+        try:
+            request = json.loads(line)
+        except ValueError:
+            log(f"ignoring a line that is not JSON: {line[:120]}")
+            continue
+
+        request_id = request.get("id")
+        method = request.get("method", "")
+        handler = getattr(driver, method, None)
+
+        if handler is None or method.startswith("_"):
+            reply = {"jsonrpc": "2.0", "id": request_id,
+                     "error": {"code": -32601,
+                               "message": f"this driver does not implement {method}"}}
+        else:
+            try:
+                reply = {"jsonrpc": "2.0", "id": request_id,
+                         "result": handler(request.get("params") or {})}
+            except DriverError as err:
+                reply = {"jsonrpc": "2.0", "id": request_id,
+                         "error": {"code": -32000, "message": str(err)}}
+            except Exception as err:  # a bug in this driver, not in the device
+                reply = {"jsonrpc": "2.0", "id": request_id,
+                         "error": {"code": -32000,
+                                   "message": f"{type(err).__name__}: {err}"}}
+
+        print(json.dumps(reply), flush=True)
+        if method == "shutdown":
+            return
+
+
+if __name__ == "__main__":
+    main()

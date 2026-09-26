@@ -1,0 +1,2487 @@
+{
+  "arguments": [
+    {
+      "tool": "app_alert",
+      "arg": "action",
+      "type": "string",
+      "setBy": [
+        "alert"
+      ]
+    },
+    {
+      "tool": "app_alert",
+      "arg": "backend",
+      "type": "string",
+      "setBy": [
+        "--backend"
+      ],
+      "global": true
+    },
+    {
+      "tool": "app_alert",
+      "arg": "device",
+      "type": "string",
+      "setBy": [
+        "--device"
+      ],
+      "global": true
+    },
+    {
+      "tool": "app_alert",
+      "arg": "text",
+      "type": "string",
+      "setBy": [
+        "alert"
+      ]
+    },
+    {
+      "tool": "app_appearance",
+      "arg": "appearance",
+      "type": "string",
+      "setBy": [
+        "appearance"
+      ]
+    },
+    {
+      "tool": "app_appearance",
+      "arg": "backend",
+      "type": "string",
+      "setBy": [
+        "--backend"
+      ],
+      "global": true
+    },
+    {
+      "tool": "app_appearance",
+      "arg": "device",
+      "type": "string",
+      "setBy": [
+        "--device"
+      ],
+      "global": true
+    },
+    {
+      "tool": "app_call",
+      "arg": "action",
+      "type": "string",
+      "setBy": [
+        "call"
+      ]
+    },
+    {
+      "tool": "app_call",
+      "arg": "backend",
+      "type": "string",
+      "setBy": [
+        "--backend"
+      ],
+      "global": true
+    },
+    {
+      "tool": "app_call",
+      "arg": "device",
+      "type": "string",
+      "setBy": [
+        "--device"
+      ],
+      "global": true
+    },
+    {
+      "tool": "app_call",
+      "arg": "number",
+      "type": "string",
+      "setBy": [
+        "call"
+      ]
+    },
+    {
+      "tool": "app_check",
+      "arg": "backend",
+      "type": "string",
+      "setBy": [
+        "--backend"
+      ],
+      "global": true
+    },
+    {
+      "tool": "app_check",
+      "arg": "checked",
+      "type": "boolean",
+      "setBy": [
+        "check",
+        "uncheck"
+      ]
+    },
+    {
+      "tool": "app_check",
+      "arg": "device",
+      "type": "string",
+      "setBy": [
+        "--device"
+      ],
+      "global": true
+    },
+    {
+      "tool": "app_check",
+      "arg": "target",
+      "type": "string",
+      "setBy": [
+        "check",
+        "uncheck"
+      ]
+    },
+    {
+      "tool": "app_clear_data",
+      "arg": "app",
+      "type": "string",
+      "setBy": [
+        "clear-data"
+      ]
+    },
+    {
+      "tool": "app_clear_data",
+      "arg": "backend",
+      "type": "string",
+      "setBy": [
+        "--backend"
+      ],
+      "global": true
+    },
+    {
+      "tool": "app_clear_data",
+      "arg": "device",
+      "type": "string",
+      "setBy": [
+        "--device"
+      ],
+      "global": true
+    },
+    {
+      "tool": "app_clipboard",
+      "arg": "backend",
+      "type": "string",
+      "setBy": [
+        "--backend"
+      ],
+      "global": true
+    },
+    {
+      "tool": "app_clipboard",
+      "arg": "device",
+      "type": "string",
+      "setBy": [
+        "--device"
+      ],
+      "global": true
+    },
+    {
+      "tool": "app_clipboard",
+      "arg": "text",
+      "type": "string",
+      "setBy": [
+        "clipboard"
+      ]
+    },
+    {
+      "tool": "app_context",
+      "arg": "backend",
+      "type": "string",
+      "setBy": [
+        "--backend"
+      ],
+      "global": true
+    },
+    {
+      "tool": "app_context",
+      "arg": "context",
+      "type": "string",
+      "setBy": [
+        "context"
+      ]
+    },
+    {
+      "tool": "app_context",
+      "arg": "device",
+      "type": "string",
+      "setBy": [
+        "--device"
+      ],
+      "global": true
+    },
+    {
+      "tool": "app_contexts",
+      "arg": "backend",
+      "type": "string",
+      "setBy": [
+        "--backend"
+      ],
+      "global": true
+    },
+    {
+      "tool": "app_contexts",
+      "arg": "device",
+      "type": "string",
+      "setBy": [
+        "--device"
+      ],
+      "global": true
+    },
+    {
+      "tool": "app_crashes",
+      "arg": "app",
+      "type": "string",
+      "setBy": [
+        "crashes"
+      ]
+    },
+    {
+      "tool": "app_crashes",
+      "arg": "backend",
+      "type": "string",
+      "setBy": [
+        "--backend"
+      ],
+      "global": true
+    },
+    {
+      "tool": "app_crashes",
+      "arg": "device",
+      "type": "string",
+      "setBy": [
+        "--device"
+      ],
+      "global": true
+    },
+    {
+      "tool": "app_crashes",
+      "arg": "id",
+      "type": "string",
+      "setBy": [
+        "crashes"
+      ]
+    },
+    {
+      "tool": "app_crashes",
+      "arg": "limit",
+      "type": "integer",
+      "setBy": [
+        "crashes"
+      ]
+    },
+    {
+      "tool": "app_current",
+      "arg": "backend",
+      "type": "string",
+      "setBy": [
+        "--backend"
+      ],
+      "global": true
+    },
+    {
+      "tool": "app_current",
+      "arg": "device",
+      "type": "string",
+      "setBy": [
+        "--device"
+      ],
+      "global": true
+    },
+    {
+      "tool": "app_dialogs",
+      "arg": "backend",
+      "type": "string",
+      "setBy": [
+        "--backend"
+      ],
+      "global": true
+    },
+    {
+      "tool": "app_dialogs",
+      "arg": "clear",
+      "type": "boolean",
+      "setBy": [
+        "dialogs"
+      ]
+    },
+    {
+      "tool": "app_dialogs",
+      "arg": "device",
+      "type": "string",
+      "setBy": [
+        "--device"
+      ],
+      "global": true
+    },
+    {
+      "tool": "app_dialogs",
+      "arg": "press",
+      "type": "string",
+      "setBy": [
+        "dialogs"
+      ]
+    },
+    {
+      "tool": "app_dialogs",
+      "arg": "when",
+      "type": "string",
+      "setBy": [
+        "dialogs"
+      ]
+    },
+    {
+      "tool": "app_drag",
+      "arg": "backend",
+      "type": "string",
+      "setBy": [
+        "--backend"
+      ],
+      "global": true
+    },
+    {
+      "tool": "app_drag",
+      "arg": "device",
+      "type": "string",
+      "setBy": [
+        "--device"
+      ],
+      "global": true
+    },
+    {
+      "tool": "app_drag",
+      "arg": "duration_ms",
+      "type": "integer",
+      "setBy": [
+        "drag"
+      ]
+    },
+    {
+      "tool": "app_drag",
+      "arg": "from",
+      "type": "string",
+      "setBy": [
+        "drag"
+      ]
+    },
+    {
+      "tool": "app_drag",
+      "arg": "hold_ms",
+      "type": "integer",
+      "setBy": [
+        "drag"
+      ]
+    },
+    {
+      "tool": "app_drag",
+      "arg": "to",
+      "type": "string",
+      "setBy": [
+        "drag"
+      ]
+    },
+    {
+      "tool": "app_drag",
+      "arg": "x1",
+      "type": "integer",
+      "setBy": [
+        "drag"
+      ]
+    },
+    {
+      "tool": "app_drag",
+      "arg": "x2",
+      "type": "integer",
+      "setBy": [
+        "drag"
+      ]
+    },
+    {
+      "tool": "app_drag",
+      "arg": "y1",
+      "type": "integer",
+      "setBy": [
+        "drag"
+      ]
+    },
+    {
+      "tool": "app_drag",
+      "arg": "y2",
+      "type": "integer",
+      "setBy": [
+        "drag"
+      ]
+    },
+    {
+      "tool": "app_eval",
+      "arg": "backend",
+      "type": "string",
+      "setBy": [
+        "--backend"
+      ],
+      "global": true
+    },
+    {
+      "tool": "app_eval",
+      "arg": "device",
+      "type": "string",
+      "setBy": [
+        "--device"
+      ],
+      "global": true
+    },
+    {
+      "tool": "app_eval",
+      "arg": "expression",
+      "type": "string",
+      "setBy": [
+        "eval"
+      ]
+    },
+    {
+      "tool": "app_find",
+      "arg": "backend",
+      "type": "string",
+      "setBy": [
+        "--backend"
+      ],
+      "global": true
+    },
+    {
+      "tool": "app_find",
+      "arg": "device",
+      "type": "string",
+      "setBy": [
+        "--device"
+      ],
+      "global": true
+    },
+    {
+      "tool": "app_find",
+      "arg": "locator",
+      "type": "string",
+      "setBy": [
+        "find"
+      ]
+    },
+    {
+      "tool": "app_grant",
+      "arg": "app",
+      "type": "string",
+      "setBy": [
+        "grant"
+      ]
+    },
+    {
+      "tool": "app_grant",
+      "arg": "backend",
+      "type": "string",
+      "setBy": [
+        "--backend"
+      ],
+      "global": true
+    },
+    {
+      "tool": "app_grant",
+      "arg": "device",
+      "type": "string",
+      "setBy": [
+        "--device"
+      ],
+      "global": true
+    },
+    {
+      "tool": "app_grant",
+      "arg": "permissions",
+      "type": "array",
+      "setBy": [
+        "grant"
+      ]
+    },
+    {
+      "tool": "app_install",
+      "arg": "backend",
+      "type": "string",
+      "setBy": [
+        "--backend"
+      ],
+      "global": true
+    },
+    {
+      "tool": "app_install",
+      "arg": "device",
+      "type": "string",
+      "setBy": [
+        "--device"
+      ],
+      "global": true
+    },
+    {
+      "tool": "app_install",
+      "arg": "path",
+      "type": "string",
+      "setBy": [
+        "install"
+      ]
+    },
+    {
+      "tool": "app_keyboard",
+      "arg": "backend",
+      "type": "string",
+      "setBy": [
+        "--backend"
+      ],
+      "global": true
+    },
+    {
+      "tool": "app_keyboard",
+      "arg": "device",
+      "type": "string",
+      "setBy": [
+        "--device"
+      ],
+      "global": true
+    },
+    {
+      "tool": "app_keyboard",
+      "arg": "hide",
+      "type": "boolean",
+      "setBy": [
+        "keyboard"
+      ]
+    },
+    {
+      "tool": "app_keyboard",
+      "arg": "key",
+      "type": "string",
+      "setBy": [
+        "keyboard"
+      ]
+    },
+    {
+      "tool": "app_keyboard",
+      "arg": "text",
+      "type": "string",
+      "setBy": [
+        "keyboard"
+      ]
+    },
+    {
+      "tool": "app_launch",
+      "arg": "app",
+      "type": "string",
+      "setBy": [
+        "launch"
+      ]
+    },
+    {
+      "tool": "app_launch",
+      "arg": "backend",
+      "type": "string",
+      "setBy": [
+        "--backend"
+      ],
+      "global": true
+    },
+    {
+      "tool": "app_launch",
+      "arg": "device",
+      "type": "string",
+      "setBy": [
+        "--device"
+      ],
+      "global": true
+    },
+    {
+      "tool": "app_list_apps",
+      "arg": "backend",
+      "type": "string",
+      "setBy": [
+        "--backend"
+      ],
+      "global": true
+    },
+    {
+      "tool": "app_list_apps",
+      "arg": "device",
+      "type": "string",
+      "setBy": [
+        "--device"
+      ],
+      "global": true
+    },
+    {
+      "tool": "app_list_apps",
+      "arg": "system",
+      "type": "boolean",
+      "setBy": [
+        "apps"
+      ]
+    },
+    {
+      "tool": "app_locale",
+      "arg": "app",
+      "type": "string",
+      "setBy": [
+        "locale"
+      ]
+    },
+    {
+      "tool": "app_locale",
+      "arg": "backend",
+      "type": "string",
+      "setBy": [
+        "--backend"
+      ],
+      "global": true
+    },
+    {
+      "tool": "app_locale",
+      "arg": "device",
+      "type": "string",
+      "setBy": [
+        "--device"
+      ],
+      "global": true
+    },
+    {
+      "tool": "app_locale",
+      "arg": "locale",
+      "type": "string",
+      "setBy": [
+        "locale"
+      ]
+    },
+    {
+      "tool": "app_location",
+      "arg": "backend",
+      "type": "string",
+      "setBy": [
+        "--backend"
+      ],
+      "global": true
+    },
+    {
+      "tool": "app_location",
+      "arg": "clear",
+      "type": "boolean",
+      "setBy": [
+        "location"
+      ]
+    },
+    {
+      "tool": "app_location",
+      "arg": "device",
+      "type": "string",
+      "setBy": [
+        "--device"
+      ],
+      "global": true
+    },
+    {
+      "tool": "app_location",
+      "arg": "gpx",
+      "type": "string",
+      "setBy": [
+        "location"
+      ]
+    },
+    {
+      "tool": "app_location",
+      "arg": "latitude",
+      "type": "number",
+      "setBy": [
+        "location"
+      ]
+    },
+    {
+      "tool": "app_location",
+      "arg": "longitude",
+      "type": "number",
+      "setBy": [
+        "location"
+      ]
+    },
+    {
+      "tool": "app_location",
+      "arg": "speed",
+      "type": "number",
+      "setBy": [
+        "location"
+      ]
+    },
+    {
+      "tool": "app_location",
+      "arg": "waypoints",
+      "type": "array",
+      "setBy": [
+        "location"
+      ]
+    },
+    {
+      "tool": "app_lock",
+      "arg": "backend",
+      "type": "string",
+      "setBy": [
+        "--backend"
+      ],
+      "global": true
+    },
+    {
+      "tool": "app_lock",
+      "arg": "device",
+      "type": "string",
+      "setBy": [
+        "--device"
+      ],
+      "global": true
+    },
+    {
+      "tool": "app_lock",
+      "arg": "state",
+      "type": "string",
+      "setBy": [
+        "lock"
+      ]
+    },
+    {
+      "tool": "app_logs",
+      "arg": "app",
+      "type": "string",
+      "setBy": [
+        "logs"
+      ]
+    },
+    {
+      "tool": "app_logs",
+      "arg": "backend",
+      "type": "string",
+      "setBy": [
+        "--backend"
+      ],
+      "global": true
+    },
+    {
+      "tool": "app_logs",
+      "arg": "device",
+      "type": "string",
+      "setBy": [
+        "--device"
+      ],
+      "global": true
+    },
+    {
+      "tool": "app_logs",
+      "arg": "level",
+      "type": "string",
+      "setBy": [
+        "logs"
+      ]
+    },
+    {
+      "tool": "app_logs",
+      "arg": "lines",
+      "type": "integer",
+      "setBy": [
+        "logs"
+      ]
+    },
+    {
+      "tool": "app_logs",
+      "arg": "source",
+      "type": "string",
+      "setBy": [
+        "logs"
+      ]
+    },
+    {
+      "tool": "app_long_press",
+      "arg": "backend",
+      "type": "string",
+      "setBy": [
+        "--backend"
+      ],
+      "global": true
+    },
+    {
+      "tool": "app_long_press",
+      "arg": "device",
+      "type": "string",
+      "setBy": [
+        "--device"
+      ],
+      "global": true
+    },
+    {
+      "tool": "app_long_press",
+      "arg": "duration_ms",
+      "type": "integer",
+      "setBy": [
+        "long-press"
+      ]
+    },
+    {
+      "tool": "app_long_press",
+      "arg": "target",
+      "type": "string",
+      "setBy": [
+        "long-press"
+      ]
+    },
+    {
+      "tool": "app_long_press",
+      "arg": "x",
+      "type": "integer",
+      "setBy": [
+        "long-press"
+      ]
+    },
+    {
+      "tool": "app_long_press",
+      "arg": "y",
+      "type": "integer",
+      "setBy": [
+        "long-press"
+      ]
+    },
+    {
+      "tool": "app_map",
+      "arg": "backend",
+      "type": "string",
+      "setBy": [
+        "--backend"
+      ],
+      "global": true
+    },
+    {
+      "tool": "app_map",
+      "arg": "device",
+      "type": "string",
+      "setBy": [
+        "--device"
+      ],
+      "global": true
+    },
+    {
+      "tool": "app_notifications",
+      "arg": "backend",
+      "type": "string",
+      "setBy": [
+        "--backend"
+      ],
+      "global": true
+    },
+    {
+      "tool": "app_notifications",
+      "arg": "device",
+      "type": "string",
+      "setBy": [
+        "--device"
+      ],
+      "global": true
+    },
+    {
+      "tool": "app_notifications",
+      "arg": "shade",
+      "type": "string",
+      "setBy": [
+        "notifications"
+      ]
+    },
+    {
+      "tool": "app_notifications",
+      "arg": "tag",
+      "type": "string",
+      "setBy": [
+        "notifications"
+      ]
+    },
+    {
+      "tool": "app_notifications",
+      "arg": "text",
+      "type": "string",
+      "setBy": [
+        "notifications"
+      ]
+    },
+    {
+      "tool": "app_notifications",
+      "arg": "title",
+      "type": "string",
+      "setBy": [
+        "notifications"
+      ]
+    },
+    {
+      "tool": "app_open_url",
+      "arg": "backend",
+      "type": "string",
+      "setBy": [
+        "--backend"
+      ],
+      "global": true
+    },
+    {
+      "tool": "app_open_url",
+      "arg": "device",
+      "type": "string",
+      "setBy": [
+        "--device"
+      ],
+      "global": true
+    },
+    {
+      "tool": "app_open_url",
+      "arg": "url",
+      "type": "string",
+      "setBy": [
+        "open"
+      ]
+    },
+    {
+      "tool": "app_orientation",
+      "arg": "backend",
+      "type": "string",
+      "setBy": [
+        "--backend"
+      ],
+      "global": true
+    },
+    {
+      "tool": "app_orientation",
+      "arg": "device",
+      "type": "string",
+      "setBy": [
+        "--device"
+      ],
+      "global": true
+    },
+    {
+      "tool": "app_orientation",
+      "arg": "orientation",
+      "type": "string",
+      "setBy": [
+        "orientation"
+      ]
+    },
+    {
+      "tool": "app_press",
+      "arg": "backend",
+      "type": "string",
+      "setBy": [
+        "--backend"
+      ],
+      "global": true
+    },
+    {
+      "tool": "app_press",
+      "arg": "button",
+      "type": "string",
+      "setBy": [
+        "press"
+      ]
+    },
+    {
+      "tool": "app_press",
+      "arg": "device",
+      "type": "string",
+      "setBy": [
+        "--device"
+      ],
+      "global": true
+    },
+    {
+      "tool": "app_press_drag",
+      "arg": "backend",
+      "type": "string",
+      "setBy": [
+        "--backend"
+      ],
+      "global": true
+    },
+    {
+      "tool": "app_press_drag",
+      "arg": "device",
+      "type": "string",
+      "setBy": [
+        "--device"
+      ],
+      "global": true
+    },
+    {
+      "tool": "app_press_drag",
+      "arg": "duration_ms",
+      "type": "integer",
+      "setBy": [
+        "press-drag"
+      ]
+    },
+    {
+      "tool": "app_press_drag",
+      "arg": "from",
+      "type": "string",
+      "setBy": [
+        "press-drag"
+      ]
+    },
+    {
+      "tool": "app_press_drag",
+      "arg": "hold",
+      "type": "string",
+      "setBy": [
+        "press-drag"
+      ]
+    },
+    {
+      "tool": "app_press_drag",
+      "arg": "lead_ms",
+      "type": "integer",
+      "setBy": [
+        "press-drag"
+      ]
+    },
+    {
+      "tool": "app_press_drag",
+      "arg": "to",
+      "type": "string",
+      "setBy": [
+        "press-drag"
+      ]
+    },
+    {
+      "tool": "app_press_drag",
+      "arg": "x1",
+      "type": "integer",
+      "setBy": [
+        "press-drag"
+      ]
+    },
+    {
+      "tool": "app_press_drag",
+      "arg": "x2",
+      "type": "integer",
+      "setBy": [
+        "press-drag"
+      ]
+    },
+    {
+      "tool": "app_press_drag",
+      "arg": "x3",
+      "type": "integer",
+      "setBy": [
+        "press-drag"
+      ]
+    },
+    {
+      "tool": "app_press_drag",
+      "arg": "y1",
+      "type": "integer",
+      "setBy": [
+        "press-drag"
+      ]
+    },
+    {
+      "tool": "app_press_drag",
+      "arg": "y2",
+      "type": "integer",
+      "setBy": [
+        "press-drag"
+      ]
+    },
+    {
+      "tool": "app_press_drag",
+      "arg": "y3",
+      "type": "integer",
+      "setBy": [
+        "press-drag"
+      ]
+    },
+    {
+      "tool": "app_press_tap",
+      "arg": "backend",
+      "type": "string",
+      "setBy": [
+        "--backend"
+      ],
+      "global": true
+    },
+    {
+      "tool": "app_press_tap",
+      "arg": "device",
+      "type": "string",
+      "setBy": [
+        "--device"
+      ],
+      "global": true
+    },
+    {
+      "tool": "app_press_tap",
+      "arg": "hold",
+      "type": "string",
+      "setBy": [
+        "press-tap"
+      ]
+    },
+    {
+      "tool": "app_press_tap",
+      "arg": "lead_ms",
+      "type": "integer",
+      "setBy": [
+        "press-tap"
+      ]
+    },
+    {
+      "tool": "app_press_tap",
+      "arg": "tap",
+      "type": "string",
+      "setBy": [
+        "press-tap"
+      ]
+    },
+    {
+      "tool": "app_press_tap",
+      "arg": "x1",
+      "type": "integer",
+      "setBy": [
+        "press-tap"
+      ]
+    },
+    {
+      "tool": "app_press_tap",
+      "arg": "x2",
+      "type": "integer",
+      "setBy": [
+        "press-tap"
+      ]
+    },
+    {
+      "tool": "app_press_tap",
+      "arg": "y1",
+      "type": "integer",
+      "setBy": [
+        "press-tap"
+      ]
+    },
+    {
+      "tool": "app_press_tap",
+      "arg": "y2",
+      "type": "integer",
+      "setBy": [
+        "press-tap"
+      ]
+    },
+    {
+      "tool": "app_record",
+      "arg": "action",
+      "type": "string",
+      "setBy": [
+        "record"
+      ]
+    },
+    {
+      "tool": "app_record",
+      "arg": "backend",
+      "type": "string",
+      "setBy": [
+        "--backend"
+      ],
+      "global": true
+    },
+    {
+      "tool": "app_record",
+      "arg": "device",
+      "type": "string",
+      "setBy": [
+        "--device"
+      ],
+      "global": true
+    },
+    {
+      "tool": "app_record",
+      "arg": "path",
+      "type": "string",
+      "setBy": [
+        "record"
+      ]
+    },
+    {
+      "tool": "app_reset_permissions",
+      "arg": "app",
+      "type": "string",
+      "setBy": [
+        "reset-permissions"
+      ]
+    },
+    {
+      "tool": "app_reset_permissions",
+      "arg": "backend",
+      "type": "string",
+      "setBy": [
+        "--backend"
+      ],
+      "global": true
+    },
+    {
+      "tool": "app_reset_permissions",
+      "arg": "device",
+      "type": "string",
+      "setBy": [
+        "--device"
+      ],
+      "global": true
+    },
+    {
+      "tool": "app_revoke",
+      "arg": "app",
+      "type": "string",
+      "setBy": [
+        "revoke"
+      ]
+    },
+    {
+      "tool": "app_revoke",
+      "arg": "backend",
+      "type": "string",
+      "setBy": [
+        "--backend"
+      ],
+      "global": true
+    },
+    {
+      "tool": "app_revoke",
+      "arg": "device",
+      "type": "string",
+      "setBy": [
+        "--device"
+      ],
+      "global": true
+    },
+    {
+      "tool": "app_revoke",
+      "arg": "permissions",
+      "type": "array",
+      "setBy": [
+        "revoke"
+      ]
+    },
+    {
+      "tool": "app_rotate",
+      "arg": "backend",
+      "type": "string",
+      "setBy": [
+        "--backend"
+      ],
+      "global": true
+    },
+    {
+      "tool": "app_rotate",
+      "arg": "degrees",
+      "type": "number",
+      "setBy": [
+        "rotate"
+      ]
+    },
+    {
+      "tool": "app_rotate",
+      "arg": "device",
+      "type": "string",
+      "setBy": [
+        "--device"
+      ],
+      "global": true
+    },
+    {
+      "tool": "app_rotate",
+      "arg": "radius",
+      "type": "integer",
+      "setBy": [
+        "rotate"
+      ]
+    },
+    {
+      "tool": "app_rotate",
+      "arg": "target",
+      "type": "string",
+      "setBy": [
+        "rotate"
+      ]
+    },
+    {
+      "tool": "app_screen",
+      "arg": "backend",
+      "type": "string",
+      "setBy": [
+        "--backend"
+      ],
+      "global": true
+    },
+    {
+      "tool": "app_screen",
+      "arg": "device",
+      "type": "string",
+      "setBy": [
+        "--device"
+      ],
+      "global": true
+    },
+    {
+      "tool": "app_screen",
+      "arg": "inspect",
+      "type": "boolean",
+      "setBy": [
+        "screen"
+      ]
+    },
+    {
+      "tool": "app_screen",
+      "arg": "profile",
+      "type": "string",
+      "setBy": [
+        "screen"
+      ]
+    },
+    {
+      "tool": "app_screenshot",
+      "arg": "backend",
+      "type": "string",
+      "setBy": [
+        "--backend"
+      ],
+      "global": true
+    },
+    {
+      "tool": "app_screenshot",
+      "arg": "device",
+      "type": "string",
+      "setBy": [
+        "--device"
+      ],
+      "global": true
+    },
+    {
+      "tool": "app_screenshot",
+      "arg": "path",
+      "type": "string",
+      "setBy": [
+        "screenshot"
+      ]
+    },
+    {
+      "tool": "app_scroll_to",
+      "arg": "backend",
+      "type": "string",
+      "setBy": [
+        "--backend"
+      ],
+      "global": true
+    },
+    {
+      "tool": "app_scroll_to",
+      "arg": "device",
+      "type": "string",
+      "setBy": [
+        "--device"
+      ],
+      "global": true
+    },
+    {
+      "tool": "app_scroll_to",
+      "arg": "direction",
+      "type": "string",
+      "setBy": [
+        "scroll-to"
+      ]
+    },
+    {
+      "tool": "app_scroll_to",
+      "arg": "target",
+      "type": "string",
+      "setBy": [
+        "scroll-to"
+      ]
+    },
+    {
+      "tool": "app_sms",
+      "arg": "backend",
+      "type": "string",
+      "setBy": [
+        "--backend"
+      ],
+      "global": true
+    },
+    {
+      "tool": "app_sms",
+      "arg": "device",
+      "type": "string",
+      "setBy": [
+        "--device"
+      ],
+      "global": true
+    },
+    {
+      "tool": "app_sms",
+      "arg": "from",
+      "type": "string",
+      "setBy": [
+        "sms"
+      ]
+    },
+    {
+      "tool": "app_sms",
+      "arg": "text",
+      "type": "string",
+      "setBy": [
+        "sms"
+      ]
+    },
+    {
+      "tool": "app_source",
+      "arg": "backend",
+      "type": "string",
+      "setBy": [
+        "--backend"
+      ],
+      "global": true
+    },
+    {
+      "tool": "app_source",
+      "arg": "device",
+      "type": "string",
+      "setBy": [
+        "--device"
+      ],
+      "global": true
+    },
+    {
+      "tool": "app_swipe",
+      "arg": "backend",
+      "type": "string",
+      "setBy": [
+        "--backend"
+      ],
+      "global": true
+    },
+    {
+      "tool": "app_swipe",
+      "arg": "device",
+      "type": "string",
+      "setBy": [
+        "--device"
+      ],
+      "global": true
+    },
+    {
+      "tool": "app_swipe",
+      "arg": "direction",
+      "type": "string",
+      "setBy": [
+        "swipe"
+      ]
+    },
+    {
+      "tool": "app_swipe",
+      "arg": "duration_ms",
+      "type": "integer",
+      "setBy": [
+        "swipe"
+      ]
+    },
+    {
+      "tool": "app_swipe",
+      "arg": "x1",
+      "type": "integer",
+      "setBy": [
+        "swipe"
+      ]
+    },
+    {
+      "tool": "app_swipe",
+      "arg": "x2",
+      "type": "integer",
+      "setBy": [
+        "swipe"
+      ]
+    },
+    {
+      "tool": "app_swipe",
+      "arg": "y1",
+      "type": "integer",
+      "setBy": [
+        "swipe"
+      ]
+    },
+    {
+      "tool": "app_swipe",
+      "arg": "y2",
+      "type": "integer",
+      "setBy": [
+        "swipe"
+      ]
+    },
+    {
+      "tool": "app_tap",
+      "arg": "backend",
+      "type": "string",
+      "setBy": [
+        "--backend"
+      ],
+      "global": true
+    },
+    {
+      "tool": "app_tap",
+      "arg": "device",
+      "type": "string",
+      "setBy": [
+        "--device"
+      ],
+      "global": true
+    },
+    {
+      "tool": "app_tap",
+      "arg": "double",
+      "type": "boolean",
+      "setBy": [
+        "double-tap"
+      ]
+    },
+    {
+      "tool": "app_tap",
+      "arg": "fingers",
+      "type": "integer",
+      "setBy": [
+        "tap"
+      ]
+    },
+    {
+      "tool": "app_tap",
+      "arg": "target",
+      "type": "string",
+      "setBy": [
+        "double-tap",
+        "tap"
+      ]
+    },
+    {
+      "tool": "app_tap",
+      "arg": "x",
+      "type": "integer",
+      "setBy": [
+        "double-tap",
+        "tap"
+      ]
+    },
+    {
+      "tool": "app_tap",
+      "arg": "y",
+      "type": "integer",
+      "setBy": [
+        "double-tap",
+        "tap"
+      ]
+    },
+    {
+      "tool": "app_terminate",
+      "arg": "app",
+      "type": "string",
+      "setBy": [
+        "terminate"
+      ]
+    },
+    {
+      "tool": "app_terminate",
+      "arg": "backend",
+      "type": "string",
+      "setBy": [
+        "--backend"
+      ],
+      "global": true
+    },
+    {
+      "tool": "app_terminate",
+      "arg": "device",
+      "type": "string",
+      "setBy": [
+        "--device"
+      ],
+      "global": true
+    },
+    {
+      "tool": "app_text",
+      "arg": "backend",
+      "type": "string",
+      "setBy": [
+        "--backend"
+      ],
+      "global": true
+    },
+    {
+      "tool": "app_text",
+      "arg": "device",
+      "type": "string",
+      "setBy": [
+        "--device"
+      ],
+      "global": true
+    },
+    {
+      "tool": "app_text",
+      "arg": "target",
+      "type": "string",
+      "setBy": [
+        "text"
+      ]
+    },
+    {
+      "tool": "app_timezone",
+      "arg": "backend",
+      "type": "string",
+      "setBy": [
+        "--backend"
+      ],
+      "global": true
+    },
+    {
+      "tool": "app_timezone",
+      "arg": "device",
+      "type": "string",
+      "setBy": [
+        "--device"
+      ],
+      "global": true
+    },
+    {
+      "tool": "app_timezone",
+      "arg": "timezone",
+      "type": "string",
+      "setBy": [
+        "timezone"
+      ]
+    },
+    {
+      "tool": "app_type",
+      "arg": "backend",
+      "type": "string",
+      "setBy": [
+        "--backend"
+      ],
+      "global": true
+    },
+    {
+      "tool": "app_type",
+      "arg": "clear",
+      "type": "boolean",
+      "setBy": [
+        "type"
+      ]
+    },
+    {
+      "tool": "app_type",
+      "arg": "device",
+      "type": "string",
+      "setBy": [
+        "--device"
+      ],
+      "global": true
+    },
+    {
+      "tool": "app_type",
+      "arg": "target",
+      "type": "string",
+      "setBy": [
+        "type"
+      ]
+    },
+    {
+      "tool": "app_type",
+      "arg": "text",
+      "type": "string",
+      "setBy": [
+        "type"
+      ]
+    },
+    {
+      "tool": "app_uninstall",
+      "arg": "app",
+      "type": "string",
+      "setBy": [
+        "uninstall"
+      ]
+    },
+    {
+      "tool": "app_uninstall",
+      "arg": "backend",
+      "type": "string",
+      "setBy": [
+        "--backend"
+      ],
+      "global": true
+    },
+    {
+      "tool": "app_uninstall",
+      "arg": "device",
+      "type": "string",
+      "setBy": [
+        "--device"
+      ],
+      "global": true
+    },
+    {
+      "tool": "app_wait_for",
+      "arg": "backend",
+      "type": "string",
+      "setBy": [
+        "--backend"
+      ],
+      "global": true
+    },
+    {
+      "tool": "app_wait_for",
+      "arg": "condition",
+      "type": "string",
+      "setBy": [
+        "wait"
+      ]
+    },
+    {
+      "tool": "app_wait_for",
+      "arg": "device",
+      "type": "string",
+      "setBy": [
+        "--device"
+      ],
+      "global": true
+    },
+    {
+      "tool": "app_wait_for",
+      "arg": "target",
+      "type": "string",
+      "setBy": [
+        "wait"
+      ]
+    },
+    {
+      "tool": "app_wait_for",
+      "arg": "text",
+      "type": "string",
+      "setBy": [
+        "wait"
+      ]
+    },
+    {
+      "tool": "app_wait_for",
+      "arg": "timeout_ms",
+      "type": "integer",
+      "setBy": [
+        "wait"
+      ]
+    },
+    {
+      "tool": "app_zoom",
+      "arg": "backend",
+      "type": "string",
+      "setBy": [
+        "--backend"
+      ],
+      "global": true
+    },
+    {
+      "tool": "app_zoom",
+      "arg": "device",
+      "type": "string",
+      "setBy": [
+        "--device"
+      ],
+      "global": true
+    },
+    {
+      "tool": "app_zoom",
+      "arg": "direction",
+      "type": "string",
+      "setBy": [
+        "zoom"
+      ]
+    },
+    {
+      "tool": "app_zoom",
+      "arg": "from",
+      "type": "integer",
+      "setBy": [
+        "zoom"
+      ]
+    },
+    {
+      "tool": "app_zoom",
+      "arg": "target",
+      "type": "string",
+      "setBy": [
+        "zoom"
+      ]
+    },
+    {
+      "tool": "app_zoom",
+      "arg": "to",
+      "type": "integer",
+      "setBy": [
+        "zoom"
+      ]
+    }
+  ],
+  "commands": [
+    {
+      "command": "alert",
+      "tools": [
+        "app_alert"
+      ],
+      "flags": [
+        "--text"
+      ],
+      "sends": [
+        "action",
+        "text"
+      ]
+    },
+    {
+      "command": "appearance",
+      "tools": [
+        "app_appearance"
+      ],
+      "sends": [
+        "appearance"
+      ]
+    },
+    {
+      "command": "apps",
+      "tools": [
+        "app_list_apps"
+      ],
+      "flags": [
+        "--system"
+      ],
+      "sends": [
+        "system"
+      ]
+    },
+    {
+      "command": "call",
+      "tools": [
+        "app_call"
+      ],
+      "flags": [
+        "--number"
+      ],
+      "sends": [
+        "action",
+        "number"
+      ]
+    },
+    {
+      "command": "check",
+      "tools": [
+        "app_check"
+      ],
+      "sends": [
+        "checked",
+        "target"
+      ]
+    },
+    {
+      "command": "clear-data",
+      "tools": [
+        "app_clear_data"
+      ],
+      "sends": [
+        "app"
+      ]
+    },
+    {
+      "command": "clipboard",
+      "tools": [
+        "app_clipboard"
+      ],
+      "sends": [
+        "text"
+      ]
+    },
+    {
+      "command": "context",
+      "tools": [
+        "app_context"
+      ],
+      "sends": [
+        "context"
+      ]
+    },
+    {
+      "command": "contexts",
+      "tools": [
+        "app_contexts"
+      ]
+    },
+    {
+      "command": "crashes",
+      "tools": [
+        "app_crashes"
+      ],
+      "flags": [
+        "--app",
+        "--limit"
+      ],
+      "sends": [
+        "app",
+        "id",
+        "limit"
+      ]
+    },
+    {
+      "command": "current",
+      "tools": [
+        "app_current"
+      ]
+    },
+    {
+      "command": "daemon"
+    },
+    {
+      "command": "devices",
+      "tools": [
+        "app_devices"
+      ]
+    },
+    {
+      "command": "dialogs",
+      "tools": [
+        "app_dialogs"
+      ],
+      "flags": [
+        "--clear",
+        "--press",
+        "--when"
+      ],
+      "sends": [
+        "clear",
+        "press",
+        "when"
+      ]
+    },
+    {
+      "command": "doctor",
+      "tools": [
+        "app_doctor"
+      ]
+    },
+    {
+      "command": "double-tap",
+      "tools": [
+        "app_tap",
+        "app_tap"
+      ],
+      "sends": [
+        "double",
+        "target",
+        "x",
+        "y"
+      ]
+    },
+    {
+      "command": "drag",
+      "tools": [
+        "app_drag"
+      ],
+      "flags": [
+        "--duration-ms",
+        "--hold-ms"
+      ],
+      "sends": [
+        "duration_ms",
+        "from",
+        "hold_ms",
+        "to",
+        "x1",
+        "x2",
+        "y1",
+        "y2"
+      ]
+    },
+    {
+      "command": "eval",
+      "tools": [
+        "app_eval"
+      ],
+      "sends": [
+        "expression"
+      ]
+    },
+    {
+      "command": "find",
+      "tools": [
+        "app_find"
+      ],
+      "sends": [
+        "locator"
+      ]
+    },
+    {
+      "command": "grant",
+      "tools": [
+        "app_grant"
+      ],
+      "sends": [
+        "app",
+        "permissions"
+      ]
+    },
+    {
+      "command": "install",
+      "tools": [
+        "app_install"
+      ],
+      "sends": [
+        "path"
+      ]
+    },
+    {
+      "command": "keyboard",
+      "tools": [
+        "app_keyboard"
+      ],
+      "flags": [
+        "--hide",
+        "--key",
+        "--text"
+      ],
+      "sends": [
+        "hide",
+        "key",
+        "text"
+      ]
+    },
+    {
+      "command": "launch",
+      "tools": [
+        "app_launch"
+      ],
+      "sends": [
+        "app"
+      ]
+    },
+    {
+      "command": "locale",
+      "tools": [
+        "app_locale"
+      ],
+      "sends": [
+        "app",
+        "locale"
+      ]
+    },
+    {
+      "command": "location",
+      "tools": [
+        "app_location"
+      ],
+      "flags": [
+        "--clear",
+        "--gpx",
+        "--lat",
+        "--lon",
+        "--speed"
+      ],
+      "sends": [
+        "clear",
+        "gpx",
+        "latitude",
+        "longitude",
+        "speed",
+        "waypoints"
+      ]
+    },
+    {
+      "command": "lock",
+      "tools": [
+        "app_lock"
+      ],
+      "sends": [
+        "state"
+      ]
+    },
+    {
+      "command": "logs",
+      "tools": [
+        "app_logs"
+      ],
+      "flags": [
+        "--app",
+        "--level",
+        "--lines",
+        "--source"
+      ],
+      "sends": [
+        "app",
+        "level",
+        "lines",
+        "source"
+      ]
+    },
+    {
+      "command": "long-press",
+      "tools": [
+        "app_long_press"
+      ],
+      "flags": [
+        "--duration"
+      ],
+      "sends": [
+        "duration_ms",
+        "target",
+        "x",
+        "y"
+      ]
+    },
+    {
+      "command": "map",
+      "tools": [
+        "app_map"
+      ]
+    },
+    {
+      "command": "mcp"
+    },
+    {
+      "command": "notifications",
+      "tools": [
+        "app_notifications"
+      ],
+      "flags": [
+        "--post",
+        "--shade",
+        "--tag",
+        "--title"
+      ],
+      "sends": [
+        "shade",
+        "tag",
+        "text",
+        "title"
+      ]
+    },
+    {
+      "command": "open",
+      "tools": [
+        "app_open_url"
+      ],
+      "sends": [
+        "url"
+      ]
+    },
+    {
+      "command": "orientation",
+      "tools": [
+        "app_orientation"
+      ],
+      "sends": [
+        "orientation"
+      ]
+    },
+    {
+      "command": "pipe"
+    },
+    {
+      "command": "press",
+      "tools": [
+        "app_press"
+      ],
+      "sends": [
+        "button"
+      ]
+    },
+    {
+      "command": "press-drag",
+      "tools": [
+        "app_press_drag"
+      ],
+      "flags": [
+        "--duration-ms",
+        "--lead-ms"
+      ],
+      "sends": [
+        "duration_ms",
+        "from",
+        "hold",
+        "lead_ms",
+        "to",
+        "x1",
+        "x2",
+        "x3",
+        "y1",
+        "y2",
+        "y3"
+      ]
+    },
+    {
+      "command": "press-tap",
+      "tools": [
+        "app_press_tap"
+      ],
+      "flags": [
+        "--lead-ms"
+      ],
+      "sends": [
+        "hold",
+        "lead_ms",
+        "tap",
+        "x1",
+        "x2",
+        "y1",
+        "y2"
+      ]
+    },
+    {
+      "command": "record",
+      "tools": [
+        "app_record"
+      ],
+      "flags": [
+        "--output"
+      ],
+      "sends": [
+        "action",
+        "path"
+      ]
+    },
+    {
+      "command": "reset-permissions",
+      "tools": [
+        "app_reset_permissions"
+      ],
+      "sends": [
+        "app"
+      ]
+    },
+    {
+      "command": "revoke",
+      "tools": [
+        "app_revoke"
+      ],
+      "sends": [
+        "app",
+        "permissions"
+      ]
+    },
+    {
+      "command": "rotate",
+      "tools": [
+        "app_rotate"
+      ],
+      "flags": [
+        "--degrees",
+        "--radius",
+        "--target"
+      ],
+      "sends": [
+        "degrees",
+        "radius",
+        "target"
+      ]
+    },
+    {
+      "command": "screen",
+      "tools": [
+        "app_screen"
+      ],
+      "flags": [
+        "--inspect"
+      ],
+      "sends": [
+        "inspect",
+        "profile"
+      ]
+    },
+    {
+      "command": "screenshot",
+      "tools": [
+        "app_screenshot"
+      ],
+      "flags": [
+        "--output"
+      ],
+      "sends": [
+        "path"
+      ]
+    },
+    {
+      "command": "scroll-to",
+      "tools": [
+        "app_scroll_to"
+      ],
+      "flags": [
+        "--direction"
+      ],
+      "sends": [
+        "direction",
+        "target"
+      ]
+    },
+    {
+      "command": "sms",
+      "tools": [
+        "app_sms"
+      ],
+      "flags": [
+        "--from"
+      ],
+      "sends": [
+        "from",
+        "text"
+      ]
+    },
+    {
+      "command": "source",
+      "tools": [
+        "app_source"
+      ]
+    },
+    {
+      "command": "start",
+      "flags": [
+        "--idle-timeout"
+      ]
+    },
+    {
+      "command": "status",
+      "sends": [
+        "running"
+      ]
+    },
+    {
+      "command": "stop",
+      "sends": [
+        "status"
+      ]
+    },
+    {
+      "command": "swipe",
+      "tools": [
+        "app_swipe"
+      ],
+      "flags": [
+        "--duration"
+      ],
+      "sends": [
+        "direction",
+        "duration_ms",
+        "x1",
+        "x2",
+        "y1",
+        "y2"
+      ]
+    },
+    {
+      "command": "tap",
+      "tools": [
+        "app_tap",
+        "app_tap"
+      ],
+      "flags": [
+        "--fingers"
+      ],
+      "sends": [
+        "fingers",
+        "target",
+        "x",
+        "y"
+      ]
+    },
+    {
+      "command": "terminate",
+      "tools": [
+        "app_terminate"
+      ],
+      "sends": [
+        "app"
+      ]
+    },
+    {
+      "command": "text",
+      "tools": [
+        "app_text"
+      ],
+      "sends": [
+        "target"
+      ]
+    },
+    {
+      "command": "timezone",
+      "tools": [
+        "app_timezone"
+      ],
+      "sends": [
+        "timezone"
+      ]
+    },
+    {
+      "command": "type",
+      "tools": [
+        "app_type"
+      ],
+      "flags": [
+        "--clear"
+      ],
+      "sends": [
+        "clear",
+        "target",
+        "text"
+      ]
+    },
+    {
+      "command": "uncheck",
+      "tools": [
+        "app_check"
+      ],
+      "sends": [
+        "checked",
+        "target"
+      ]
+    },
+    {
+      "command": "uninstall",
+      "tools": [
+        "app_uninstall"
+      ],
+      "sends": [
+        "app"
+      ]
+    },
+    {
+      "command": "wait",
+      "tools": [
+        "app_wait_for"
+      ],
+      "flags": [
+        "--for",
+        "--text",
+        "--timeout"
+      ],
+      "sends": [
+        "condition",
+        "target",
+        "text",
+        "timeout_ms"
+      ]
+    },
+    {
+      "command": "zoom",
+      "tools": [
+        "app_zoom"
+      ],
+      "flags": [
+        "--from",
+        "--target",
+        "--to"
+      ],
+      "sends": [
+        "direction",
+        "from",
+        "target",
+        "to"
+      ]
+    }
+  ]
+}

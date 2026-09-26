@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512"
+     role="img" aria-label="Mobium">
+  <title>Mobium</title>
+  <!--
+    The app icon on white. Same geometry and the same inset as
+    mobium-icon.svg, generated from mobium-mark.svg so the three cannot drift.
+
+    Note what this does not have: a border. On a white page the rounded square
+    is invisible and only the mark shows, which is correct for an app icon —
+    iOS and Android mask the corners themselves and composite it on their own
+    background — but wrong for a listing or a document on white, where the
+    dark variant reads better. Adding a hairline here would fix the second
+    case and spoil the first, so it is left to the caller to choose.
+  -->
+  <defs>
+    <linearGradient id="wingL" x1="334" y1="0" x2="624" y2="0" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#4C59FC"/><stop offset="1" stop-color="#3552FD"/>
+    </linearGradient>
+    <linearGradient id="wingR" x1="632" y1="0" x2="919" y2="0" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#0F70FC"/><stop offset="1" stop-color="#00BAFC"/>
+    </linearGradient>
+    <linearGradient id="footL" x1="337" y1="0" x2="530" y2="0" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#763CFB"/><stop offset="1" stop-color="#5832FA"/>
+    </linearGradient>
+    <linearGradient id="footR" x1="726" y1="0" x2="917" y2="0" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#02BCC1"/><stop offset="1" stop-color="#01CBDD"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="114" fill="#FFFFFF"/>
+  <g transform="translate(256,256) scale(0.615) translate(-293,-290)">
+    <g transform="translate(-334,-226)">
+    <path fill="url(#footL)" d="M337,450 C617,490 563,819 337,805 Z"/>
+    <path fill="url(#footR)" d="M919,450 C639,490 693,819 919,805 Z"/>
+    <path fill="url(#wingL)" d="M342,226 C490,235 640,380 624,584 C440,428 296,480 342,226 Z"/>
+    <path fill="url(#wingR)" d="M914,226 C766,235 616,380 632,584 C816,428 960,480 914,226 Z"/>
+  </g>
+  </g>
+</svg>

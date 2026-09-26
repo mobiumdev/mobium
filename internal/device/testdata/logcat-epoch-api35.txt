@@ -1,0 +1,30 @@
+--------- beginning of main
+         1790357963.975   834  1028 D EGL_emulation: app_time_stats: avg=23934.78ms min=23934.78ms max=23934.78ms count=1
+         1790357966.282   822   822 I wpa_supplicant: wlan0: CTRL-EVENT-BEACON-LOSS 
+         1790357974.478   822   822 I wpa_supplicant: wlan0: CTRL-EVENT-BEACON-LOSS 
+         1790357982.409   822   822 I wpa_supplicant: wlan0: CTRL-EVENT-BEACON-LOSS 
+         1790357990.349   822   822 I wpa_supplicant: wlan0: CTRL-EVENT-BEACON-LOSS 
+         1790357992.184  1479  2008 I BistoHotwordHelper: (REDACTED) getHotwordActive::active query: %s, watch: %s, devices connected: %s
+         1790357998.280   822   822 I wpa_supplicant: wlan0: CTRL-EVENT-BEACON-LOSS 
+         1790358000.025  1465  1568 I AiAiEcho: Predicting[0]:  [CONTEXT sampling_count=5 ]
+         1790358000.025  1465  1568 I AiAiEcho: EchoTargets: 
+         1790358000.025  1465  1568 I AiAiEcho: Filtered by AiAi flag check: 
+         1790358000.025  1465  1568 I AiAiEcho: [CONTEXT ratelimit_period="10 SECONDS" ]
+         1790358000.025  1465  1568 I AiAiEcho: Ranked targets strategy: SORT, count: 0, ranking metadata:  [CONTEXT ratelimit_period="10 SECONDS" ]
+         1790358000.026  1465  1568 I AiAiEcho: #remoteViewsTwiddler: feature disabled.
+         1790358000.026  1465  1568 I AiAiEcho: Predicting[0]:  [CONTEXT sampling_count=5 ]
+         1790358000.026  1465  1568 I AiAiEcho: EchoTargets: 
+         1790358000.026  1465  1568 I AiAiEcho: Filtered by AiAi flag check: 
+         1790358000.026  1465  1568 I AiAiEcho: [CONTEXT ratelimit_period="10 SECONDS" ]
+         1790358000.026  1465  1568 I AiAiEcho: Ranked targets strategy: SORT, count: 0, ranking metadata:  [CONTEXT ratelimit_period="10 SECONDS" ]
+         1790358000.026  1465  1568 I AiAiEcho: #remoteViewsTwiddler: feature disabled.
+         1790358000.026  1465  1568 I AiAiEcho: #postPredictionTargets: Sending updates to UISurface lockscreen with targets# 0 (types=[])
+         1790358000.027  1465  1568 I AiAiEcho: #postPredictionTargets: Sending updates to UISurface home with targets# 0 (types=[])
+         1790358000.027  1318  1318 D SsBaseTemplateCard: No text view can be set up
+         1790358000.027  1318  1318 D SsBaseTemplateCard: Passed-in item info is null
+         1790358000.027  1318  1318 D SsBaseTemplateCard: Passed-in item info is null
+         1790358000.027  1318  1318 D SsBaseTemplateCard: Passed-in item info is null
+         1790358000.027  1318  1318 I SsBaseTemplateCard: Secondary card pane is null
+         1790358000.039   834   834 W PageIndicator: Total number of pages invalid: 0. Assuming 1 page.
+         1790358000.044   834  1028 D EGL_emulation: app_time_stats: avg=36069.02ms min=36069.02ms max=36069.02ms count=1
+         1790358000.876  4577  4577 I MobiumProbe: fixture line: with colon: inside

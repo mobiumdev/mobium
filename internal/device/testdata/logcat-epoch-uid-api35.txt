@@ -1,0 +1,11 @@
+--------- beginning of main
+         1790376930.825  1000   163   163 W linker  : Warning: failed to find generated linker configuration from "/linkerconfig/ld.config.txt"
+         1790376930.829  1000   164   164 W linker  : Warning: failed to find generated linker configuration from "/linkerconfig/ld.config.txt"
+         1790376930.836  root   173   173 I qemu-props: successfully set property 'vendor.qemu.sf.fake_camera' to 'back'
+         1790376932.431  1000   567   567 I system_server: Using CollectorTypeCMC GC.
+         1790376932.432  1000   567   567 W system_server: Failed to upload odrefresh metrics: Unable to open or parse metrics file /data/misc/odrefresh/odrefresh-metrics.xml (error: Error=XML_ERROR_FILE_NOT_FOUND ErrorID=3 (0x3) Line number=0: filename=/data/misc/odrefresh/odrefresh-metrics.xml)
+         1790376955.028 10214  3571  3571 I obium.mobiumapp: Using CollectorTypeCMC GC.
+         1790376955.029 10214  3571  3571 E obium.mobiumapp: Not starting debugger since process cannot load the jdwp agent.
+         1790376955.030 10214  3571  3571 D nativeloader: Load libframework-connectivity-tiramisu-jni.so using APEX ns com_android_tethering for caller /apex/com.android.tethering/javalib/framework-connectivity-t.jar: ok
+         1790376961.305  1000   567   701 I WindowManager: ANR in Window{87dc1ed u0 dev.mobium.mobiumapp/dev.mobium.mobiumapp.MainActivity}. Reason:Input dispatching timed out (87dc1ed dev.mobium.mobiumapp/dev.mobium.mobiumapp.MainActivity (server) is not responding. Waited 5003ms for MotionEvent(deviceId=-1, eventTime=30835000000, source=TOUCHSCREEN, displayId=0, action=DOWN, actionButton=0x00000000, flags=0x00000000, metaState=0x00000000, buttonState=0x00000000, classification=NONE, edgeFlags=0x00000000, xPrecision=1.0, yPrecision=1.0, xCursorPosition=nan, yCursorPosition=nan, pointers=[0: (540.0, 1200.0)]), policyFlags=0x6b000000).
+         1790376973.343  1000   567  3644 E ActivityManager: ANR in dev.mobium.mobiumapp (dev.mobium.mobiumapp/.MainActivity)

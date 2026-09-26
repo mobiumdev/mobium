@@ -1,0 +1,76 @@
+Drop box contents: 8 entries
+Max entries: 1000
+Searching for: system_app_anr
+
+========================================
+2026-09-23 20:13:48 system_app_anr (compressed text, 14979 bytes)
+/data/system/dropbox/system_app_anr@1790219628243.txt.gz
+SystemUptimeMs: 339112349
+Process: com.google.android.odad
+PID: 28768
+UID: 10129
+Frozen: false
+Timestamp: 2026-09-23 20:13:47.725-0700
+Flags: 0x30c9bec5
+Package: com.google.android.odad v119938 (C.7.playstore.pixel3.978777183)
+Foreground: No
+Process-Runtime: 45368487
+ErrorId: 4d2d006d-7842-49d7-b5d2-b800a9c50a22
+Build: google/husky/husky:17/CP2A.260805.005/15828068:user/release-keys
+DefaultScreen-State: OFF
+Keyguard-Locked: true
+Loading-Progress: 1.0
+Dropped-Count: 0
+
+----- Output from /proc/pressure/memory -----
+some avg10=7.36 avg60=2.76 avg300=0.78 total=1044347167
+full avg10=2.20 avg60=0.72 avg300=0.20 total=452463155
+----- End output from /proc/pressure/memory -----
+----- Output from /proc/pressure/cpu -----
+some avg10=43.46 avg60=15.65 avg300=5.13 total=20381343708
+full avg10=0.00 avg60=0.00 avg300=0.00 total=0
+----- End output from /proc/pressure/cpu -----
+----- Output from /proc/pressure/io -----
+some avg10=9.95 avg60=2.86 avg300=0.64 total=928963785
+full avg10=1.94 avg60=0.54 avg300=0.12 total=556865580
+----- End output from /proc/pressure/io -----
+
+CPU usage from 184361ms to 0ms ago (2026-09-23 20:10:43.370 to 2026-09-23 20:13:47.731):
+  14% 1932/system_server: 7.1% user + 7.5% kernel / faults: 79303 minor 507 major
+CPU usage from 184361ms to 0ms ago (2026-09-23 20:10:43.370 to 2026-09-23 20:13:47.731):
+9.4% TOTAL: 4.1% user + 4.1% kernel + 0.1% iowait + 0.6% irq + 0.3% softirq
+Data File: /data/anr/anr_2026-09-23-20-13-47-733
+Subject: Broadcast of Intent { act=android.safetycenter.action.REFRESH_SAFETY_SOURCES flg=0x10000010 xflg=0x4 pkg=com.google.android.odad cmp=com.google.android.odad/com.google.android.apps.miphone.odad.safetycenter.impl.SafetyCenterReceiver (has extras) }
+Timeout: 10000
+
+----- dumping pid: 28768 at 339111846
+
+----- pid 28768 at 2026-09-23 20:13:47.824449103-0700 -----
+Cmd line: com.google.android.odad
+Build fingerprint: 'google/husky/husky:17/CP2A.260805.005/15828068:user/release-keys'
+ABI: 'arm64'
+Build type: optimized
+Debug Store: 3,32,339111938::ID:485,C:E,T:339101838||ID:0,C:P,T:339101838,N:GoAsync,D:tname=main;stid=28768;prid=b7fc9d6||ID:485,C:S,T:339101837,N:Rcv,D:tname=main;stid=28768;cls=SafetyCenterReceiver;prid=b7fc9d6||ID:0,C:P,T:339101837,N:SchRcv,D:tname=binder:28768_4;stid=28784;act=android.safetycenter.action.REFRESH_SAFETY_SOURCES;cmp=com.google.android.odad/com.google.android.apps.miphone.odad.safetycenter.impl.SafetyCenterReceiver;prid=b7fc9d6||ID:484,C:E,T:339098950||ID:484,C:S,T:339098933,N:JobStart,D:mid=cf1dae4||ID:483,C:E,T:339098933||ID:0,C:P,T:339098919,N:SchJobStart,D:tname=binder:28768_4;stid=28784;jobid=319;jobns=androidx.work.systemjobscheduler;mid=cf1dae4||ID:483,C:S,T:339098917,N:SvcBind,D:mid=1cad876||ID:482,C:E,T:339098917||ID:482,C:S,T:339098892,N:SvcCreate,D:mid=7795f11||ID:0,C:P,T:339098888,N:SchSvcBind,D:tname=binder:28768_A;stid=8790;act=null;cmp=com.google.android.odad/androidx.work.impl.background.systemjob.SystemJobService;mid=1cad876||ID:0,C:P,T:339098887,N:SchSvcCreate,D:tname=binder:28768_2;stid=28779;name=androidx.work.impl.background.systemjob.SystemJobService;mid=7795f11||ID:481,C:E,T:338013707||ID:481,C:S,T:338013701,N:SvcStart,D:mid=c1c71c6||ID:480,C:E,T:338013701||ID:480,C:S,T:338013701,N:SvcCreate,D:mid=c374ba1||ID:0,C:P,T:338013699,N:SchSvcStart,D:tname=binder:28768_2;stid=28779;act=null;cmp=com.google.android.odad/com.google.android.apps.miphone.odad.backgroundwork.impl.WorkService;mid=c1c71c6||ID:0,C:P,T:338013699,N:SchSvcCreate,D:tname=binder:28768_2;stid=28779;name=com.google.android.apps.miphone.odad.backgroundwork.impl.WorkService;mid=c374ba1||ID:479,C:E,T:338013137||ID:479,C:S,T:338013120,N:SvcStart,D:mid=8985ef9||ID:478,C:E,T:338013120||ID:478,C:S,T:338013119,N:SvcCreate,D:mid=fb4b1c0||ID:0,C:P,T:338013117,N:SchSvcStart,D:tname=binder:28768_2;stid=28779;act=null;cmp=com.google.android.odad/com.google.android.apps.miphone.odad.backgroundwork.impl.WorkService;mid=8985ef9||ID:0,C:P,T:338013116,N:SchSvcCreate,D:tname=binder:28768_2;stid=28779;name=com.google.android.apps.miphone.odad.backgroundwork.impl.WorkService;mid=fb4b1c0||ID:477,C:E,T:338012951||ID:477,C:S,T:338012948,N:SvcBind,D:mid=9572d45||ID:476,C:E,T:338012948||ID:0,C:P,T:338012929,N:SchSvcBind,D:tname=binder:28768_E;stid=19660;act=android.service.contentcapture.ContentProtectionService;cmp=com.google.android.odad/com.google.android.apps.miphone.odad.contentprotection.ContentProtectionService;mid=9572d45||ID:476,C:S,T:338012925,N:SvcCreate,D:mid=f47d9bc||ID:0,C:P,T:338012925,N:SchSvcCreate,D:tname=binder:28768_E;stid=19660;name=com.google.android.apps.miphone.odad.contentprotection.ContentProtectionService;mid=f47d9bc||ID:475,C:E,T:334891329;;
+suspend all histogram:	Sum: 85.279ms 99% C.I. 2.817us-18411.519us Avg: 600.556us Max: 26713us
+DALVIK THREADS (60):
+"main" prio=5 tid=1 Native
+  | group="main" sCount=1 ucsCount=0 flags=1 obj=0x73090460 self=0xb400007777ceabe0
+  | sysTid=28768 nice=0 cgrp=default sched=3/0 handle=0x79160a5048
+  | state=S schedstat=( 2019806942 3690369010 3532 ) utm=85 stm=116 core=4 HZ=100
+  | stack=0x7fd0d86000-0x7fd0d88000 stackSize=8188KB
+  | held mutexes=
+  native: #00 pc 000eaacc  /apex/com.android.runtime/lib64/bionic/libc.so (__epoll_pwait+12) (BuildId: ed2549ec5e52f30524dcd059e48d976b)
+  native: #01 pc 00016dc8  /system/lib64/libutils.so (android::Looper::pollOnce+248) (BuildId: cb3eb8721470b3346b48ea3c2cd26694)
+  native: #02 pc 00216950  /system/lib64/libandroid_runtime.so (android::android_os_MessageQueue_nativePollOnce +48) (BuildId: 3ad6419fee3ccc756458d806c6501fde)
+  at android.os.MessageQueue.nativePollOnce(Native method)
+  at android.os.MessageQueue.nextDeliQueue(MessageQueue.java:791)
+  at android.os.MessageQueue.next(MessageQueue.java:771)
+  at android.os.Looper.loopOnce(Looper.java:232)
+  at android.os.Looper.loop(Looper.java:397)
+  at android.app.ActivityThread.main(ActivityThread.java:9523)
+  at java.lang.reflect.Method.invoke(Native method)
+  at com.android.internal.os.RuntimeInit$MethodAndArgsCaller.run(RuntimeInit.java:575)
+  at com.android.internal.os.ZygoteInit.main(ZygoteInit.java:939)
+DumpLatencyMs: 4.60107
+
+"ReferenceQueueDaemon" daemon prio=5 tid=4 Waiting

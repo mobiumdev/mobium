@@ -1,0 +1,496 @@
+package agent
+
+import (
+	"context"
+	"errors"
+	"fmt"
+	"github.com/mobiumdev/mobium/internal/mobiumerr"
+	"strings"
+	"time"
+
+	"github.com/mobiumdev/mobium/internal/mobiumdriver"
+	"github.com/mobiumdev/mobium/internal/uitree"
+)
+
+// Scrolling is a swipe-and-recheck loop rather than a call to the platform's
+// own scrollIntoView, and the **axis comes from the caller**.
+//
+// It has to. Nothing in the hierarchy says which way a container scrolls:
+// Android clips child bounds to the parent, so a horizontal pager and a
+// vertical list are indistinguishable from outside — measured across every
+// scrollable on the launcher and two Settings screens, overflow was zero in
+// both axes every time (CHALLENGES 21). Guessing would be wrong roughly
+// whenever it mattered, and a wrong guess is not a no-op: a vertical swipe on
+// a pager does whatever the app does with an upward drag, which on a launcher
+// opens the app drawer.
+//
+// So `direction` is the answer to a question only the caller can answer, and
+// the loop below watches for the swipe having navigated instead of scrolled.
+//
+// Both device-side servers offer one — UiAutomator2 through the
+// `-android uiautomator` selector strategy, WebDriverAgent through
+// /wda/element/{id}/scroll — and either would be a single round trip instead
+// of this loop. Neither takes Mobium's locators, though: UiSelector covers
+// text, description, resource-id and class but not role or path, and the WDA
+// endpoint needs an element id, which is the thing being looked for. Mapping
+// what fits and falling back for the rest would mean scrolling behaving
+// differently depending on how the caller happened to name the element.
+//
+// So the loop is the whole implementation: one behavior on every backend,
+// including the dump backend, which has no native scroll at all. The cost is
+// round trips, and a snapshot is 0.04s on UiAutomator2.
+const (
+	// maxScrolls bounds the loop. A list long enough to need more than this
+	// is better reached by a deep link than by swiping.
+	maxScrolls = 15
+
+	// scrollDuration is slow enough not to fling. A fling keeps moving after
+	// the gesture ends, so the snapshot that follows catches the list
+	// mid-flight and the progress check compares two blurred frames.
+	scrollDuration = 400 * time.Millisecond
+
+	// settleAfterScroll lets the list stop before it is read.
+	settleAfterScroll = 150 * time.Millisecond
+)
+
+// scrollTo is app_scroll_to.
+func (h *Handlers) scrollTo(ctx context.Context, args map[string]interface{}) (*ToolsCallResult, error) {
+	s, err := h.sessionFor(ctx, args)
+	if err != nil {
+		return nil, err
+	}
+	return h.scrollToOn(ctx, s, args)
+}
+
+// scrollToOn is app_scroll_to once the device is resolved.
+func (h *Handlers) scrollToOn(ctx context.Context, s *session, args map[string]interface{}) (*ToolsCallResult, error) {
+	if s.web != nil {
+		return nil, mobiumerr.New(mobiumerr.Unsupported, "app_scroll_to works on the native context — "+
+			"switch back with app_context native")
+	}
+	target := stringArg(args, "target")
+	if target == "" {
+		return nil, mobiumerr.New(mobiumerr.InvalidArgument, "app_scroll_to needs a target (\"@e5\" or \"text=Sign out\")")
+	}
+	dir := strings.ToLower(stringArg(args, "direction"))
+	if dir == "" {
+		dir = "down"
+	}
+	if !isScrollDirection(dir) {
+		return nil, mobiumerr.New(mobiumerr.InvalidArgument, "direction must be \"down\", \"up\", \"left\" or \"right\", got %q — "+
+			"and it is the caller's to give: nothing in the hierarchy says which way a "+
+			"container scrolls", dir)
+	}
+
+	loc, err := h.locatorFor(s.dev.Serial, target)
+	if err != nil {
+		return nil, err
+	}
+	node, tree, scrolls, err := h.scrollIntoView(ctx, s, loc, dir)
+	if err != nil {
+		return nil, err
+	}
+
+	view := ScrollView{Target: target, Direction: dir, Scrolls: scrolls}
+	msg := fmt.Sprintf("%s is on screen", loc)
+	if scrolls > 0 {
+		msg = fmt.Sprintf("%s after %d scroll%s %s", msg, scrolls, plural(scrolls), dir)
+	} else {
+		msg += " already"
+	}
+	if e, ok := h.rememberRefs(s.dev.Serial, tree, node); ok {
+		ev := elementView(e)
+		view.Element = &ev
+		msg += " — " + e.Line()
+	}
+	return Result(msg, view), nil
+}
+
+func plural(n int) string {
+	if n == 1 {
+		return ""
+	}
+	return "s"
+}
+
+// scrollIntoView swipes until the locator resolves to a node that is wholly
+// inside its scroll container, and returns that node with the snapshot it
+// came from.
+//
+// It reports how many scrolls it took, which is the difference between "this
+// was already visible" and "this was eleven swipes down a settings list" —
+// worth saying, because the second is usually a sign the caller wants a deep
+// link instead.
+func (h *Handlers) scrollIntoView(ctx context.Context, s *session, loc uitree.Locator, dir string) (*uitree.Node, *uitree.Tree, int, error) {
+	tree, err := s.driver.Snapshot(ctx)
+	if err != nil {
+		return nil, nil, 0, err
+	}
+
+	// Already there? Resolve against the container it will be measured
+	// against, so "visible" means the same thing before and after scrolling.
+	container := scrollContainer(tree)
+	n, resolveErr := resolvedAndVisible(loc, tree, container)
+	if resolveErr == nil {
+		return n, tree, 0, nil
+	}
+	// Two of them is not none of them, and no amount of scrolling turns one
+	// into the other. Verified on an iPhone 17 Pro: a Settings cell and the
+	// static text inside it carry the same label, so `label=Privacy &
+	// Security` matches twice while the old message insisted nothing matched.
+	if !matchedNothing(resolveErr) && !errors.Is(resolveErr, errOffScreen) {
+		return nil, nil, 0, resolveErr
+	}
+	if container == nil {
+		// Distinguish the two ways this fails. A screen with nothing
+		// scrollable cannot be searched by scrolling, and saying so is more
+		// use than reporting that fifteen swipes found nothing.
+		return nil, nil, 0, mobiumerr.New(mobiumerr.NoSuchElement, "no element matches %s and nothing on this screen scrolls", loc)
+	}
+
+	// Checked only now: a backend that cannot swipe can still answer for an
+	// element that is already in view, and refusing above would have made
+	// app_scroll_to useless on the dump backend even when it had nothing to do.
+	gest, ok := mobiumdriver.AsGesturer(s.driver)
+	if !ok {
+		return nil, nil, 0, cannot(s, mobiumdriver.CapGestures, "scroll")
+	}
+
+	// prev detects the end of the list. A swipe against the end moves
+	// nothing, so a reading that has not moved means there is no more to see
+	// — without this the loop swipes uselessly to its limit and then blames
+	// the locator.
+	prev := read(container)
+	lastErr := resolveErr
+
+	// The axis came from the caller because nothing here can supply it, but a
+	// caller can be wrong too — and swiping the wrong way is not a no-op.
+	//
+	// The app it happens in is the one signal available, so it is watched:
+	// leaving the app mid-scroll means the swipe navigated rather than
+	// scrolled, and continuing would swipe fourteen more times somewhere the
+	// caller did not ask to be.
+	app := tree.Package()
+
+	// partial is the target once it has been found but is not wholly in
+	// view, with the container that moves it. From then on the loop swipes
+	// only as far as it takes to bring it in, on whichever side it is: a
+	// full swipe from a near miss carried a button 33 pixels short of the
+	// bottom edge past the top of the list on an iPhone simulator, where a
+	// swipe coasts, and the next swipe found the end and gave up with the
+	// button in plain sight above it. CHALLENGES 114.
+	partial, partialIn := offScreenTarget(loc, tree)
+
+	for i := 1; i <= maxScrolls; i++ {
+		nudged, err := nudgeInto(ctx, gest, partialIn, partial, horizontal(dir))
+		if err != nil {
+			return nil, nil, i, err
+		}
+		if !nudged {
+			if err := swipeWithin(ctx, gest, container.Bounds, dir); err != nil {
+				return nil, nil, i, err
+			}
+		}
+		select {
+		case <-ctx.Done():
+			return nil, nil, i, ctx.Err()
+		case <-time.After(settleAfterScroll):
+		}
+
+		tree, err = s.driver.Snapshot(ctx)
+		if err != nil {
+			return nil, nil, i, err
+		}
+		if now := tree.Package(); app != "" && now != "" && now != app {
+			return nil, nil, i, mobiumerr.New(mobiumerr.ElementNotReachable, "swiping %s moved from %s to %s instead of scrolling — "+
+				"the area being swiped does not scroll that way. Nothing in the hierarchy "+
+				"says which way it does, so try the other axis, or app_swipe", dir, app, now)
+		}
+		container = scrollContainer(tree)
+		if container == nil {
+			return nil, nil, i, mobiumerr.New(mobiumerr.ElementNotReachable, "the scrollable area went away while scrolling %s for %s — "+
+				"the swipe changed the screen instead of scrolling it, so it does not "+
+				"scroll that way. Try the other axis, or app_swipe", dir, loc)
+		}
+		n, resolveErr := resolvedAndVisible(loc, tree, container)
+		if resolveErr == nil {
+			return n, tree, i, nil
+		}
+		if !matchedNothing(resolveErr) && !errors.Is(resolveErr, errOffScreen) {
+			return nil, nil, i, resolveErr
+		}
+		lastErr = resolveErr
+		partial, partialIn = offScreenTarget(loc, tree)
+
+		now := read(container)
+		if !moved(prev, now) {
+			return nil, nil, i, mobiumerr.New(mobiumerr.NoSuchElement, "%s — scrolled %s to the end of the list "+
+				"(%d scroll%s) without bringing it into view", whyNot(loc, resolveErr), dir, i, plural(i))
+		}
+		prev = now
+	}
+	return nil, nil, maxScrolls, mobiumerr.New(mobiumerr.NoSuchElement, "%s after scrolling %s %d times — "+
+		"the list is longer than mobium will swipe; try a deep link with app_open_url",
+		whyNot(loc, lastErr), dir, maxScrolls)
+}
+
+// resolvedAndVisible reports the single node a locator names, but only when it
+// is wholly inside the scroll container.
+//
+// Partly-scrolled-in elements are the reason this checks containment rather
+// than mere presence: a row half off the bottom edge is in the hierarchy with
+// real bounds, and its center — which is what a tap uses — can be off screen
+// entirely.
+//
+// The error is handed back rather than swallowed. Not finding an element and
+// finding two of them want completely different responses from the caller,
+// and reporting the second as the first sends them looking for something that
+// is on the screen in front of them.
+func resolvedAndVisible(loc uitree.Locator, tree *uitree.Tree, container *uitree.Node) (*uitree.Node, error) {
+	n, err := pickOne(loc, tree)
+	if err != nil {
+		return nil, err
+	}
+	// Judge it against the container that would move it, not whichever
+	// scrollable happens to be biggest.
+	if own := scrollContainerOf(n); own != nil && !encloses(own.Bounds, n.Bounds) {
+		return nil, errOffScreen
+	}
+	return n, nil
+}
+
+// offScreenTarget returns the node a locator names and the container that
+// moves it, when it resolves with real bounds but not wholly inside that
+// container — the case a measured swipe can finish. Otherwise both are nil.
+func offScreenTarget(loc uitree.Locator, tree *uitree.Tree) (*uitree.Node, *uitree.Node) {
+	n, err := pickOne(loc, tree)
+	if err != nil || n.Bounds.Empty() {
+		return nil, nil
+	}
+	own := scrollContainerOf(n)
+	if own == nil || encloses(own.Bounds, n.Bounds) {
+		return nil, nil
+	}
+	return n, own
+}
+
+// nudgeInto swipes a found target into its container by the distance it is
+// out, plus an eighth of the container so it lands clear of the edge, and
+// reports whether it swiped. It does not when there is no such target, or
+// the target is bigger than the container along the axis and can never fit;
+// the caller's full swipe goes instead. The direction is from where the
+// target is, not from the caller's: once found, which side it is on is known.
+func nudgeInto(ctx context.Context, gest mobiumdriver.Gesturer, c, n *uitree.Node, horiz bool) (bool, error) {
+	if c == nil || n == nil {
+		return false, nil
+	}
+	lo, hi, clo, chi := n.Bounds.Y1, n.Bounds.Y2, c.Bounds.Y1, c.Bounds.Y2
+	if horiz {
+		lo, hi, clo, chi = n.Bounds.X1, n.Bounds.X2, c.Bounds.X1, c.Bounds.X2
+	}
+	span := chi - clo
+	if hi-lo > span {
+		return false, nil
+	}
+	// d > 0 moves the content toward lower coordinates: up, or left.
+	d := 0
+	switch {
+	case hi > chi:
+		d = hi - chi + span/8
+	case lo < clo:
+		d = -(clo - lo + span/8)
+	default:
+		return false, nil
+	}
+	if limit := span / 2; d > limit {
+		d = limit
+	} else if d < -limit {
+		d = -limit
+	}
+	mid := (clo + chi) / 2
+	from, to := mid+d/2, mid-d/2
+	if horiz {
+		y := (c.Bounds.Y1 + c.Bounds.Y2) / 2
+		return true, gest.Swipe(ctx, from, y, to, y, scrollDuration)
+	}
+	x := (c.Bounds.X1 + c.Bounds.X2) / 2
+	return true, gest.Swipe(ctx, x, from, x, to, scrollDuration)
+}
+
+// errOffScreen means the locator resolved but the element is outside the part
+// of the list you can see — which is the one case scrolling can fix.
+var errOffScreen = mobiumerr.New(mobiumerr.ElementNotReachable, "the element is not in view")
+
+func encloses(outer, inner uitree.Rect) bool {
+	return inner.X1 >= outer.X1 && inner.Y1 >= outer.Y1 &&
+		inner.X2 <= outer.X2 && inner.Y2 <= outer.Y2
+}
+
+// scrollContainerOf returns the scrollable that would actually move a node:
+// its nearest scrollable ancestor, or nil if it has none.
+//
+// This is not the same question as "what is the biggest scrollable on screen",
+// and conflating the two was a real bug. On a Pixel 8 Pro, Calculator's only
+// scrollable is the history strip across the top, [0,0][1008,285]; the "7"
+// button sits at [9,1218][249,1452] and is not inside it or under it. Judging
+// the button against that container concluded it was out of view and tried to
+// scroll a list it has nothing to do with. The same shape breaks any screen
+// with a fixed button bar below a scrolling list, which is most of them.
+func scrollContainerOf(n *uitree.Node) *uitree.Node {
+	for p := n.Parent; p != nil; p = p.Parent {
+		if p.Scrollable && !p.Bounds.Empty() {
+			return p
+		}
+	}
+	return nil
+}
+
+// scrollContainer picks the scrollable node to swipe inside: the largest one,
+// which on a real screen is the list rather than a small horizontal carousel
+// inside it. Returns nil when nothing on the screen scrolls.
+//
+// Only for the case where the target cannot be found at all, so there is no
+// node to ask about ancestry. Once a node is in hand, use scrollContainerOf.
+func scrollContainer(tree *uitree.Tree) *uitree.Node {
+	var best *uitree.Node
+	tree.Walk(func(n *uitree.Node) bool {
+		if !n.Scrollable || n.Bounds.Empty() {
+			return true
+		}
+		if best == nil || area(n.Bounds) > area(best.Bounds) {
+			best = n
+		}
+		return true
+	})
+	return best
+}
+
+// swipeWithin drags inside the container rather than across the whole screen.
+//
+// Swiping the screen would work on a full-height list and would hit whatever
+// is above or below a short one. The gesture spans the middle half of the
+// container, away from the edges where the system takes over the gesture.
+// isScrollDirection reports whether a direction is one this loop can swipe.
+func isScrollDirection(dir string) bool {
+	switch dir {
+	case "down", "up", "left", "right":
+		return true
+	}
+	return false
+}
+
+// horizontal reports whether a direction moves along the x axis.
+func horizontal(dir string) bool { return dir == "left" || dir == "right" }
+
+// swipeWithin drags inside a container, along the axis the caller named.
+//
+// The quarter insets matter more horizontally than vertically: a drag that
+// starts at the very edge of the screen is the system's back gesture on both
+// platforms, so it would navigate rather than scroll and the loop would report
+// that instead of moving the pager. Starting a quarter of the way in keeps the
+// gesture inside the app.
+func swipeWithin(ctx context.Context, gest mobiumdriver.Gesturer, r uitree.Rect, dir string) error {
+	if horizontal(dir) {
+		y := (r.Y1 + r.Y2) / 2
+		near := r.X1 + r.Width()/4
+		far := r.X2 - r.Width()/4
+		if dir == "right" {
+			// Looking further right means the content moves left, so the
+			// finger travels from right to left.
+			return gest.Swipe(ctx, far, y, near, y, scrollDuration)
+		}
+		return gest.Swipe(ctx, near, y, far, y, scrollDuration)
+	}
+	x := (r.X1 + r.X2) / 2
+	near := r.Y1 + r.Height()/4
+	far := r.Y2 - r.Height()/4
+	if dir == "down" {
+		// Looking further down the list means the content moves up, so the
+		// finger travels from low to high.
+		return gest.Swipe(ctx, x, far, x, near, scrollDuration)
+	}
+	return gest.Swipe(ctx, x, near, x, far, scrollDuration)
+}
+
+// reading is what a container is showing, in the two parts that have to be
+// judged separately.
+type reading struct {
+	// geometry is where everything is. Scrolling moves things; a screen doing
+	// nothing does not.
+	geometry string
+	// texts is what everything says, in document order.
+	texts []string
+}
+
+// read captures a container for later comparison.
+func read(container *uitree.Node) reading {
+	var r reading
+	var b strings.Builder
+	var visit func(*uitree.Node)
+	visit = func(n *uitree.Node) {
+		for _, c := range n.Children {
+			fmt.Fprintf(&b, "%s\n", c.Bounds)
+			r.texts = append(r.texts, c.Text+"\x00"+c.Label)
+			visit(c)
+		}
+	}
+	visit(container)
+	r.geometry = b.String()
+	return r
+}
+
+// moved reports whether the list actually went anywhere between two readings.
+//
+// Text alone is not evidence. The About screen on a Pixel 7 shows an uptime
+// counter that ticks every second, so comparing everything the container said
+// found a difference on every pass and the loop swiped its full fifteen times
+// at a list that had been pinned to the bottom from the start. Geometry alone
+// is not evidence either: a recycled list can present its rows at the same
+// coordinates after a scroll, changing only what they say.
+//
+// So: the list moved if anything is in a different place, or if more than one
+// thing is saying something new. One changed string is a clock. Several are a
+// screenful of different rows.
+func moved(before, after reading) bool {
+	if before.geometry != after.geometry {
+		return true
+	}
+	if len(before.texts) != len(after.texts) {
+		return true
+	}
+	changed := 0
+	for i := range before.texts {
+		if before.texts[i] != after.texts[i] {
+			changed++
+			if changed > 1 {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+// fingerprint renders a subtree as one string, for the coarser question of
+// whether a screen changed at all.
+func fingerprint(root *uitree.Node) string {
+	r := read(root)
+	return r.geometry + strings.Join(r.texts, "\n")
+}
+
+// ScrollView is the result of app_scroll_to.
+type ScrollView struct {
+	Target    string `json:"target"`
+	Direction string `json:"direction"`
+	// Scrolls is how many swipes it took; 0 means it was already on screen.
+	Scrolls int          `json:"scrolls"`
+	Element *ElementView `json:"element,omitempty"`
+}
+
+// whyNot phrases a scroll failure by what actually happened, since "no element
+// matches" and "it never came into view" send a caller to different places.
+func whyNot(loc uitree.Locator, err error) string {
+	if errors.Is(err, errOffScreen) {
+		return fmt.Sprintf("%s is on the screen but never scrolled fully into view", loc)
+	}
+	return fmt.Sprintf("no element matches %s", loc)
+}

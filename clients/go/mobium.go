@@ -1,0 +1,1309 @@
+// Package mobium drives native apps on Android emulators and iOS simulators.
+//
+// It speaks to the same tool layer the CLI and the MCP server use, over
+// `mobium pipe`, so a Go program and a command cannot drift apart. The mobium
+// binary has to be on PATH, or named by MOBIUM_BIN_PATH.
+//
+//	dev, err := mobium.Connect()
+//	if err != nil {
+//		log.Fatal(err)
+//	}
+//	defer dev.Close()
+//
+//	ctx := context.Background()
+//	if err := dev.Launch(ctx, "com.example.shop"); err != nil {
+//		log.Fatal(err)
+//	}
+//	el, err := dev.WaitFor(ctx, "text=Sign in", nil)
+//	if err != nil {
+//		log.Fatal(err)
+//	}
+//	if err := dev.Tap(ctx, el.Ref); err != nil {
+//		log.Fatal(err)
+//	}
+//
+// Refs like "@e1" are only valid for the screen they were taken from. Every
+// action re-resolves its target immediately before acting and retries briefly
+// while the screen settles, so a tap can follow another tap without a sleep.
+package mobium
+
+import (
+	"context"
+	"encoding/base64"
+	"errors"
+	"fmt"
+	"os"
+	"strings"
+	"time"
+)
+
+// Bounds is an on-screen rectangle in device pixels, on both platforms.
+type Bounds struct {
+	X1 int `json:"x1"`
+	Y1 int `json:"y1"`
+	X2 int `json:"x2"`
+	Y2 int `json:"y2"`
+}
+
+// Center is the point a tap targets.
+func (b Bounds) Center() (int, int) { return (b.X1 + b.X2) / 2, (b.Y1 + b.Y2) / 2 }
+
+// Width and Height are the rectangle's size in device pixels.
+func (b Bounds) Width() int  { return b.X2 - b.X1 }
+func (b Bounds) Height() int { return b.Y2 - b.Y1 }
+
+// Locator is how a ref resolves on a later screen.
+type Locator struct {
+	Kind  string `json:"kind"`
+	Value string `json:"value"`
+	Exact bool   `json:"exact,omitempty"`
+	Role  string `json:"role,omitempty"`
+}
+
+// String renders the locator the way the tools accept it.
+func (l Locator) String() string {
+	if l.Kind == "" {
+		return ""
+	}
+	return l.Kind + "=" + l.Value
+}
+
+// Element is one actionable thing on screen.
+type Element struct {
+	Ref     string   `json:"ref"`
+	Label   string   `json:"label"`
+	Role    string   `json:"role,omitempty"`
+	Locator *Locator `json:"locator,omitempty"`
+	Bounds  Bounds   `json:"bounds"`
+	// Context names the WebView an element came from, empty for native ones.
+	Context string `json:"context,omitempty"`
+}
+
+// DeviceInfo is one attached device or simulator.
+type DeviceInfo struct {
+	ID       string `json:"id"`
+	Platform string `json:"platform"`
+	State    string `json:"state"`
+	Model    string `json:"model,omitempty"`
+	Runtime  string `json:"runtime,omitempty"`
+	Emulator bool   `json:"emulator"`
+}
+
+// Device is a connection to mobium. It is safe for concurrent use: calls are
+// serialized, because there is one pipe underneath.
+type Device struct {
+	conn *conn
+}
+
+// Option configures Connect.
+type Option func(*settings)
+
+type settings struct {
+	binary  string
+	serial  string
+	backend string
+	args    []string
+}
+
+// WithBinary pins the mobium executable, ahead of MOBIUM_BIN_PATH and PATH.
+func WithBinary(path string) Option { return func(s *settings) { s.binary = path } }
+
+// WithDevice targets one device by serial or UDID. Omit it when only one
+// device is running.
+func WithDevice(serial string) Option { return func(s *settings) { s.serial = serial } }
+
+// WithBackend chooses the driver: "uiautomator2" (default on Android),
+// "uiautomator" (installs nothing, slower, cannot type) or "webdriveragent"
+// (iOS simulators).
+func WithBackend(name string) Option { return func(s *settings) { s.backend = name } }
+
+// Connect starts a mobium session.
+//
+// The transport is `mobium pipe`, which forwards to the shared daemon rather
+// than starting a session of its own: a device-side server holds one session
+// at a time, so a client with its own would invalidate the CLI's.
+func Connect(opts ...Option) (*Device, error) {
+	var s settings
+	for _, opt := range opts {
+		opt(&s)
+	}
+	binary, err := FindBinary(s.binary)
+	if err != nil {
+		return nil, err
+	}
+	if s.serial != "" {
+		s.args = append(s.args, "--device", s.serial)
+	}
+	if s.backend != "" {
+		s.args = append(s.args, "--backend", s.backend)
+	}
+	c, err := dial(binary, s.args)
+	if err != nil {
+		return nil, err
+	}
+	return &Device{conn: c}, nil
+}
+
+// Close ends the session.
+func (d *Device) Close() error { return d.conn.Close() }
+
+// -- reading ---------------------------------------------------------------
+
+// Devices lists every attached device and simulator.
+func (d *Device) Devices(ctx context.Context) ([]DeviceInfo, error) {
+	var out struct {
+		Devices []DeviceInfo `json:"devices"`
+	}
+	if err := d.data(ctx, "app_devices", nil, &out); err != nil {
+		return nil, err
+	}
+	return out.Devices, nil
+}
+
+// Map returns the actionable elements on the current screen.
+//
+// Refs are only valid for this screen; call Map again after anything that
+// changes it, or just act — actions re-resolve their target anyway.
+func (d *Device) Map(ctx context.Context) ([]Element, error) {
+	return d.elements(ctx, "app_map", nil)
+}
+
+// Find returns the elements matching a locator, without acting on them.
+func (d *Device) Find(ctx context.Context, locator string) ([]Element, error) {
+	return d.elements(ctx, "app_find", map[string]any{"locator": locator})
+}
+
+// Text reads everything on screen. Pass a ref or locator to read one element
+// instead, or "" for the whole screen.
+func (d *Device) Text(ctx context.Context, target string) (string, error) {
+	args := map[string]any{}
+	if target != "" {
+		args["target"] = target
+	}
+	res, err := d.conn.call(ctx, "app_text", args)
+	if err != nil {
+		return "", err
+	}
+	return res.text(), nil
+}
+
+// Current reports the package name or bundle id of the foreground app.
+//
+// It costs no extra device call: it reads the hierarchy a snapshot fetches
+// anyway. Use it to confirm a tap went where you expected.
+func (d *Device) Current(ctx context.Context) (string, error) {
+	var out struct {
+		App string `json:"app"`
+	}
+	if err := d.data(ctx, "app_current", nil, &out); err != nil {
+		return "", err
+	}
+	return out.App, nil
+}
+
+// Screenshot captures the screen as PNG. With a path it also writes the file;
+// without one the bytes come back over the wire.
+func (d *Device) Screenshot(ctx context.Context, path string) ([]byte, error) {
+	if path == "" {
+		res, err := d.conn.call(ctx, "app_screenshot", nil)
+		if err != nil {
+			return nil, err
+		}
+		return res.image()
+	}
+	if _, err := d.conn.call(ctx, "app_screenshot", map[string]any{"path": path}); err != nil {
+		return nil, err
+	}
+	return os.ReadFile(path)
+}
+
+// -- waiting and scrolling -------------------------------------------------
+
+// Wait conditions.
+const (
+	// Visible waits for the element to be on screen. The default.
+	Visible = "visible"
+	// Hidden waits for it to go away — a spinner, say.
+	Hidden = "hidden"
+	// HasText waits until it contains the text given in WaitOptions.Text.
+	HasText = "text"
+)
+
+// WaitOptions tunes WaitFor. A nil *WaitOptions means visible, ten seconds.
+type WaitOptions struct {
+	// Condition is Visible (the default), Hidden or HasText.
+	Condition string
+	// Text is what to wait for, required by and only used by HasText.
+	Text string
+	// Timeout defaults to ten seconds and may not exceed two minutes.
+	Timeout time.Duration
+}
+
+// WaitFor blocks until the screen agrees, instead of sleeping.
+//
+// On success the screen is remapped, so the returned element already has a ref
+// that can be tapped without calling Map first. Waiting for something to go
+// away returns a nil element and a nil error, since there is nothing left to
+// point at. If the condition never holds the error says what was on screen
+// instead, which is usually the answer.
+func (d *Device) WaitFor(ctx context.Context, target string, opts *WaitOptions) (*Element, error) {
+	if opts == nil {
+		opts = &WaitOptions{}
+	}
+	args := map[string]any{"target": target}
+	if opts.Condition != "" {
+		args["condition"] = opts.Condition
+	}
+	if opts.Text != "" {
+		args["text"] = opts.Text
+	}
+	if opts.Timeout > 0 {
+		args["timeout_ms"] = int(opts.Timeout / time.Millisecond)
+	}
+	return d.element(ctx, "app_wait_for", args)
+}
+
+// Scroll directions.
+const (
+	// Down looks further down the list. The default.
+	Down = "down"
+	// Up looks back towards the top.
+	Up = "up"
+)
+
+// ScrollTo scrolls until an element is on screen and returns it with a ref.
+//
+// Map only sees what is currently visible. Tap, Type and LongPress already
+// scroll to a target that is not, so reach for this to look without acting, or
+// to scroll back up. Vertical lists only: use Swipe for a horizontal pager.
+// direction may be "" for Down.
+func (d *Device) ScrollTo(ctx context.Context, target, direction string) (*Element, error) {
+	args := map[string]any{"target": target}
+	if direction != "" {
+		args["direction"] = direction
+	}
+	return d.element(ctx, "app_scroll_to", args)
+}
+
+// -- acting ----------------------------------------------------------------
+
+// Tap taps a ref ("@e5") or a locator ("text=Sign In").
+//
+// The element is re-resolved immediately before the tap, and the tap scrolls
+// to it first if it is below the fold.
+func (d *Device) Tap(ctx context.Context, target string) error {
+	return d.act(ctx, "app_tap", map[string]any{"target": target})
+}
+
+// TapPoint taps a point in device pixels.
+func (d *Device) TapPoint(ctx context.Context, x, y int) error {
+	return d.act(ctx, "app_tap", map[string]any{"x": x, "y": y})
+}
+
+// DoubleTap taps an element twice, close enough together that the platform
+// reads one gesture rather than two taps.
+//
+// The same tool as Tap with one argument set, so the target is resolved the
+// same way and refused the same way when the screen has moved. The uiautomator
+// dump backend refuses it: nothing there controls the interval.
+func (d *Device) DoubleTap(ctx context.Context, target string) error {
+	return d.act(ctx, "app_tap", map[string]any{"target": target, "double": true})
+}
+
+// DoubleTapPoint double-taps a point in device pixels.
+func (d *Device) DoubleTapPoint(ctx context.Context, x, y int) error {
+	return d.act(ctx, "app_tap", map[string]any{"x": x, "y": y, "double": true})
+}
+
+// Drag picks one element up, carries it onto another, and drops it.
+//
+// Not Swipe with two targets: a swipe has no hold at either end, so pointed at
+// a reorderable row it scrolls the list instead of moving the row. Both ends
+// are resolved from one snapshot before anything is touched.
+//
+// What it reports is that the gesture was delivered. Whether the drop was
+// accepted is the app's own state — call Map again to see it.
+func (d *Device) Drag(ctx context.Context, from, to string) error {
+	return d.act(ctx, "app_drag", map[string]any{"from": from, "to": to})
+}
+
+// DragFor is Drag with the hold at each end spelled out. Raise it first when
+// a drag picks nothing up: the default is 700ms, above Android's 500ms
+// long-press timeout, and some lists arm slower than that.
+func (d *Device) DragFor(ctx context.Context, from, to string, hold time.Duration) error {
+	return d.act(ctx, "app_drag", map[string]any{
+		"from": from, "to": to, "hold_ms": int(hold.Milliseconds()),
+	})
+}
+
+// TapFingers taps an element with several fingers at once, side by side — a
+// two-finger tap with 2, a three-finger tap with 3 (up to 5). On iOS three
+// fingers can reach the system instead of the app: three-finger gestures are
+// undo, redo, copy and paste there.
+func (d *Device) TapFingers(ctx context.Context, target string, fingers int) error {
+	return d.act(ctx, "app_tap", map[string]any{"target": target, "fingers": fingers})
+}
+
+// PressTap holds one element with a finger while a second finger taps
+// another, and lifts the first only after the second. Both are resolved
+// before anything is touched. It reports that the gesture was delivered; what
+// it meant is the app's own state, so call Map again to see it. Android 15 and
+// earlier only: on iOS XCTest adds a zero-length touch at the second finger's
+// target when the gesture starts, and on Android 16 and later UiAutomator2's
+// down times are rejected, so both refuse (ErrUnsupported).
+func (d *Device) PressTap(ctx context.Context, hold, tap string) error {
+	return d.act(ctx, "app_press_tap", map[string]any{"hold": hold, "tap": tap})
+}
+
+// PressDrag holds one element with a finger while a second finger drags from
+// one element to another. Not Drag, which is one finger carrying something:
+// here one finger anchors and the other moves. Android 15 and earlier only,
+// for PressTap's reasons.
+func (d *Device) PressDrag(ctx context.Context, hold, from, to string) error {
+	return d.act(ctx, "app_press_drag", map[string]any{"hold": hold, "from": from, "to": to})
+}
+
+// Type puts text into an element. Pass "" to clear it.
+func (d *Device) Type(ctx context.Context, target, text string) error {
+	return d.act(ctx, "app_type", map[string]any{"target": target, "text": text})
+}
+
+// Replace clears an element and types into it.
+func (d *Device) Replace(ctx context.Context, target, text string) error {
+	return d.act(ctx, "app_type", map[string]any{"target": target, "text": text, "clear": true})
+}
+
+// Swipe drags across the middle of the screen in a direction: "up", "down",
+// "left" or "right". The finger moves that way, so "up" scrolls a page down.
+func (d *Device) Swipe(ctx context.Context, direction string) error {
+	return d.act(ctx, "app_swipe", map[string]any{"direction": direction})
+}
+
+// SwipePoints drags between two points in device pixels.
+func (d *Device) SwipePoints(ctx context.Context, x1, y1, x2, y2 int, duration time.Duration) error {
+	args := map[string]any{"x1": x1, "y1": y1, "x2": x2, "y2": y2}
+	if duration > 0 {
+		args["duration_ms"] = int(duration / time.Millisecond)
+	}
+	return d.act(ctx, "app_swipe", args)
+}
+
+// LongPress presses and holds an element. A zero duration uses the default.
+func (d *Device) LongPress(ctx context.Context, target string, duration time.Duration) error {
+	args := map[string]any{"target": target}
+	if duration > 0 {
+		args["duration_ms"] = int(duration / time.Millisecond)
+	}
+	return d.act(ctx, "app_long_press", args)
+}
+
+// -- app lifecycle ---------------------------------------------------------
+
+// Launch brings an app to the foreground by package name or bundle id, and
+// waits for it to actually be in front.
+//
+// Every ref from the previous screen is discarded.
+func (d *Device) Launch(ctx context.Context, app string) error {
+	return d.act(ctx, "app_launch", map[string]any{"app": app})
+}
+
+// Terminate stops a running app.
+func (d *Device) Terminate(ctx context.Context, app string) error {
+	return d.act(ctx, "app_terminate", map[string]any{"app": app})
+}
+
+// Install adds an app from a local .apk (Android) or .app bundle (iOS), and
+// returns the absolute path that was installed.
+func (d *Device) Install(ctx context.Context, path string) (string, error) {
+	var out struct {
+		Path string `json:"path"`
+	}
+	if err := d.data(ctx, "app_install", map[string]any{"path": path}, &out); err != nil {
+		return "", err
+	}
+	return out.Path, nil
+}
+
+// App is one installed app. Name is empty on Android, where reading a
+// package's label costs a dumpsys per app.
+type App struct {
+	ID      string `json:"id"`
+	Name    string `json:"name,omitempty"`
+	Version string `json:"version,omitempty"`
+	System  bool   `json:"system"`
+}
+
+// Apps lists installed apps. With system false — the usual case — it lists
+// only what someone installed; a stock Android emulator ships about 240
+// system packages.
+func (d *Device) Apps(ctx context.Context, system bool) ([]App, error) {
+	var out struct {
+		Apps []App `json:"apps"`
+	}
+	if err := d.data(ctx, "app_list_apps", map[string]any{"system": system}, &out); err != nil {
+		return nil, err
+	}
+	return out.Apps, nil
+}
+
+// Uninstall removes an app, verified by listing afterwards. `adb uninstall`
+// reports success when it has only removed the updates to a system app, so
+// this returns an error rather than a lie.
+func (d *Device) Uninstall(ctx context.Context, app string) error {
+	return d.act(ctx, "app_uninstall", map[string]any{"app": app})
+}
+
+// PageSource is the raw hierarchy, as the device-side server sent it.
+type PageSource struct {
+	// Source is the platform's XML, or in a WebView the page's markup.
+	Source string `json:"source"`
+	// Format is "xml" or "html".
+	Format string `json:"format"`
+	// Units is "px" on Android and "pt" on iOS, where map, taps and
+	// screenshots are in pixels, Scale times as many. Empty for a page.
+	Units string  `json:"units,omitempty"`
+	Scale float64 `json:"scale,omitempty"`
+	// Redacted is how many password fields had their contents hidden.
+	Redacted int `json:"redacted"`
+}
+
+// Source returns the raw hierarchy — what Appium calls the page source — for
+// when Map leaves out the thing you need to see. Map is what to act on.
+func (d *Device) Source(ctx context.Context) (PageSource, error) {
+	var out PageSource
+	err := d.data(ctx, "app_source", map[string]any{}, &out)
+	return out, err
+}
+
+// DialogRule is a declared answer to a dialog: when one whose text contains
+// When is in an action's way, press the button captioned Press.
+type DialogRule struct {
+	When  string `json:"when"`
+	Press string `json:"press"`
+	Hits  int    `json:"hits"`
+}
+
+// AddDialogRule declares how to answer a dialog, so an action that meets it
+// carries on. It names a button, not accept or dismiss: which button those
+// press differs by platform and by dialog. Captions match ignoring case.
+func (d *Device) AddDialogRule(ctx context.Context, when, press string) error {
+	return d.act(ctx, "app_dialogs", map[string]any{"when": when, "press": press})
+}
+
+// DialogRules lists the declared rules, with how often each has answered.
+func (d *Device) DialogRules(ctx context.Context) ([]DialogRule, error) {
+	var out struct {
+		Rules []DialogRule `json:"rules"`
+	}
+	err := d.data(ctx, "app_dialogs", map[string]any{}, &out)
+	return out.Rules, err
+}
+
+// ClearDialogRules removes every rule for this device.
+func (d *Device) ClearDialogRules(ctx context.Context) error {
+	return d.act(ctx, "app_dialogs", map[string]any{"clear": true})
+}
+
+// ClearedData is what ClearData did: the stores read back empty, what was
+// kept, and on Android the runtime permissions still granted afterwards.
+type ClearedData struct {
+	Emptied      []string `json:"emptied"`
+	Kept         []string `json:"kept,omitempty"`
+	StillGranted []string `json:"still_granted"`
+}
+
+// ClearData deletes an app's data and leaves it installed — the state of a
+// fresh install, without reinstalling. Android's `pm clear` also revokes the
+// runtime permissions the user granted; an iOS simulator keeps its privacy
+// grants and keychain. A real iPhone refuses.
+func (d *Device) ClearData(ctx context.Context, app string) (ClearedData, error) {
+	var out ClearedData
+	err := d.data(ctx, "app_clear_data", map[string]any{"app": app}, &out)
+	return out, err
+}
+
+// OpenURL opens a URL or deep link — the quickest way to a specific screen —
+// and returns the app that ended up in the foreground.
+func (d *Device) OpenURL(ctx context.Context, url string) (string, error) {
+	var out struct {
+		App string `json:"app"`
+	}
+	if err := d.data(ctx, "app_open_url", map[string]any{"url": url}, &out); err != nil {
+		return "", err
+	}
+	return out.App, nil
+}
+
+// -- permissions -----------------------------------------------------------
+
+// Grant allows permissions up front, so no dialog blocks the flow.
+//
+// Names are cross-platform ("camera", "location", "contacts", …); "all"
+// grants everything the app declares, and a platform name such as
+// "android.permission.NFC" also works. On Android the result is verified by
+// reading the state back, because `pm grant` reports success for permissions
+// the app never declared.
+func (d *Device) Grant(ctx context.Context, app string, permissions ...string) error {
+	return d.act(ctx, "app_grant", map[string]any{"app": app, "permissions": permissions})
+}
+
+// Revoke denies permissions, to test how the app behaves without them.
+func (d *Device) Revoke(ctx context.Context, app string, permissions ...string) error {
+	return d.act(ctx, "app_revoke", map[string]any{"app": app, "permissions": permissions})
+}
+
+// ResetPermissions puts permissions back to their defaults, so the app
+// prompts again on next use.
+//
+// iOS can reset one app. Android cannot — `pm reset-permissions` is
+// device-wide — so pass "" there; naming an app returns an error rather than
+// resetting every app on the device.
+func (d *Device) ResetPermissions(ctx context.Context, app string) error {
+	args := map[string]any{}
+	if app != "" {
+		args["app"] = app
+	}
+	return d.act(ctx, "app_reset_permissions", args)
+}
+
+// Appearance reads the light/dark setting, or changes it and returns the new
+// one.
+//
+// mode is "light", "dark", or "auto" (Android only; iOS returns an error).
+// Pass "" to read without changing. Dark mode is a different rendering of
+// every screen, so a flow is worth running in both; changing it discards the
+// refs from the last Map.
+func (d *Device) Appearance(ctx context.Context, mode string) (string, error) {
+	args := map[string]any{}
+	if mode != "" {
+		args["appearance"] = mode
+	}
+	var out struct {
+		Appearance string `json:"appearance"`
+	}
+	if err := d.data(ctx, "app_appearance", args, &out); err != nil {
+		return "", err
+	}
+	return out.Appearance, nil
+}
+
+// Screen is one device's screen, and what is wrong with the layout on it.
+type Screen struct {
+	Width  int `json:"width"`
+	Height int `json:"height"`
+	// DPI is Android's density. Zero on iOS, where bounds are device pixels
+	// and there is no density to read.
+	DPI int `json:"dpi,omitempty"`
+
+	PhysicalWidth  int `json:"physical_width"`
+	PhysicalHeight int `json:"physical_height"`
+	PhysicalDPI    int `json:"physical_dpi,omitempty"`
+
+	// Overridden says the device is pretending, which is a state somebody has
+	// to put back with Screen(ctx, "reset", false).
+	Overridden bool `json:"overridden"`
+	// Applied names what the call did, empty when it only read.
+	Applied string `json:"applied,omitempty"`
+
+	Profiles []string  `json:"profiles"`
+	Findings []Finding `json:"findings,omitempty"`
+	Device   string    `json:"device"`
+}
+
+// Finding is one thing wrong with a layout at one screen size.
+type Finding struct {
+	// Kind is "overflow", "tiny-target", "truncated" or "unlabeled".
+	Kind    string `json:"kind"`
+	Label   string `json:"label"`
+	Detail  string `json:"detail"`
+	Locator string `json:"locator,omitempty"`
+	// Path identifies the element within this snapshot when it gave no
+	// locator. It does not survive a change of screen.
+	Path   string `json:"path,omitempty"`
+	Bounds Bounds `json:"bounds"`
+}
+
+// Screen reads the screen, or makes an Android device pretend to be another.
+//
+// A flow that works on the screen you happen to have is a flow tested once.
+// Pass a profile name to apply it, or "reset" to put the device back — an
+// override outlives this session. Applying one discards the refs from the last
+// map, because nothing is where it was. The answer always lists the profiles
+// this platform knows.
+//
+// On iOS the screen is fixed when the simulator is created, so this reads only
+// and names the simulator to boot instead.
+//
+// With inspect, the answer also carries Findings. Treat a tiny-target finding
+// as worth a look rather than a defect: Android can enlarge a tap area without
+// changing an element's bounds.
+func (d *Device) Screen(ctx context.Context, profile string, inspect bool) (Screen, error) {
+	args := map[string]any{}
+	if profile != "" {
+		args["profile"] = profile
+	}
+	if inspect {
+		args["inspect"] = true
+	}
+	var out Screen
+	if err := d.data(ctx, "app_screen", args, &out); err != nil {
+		return Screen{}, err
+	}
+	return out, nil
+}
+
+// Orientation reports which way the screen is turned and whether that is
+// pinned. A screen that merely happens to be portrait can rotate under you, so
+// the two are separate answers.
+func (d *Device) Orientation(ctx context.Context) (mode string, locked bool, err error) {
+	var out struct {
+		Orientation string `json:"orientation"`
+		Locked      bool   `json:"locked"`
+	}
+	if err := d.data(ctx, "app_orientation", map[string]any{}, &out); err != nil {
+		return "", false, err
+	}
+	return out.Orientation, out.Locked, nil
+}
+
+// SetOrientation turns the screen and pins it there. Pass "auto" to hand it
+// back to the sensor.
+//
+// A rotation re-lays out every screen, so the refs from the last Map are
+// discarded — their bounds describe a layout that no longer exists. An
+// activity that locks its own orientation cannot be turned from outside, and
+// that returns an error rather than reporting success.
+func (d *Device) SetOrientation(ctx context.Context, mode string) error {
+	var out struct{}
+	return d.data(ctx, "app_orientation", map[string]any{"orientation": mode}, &out)
+}
+
+// AppLocale reports the language tags pinned for an app. Empty means it
+// follows the device.
+func (d *Device) AppLocale(ctx context.Context, appID string) ([]string, error) {
+	var out struct {
+		Locales []string `json:"locales"`
+	}
+	if err := d.data(ctx, "app_locale", map[string]any{"app": appID}, &out); err != nil {
+		return nil, err
+	}
+	return out.Locales, nil
+}
+
+// SetAppLocale runs one app in a chosen language. Pass no tags to follow the
+// device again. Android 13 and later.
+//
+// What this confirms is that the device stored the tag, not that the app has a
+// translation for it — Android reports no difference between the two, so check
+// the screen. Relaunch the app for it to re-render.
+func (d *Device) SetAppLocale(ctx context.Context, appID string, tags ...string) error {
+	var out struct{}
+	return d.data(ctx, "app_locale", map[string]any{
+		"app": appID, "locale": strings.Join(tags, ","),
+	}, &out)
+}
+
+// Rotate turns two fingers about an element or the middle of the screen,
+// positive degrees clockwise.
+//
+// Like Zoom it reports that the gesture was delivered and nothing more, and
+// this one is harder still to confirm: nothing in either hierarchy reports a
+// rotation, and there is no WebView property to ask either.
+func (d *Device) Rotate(ctx context.Context, degrees float64, target string) error {
+	args := map[string]any{"degrees": degrees}
+	if target != "" {
+		args["target"] = target
+	}
+	var out struct{}
+	return d.data(ctx, "app_rotate", args, &out)
+}
+
+// Zoom pinches two fingers apart, or together when in is false, about an
+// element or the middle of the screen.
+//
+// It reports that the gesture was delivered and nothing more: neither platform
+// exposes a zoom level in the accessibility hierarchy, so confirming a zoom
+// means asking whatever was zoomed. A WebView can answer with
+// visualViewport.scale through Eval.
+func (d *Device) Zoom(ctx context.Context, in bool, target string) error {
+	args := map[string]any{"direction": "out"}
+	if in {
+		args["direction"] = "in"
+	}
+	if target != "" {
+		args["target"] = target
+	}
+	var out struct{}
+	return d.data(ctx, "app_zoom", args, &out)
+}
+
+// Check puts a checkbox or switch into a state, rather than toggling it.
+//
+// Idempotent: asking for a state it is already in does nothing, which is what
+// makes it safe to call without reading first. Anything with no checked state
+// is refused rather than tapped, and a radio cannot be unchecked — a group is
+// cleared by choosing a different member.
+func (d *Device) Check(ctx context.Context, target string, checked bool) error {
+	var out struct{}
+	return d.data(ctx, "app_check", map[string]any{
+		"target": target, "checked": checked,
+	}, &out)
+}
+
+// Alert reports what a system dialog says, or "" when none is up.
+//
+// A permission prompt is another process's window, not the app's. Reading it
+// needs no knowledge of what the buttons say, which is the point.
+func (d *Device) Alert(ctx context.Context) (string, error) {
+	var out struct {
+		Text string `json:"text"`
+	}
+	if err := d.data(ctx, "app_alert", map[string]any{}, &out); err != nil {
+		return "", err
+	}
+	return out.Text, nil
+}
+
+// AnswerAlert accepts or dismisses a system dialog.
+//
+// These answer a dialog; they do not choose an outcome. On a permission prompt
+// they do not mean grant and deny, and on iOS they are the other way round —
+// accept leaves it denied, dismiss leaves it granted, because W3C accept
+// presses the affirmative button and Apple puts "Don't Allow" last. Tap the
+// button by ref if you need a particular answer.
+func (d *Device) AnswerAlert(ctx context.Context, accept bool) error {
+	action := "dismiss"
+	if accept {
+		action = "accept"
+	}
+	var out struct{}
+	return d.data(ctx, "app_alert", map[string]any{"action": action}, &out)
+}
+
+// Clipboard reads the device clipboard.
+//
+// iOS only. On Android 10 and later only an app with focus may read the
+// clipboard and the UiAutomator2 server has no activity, so it would answer
+// "empty" for a clipboard that is full — this returns an error there rather
+// than that.
+func (d *Device) Clipboard(ctx context.Context) (string, error) {
+	var out struct {
+		Text string `json:"text"`
+	}
+	if err := d.data(ctx, "app_clipboard", map[string]any{}, &out); err != nil {
+		return "", err
+	}
+	return out.Text, nil
+}
+
+// SetClipboard writes the device clipboard. On iOS the write is confirmed by
+// reading it back; on Android it is reported as sent, since nothing there can
+// read it. Paste into a field to check an Android write.
+func (d *Device) SetClipboard(ctx context.Context, text string) error {
+	var out struct{}
+	return d.data(ctx, "app_clipboard", map[string]any{"text": text}, &out)
+}
+
+// Location is where the device believes it is.
+//
+// Mock says the fix was injected; Mocking says a test provider is installed
+// now. They differ after ClearLocation, because Android keeps the last known
+// position after the provider that supplied it is gone.
+type Location struct {
+	Latitude  float64 `json:"latitude"`
+	Longitude float64 `json:"longitude"`
+	Mock      bool    `json:"mock"`
+	Mocking   bool    `json:"mocking"`
+	// Known is false when the platform cannot report a position at all, as on
+	// iOS, which is different from the device having none.
+	Known bool `json:"known"`
+}
+
+// Location reports where the device is. Android only: `simctl location` has no
+// `get`, so on iOS this returns an error saying so rather than a position it
+// never read.
+func (d *Device) Location(ctx context.Context) (Location, error) {
+	var out Location
+	if err := d.data(ctx, "app_location", map[string]any{}, &out); err != nil {
+		return Location{}, err
+	}
+	return out, nil
+}
+
+// SetLocation places the device at a coordinate.
+//
+// On Android this goes through a test provider, is read back, and works on
+// real hardware. On iOS it goes through simctl and cannot be confirmed — the
+// call succeeding means the request was accepted, not that an app will read it.
+func (d *Device) SetLocation(ctx context.Context, lat, lon float64) error {
+	var out struct{}
+	return d.data(ctx, "app_location", map[string]any{
+		"latitude": lat, "longitude": lon,
+	}, &out)
+}
+
+// ClearLocation removes the injected position.
+//
+// It does not clear the device's last known location, which Android caches, so
+// a Location straight afterwards still reports the injected fix with Mocking
+// false.
+func (d *Device) ClearLocation(ctx context.Context) error {
+	var out struct{}
+	return d.data(ctx, "app_location", map[string]any{"clear": true}, &out)
+}
+
+// FollowRoute moves the device along waypoints at speedMPS meters per second.
+// Two or more points; pass 0 for the default speed.
+//
+// On iOS the simulator interpolates the route itself. On Android the daemon
+// steps a test provider once a second, since the platform has no route
+// command — either way this returns as soon as the route starts.
+func (d *Device) FollowRoute(ctx context.Context, points [][2]float64, speedMPS float64) error {
+	wp := make([]any, 0, len(points))
+	for _, p := range points {
+		wp = append(wp, []any{p[0], p[1]})
+	}
+	args := map[string]any{"waypoints": wp}
+	if speedMPS > 0 {
+		args["speed"] = speedMPS
+	}
+	var out struct{}
+	return d.data(ctx, "app_location", args, &out)
+}
+
+// FollowGPX follows a GPX file, reading it on the machine running the daemon.
+func (d *Device) FollowGPX(ctx context.Context, path string, speedMPS float64) error {
+	args := map[string]any{"gpx": path}
+	if speedMPS > 0 {
+		args["speed"] = speedMPS
+	}
+	var out struct{}
+	return d.data(ctx, "app_location", args, &out)
+}
+
+// Press sends a hardware button: "back", "home", "recents", "volume-up" or
+// "volume-down".
+//
+// On Android back is primary navigation. iOS has no back button by design and
+// returns an error saying what to do instead, rather than sending an edge
+// swipe — a different event that an app can tell apart. Any press can move the
+// screen, so the refs from the last Map are discarded.
+func (d *Device) Press(ctx context.Context, button string) error {
+	var out struct{}
+	return d.data(ctx, "app_press", map[string]any{"button": button}, &out)
+}
+
+// ScreenLocked reports whether the screen is locked.
+func (d *Device) ScreenLocked(ctx context.Context) (bool, error) {
+	var out struct {
+		Locked bool `json:"locked"`
+	}
+	if err := d.data(ctx, "app_lock", map[string]any{}, &out); err != nil {
+		return false, err
+	}
+	return out.Locked, nil
+}
+
+// SetScreenLocked locks or unlocks the screen and confirms it.
+//
+// A state rather than a power-button press: power is a toggle, so asking twice
+// leaves the device where it started. A device with a PIN, pattern or password
+// cannot be unlocked from outside and returns an error rather than pretending.
+func (d *Device) SetScreenLocked(ctx context.Context, locked bool) error {
+	state := "unlock"
+	if locked {
+		state = "lock"
+	}
+	var out struct{}
+	return d.data(ctx, "app_lock", map[string]any{"state": state}, &out)
+}
+
+// IncomingCall drives a simulated incoming call: "ring", "accept" or "hang".
+// Emulator only — a real phone cannot be made to ring from outside.
+//
+// Not called Call: that is already the raw tool-call escape hatch below.
+func (d *Device) IncomingCall(ctx context.Context, action, number string) error {
+	args := map[string]any{"action": action}
+	if number != "" {
+		args["number"] = number
+	}
+	var out struct{}
+	return d.data(ctx, "app_call", args, &out)
+}
+
+// SendSMS delivers a simulated text message. Emulator only.
+func (d *Device) SendSMS(ctx context.Context, from, text string) error {
+	args := map[string]any{"text": text}
+	if from != "" {
+		args["from"] = from
+	}
+	var out struct{}
+	return d.data(ctx, "app_sms", args, &out)
+}
+
+// Doctor checks the environment and returns its report.
+//
+// Needs no device: its whole job is to be runnable when nothing works yet, so
+// it is the first thing to call when something fails for a reason that makes
+// no sense.
+func (d *Device) Doctor(ctx context.Context) (string, error) {
+	var out struct {
+		Report string `json:"report"`
+	}
+	if err := d.data(ctx, "app_doctor", map[string]any{}, &out); err != nil {
+		return "", err
+	}
+	return out.Report, nil
+}
+
+// ConsoleEntry is one line a page logged.
+type ConsoleEntry struct {
+	Level string `json:"level"`
+	Text  string `json:"text"`
+	Time  int64  `json:"time"`
+}
+
+// Logs returns what the current WebView has written to its console since the
+// last call, including uncaught errors and unhandled promise rejections.
+// Pass "" for every level.
+//
+// Each read drains what it returns, so it reports what happened since the last
+// call — which is what makes "nothing was logged during this step" assertable.
+// Capture starts when the context is entered, so a page's initial load is
+// already over by then.
+func (d *Device) Logs(ctx context.Context, level string) ([]ConsoleEntry, error) {
+	// Named, because with no source the tool follows the context and would
+	// read the device log on the native shell — entries of another shape.
+	args := map[string]any{"source": "webview"}
+	if level != "" {
+		args["level"] = level
+	}
+	var out struct {
+		Entries []ConsoleEntry `json:"entries"`
+	}
+	if err := d.data(ctx, "app_logs", args, &out); err != nil {
+		return nil, err
+	}
+	return out.Entries, nil
+}
+
+// DeviceLogEntry is one line of the device's own log.
+type DeviceLogEntry struct {
+	Time    string `json:"time"`
+	Level   string `json:"level"`
+	Tag     string `json:"tag,omitempty"`
+	PID     int    `json:"pid,omitempty"`
+	Message string `json:"message"`
+}
+
+// DeviceLogs reads the device's own log — logcat on Android, the unified log
+// on an iOS simulator — since the last read. The first read returns the most
+// recent lines. An empty app reads the whole device; an empty level keeps
+// every level; lines of zero takes the tool's default.
+//
+// skipped counts lines newer than the last read that the limit dropped. They
+// will not come back, so a caller waiting for one line should narrow by app
+// or level rather than read again.
+func (d *Device) DeviceLogs(ctx context.Context, app, level string, lines int) (entries []DeviceLogEntry, skipped int, err error) {
+	args := map[string]any{"source": "device"}
+	if app != "" {
+		args["app"] = app
+	}
+	if level != "" {
+		args["level"] = level
+	}
+	if lines > 0 {
+		args["lines"] = lines
+	}
+	var out struct {
+		Entries []DeviceLogEntry `json:"entries"`
+		Skipped int              `json:"skipped"`
+	}
+	if err := d.data(ctx, "app_logs", args, &out); err != nil {
+		return nil, 0, err
+	}
+	return out.Entries, out.Skipped, nil
+}
+
+// Recording is what app_record reports: whether one is running, and on stop
+// the saved file's frames and duration, read from its own header.
+type Recording struct {
+	Recording bool   `json:"recording"`
+	Path      string `json:"path,omitempty"`
+	Frames    int    `json:"frames,omitempty"`
+	// Duration and Elapsed are nanoseconds.
+	Duration int64 `json:"duration,omitempty"`
+	Elapsed  int64 `json:"elapsed,omitempty"`
+}
+
+// Record starts ("start") or stops ("stop", saving to path) a screen
+// recording, or with an empty action asks whether one is running. A relative
+// path is this process's: `mobium pipe` resolves it before the daemon sees it.
+func (d *Device) Record(ctx context.Context, action, path string) (Recording, error) {
+	args := map[string]any{}
+	if action != "" {
+		args["action"] = action
+	}
+	if path != "" {
+		args["path"] = path
+	}
+	var out Recording
+	err := d.data(ctx, "app_record", args, &out)
+	return out, err
+}
+
+// KeyboardField is the field with keyboard focus. A password's Value is
+// masked, never the password.
+type KeyboardField struct {
+	ID       string `json:"id,omitempty"`
+	Kind     string `json:"kind,omitempty"`
+	Value    string `json:"value"`
+	Password bool   `json:"password,omitempty"`
+	Empty    bool   `json:"empty,omitempty"`
+}
+
+// KeyboardState is the soft keyboard after an app_keyboard call.
+type KeyboardState struct {
+	Shown   bool           `json:"shown"`
+	Focused *KeyboardField `json:"focused,omitempty"`
+	Hidden  bool           `json:"hidden,omitempty"`
+}
+
+// KeyboardOptions says what to do with the keyboard. The zero value reads it.
+type KeyboardOptions struct {
+	// Text is added to the end of the focused field and confirmed. Nil types
+	// nothing; a pointer so "" can be told apart from no text.
+	Text *string
+	// Key is "enter", "delete" or "space", pressed after any text.
+	Key string
+	// Hide hides the keyboard, confirmed. It cannot be combined with Text or Key.
+	Hide bool
+}
+
+// Keyboard reads, types into, presses a key on, or hides the soft keyboard.
+// It fails with ErrNoSuchElement when text is given and nothing has focus.
+func (d *Device) Keyboard(ctx context.Context, opts KeyboardOptions) (KeyboardState, error) {
+	args := map[string]any{}
+	if opts.Text != nil {
+		args["text"] = *opts.Text
+	}
+	if opts.Key != "" {
+		args["key"] = opts.Key
+	}
+	if opts.Hide {
+		args["hide"] = true
+	}
+	var out KeyboardState
+	err := d.data(ctx, "app_keyboard", args, &out)
+	return out, err
+}
+
+// CrashReport is one crash the device recorded.
+type CrashReport struct {
+	ID      string `json:"id"`
+	Time    string `json:"time"`
+	Kind    string `json:"kind"`
+	App     string `json:"app,omitempty"`
+	Summary string `json:"summary,omitempty"`
+	// Text is the whole report, filled only by Crash.
+	Text string `json:"text,omitempty"`
+}
+
+// Crashes lists the crashes the device recorded, newest first. An empty app
+// lists every process's; limit of zero takes the tool's default.
+func (d *Device) Crashes(ctx context.Context, app string, limit int) ([]CrashReport, error) {
+	args := map[string]any{}
+	if app != "" {
+		args["app"] = app
+	}
+	if limit > 0 {
+		args["limit"] = limit
+	}
+	var out struct {
+		Crashes []CrashReport `json:"crashes"`
+	}
+	if err := d.data(ctx, "app_crashes", args, &out); err != nil {
+		return nil, err
+	}
+	return out.Crashes, nil
+}
+
+// Crash reads one crash report in full, by an id from Crashes.
+func (d *Device) Crash(ctx context.Context, id string) (CrashReport, error) {
+	var out struct {
+		Crashes []CrashReport `json:"crashes"`
+	}
+	if err := d.data(ctx, "app_crashes", map[string]any{"id": id}, &out); err != nil {
+		return CrashReport{}, err
+	}
+	if len(out.Crashes) == 0 {
+		return CrashReport{}, &Error{Tool: "app_crashes", Code: CodeInternal, Reason: "answered an id with no report"}
+	}
+	return out.Crashes[0], nil
+}
+
+// Eval runs a JavaScript expression in the current WebView and returns its
+// value as a string. Objects come back as JSON.
+func (d *Device) Eval(ctx context.Context, expression string) (string, error) {
+	var out struct {
+		Value string `json:"value"`
+	}
+	if err := d.data(ctx, "app_eval", map[string]any{"expression": expression}, &out); err != nil {
+		return "", err
+	}
+	return out.Value, nil
+}
+
+// Notification is one entry in the shade.
+type Notification struct {
+	Package string `json:"package"`
+	Title   string `json:"title,omitempty"`
+	Text    string `json:"text,omitempty"`
+	Tag     string `json:"tag,omitempty"`
+}
+
+// Notifications lists what is in the shade — how a test asserts an app posted
+// what it should.
+func (d *Device) Notifications(ctx context.Context) ([]Notification, error) {
+	var out struct {
+		Notifications []Notification `json:"notifications"`
+	}
+	if err := d.data(ctx, "app_notifications", map[string]any{}, &out); err != nil {
+		return nil, err
+	}
+	return out.Notifications, nil
+}
+
+// PostNotification puts a notification in the shade as an interruption, and
+// confirms it arrived by reading the shade back.
+func (d *Device) PostNotification(ctx context.Context, title, text string) error {
+	args := map[string]any{"text": text}
+	if title != "" {
+		args["title"] = title
+	}
+	var out struct{}
+	return d.data(ctx, "app_notifications", args, &out)
+}
+
+// SetShade opens or closes the notification panel. A notification cannot be
+// tapped until the shade is open: until then it is not on screen and Map
+// cannot see it. Opening it discards the refs from the last Map.
+func (d *Device) SetShade(ctx context.Context, open bool) error {
+	state := "close"
+	if open {
+		state = "open"
+	}
+	var out struct{}
+	return d.data(ctx, "app_notifications", map[string]any{"shade": state}, &out)
+}
+
+// Timezone reports the device timezone.
+func (d *Device) Timezone(ctx context.Context) (string, error) {
+	var out struct {
+		Timezone string `json:"timezone"`
+	}
+	if err := d.data(ctx, "app_timezone", map[string]any{}, &out); err != nil {
+		return "", err
+	}
+	return out.Timezone, nil
+}
+
+// SetTimezone changes the device timezone, confirmed by reading it back. Takes
+// an IANA name such as "Asia/Tokyo"; an unknown one is accepted by the device
+// and ignored, which the check catches. Works on real hardware.
+func (d *Device) SetTimezone(ctx context.Context, tz string) error {
+	var out struct{}
+	return d.data(ctx, "app_timezone", map[string]any{"timezone": tz}, &out)
+}
+
+// -- contexts --------------------------------------------------------------
+
+// Contexts lists the automatable contexts: the native shell plus any WebViews.
+func (d *Device) Contexts(ctx context.Context) ([]string, error) {
+	var out struct {
+		Contexts []struct {
+			ID string `json:"id"`
+		} `json:"contexts"`
+	}
+	if err := d.data(ctx, "app_contexts", nil, &out); err != nil {
+		return nil, err
+	}
+	names := make([]string, 0, len(out.Contexts))
+	for _, c := range out.Contexts {
+		names = append(names, c.ID)
+	}
+	return names, nil
+}
+
+// Context switches context, or reads the current one when name is "".
+func (d *Device) Context(ctx context.Context, name string) (string, error) {
+	args := map[string]any{}
+	if name != "" {
+		args["context"] = name
+	}
+	res, err := d.conn.call(ctx, "app_context", args)
+	if err != nil {
+		return "", err
+	}
+	return res.text(), nil
+}
+
+// -- plumbing --------------------------------------------------------------
+
+// Call runs any tool by name, for anything this package does not wrap yet.
+// The tool's structured answer is decoded into out, which may be nil.
+func (d *Device) Call(ctx context.Context, tool string, args map[string]any, out any) error {
+	return d.data(ctx, tool, args, out)
+}
+
+func (d *Device) act(ctx context.Context, tool string, args map[string]any) error {
+	_, err := d.conn.call(ctx, tool, args)
+	return err
+}
+
+func (d *Device) data(ctx context.Context, tool string, args map[string]any, out any) error {
+	res, err := d.conn.call(ctx, tool, args)
+	if err != nil {
+		return err
+	}
+	if out == nil {
+		return nil
+	}
+	return res.into(out)
+}
+
+func (d *Device) elements(ctx context.Context, tool string, args map[string]any) ([]Element, error) {
+	var out struct {
+		Elements []Element `json:"elements"`
+	}
+	if err := d.data(ctx, tool, args, &out); err != nil {
+		return nil, err
+	}
+	return out.Elements, nil
+}
+
+// element reads a tool that answers with a single element, which may legally
+// be absent — a wait for something to disappear has nothing to return.
+func (d *Device) element(ctx context.Context, tool string, args map[string]any) (*Element, error) {
+	var out struct {
+		Element *Element `json:"element"`
+	}
+	if err := d.data(ctx, tool, args, &out); err != nil {
+		return nil, err
+	}
+	return out.Element, nil
+}
+
+// image lifts the PNG out of a screenshot result.
+func (r *toolResult) image() ([]byte, error) {
+	for _, c := range r.Content {
+		if c.Type == "image" {
+			data, err := base64.StdEncoding.DecodeString(c.Data)
+			if err != nil {
+				return nil, fmt.Errorf("mobium returned an unreadable image: %w", err)
+			}
+			return data, nil
+		}
+	}
+	return nil, errors.New("mobium returned no image")
+}

@@ -1,0 +1,118 @@
+Drop box contents: 196 entries
+Max entries: 1000
+Low priority rate limit period: 2000 ms
+Low priority tags: {data_app_wtf, keymaster, system_server_wtf, system_app_strictmode, system_app_wtf, system_server_strictmode, data_app_strictmode, netstats}
+Searching for: data_app_crash
+
+========================================
+2026-09-22 11:23:32 data_app_crash (text, 1269 bytes)
+/data/system/dropbox/data_app_crash@1790101412202.txt
+SystemUptimeMs: 3686105
+Process: io.appium.uiautomator2.server
+PID: 10084
+UID: 10213
+Frozen: false
+Flags: 0x2088be46
+Package: io.appium.uiautomator2.server v278 (10.6.6)
+Foreground: No
+Process-Runtime: 32393
+Timestamp: 2026-09-22 11:23:32.161-0700
+Build: google/sdk_gphone64_arm64/emu64a:15/AE3A.240806.043/12960925:userdebug/dev-keys
+Crash-Handler: com.android.internal.os.RuntimeInit$KillApplicationHandler
+Loading-Progress: 1.0
+Dropped-Count: 0
+
+java.lang.RuntimeException: Error while disconnecting UiAutomation@841c550[id=-1, displayId=0, flags=0]
+	at android.app.UiAutomation.disconnect(UiAutomation.java:455)
+	at android.app.Instrumentation.finish(Instrumentation.java:285)
+	at androidx.test.runner.MonitoringInstrumentation.finish(MonitoringInstrumentation.java:409)
+	at androidx.test.runner.AndroidJUnitRunner.onStart(AndroidJUnitRunner.java:476)
+	at android.app.Instrumentation$InstrumentationThread.run(Instrumentation.java:2594)
+Caused by: android.os.DeadObjectException
+	at android.os.BinderProxy.transactNative(Native Method)
+	at android.os.BinderProxy.transact(BinderProxy.java:586)
+	at android.app.IUiAutomationConnection$Stub$Proxy.disconnect(IUiAutomationConnection.java:540)
+	at android.app.UiAutomation.disconnect(UiAutomation.java:453)
+	... 4 more
+
+========================================
+2026-09-25 10:36:13 system_app_crash (text, 1157 bytes)
+/data/system/dropbox/system_app_crash@1790357773461.txt
+SystemUptimeMs: 36006
+Process: com.android.settings
+PID: 980
+UID: 1000
+Frozen: false
+Flags: 0x38cbbe45
+Package: com.android.settings v35 (15)
+Foreground: Yes
+Process-Runtime: 27504
+Timestamp: 2026-09-25 10:36:13.458-0700
+Build: google/sdk_gphone64_arm64/emu64a:15/AE3A.240806.043/12960925:userdebug/dev-keys
+Crash-Handler: com.android.internal.os.RuntimeInit$KillApplicationHandler
+Loading-Progress: 1.0
+Dropped-Count: 0
+
+android.app.RemoteServiceException$CrashedByAdbException: shell-induced crash
+	at android.app.ActivityThread.throwRemoteServiceException(ActivityThread.java:2257)
+	at android.app.ActivityThread.-$$Nest$mthrowRemoteServiceException(Unknown Source:0)
+	at android.app.ActivityThread$H.handleMessage(ActivityThread.java:2557)
+	at android.os.Handler.dispatchMessage(Handler.java:107)
+	at android.os.Looper.loopOnce(Looper.java:232)
+	at android.os.Looper.loop(Looper.java:317)
+	at android.app.ActivityThread.main(ActivityThread.java:8705)
+	at java.lang.reflect.Method.invoke(Native Method)
+	at com.android.internal.os.RuntimeInit$MethodAndArgsCaller.run(RuntimeInit.java:580)
+	at com.android.internal.os.ZygoteInit.main(ZygoteInit.java:886)
+
+Drop box contents: 196 entries
+Max entries: 1000
+Low priority rate limit period: 2000 ms
+Low priority tags: {data_app_wtf, keymaster, system_server_wtf, system_app_strictmode, system_app_wtf, system_server_strictmode, data_app_strictmode, netstats}
+Searching for: system_app_native_crash
+
+Drop box contents: 196 entries
+Searching for: data_app_anr
+
+(No entries found.)
+========================================
+2026-09-22 11:32:22 system_app_native_crash (text, 5421 bytes)
+/data/system/dropbox/system_app_native_crash@1790101942587.txt
+SystemUptimeMs: 4216530
+Process: com.google.android.bluetooth
+PID: 8673
+UID: 1002
+Frozen: false
+Flags: 0x20c8be45
+Package: com.google.android.bluetooth v34 (15)
+Foreground: No
+Process-Runtime: 1017271
+Build: google/sdk_gphone64_arm64/emu64a:15/AE3A.240806.043/12960925:userdebug/dev-keys
+Loading-Progress: 1.0
+Dropped-Count: 0
+
+*** *** *** *** *** *** *** *** *** *** *** *** *** *** *** ***
+Build fingerprint: 'google/sdk_gphone64_arm64/emu64a:15/AE3A.240806.043/12960925:userdebug/dev-keys'
+Revision: '0'
+ABI: 'arm64'
+Timestamp: 2026-09-22 11:32:22.477759983-0700
+Process uptime: 0s
+Cmdline: com.google.android.bluetooth
+pid: 8673, tid: 8698, name: bt_stack_manage  >>> com.google.android.bluetooth <<<
+uid: 1002
+tagged_addr_ctrl: 0000000000000001 (PR_TAGGED_ADDR_ENABLE)
+pac_enabled_keys: 000000000000000f (PR_PAC_APIAKEY, PR_PAC_APIBKEY, PR_PAC_APDAKEY, PR_PAC_APDBKEY)
+signal 6 (SIGABRT), code -1 (SI_QUEUE), fault addr --------
+Abort message: 'system/gd/hci/hci_layer.cc:478 on_hardware_error: Hardware Error Event with code 0x42'
+    x0  0000000000000000  x1  00000000000021fa  x2  0000000000000006  x3  000000777ece4660
+    x4  6e1f373633396262  x5  6e1f373633396262  x6  6e1f373633396262  x7  7f7f7f7f7f7f7f7f
+    x8  00000000000000f0  x9  0000007a798a4468  x10 ffffff80fffffb9f  x11 0000000000000000
+    x12 000000777ece3570  x13 0000000000000056  x14 000000777ece47b8  x15 00000ef547f69f6e
+    x16 0000007a79953ff8  x17 0000007a7993e1c0  x18 0000007714704048  x19 00000000000021e1
+    x20 00000000000021fa  x21 00000000ffffffff  x22 00000077b840e180  x23 0000000000000027
+    x24 000000771cc6c0f5  x25 000000777ece4c20  x26 000000777ece47b8  x27 000000777ece5a80
+    x28 000000771d763d40  x29 000000777ece46e0
+    lr  0000007a798dc6a4  sp  000000777ece4640  pc  0000007a798dc6d4  pst 0000000000000000
+14 total frames
+backtrace:
+      #00 pc 000000000005b6d4  /apex/com.android.runtime/lib64/bionic/libc.so (abort+168) (BuildId: 1b9fecf834d610f77e641f026ca7269b)

@@ -1,0 +1,10 @@
+{
+  "name": "mobium",
+  "version": "0.1.0",
+  "description": "Native mobile app automation on virtual devices",
+  "type": "module",
+  "main": "index.js",
+  "exports": { ".": "./index.js" },
+  "license": "MIT",
+  "engines": { "node": ">=18" }
+}

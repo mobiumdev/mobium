@@ -1,0 +1,802 @@
+using System;
+using System.Collections.Generic;
+using System.IO;
+
+namespace Mobium
+{
+    /// <summary>
+    /// Drives native apps on Android emulators, Android phones and iOS
+    /// simulators.
+    /// </summary>
+    /// <remarks>
+    /// <para>Speaks to the same tool layer the CLI and the MCP server use,
+    /// over <c>mobium pipe</c>, so a .NET program and a command cannot drift
+    /// apart. The <c>mobium</c> binary has to be on <c>PATH</c>, or named by
+    /// <c>MOBIUM_BIN_PATH</c>.</para>
+    /// <para>Refs like <c>@e1</c> are valid only for the screen they came
+    /// from. Every action re-resolves its target immediately before acting,
+    /// retries briefly while the screen settles, and scrolls to it if it is
+    /// below the fold — so a tap can follow another tap without a sleep in
+    /// between.</para>
+    /// <para>Not thread-safe: there is one pipe underneath, and one device.</para>
+    /// </remarks>
+    /// <example>
+    /// <code>
+    /// using var device = Device.Connect();
+    /// device.Launch("com.example.shop");
+    /// var signIn = device.WaitFor("text=Sign in");
+    /// device.Tap(signIn.Ref);
+    /// </code>
+    /// </example>
+    public sealed class Device : IDisposable
+    {
+        private readonly Connection _conn;
+
+        internal Device(Connection conn) { _conn = conn; }
+
+        // -- connecting -----------------------------------------------------
+
+        /// <summary>Starts a session against whichever device is running.</summary>
+        public static Device Connect() => Builder().Connect();
+
+        /// <summary>Configures a session.</summary>
+        public static DeviceBuilder Builder() => new DeviceBuilder();
+
+        // -- reading --------------------------------------------------------
+
+        /// <summary>Every attached device and simulator.</summary>
+        public IList<DeviceInfo> Devices()
+        {
+            var list = new List<DeviceInfo>();
+            foreach (var o in Field("app_devices", null, "devices"))
+                list.Add(DeviceInfo.From(Json.AsObject(o)));
+            return list;
+        }
+
+        /// <summary>
+        /// The actionable elements on the current screen. Refs are valid only
+        /// for this screen — call it again after anything that changes the
+        /// screen, or just act, since actions re-resolve their target anyway.
+        /// </summary>
+        public IList<Element> Map() => Elements("app_map", null);
+
+        /// <summary>The elements matching a locator, without acting on them.</summary>
+        public IList<Element> Find(string locator) =>
+            Elements("app_find", Args("locator", locator));
+
+        /// <summary>
+        /// The raw hierarchy — what Appium calls the page source — for when
+        /// <see cref="Map"/> leaves out the thing you need to see; map is what
+        /// to act on. <c>source</c> is the platform's XML, or in a WebView the
+        /// page's markup; <c>units</c> is "px" on Android and "pt" on iOS, where
+        /// map, taps and screenshots are in pixels, <c>scale</c> times as many.
+        /// <c>redacted</c> counts the password fields hidden.
+        /// </summary>
+        public IDictionary<string, object> Source() => Data("app_source", Args());
+
+        /// <summary>
+        /// Declares how to answer a dialog, so an action that meets it carries
+        /// on: when a dialog whose text contains <paramref name="when"/> is in
+        /// the way, press the button captioned <paramref name="press"/>. It names
+        /// a button, not accept or dismiss, because which button those press
+        /// differs by platform and by dialog. Captions match ignoring case.
+        /// </summary>
+        public void AddDialogRule(string when, string press) =>
+            Act("app_dialogs", Args("when", when, "press", press));
+
+        /// <summary>The declared rules, each with how often it has answered.</summary>
+        public IList<IDictionary<string, object>> DialogRules() =>
+            Maps(Field("app_dialogs", Args(), "rules"));
+
+        /// <summary>Removes every rule for this device.</summary>
+        public void ClearDialogRules() => Act("app_dialogs", Args("clear", true));
+
+        /// <summary>Everything readable on screen.</summary>
+        public string Text() => Prose("app_text", Args());
+
+        /// <summary>The text of one element, by ref or locator.</summary>
+        public string Text(string target) => Prose("app_text", Args("target", target));
+
+        /// <summary>
+        /// The package name or bundle id of the foreground app. Costs no extra
+        /// device call: it reads the hierarchy a snapshot fetches anyway.
+        /// </summary>
+        public string Current() => Json.Str(Data("app_current", null), "app");
+
+        /// <summary>Captures the screen as PNG.</summary>
+        public byte[] Screenshot()
+        {
+            var result = _conn.Call("app_screenshot", Args());
+            result.TryGetValue("content", out var content);
+            foreach (var block in Json.AsArray(content))
+            {
+                var c = Json.AsObject(block);
+                if (Json.Str(c, "type") == "image") return Convert.FromBase64String(Json.Str(c, "data"));
+            }
+            throw new MobiumException("mobium returned no image");
+        }
+
+        /// <summary>Captures the screen as PNG and writes it to a file.</summary>
+        public byte[] Screenshot(string path)
+        {
+            Act("app_screenshot", Args("path", path));
+            try
+            {
+                return File.ReadAllBytes(path);
+            }
+            catch (IOException e)
+            {
+                throw new MobiumException("could not read back " + path, e);
+            }
+        }
+
+        // -- waiting and scrolling ------------------------------------------
+
+        /// <summary>Waits for an element to be on screen, for up to ten seconds.</summary>
+        public Element WaitFor(string target) => WaitFor(target, Until.Visible());
+
+        /// <summary>
+        /// Blocks until the screen agrees, instead of sleeping. On success the
+        /// screen is remapped, so the element returned already has a ref that
+        /// can be tapped. Waiting for something to go away returns
+        /// <c>null</c>: there is nothing left to point at.
+        /// </summary>
+        public Element WaitFor(string target, Until condition) =>
+            One("app_wait_for", condition.Args(target));
+
+        /// <summary>Scrolls down until an element is on screen and returns it with a ref.</summary>
+        public Element ScrollTo(string target) => ScrollTo(target, "down");
+
+        /// <summary>
+        /// Scrolls <c>"down"</c> or <c>"up"</c> until an element is on screen.
+        /// Vertical lists only: use <see cref="Swipe(string)"/> for a
+        /// horizontal pager.
+        /// </summary>
+        public Element ScrollTo(string target, string direction) =>
+            One("app_scroll_to", Args("target", target, "direction", direction));
+
+        // -- acting ----------------------------------------------------------
+
+        /// <summary>Taps a ref (<c>"@e5"</c>) or a locator (<c>"text=Sign In"</c>).</summary>
+        public void Tap(string target) => Act("app_tap", Args("target", target));
+
+        /// <summary>Taps a point in device pixels.</summary>
+        public void Tap(int x, int y) => Act("app_tap", Args("x", x, "y", y));
+
+        /// <summary>
+        /// Taps twice, as one gesture rather than as two taps. The same tool
+        /// as <see cref="Tap(string)"/> with one argument set, so the target
+        /// is resolved the same way and refused the same way when the screen
+        /// has moved. The uiautomator dump backend refuses it: the window is
+        /// 40-300ms and nothing there controls the interval between two adb
+        /// calls.
+        /// </summary>
+        public void DoubleTap(string target) =>
+            Act("app_tap", Args("target", target, "double", true));
+
+        /// <summary>Double-taps a point in device pixels.</summary>
+        public void DoubleTap(int x, int y) =>
+            Act("app_tap", Args("x", x, "y", y, "double", true));
+
+        /// <summary>
+        /// Picks one element up, carries it onto another, and drops it. Not a
+        /// swipe with two targets: a swipe has no hold at either end, so
+        /// pointed at a reorderable row it scrolls the list instead of moving
+        /// the row. Both ends are resolved from one snapshot before anything
+        /// is touched. Reports that the gesture was delivered; whether the
+        /// drop was accepted is the app's own state, so call Map again.
+        /// </summary>
+        public void Drag(string from, string to) =>
+            Act("app_drag", Args("from", from, "to", to));
+
+        /// <summary>
+        /// Drags with the hold at each end spelled out, in milliseconds.
+        /// Raise it first when a drag picks nothing up: the default is 700,
+        /// above Android's 500ms long-press timeout, and some lists arm
+        /// slower than that.
+        /// </summary>
+        public void Drag(string from, string to, int holdMillis) =>
+            Act("app_drag", Args("from", from, "to", to, "hold_ms", holdMillis));
+
+        /// <summary>
+        /// Taps an element with several fingers at once, side by side — a
+        /// two-finger tap with 2, three with 3 (up to 5). On iOS three fingers
+        /// can reach the system instead of the app: three-finger gestures are
+        /// undo, redo, copy and paste there.
+        /// </summary>
+        public void TapFingers(string target, int fingers) =>
+            Act("app_tap", Args("target", target, "fingers", fingers));
+
+        /// <summary>
+        /// Holds one element with a finger while a second finger taps another;
+        /// the first lifts only after the second. Both are resolved before
+        /// anything is touched. Reports that the gesture was delivered; call
+        /// Map again to see what it did. Android 15 and earlier only: on iOS
+        /// XCTest adds a zero-length touch at the second finger's target when
+        /// the gesture starts, and on Android 16 and later UiAutomator2's down
+        /// times are rejected, so both refuse with UnsupportedException.
+        /// </summary>
+        public void PressTap(string hold, string tap) =>
+            Act("app_press_tap", Args("hold", hold, "tap", tap));
+
+        /// <summary>
+        /// Holds one element with a finger while a second finger drags from
+        /// one element to another. Not <see cref="Drag(string, string)"/>,
+        /// which is one finger carrying something: here one finger anchors and
+        /// the other moves. Android 15 and earlier only, for PressTap's reasons.
+        /// </summary>
+        public void PressDrag(string hold, string from, string to) =>
+            Act("app_press_drag", Args("hold", hold, "from", from, "to", to));
+
+        /// <summary>Types into an element. Pass <c>""</c> to clear it.</summary>
+        public void Type(string target, string text) =>
+            Act("app_type", Args("target", target, "text", text));
+
+        /// <summary>Clears an element and types into it.</summary>
+        public void Replace(string target, string text) =>
+            Act("app_type", Args("target", target, "text", text, "clear", true));
+
+        /// <summary>
+        /// Drags across the middle of the screen: <c>"up"</c>, <c>"down"</c>,
+        /// <c>"left"</c> or <c>"right"</c>. The finger moves that way, so
+        /// <c>"up"</c> scrolls a page down.
+        /// </summary>
+        public void Swipe(string direction) => Act("app_swipe", Args("direction", direction));
+
+        /// <summary>Drags between two points in device pixels.</summary>
+        public void Swipe(int x1, int y1, int x2, int y2) =>
+            Act("app_swipe", Args("x1", x1, "y1", y1, "x2", x2, "y2", y2));
+
+        /// <summary>Presses and holds an element.</summary>
+        public void LongPress(string target) => Act("app_long_press", Args("target", target));
+
+        /// <summary>Presses and holds an element for a given time.</summary>
+        public void LongPress(string target, TimeSpan duration) =>
+            Act("app_long_press", Args("target", target, "duration_ms", (long)duration.TotalMilliseconds));
+
+        // -- app lifecycle ---------------------------------------------------
+
+        /// <summary>
+        /// Brings an app to the foreground by package name or bundle id, and
+        /// waits for it to actually be in front. Discards every ref from the
+        /// previous screen.
+        /// </summary>
+        public void Launch(string app) => Act("app_launch", Args("app", app));
+
+        /// <summary>Stops a running app.</summary>
+        public void Terminate(string app) => Act("app_terminate", Args("app", app));
+
+        /// <summary>Installs a local .apk or .app, returning the absolute path installed.</summary>
+        public string Install(string path) =>
+            Json.Str(Data("app_install", Args("path", path)), "path");
+
+        /// <summary>
+        /// Removes an app, verified by listing afterwards — <c>adb uninstall</c>
+        /// reports success when it has only removed the updates to a system app.
+        /// </summary>
+        public void Uninstall(string app) => Act("app_uninstall", Args("app", app));
+
+        /// <summary>
+        /// Deletes an app's data and leaves it installed — a fresh install's
+        /// state, without reinstalling. The answer holds <c>emptied</c>,
+        /// <c>kept</c> and, on Android, <c>still_granted</c>: <c>pm clear</c>
+        /// revokes the runtime permissions the user granted. An iOS simulator
+        /// keeps its privacy grants and keychain; a real iPhone refuses.
+        /// </summary>
+        public IDictionary<string, object> ClearData(string app) =>
+            Data("app_clear_data", Args("app", app));
+
+        /// <summary>
+        /// Opens a URL or deep link — the quickest way to a specific screen —
+        /// and returns the app that ended up in the foreground.
+        /// </summary>
+        public string OpenUrl(string url) =>
+            Json.Str(Data("app_open_url", Args("url", url)), "app");
+
+        /// <summary>Apps someone installed. A stock emulator ships about 240 system ones.</summary>
+        public IList<App> Apps() => Apps(false);
+
+        /// <summary>Installed apps, optionally including the platform's own.</summary>
+        public IList<App> Apps(bool includeSystem)
+        {
+            var list = new List<App>();
+            foreach (var o in Field("app_list_apps", Args("system", includeSystem), "apps"))
+                list.Add(App.From(Json.AsObject(o)));
+            return list;
+        }
+
+        // -- device state ----------------------------------------------------
+
+        /// <summary>
+        /// Grants permissions up front, so no dialog blocks the flow. Names are
+        /// cross-platform (<c>"camera"</c>, <c>"location"</c>, …);
+        /// <c>"all"</c> grants everything the app declares. On Android the
+        /// result is verified by reading the state back, because
+        /// <c>pm grant</c> reports success for permissions the app never
+        /// declared.
+        /// </summary>
+        public void Grant(string app, params string[] permissions) =>
+            Act("app_grant", Args("app", app, "permissions", permissions));
+
+        /// <summary>Denies permissions, to test how the app behaves without them.</summary>
+        public void Revoke(string app, params string[] permissions) =>
+            Act("app_revoke", Args("app", app, "permissions", permissions));
+
+        /// <summary>
+        /// Puts permissions back to their defaults. iOS can reset one app;
+        /// Android cannot — <c>pm reset-permissions</c> is device-wide — so
+        /// pass <c>null</c> there rather than an app.
+        /// </summary>
+        public void ResetPermissions(string app) =>
+            Act("app_reset_permissions", app == null ? Args() : Args("app", app));
+
+        /// <summary>The device's light/dark setting.</summary>
+        public string Appearance() => Json.Str(Data("app_appearance", null), "appearance");
+
+        /// <summary>
+        /// Changes the light/dark setting and returns the new one.
+        /// <c>"light"</c>, <c>"dark"</c>, or <c>"auto"</c> on Android only.
+        /// Discards the refs from the last map.
+        /// </summary>
+        public string Appearance(string mode) =>
+            Json.Str(Data("app_appearance", Args("appearance", mode)), "appearance");
+
+        /// <summary>
+        /// Which way the screen is turned. A screen that merely happens to be
+        /// portrait can rotate under you, so <see cref="OrientationLocked"/>
+        /// is a separate question.
+        /// </summary>
+        public string Orientation() => Json.Str(Data("app_orientation", null), "orientation");
+
+        /// <summary>Whether the orientation is pinned rather than following the sensor.</summary>
+        public bool OrientationLocked() => Json.Bool(Data("app_orientation", null), "locked");
+
+        /// <summary>
+        /// Turns the screen and pins it there; <c>"auto"</c> hands it back to
+        /// the sensor. <c>"portrait"</c>, <c>"landscape"</c>,
+        /// <c>"portrait-reverse"</c> or <c>"landscape-reverse"</c> — not
+        /// left/right, which the two platforms name differently. Discards the
+        /// refs from the last map, since bounds do not survive a rotation.
+        /// </summary>
+        public string Orientation(string mode) =>
+            Json.Str(Data("app_orientation", Args("orientation", mode)), "orientation");
+
+        /// <summary>
+        /// Reads the screen, or makes an Android device pretend to be another.
+        /// </summary>
+        /// <remarks>
+        /// <para>A flow that works on the screen you happen to have is a flow
+        /// tested once. Pass a profile name to apply it, or <c>"reset"</c> to
+        /// put the device back — an override outlives this session. Applying
+        /// one discards the refs from the last map, because nothing is where
+        /// it was.</para>
+        /// <para>On iOS the screen is fixed when the simulator is created, so
+        /// this reads only and names the simulator to boot instead.</para>
+        /// <para>With <paramref name="inspect"/> the answer carries
+        /// <c>findings</c>: elements past the edge, touch targets below the
+        /// platform minimum, text the platform truncated, and tappable
+        /// elements with nothing to announce. Treat a touch-target finding as
+        /// worth a look rather than a defect — Android can enlarge a tap area
+        /// without changing an element's bounds.</para>
+        /// </remarks>
+        public IDictionary<string, object> Screen(string profile = "", bool inspect = false)
+        {
+            var args = Args();
+            if (!string.IsNullOrWhiteSpace(profile)) args["profile"] = profile;
+            if (inspect) args["inspect"] = true;
+            return Data("app_screen", args);
+        }
+
+        /// <summary>
+        /// Turns two fingers about an element or the screen, positive
+        /// clockwise. Reports that the gesture was delivered and nothing more,
+        /// and this one is harder still to confirm than a zoom: nothing in
+        /// either hierarchy reports a rotation, and there is no WebView
+        /// property to ask either.
+        /// </summary>
+        public void Rotate(double degrees = 90, string target = null)
+        {
+            var args = Args("degrees", degrees);
+            if (!string.IsNullOrEmpty(target)) args["target"] = target;
+            Act("app_rotate", args);
+        }
+
+        /// <summary>
+        /// Pinches apart or together, about an element or the screen. Reports
+        /// that the gesture was delivered and nothing more: neither platform
+        /// exposes a zoom level in the accessibility hierarchy, so confirming a
+        /// zoom means asking whatever was zoomed — a WebView can answer with
+        /// <c>visualViewport.scale</c> through <see cref="Eval"/>.
+        /// </summary>
+        public void Zoom(string direction = "in", string target = null)
+        {
+            var args = Args("direction", direction);
+            if (!string.IsNullOrEmpty(target)) args["target"] = target;
+            Act("app_zoom", args);
+        }
+
+        /// <summary>
+        /// Puts a checkbox or switch into a state, rather than toggling it.
+        /// Idempotent: asking for a state it is already in does nothing, which
+        /// is what makes it safe to call without reading first. Anything with
+        /// no checked state is refused rather than tapped, and a radio cannot
+        /// be unchecked — a group is cleared by choosing a different member.
+        /// </summary>
+        public void Check(string target, bool checkedState = true) =>
+            Act("app_check", Args("target", target, "checked", checkedState));
+
+        /// <summary>
+        /// What a system dialog says, or an empty string when none is up. A
+        /// permission prompt is another process's window, not the app's, and
+        /// reading it needs no knowledge of what the buttons say.
+        /// </summary>
+        public string Alert() => Json.Str(Data("app_alert", Args()), "text");
+
+        /// <summary>
+        /// Accepts or dismisses a system dialog. These answer a dialog; they
+        /// do not choose an outcome. On a permission prompt they do not mean
+        /// grant and deny, and on iOS they are the other way round — accept
+        /// leaves it denied and dismiss leaves it granted, because W3C accept
+        /// presses the affirmative button and Apple puts "Don't Allow" last.
+        /// Tap the button by ref for a particular answer.
+        /// </summary>
+        public void AnswerAlert(bool accept) =>
+            Act("app_alert", Args("action", accept ? "accept" : "dismiss"));
+
+        /// <summary>
+        /// What the device clipboard holds. iOS only: on Android 10 and later
+        /// only an app with focus may read the clipboard and the UiAutomator2
+        /// server has no activity, so it would answer "empty" for a clipboard
+        /// that is full — this throws there instead.
+        /// </summary>
+        public string Clipboard() => Json.Str(Data("app_clipboard", Args()), "text");
+
+        /// <summary>
+        /// Writes the device clipboard. On iOS the write is confirmed by
+        /// reading it back; on Android it is reported as sent.
+        /// </summary>
+        public void SetClipboard(string text) => Act("app_clipboard", Args("text", text));
+
+        /// <summary>
+        /// Where the device believes it is. <c>Mock</c> says this fix was
+        /// injected; <c>Mocking</c> says a test provider is installed now.
+        /// They differ after <see cref="ClearLocation"/>, because Android keeps
+        /// the last known position after the provider supplying it is gone.
+        /// Android only: <c>simctl location</c> has no <c>get</c>, so on iOS
+        /// this throws rather than returning a position it never read.
+        /// </summary>
+        public Location Location()
+        {
+            var d = Data("app_location", Args());
+            return new Location(
+                Json.Number(d, "latitude"), Json.Number(d, "longitude"),
+                Json.Bool(d, "mock"), Json.Bool(d, "mocking"), Json.Bool(d, "known"));
+        }
+
+        /// <summary>
+        /// Places the device at a coordinate. On Android this goes through a
+        /// test provider, is read back, and works on real hardware. On iOS it
+        /// goes through simctl and cannot be confirmed: returning means the
+        /// request was accepted, not that an app will read it.
+        /// </summary>
+        public void SetLocation(double latitude, double longitude) =>
+            Act("app_location", Args("latitude", latitude, "longitude", longitude));
+
+        /// <summary>
+        /// Removes the injected position. Does not clear the device's last
+        /// known location, which Android caches.
+        /// </summary>
+        public void ClearLocation() => Act("app_location", Args("clear", true));
+
+        /// <summary>
+        /// Moves along two or more waypoints over time, each a
+        /// (latitude, longitude) pair, at <paramref name="speedMPS"/> meters
+        /// per second — pass 0 for the default. On iOS the simulator
+        /// interpolates the route itself; on Android the daemon steps a test
+        /// provider once a second, the platform having no route command.
+        /// </summary>
+        public void FollowRoute(IEnumerable<double[]> waypoints, double speedMPS)
+        {
+            var wp = new List<object>();
+            foreach (var p in waypoints) wp.Add(new List<object> { p[0], p[1] });
+            var args = Args("waypoints", wp);
+            if (speedMPS > 0) args["speed"] = speedMPS;
+            Act("app_location", args);
+        }
+
+        /// <summary>Follows a GPX file, read on the machine running the daemon.</summary>
+        public void FollowGpx(string path, double speedMPS)
+        {
+            var args = Args("gpx", path);
+            if (speedMPS > 0) args["speed"] = speedMPS;
+            Act("app_location", args);
+        }
+
+        /// <summary>Language tags pinned for an app; empty means it follows the device.</summary>
+        public IList<string> AppLocale(string app) => Strings(Field("app_locale", Args("app", app), "locales"));
+
+        /// <summary>
+        /// Runs one app in a chosen language; an empty tag follows the device
+        /// again. Android 13 and later. What this confirms is that the device
+        /// stored the tag, not that the app has a translation for it, so check
+        /// the screen. Relaunch the app for it to re-render.
+        /// </summary>
+        public IList<string> AppLocale(string app, string tags) =>
+            Strings(Field("app_locale", Args("app", app, "locale", tags), "locales"));
+
+        /// <summary>
+        /// Presses a hardware button: <c>"back"</c>, <c>"home"</c>,
+        /// <c>"recents"</c>, <c>"volume-up"</c> or <c>"volume-down"</c>. On
+        /// Android back is primary navigation. iOS has no back button by
+        /// design and throws with what to do instead, rather than sending an
+        /// edge swipe — a different event an app can tell apart.
+        /// </summary>
+        public void Press(string button) => Act("app_press", Args("button", button));
+
+        /// <summary>Whether the screen is locked.</summary>
+        public bool ScreenLocked() => Json.Bool(Data("app_lock", null), "locked");
+
+        /// <summary>
+        /// Locks or unlocks the screen, confirmed against the device. A state
+        /// rather than a power-button press: power is a toggle, so asking twice
+        /// leaves the device where it started. A device with a PIN, pattern or
+        /// password cannot be unlocked from outside and throws.
+        /// </summary>
+        public bool ScreenLocked(bool locked) =>
+            Json.Bool(Data("app_lock", Args("state", locked ? "lock" : "unlock")), "locked");
+
+        /// <summary>
+        /// Simulates an incoming call: <c>"ring"</c>, <c>"accept"</c> or
+        /// <c>"hang"</c>. Emulator only — a real phone cannot be made to ring
+        /// from outside. Not named <c>Call</c>: that is the raw tool-call
+        /// escape hatch.
+        /// </summary>
+        public void IncomingCall(string action) => Act("app_call", Args("action", action));
+
+        /// <summary>Delivers a simulated text message. Emulator only.</summary>
+        public void Sms(string text) => Act("app_sms", Args("text", text));
+
+        /// <summary>
+        /// Console output from the current WebView since the last call,
+        /// including uncaught errors and unhandled promise rejections. Each
+        /// read drains what it returns.
+        /// </summary>
+        /// <remarks>
+        /// The source is named because with none the tool follows the context
+        /// and would read the device log on the native shell.
+        /// </remarks>
+        public IList<IDictionary<string, object>> Logs() =>
+            Maps(Field("app_logs", Args("source", "webview"), "entries"));
+
+        /// <summary>
+        /// The device's own log since the last read: logcat on Android, the
+        /// unified log on an iOS simulator, what a real iPhone's session has captured. The map has <c>entries</c> — each
+        /// with time, level, tag, pid and message — and <c>skipped</c>, lines
+        /// newer than the last read that the limit dropped, which will not
+        /// come back. The first read returns the most recent lines. Pass null
+        /// or zero to leave a filter unset.
+        /// </summary>
+        public IDictionary<string, object> DeviceLogs(string app = null, string level = null, int lines = 0)
+        {
+            var args = Args("source", "device");
+            if (!string.IsNullOrWhiteSpace(app)) args["app"] = app;
+            if (!string.IsNullOrWhiteSpace(level)) args["level"] = level;
+            if (lines > 0) args["lines"] = lines;
+            return Data("app_logs", args);
+        }
+
+        /// <summary>
+        /// Records the screen: action "start", or "stop" with a path to save
+        /// the video; neither asks whether one is running. Stop returns the
+        /// file's frames and duration, read from its own header; a still
+        /// screen is one frame on Android, which is not a failure. A relative
+        /// path is this process's.
+        /// </summary>
+        public IDictionary<string, object> Record(string action = null, string path = null)
+        {
+            var args = Args();
+            if (!string.IsNullOrWhiteSpace(action)) args["action"] = action;
+            if (!string.IsNullOrWhiteSpace(path)) args["path"] = path;
+            return Data("app_record", args);
+        }
+
+        /// <summary>
+        /// The soft keyboard: read it, type at the focused field, press a key,
+        /// or hide it. With no arguments, returns <c>shown</c> and the
+        /// <c>focused</c> field — a password's value is never shown. Text is
+        /// added to the end of the focused field and confirmed; key is
+        /// "enter", "delete" or "space", after any text; hide hides the
+        /// keyboard, confirmed, alone. Throws
+        /// <see cref="NoSuchElementException"/> when nothing has focus.
+        /// </summary>
+        public IDictionary<string, object> Keyboard(string text = null, string key = null, bool hide = false)
+        {
+            var args = Args();
+            if (text != null) args["text"] = text;
+            if (!string.IsNullOrWhiteSpace(key)) args["key"] = key;
+            if (hide) args["hide"] = true;
+            return Data("app_keyboard", args);
+        }
+
+        /// <summary>
+        /// The crashes the device recorded, newest first: each map has id,
+        /// time, kind (crash, native_crash or anr), app and summary. Not
+        /// drained — asking twice shows a crash twice.
+        /// </summary>
+        public IList<IDictionary<string, object>> Crashes(string app = null, int limit = 0)
+        {
+            var args = Args();
+            if (!string.IsNullOrWhiteSpace(app)) args["app"] = app;
+            if (limit > 0) args["limit"] = limit;
+            return Maps(Field("app_crashes", args, "crashes"));
+        }
+
+        /// <summary>One crash report in full, by an id from <see cref="Crashes"/>; the text is under <c>text</c>.</summary>
+        public IDictionary<string, object> Crash(string id)
+        {
+            var found = Maps(Field("app_crashes", Args("id", id), "crashes"));
+            return found.Count > 0 ? found[0] : new Dictionary<string, object>();
+        }
+
+        /// <summary>Runs a JavaScript expression in the current WebView; objects come back as JSON.</summary>
+        public string Eval(string expression) =>
+            Json.Str(Data("app_eval", Args("expression", expression)), "value");
+
+        /// <summary>
+        /// What is in the notification shade — how a test asserts an app posted
+        /// what it should. Each map has package, title and text.
+        /// </summary>
+        public IList<IDictionary<string, object>> Notifications() =>
+            Maps(Field("app_notifications", null, "notifications"));
+
+        /// <summary>
+        /// Puts a notification in the shade as an interruption, confirmed by
+        /// reading the shade back.
+        /// </summary>
+        public void PostNotification(string title, string text) =>
+            Act("app_notifications", Args("title", title, "text", text));
+
+        /// <summary>
+        /// Opens or closes the notification panel. A notification cannot be
+        /// tapped until the shade is open: until then it is not on screen and
+        /// <see cref="Map"/> cannot see it.
+        /// </summary>
+        public void Shade(bool open) =>
+            Act("app_notifications", Args("shade", open ? "open" : "close"));
+
+        /// <summary>The device timezone.</summary>
+        public string Timezone() => Json.Str(Data("app_timezone", null), "timezone");
+
+        /// <summary>
+        /// Changes the device timezone and returns the new one. Takes an IANA
+        /// name such as <c>"Asia/Tokyo"</c>; confirmed by reading it back,
+        /// since an unknown zone is accepted by the device and ignored. Works
+        /// on real hardware, unlike <see cref="IncomingCall"/> and
+        /// <see cref="Sms"/>.
+        /// </summary>
+        public string Timezone(string tz) =>
+            Json.Str(Data("app_timezone", Args("timezone", tz)), "timezone");
+
+        // -- contexts ---------------------------------------------------------
+
+        /// <summary>The automatable contexts: the native shell plus any WebViews.</summary>
+        public IList<string> Contexts()
+        {
+            var list = new List<string>();
+            foreach (var o in Field("app_contexts", null, "contexts"))
+                list.Add(Json.Str(Json.AsObject(o), "id"));
+            return list;
+        }
+
+        /// <summary>Switches context, or reads the current one when <paramref name="name"/> is null.</summary>
+        public string Context(string name) =>
+            Prose("app_context", name == null ? Args() : Args("context", name));
+
+        // -- diagnostics -------------------------------------------------------
+
+        /// <summary>
+        /// Checks the environment and returns the report. Needs no device —
+        /// that is the point of it.
+        /// </summary>
+        public string Doctor() => Prose("app_doctor", Args());
+
+        // -- plumbing ----------------------------------------------------------
+
+        /// <summary>
+        /// Runs any tool by name, for anything this class does not wrap yet,
+        /// and returns its structured answer.
+        /// </summary>
+        public IDictionary<string, object> Call(string tool, IDictionary<string, object> arguments) =>
+            Connection.DataOf(_conn.Call(tool, arguments));
+
+        /// <summary>
+        /// Closes the pipe and waits for mobium to exit. The device session
+        /// itself lives in the daemon and outlives this object.
+        /// </summary>
+        public void Dispose() => _conn.Dispose();
+
+        // -- internals ---------------------------------------------------------
+
+        private static IDictionary<string, object> Args(params object[] pairs)
+        {
+            var m = new Dictionary<string, object>(StringComparer.Ordinal);
+            for (var i = 0; i + 1 < pairs.Length; i += 2) m[(string)pairs[i]] = pairs[i + 1];
+            return m;
+        }
+
+        private void Act(string tool, IDictionary<string, object> args) => _conn.Call(tool, args);
+
+        private string Prose(string tool, IDictionary<string, object> args) =>
+            Connection.TextOf(_conn.Call(tool, args));
+
+        private IDictionary<string, object> Data(string tool, IDictionary<string, object> args) =>
+            Connection.DataOf(_conn.Call(tool, args ?? Args()));
+
+        private IList<object> Field(string tool, IDictionary<string, object> args, string key)
+        {
+            var d = Data(tool, args);
+            return Json.AsArray(d.TryGetValue(key, out var v) ? v : null);
+        }
+
+        private IList<Element> Elements(string tool, IDictionary<string, object> args)
+        {
+            var list = new List<Element>();
+            foreach (var o in Field(tool, args, "elements")) list.Add(Element.From(Json.AsObject(o)));
+            return list;
+        }
+
+        /// <summary>Reads a tool that answers with a single element, which may be absent.</summary>
+        private Element One(string tool, IDictionary<string, object> args)
+        {
+            var d = Data(tool, args);
+            return d.TryGetValue("element", out var el) && el != null
+                ? Element.From(Json.AsObject(el))
+                : null;
+        }
+
+        private static IList<string> Strings(IList<object> raw)
+        {
+            var list = new List<string>();
+            foreach (var o in raw) list.Add(Convert.ToString(o, System.Globalization.CultureInfo.InvariantCulture));
+            return list;
+        }
+
+        private static IList<IDictionary<string, object>> Maps(IList<object> raw)
+        {
+            var list = new List<IDictionary<string, object>>();
+            foreach (var o in raw) list.Add(Json.AsObject(o));
+            return list;
+        }
+    }
+
+    /// <summary>Options for <see cref="Device.Connect()"/>.</summary>
+    public sealed class DeviceBuilder
+    {
+        private string _binary = "";
+        private string _device = "";
+        private string _backend = "";
+
+        /// <summary>Pins the mobium executable, ahead of MOBIUM_BIN_PATH and PATH.</summary>
+        public DeviceBuilder Binary(string path) { _binary = path; return this; }
+
+        /// <summary>Targets one device by serial or UDID. Omit when only one is running.</summary>
+        public DeviceBuilder OnDevice(string serial) { _device = serial; return this; }
+
+        /// <summary>
+        /// Chooses the driver: <c>uiautomator2</c> (default on Android),
+        /// <c>uiautomator</c> (installs nothing, slower, cannot type) or
+        /// <c>webdriveragent</c> (iOS simulators).
+        /// </summary>
+        public DeviceBuilder Backend(string name) { _backend = name; return this; }
+
+        /// <summary>Starts the session.</summary>
+        public Device Connect()
+        {
+            var args = new List<string>();
+            if (!string.IsNullOrWhiteSpace(_device)) { args.Add("--device"); args.Add(_device); }
+            if (!string.IsNullOrWhiteSpace(_backend)) { args.Add("--backend"); args.Add(_backend); }
+            return new Device(new Connection(Connection.FindBinary(_binary), args));
+        }
+    }
+
+}

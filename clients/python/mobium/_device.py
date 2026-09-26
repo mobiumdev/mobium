@@ -1,0 +1,867 @@
+"""The device API."""
+
+from __future__ import annotations
+
+import base64
+from dataclasses import dataclass
+from typing import Any
+
+from ._rpc import Connection, MobiumError, find_binary, _data_of, _text_of
+
+
+@dataclass(frozen=True)
+class Bounds:
+    """An on-screen rectangle in device pixels, on both platforms."""
+
+    x1: int
+    y1: int
+    x2: int
+    y2: int
+
+    @property
+    def center(self) -> tuple[int, int]:
+        return (self.x1 + self.x2) // 2, (self.y1 + self.y2) // 2
+
+    @property
+    def width(self) -> int:
+        return self.x2 - self.x1
+
+    @property
+    def height(self) -> int:
+        return self.y2 - self.y1
+
+
+@dataclass(frozen=True)
+class Element:
+    """One actionable element on screen."""
+
+    ref: str
+    label: str
+    role: str = ""
+    bounds: Bounds = Bounds(0, 0, 0, 0)
+    locator: str = ""
+    context: str = ""
+
+    def __str__(self) -> str:
+        return f"{self.ref} {self.label} ({self.role})" if self.role else f"{self.ref} {self.label}"
+
+
+@dataclass(frozen=True)
+class DeviceInfo:
+    """One attached device or simulator."""
+
+    id: str
+    platform: str
+    state: str
+    model: str = ""
+    runtime: str = ""
+    emulator: bool = False
+
+    def __str__(self) -> str:
+        bits = [self.id, self.state, self.platform]
+        if self.model:
+            bits.append(self.model)
+        return "  ".join(bits)
+
+
+def connect(
+    device: str | None = None,
+    backend: str | None = None,
+    binary: str | None = None,
+) -> "Device":
+    """Start a mobium session.
+
+    device: serial or UDID, when more than one is running.
+    backend: "uiautomator2" (default), "uiautomator", or "webdriveragent".
+    """
+    args: list[str] = []
+    if device:
+        args += ["--device", device]
+    if backend:
+        args += ["--backend", backend]
+    return Device(Connection(find_binary(binary), args))
+
+
+class Device:
+    """A connected device or simulator."""
+
+    def __init__(self, conn: Connection):
+        self._conn = conn
+
+    # -- lifecycle ---------------------------------------------------------
+
+    def close(self) -> None:
+        self._conn.close()
+
+    def __enter__(self) -> "Device":
+        return self
+
+    def __exit__(self, *_: Any) -> None:
+        self.close()
+
+    # -- reading -----------------------------------------------------------
+
+    def devices(self) -> list[DeviceInfo]:
+        """Every attached device and simulator."""
+        data = self._data("app_devices") or {}
+        return [
+            DeviceInfo(
+                id=d.get("id", ""),
+                platform=d.get("platform", ""),
+                state=d.get("state", ""),
+                model=d.get("model", ""),
+                runtime=d.get("runtime", ""),
+                emulator=bool(d.get("emulator")),
+            )
+            for d in data.get("devices", [])
+        ]
+
+    def map(self) -> list[Element]:
+        """Actionable elements on the current screen.
+
+        Refs are only valid for this screen; call map() again after anything
+        that changes it.
+        """
+        return _elements(self._data("app_map"))
+
+    def text(self, target: str | None = None) -> str:
+        """All readable text, or the text of one element."""
+        return self._call("app_text", {"target": target} if target else None)
+
+    def add_dialog_rule(self, when: str, press: str) -> None:
+        """Declare how to answer a dialog, so an action that meets it carries on:
+        when a dialog whose text contains ``when`` is in the way, press the
+        button captioned ``press``. It names a button, not accept or dismiss,
+        because which button those press differs by platform and by dialog.
+        Captions match ignoring case.
+        """
+        self._call("app_dialogs", {"when": when, "press": press})
+
+    def dialog_rules(self) -> list:
+        """The declared rules, each with how often it has answered."""
+        return (self._data("app_dialogs") or {}).get("rules", [])
+
+    def clear_dialog_rules(self) -> None:
+        """Remove every rule for this device."""
+        self._call("app_dialogs", {"clear": True})
+
+    def source(self) -> dict:
+        """The raw hierarchy — what Appium calls the page source — for when
+        map leaves out the thing you need to see. map is what to act on.
+
+        ``source`` is the platform's XML, or in a WebView the page's markup;
+        ``format`` is "xml" or "html"; ``units`` is "px" on Android and "pt"
+        on iOS, where map, taps and screenshots are in pixels, ``scale`` times
+        as many. ``redacted`` counts the password fields hidden.
+        """
+        return self._data("app_source") or {}
+
+    def find(self, locator: str) -> list[Element]:
+        """Elements matching a locator, without acting on them."""
+        return _elements(self._data("app_find", {"locator": locator}))
+
+    def wait_for(
+        self,
+        target: str,
+        condition: str = "visible",
+        text: str | None = None,
+        timeout_ms: int = 10000,
+    ) -> Element | None:
+        """Block until the screen agrees, instead of sleeping.
+
+        condition is "visible" (default), "hidden", or "text" — which needs
+        the text to wait for. Raises MobiumError if it never happens, saying
+        what was on screen instead.
+
+        On success the screen is remapped, so the element returned already has
+        a ref that can be tapped without calling map() first. Nothing is
+        returned when waiting for something to go away.
+        """
+        args: dict[str, Any] = {
+            "target": target,
+            "condition": condition,
+            "timeout_ms": timeout_ms,
+        }
+        if text is not None:
+            args["text"] = text
+        data = self._data("app_wait_for", args) or {}
+        found = data.get("element")
+        return _element(found) if found else None
+
+    def scroll_to(self, target: str, direction: str = "down") -> Element | None:
+        """Scroll until an element is on screen, and return it with a ref.
+
+        map() only sees what is currently visible, and tap(), type() and
+        long_press() already scroll to a target that is not — so call this to
+        look without acting, or to scroll back up. Vertical only; use swipe()
+        for a horizontal pager. Raises MobiumError if it is not found.
+        """
+        data = self._data("app_scroll_to", {"target": target, "direction": direction}) or {}
+        found = data.get("element")
+        return _element(found) if found else None
+
+    def screenshot(self, path: str | None = None) -> bytes:
+        """Capture the screen as PNG, optionally also writing it to path."""
+        if path:
+            self._call("app_screenshot", {"path": path})
+            with open(path, "rb") as handle:
+                return handle.read()
+
+        result = self._conn.call_tool("app_screenshot", {})
+        for block in result.get("content", []):
+            if block.get("type") == "image":
+                return base64.b64decode(block["data"])
+        raise MobiumError("mobium returned no image")
+
+    # -- acting ------------------------------------------------------------
+
+    def tap(
+        self,
+        target: str | None = None,
+        x: int | None = None,
+        y: int | None = None,
+        fingers: int | None = None,
+    ) -> None:
+        """Tap a ref, a locator, or a point in device pixels.
+
+        fingers taps with several at once, side by side: 2 for a two-finger
+        tap, 3 for three (up to 5). On iOS three fingers can reach the system
+        instead of the app — three-finger gestures are undo, redo, copy and
+        paste there.
+        """
+        extra = {} if fingers is None else {"fingers": fingers}
+        if target is not None:
+            self._call("app_tap", {"target": target, **extra})
+        elif x is not None and y is not None:
+            self._call("app_tap", {"x": x, "y": y, **extra})
+        else:
+            raise MobiumError("tap needs a target, or both x and y")
+
+    def double_tap(
+        self, target: str | None = None, x: int | None = None, y: int | None = None
+    ) -> None:
+        """Tap twice, as one gesture rather than as two taps.
+
+        The same tool as tap with one argument set, so the target is resolved
+        the same way and refused the same way when the screen has moved. The
+        uiautomator dump backend refuses it: the window is 40-300ms and
+        nothing there controls the interval between two adb calls.
+        """
+        if target is not None:
+            self._call("app_tap", {"target": target, "double": True})
+        elif x is not None and y is not None:
+            self._call("app_tap", {"x": x, "y": y, "double": True})
+        else:
+            raise MobiumError("double_tap needs a target, or both x and y")
+
+    def drag(self, source: str, target: str, hold_ms: int | None = None) -> dict:
+        """Pick one element up, carry it onto another, and drop it.
+
+        Not swipe with two targets: a swipe has no hold at either end, so
+        pointed at a reorderable row it scrolls the list instead of moving the
+        row. Both ends are resolved from one snapshot before anything is
+        touched.
+
+        hold_ms is how long the finger rests at each end, defaulting to 700 —
+        above Android's 500ms long-press timeout, which is what a
+        drag-to-reorder list arms on. Raise it first when a drag picks nothing
+        up.
+
+        Reports that the gesture was delivered. Whether the drop was accepted
+        is the app's own state, so call map() again to see it.
+        """
+        args: dict = {"from": source, "to": target}
+        if hold_ms is not None:
+            args["hold_ms"] = hold_ms
+        return self._data("app_drag", args) or {}
+
+    def press_tap(self, hold: str, tap: str, lead_ms: int | None = None) -> dict:
+        """Hold one element with a finger while a second finger taps another.
+
+        The first finger lifts only after the second. Both are resolved before
+        anything is touched. lead_ms is how long the first rests before the
+        second taps, 300 by default — under Android's 500ms long-press timeout,
+        so the held element does not open its own menu first.
+
+        Reports that the gesture was delivered; what it meant is the app's own
+        state, so call map() again to see it. Android 15 and earlier only: on
+        iOS XCTest adds a zero-length touch at the second finger's target when
+        the gesture starts, and on Android 16 and later UiAutomator2's down
+        times are rejected, so both refuse with UnsupportedError.
+        """
+        args: dict = {"hold": hold, "tap": tap}
+        if lead_ms is not None:
+            args["lead_ms"] = lead_ms
+        return self._data("app_press_tap", args) or {}
+
+    def press_drag(self, hold: str, source: str, target: str, lead_ms: int | None = None) -> dict:
+        """Hold one element with a finger while a second finger drags.
+
+        The second finger lands on source, moves to target and lifts, then the
+        first lifts. Not drag(), which is one finger carrying something: here
+        one finger anchors and the other moves. Android 15 and earlier only,
+        for press_tap's reasons.
+        """
+        args: dict = {"hold": hold, "from": source, "to": target}
+        if lead_ms is not None:
+            args["lead_ms"] = lead_ms
+        return self._data("app_press_drag", args) or {}
+
+    def type(self, target: str, text: str, clear: bool = False) -> None:
+        """Type into an element. An empty string clears it."""
+        self._call("app_type", {"target": target, "text": text, "clear": clear})
+
+    def swipe(
+        self,
+        direction: str | None = None,
+        coordinates: tuple[int, int, int, int] | None = None,
+        duration_ms: int = 300,
+    ) -> None:
+        """Swipe by direction ("up", "down", "left", "right") or exact points."""
+        args: dict[str, Any] = {"duration_ms": duration_ms}
+        if coordinates:
+            args["x1"], args["y1"], args["x2"], args["y2"] = coordinates
+        elif direction:
+            args["direction"] = direction
+        else:
+            raise MobiumError("swipe needs a direction or four coordinates")
+        self._call("app_swipe", args)
+
+    def long_press(self, target: str | None = None, x: int | None = None,
+                   y: int | None = None, duration_ms: int = 800) -> None:
+        """Press and hold an element or a point."""
+        args: dict[str, Any] = {"duration_ms": duration_ms}
+        if target is not None:
+            args["target"] = target
+        elif x is not None and y is not None:
+            args["x"], args["y"] = x, y
+        else:
+            raise MobiumError("long_press needs a target, or both x and y")
+        self._call("app_long_press", args)
+
+    # -- app lifecycle -----------------------------------------------------
+
+    def launch(self, app: str) -> None:
+        """Bring an app to the foreground by package name or bundle id.
+
+        Every ref from the previous screen is discarded — call map(), or just
+        act, since actions re-resolve their target anyway.
+        """
+        self._call("app_launch", {"app": app})
+
+    def terminate(self, app: str) -> None:
+        """Stop a running app."""
+        self._call("app_terminate", {"app": app})
+
+    def install(self, path: str) -> str:
+        """Install a local .apk (Android) or .app bundle (iOS).
+
+        Returns the absolute path that was installed.
+        """
+        data = self._data("app_install", {"path": path}) or {}
+        return data.get("path", "")
+
+    def apps(self, system: bool = False) -> list[dict[str, Any]]:
+        """Installed apps, each with id, name, version and whether it is a
+        system app.
+
+        By default only apps someone installed — a stock Android emulator
+        ships about 240 system packages. Name is empty on Android.
+        """
+        data = self._data("app_list_apps", {"system": system}) or {}
+        return data.get("apps", [])
+
+    def uninstall(self, app: str) -> None:
+        """Remove an app, verified by listing afterwards.
+
+        `adb uninstall` reports success when it has only removed the updates
+        to a system app, so this raises rather than reporting a lie.
+        """
+        self._call("app_uninstall", {"app": app})
+
+    def clear_data(self, app: str) -> dict:
+        """Delete an app's data and leave it installed — a fresh install's
+        state, without reinstalling.
+
+        Returns what was read back empty (``emptied``), what was kept
+        (``kept``) and, on Android, the runtime permissions still granted
+        (``still_granted``): `pm clear` revokes what the user granted. An iOS
+        simulator keeps its privacy grants and keychain; a real iPhone
+        refuses.
+        """
+        return self._data("app_clear_data", {"app": app}) or {}
+
+    def open_url(self, url: str) -> None:
+        """Open a URL or deep link — the quickest way to a specific screen."""
+        self._call("app_open_url", {"url": url})
+
+    def current(self) -> str:
+        """The package name or bundle id of the foreground app.
+
+        Costs no extra device call: it reads the hierarchy a snapshot fetches
+        anyway. Use it to confirm a tap went where you expected.
+        """
+        data = self._data("app_current") or {}
+        return data.get("app", "")
+
+    # -- permissions -------------------------------------------------------
+
+    def grant(self, app: str, *permissions: str) -> None:
+        """Grant permissions up front, so no dialog blocks the flow.
+
+        Names are cross-platform ("camera", "location", "contacts", ...);
+        "all" grants everything the app declares, and a platform name like
+        "android.permission.NFC" also works. On Android the result is verified
+        by reading the state back, because `pm grant` reports success for
+        permissions the app never declared.
+        """
+        self._call("app_grant", {"app": app, "permissions": list(permissions)})
+
+    def revoke(self, app: str, *permissions: str) -> None:
+        """Deny permissions, to test how the app behaves without them."""
+        self._call("app_revoke", {"app": app, "permissions": list(permissions)})
+
+    def reset_permissions(self, app: str | None = None) -> None:
+        """Put permissions back to their defaults, so the app prompts again.
+
+        iOS can reset one app. Android cannot — `pm reset-permissions` is
+        device-wide — so omit app there; naming one raises rather than
+        resetting every app on the device.
+        """
+        self._call("app_reset_permissions", {"app": app} if app else None)
+
+    # -- device state ------------------------------------------------------
+
+    def appearance(self, mode: str | None = None) -> str:
+        """Read the light/dark setting, or change it and return the new one.
+
+        mode is "light", "dark", or "auto" (Android only; iOS raises). Dark
+        mode is a different rendering of every screen, so a flow is worth
+        running in both. Changing it discards the refs from the last map.
+        """
+        data = self._data("app_appearance", {"appearance": mode} if mode else None) or {}
+        return data.get("appearance", "")
+
+    def orientation(self) -> tuple[str, bool]:
+        """Which way the screen is turned, and whether that is pinned.
+
+        A screen that merely happens to be portrait can rotate under you, so
+        the two are separate answers.
+        """
+        data = self._data("app_orientation") or {}
+        return data.get("orientation", ""), bool(data.get("locked"))
+
+    def set_orientation(self, mode: str) -> str:
+        """Turn the screen and pin it. "auto" hands it back to the sensor.
+
+        mode is "portrait", "landscape", "portrait-reverse",
+        "landscape-reverse" or "auto" — not "left"/"right", which the two
+        platforms name differently. A rotation re-lays out every screen, so
+        the refs from the last map are discarded. An activity that locks its
+        own orientation cannot be turned from outside and raises.
+        """
+        data = self._data("app_orientation", {"orientation": mode}) or {}
+        return data.get("orientation", "")
+
+    def screen(self, profile: str = "", inspect: bool = False) -> dict:
+        """Read the screen, or make an Android device pretend to be another.
+
+        A flow that works on the screen you happen to have is a flow tested
+        once. Pass a profile name to apply it, or "reset" to put the device
+        back — an override outlives this session, so reset when you are done.
+        Applying one discards the refs from the last map, because nothing is
+        where it was.
+
+        On iOS the screen is fixed when the simulator is created, so this
+        reads only and names the simulator to boot instead.
+
+        With inspect=True the answer also carries "findings": elements past
+        the edge, touch targets below the platform minimum, text the platform
+        truncated, and tappable elements with nothing to announce. Treat a
+        touch-target finding as worth a look rather than a defect — Android
+        can enlarge a tap area without changing an element's bounds.
+        """
+        args: dict = {}
+        if profile:
+            args["profile"] = profile
+        if inspect:
+            args["inspect"] = True
+        return self._data("app_screen", args) or {}
+
+    def app_locale(self, app: str) -> list[str]:
+        """Language tags pinned for an app; empty means it follows the device."""
+        data = self._data("app_locale", {"app": app}) or {}
+        return list(data.get("locales") or [])
+
+    def set_app_locale(self, app: str, *tags: str) -> list[str]:
+        """Run one app in a chosen language; no tags follows the device again.
+
+        Android 13 and later. What this confirms is that the device stored the
+        tag, not that the app has a translation for it — Android reports no
+        difference — so check the screen. Relaunch the app to re-render it.
+        """
+        data = self._data("app_locale", {"app": app, "locale": ",".join(tags)}) or {}
+        return list(data.get("locales") or [])
+
+    def rotate(self, degrees: float = 90, target: str | None = None) -> dict:
+        """Turn two fingers about an element or the screen, positive clockwise.
+
+        Like :meth:`zoom` it reports that the gesture was delivered and nothing
+        more, and this one is harder still to confirm: nothing in either
+        hierarchy reports a rotation, and there is no WebView property to ask.
+        """
+        args: dict = {"degrees": degrees}
+        if target is not None:
+            args["target"] = target
+        return self._data("app_rotate", args) or {}
+
+    def zoom(self, direction: str = "in", target: str | None = None) -> dict:
+        """Pinch apart or together, about an element or the screen.
+
+        Reports that the gesture was delivered and nothing more: neither
+        platform exposes a zoom level in the accessibility hierarchy, so
+        confirming a zoom means asking whatever was zoomed — a WebView can
+        answer with ``visualViewport.scale`` through :meth:`eval`.
+        """
+        args: dict = {"direction": direction}
+        if target is not None:
+            args["target"] = target
+        return self._data("app_zoom", args) or {}
+
+    def check(self, target: str, checked: bool = True) -> dict:
+        """Put a checkbox or switch into a state, rather than toggling it.
+
+        Idempotent: asking for a state it is already in does nothing, which
+        is what makes it safe to call without reading first. Anything with no
+        checked state is refused rather than tapped, and a radio cannot be
+        unchecked — a group is cleared by choosing a different member.
+        """
+        return self._data("app_check", {"target": target, "checked": checked}) or {}
+
+    def alert(self) -> str:
+        """What a system dialog says, or "" when none is up.
+
+        A permission prompt is another process's window, not the app's, and
+        reading it needs no knowledge of what the buttons say.
+        """
+        data = self._data("app_alert", {}) or {}
+        return str(data.get("text") or "")
+
+    def answer_alert(self, accept: bool = True) -> dict:
+        """Accept or dismiss a system dialog.
+
+        These answer a dialog; they do not choose an outcome. On a permission
+        prompt they do not mean grant and deny, and on iOS they are the other
+        way round — accept leaves it denied and dismiss leaves it granted,
+        because W3C accept presses the affirmative button and Apple puts
+        "Don't Allow" last. Tap the button by ref for a particular answer.
+        """
+        return self._data("app_alert", {"action": "accept" if accept else "dismiss"}) or {}
+
+    def clipboard(self) -> str:
+        """What the device clipboard holds.
+
+        iOS only. On Android 10 and later only an app with focus may read the
+        clipboard and the UiAutomator2 server has no activity, so it would
+        answer "empty" for a clipboard that is full — this raises there
+        instead.
+        """
+        data = self._data("app_clipboard", {}) or {}
+        return str(data.get("text") or "")
+
+    def set_clipboard(self, text: str) -> dict:
+        """Write the device clipboard.
+
+        On iOS the write is confirmed by reading it back; on Android it is
+        reported as sent, nothing there being able to read it.
+        """
+        return self._data("app_clipboard", {"text": text}) or {}
+
+    def location(self) -> dict:
+        """Where the device believes it is.
+
+        Returns latitude, longitude, ``mock`` (this fix was injected),
+        ``mocking`` (a test provider is installed now) and ``known``. The two
+        mock flags differ after :meth:`clear_location`, because Android keeps
+        the last known position after the provider supplying it is gone.
+
+        Android only. ``simctl location`` has no ``get``, so on iOS this
+        raises rather than returning a position it never read.
+        """
+        return self._data("app_location", {}) or {}
+
+    def set_location(self, latitude: float, longitude: float) -> dict:
+        """Place the device at a coordinate.
+
+        On Android this goes through a test provider, is read back, and works
+        on real hardware. On iOS it goes through simctl and cannot be
+        confirmed — success means the request was accepted, not that an app
+        will read it.
+        """
+        return self._data(
+            "app_location", {"latitude": latitude, "longitude": longitude}
+        ) or {}
+
+    def clear_location(self) -> dict:
+        """Remove the injected position.
+
+        Does not clear the device's last known location, which Android caches.
+        """
+        return self._data("app_location", {"clear": True}) or {}
+
+    def follow_route(self, waypoints, speed: float | None = None) -> dict:
+        """Move along two or more (latitude, longitude) pairs over time.
+
+        On iOS the simulator interpolates the route itself; on Android the
+        daemon steps a test provider once a second, the platform having no
+        route command. Either way this returns as the route starts.
+        """
+        args: dict = {"waypoints": [list(w) for w in waypoints]}
+        if speed is not None:
+            args["speed"] = speed
+        return self._data("app_location", args) or {}
+
+    def follow_gpx(self, path: str, speed: float | None = None) -> dict:
+        """Follow a GPX file, read on the machine running the daemon."""
+        args: dict = {"gpx": path}
+        if speed is not None:
+            args["speed"] = speed
+        return self._data("app_location", args) or {}
+
+    def press(self, button: str) -> None:
+        """Press a hardware button.
+
+        "back", "home", "recents", "volume-up" or "volume-down". On Android
+        back is primary navigation. iOS has no back button by design and
+        raises with what to do instead, rather than sending an edge swipe —
+        a different event an app can tell apart. Any press can move the
+        screen, so the refs from the last map are discarded.
+        """
+        self._data("app_press", {"button": button})
+
+    def screen_locked(self) -> bool:
+        """Whether the screen is locked."""
+        data = self._data("app_lock") or {}
+        return bool(data.get("locked"))
+
+    def set_screen_locked(self, locked: bool) -> bool:
+        """Lock or unlock the screen, confirmed against the device.
+
+        A state rather than a power-button press: power is a toggle, so asking
+        twice leaves the device where it started. A device with a PIN, pattern
+        or password cannot be unlocked from outside and raises.
+        """
+        data = self._data("app_lock", {"state": "lock" if locked else "unlock"}) or {}
+        return bool(data.get("locked"))
+
+    def incoming_call(self, action: str = "ring", number: str | None = None) -> None:
+        """Simulate an incoming call: "ring", "accept" or "hang".
+
+        Emulator only — a real phone cannot be made to ring from outside.
+        """
+        args: dict = {"action": action}
+        if number:
+            args["number"] = number
+        self._data("app_call", args)
+
+    def sms(self, text: str, sender: str | None = None) -> None:
+        """Deliver a simulated text message. Emulator only."""
+        args: dict = {"text": text}
+        if sender:
+            args["from"] = sender
+        self._data("app_sms", args)
+
+    def doctor(self) -> dict:
+        """Check the environment and return the report.
+
+        Needs no device: its whole job is to be runnable when nothing works
+        yet, so it is the first thing to call when something fails for a
+        reason that makes no sense.
+        """
+        return self._data("app_doctor") or {}
+
+    def logs(self, level: str | None = None) -> list[dict]:
+        """Console output from the current WebView since the last call.
+
+        Includes uncaught errors and unhandled promise rejections. Each read
+        drains what it returns, so it reports what happened since the last
+        call — which is what makes "nothing was logged during this step"
+        assertable. Capture starts when the context is entered, so a page's
+        initial load is already over by then.
+        """
+        # Named, because with no source the tool follows the context and
+        # would read the device log on the native shell.
+        args = {"source": "webview"}
+        if level:
+            args["level"] = level
+        data = self._data("app_logs", args) or {}
+        return list(data.get("entries") or [])
+
+    def device_logs(
+        self, app: str | None = None, level: str | None = None, lines: int | None = None
+    ) -> dict:
+        """The device's own log since the last read: logcat on Android, the
+        unified log on an iOS simulator, what a real iPhone's session has captured.
+
+        Returns a dict with ``entries`` (each has time, level, tag, pid and
+        message) and ``skipped`` — lines newer than the last read that the
+        limit dropped, which will not come back. The first read returns the
+        most recent lines. A read narrowed by app or level leaves the rest
+        unread.
+        """
+        args: dict = {"source": "device"}
+        if app:
+            args["app"] = app
+        if level:
+            args["level"] = level
+        if lines:
+            args["lines"] = lines
+        data = self._data("app_logs", args) or {}
+        return {"entries": list(data.get("entries") or []), "skipped": data.get("skipped", 0)}
+
+    def record(self, action: str | None = None, path: str | None = None) -> dict:
+        """Record the screen: ``action`` "start", or "stop" with ``path`` to save
+        the video; neither asks whether one is running.
+
+        Stop returns the saved file's ``frames`` and ``duration`` read from its
+        own header. A still screen is one frame on Android, which is not a
+        failure. Raises when a recording could not be finished.
+        """
+        args: dict = {}
+        if action:
+            args["action"] = action
+        if path:
+            args["path"] = path
+        return self._data("app_record", args or None) or {}
+
+    def keyboard(self, text: str | None = None, key: str | None = None, hide: bool = False) -> dict:
+        """The soft keyboard: read it, type at the focused field, press a key, or hide it.
+
+        With no arguments, returns whether it is ``shown`` and the ``focused``
+        field (id, kind, value — a password's value is never shown). ``text``
+        is added to the end of the focused field and confirmed by reading it
+        back; ``key`` is "enter", "delete" or "space", pressed after any text;
+        ``hide`` hides the keyboard, confirmed, and cannot be combined with the
+        others. Raises NoSuchElementError when nothing has focus.
+        """
+        args: dict = {}
+        if text is not None:
+            args["text"] = text
+        if key:
+            args["key"] = key
+        if hide:
+            args["hide"] = True
+        return self._data("app_keyboard", args or None) or {}
+
+    def crashes(self, app: str | None = None, limit: int | None = None) -> list[dict]:
+        """The crashes the device recorded, newest first.
+
+        Each has id, time, kind (crash, native_crash or anr), app and summary.
+        Not drained: a crash is a record, so asking twice shows it twice.
+        """
+        args: dict = {}
+        if app:
+            args["app"] = app
+        if limit:
+            args["limit"] = limit
+        data = self._data("app_crashes", args or None) or {}
+        return list(data.get("crashes") or [])
+
+    def crash(self, id: str) -> dict:
+        """One crash report in full, by an id from crashes(); the text is in ``text``."""
+        data = self._data("app_crashes", {"id": id}) or {}
+        found = data.get("crashes") or []
+        return found[0] if found else {}
+
+    def eval(self, expression: str) -> str:
+        """Run a JavaScript expression in the current WebView.
+
+        Objects come back as JSON.
+        """
+        data = self._data("app_eval", {"expression": expression}) or {}
+        return data.get("value", "")
+
+    def notifications(self) -> list[dict]:
+        """What is in the notification shade.
+
+        How a test asserts an app posted what it should: each entry has
+        package, title and text.
+        """
+        data = self._data("app_notifications") or {}
+        return list(data.get("notifications") or [])
+
+    def post_notification(self, text: str, title: str | None = None) -> list[dict]:
+        """Put a notification in the shade as an interruption.
+
+        Confirmed by reading the shade back — the underlying command prints
+        what it thinks it built and says nothing about whether the system
+        accepted it.
+        """
+        args: dict = {"text": text}
+        if title:
+            args["title"] = title
+        data = self._data("app_notifications", args) or {}
+        return list(data.get("notifications") or [])
+
+    def shade(self, open: bool) -> list[dict]:
+        """Open or close the notification panel.
+
+        A notification cannot be tapped until the shade is open: until then it
+        is not on screen and map cannot see it. Discards the refs from the
+        last map.
+        """
+        data = self._data("app_notifications", {"shade": "open" if open else "close"}) or {}
+        return list(data.get("notifications") or [])
+
+    def timezone(self, tz: str | None = None) -> str:
+        """Read the device timezone, or change it and return the new one.
+
+        Takes an IANA name such as "Asia/Tokyo". Confirmed by reading it
+        back — an unknown zone is accepted by the device and ignored. Works
+        on real hardware, unlike call and sms.
+        """
+        data = self._data("app_timezone", {"timezone": tz} if tz else None) or {}
+        return data.get("timezone", "")
+
+    # -- contexts ----------------------------------------------------------
+
+    def contexts(self) -> list[str]:
+        """Automatable contexts: the native shell plus any WebViews."""
+        data = self._data("app_contexts") or {}
+        return [c.get("id", "") for c in data.get("contexts", [])]
+
+    def context(self, name: str | None = None) -> str:
+        """Switch context, or read the current one."""
+        return self._call("app_context", {"context": name} if name else None)
+
+    # -- internals ---------------------------------------------------------
+
+    def _call(self, tool: str, args: dict[str, Any] | None = None) -> str:
+        return _text_of(self._conn.call_tool(tool, args))
+
+    def _data(self, tool: str, args: dict[str, Any] | None = None) -> Any:
+        """A tool's structured answer.
+
+        Tools return their result as data as well as prose, so nothing here
+        parses the human-readable rendering.
+        """
+        return _data_of(self._conn.call_tool(tool, args))
+
+
+def _element(e: dict[str, Any]) -> Element:
+    b = e.get("bounds") or {}
+    loc = e.get("locator") or {}
+    return Element(
+        ref=e.get("ref", ""),
+        label=e.get("label", ""),
+        role=e.get("role", ""),
+        bounds=Bounds(b.get("x1", 0), b.get("y1", 0), b.get("x2", 0), b.get("y2", 0)),
+        locator=f"{loc['kind']}={loc['value']}" if loc.get("kind") else "",
+        context=e.get("context", ""),
+    )
+
+
+def _elements(data: Any) -> list[Element]:
+    if not data:
+        return []
+    return [_element(e) for e in data.get("elements", [])]

@@ -1,0 +1,34 @@
+Drop box contents: 55 entries
+Searching for: data_app_crash
+
+========================================
+2026-09-25 16:24:20 data_app_crash (text, 1464 bytes)
+/data/system/dropbox/data_app_crash@1790378660052.txt
+SystemUptimeMs: 1734593
+Process: dev.mobium.mobiumapp
+PID: 11418
+UID: 10214
+Frozen: false
+Flags: 0x20c8be44
+Package: dev.mobium.mobiumapp v1 (1.0.0)
+Foreground: Yes
+Process-Runtime: 2347
+Timestamp: 2026-09-25 16:24:20.052-0700
+Build: google/sdk_gphone64_arm64/emu64a:15/AE3A.240806.043/12960925:userdebug/dev-keys
+Crash-Handler: com.android.internal.os.RuntimeInit$KillApplicationHandler
+Loading-Progress: 1.0
+Dropped-Count: 3
+
+com.facebook.react.common.JavascriptException: Error: mobium-crash-control: an unhandled JavaScript error, stack:
+anonymous@1:734084
+
+	at com.facebook.react.modules.core.ExceptionsManagerModule.reportException(ExceptionsManagerModule.kt:52)
+	at com.facebook.jni.NativeRunnable.run(Native Method)
+	at android.os.Handler.handleCallback(Handler.java:959)
+	at android.os.Handler.dispatchMessage(Handler.java:100)
+	at com.facebook.react.bridge.queue.MessageQueueThreadHandler.dispatchMessage(MessageQueueThreadHandler.kt:21)
+	at android.os.Looper.loopOnce(Looper.java:232)
+	at android.os.Looper.loop(Looper.java:317)
+	at com.facebook.react.bridge.queue.MessageQueueThreadImpl$Companion.startNewBackgroundThread$lambda$0(MessageQueueThreadImpl.kt:152)
+	at com.facebook.react.bridge.queue.MessageQueueThreadImpl$Companion.$r8$lambda$YYXYCFexeoKtAeDpeNYkxZZlpbA(Unknown Source:0)
+	at com.facebook.react.bridge.queue.MessageQueueThreadImpl$Companion$$ExternalSyntheticLambda0.run(D8$$SyntheticClass:0)

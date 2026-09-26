@@ -1,0 +1,318 @@
+Drop box contents: 386 entries
+Max entries: 1000
+Low priority rate limit period: 2000 ms
+Low priority tags: {data_app_wtf, keymaster, system_server_wtf, system_app_strictmode, system_app_wtf, system_server_strictmode, data_app_strictmode, netstats}
+Searching for: data_app_anr
+
+========================================
+2026-09-25 15:56:13 data_app_anr (text, 5440 bytes)
+/data/system/dropbox/data_app_anr@1790376973349.txt
+SystemUptimeMs: 47885
+Process: dev.mobium.mobiumapp
+PID: 3571
+UID: 10214
+Frozen: false
+Timestamp: 2026-09-25 15:56:01.304-0700
+Flags: 0x20e8be44
+Package: dev.mobium.mobiumapp v1 (1.0.0)
+Foreground: Yes
+Process-Runtime: 18341
+Activity: dev.mobium.mobiumapp/.MainActivity
+ErrorId: 52ee37c5-c80c-4aec-95dd-48a775110f2a
+Build: google/sdk_gphone64_arm64/emu64a:15/AE3A.240806.043/12960925:userdebug/dev-keys
+Loading-Progress: 1.0
+Dropped-Count: 0
+
+----- Output from /proc/pressure/memory -----
+some avg10=3.34 avg60=1.79 avg300=0.45 total=1479563
+full avg10=1.54 avg60=0.74 avg300=0.18 total=627351
+----- End output from /proc/pressure/memory -----
+----- Output from /proc/pressure/cpu -----
+some avg10=16.31 avg60=10.26 avg300=2.66 total=8467555
+full avg10=0.00 avg60=0.00 avg300=0.00 total=0
+----- End output from /proc/pressure/cpu -----
+----- Output from /proc/pressure/io -----
+some avg10=4.44 avg60=2.97 avg300=0.78 total=2563129
+full avg10=1.17 avg60=0.82 avg300=0.22 total=879222
+----- End output from /proc/pressure/io -----
+
+CPU usage from 0ms to 12024ms later (2026-09-25 15:56:01.310 to 2026-09-25 15:56:13.334):
+  4.4% 567/system_server: 1.2% user + 3.1% kernel / faults: 3985 minor 58 major
+  0.4% 1596/com.google.android.gms: 0.3% user + 0% kernel / faults: 6794 minor 146 major
+  0.3% 3142/com.example.sync: 0.2% user + 0% kernel / faults: 9123 minor 26 major
+  0.2% 395/android.hardware.graphics.composer3-service.ranchu: 0% user + 0.1% kernel
+  0.2% 419/surfaceflinger: 0.1% user + 0% kernel
+  0.2% 2182/com.google.android.tts: 0% user + 0.1% kernel / faults: 2775 minor 1545 major
+  0.2% 2321/com.android.localtransport: 0.1% user + 0% kernel / faults: 1553 minor 358 major
+  0.1% 157/logd: 0% user + 0% kernel / faults: 9 minor 1 major
+  0.1% 451/logcat: 0% user + 0.1% kernel
+  0.1% 838/com.android.systemui: 0% user + 0% kernel / faults: 810 minor 16 major
+4.4% TOTAL: 1.1% user + 1.7% kernel + 0.1% iowait + 1.3% irq + 0% softirq
+Data File: /data/anr/anr_2026-09-25-15-56-01-313
+Subject: Input dispatching timed out (87dc1ed dev.mobium.mobiumapp/dev.mobium.mobiumapp.MainActivity (server) is not responding. Waited 5003ms for MotionEvent(deviceId=-1, eventTime=30835000000, source=TOUCHSCREEN, displayId=0, action=DOWN, actionButton=0x00000000, flags=0x00000000, metaState=0x00000000, buttonState=0x00000000, classification=NONE, edgeFlags=0x00000000, xPrecision=1.0, yPrecision=1.0, xCursorPosition=nan, yCursorPosition=nan, pointers=[0: (540.0, 1200.0)]), policyFlags=0x6b000000).
+RssHwmKb: 163976
+RssKb: 163976
+RssAnonKb: 51968
+RssShmemKb: 640
+VmSwapKb: 24468
+
+
+--- CriticalEventLog ---
+capacity: 20
+events <
+  timestamp_ms: 1790376933880
+  system_server_started <
+  >
+>
+timestamp_ms: 1790376961312
+window_ms: 300000
+
+----- dumping pid: 3571 at 35849
+libdebuggerd_client: failed to read status response from tombstoned: timeout reached?
+
+----- Waiting Channels: pid 3571 at 2026-09-25 15:56:01.310892517-0700 -----
+Cmd line: dev.mobium.mobiumapp
+
+sysTid=3571      do_signal_stop
+sysTid=3572      do_signal_stop
+sysTid=3573      do_signal_stop
+sysTid=3574      do_signal_stop
+sysTid=3575      do_signal_stop
+sysTid=3576      do_signal_stop
+sysTid=3577      do_signal_stop
+sysTid=3578      do_signal_stop
+sysTid=3579      do_signal_stop
+sysTid=3580      do_signal_stop
+sysTid=3581      do_signal_stop
+sysTid=3582      do_signal_stop
+sysTid=3584      do_signal_stop
+sysTid=3587      do_signal_stop
+sysTid=3588      do_signal_stop
+sysTid=3589      do_signal_stop
+sysTid=3590      do_signal_stop
+sysTid=3591      do_signal_stop
+sysTid=3592      do_signal_stop
+sysTid=3593      do_signal_stop
+sysTid=3594      do_signal_stop
+sysTid=3595      do_signal_stop
+sysTid=3596      do_signal_stop
+sysTid=3597      do_signal_stop
+sysTid=3599      do_signal_stop
+sysTid=3600      do_signal_stop
+sysTid=3601      do_signal_stop
+sysTid=3602      do_signal_stop
+sysTid=3604      do_signal_stop
+sysTid=3605      do_signal_stop
+sysTid=3606      do_signal_stop
+sysTid=3607      do_signal_stop
+sysTid=3608      do_signal_stop
+
+----- end 3571 -----
+
+libdebuggerd_client: failed to read status response from tombstoned: Try again
+
+----- Waiting Channels: pid 3571 at 2026-09-25 15:56:11.325135355-0700 -----
+Cmd line: dev.mobium.mobiumapp
+
+sysTid=3571      do_signal_stop
+sysTid=3572      do_signal_stop
+sysTid=3573      do_signal_stop
+sysTid=3574      do_signal_stop
+sysTid=3575      do_signal_stop
+sysTid=3576      do_signal_stop
+sysTid=3577      do_signal_stop
+sysTid=3578      do_signal_stop
+sysTid=3579      do_signal_stop
+sysTid=3580      do_signal_stop
+sysTid=3581      do_signal_stop
+sysTid=3582      do_signal_stop
+sysTid=3584      do_signal_stop
+sysTid=3587      do_signal_stop
+sysTid=3588      do_signal_stop
+sysTid=3589      do_signal_stop
+sysTid=3590      do_signal_stop
+sysTid=3591      do_signal_stop
+sysTid=3592      do_signal_stop
+sysTid=3593      do_signal_stop
+sysTid=3594      do_signal_stop
+sysTid=3595      do_signal_stop
+sysTid=3596      do_signal_stop
+sysTid=3597      do_signal_stop
+sysTid=3599      do_signal_stop
+sysTid=3600      do_signal_stop
+sysTid=3601      do_signal_stop
+sysTid=3602      do_signal_stop
+sysTid=3604      do_signal_stop
+sysTid=3605      do_signal_stop
+sysTid=3606      do_signal_stop
+sysTid=3607      do_signal_stop
+sysTid=3608      do_signal_stop
+
+----- end 3571 -----
+
+DurationsV5: 35845,1,0,1,7,7,0,229,1,0,0,0,0,0,0,1,12026,1,1,12019,4,1,1,0,1
+
+----- dumping ended at 47875
+End Data File
+
+========================================
+2026-09-25 15:58:34 data_app_anr (text, 5725 bytes)
+/data/system/dropbox/data_app_anr@1790377114779.txt
+SystemUptimeMs: 189318
+Process: dev.mobium.mobiumapp
+PID: 3571
+UID: 10214
+Frozen: false
+Timestamp: 2026-09-25 15:58:22.710-0700
+Flags: 0x20e8be44
+Package: dev.mobium.mobiumapp v1 (1.0.0)
+Foreground: Yes
+Process-Runtime: 159772
+Activity: dev.mobium.mobiumapp/.MainActivity
+ErrorId: 5bf88875-42b7-4f19-907c-f44da3be4bc1
+Build: google/sdk_gphone64_arm64/emu64a:15/AE3A.240806.043/12960925:userdebug/dev-keys
+Loading-Progress: 1.0
+Dropped-Count: 0
+
+----- Output from /proc/pressure/memory -----
+some avg10=0.00 avg60=0.16 avg300=0.26 total=1537736
+full avg10=0.00 avg60=0.06 avg300=0.09 total=666623
+----- End output from /proc/pressure/memory -----
+----- Output from /proc/pressure/cpu -----
+some avg10=0.52 avg60=1.59 avg300=1.89 total=10204348
+full avg10=0.00 avg60=0.00 avg300=0.00 total=0
+----- End output from /proc/pressure/cpu -----
+----- Output from /proc/pressure/io -----
+some avg10=0.00 avg60=0.27 avg300=0.47 total=2737926
+full avg10=0.00 avg60=0.07 avg300=0.12 total=1011187
+----- End output from /proc/pressure/io -----
+
+CPU usage from 0ms to 12056ms later (2026-09-25 15:58:22.715 to 2026-09-25 15:58:34.771):
+  0.6% 567/system_server: 0.5% user + 0% kernel / faults: 963 minor
+  0.3% 395/android.hardware.graphics.composer3-service.ranchu: 0% user + 0.2% kernel
+  0.2% 383/android.hardware.sensors-service.multihal: 0% user + 0.1% kernel
+  0.1% 7/kworker/0:0-events: 0% user + 0.1% kernel
+  0.1% 1566/com.google.android.googlequicksearchbox:search: 0% user + 0% kernel / faults: 413 minor 1506 major
+  0% 54/kworker/1:1-events: 0% user + 0% kernel
+  0% 157/logd: 0% user + 0% kernel / faults: 50 minor 2 major
+  0% 419/surfaceflinger: 0% user + 0% kernel
+  0% 838/com.android.systemui: 0% user + 0% kernel / faults: 10 minor
+  0% 3522/app_process: 0% user + 0% kernel / faults: 37 minor
+1.4% TOTAL: 0.3% user + 0.4% kernel + 0% iowait + 0.5% irq + 0% softirq
+Data File: /data/anr/anr_2026-09-25-15-58-22-717
+Subject: Input dispatching timed out (87dc1ed dev.mobium.mobiumapp/dev.mobium.mobiumapp.MainActivity (server) is not responding. Waited 5006ms for MotionEvent(deviceId=-1, eventTime=172243000000, source=TOUCHSCREEN, displayId=0, action=DOWN, actionButton=0x00000000, flags=0x00000000, metaState=0x00000000, buttonState=0x00000000, classification=NONE, edgeFlags=0x00000000, xPrecision=1.0, yPrecision=1.0, xCursorPosition=nan, yCursorPosition=nan, pointers=[0: (540.0, 1200.0)]), policyFlags=0x6b000000).
+RssHwmKb: 178824
+RssKb: 170132
+RssAnonKb: 51616
+RssShmemKb: 1408
+VmSwapKb: 23444
+
+
+--- CriticalEventLog ---
+capacity: 20
+events <
+  timestamp_ms: 1790376933880
+  system_server_started <
+  >
+>
+events <
+  timestamp_ms: 1790376961313
+  anr <
+    pid: 3571
+    process: "dev.mobium.mobiumapp"
+    process_class: 1
+    subject: "Input dispatching timed out (87dc1ed dev.mobium.mobiumapp/dev.mobium.mobiumapp.MainActivity (server) is not responding. Waited 5003ms for MotionEvent(deviceId=-1, eventTime=30835000000, source=TOUCHSC[...]"
+    uid: 10214
+  >
+>
+timestamp_ms: 1790377102716
+window_ms: 300000
+
+----- dumping pid: 3571 at 177254
+libdebuggerd_client: failed to read status response from tombstoned: timeout reached?
+
+----- Waiting Channels: pid 3571 at 2026-09-25 15:58:22.716715709-0700 -----
+Cmd line: dev.mobium.mobiumapp
+
+sysTid=3571      do_signal_stop
+sysTid=3572      do_signal_stop
+sysTid=3573      do_signal_stop
+sysTid=3574      do_signal_stop
+sysTid=3575      do_signal_stop
+sysTid=3576      do_signal_stop
+sysTid=3577      do_signal_stop
+sysTid=3578      do_signal_stop
+sysTid=3579      do_signal_stop
+sysTid=3580      do_signal_stop
+sysTid=3581      do_signal_stop
+sysTid=3582      do_signal_stop
+sysTid=3584      do_signal_stop
+sysTid=3587      do_signal_stop
+sysTid=3589      do_signal_stop
+sysTid=3590      do_signal_stop
+sysTid=3591      do_signal_stop
+sysTid=3592      do_signal_stop
+sysTid=3593      do_signal_stop
+sysTid=3594      do_signal_stop
+sysTid=3595      do_signal_stop
+sysTid=3596      do_signal_stop
+sysTid=3597      do_signal_stop
+sysTid=3599      do_signal_stop
+sysTid=3600      do_signal_stop
+sysTid=3601      do_signal_stop
+sysTid=3602      do_signal_stop
+sysTid=3604      do_signal_stop
+sysTid=3605      do_signal_stop
+sysTid=3606      do_signal_stop
+sysTid=3607      do_signal_stop
+sysTid=3608      do_signal_stop
+sysTid=3816      do_signal_stop
+
+----- end 3571 -----
+
+libdebuggerd_client: failed to read status response from tombstoned: Try again
+
+----- Waiting Channels: pid 3571 at 2026-09-25 15:58:32.736494589-0700 -----
+Cmd line: dev.mobium.mobiumapp
+
+sysTid=3571      do_signal_stop
+sysTid=3572      do_signal_stop
+sysTid=3573      do_signal_stop
+sysTid=3574      do_signal_stop
+sysTid=3575      do_signal_stop
+sysTid=3576      do_signal_stop
+sysTid=3577      do_signal_stop
+sysTid=3578      do_signal_stop
+sysTid=3579      do_signal_stop
+sysTid=3580      do_signal_stop
+sysTid=3581      do_signal_stop
+sysTid=3582      do_signal_stop
+sysTid=3584      do_signal_stop
+sysTid=3587      do_signal_stop
+sysTid=3589      do_signal_stop
+sysTid=3590      do_signal_stop
+sysTid=3591      do_signal_stop
+sysTid=3592      do_signal_stop
+sysTid=3593      do_signal_stop
+sysTid=3594      do_signal_stop
+sysTid=3595      do_signal_stop
+sysTid=3596      do_signal_stop
+sysTid=3597      do_signal_stop
+sysTid=3599      do_signal_stop
+sysTid=3600      do_signal_stop
+sysTid=3601      do_signal_stop
+sysTid=3602      do_signal_stop
+sysTid=3604      do_signal_stop
+sysTid=3605      do_signal_stop
+sysTid=3606      do_signal_stop
+sysTid=3607      do_signal_stop
+sysTid=3608      do_signal_stop
+sysTid=3816      do_signal_stop
+
+----- end 3571 -----
+
+DurationsV5: 177251,1,1,1,4,6,1,237,0,0,0,0,0,0,0,0,12058,1,1,12053,4,1,1,0,2
+
+----- dumping ended at 189312
+End Data File
+

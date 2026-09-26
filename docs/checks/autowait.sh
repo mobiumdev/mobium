@@ -1,0 +1,169 @@
+#!/bin/sh
+# Auto-wait, end to end: an action waits until its target is ready — on
+# screen, holding still, enabled, and the kind of thing the action is for —
+# and refuses, saying why, what it cannot wait out. Judged by what MobiumApp
+# says it received, never by the tool's own report.
+#
+#   docs/checks/autowait.sh <android-serial | simulator-udid>
+#
+# Stable, on the Motion Demo: a tap on a target sliding in waits for the slide
+# to end — the app's own stopwatch says how long after Replay the tap came —
+# and with Reduce Motion on, the honoring target is tapped at once while the
+# ignoring one still waits. Confetti: a still button is tappable during a
+# burst, and a piece that never holds still is refused. Enabled, on the Login
+# Demo: a second tap on Log In waits out "Signing in…" and lands. Editable, on
+# the Form Demo: typing into a button, a checkbox and a read-only field is
+# refused. Covered targets — a dialog, the keyboard — are dialogs.sh's.
+#
+# Needs MobiumApp installed (mobiumdev/mobium-app). Simulators and emulators
+# only: Reduce Motion is switched from outside, which a phone does not allow
+# on iOS. Every setting changed is put back, on failure too.
+set -e
+DEV="$1"
+if [ -z "$DEV" ]; then echo "usage: $0 <serial|udid>" >&2; exit 2; fi
+ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
+fail() { echo "FAIL: $*" >&2; exit 1; }
+row() { printf '    %-16s %-52s ok\n' "$1" "$2"; }
+ms() { python3 -c 'import time; print(int(time.time()*1000))'; }
+APP=dev.mobium.mobiumapp
+
+case "$DEV" in
+  ????????-????????????????) echo "a real iPhone's Reduce Motion cannot be set from outside; use a simulator" >&2; exit 2 ;;
+  *-*-*-*-*) PLATFORM=ios; M="$ROOT/bin/mobium --backend webdriveragent --device $DEV" ;;
+  *)         PLATFORM=android; M="$ROOT/bin/mobium --device $DEV" ;;
+esac
+echo "--- $DEV ($PLATFORM)"
+
+# Reduce Motion, on and off, from outside: Android's is the transition
+# animation scale (what React Native reads — not the animator scale), iOS's
+# WebDriverAgent's setting. The original is put back on any exit.
+ORIG_SCALE=""
+reduce() { # reduce on|off
+  if [ "$PLATFORM" = android ]; then
+    [ -z "$ORIG_SCALE" ] && ORIG_SCALE=$(adb -s "$DEV" shell settings get global transition_animation_scale | tr -d '\r')
+    [ "$1" = on ] && adb -s "$DEV" shell settings put global transition_animation_scale 0 \
+      || adb -s "$DEV" shell settings put global transition_animation_scale "${ORIG_SCALE:-1.0}"
+  else
+    sid=$(curl -s localhost:8100/status | python3 -c 'import json,sys; print(json.load(sys.stdin)["sessionId"])')
+    v=false; [ "$1" = on ] && v=true
+    curl -s -X POST "localhost:8100/session/$sid/appium/settings" -H 'Content-Type: application/json' \
+      -d "{\"settings\":{\"reduceMotion\":$v}}" >/dev/null
+  fi
+}
+cleanup() { reduce off >/dev/null 2>&1 || true; $M terminate "$APP" >/dev/null 2>&1 || true; }
+trap cleanup EXIT
+# iOS switches Reduce Motion through WebDriverAgent, which a session starts;
+# without one the settings endpoint is not there to answer.
+$M current >/dev/null
+
+open() { # open <home entry>: from a cold start, so the screen starts fresh
+  $M terminate "$APP" >/dev/null 2>&1 || true
+  $M launch "$APP" >/dev/null
+  $M scroll-to "label=$1" >/dev/null 2>&1 || true
+  $M tap "label=$1" >/dev/null
+}
+after_replay() { # after_replay <panel>: ms the app says passed between Replay and the tap
+  $M text "testid=${1}Result" | sed -n 's/.*tapped \([0-9]*\)ms after replay.*/\1/p'
+}
+slide() { # slide <panel>: replay, then tap the target at once
+  $M tap "testid=${1}Replay" >/dev/null
+  $M tap "testid=${1}Target" >/dev/null
+  sleep 1
+  after_replay "$1"
+}
+
+# --- stable: a target sliding in -------------------------------------------
+reduce off
+open "Motion Demo"
+$M wait testid=honoringReplay >/dev/null
+[ "$($M text testid=reduceMotion)" = "reduceMotion=false" ] || fail "Reduce Motion is on before the check turned it on"
+h=$(slide honoring); i=$(slide ignoring)
+[ -n "$h" ] && [ -n "$i" ] || fail "a tap on a sliding target did not reach the app (honoring '$h', ignoring '$i')"
+[ "$h" -ge 1800 ] || fail "the honoring target was tapped ${h}ms after Replay, before its 2s slide ended"
+[ "$i" -ge 1800 ] || fail "the ignoring target was tapped ${i}ms after Replay, before its 2s slide ended"
+row "stable" "tapped after the slide: ${h}ms and ${i}ms after Replay"
+
+# --- stable, with Reduce Motion on -----------------------------------------
+# The honoring target appears at once, so there is nothing to wait out; the
+# ignoring one is the control, and must still wait for its slide.
+reduce on
+open "Motion Demo"
+$M wait testid=honoringReplay >/dev/null
+i=0; until [ "$($M text testid=reduceMotion)" = "reduceMotion=true" ]; do
+  i=$((i + 1)); [ $i -lt 5 ] || fail "the app never saw Reduce Motion on"; sleep 1
+done
+h=$(slide honoring); i=$(slide ignoring)
+[ "$h" -lt 1800 ] || fail "with Reduce Motion on, the honoring target still waited ${h}ms"
+[ "$i" -ge 1800 ] || fail "with Reduce Motion on, the ignoring target — the control — was tapped at ${i}ms"
+row "reduce motion" "honoring ${h}ms, at once; ignoring still ${i}ms"
+reduce off
+
+# --- a still button beside a burst of confetti ------------------------------
+open "Motion Demo"
+$M wait testid=celebrateBtn >/dev/null
+$M tap testid=celebrateBtn >/dev/null
+# The button is still, so it is tapped — not refused, and not waited on
+# until the burst is over. How long it takes is reported, not judged: every
+# read of a screen in motion is slower (about a second on an emulator,
+# CHALLENGES 109), and a tap takes three.
+t0=$(ms); $M tap testid=ignoringReplay >/dev/null || fail "a still button beside the burst was not tapped"; t1=$(ms)
+row "confetti" "a still button beside it tapped, in $((t1 - t0))ms"
+sleep 4
+
+# --- a target that never holds still ----------------------------------------
+# An exposed piece falls in 8.4 to 12 seconds, and finding one, resolving the
+# tap and five seconds of settling take about nine on an emulator, where
+# every read of a moving screen is slow (CHALLENGES 109) — so a piece can
+# leave the screen before the verdict. That is a miss, not a pass: it is
+# tried again with a new burst, up to three, and anything but "still moving"
+# or a piece gone fails.
+$M check testid=confettiExposed >/dev/null
+tries=0
+while :; do
+  tries=$((tries + 1))
+  $M tap testid=celebrateBtn >/dev/null
+  # Pieces start above the top edge and ease in, so the first look can come
+  # before any has arrived.
+  piece=""; looks=0
+  while [ -z "$piece" ] && [ $looks -lt 4 ]; do
+    looks=$((looks + 1))
+    piece=$($M find testid=confetti --json | python3 -c '
+import json,sys
+e=[x for x in json.load(sys.stdin)["elements"] if "confetti " in (x.get("label") or "") and x["bounds"]["y1"]>0]
+e.sort(key=lambda x: x["bounds"]["y1"]); print(e[0]["label"].replace(" ","") if e else "")')
+  done
+  [ -n "$piece" ] || fail "no piece of exposed confetti was on screen to aim at, in $looks looks"
+  out=$($M tap "testid=$piece" 2>&1) && fail "a piece that never holds still was tapped: $out"
+  echo "$out" | grep -q "still moving" && break
+  echo "$out" | grep -q "no element matches testid=$piece" || fail "the refusal did not say it was moving: $out"
+  [ $tries -lt 3 ] || fail "three pieces in a row left the screen before the verdict: $out"
+  sleep 10
+done
+row "never still" "a falling piece refused as still moving ($tries burst$( [ $tries = 1 ] || echo s))"
+sleep 10
+$M uncheck testid=confettiExposed >/dev/null
+
+# --- enabled: Log In while it signs in --------------------------------------
+open "Login Demo"
+$M type testid=username mobium >/dev/null
+$M type testid=password wrongpass1 >/dev/null
+$M tap testid=loginBtn >/dev/null
+$M wait testid=loginBtn --for disabled --timeout 2s >/dev/null || fail "Log In was never disabled while signing in"
+t0=$(ms); $M tap testid=loginBtn >/dev/null || fail "a tap on Log In did not wait for it to be enabled"; t1=$(ms)
+# It landed: the button signs in again.
+$M wait testid=loginBtn --for disabled --timeout 2s >/dev/null || fail "the second tap reported success and did not land"
+row "enabled" "waited $((t1 - t0))ms for Log In, then signed in again"
+
+# --- editable: typing into what is not a field ------------------------------
+open "Form Demo"
+$M wait testid=notifyCheck >/dev/null
+out=$($M type testid=backBtn hello 2>&1) && fail "typing into a button was accepted: $out"
+echo "$out" | grep -q "not a text field" || fail "the refusal for a button did not say why: $out"
+out=$($M type testid=notifyCheck hello 2>&1) && fail "typing into a checkbox was accepted: $out"
+echo "$out" | grep -q "not a text field" || fail "the refusal for a checkbox did not say why: $out"
+out=$($M type testid=readOnlyField hello 2>&1) && fail "typing into a read-only field was accepted: $out"
+ro=$(echo "$out" | sed -n 's/^error: //p' | head -1 | cut -c1-70)
+row "editable" "a button and a checkbox refused as not text fields"
+printf '    %-16s %s\n' "read-only" "refused: $ro"
+
+echo PASS

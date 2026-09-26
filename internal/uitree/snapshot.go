@@ -1,0 +1,501 @@
+package uitree
+
+import (
+	"fmt"
+	"regexp"
+	"strings"
+)
+
+// Entry is one line of `mobium map`: a stable @ref, the locator it resolves
+// through, and the label an agent reads to decide what to touch.
+type Entry struct {
+	Ref     string  `json:"ref"`
+	Label   string  `json:"label"`
+	Role    string  `json:"role"`
+	Locator Locator `json:"locator"`
+	Bounds  Rect    `json:"bounds"`
+	// Checked is the state of a checkbox, radio or switch, and nil for
+	// everything else.
+	//
+	// A pointer because "not a checkable thing" and "unchecked" are different
+	// answers, and reporting a button as unchecked would be a lie of the kind
+	// this project keeps finding. It was missing entirely until 2026-09-21:
+	// the state was parsed, carried on the wire and then dropped here, so
+	// `map` printed the same line for a ticked box and an empty one while the
+	// device was plainly reporting `checked="true"`. Tapping a checkbox is a
+	// toggle, so a caller that cannot see the state cannot reach one — it can
+	// only flip whatever is there. CHALLENGES 65.
+	Checked *bool `json:"checked,omitempty"`
+	Node    *Node `json:"-"`
+}
+
+// Line renders the entry the way the CLI prints it.
+func (e Entry) Line() string {
+	if e.Role == "" {
+		return fmt.Sprintf("%s %s", e.Ref, e.Label)
+	}
+	if e.Checked != nil {
+		state := "unchecked"
+		if *e.Checked {
+			state = "checked"
+		}
+		return fmt.Sprintf("%s %s (%s, %s)", e.Ref, e.Label, e.Role, state)
+	}
+	return fmt.Sprintf("%s %s (%s)", e.Ref, e.Label, e.Role)
+}
+
+// Actionable reports whether a node is worth putting in front of an agent.
+//
+// This is the native counterpart of vibium's interactive-element filter. A
+// node qualifies if a user could do something to it and it occupies real
+// space on screen; scrollable containers are included because scrolling is an
+// action even when the container itself is not clickable.
+//
+// Displayed is checked here, and what that is worth differs by platform:
+//
+//   - Android tells us nothing. UiAutomator2 filters non-displayed nodes out
+//     of /source before serializing, so the attribute is a constant: measured
+//     across ten screen states — launcher, Settings, Settings scrolled to the
+//     bottom, a search overlay, the notification shade, Clock, Chrome,
+//     Contacts, Photos, Calculator — all 590 nodes carried displayed="true"
+//     and not one carried false. The `uiautomator dump` format has no such
+//     attribute at all and is parsed as displayed.
+//   - iOS means it. 120 of the 201 nodes in the SpringBoard capture are
+//     visible="false". It is mostly already accounted for, because the iOS
+//     parser folds it into Clickable — but only into Clickable, so an
+//     invisible scroll view or switch would still reach here.
+//   - An external driver may send it, and this is the only place its answer
+//     is acted on. Without this line the protocol would document a field that
+//     changes nothing, which is worse than not having one.
+//
+// It costs nothing measurable today: honouring it changes no entry in any of
+// the four captured hierarchies. That is the point — it is a guard against a
+// screen we have not seen, not a fix for one we have.
+func Actionable(n *Node) bool {
+	if n.Bounds.Empty() {
+		return false
+	}
+	if !n.Displayed {
+		return false
+	}
+	if !n.Clickable && !n.LongClickable && !n.Checkable && !n.Scrollable {
+		// Text inputs are frequently focusable-only until touched.
+		if !(n.Focusable && HasRole(n, "input")) {
+			return false
+		}
+	}
+	return true
+}
+
+// maxLabel is how many runes of label `map` will print for one element.
+//
+// A label exists so an agent can choose between elements; past a sentence or
+// so it stops helping and starts costing context. The number is not arbitrary:
+// on Wikipedia's feed, the useful labels ran 4 to 90 runes ("Ada Lovelace Day
+// Annual event celebrating the contributions of women to STEM fields" is 82)
+// while a single feed card produced **876** — 91% of that entire map's text
+// from one of its thirteen entries. 120 keeps every real label intact and
+// stops the runaway.
+//
+// Truncating is safe for resolution: Map derives each entry's locator from the
+// node, not from the printed label, so a shortened label never changes what a
+// @ref resolves to.
+const maxLabel = 120
+
+// describe produces the human label for a node, preferring what a person
+// would actually read on screen. Falls back through the tree because Android
+// containers routinely carry the click and their children carry the words.
+func describe(n *Node) string {
+	// A password field's text is the password. Android puts the typed value
+	// straight into the `text` attribute of a node it has already marked
+	// `password="true"`, so `map` printed it — found on Aegis, where typing
+	// into the master-password field made the next map read
+	// `@e2 Sup3rSecret! (input)`.
+	//
+	// `map` is broadcast output: it goes to agent transcripts, CI logs, MCP
+	// responses and anywhere a user pipes it, and nobody consented to that.
+	// The platform marked the field; honor the marking. The resource id is
+	// used instead because it is stable, descriptive and distinguishes two
+	// password fields on one screen — a confirm field is otherwise
+	// indistinguishable from the first.
+	if n.Password {
+		if id := n.ShortTestID(); id != "" {
+			return id
+		}
+		if label := clean(n.Label); label != "" {
+			return label
+		}
+		return "password field"
+	}
+
+	text := clean(n.Text)
+	label := clean(n.Label)
+
+	// Android's idiom is a short visible text plus a fuller content-desc
+	// ("Continue" / "Continue with Google"). Two buttons reading "Continue"
+	// are useless to an agent, so the more specific string wins.
+	if text != "" && label != "" && len(label) > len(text) && strings.Contains(label, text) {
+		return truncate(label)
+	}
+	if text != "" {
+		return truncate(text)
+	}
+	if label != "" {
+		return truncate(label)
+	}
+	// A scroll container's descendants are its contents, not its name —
+	// borrowing their text produces labels like "Continue Continue".
+	if !n.Scrollable {
+		if s := descendantText(n, 3); s != "" {
+			return truncate(s)
+		}
+	}
+	if s := n.ShortTestID(); s != "" {
+		return s
+	}
+	return n.ShortClass()
+}
+
+// tagPattern matches an HTML/XML tag. Deliberately narrow: the name must start
+// with a letter, a slash or a bang, so arithmetic like "a < b" and "5<6>7" is
+// left alone.
+var tagPattern = regexp.MustCompile(`<[a-zA-Z/!][^>]*>`)
+
+// whitespaceRun collapses the gaps left behind once tags are removed.
+var whitespaceRun = regexp.MustCompile(`\s+`)
+
+// clean strips markup an app put in its own text or content description.
+//
+// Apps do this. Wikipedia's feed card carries
+// `<span lang="en" dir="ltr"><span class="mw-page-title-main">Thomas Hardy…`
+// in an accessibility string, and passing it through means an agent reads tag
+// soup and a `text=` locator has to spell out the markup to match. Only strings
+// that actually contain a tag have tags removed.
+//
+// Whitespace is collapsed in every string, tag or none. `map` prints one
+// element per line, and a label with a newline in it prints as two: a
+// Wikipedia search result on a real iPhone read "Delilah S. Dawson Redirected
+// from: Ava Lovelace" on one line and "American author (born 1977) (button)"
+// on the next, which splits one entry into two for anything reading the
+// output line by line. CHALLENGES 79.
+func clean(s string) string {
+	s = strings.TrimSpace(whitespaceRun.ReplaceAllString(s, " "))
+	if s == "" || !strings.Contains(s, "<") || !tagPattern.MatchString(s) {
+		return s
+	}
+	return strings.TrimSpace(whitespaceRun.ReplaceAllString(tagPattern.ReplaceAllString(s, " "), " "))
+}
+
+// truncate bounds a label at maxLabel runes, breaking on a word where it can
+// so the result reads as a phrase rather than a severed word.
+func truncate(s string) string {
+	r := []rune(s)
+	if len(r) <= maxLabel {
+		return s
+	}
+	cut := string(r[:maxLabel])
+	// Only back up to a space if one is reasonably near the end; otherwise a
+	// label with no spaces would lose most of its budget.
+	if i := strings.LastIndex(cut, " "); i > maxLabel*3/4 {
+		cut = cut[:i]
+	}
+	return strings.TrimRight(cut, " ,;:.-") + "…"
+}
+
+// descendantText collects the text of a node's descendants up to maxDepth,
+// joined the way it reads on screen.
+//
+// Bounded in three ways, each of which a real app broke. Depth was always
+// capped; breadth and total length were not, so one Wikipedia feed card —
+// a title, Save and Share buttons, a subtitle and a full article lede — came
+// back as a single 876-rune label. And the parts repeat: a search field
+// rendered as "Search Wikipedia Search Wikipedia Voice input search", because
+// the hint text and the content description say the same thing.
+func descendantText(n *Node, maxDepth int) string {
+	var parts []string
+	seen := map[string]bool{}
+	total := 0
+
+	var walk func(*Node, int)
+	walk = func(p *Node, depth int) {
+		if depth <= 0 || total >= maxLabel {
+			return
+		}
+		for _, c := range p.Children {
+			if total >= maxLabel {
+				return
+			}
+			s := clean(c.Text)
+			if s == "" {
+				s = clean(c.Label)
+			}
+			if s == "" {
+				walk(c, depth-1)
+				continue
+			}
+			// A card repeats its title in the text and the content
+			// description; printing it twice helps nobody.
+			if seen[s] {
+				continue
+			}
+			seen[s] = true
+			parts = append(parts, s)
+			total += len([]rune(s)) + 1
+		}
+	}
+	walk(n, maxDepth)
+	return strings.Join(parts, " ")
+}
+
+// RoleOf names the most specific role a node satisfies, for callers outside
+// this package. The tool layer needs it to tell a radio from a checkbox: one
+// of the two cannot be unchecked.
+func RoleOf(n *Node) string { return roleOf(n) }
+
+// roleOf names the most specific role a node satisfies, for map output.
+func roleOf(n *Node) string {
+	// Before "input", because a password field is one and the more specific
+	// answer is the useful one.
+	if n.Password {
+		return "password"
+	}
+	// iOS names a link as an element type, so it is reported as one. Android
+	// is left out on purpose: there a "link" is any tappable text view, which
+	// is every icon on the launcher (defect 1).
+	if IsIOS(n) && HasRole(n, "link") {
+		return "link"
+	}
+	for _, r := range []string{"input", "checkbox", "switch", "radio", "button", "image", "list", "tab"} {
+		if HasRole(n, r) {
+			return r
+		}
+	}
+	if n.Scrollable {
+		return "list"
+	}
+	if n.Clickable {
+		return "button"
+	}
+	return ""
+}
+
+// Map builds the @ref table for a snapshot. Refs are assigned in document
+// order, which is top-to-bottom, left-to-right on screen.
+func (t *Tree) Map() []Entry {
+	var actionable []*Node
+	t.Walk(func(n *Node) bool {
+		if Actionable(n) {
+			actionable = append(actionable, n)
+		}
+		return true
+	})
+
+	var out []Entry
+	for i, n := range collapseByBounds(actionable) {
+		e := Entry{
+			Ref:     fmt.Sprintf("@e%d", i+1),
+			Label:   n.label,
+			Role:    roleOf(n.node),
+			Locator: Derive(n.node, t),
+			Bounds:  n.node.Bounds,
+			Node:    n.node,
+		}
+		// Only for things that have a state to report. The platform says
+		// which: Android marks them `checkable`, and the iOS parser sets the
+		// same flag for the element types that carry a value.
+		if n.node.Checkable {
+			checked := n.node.Checked
+			e.Checked = &checked
+		}
+		out = append(out, e)
+	}
+	return out
+}
+
+// chosen is one map entry's node paired with the label picked for it, which
+// may have come from a different node in the same collapsed group.
+type chosen struct {
+	node  *Node
+	label string
+}
+
+// collapseByBounds merges actionable nodes that occupy exactly the same
+// rectangle into one entry.
+//
+// Real screens stack them: the launcher's "At a glance" widget is a
+// long-clickable ViewPager wrapping a clickable ViewGroup on identical bounds,
+// and an app's submit button is routinely a clickable wrapper around a
+// clickable button. Listing both is noise — a tap lands in the same place
+// either way — and the two rows disagree about the label.
+//
+// The tap target kept is the innermost clickable node, since that is what the
+// platform dispatches to; the label kept is the most specific one any node in
+// the group carries in its own text or content-desc, rather than one borrowed
+// from a descendant. (A group's outer node may accept a long-press the inner
+// one does not; that distinction returns when a longpress command needs it.)
+func collapseByBounds(nodes []*Node) []chosen {
+	groups := map[Rect][]*Node{}
+	var order []Rect
+	for _, n := range nodes {
+		if _, seen := groups[n.Bounds]; !seen {
+			order = append(order, n.Bounds)
+		}
+		groups[n.Bounds] = append(groups[n.Bounds], n)
+	}
+
+	out := make([]chosen, 0, len(order))
+	for _, r := range order {
+		group := groups[r]
+		out = append(out, chosen{node: tapTarget(group), label: bestLabel(group)})
+	}
+	return out
+}
+
+// tapTarget picks the node a tap should resolve to: the innermost clickable
+// node, falling back to the innermost node of any kind.
+func tapTarget(group []*Node) *Node {
+	best := group[0]
+	for _, n := range group {
+		if n.Clickable && (!best.Clickable || n.Depth > best.Depth) {
+			best = n
+		} else if !best.Clickable && n.Depth > best.Depth {
+			best = n
+		}
+	}
+	return best
+}
+
+// bestLabel prefers a name a node carries itself over one inferred from its
+// descendants — "At a glance" over the "Fri, Sep 11" its card happens to show.
+func bestLabel(group []*Node) string {
+	for _, n := range group {
+		if strings.TrimSpace(n.Text) != "" || strings.TrimSpace(n.Label) != "" {
+			return describe(n)
+		}
+	}
+	return describe(tapTarget(group))
+}
+
+// Redact returns what may safely be shown for a node's text.
+//
+// A password field's text *is* the password: Android puts the typed value into
+// the `text` attribute of a node it has already marked `password="true"`, and
+// iOS uses XCUIElementTypeSecureTextField. The platform says it is a secret;
+// everything here that prints text honors that, because all of it ends up in
+// agent transcripts, CI logs and MCP responses.
+//
+// The length is kept, because the real question an agent asks after typing is
+// "did that land", and the answer to that is not secret. What cannot be
+// distinguished is a filled field from an empty one showing its placeholder,
+// since both platforms put the placeholder where the text goes. Both also say
+// which: UiAutomator2 with `showing-hint`, and WebDriverAgent by reporting
+// the placeholder in plain text where typed text would be bullets. An empty
+// field is said to be empty; MobiumApp's was reported as an 8-character
+// password, its placeholder being "password" (CHALLENGES 102). The dump
+// backend reports neither, so there it is masked like anything else; losing
+// a hint is cheap, and leaking a password is not.
+func Redact(n *Node) (string, bool) {
+	if !n.Password {
+		return "", false
+	}
+	raw := strings.TrimSpace(n.Text)
+	if raw == "" {
+		return "", false
+	}
+	if n.ShowingHint {
+		return "(empty, showing its placeholder)", true
+	}
+	k := len([]rune(raw))
+	return fmt.Sprintf("%s (%d characters, hidden: this is a password field)", strings.Repeat("•", k), k), true
+}
+
+func (t *Tree) Text() string {
+	var lines []string
+	seen := map[string]bool{}
+	t.Walk(func(n *Node) bool {
+		if n.Bounds.Empty() {
+			return true
+		}
+		s := strings.TrimSpace(n.Text)
+		if masked, yes := Redact(n); yes {
+			s = masked
+		}
+		if s == "" {
+			s = strings.TrimSpace(n.Label)
+		}
+		if s == "" || seen[s] {
+			return true
+		}
+		seen[s] = true
+		lines = append(lines, s)
+		return true
+	})
+	return strings.Join(lines, "\n")
+}
+
+// Dialog returns the dialog over the screen when the hierarchy holds one
+// alongside what it covers, or nil.
+//
+// iOS puts an app's own alert, and a sheet such as "Save Password?", into the
+// app's tree as XCUIElementTypeAlert or XCUIElementTypeSheet, and keeps every
+// element underneath — reporting each one not visible. A locator could
+// resolve one of those, and a tap on it landed on the dialog while reporting
+// success. Android, and SpringBoard's prompts on iOS, give the dialog's window
+// alone, with nothing underneath to resolve, so this finds nothing there.
+func (t *Tree) Dialog() *Node {
+	var found *Node
+	t.Walk(func(n *Node) bool {
+		if found != nil {
+			return false
+		}
+		if n.Displayed && (n.Class == "XCUIElementTypeAlert" || n.Class == "XCUIElementTypeSheet") {
+			found = n
+			return false
+		}
+		return true
+	})
+	return found
+}
+
+// Within reports whether n is anc or lies inside it.
+func (n *Node) Within(anc *Node) bool {
+	for p := n; p != nil; p = p.Parent {
+		if p == anc {
+			return true
+		}
+	}
+	return false
+}
+
+// Keyboard returns the on-screen keyboard when the hierarchy holds one, or
+// nil. Only iOS reports it: WebDriverAgent puts XCUIElementTypeKeyboard in
+// the app's tree, while UiAutomator2 shows only the app's window and leaves
+// out whatever the keyboard covers.
+//
+// A keyboard that is present but off the bottom of the screen is not one:
+// with a hardware keyboard attached, a simulator keeps the software keyboard
+// in the tree below the screen's edge (y=952 on an 874-point screen).
+func (t *Tree) Keyboard() *Node {
+	var screen Rect
+	var found *Node
+	t.Walk(func(n *Node) bool {
+		if found != nil {
+			return false
+		}
+		if screen.Empty() && !n.Bounds.Empty() {
+			screen = n.Bounds
+		}
+		if n.Class == "XCUIElementTypeKeyboard" && n.Displayed && !n.Bounds.Empty() && n.Bounds.Y1 < screen.Y2 {
+			found = n
+			return false
+		}
+		return true
+	})
+	return found
+}
+
+// Covers reports whether r sits over the center of n.
+func (r Rect) Covers(n *Node) bool {
+	x, y := n.Bounds.Center()
+	return x >= r.X1 && x < r.X2 && y >= r.Y1 && y < r.Y2
+}

@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <!--
+    dev.mobium, and settled: publishing to Maven Central requires proving you
+    control the namespace, and mobium.dev is owned. The groupId and the Java
+    package therefore agree, and neither needs renaming before the first
+    release — which is the version of this that would have hurt.
+  -->
+  <groupId>dev.mobium</groupId>
+  <artifactId>mobium</artifactId>
+  <version>0.1.0-SNAPSHOT</version>
+  <packaging>jar</packaging>
+
+  <name>Mobium Java client</name>
+  <description>Drive native apps on Android emulators, Android phones and iOS simulators.</description>
+  <url>https://github.com/mobiumdev/mobium</url>
+
+  <licenses>
+    <license>
+      <name>MIT</name>
+      <url>https://opensource.org/licenses/MIT</url>
+    </license>
+  </licenses>
+
+  <properties>
+    <maven.compiler.release>17</maven.compiler.release>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+  </properties>
+
+  <!--
+    No dependencies, and that is the point. A test library that drags a JSON
+    parser onto the classpath will collide with the version the application
+    under test already uses, and the person untangling it is the user. The
+    tests have none either, so the client can be checked with javac alone —
+    see the `java` target in the repository Makefile.
+  -->
+
+  <build>
+    <testSourceDirectory>src/test/java</testSourceDirectory>
+  </build>
+</project>

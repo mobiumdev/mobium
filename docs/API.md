@@ -1,0 +1,133 @@
+# The API surface
+
+**Generated — do not edit.** Run `make api` to rebuild this and
+[api/surface.json](api/surface.json) from the source.
+
+Mobium's architecture rests on one claim: every front door reaches the same
+tool layer, so a CLI command and an MCP tool cannot answer differently. This is
+that claim, enumerated, and a drift check keeps it true —
+`internal/apisurface` fails the build if any tool stops being reachable
+from any surface without the gap being written down.
+
+One level down, [FLAGS.md](FLAGS.md) asks whether the CLI and the schema agree
+about what each tool *accepts*. Same procedure, same package, same kind of
+exemption list — and a separate check, because the two questions fail
+differently.
+
+## The numbers
+
+| | |
+| --- | --- |
+| Tools | **51** |
+| CLI commands registered | 56 |
+| …visible in `mobium --help` | 55 |
+| …hidden | 1 (pipe) |
+| Command constructors in source | 59 (includes `daemon start`, `stop`, `status`) |
+| Client libraries | 5 |
+
+Those three command counts differ on purpose, and the arithmetic is asserted
+by a test: registered = visible + hidden, and the constructor count is higher
+again because `daemon` has subcommands. Reported as one number, they have
+been wrong twice.
+
+## Every tool, and what reaches it
+
+| # | Tool | CLI | Go | Python | JavaScript | Java |
+| --- | --- | --- | --- | --- | --- | --- |
+| 1 | `app_alert` | `alert` | `Alert` | `alert` | `alert` | `alert` |
+| 2 | `app_appearance` | `appearance` | `Appearance` | `appearance` | `appearance` | `appearance` |
+| 3 | `app_call` | `call` | `IncomingCall` | `incoming_call` | `incomingCall` | `incomingCall` |
+| 4 | `app_check` | `check, uncheck` | `Check` | `check` | `check` | `check` |
+| 5 | `app_clear_data` | `clear-data` | `ClearData` | `clear_data` | `clearData` | `clearData` |
+| 6 | `app_clipboard` | `clipboard` | `Clipboard` | `clipboard` | `clipboard` | `clipboard` |
+| 7 | `app_context` | `context` | `Context` | `context` | `context` | `context` |
+| 8 | `app_contexts` | `contexts` | `Contexts` | `contexts` | `contexts` | `contexts` |
+| 9 | `app_crashes` | `crashes` | `Crashes` | `crashes` | `crashes` | `crashes` |
+| 10 | `app_current` | `current` | `Current` | `current` | `current` | `current` |
+| 11 | `app_devices` | `devices` | `Devices` | `devices` | `devices` | `devices` |
+| 12 | `app_dialogs` | `dialogs` | `AddDialogRule` | `add_dialog_rule` | `addDialogRule` | `addDialogRule` |
+| 13 | `app_doctor` | `doctor` | `Doctor` | `doctor` | `doctor` | `doctor` |
+| 14 | `app_drag` | `drag` | `Drag` | `drag` | `drag` | `drag` |
+| 15 | `app_eval` | `eval` | `Eval` | `eval` | `eval` | `eval` |
+| 16 | `app_find` | `find` | `Find` | `find` | `find` | `find` |
+| 17 | `app_grant` | `grant` | `Grant` | `grant` | `grant` | `grant` |
+| 18 | `app_install` | `install` | `Install` | `install` | `install` | `install` |
+| 19 | `app_keyboard` | `keyboard` | `Keyboard` | `keyboard` | `keyboard` | `keyboard` |
+| 20 | `app_launch` | `launch` | `Launch` | `launch` | `launch` | `launch` |
+| 21 | `app_list_apps` | `apps` | `Apps` | `apps` | `apps` | `apps` |
+| 22 | `app_locale` | `locale` | `AppLocale` | `app_locale` | `appLocale` | `appLocale` |
+| 23 | `app_location` | `location` | `Location` | `location` | `location` | `location` |
+| 24 | `app_lock` | `lock` | `ScreenLocked` | `screen_locked` | `screenLocked` | `screenLocked` |
+| 25 | `app_logs` | `logs` | `Logs` | `logs` | `logs` | `logs` |
+| 26 | `app_long_press` | `long-press` | `LongPress` | `long_press` | `longPress` | `longPress` |
+| 27 | `app_map` | `map` | `Map` | `map` | `map` | `map` |
+| 28 | `app_notifications` | `notifications` | `Notifications` | `notifications` | `notifications` | `notifications` |
+| 29 | `app_open_url` | `open` | `OpenURL` | `open_url` | `openUrl` | `openUrl` |
+| 30 | `app_orientation` | `orientation` | `Orientation` | `orientation` | `orientation` | `orientation` |
+| 31 | `app_press` | `press` | `Press` | `press` | `press` | `press` |
+| 32 | `app_press_drag` | `press-drag` | `PressDrag` | `press_drag` | `pressDrag` | `pressDrag` |
+| 33 | `app_press_tap` | `press-tap` | `PressTap` | `press_tap` | `pressTap` | `pressTap` |
+| 34 | `app_record` | `record` | `Record` | `record` | `record` | `record` |
+| 35 | `app_reset_permissions` | `reset-permissions` | `ResetPermissions` | `reset_permissions` | `resetPermissions` | `resetPermissions` |
+| 36 | `app_revoke` | `revoke` | `Revoke` | `revoke` | `revoke` | `revoke` |
+| 37 | `app_rotate` | `rotate` | `Rotate` | `rotate` | `rotate` | `rotate` |
+| 38 | `app_screen` | `screen` | `Screen` | `screen` | `screen` | `screen` |
+| 39 | `app_screenshot` | `screenshot` | `Screenshot` | `screenshot` | `screenshot` | `screenshot` |
+| 40 | `app_scroll_to` | `scroll-to` | `ScrollTo` | `scroll_to` | `scrollTo` | `scrollTo` |
+| 41 | `app_sms` | `sms` | `SendSMS` | `sms` | `sms` | `sms` |
+| 42 | `app_source` | `source` | `Source` | `source` | `source` | `source` |
+| 43 | `app_swipe` | `swipe` | `Swipe` | `swipe` | `swipe` | `swipe` |
+| 44 | `app_tap` | `tap, double-tap, double-tap` | `Tap` | `tap` | `tap` | `tap` |
+| 45 | `app_terminate` | `terminate` | `Terminate` | `terminate` | `terminate` | `terminate` |
+| 46 | `app_text` | `text` | `Text` | `text` | `text` | `text` |
+| 47 | `app_timezone` | `timezone` | `Timezone` | `timezone` | `timezone` | `timezone` |
+| 48 | `app_type` | `type` | `Type` | `type` | `type` | `type` |
+| 49 | `app_uninstall` | `uninstall` | `Uninstall` | `uninstall` | `uninstall` | `uninstall` |
+| 50 | `app_wait_for` | `wait` | `WaitFor` | `wait_for` | `waitFor` | `waitFor` |
+| 51 | `app_zoom` | `zoom` | `Zoom` | `zoom` | `zoom` | `zoom` |
+
+## Client coverage
+
+| Client | Source | Tools reached |
+| --- | --- | --- |
+| go | [clients/go/mobium.go](../clients/go/mobium.go) | 51 / 51 |
+| python | [clients/python/mobium/_device.py](../clients/python/mobium/_device.py) | 51 / 51 |
+| javascript | [clients/javascript/index.js](../clients/javascript/index.js) | 51 / 51 |
+| java | [clients/java/src/main/java/dev/mobium/Mobium.java](../clients/java/src/main/java/dev/mobium/Mobium.java) | 51 / 51 |
+| dotnet | [clients/dotnet/Mobium/Device.cs](../clients/dotnet/Mobium/Device.cs) | 51 / 51 |
+
+## Commands that dispatch no tool
+
+- `daemon`
+- `mcp`
+- `pipe`
+- `start`
+- `status`
+- `stop`
+
+
+These run the process rather than the device — the daemon's own lifecycle, and
+the two stdio servers. They are listed because a command that reaches no tool
+is either one of these or an orphan, and from outside the two look identical; a
+test names them so a new orphan fails rather than blending in.
+
+## How drift is prevented
+
+`internal/apisurface` sweeps the source — not a running binary, so it
+cannot disagree with what would be built — and asserts:
+
+1. **Every tool is reachable from the CLI.** Both dispatch paths count: most
+   commands go through the daemon, while `doctor` calls the tool layer
+   in-process so it still works with no daemon, no device and nothing on PATH.
+2. **Every client reaches every tool.** Per client, so a failure names the
+   client rather than a list of tools.
+3. **Gaps may exist, but only declared ones.** An undeclared gap fails; so does
+   an exemption for a gap that has since been closed, so the list cannot rot
+   into a blanket excuse. It is currently empty.
+4. **The sweep can see each surface.** A pattern that stopped matching would
+   report a client as covering nothing; that is asserted against, because a
+   drift check that fails open is worse than none.
+
+The first thing this found, on the day it was written, was real: `doctor`
+existed in the Java client and in none of the other three. Nothing had compared
+them before.

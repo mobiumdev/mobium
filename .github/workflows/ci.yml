@@ -1,0 +1,81 @@
+# Everything that can be checked without a device.
+#
+# The job body is `make ci` rather than a list of steps, so this file and a
+# person checking before a commit run exactly the same thing. Adding a check
+# here without adding it to the Makefile would give CI a coverage the
+# developer cannot reproduce, which is how a green build starts meaning less
+# than it should.
+#
+# What this deliberately does NOT cover is in docs/RELEASE-CHECKLIST.md.
+
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  # A newer push to the same branch makes an in-flight run irrelevant.
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    name: Build, vet and test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-go@v7
+        with:
+          # Read from go.mod so the version is stated once. Both modules
+          # declare the same one; the root is the source of truth.
+          go-version-file: go.mod
+          # Two modules, so both lock files matter to the cache key.
+          cache-dependency-path: |
+            go.sum
+            clients/go/go.sum
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+
+      # The Java client needs only a JDK: it has no dependencies and its
+      # tests have no framework, so `make java` is javac and java and nothing
+      # else. No Maven, and no network beyond this step.
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      # The .NET client targets netstandard2.0 and its tests run on the
+      # SDK's own runtime, so the SDK is all that is needed -- no NuGet
+      # restore, because the client has no dependencies.
+      - uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: '10.0.x'
+
+      # Pinned and checksum-verified by the Makefile, so CI and a developer's
+      # machine run the same linter at the same version.
+      - name: Install golangci-lint
+        run: make lint-install
+
+      - name: make ci
+        run: make ci
+
+      - name: Build the binary
+        run: make build
+
+      # A smoke test that the thing that just built actually runs. `--help`
+      # exercises the whole cobra command tree, which has caught a duplicate
+      # command registration before it reached anyone.
+      - name: Smoke test
+        run: |
+          ./bin/mobium --version
+          ./bin/mobium --help > /dev/null
+          test "$(./bin/mobium --help | grep -cE '^  [a-z-]+ ')" -ge 20
