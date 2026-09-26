@@ -201,7 +201,10 @@ echo "    home           mapped                                          ok"
 $M tap "$(ref 'WebViews')" >/dev/null; sleep 1
 $M tap "$(ref 'Plain page')" >/dev/null; sleep 3
 CTX=$(appContexts "$APP" | head -1)
-[ -n "$CTX" ] || fail "no WebView context — the app did not opt into inspection"
+# Say why. `contexts` fails for reasons of its own -- a phone off its cable
+# cannot reach the web inspector at all -- and only when it succeeds and lists
+# nothing for this app is the app not opting into inspection the answer.
+[ -n "$CTX" ] || fail "no WebView context: $($M contexts 2>&1 | grep -m1 "^error:" || echo "mobium listed none for this app")"
 echo "    contexts       $CTX"
 
 $M context "$CTX" >/dev/null

@@ -54,7 +54,7 @@ sleep 3
   || fail "Safari is not in the foreground; the native WebView element will not be there"
 
 ctx=$(appContexts com.apple.mobilesafari | head -1)
-[ -n "$ctx" ] || fail "no WebView context on a simulator showing a web page"
+[ -n "$ctx" ] || fail "no WebView context on a simulator showing a web page: $($M contexts 2>&1 | grep -m1 "^error:" || echo "mobium listed none for this app")"
 echo "    contexts       $ctx"
 
 $M contexts | grep -q "example.com" || fail "the context does not name the page it is showing"

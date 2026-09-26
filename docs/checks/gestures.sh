@@ -115,7 +115,7 @@ if [ "$PLATFORM" = android ]; then
   # homework.
   open_gesture 'Double Tap'; sleep 1
   CTX=$(appContexts "$APP" | head -1)
-  [ -n "$CTX" ] || fail "no WebView context for the double tap"
+  [ -n "$CTX" ] || fail "no WebView context for the double tap: $($M contexts 2>&1 | grep -m1 "^error:" || echo "mobium listed none for this app")"
   $M context "$CTX" >/dev/null
   $M map >/dev/null
   D0=$($M eval 'tapCounts().doubles' | tail -1)
@@ -285,7 +285,7 @@ sh "$ROOT/docs/checks/zoom.sh" "$DEV" | grep -v -e '^---' -e '^PASS' \
 # why the demo is a WebView rather than a native view.
 open_gesture 'Rotate'; sleep 1
 CTX=$(appContexts "$APP" | head -1)
-[ -n "$CTX" ] || fail "no WebView context to rotate in"
+[ -n "$CTX" ] || fail "no WebView context to rotate in: $($M contexts 2>&1 | grep -m1 "^error:" || echo "mobium listed none for this app")"
 
 turned() {
   $M context "$CTX" >/dev/null
