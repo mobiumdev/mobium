@@ -68,7 +68,7 @@ for e in json.load(sys.stdin).get('elements',[]):
 $M tap "$(ref 'Gestures')" >/dev/null; sleep 1
 $M tap "$(ref 'Pinch and Spread')" >/dev/null; sleep 3
 CTX=$(appContexts "$APP" | head -1)
-[ -n "$CTX" ] || fail "no WebView context to zoom"
+[ -n "$CTX" ] || fail "no WebView context to zoom: $($M contexts 2>&1 | grep -m1 "^error:" || echo "mobium listed none for this app")"
 
 # scale reads the page's own idea of how far it is zoomed, which means
 # switching context and back. The switching is the price of asking the only
