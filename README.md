@@ -110,7 +110,10 @@ rather than taps — a target under a dialog or the keyboard, and `type` refuses
 what is certainly not a text field. When the app itself has drawn a control
 over the target, a tap aims at a clear part of it, waits for the cover to go,
 or refuses and names the cover; anything else drawn over the point is
-reported in the result. `wait` blocks for an element to appear,
+reported in the result. Inside a WebView the page itself is asked, with
+Vibium's checks: the element is scrolled into view, and a tap waits for it to
+be visible, enabled, still and not covered — the page's own hit test says
+what is on top — and otherwise refuses with the check that failed. `wait` blocks for an element to appear,
 disappear or read a certain way, so no flow needs a sleep.
 
 A backend that cannot do something correctly says so and names the fix,

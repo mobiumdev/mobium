@@ -492,16 +492,22 @@ func (h *Handlers) tapOn(ctx context.Context, s *session, args map[string]interf
 	// natively: the driver already knows how to touch a point, so none of
 	// CDP's input domain is needed.
 	if s.web != nil {
-		rect, err := h.resolveWeb(ctx, s, target)
+		// Only once the page says it can be touched: visible and in view,
+		// enabled, still, and not covered — and aimed around a cover over its
+		// center (webview.CheckActionable).
+		wx, wy, cover, err := h.aimWeb(ctx, s, target)
 		if err != nil {
 			return nil, err
 		}
-		wx, wy := rect.Center()
 		if err := touch(ctx, wx, wy); err != nil {
 			return nil, err
 		}
-		return Result(fmt.Sprintf("%s %s at (%d, %d) in %s", verb, target, wx, wy, s.webCtx),
-			ActionView{Action: action, Target: target, X: wx, Y: wy, Context: s.webCtx}), nil
+		note := ""
+		if cover != nil {
+			note = fmt.Sprintf("; its center is covered by %q, so it was touched at a clear point", cover.Label)
+		}
+		return Result(fmt.Sprintf("%s %s at (%d, %d) in %s%s", verb, target, wx, wy, s.webCtx, note),
+			ActionView{Action: action, Target: target, X: wx, Y: wy, Context: s.webCtx, Cover: cover}), nil
 	}
 
 	// Re-snapshot and re-resolve rather than replaying the coordinates the

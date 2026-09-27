@@ -99,7 +99,10 @@ func (h *Handlers) dragOn(ctx context.Context, s *session, args map[string]inter
 	// hierarchy, where the page's own elements do not exist — and the failure
 	// would name the ref rather than the context.
 	if s.web != nil {
-		a, err := h.resolveWeb(ctx, s, from)
+		// The source must be touchable, as for a tap. The destination is
+		// where the finger lets go, and a drop zone often has something over
+		// it mid-drag — the dragged item itself — so it keeps its center.
+		ax, ay, _, err := h.aimWeb(ctx, s, from)
 		if err != nil {
 			return nil, err
 		}
@@ -107,7 +110,6 @@ func (h *Handlers) dragOn(ctx context.Context, s *session, args map[string]inter
 		if err != nil {
 			return nil, err
 		}
-		ax, ay := a.Center()
 		bx, by := b.Center()
 		if ax == bx && ay == by {
 			return nil, mobiumerr.New(mobiumerr.InvalidArgument, "from and to are both at (%d, %d), so nothing "+

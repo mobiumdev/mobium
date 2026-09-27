@@ -175,7 +175,10 @@ settle() {
 $M alert dismiss >/dev/null 2>&1 || true
 
 echo "--- $DEV ($PLATFORM${PHONE:+, real iPhone})"
-$M apps 2>/dev/null | grep -q "$APP" || fail "$APP is not installed — build it first (see the header)"
+# A listing that fails is not an empty one: a phone gone from its cable
+# answered "not installed" here while the real error was the device.
+APPS=$($M apps 2>&1) || fail "could not list the apps: $APPS"
+echo "$APPS" | grep -q "$APP" || fail "$APP is not installed — build it first (see the header)"
 
 # A phone cannot reset a permission from outside, and an unanswered prompt left
 # by a run that died is shown again the next time the app comes forward --

@@ -31,7 +31,10 @@ case "$DEV" in
   *)                                   PLATFORM=android; M="$ROOT/bin/mobium --device $DEV" ;;
 esac
 echo "--- $DEV ($PLATFORM)"
-$M apps | grep -q "$APP" || fail "$APP is not installed — build it first (see mobium-app.sh's header)"
+# A listing that fails is not an empty one: a phone gone from its cable
+# answered "not installed" here while the real error was the device.
+APPS=$($M apps 2>&1) || fail "could not list the apps: $APPS"
+echo "$APPS" | grep -q "$APP" || fail "$APP is not installed — build it first (see mobium-app.sh's header)"
 trap '$M terminate "$APP" >/dev/null 2>&1 || true' EXIT
 
 $M terminate "$APP" >/dev/null 2>&1 || true

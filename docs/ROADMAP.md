@@ -16,9 +16,9 @@ this is what is not.
   app drew over it ([CHALLENGES 115](CHALLENGES.md)). Still to come:
   - An overlay hidden from accessibility on iOS, which WebDriverAgent's tree
     does not contain, so a tap under one still lands on it.
-  - The same checks *inside WebViews*, run in the page, with the tap staying a
-    real touch.
-  - One error shape for a failed check — "failed check X: reason".
+  - One error shape for a failed check — "failed check X: reason" — on
+    native screens too. A WebView's refusals use it since CHALLENGES 118,
+    where Vibium's checks now run in the page.
   - More states to `wait` for: checked, focused, a value.
 - **Android Settings' switches map without a name.** On a Pixel 7 AVD, the
   switch beside "Remove animations", "Bold text" and "High contrast text"

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/mobiumdev/mobium/internal/mobiumerr"
 	"strings"
+	"time"
 
 	"github.com/mobiumdev/mobium/internal/device"
 	"github.com/mobiumdev/mobium/internal/uitree"
@@ -233,9 +234,17 @@ func firstSentence(s string) string {
 // in the map. Anything cached from the previous map would be a coordinate that
 // the page may have scrolled out from under.
 func (h *Handlers) resolveWeb(ctx context.Context, s *session, target string) (uitree.Rect, error) {
+	rect, _, _, err := h.findWeb(ctx, s, target)
+	return rect, err
+}
+
+// findWeb resolves a web ref to its element: the rectangle on screen, the
+// element's index among the page's map candidates, and the frame that
+// converts page pixels to device pixels.
+func (h *Handlers) findWeb(ctx context.Context, s *session, target string) (uitree.Rect, int, *webview.Frame, error) {
 	table, ok := h.refs[s.dev.Serial]
 	if !ok || table.web == nil {
-		return uitree.Rect{}, mobiumerr.New(mobiumerr.InvalidArgument, "no map for %s yet — run app_map first", s.webCtx)
+		return uitree.Rect{}, 0, nil, mobiumerr.New(mobiumerr.InvalidArgument, "no map for %s yet — run app_map first", s.webCtx)
 	}
 	ref, ok := table.web[target]
 	if !ok {
@@ -246,22 +255,22 @@ func (h *Handlers) resolveWeb(ctx context.Context, s *session, target string) (u
 		// `tap text=Charles Babbage` reported "unknown ref" and reading it
 		// literally sent you back to app_map forever.
 		if !strings.HasPrefix(target, "@") {
-			return uitree.Rect{}, mobiumerr.New(mobiumerr.InvalidArgument,
+			return uitree.Rect{}, 0, nil, mobiumerr.New(mobiumerr.InvalidArgument,
 				"%q is a locator, and locators do not work inside a WebView — "+
 					"use a @ref from app_map (you are in %s; `app_context NATIVE_APP` "+
 					"switches back to the app shell, where locators do work)",
 				target, s.webCtx)
 		}
-		return uitree.Rect{}, mobiumerr.New(mobiumerr.InvalidArgument, "unknown ref %s in %s — run app_map again", target, s.webCtx)
+		return uitree.Rect{}, 0, nil, mobiumerr.New(mobiumerr.InvalidArgument, "unknown ref %s in %s — run app_map again", target, s.webCtx)
 	}
 
 	frame, err := h.webFrame(ctx, s)
 	if err != nil {
-		return uitree.Rect{}, err
+		return uitree.Rect{}, 0, nil, err
 	}
 	els, err := s.web.Map(ctx)
 	if err != nil {
-		return uitree.Rect{}, err
+		return uitree.Rect{}, 0, nil, err
 	}
 
 	match := -1
@@ -279,19 +288,19 @@ func (h *Handlers) resolveWeb(ctx context.Context, s *session, target string) (u
 		// Fall back to position only when the page still has an element
 		// there, and say so rather than silently tapping the wrong one.
 		if ref.Index < len(els) {
-			return uitree.Rect{}, mobiumerr.New(mobiumerr.NoSuchElement,
+			return uitree.Rect{}, 0, nil, mobiumerr.New(mobiumerr.NoSuchElement,
 				"%s (%q) is no longer on the page — the content changed, run app_map again",
 				target, ref.Label)
 		}
-		return uitree.Rect{}, mobiumerr.New(mobiumerr.NoSuchElement, "%s (%q) is no longer on the page", target, ref.Label)
+		return uitree.Rect{}, 0, nil, mobiumerr.New(mobiumerr.NoSuchElement, "%s (%q) is no longer on the page", target, ref.Label)
 	}
 
 	e := els[match]
 	rect := frame.ToDevice(e.X, e.Y, e.W, e.H)
 	if rect.Empty() {
-		return uitree.Rect{}, mobiumerr.New(mobiumerr.ElementNotReachable, "%s has no on-screen area", target)
+		return uitree.Rect{}, 0, nil, mobiumerr.New(mobiumerr.ElementNotReachable, "%s has no on-screen area", target)
 	}
-	return rect, nil
+	return rect, match, frame, nil
 }
 
 // adbFor recovers the adb handle for a session's device. Only the Android
@@ -393,4 +402,78 @@ func noWebViewsHint(s *session) string {
 	return "No WebViews are attachable. A debuggable WebView is required: apps must " +
 		"call WebView.setWebContentsDebuggingEnabled(true), which release builds " +
 		"usually do not."
+}
+
+// webStableGap is how long apart two readings of a web target's position
+// must agree before it counts as still: Vibium's figure.
+const webStableGap = 50 * time.Millisecond
+
+// aimWeb resolves a web ref and decides where to touch it, after the page
+// has said the element can be touched: visible and in view, enabled, holding
+// still, and not covered — or covered only at its center, in which case the
+// clear point nearest it is used (webview.CheckActionable). A check that
+// fails is waited out within the implicit wait, since a slide, a spinner or a
+// banner on its way out is the ordinary case, and then refused in Vibium's
+// words: which check, and why.
+func (h *Handlers) aimWeb(ctx context.Context, s *session, target string) (int, int, *CoverView, error) {
+	deadline := time.Now().Add(h.implicitWait)
+	var last *webview.Actionability
+	for {
+		_, index, frame, err := h.findWeb(ctx, s, target)
+		if err != nil {
+			return 0, 0, nil, err
+		}
+		a, err := webview.CheckActionable(ctx, s.web, index)
+		if err != nil {
+			return 0, 0, nil, err
+		}
+		if a.Status == "ok" {
+			time.Sleep(webStableGap)
+			b, err := webview.CheckActionable(ctx, s.web, index)
+			if err != nil {
+				return 0, 0, nil, err
+			}
+			if b.Status == "ok" && b.X == a.X && b.Y == a.Y && b.W == a.W && b.H == a.H {
+				p := frame.ToDevice(b.PX, b.PY, 0, 0)
+				var cover *CoverView
+				if b.Moved {
+					cover = &CoverView{Label: b.Cover, Control: true}
+				}
+				return p.X1, p.Y1, cover, nil
+			}
+			a = &webview.Actionability{Status: "failed", Check: "stable", Reason: "the element is moving or resizing"}
+			if b.Status != "ok" {
+				a = b
+			}
+		}
+		last = a
+		if a.Status == "not_found" {
+			return 0, 0, nil, mobiumerr.New(mobiumerr.NoSuchElement, "%s is no longer on the page — the content changed, run app_map again", target)
+		}
+		if time.Now().After(deadline) {
+			return 0, 0, nil, webCheckFailed(target, last, h.implicitWait)
+		}
+		select {
+		case <-ctx.Done():
+			return 0, 0, nil, ctx.Err()
+		case <-time.After(100 * time.Millisecond):
+		}
+	}
+}
+
+// webCheckFailed is the refusal for a web target that never became
+// touchable, in Vibium's shape — "failed check X: reason" — with a code that
+// says what kind of failure it is.
+func webCheckFailed(target string, a *webview.Actionability, waited time.Duration) error {
+	code, remedy := mobiumerr.ElementNotReachable, "wait for it to become touchable, or scroll or dismiss what is in the way"
+	switch a.Check {
+	case "enabled":
+		code, remedy = mobiumerr.Timeout, "do what enables it first"
+	case "stable":
+		code, remedy = mobiumerr.Timeout, "wait for it to stop moving"
+	}
+	return mobiumerr.New(code, "%s failed check %s: %s, and still did after %s", target, a.Check, a.Reason, waited).
+		WithRemedy(remedy).
+		WithDetail("check", a.Check).
+		WithDetail("reason", a.Reason)
 }

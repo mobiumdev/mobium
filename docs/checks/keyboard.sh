@@ -32,7 +32,10 @@ esac
 # field is reached by its role there.
 echo "--- $DEV ($PLATFORM)"
 
-$M apps | grep -q "$APP" || fail "MobiumApp is not installed — see docs/checks/mobium-app.sh"
+# A listing that fails is not an empty one: a phone gone from its cable
+# answered "not installed" here while the real error was the device.
+APPS=$($M apps 2>&1) || fail "could not list the apps: $APPS"
+echo "$APPS" | grep -q "$APP" || fail "$APP is not installed — build it first (see docs/checks/mobium-app.sh)"
 $M terminate "$APP" >/dev/null 2>&1 || true
 $M launch "$APP" >/dev/null
 $M tap "label=Login Demo" >/dev/null
