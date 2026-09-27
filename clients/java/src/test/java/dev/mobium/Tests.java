@@ -130,6 +130,11 @@ public final class Tests {
         eq("no locator is empty, not null", "", e.locator());
         eq("no context is empty, not null", "", e.context());
         eq("toString without a role", "@e3 Go", e.toString());
+        yes("no checked state is null, not false", e.checked() == null);
+        Element box = Element.from(Json.asObject(Json.parse("{\"ref\":\"@e4\",\"role\":\"checkbox\",\"checked\":true}")));
+        eq("a checkbox carries its state", Boolean.TRUE, box.checked());
+        Element off = Element.from(Json.asObject(Json.parse("{\"ref\":\"@e5\",\"role\":\"switch\",\"checked\":false}")));
+        eq("an unchecked switch is false, not null", Boolean.FALSE, off.checked());
     }
 
     static void boundsComputeTheirCenter() {

@@ -83,6 +83,9 @@ type Element struct {
 	Bounds  Bounds   `json:"bounds"`
 	// Context names the WebView an element came from, empty for native ones.
 	Context string `json:"context,omitempty"`
+	// Checked is a checkbox, radio or switch's state; nil for anything with
+	// no such state, which is a different answer from unchecked.
+	Checked *bool `json:"checked,omitempty"`
 }
 
 // DeviceInfo is one attached device or simulator.
@@ -730,15 +733,24 @@ func (d *Device) SetAccessibility(ctx context.Context, setting, value string) (s
 
 // Screen is one device's screen, and what is wrong with the layout on it.
 type Screen struct {
-	Width  int `json:"width"`
-	Height int `json:"height"`
+	// WidthPx and HeightPx are device pixels, on both platforms — what map
+	// bounds, taps and screenshots are in. They were read as "width" and
+	// "height", which the daemon never sent, so every Screen was 0x0.
+	WidthPx  int `json:"width_px"`
+	HeightPx int `json:"height_px"`
 	// DPI is Android's density. Zero on iOS, where bounds are device pixels
 	// and there is no density to read.
 	DPI int `json:"dpi,omitempty"`
+	// WidthDP and HeightDP are what a layout is chosen by — dp on Android,
+	// points on iOS — and SmallestWidthDP is Android's `sw` qualifier, the
+	// shorter edge in dp. Zero when the conversion is unknown.
+	WidthDP         int `json:"width_dp,omitempty"`
+	HeightDP        int `json:"height_dp,omitempty"`
+	SmallestWidthDP int `json:"smallest_width_dp,omitempty"`
 
-	PhysicalWidth  int `json:"physical_width"`
-	PhysicalHeight int `json:"physical_height"`
-	PhysicalDPI    int `json:"physical_dpi,omitempty"`
+	PhysicalWidthPx  int `json:"physical_width_px"`
+	PhysicalHeightPx int `json:"physical_height_px"`
+	PhysicalDPI      int `json:"physical_dpi,omitempty"`
 
 	// Overridden says the device is pretending, which is a state somebody has
 	// to put back with Screen(ctx, "reset", false).
@@ -1088,13 +1100,13 @@ func (d *Device) SendSMS(ctx context.Context, from, text string) error {
 // it is the first thing to call when something fails for a reason that makes
 // no sense.
 func (d *Device) Doctor(ctx context.Context) (string, error) {
-	var out struct {
-		Report string `json:"report"`
-	}
-	if err := d.data(ctx, "app_doctor", map[string]any{}, &out); err != nil {
+	// The report is the tool's text, as `mobium doctor` prints it. This read
+	// a "report" field the tool never sends, and so returned "" every time.
+	res, err := d.conn.call(ctx, "app_doctor", map[string]any{})
+	if err != nil {
 		return "", err
 	}
-	return out.Report, nil
+	return res.text(), nil
 }
 
 // ConsoleEntry is one line a page logged.

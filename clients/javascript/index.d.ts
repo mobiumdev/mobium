@@ -31,6 +31,8 @@ export interface Element {
   locator: string
   /** The WebView it came from; empty for native elements. */
   context: string
+  /** A checkbox, radio or switch's state; null for anything with no such state. */
+  checked: boolean | null
 }
 
 /** One attached device or simulator. */

@@ -191,6 +191,11 @@ namespace Mobium.Tests
             Eq("missing role is empty, not null", "", e.Role);
             Eq("missing locator is empty", "", e.Locator);
             Eq("toString without a role", "@e2 Search", e.ToString());
+            Yes("no checked state is null, not false", e.Checked == null);
+            var box = Element.From(Json.AsObject(Json.Parse("{\"ref\":\"@e4\",\"role\":\"checkbox\",\"checked\":true}")));
+            Eq("a checkbox carries its state", true, box.Checked);
+            var off = Element.From(Json.AsObject(Json.Parse("{\"ref\":\"@e5\",\"role\":\"switch\",\"checked\":false}")));
+            Eq("an unchecked switch is false, not null", false, off.Checked);
         }
 
         private static void BoundsComputeTheirCenter()

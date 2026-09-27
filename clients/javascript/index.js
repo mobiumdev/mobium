@@ -203,6 +203,8 @@ function toElement(e) {
     bounds: toBounds(e.bounds),
     locator: e.locator ? `${e.locator.kind}=${e.locator.value}` : '',
     context: e.context || '',
+    // A checkbox, radio or switch's state; null for anything with no such state.
+    checked: typeof e.checked === 'boolean' ? e.checked : null,
   }
 }
 

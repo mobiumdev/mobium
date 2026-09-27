@@ -23,11 +23,15 @@ namespace Mobium
         /// <summary>The WebView it came from; empty for native elements.</summary>
         public string Context { get; }
 
+        /// <summary>A checkbox, radio or switch's state; null for anything with no such state.</summary>
+        public bool? Checked { get; }
+
         /// <summary>Builds an element record.</summary>
-        public Element(string @ref, string label, string role, string locator, Bounds bounds, string context)
+        public Element(string @ref, string label, string role, string locator, Bounds bounds, string context,
+            bool? @checked = null)
         {
             Ref = @ref; Label = label; Role = role;
-            Locator = locator; Bounds = bounds; Context = context;
+            Locator = locator; Bounds = bounds; Context = context; Checked = @checked;
         }
 
         internal static Element From(IDictionary<string, object?> m)
@@ -40,7 +44,8 @@ namespace Mobium
                 Json.Str(m, "role"),
                 locator,
                 Bounds.From(Json.AsObject(m.TryGetValue("bounds", out var b) ? b : null)),
-                Json.Str(m, "context"));
+                Json.Str(m, "context"),
+                m.TryGetValue("checked", out var c) && c is bool isChecked ? isChecked : (bool?)null);
         }
 
         /// <summary>The ref and label, with the role in brackets when there is one.</summary>

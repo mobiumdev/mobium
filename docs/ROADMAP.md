@@ -10,6 +10,18 @@ this is what is not.
   transport is written; it has not yet been verified on a Windows machine, and
   until it has, Windows is unsupported. [WINDOWS.md](WINDOWS.md) is the state
   of it.
+- **Two gestures that land wrong, found and not yet diagnosed** (driving
+  every Go client method against MobiumApp, 2026-09-27):
+  - On a headless Android emulator, a tap on a button still visible above the
+    full on-screen keyboard is reported as tapped and never reaches the app;
+    the keyboard stays up and the button leaves the hierarchy. Windowed
+    emulators show only a floating toolbar, and the iPhone simulator passes.
+  - On iOS, `double-tap` reaches a React Native `Pressable` as one press
+    (Android: two, 165-184ms apart). WebDriverAgent's own double tap is the
+    only form WebKit accepts, so the fix is not simply a different chain.
+- **iOS contexts include other apps' pages.** After Safari has opened a link,
+  `contexts` on iOS lists its page beside the app's own WebViews; the names
+  say which is which, but the list is not scoped to the app in front.
 - **Published client packages.** Every client builds, as its registry would
   receive it, into a package that carries the LICENSE, a README and full
   metadata, and each has been installed from that package into a clean project

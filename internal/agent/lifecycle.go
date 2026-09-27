@@ -57,6 +57,9 @@ const settleAfterStart = 3 * time.Second
 // is the honest answer either way.
 func (h *Handlers) awaitForeground(ctx context.Context, s *session, want, wasApp, wasScreen string) string {
 	app := wasApp
+	// changed and changedAt track a new screen in the same app, which only
+	// counts once it has held still for sameAppSettle: see below.
+	changed, changedAt := "", time.Time{}
 	_ = pollUntil(ctx, settleAfterStart, func(ctx context.Context) (bool, error) {
 		tree, err := s.driver.Snapshot(ctx)
 		if err != nil {
@@ -74,10 +77,33 @@ func (h *Handlers) awaitForeground(ctx context.Context, s *session, want, wasApp
 		if now != "" && now != wasApp {
 			return true, nil
 		}
-		return fingerprint(tree.Root) != wasScreen, nil
+		// A new screen in the same app is either a deep link that landed in
+		// it or the app on its way out for another one — and the second looks
+		// like the first until the other app arrives. Measured on an iPhone 17
+		// Pro simulator: opening https://example.com over MobiumApp changed
+		// its screen within 400-850ms, the answer was taken from that, and
+		// Safari came forward 500-900ms later — so every open-url reported
+		// MobiumApp. A deep link's screen holds still; a departing app's does
+		// not, or is replaced, so the change only counts once it has held.
+		fp := fingerprint(tree.Root)
+		if fp == wasScreen {
+			changed = ""
+			return false, nil
+		}
+		if fp != changed {
+			changed, changedAt = fp, time.Now()
+			return false, nil
+		}
+		return time.Since(changedAt) >= sameAppSettle, nil
 	})
 	return app
 }
+
+// sameAppSettle is how long a new screen in the same app must hold still
+// before an open-url decides the link landed there, rather than in an app
+// still on its way. Safari arrived at most 900ms after MobiumApp's screen first
+// changed; the price is up to this much more wait on a same-app deep link.
+const sameAppSettle = 1 * time.Second
 
 // lockedInstead turns "started, but something else is in front" into the
 // refusal it is when the device is locked.

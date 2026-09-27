@@ -49,7 +49,7 @@ func (u *UIA2) Drag(ctx context.Context, x1, y1, x2, y2 int, hold, move time.Dur
 // only the geometry scales.
 func (w *WDA) Drag(ctx context.Context, x1, y1, x2, y2 int, hold, move time.Duration) error {
 	return w.w3c.pointerSequence(ctx,
-		dragHoldActions(w.toPoints(x1), w.toPoints(y1), w.toPoints(x2), w.toPoints(y2), hold, move))
+		dragHoldChain(w.toPoints(x1), w.toPoints(y1), w.toPoints(x2), w.toPoints(y2), hold, move, true))
 }
 
 // The dump backend implements neither, and the reasons are different.

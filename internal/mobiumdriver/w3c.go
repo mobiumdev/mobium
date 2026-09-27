@@ -301,9 +301,10 @@ func doubleTapActions(x, y int) []map[string]interface{} {
 		// while the pointer is up** — measured on an iPhone 17 Pro simulator
 		// by instrumenting the page: the two taps arrived 67ms long with
 		// *zero* milliseconds between them, and WebKit rejected the second as
-		// a bounce, so no dblclick was ever synthesized. A pause between
-		// pointerDown and pointerUp is honored there (a drag's holds prove
-		// it), so the rule is narrower than "WDA ignores pauses".
+		// a bounce, so no dblclick was ever synthesized. A pause while the
+		// pointer is down is honored only in part: a drag's closing hold,
+		// after its moves, arrives in full, and its opening one, straight
+		// after pointerDown, does not — see dragHoldChain.
 		//
 		// Spending the interval on a timed pointerMove instead was tried and
 		// is worse: WDA read the move as a second contact and the page saw
@@ -337,6 +338,22 @@ func doubleTapActions(x, y int) []map[string]interface{} {
 // **It holds before releasing.** A release in the same frame as the arrival
 // is dropped before the target under the finger has seen it.
 func dragHoldActions(x1, y1, x2, y2 int, hold, move time.Duration) []map[string]interface{} {
+	return dragHoldChain(x1, y1, x2, y2, hold, move, false)
+}
+
+// dragHoldChain is dragHoldActions, with the opening hold sent either as a
+// pause or, when holdByMoving, as a move to the point the finger is already on.
+//
+// WebDriverAgent needs the move. A pause straight after pointerDown arrived
+// as 183ms whatever was asked — measured three times in three on an iPhone
+// 17 Pro simulator, by MobiumApp's drop zone, with 1500ms asked — while the
+// closing pause, after the moves, arrived in full. Sent as a move in place,
+// the opening hold arrived as 1517ms, three times in three. So a long-press
+// drag on iOS, which arms on that hold, had never really been one. It is
+// CHALLENGES 84's lesson on the other platform: a finger that is down holds
+// still by moving to where it already is. Android's pause arrives in full
+// (1522ms, the same measurement) and keeps it.
+func dragHoldChain(x1, y1, x2, y2 int, hold, move time.Duration, holdByMoving bool) []map[string]interface{} {
 	// One step per 50 device pixels of travel, never fewer than 5 and never
 	// more than 40: below the floor a short drag sends too few events to be
 	// a hover, above the ceiling a long one only makes the payload bigger.
@@ -357,6 +374,9 @@ func dragHoldActions(x1, y1, x2, y2 int, hold, move time.Duration) []map[string]
 		{"type": "pointerMove", "duration": 0, "x": x1, "y": y1},
 		{"type": "pointerDown", "button": 0},
 		{"type": "pause", "duration": hold.Milliseconds()},
+	}
+	if holdByMoving {
+		chain[2] = map[string]interface{}{"type": "pointerMove", "duration": hold.Milliseconds(), "x": x1, "y": y1}
 	}
 	for i := 1; i <= steps; i++ {
 		f := float64(i) / float64(steps)

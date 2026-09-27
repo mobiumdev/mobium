@@ -11,9 +11,11 @@ import java.util.Map;
  * @param locator how the ref resolves on a later screen, as {@code kind=value}
  * @param bounds  where it is, in device pixels
  * @param context the WebView it came from, empty for native elements
+ * @param checked a checkbox, radio or switch's state; null for anything with
+ *                no such state, which is a different answer from unchecked
  */
 public record Element(String ref, String label, String role,
-                      String locator, Bounds bounds, String context) {
+                      String locator, Bounds bounds, String context, Boolean checked) {
 
     static Element from(Map<String, Object> m) {
         Map<String, Object> loc = Json.asObject(m.get("locator"));
@@ -24,7 +26,8 @@ public record Element(String ref, String label, String role,
                 Json.str(m, "role"),
                 locator,
                 Bounds.from(Json.asObject(m.get("bounds"))),
-                Json.str(m, "context"));
+                Json.str(m, "context"),
+                m.get("checked") instanceof Boolean c ? c : null);
     }
 
     @Override public String toString() {

@@ -54,6 +54,14 @@ async function handle(msg) {
     send({ jsonrpc: '2.0', id, result: { content: [{ type: 'text', text: args.action || 'status' }], structuredContent: view } })
     return
   }
+  if (name === 'app_map' && mode === 'ok') {
+    send({ jsonrpc: '2.0', id, result: { content: [{ type: 'text', text: 'map' }], structuredContent: { elements: [
+      { ref: '@e1', label: 'Accept terms', role: 'checkbox', checked: true },
+      { ref: '@e2', label: 'Dark mode', role: 'switch', checked: false },
+      { ref: '@e3', label: 'Go', role: 'button' },
+    ] } } })
+    return
+  }
   if (mode === 'noid' && name === 'app_map') {
     process.stdout.write('{"jsonrpc":"2.0","error":{"code":-32700,"message":"Parse error","data":"invalid character"}}\n')
     return
