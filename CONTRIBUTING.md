@@ -11,6 +11,8 @@ only what must change. When something needs to work on a second platform,
 through a second front door or via a third-party backend, the answer is the
 existing thing with the necessary changes, not a parallel implementation. A
 change that duplicates a layer is almost always the wrong one.
+[docs/PHILOSOPHY.md](docs/PHILOSOPHY.md) has where the motto comes from — Poul
+Anderson's "The Three-Cornered Wheel" — and the rule applied across the codebase.
 
 - `internal/mobiumdriver` is the only platform-specific layer. Everything above
   it is written once. A third party adds a backend as a **driver process**
