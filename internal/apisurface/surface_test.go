@@ -252,3 +252,36 @@ func TestTheUnclassifiedScanCanFail(t *testing.T) {
 		t.Errorf("found %v, want the two bare ones and not the wrapping one", found)
 	}
 }
+
+func TestTheGoClientReadsOnlyWhatTheDaemonSends(t *testing.T) {
+	problems, err := CheckGoWireTypes(repoRoot)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, p := range problems {
+		t.Error(p)
+	}
+}
+
+func TestTheWireTypeCheckCanFail(t *testing.T) {
+	// The defect it exists for: a key renamed on the daemon's side and not
+	// the client's. Rebuilt in a scratch tree, it must be reported.
+	root := t.TempDir()
+	for dir, src := range map[string]string{
+		"clients/go":     "package mobium\ntype Screen struct { Width int `json:\"width\"` }\n",
+		"internal/agent": "package agent\ntype ScreenView struct { WidthPx int `json:\"width_px\"` }\n",
+	} {
+		os.MkdirAll(filepath.Join(root, dir), 0o755)
+		os.WriteFile(filepath.Join(root, dir, "x.go"), []byte(src), 0o644)
+	}
+	saved := GoWireTypes
+	GoWireTypes = map[string][2]string{"Screen": {"internal/agent", "ScreenView"}}
+	defer func() { GoWireTypes = saved }()
+	problems, err := CheckGoWireTypes(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(problems) != 1 || !strings.Contains(problems[0], `reads "width"`) {
+		t.Errorf("problems = %v, want the renamed key reported", problems)
+	}
+}

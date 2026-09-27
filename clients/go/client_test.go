@@ -199,6 +199,20 @@ func connectFake(t *testing.T, scenario string) *Device {
 	return dev
 }
 
+func TestAnElementCarriesItsCheckedState(t *testing.T) {
+	var els []Element
+	if err := json.Unmarshal([]byte(`[{"ref":"@e1","role":"checkbox","checked":true},`+
+		`{"ref":"@e2","role":"switch","checked":false},{"ref":"@e3","role":"button"}]`), &els); err != nil {
+		t.Fatal(err)
+	}
+	if els[0].Checked == nil || !*els[0].Checked || els[1].Checked == nil || *els[1].Checked {
+		t.Errorf("checked states lost: %v %v", els[0].Checked, els[1].Checked)
+	}
+	if els[2].Checked != nil {
+		t.Error("a button reported a checked state; nil means it has none")
+	}
+}
+
 func TestMapDecodesElements(t *testing.T) {
 	dev := connectFake(t, "")
 	els, err := dev.Map(context.Background())

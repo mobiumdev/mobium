@@ -41,6 +41,8 @@ class Element:
     bounds: Bounds = Bounds(0, 0, 0, 0)
     locator: str = ""
     context: str = ""
+    checked: bool | None = None
+    """A checkbox, radio or switch's state; None for anything with no such state."""
 
     def __str__(self) -> str:
         return f"{self.ref} {self.label} ({self.role})" if self.role else f"{self.ref} {self.label}"
@@ -979,6 +981,7 @@ def _element(e: dict[str, Any]) -> Element:
         bounds=Bounds(b.get("x1", 0), b.get("y1", 0), b.get("x2", 0), b.get("y2", 0)),
         locator=f"{loc['kind']}={loc['value']}" if loc.get("kind") else "",
         context=e.get("context", ""),
+        checked=e.get("checked"),
     )
 
 

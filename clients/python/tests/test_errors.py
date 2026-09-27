@@ -86,6 +86,14 @@ with tempfile.TemporaryDirectory() as tmp:
         if saved[2] is not None:
             os.environ["MOBIUM_BIN_PATH"] = saved[2]
 
+# A checkbox, radio or switch carries its state; anything else carries none,
+# which is a different answer from unchecked.
+from mobium._device import _element  # noqa: E402
+
+check(_element({"ref": "@e1", "role": "checkbox", "checked": True}).checked is True, "a checked box read as unchecked")
+check(_element({"ref": "@e2", "role": "switch", "checked": False}).checked is False, "an unchecked switch lost its state")
+check(_element({"ref": "@e3", "role": "button"}).checked is None, "a button reported a checked state")
+
 if failures:
     print("\n".join("FAIL: " + f for f in failures))
     sys.exit(1)

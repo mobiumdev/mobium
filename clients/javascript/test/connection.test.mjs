@@ -50,6 +50,15 @@ const within = (p, ms) => Promise.race([settle(p), new Promise((r) => setTimeout
   await d.close()
 }
 
+// -- an element carries its checked state ---------------------------------
+{
+  const d = await fake('ok')
+  const [box, sw, button] = await d.map()
+  check(box.checked === true && sw.checked === false, `checked states lost: ${box.checked} ${sw.checked}`)
+  check(button.checked === null, 'a button reported a checked state; null means it has none')
+  await d.close()
+}
+
 // -- NaN is refused, not sent as null -------------------------------------
 {
   const d = await fake('ok')

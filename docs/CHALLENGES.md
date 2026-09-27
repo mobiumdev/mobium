@@ -7,7 +7,7 @@ the source.
 
 The pattern across them is the reason the document exists: **almost nothing
 here was found by reading code or by a test written from imagination.** Of
-123 defects, 102 were found only by running against a real device. The other
+127 defects, 106 were found only by running against a real device. The other
 twenty-one — 4, 5, 6, 14, 23, 24, 32, 35, 36, 39, 44, 50, 53, 54, 57, 66, 89,
 99, 100, 121 and 123 — came from reading code, the compiler, a test, a linter,
 cross-checking a computed number against a screenshot, using the tooling on
@@ -2912,6 +2912,64 @@ The exit status is now read best-effort, catching what each platform throws
 for a process that has exited, been killed or been disposed; the call fails as
 the disposed call it is. Only Windows could show this, and only when the two
 threads crossed — which is what that CI job exists for.
+
+### 124. map said a box was ticked, and no client could read it
+
+**Found by:** driving every Go client method against MobiumApp's Form Demo on
+a Pixel 7 AVD. `map`'s text read "Email me (checkbox, unchecked)" and "Free
+(radio, checked)"; its structured result — what every client receives — had
+the role and no state. `uitree.Entry` carried `Checked`, and `elementView`
+never copied it onto the wire, so a test in any of the five languages could
+act on a checkbox and not ask whether it was ticked.
+
+The element now carries `checked`, absent for anything with no such state,
+and each client reads it as a nullable boolean — null, not false, for a
+button, because "no state" and "unchecked" are different answers. A WebView's
+checkboxes report no state in either form yet.
+
+### 125. The Go client read two fields the daemon had stopped sending
+
+**Found by:** the same run. `Doctor` returned an empty string — it read a
+`report` field the tool never sent, where the report is the tool's text — and
+`Screen` reported every screen as 0x0, reading `width` and `height` after the
+daemon had renamed them `width_px` and `height_px` for their unit. A JSON key
+that is never sent decodes as a zero, so neither failed; both were simply
+wrong. The other four clients read results as maps and were unaffected.
+
+Both read what the daemon sends now, and `apisurface` pairs every Go client
+type with the daemon type it decodes and fails the build when the client
+reads a key that type does not send — the check that would have caught the
+rename the day it happened. A Go type with JSON tags and no pairing fails it
+too, so a new one cannot slip past.
+
+### 126. On iOS a drag never held before it moved
+
+**Found by:** the same run on an iPhone 17 Pro simulator. MobiumApp's drop
+zone measures the hold before a drag moves: asked for 1500ms, it read 183ms,
+three times in three, while the hold before the finger lifted arrived in full
+at 1517ms. The drop still succeeded, which is why `GESTURES.md` had drag down
+as working on iOS; but a list that arms reordering on a long press would never
+have armed.
+
+WebDriverAgent shortens a pause straight after pointerDown. The opening hold
+is now sent to it as a move to the point the finger is already on, lasting
+the hold — CHALLENGES 84's lesson on the other platform — and arrives as
+1517ms, three times in three. Android's pause arrives in full (1522ms) and is
+unchanged.
+
+### 127. On iOS, opening a link answered with the app it was leaving
+
+**Found by:** the same run: `open` reported MobiumApp as the app that opened
+`https://example.com`, five times in five, and Safari was in front two
+seconds later. Traced every 150ms, MobiumApp's screen changed 400-850ms after
+the call, the wait took that change as the answer, and Safari arrived
+500-900ms after it.
+
+The wait could not tell a deep link landing in the same app from the app on
+its way out, because until the other app arrives the two look alike. A new
+screen in the same app now counts only once it has held still for a second,
+which a departing app's does not: `open` reported Safari five times in five,
+Chrome on Android as before, and a same-app deep link still lands.
 
 ## Findings that were not defects
 

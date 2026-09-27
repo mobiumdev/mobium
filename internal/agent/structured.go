@@ -15,6 +15,10 @@ type ElementView struct {
 	Bounds  BoundsView   `json:"bounds"`
 	// Context names the WebView an element came from, absent for native ones.
 	Context string `json:"context,omitempty"`
+	// Checked is a checkbox, radio or switch's state, absent for anything
+	// with no such state. map's text had it and this did not, so no client
+	// could tell whether a box was ticked.
+	Checked *bool `json:"checked,omitempty"`
 }
 
 // LocatorView is how a ref resolves on a later screen.
@@ -111,7 +115,8 @@ func elementView(e uitree.Entry) ElementView {
 			Exact: e.Locator.Exact,
 			Role:  e.Locator.Role,
 		},
-		Bounds: boundsView(e.Bounds),
+		Bounds:  boundsView(e.Bounds),
+		Checked: e.Checked,
 	}
 }
 

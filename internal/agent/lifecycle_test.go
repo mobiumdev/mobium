@@ -24,17 +24,23 @@ type openDriver struct {
 	// becomes is the package that eventually shows up; empty means the URL
 	// changes nothing at all.
 	becomes string
+	// transition, when set, is what the first app shows after the open and
+	// before the new app appears — its screen changing on the way out.
+	transition string
 }
 
 func (d *openDriver) Snapshot(ctx context.Context) (*uitree.Tree, error) {
-	pkg := d.pkg
+	pkg, text := d.pkg, d.pkg
+	if d.opened && d.transition != "" {
+		text = d.transition
+	}
 	if d.opened && d.becomes != "" && time.Since(d.openedAt) >= d.appears {
-		pkg = d.becomes
+		pkg, text = d.becomes, d.becomes
 	}
 	xml := fmt.Sprintf(`<?xml version='1.0' encoding='UTF-8'?><hierarchy rotation="0">`+
 		`<node index="0" package="%s" class="android.widget.FrameLayout" bounds="[0,0][1080,2400]">`+
 		`<node index="0" text="%s" class="android.widget.TextView" bounds="[0,0][500,100]" />`+
-		`</node></hierarchy>`, pkg, pkg)
+		`</node></hierarchy>`, pkg, text)
 	return uitree.ParseAndroid([]byte(xml))
 }
 
@@ -92,6 +98,40 @@ func TestOpenURLDoesNotWaitTheWholeBudget(t *testing.T) {
 	}
 	if took := time.Since(started); took > settleAfterStart/2 {
 		t.Errorf("took %s of a %s budget for an app that appeared immediately", took, settleAfterStart)
+	}
+}
+
+func TestOpenURLWaitsPastTheFirstAppLeaving(t *testing.T) {
+	// Measured on an iPhone 17 Pro simulator: the app a link is opened over
+	// changes its screen on the way out, and Safari arrives 500-900ms later.
+	// Taking the first change as the answer reported the app being left.
+	d := &openDriver{pkg: "dev.mobium.mobiumapp", transition: "leaving",
+		becomes: "com.apple.mobilesafari", appears: 700 * time.Millisecond}
+	h, sess := withOpener(t, d)
+	res, err := openURL(h, sess, map[string]interface{}{"url": "https://example.com"})
+	if err != nil {
+		t.Fatalf("open: %v", err)
+	}
+	if got := res.StructuredContent.(OpenURLView).App; got != "com.apple.mobilesafari" {
+		t.Errorf("reported %q, the app being left; want the one the link opened", got)
+	}
+}
+
+func TestADeepLinkIntoTheSameAppStillLands(t *testing.T) {
+	// A link that opens a new screen in the app already in front changes the
+	// screen and not the app. It must still be answered, once it has settled.
+	d := &openDriver{pkg: "com.example.shop", transition: "product page"}
+	h, sess := withOpener(t, d)
+	started := time.Now()
+	res, err := openURL(h, sess, map[string]interface{}{"url": "shop://product/42"})
+	if err != nil {
+		t.Fatalf("open: %v", err)
+	}
+	if got := res.StructuredContent.(OpenURLView).App; got != "com.example.shop" {
+		t.Errorf("app = %q, want the app it landed in", got)
+	}
+	if took := time.Since(started); took >= settleAfterStart {
+		t.Errorf("took the whole %s budget; a settled deep link should end the wait", took)
 	}
 }
 
