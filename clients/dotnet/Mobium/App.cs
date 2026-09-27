@@ -26,7 +26,7 @@ namespace Mobium
             Id = id; Name = name; Version = version; System = system;
         }
 
-        internal static App From(IDictionary<string, object> m) =>
+        internal static App From(IDictionary<string, object?> m) =>
             new App(Json.Str(m, "id"), Json.Str(m, "name"),
                     Json.Str(m, "version"), Json.Bool(m, "system"));
 

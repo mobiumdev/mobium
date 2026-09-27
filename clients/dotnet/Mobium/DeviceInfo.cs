@@ -30,7 +30,7 @@ namespace Mobium
             Model = model; Runtime = runtime; Emulator = emulator;
         }
 
-        internal static DeviceInfo From(IDictionary<string, object> m) =>
+        internal static DeviceInfo From(IDictionary<string, object?> m) =>
             new DeviceInfo(Json.Str(m, "id"), Json.Str(m, "platform"), Json.Str(m, "state"),
                            Json.Str(m, "model"), Json.Str(m, "runtime"), Json.Bool(m, "emulator"));
 

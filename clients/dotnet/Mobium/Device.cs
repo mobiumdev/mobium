@@ -5,8 +5,8 @@ using System.IO;
 namespace Mobium
 {
     /// <summary>
-    /// Drives native apps on Android emulators, Android phones and iOS
-    /// simulators.
+    /// Drives native apps on Android emulators, Android phones, iOS
+    /// simulators and iPhones.
     /// </summary>
     /// <remarks>
     /// <para>Speaks to the same tool layer the CLI and the MCP server use,
@@ -18,7 +18,10 @@ namespace Mobium
     /// retries briefly while the screen settles, and scrolls to it if it is
     /// below the fold — so a tap can follow another tap without a sleep in
     /// between.</para>
-    /// <para>Not thread-safe: there is one pipe underneath, and one device.</para>
+    /// <para>Safe to share between threads, one call at a time: there is one
+    /// pipe underneath, and one device, so calls from two threads are
+    /// serialized rather than interleaved. <see cref="Dispose"/> from another
+    /// thread ends a call that is waiting.</para>
     /// </remarks>
     /// <example>
     /// <code>
@@ -72,7 +75,7 @@ namespace Mobium
         /// map, taps and screenshots are in pixels, <c>scale</c> times as many.
         /// <c>redacted</c> counts the password fields hidden.
         /// </summary>
-        public IDictionary<string, object> Source() => Data("app_source", Args());
+        public IDictionary<string, object?> Source() => Data("app_source", Args());
 
         /// <summary>
         /// Declares how to answer a dialog, so an action that meets it carries
@@ -85,7 +88,7 @@ namespace Mobium
             Act("app_dialogs", Args("when", when, "press", press));
 
         /// <summary>The declared rules, each with how often it has answered.</summary>
-        public IList<IDictionary<string, object>> DialogRules() =>
+        public IList<IDictionary<string, object?>> DialogRules() =>
             Maps(Field("app_dialogs", Args(), "rules"));
 
         /// <summary>Removes every rule for this device.</summary>
@@ -111,7 +114,15 @@ namespace Mobium
             foreach (var block in Json.AsArray(content))
             {
                 var c = Json.AsObject(block);
-                if (Json.Str(c, "type") == "image") return Convert.FromBase64String(Json.Str(c, "data"));
+                if (Json.Str(c, "type") != "image") continue;
+                try
+                {
+                    return Convert.FromBase64String(Json.Str(c, "data"));
+                }
+                catch (FormatException e)
+                {
+                    throw new MobiumException("mobium returned an image that is not base64", e);
+                }
             }
             throw new MobiumException("mobium returned no image");
         }
@@ -133,7 +144,7 @@ namespace Mobium
         // -- waiting and scrolling ------------------------------------------
 
         /// <summary>Waits for an element to be on screen, for up to ten seconds.</summary>
-        public Element WaitFor(string target) => WaitFor(target, Until.Visible());
+        public Element? WaitFor(string target) => WaitFor(target, Until.Visible());
 
         /// <summary>
         /// Blocks until the screen agrees, instead of sleeping. On success the
@@ -141,18 +152,18 @@ namespace Mobium
         /// can be tapped. Waiting for something to go away returns
         /// <c>null</c>: there is nothing left to point at.
         /// </summary>
-        public Element WaitFor(string target, Until condition) =>
+        public Element? WaitFor(string target, Until condition) =>
             One("app_wait_for", condition.Args(target));
 
         /// <summary>Scrolls down until an element is on screen and returns it with a ref.</summary>
-        public Element ScrollTo(string target) => ScrollTo(target, "down");
+        public Element? ScrollTo(string target) => ScrollTo(target, "down");
 
         /// <summary>
         /// Scrolls <c>"down"</c> or <c>"up"</c> until an element is on screen.
         /// Vertical lists only: use <see cref="Swipe(string)"/> for a
         /// horizontal pager.
         /// </summary>
-        public Element ScrollTo(string target, string direction) =>
+        public Element? ScrollTo(string target, string direction) =>
             One("app_scroll_to", Args("target", target, "direction", direction));
 
         // -- acting ----------------------------------------------------------
@@ -283,7 +294,7 @@ namespace Mobium
         /// revokes the runtime permissions the user granted. An iOS simulator
         /// keeps its privacy grants and keychain; a real iPhone refuses.
         /// </summary>
-        public IDictionary<string, object> ClearData(string app) =>
+        public IDictionary<string, object?> ClearData(string app) =>
             Data("app_clear_data", Args("app", app));
 
         /// <summary>
@@ -413,7 +424,7 @@ namespace Mobium
         /// worth a look rather than a defect — Android can enlarge a tap area
         /// without changing an element's bounds.</para>
         /// </remarks>
-        public IDictionary<string, object> Screen(string profile = "", bool inspect = false)
+        public IDictionary<string, object?> Screen(string profile = "", bool inspect = false)
         {
             var args = Args();
             if (!string.IsNullOrWhiteSpace(profile)) args["profile"] = profile;
@@ -428,7 +439,7 @@ namespace Mobium
         /// either hierarchy reports a rotation, and there is no WebView
         /// property to ask either.
         /// </summary>
-        public void Rotate(double degrees = 90, string target = null)
+        public void Rotate(double degrees = 90, string? target = null)
         {
             var args = Args("degrees", degrees);
             if (!string.IsNullOrEmpty(target)) args["target"] = target;
@@ -442,7 +453,7 @@ namespace Mobium
         /// zoom means asking whatever was zoomed — a WebView can answer with
         /// <c>visualViewport.scale</c> through <see cref="Eval"/>.
         /// </summary>
-        public void Zoom(string direction = "in", string target = null)
+        public void Zoom(string direction = "in", string? target = null)
         {
             var args = Args("direction", direction);
             if (!string.IsNullOrEmpty(target)) args["target"] = target;
@@ -531,8 +542,15 @@ namespace Mobium
         /// </summary>
         public void FollowRoute(IEnumerable<double[]> waypoints, double speedMPS)
         {
-            var wp = new List<object>();
-            foreach (var p in waypoints) wp.Add(new List<object> { p[0], p[1] });
+            if (waypoints == null)
+                throw new InvalidArgumentException("waypoints must not be null", "", "", false, null);
+            var wp = new List<object?>();
+            foreach (var p in waypoints)
+            {
+                if (p == null || p.Length != 2)
+                    throw new InvalidArgumentException("each waypoint is {latitude, longitude}", "", "", false, null);
+                wp.Add(new List<object?> { p[0], p[1] });
+            }
             var args = Args("waypoints", wp);
             if (speedMPS > 0) args["speed"] = speedMPS;
             Act("app_location", args);
@@ -599,7 +617,7 @@ namespace Mobium
         /// The source is named because with none the tool follows the context
         /// and would read the device log on the native shell.
         /// </remarks>
-        public IList<IDictionary<string, object>> Logs() =>
+        public IList<IDictionary<string, object?>> Logs() =>
             Maps(Field("app_logs", Args("source", "webview"), "entries"));
 
         /// <summary>
@@ -610,7 +628,7 @@ namespace Mobium
         /// come back. The first read returns the most recent lines. Pass null
         /// or zero to leave a filter unset.
         /// </summary>
-        public IDictionary<string, object> DeviceLogs(string app = null, string level = null, int lines = 0)
+        public IDictionary<string, object?> DeviceLogs(string? app = null, string? level = null, int lines = 0)
         {
             var args = Args("source", "device");
             if (!string.IsNullOrWhiteSpace(app)) args["app"] = app;
@@ -626,7 +644,7 @@ namespace Mobium
         /// screen is one frame on Android, which is not a failure. A relative
         /// path is this process's.
         /// </summary>
-        public IDictionary<string, object> Record(string action = null, string path = null)
+        public IDictionary<string, object?> Record(string? action = null, string? path = null)
         {
             var args = Args();
             if (!string.IsNullOrWhiteSpace(action)) args["action"] = action;
@@ -643,7 +661,7 @@ namespace Mobium
         /// keyboard, confirmed, alone. Throws
         /// <see cref="NoSuchElementException"/> when nothing has focus.
         /// </summary>
-        public IDictionary<string, object> Keyboard(string text = null, string key = null, bool hide = false)
+        public IDictionary<string, object?> Keyboard(string? text = null, string? key = null, bool hide = false)
         {
             var args = Args();
             if (text != null) args["text"] = text;
@@ -657,7 +675,7 @@ namespace Mobium
         /// time, kind (crash, native_crash or anr), app and summary. Not
         /// drained — asking twice shows a crash twice.
         /// </summary>
-        public IList<IDictionary<string, object>> Crashes(string app = null, int limit = 0)
+        public IList<IDictionary<string, object?>> Crashes(string? app = null, int limit = 0)
         {
             var args = Args();
             if (!string.IsNullOrWhiteSpace(app)) args["app"] = app;
@@ -666,10 +684,10 @@ namespace Mobium
         }
 
         /// <summary>One crash report in full, by an id from <see cref="Crashes"/>; the text is under <c>text</c>.</summary>
-        public IDictionary<string, object> Crash(string id)
+        public IDictionary<string, object?> Crash(string id)
         {
             var found = Maps(Field("app_crashes", Args("id", id), "crashes"));
-            return found.Count > 0 ? found[0] : new Dictionary<string, object>();
+            return found.Count > 0 ? found[0] : new Dictionary<string, object?>();
         }
 
         /// <summary>Runs a JavaScript expression in the current WebView; objects come back as JSON.</summary>
@@ -680,7 +698,7 @@ namespace Mobium
         /// What is in the notification shade — how a test asserts an app posted
         /// what it should. Each map has package, title and text.
         /// </summary>
-        public IList<IDictionary<string, object>> Notifications() =>
+        public IList<IDictionary<string, object?>> Notifications() =>
             Maps(Field("app_notifications", null, "notifications"));
 
         /// <summary>
@@ -740,8 +758,12 @@ namespace Mobium
         /// Runs any tool by name, for anything this class does not wrap yet,
         /// and returns its structured answer.
         /// </summary>
-        public IDictionary<string, object> Call(string tool, IDictionary<string, object> arguments) =>
-            Connection.DataOf(_conn.Call(tool, arguments));
+        public IDictionary<string, object?> Call(string tool, IDictionary<string, object?>? arguments)
+        {
+            if (string.IsNullOrWhiteSpace(tool))
+                throw new InvalidArgumentException("a tool name is required", "", "", false, null);
+            return Connection.DataOf(_conn.Call(tool, arguments));
+        }
 
         /// <summary>
         /// Closes the pipe and waits for mobium to exit. The device session
@@ -751,28 +773,41 @@ namespace Mobium
 
         // -- internals ---------------------------------------------------------
 
-        private static IDictionary<string, object> Args(params object[] pairs)
+        // Every value passed here is one the tool needs; optional ones are
+        // added only when set. So a null is the caller's mistake, and it is
+        // refused here, naming the argument, rather than sent to mobium to
+        // come back as a schema complaint about a key the caller never typed.
+        private static IDictionary<string, object?> Args(params object?[] pairs)
         {
-            var m = new Dictionary<string, object>(StringComparer.Ordinal);
-            for (var i = 0; i + 1 < pairs.Length; i += 2) m[(string)pairs[i]] = pairs[i + 1];
+            var m = new Dictionary<string, object?>(StringComparer.Ordinal);
+            for (var i = 0; i + 1 < pairs.Length; i += 2)
+            {
+                var key = (string)pairs[i]!;
+                var value = pairs[i + 1];
+                if (value == null)
+                    throw new InvalidArgumentException(key + " must not be null", "", "", false, null);
+                if (value is object?[] items && Array.IndexOf(items, null) >= 0)
+                    throw new InvalidArgumentException(key + " must not contain null", "", "", false, null);
+                m[key] = value;
+            }
             return m;
         }
 
-        private void Act(string tool, IDictionary<string, object> args) => _conn.Call(tool, args);
+        private void Act(string tool, IDictionary<string, object?>? args) => _conn.Call(tool, args);
 
-        private string Prose(string tool, IDictionary<string, object> args) =>
+        private string Prose(string tool, IDictionary<string, object?>? args) =>
             Connection.TextOf(_conn.Call(tool, args));
 
-        private IDictionary<string, object> Data(string tool, IDictionary<string, object> args) =>
+        private IDictionary<string, object?> Data(string tool, IDictionary<string, object?>? args) =>
             Connection.DataOf(_conn.Call(tool, args ?? Args()));
 
-        private IList<object> Field(string tool, IDictionary<string, object> args, string key)
+        private IList<object?> Field(string tool, IDictionary<string, object?>? args, string key)
         {
             var d = Data(tool, args);
             return Json.AsArray(d.TryGetValue(key, out var v) ? v : null);
         }
 
-        private IList<Element> Elements(string tool, IDictionary<string, object> args)
+        private IList<Element> Elements(string tool, IDictionary<string, object?>? args)
         {
             var list = new List<Element>();
             foreach (var o in Field(tool, args, "elements")) list.Add(Element.From(Json.AsObject(o)));
@@ -780,7 +815,7 @@ namespace Mobium
         }
 
         /// <summary>Reads a tool that answers with a single element, which may be absent.</summary>
-        private Element One(string tool, IDictionary<string, object> args)
+        private Element? One(string tool, IDictionary<string, object?>? args)
         {
             var d = Data(tool, args);
             return d.TryGetValue("element", out var el) && el != null
@@ -788,16 +823,16 @@ namespace Mobium
                 : null;
         }
 
-        private static IList<string> Strings(IList<object> raw)
+        private static IList<string> Strings(IList<object?> raw)
         {
             var list = new List<string>();
             foreach (var o in raw) list.Add(Convert.ToString(o, System.Globalization.CultureInfo.InvariantCulture));
             return list;
         }
 
-        private static IList<IDictionary<string, object>> Maps(IList<object> raw)
+        private static IList<IDictionary<string, object?>> Maps(IList<object?> raw)
         {
-            var list = new List<IDictionary<string, object>>();
+            var list = new List<IDictionary<string, object?>>();
             foreach (var o in raw) list.Add(Json.AsObject(o));
             return list;
         }
@@ -809,19 +844,41 @@ namespace Mobium
         private string _binary = "";
         private string _device = "";
         private string _backend = "";
+        private TimeSpan _timeout = System.Threading.Timeout.InfiniteTimeSpan;
 
         /// <summary>Pins the mobium executable, ahead of MOBIUM_BIN_PATH and PATH.</summary>
-        public DeviceBuilder Binary(string path) { _binary = path; return this; }
+        public DeviceBuilder Binary(string path) { _binary = path ?? ""; return this; }
 
         /// <summary>Targets one device by serial or UDID. Omit when only one is running.</summary>
-        public DeviceBuilder OnDevice(string serial) { _device = serial; return this; }
+        public DeviceBuilder OnDevice(string serial) { _device = serial ?? ""; return this; }
 
         /// <summary>
         /// Chooses the driver: <c>uiautomator2</c> (default on Android),
         /// <c>uiautomator</c> (installs nothing, slower, cannot type) or
-        /// <c>webdriveragent</c> (iOS simulators).
+        /// <c>webdriveragent</c> (iOS simulators and iPhones).
         /// </summary>
-        public DeviceBuilder Backend(string name) { _backend = name; return this; }
+        public DeviceBuilder Backend(string name) { _backend = name ?? ""; return this; }
+
+        /// <summary>
+        /// The longest any one call may take before the connection is given
+        /// up, including the handshake. Unlimited by default, because the first
+        /// session on an iPhone builds WebDriverAgent and that takes minutes.
+        /// </summary>
+        /// <remarks>
+        /// A call that runs out <b>ends the connection</b>: there is one pipe,
+        /// replies are told apart only by id, and the late answer to an
+        /// abandoned call would be read as the answer to the next one. Every
+        /// call after fails saying so; connect again. The device's session
+        /// lives in the daemon, so reconnecting is cheap. Set it well above the
+        /// longest <see cref="Until.Timeout"/> you use.
+        /// </remarks>
+        public DeviceBuilder CallTimeout(TimeSpan timeout)
+        {
+            if (timeout <= TimeSpan.Zero && timeout != System.Threading.Timeout.InfiniteTimeSpan)
+                throw new ArgumentOutOfRangeException(nameof(timeout), "a call timeout must be positive, or Timeout.InfiniteTimeSpan");
+            _timeout = timeout;
+            return this;
+        }
 
         /// <summary>Starts the session.</summary>
         public Device Connect()
@@ -829,7 +886,7 @@ namespace Mobium
             var args = new List<string>();
             if (!string.IsNullOrWhiteSpace(_device)) { args.Add("--device"); args.Add(_device); }
             if (!string.IsNullOrWhiteSpace(_backend)) { args.Add("--backend"); args.Add(_backend); }
-            return new Device(new Connection(Connection.FindBinary(_binary), args));
+            return new Device(new Connection(Connection.FindBinary(_binary), args, _timeout));
         }
     }
 

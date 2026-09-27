@@ -34,7 +34,7 @@ namespace Mobium
         public bool Retryable { get; }
 
         /// <summary>Machine-readable facts: the locator, the W3C code a device server sent.</summary>
-        public IDictionary<string, object> Details { get; }
+        public IDictionary<string, object?> Details { get; }
 
         /// <summary>A transport-level failure, with no tool to blame.</summary>
         public MobiumException(string message) : this(message, "") { }
@@ -49,27 +49,27 @@ namespace Mobium
             Tool = "";
             Code = "error";
             Remedy = "";
-            Details = new Dictionary<string, object>();
+            Details = new Dictionary<string, object?>();
         }
 
         internal MobiumException(string message, string tool, string code, string remedy,
-            bool retryable, IDictionary<string, object> details)
+            bool retryable, IDictionary<string, object?>? details)
             : base(string.IsNullOrEmpty(tool) ? message : tool + ": " + message)
         {
             Tool = tool ?? "";
             Code = code;
             Remedy = remedy ?? "";
             Retryable = retryable;
-            Details = details ?? new Dictionary<string, object>();
+            Details = details ?? new Dictionary<string, object?>();
         }
 
         /// <summary>
         /// The exception for a failed tool call: the text as always, and the
         /// code, remedy and details when the daemon sent them.
         /// </summary>
-        internal static MobiumException From(string text, string tool, object structuredContent)
+        internal static MobiumException From(string text, string tool, object? structuredContent)
         {
-            var s = structuredContent as IDictionary<string, object>;
+            var s = structuredContent as IDictionary<string, object?>;
             if (s == null) return new MobiumException(text, tool);
             var code = Json.Str(s, "code");
             if (code.Length == 0) return new MobiumException(text, tool);
@@ -105,7 +105,7 @@ namespace Mobium
         public const string ErrorCode = "no_device";
 
         internal NoDeviceException(string message, string tool, string remedy, bool retryable,
-            IDictionary<string, object> details)
+            IDictionary<string, object?>? details)
             : base(message, tool, ErrorCode, remedy, retryable, details) { }
     }
 
@@ -116,7 +116,7 @@ namespace Mobium
         public const string ErrorCode = "device_not_ready";
 
         internal DeviceNotReadyException(string message, string tool, string remedy, bool retryable,
-            IDictionary<string, object> details)
+            IDictionary<string, object?>? details)
             : base(message, tool, ErrorCode, remedy, retryable, details) { }
     }
 
@@ -127,7 +127,7 @@ namespace Mobium
         public const string ErrorCode = "toolchain_missing";
 
         internal ToolchainMissingException(string message, string tool, string remedy, bool retryable,
-            IDictionary<string, object> details)
+            IDictionary<string, object?>? details)
             : base(message, tool, ErrorCode, remedy, retryable, details) { }
     }
 
@@ -138,7 +138,7 @@ namespace Mobium
         public const string ErrorCode = "no_such_element";
 
         internal NoSuchElementException(string message, string tool, string remedy, bool retryable,
-            IDictionary<string, object> details)
+            IDictionary<string, object?>? details)
             : base(message, tool, ErrorCode, remedy, retryable, details) { }
     }
 
@@ -149,7 +149,7 @@ namespace Mobium
         public const string ErrorCode = "ambiguous_locator";
 
         internal AmbiguousLocatorException(string message, string tool, string remedy, bool retryable,
-            IDictionary<string, object> details)
+            IDictionary<string, object?>? details)
             : base(message, tool, ErrorCode, remedy, retryable, details) { }
     }
 
@@ -160,7 +160,7 @@ namespace Mobium
         public const string ErrorCode = "element_not_reachable";
 
         internal ElementNotReachableException(string message, string tool, string remedy, bool retryable,
-            IDictionary<string, object> details)
+            IDictionary<string, object?>? details)
             : base(message, tool, ErrorCode, remedy, retryable, details) { }
     }
 
@@ -171,7 +171,7 @@ namespace Mobium
         public const string ErrorCode = "no_such_context";
 
         internal NoSuchContextException(string message, string tool, string remedy, bool retryable,
-            IDictionary<string, object> details)
+            IDictionary<string, object?>? details)
             : base(message, tool, ErrorCode, remedy, retryable, details) { }
     }
 
@@ -182,7 +182,7 @@ namespace Mobium
         public const string ErrorCode = "no_such_alert";
 
         internal NoSuchAlertException(string message, string tool, string remedy, bool retryable,
-            IDictionary<string, object> details)
+            IDictionary<string, object?>? details)
             : base(message, tool, ErrorCode, remedy, retryable, details) { }
     }
 
@@ -193,7 +193,7 @@ namespace Mobium
         public const string ErrorCode = "unsupported";
 
         internal UnsupportedException(string message, string tool, string remedy, bool retryable,
-            IDictionary<string, object> details)
+            IDictionary<string, object?>? details)
             : base(message, tool, ErrorCode, remedy, retryable, details) { }
     }
 
@@ -204,7 +204,7 @@ namespace Mobium
         public const string ErrorCode = "not_confirmed";
 
         internal NotConfirmedException(string message, string tool, string remedy, bool retryable,
-            IDictionary<string, object> details)
+            IDictionary<string, object?>? details)
             : base(message, tool, ErrorCode, remedy, retryable, details) { }
     }
 
@@ -215,7 +215,7 @@ namespace Mobium
         public const string ErrorCode = "timeout";
 
         internal TimedOutException(string message, string tool, string remedy, bool retryable,
-            IDictionary<string, object> details)
+            IDictionary<string, object?>? details)
             : base(message, tool, ErrorCode, remedy, retryable, details) { }
     }
 
@@ -226,7 +226,7 @@ namespace Mobium
         public const string ErrorCode = "invalid_argument";
 
         internal InvalidArgumentException(string message, string tool, string remedy, bool retryable,
-            IDictionary<string, object> details)
+            IDictionary<string, object?>? details)
             : base(message, tool, ErrorCode, remedy, retryable, details) { }
     }
 
@@ -237,7 +237,7 @@ namespace Mobium
         public const string ErrorCode = "device_server";
 
         internal DeviceServerException(string message, string tool, string remedy, bool retryable,
-            IDictionary<string, object> details)
+            IDictionary<string, object?>? details)
             : base(message, tool, ErrorCode, remedy, retryable, details) { }
     }
 
@@ -248,7 +248,7 @@ namespace Mobium
         public const string ErrorCode = "internal";
 
         internal InternalException(string message, string tool, string remedy, bool retryable,
-            IDictionary<string, object> details)
+            IDictionary<string, object?>? details)
             : base(message, tool, ErrorCode, remedy, retryable, details) { }
     }
 }

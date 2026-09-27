@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -326,9 +327,9 @@ func TestActionsReturnOnlyAnError(t *testing.T) {
 	}
 }
 
-func TestCancellingEndsTheConnection(t *testing.T) {
+func TestCancelingEndsTheConnection(t *testing.T) {
 	// There is one pipe and replies are told apart only by id, so a call
-	// abandoned half-way cannot be resynchronised. Canceling has to end the
+	// abandoned half-way cannot be resynchronized. Canceling has to end the
 	// connection, and the next call has to say so rather than quietly
 	// returning the previous call's answer.
 	dev := connectFake(t, "hang")
@@ -357,11 +358,49 @@ func TestFindBinaryRejectsSomethingThatIsNotOne(t *testing.T) {
 	}
 }
 
+// plantMobium puts an executable named mobium in dir, the kind of file a
+// library must never run just because it sits beside a test.
+func plantMobium(t *testing.T, dir string) string {
+	t.Helper()
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	p := filepath.Join(dir, "mobium")
+	if err := os.WriteFile(p, []byte("#!/bin/sh\nexit 99\n"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	return p
+}
+
+func TestFindBinaryNeverSearchesTheCurrentDirectory(t *testing.T) {
+	t.Setenv("MOBIUM_BIN_PATH", "")
+	dir := t.TempDir()
+	plantMobium(t, dir)
+	plantMobium(t, filepath.Join(dir, "bin"))
+	t.Chdir(dir)
+	for _, path := range []string{".", "bin", "./bin", ""} {
+		t.Setenv("PATH", path)
+		if found, err := FindBinary(""); err == nil {
+			t.Errorf("PATH=%q: found %s, a binary in the current directory", path, found)
+		}
+	}
+	// The positive control: the same file, on PATH by its absolute directory.
+	t.Setenv("PATH", filepath.Join(dir, "bin"))
+	if found, err := FindBinary(""); err != nil || found != filepath.Join(dir, "bin", "mobium") {
+		t.Errorf("an absolute PATH entry was not searched: %q, %v", found, err)
+	}
+}
+
 func TestConnectFailsWhenMobiumIsMissing(t *testing.T) {
 	t.Setenv("PATH", t.TempDir())
 	t.Setenv("MOBIUM_BIN_PATH", "")
-	// Away from the repo, where the ./bin/mobium fallbacks would find one.
-	t.Chdir(t.TempDir())
+	// Beside a mobium it must not find: the current directory is never
+	// searched, in ./bin or through a relative PATH entry.
+	dir := t.TempDir()
+	plantMobium(t, dir)
+	plantMobium(t, filepath.Join(dir, "bin"))
+	t.Setenv("PATH", ".")
+	t.Chdir(dir)
 	if _, err := Connect(); err == nil {
 		t.Error("connected with no mobium anywhere")
 	} else if !strings.Contains(err.Error(), "MOBIUM_BIN_PATH") {

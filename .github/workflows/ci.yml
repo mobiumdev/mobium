@@ -45,13 +45,16 @@ jobs:
         with:
           node-version: '22'
 
-      # The Java client needs only a JDK: it has no dependencies and its
-      # tests have no framework, so `make java` is javac and java and nothing
-      # else. No Maven, and no network beyond this step.
+      # The Java client builds through its Maven wrapper, which fetches a
+      # pinned, checksum-verified Maven and the pinned plugins; the client
+      # itself has no dependencies. The cache keeps those downloads between
+      # runs.
       - uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: '17'
+          cache: maven
+          cache-dependency-path: clients/java/pom.xml
 
       # The .NET client targets netstandard2.0 and its tests run on the
       # SDK's own runtime, so the SDK is all that is needed -- no NuGet
@@ -79,3 +82,21 @@ jobs:
           ./bin/mobium --version
           ./bin/mobium --help > /dev/null
           test "$(./bin/mobium --help | grep -cE '^  [a-z-]+ ')" -ge 20
+
+  # The .NET client on Windows, where it is most likely to be used and where
+  # the command line it hand-quotes is parsed by CommandLineToArgvW. Its tests
+  # start a fake `mobium pipe` (the test program itself), so no mobium binary
+  # is needed -- which is why this can run before the daemon supports Windows.
+  dotnet-windows:
+    name: .NET client on Windows
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: make dotnet
+        shell: bash
+        run: make dotnet

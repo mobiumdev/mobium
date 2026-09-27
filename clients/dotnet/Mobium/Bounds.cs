@@ -36,7 +36,7 @@ namespace Mobium
         /// <summary>How tall it is, in device pixels.</summary>
         public int Height => Y2 - Y1;
 
-        internal static Bounds From(IDictionary<string, object> m) =>
+        internal static Bounds From(IDictionary<string, object?> m) =>
             new Bounds(Json.Integer(m, "x1"), Json.Integer(m, "y1"),
                        Json.Integer(m, "x2"), Json.Integer(m, "y2"));
 

@@ -43,7 +43,7 @@ run javascript node clients/javascript/test/e2e.mjs
 # failing test prints a line grep would happily match.
 run go sh -c 'cd clients/go && go test -count=1 -run EndToEnd ./...'
 if [ -x "$JAVA" ]; then
-  run java sh -c "make -s java >/dev/null && \"$JAVA\" -cp clients/java/target/classes dev.mobium.E2E"
+  run java sh -c "cd clients/java && ./mvnw -B -q --no-transfer-progress test-compile exec:exec@e2e"
 else
   skip java "no JDK"
 fi

@@ -13,8 +13,12 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.time.Duration;
 import java.util.Map;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * A live {@code mobium pipe} subprocess speaking JSON-RPC over stdio.
@@ -28,10 +32,37 @@ final class Connection implements AutoCloseable {
 
     private final Process process;
     private final Writer stdin;
-    private final BufferedReader stdout;
-    private int nextId;
+    private final Duration timeout;
+    private long nextId;
 
-    Connection(String binary, List<String> args) {
+    // Every line mobium writes, in order, put here by one reader thread. A call
+    // takes from it with or without a deadline, so the timed and untimed paths
+    // read the same way. END is put last, when stdout closes or fails.
+    private final BlockingQueue<String> lines = new LinkedBlockingQueue<>();
+    private static final String END = new String("end of stdout");
+    private volatile IOException readFailure;
+
+    // gate serializes whole request/response pairs, as the Go client's mutex
+    // does. The transport is one pipe with replies told apart only by id, so
+    // two calls in flight would race to read each other's answer -- and
+    // before that, their requests' bytes interleave on the one stdin, which
+    // was measured: two requests arrived on one line and mobium could parse
+    // neither.
+    private final Object gate = new Object();
+
+    // dead says why the connection can no longer be used, once something has
+    // made that true: it was closed, mobium exited, or a call timed out
+    // half-way. A call abandoned half-way cannot be resynchronized -- its
+    // answer would be read as the answer to the next one -- so the connection
+    // ends rather than being left subtly wrong, and every call after says so.
+    private volatile String dead;
+    private final AtomicBoolean closed = new AtomicBoolean();
+
+    Connection(String binary, List<String> args) { this(binary, args, null); }
+
+    /** A null or zero timeout waits as long as each call takes. */
+    Connection(String binary, List<String> args, Duration timeout) {
+        this.timeout = timeout == null || timeout.isZero() ? null : timeout;
         List<String> command = new ArrayList<>();
         command.add(binary);
         command.add("pipe");
@@ -48,16 +79,39 @@ final class Connection implements AutoCloseable {
             throw new MobiumException("could not start " + binary, e);
         }
         this.stdin = new OutputStreamWriter(process.getOutputStream(), StandardCharsets.UTF_8);
-        this.stdout = new BufferedReader(
+        BufferedReader stdout = new BufferedReader(
                 new InputStreamReader(process.getInputStream(), StandardCharsets.UTF_8));
-        initialize();
+        Thread reader = new Thread(() -> {
+            try {
+                String line;
+                while ((line = stdout.readLine()) != null) lines.add(line);
+            } catch (IOException e) {
+                readFailure = e;
+            } finally {
+                lines.add(END);
+            }
+        }, "mobium-pipe-reader");
+        // A daemon thread, so a connection nobody closed cannot keep the JVM
+        // from exiting.
+        reader.setDaemon(true);
+        reader.start();
+
+        // A handshake that fails leaves a process nobody will ever close, so it
+        // is ended here rather than leaked -- measured: a refused handshake
+        // left mobium running.
+        try {
+            initialize();
+        } catch (RuntimeException e) {
+            close();
+            throw e;
+        }
     }
 
     private void initialize() {
         Map<String, Object> params = new LinkedHashMap<>();
         params.put("protocolVersion", "2024-11-05");
         params.put("capabilities", Map.of());
-        params.put("clientInfo", Map.of("name", "mobium-java", "version", "0.1.0"));
+        params.put("clientInfo", Map.of("name", "mobium-java", "version", clientVersion()));
         request("initialize", params);
         notification();
     }
@@ -71,19 +125,57 @@ final class Connection implements AutoCloseable {
 
     private void write(Map<String, Object> payload) {
         if (!process.isAlive()) {
-            throw new MobiumException("mobium exited with status " + process.exitValue());
+            throw die("mobium exited with status " + process.exitValue(), null);
         }
         try {
-            stdin.write(Json.write(payload));
-            stdin.write('\n');
+            // One write of the whole line: a payload and its newline written
+            // separately are two chances for another writer to get between.
+            stdin.write(Json.write(payload) + "\n");
             stdin.flush();
         } catch (IOException e) {
-            throw new MobiumException("mobium closed the connection", e);
+            throw die("mobium closed the connection", e);
         }
     }
 
+    /** Marks the connection unusable, ends mobium, and returns the exception that says why. */
+    private MobiumException die(String why, Throwable cause) {
+        if (dead == null) dead = why;
+        process.destroy();
+        return cause == null ? new MobiumException(why) : new MobiumException(why, cause);
+    }
+
+    /** The next line mobium wrote, within the call timeout when there is one; null at the end. */
+    private String readLine(String method) {
+        String line;
+        try {
+            line = timeout == null ? lines.take() : lines.poll(timeout.toMillis(), TimeUnit.MILLISECONDS);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw die("interrupted while waiting for mobium to answer " + method
+                    + ", so the connection was closed: a reply arriving later would be read as the answer to the next call", e);
+        }
+        if (line == null) {
+            throw die(method + " got no answer within " + timeout.toMillis() / 1000.0
+                    + "s, so the connection was closed: a reply arriving later would be read as the answer to the next call. "
+                    + "Connect again, with a longer callTimeout if the device is slow", null);
+        }
+        if (line == END) {
+            lines.add(END); // every later read sees the end too
+            if (readFailure != null) throw die("mobium closed the connection while answering " + method, readFailure);
+            return null;
+        }
+        return line;
+    }
+
     private Object request(String method, Map<String, Object> params) {
-        int id = ++nextId;
+        synchronized (gate) {
+            if (dead != null) throw new MobiumException("this mobium connection is no longer usable: " + dead);
+            return requestLocked(method, params);
+        }
+    }
+
+    private Object requestLocked(String method, Map<String, Object> params) {
+        long id = ++nextId;
         Map<String, Object> payload = new LinkedHashMap<>();
         payload.put("jsonrpc", "2.0");
         payload.put("id", id);
@@ -92,14 +184,15 @@ final class Connection implements AutoCloseable {
         write(payload);
 
         while (true) {
-            String line;
-            try {
-                line = stdout.readLine();
-            } catch (IOException e) {
-                throw new MobiumException("mobium closed the connection while answering " + method, e);
-            }
+            String line = readLine(method);
             if (line == null) {
-                throw new MobiumException("mobium closed the connection without answering " + method);
+                String status = "";
+                try {
+                    if (process.waitFor(2, TimeUnit.SECONDS)) status = " (it exited with status " + process.exitValue() + ")";
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                }
+                throw die("mobium closed the connection without answering " + method + status, null);
             }
             Map<String, Object> message;
             try {
@@ -108,7 +201,7 @@ final class Connection implements AutoCloseable {
                 continue; // not a message we can read; keep looking
             }
             Object gotId = message.get("id");
-            if (!(gotId instanceof Number) || ((Number) gotId).intValue() != id) {
+            if (!(gotId instanceof Long) || (Long) gotId != id) {
                 continue; // a notification, or a reply to something else
             }
             Object error = message.get("error");
@@ -155,7 +248,14 @@ final class Connection implements AutoCloseable {
         return structured == null ? Map.of() : Json.asObject(structured);
     }
 
+    /**
+     * Asks mobium to exit and waits for it, killing it after ten seconds. Safe
+     * to call more than once, and from another thread while a call is
+     * waiting: that call then fails, saying the connection was closed.
+     */
     @Override public void close() {
+        if (!closed.compareAndSet(false, true)) return;
+        if (dead == null) dead = "it was closed";
         try {
             stdin.close();
         } catch (IOException ignored) {
@@ -171,8 +271,14 @@ final class Connection implements AutoCloseable {
     }
 
     /**
-     * Locates the mobium executable. MOBIUM_BIN_PATH wins, so a test run can
+     * Locates the mobium executable: the explicit path, then MOBIUM_BIN_PATH,
+     * then PATH — and nothing else. MOBIUM_BIN_PATH wins, so a test run can
      * pin a specific build — the same escape hatch the other clients have.
+     *
+     * <p>The current directory is never searched, not in ./bin and not
+     * through a relative PATH entry such as {@code .}: a library that runs
+     * whatever mobium sits where a test was started runs a binary anyone
+     * could have planted there.
      */
     static String findBinary(String explicit) {
         for (String candidate : new String[] { explicit, System.getenv("MOBIUM_BIN_PATH") }) {
@@ -180,19 +286,33 @@ final class Connection implements AutoCloseable {
             if (executable(Paths.get(candidate))) return candidate;
             throw new MobiumException(candidate + " is not an executable mobium binary");
         }
-        String path = System.getenv("PATH");
-        if (path != null) {
-            for (String dir : path.split(File.pathSeparator)) {
-                Path p = Paths.get(dir, "mobium");
-                if (executable(p)) return p.toString();
-            }
-        }
-        for (String rel : new String[] { "./bin/mobium", "../bin/mobium", "../../bin/mobium" }) {
-            Path p = Paths.get(rel);
-            if (executable(p)) return p.toAbsolutePath().toString();
-        }
+        String name = System.getProperty("os.name", "").startsWith("Windows") ? "mobium.exe" : "mobium";
+        String found = searchPath(System.getenv("PATH"), name);
+        if (found != null) return found;
         throw new MobiumException(
                 "mobium not found — put it on PATH or set MOBIUM_BIN_PATH to the binary");
+    }
+
+    /**
+     * The version this client reports to mobium: the jar's
+     * Implementation-Version, which Maven writes from pom.xml, so it is
+     * stated once. Run from a classes directory there is no manifest, and it
+     * says so rather than inventing a number.
+     */
+    static String clientVersion() {
+        String v = Connection.class.getPackage().getImplementationVersion();
+        return v == null ? "unpackaged" : v;
+    }
+
+    /** The first executable {@code name} in an absolute directory of {@code path}, or null. */
+    static String searchPath(String path, String name) {
+        if (path == null) return null;
+        for (String dir : path.split(File.pathSeparator, -1)) {
+            if (dir.isEmpty() || !Paths.get(dir).isAbsolute()) continue;
+            Path p = Paths.get(dir, name);
+            if (executable(p)) return p.toString();
+        }
+        return null;
     }
 
     private static boolean executable(Path p) {

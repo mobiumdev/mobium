@@ -30,7 +30,7 @@ namespace Mobium
             Locator = locator; Bounds = bounds; Context = context;
         }
 
-        internal static Element From(IDictionary<string, object> m)
+        internal static Element From(IDictionary<string, object?> m)
         {
             var loc = Json.AsObject(m.TryGetValue("locator", out var l) ? l : null);
             var locator = loc.Count == 0 ? "" : Json.Str(loc, "kind") + "=" + Json.Str(loc, "value");

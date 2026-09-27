@@ -61,7 +61,7 @@ func TestUnknownRefListsKnownOnes(t *testing.T) {
 	}
 }
 
-func TestKnownRefsSummarisesLargeTables(t *testing.T) {
+func TestKnownRefsSummarizesLargeTables(t *testing.T) {
 	entries := map[string]uitree.Locator{}
 	for _, r := range []string{"@e1", "@e2", "@e3", "@e4", "@e5", "@e6", "@e7",
 		"@e8", "@e9", "@e10", "@e11", "@e12", "@e13"} {

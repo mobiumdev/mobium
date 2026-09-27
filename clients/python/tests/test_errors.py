@@ -50,6 +50,42 @@ check(type(u) is MobiumError and u.code == "something_new", "unknown code mishan
 o = error_from("plain text", None)
 check(type(o) is MobiumError and o.code == "error", "text-only failure mishandled")
 
+# The binary is never looked for in the current directory, in ./bin or
+# through a relative PATH entry: anything could have been planted there.
+import os  # noqa: E402
+import tempfile  # noqa: E402
+
+from mobium._rpc import find_binary  # noqa: E402
+
+saved = (os.getcwd(), os.environ.get("PATH"), os.environ.pop("MOBIUM_BIN_PATH", None))
+with tempfile.TemporaryDirectory() as tmp:
+    name = "mobium.exe" if sys.platform == "win32" else "mobium"
+    for where in (tmp, os.path.join(tmp, "bin")):
+        os.makedirs(where, exist_ok=True)
+        planted = os.path.join(where, name)
+        pathlib.Path(planted).write_text("#!/bin/sh\nexit 99\n")
+        os.chmod(planted, 0o755)
+    try:
+        os.chdir(tmp)
+        for path in (".", "bin", "./bin", ""):
+            os.environ["PATH"] = path
+            try:
+                found = find_binary()
+                check(False, f"PATH={path!r}: found {found}, a binary in the current directory")
+            except MobiumError:
+                pass
+        # The positive control: the same file, by its absolute directory.
+        os.environ["PATH"] = os.path.join(tmp, "bin")
+        check(find_binary() == os.path.join(tmp, "bin", name), "an absolute PATH entry was not searched")
+    finally:
+        os.chdir(saved[0])
+        if saved[1] is None:
+            os.environ.pop("PATH", None)
+        else:
+            os.environ["PATH"] = saved[1]
+        if saved[2] is not None:
+            os.environ["MOBIUM_BIN_PATH"] = saved[2]
+
 if failures:
     print("\n".join("FAIL: " + f for f in failures))
     sys.exit(1)

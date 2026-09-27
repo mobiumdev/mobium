@@ -5,10 +5,10 @@
   <modelVersion>4.0.0</modelVersion>
 
   <!--
-    dev.mobium, and settled: publishing to Maven Central requires proving you
-    control the namespace, and mobium.dev is owned. The groupId and the Java
-    package therefore agree, and neither needs renaming before the first
-    release — which is the version of this that would have hurt.
+    dev.mobium: publishing to Maven Central requires proving you control the
+    namespace, and mobium.dev is owned, so Central verifies it by a DNS TXT
+    record. The groupId and the Java package therefore agree, and neither
+    needs renaming before the first release.
   -->
   <groupId>dev.mobium</groupId>
   <artifactId>mobium</artifactId>
@@ -16,30 +16,246 @@
   <packaging>jar</packaging>
 
   <name>Mobium Java client</name>
-  <description>Drive native apps on Android emulators, Android phones and iOS simulators.</description>
+  <description>Drives native apps on Android emulators, Android phones, iOS simulators and iPhones, over the mobium CLI. No dependencies.</description>
   <url>https://github.com/mobiumdev/mobium</url>
+  <inceptionYear>2026</inceptionYear>
 
   <licenses>
     <license>
       <name>MIT</name>
       <url>https://opensource.org/licenses/MIT</url>
+      <distribution>repo</distribution>
     </license>
   </licenses>
+
+  <developers>
+    <developer>
+      <name>Lana Begunova</name>
+      <url>https://github.com/mobiumdev</url>
+    </developer>
+  </developers>
+
+  <scm>
+    <connection>scm:git:https://github.com/mobiumdev/mobium.git</connection>
+    <developerConnection>scm:git:git@github.com:mobiumdev/mobium.git</developerConnection>
+    <url>https://github.com/mobiumdev/mobium/tree/main/clients/java</url>
+  </scm>
+
+  <issueManagement>
+    <system>GitHub</system>
+    <url>https://github.com/mobiumdev/mobium/issues</url>
+  </issueManagement>
 
   <properties>
     <maven.compiler.release>17</maven.compiler.release>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+    <!-- Reproducible builds: every entry in the jar carries this time, so the
+         same source builds the same bytes. Set to the release's date when
+         cutting one. -->
+    <project.build.outputTimestamp>2026-09-27T00:00:00Z</project.build.outputTimestamp>
   </properties>
 
   <!--
     No dependencies, and that is the point. A test library that drags a JSON
     parser onto the classpath will collide with the version the application
     under test already uses, and the person untangling it is the user. The
-    tests have none either, so the client can be checked with javac alone —
-    see the `java` target in the repository Makefile.
+    tests have none either. The enforcer below makes that a build failure
+    rather than a sentence in a README.
   -->
 
   <build>
-    <testSourceDirectory>src/test/java</testSourceDirectory>
+    <!-- Every plugin pinned, including the ones Maven would otherwise choose
+         for itself, so a newer Maven cannot change what this builds. -->
+    <pluginManagement>
+      <plugins>
+        <plugin><groupId>org.apache.maven.plugins</groupId><artifactId>maven-clean-plugin</artifactId><version>3.5.0</version></plugin>
+        <plugin><groupId>org.apache.maven.plugins</groupId><artifactId>maven-resources-plugin</artifactId><version>3.5.0</version></plugin>
+        <plugin><groupId>org.apache.maven.plugins</groupId><artifactId>maven-compiler-plugin</artifactId><version>3.16.0</version></plugin>
+        <plugin><groupId>org.apache.maven.plugins</groupId><artifactId>maven-surefire-plugin</artifactId><version>3.6.0</version></plugin>
+        <plugin><groupId>org.apache.maven.plugins</groupId><artifactId>maven-jar-plugin</artifactId><version>3.5.1</version></plugin>
+        <plugin><groupId>org.apache.maven.plugins</groupId><artifactId>maven-source-plugin</artifactId><version>3.4.0</version></plugin>
+        <plugin><groupId>org.apache.maven.plugins</groupId><artifactId>maven-javadoc-plugin</artifactId><version>3.12.0</version></plugin>
+        <plugin><groupId>org.apache.maven.plugins</groupId><artifactId>maven-install-plugin</artifactId><version>3.2.0</version></plugin>
+        <plugin><groupId>org.apache.maven.plugins</groupId><artifactId>maven-deploy-plugin</artifactId><version>3.2.0</version></plugin>
+        <plugin><groupId>org.apache.maven.plugins</groupId><artifactId>maven-site-plugin</artifactId><version>3.22.0</version></plugin>
+        <plugin><groupId>org.apache.maven.plugins</groupId><artifactId>maven-enforcer-plugin</artifactId><version>3.6.3</version></plugin>
+        <plugin><groupId>org.apache.maven.plugins</groupId><artifactId>maven-gpg-plugin</artifactId><version>3.2.8</version></plugin>
+        <plugin><groupId>org.codehaus.mojo</groupId><artifactId>exec-maven-plugin</artifactId><version>3.6.4</version></plugin>
+        <plugin><groupId>org.sonatype.central</groupId><artifactId>central-publishing-maven-plugin</artifactId><version>0.11.0</version></plugin>
+      </plugins>
+    </pluginManagement>
+
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-enforcer-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>enforce</id>
+            <goals><goal>enforce</goal></goals>
+            <configuration>
+              <rules>
+                <requireMavenVersion><version>[3.9,)</version></requireMavenVersion>
+                <requireJavaVersion><version>[17,)</version></requireJavaVersion>
+                <!-- Any dependency at all, in any scope, fails the build. -->
+                <bannedDependencies>
+                  <excludes><exclude>*</exclude></excludes>
+                  <message>The Java client has no dependencies, on purpose: see the comment in pom.xml.</message>
+                </bannedDependencies>
+                <requirePluginVersions/>
+              </rules>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <configuration>
+          <!-- A client nobody has a spare device for is held up by the
+               compiler or by nothing. -->
+          <compilerArgs>
+            <arg>-Xlint:all</arg>
+            <arg>-Werror</arg>
+          </compilerArgs>
+          <showWarnings>true</showWarnings>
+        </configuration>
+      </plugin>
+
+      <!-- The tests are a main method, not a framework, so this client can be
+           checked without a test dependency; surefire has nothing to run. -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <configuration><skip>true</skip></configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>exec-maven-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>tests</id>
+            <phase>test</phase>
+            <goals><goal>exec</goal></goals>
+            <configuration>
+              <skip>${skipTests}</skip>
+              <executable>${java.home}/bin/java</executable>
+              <classpathScope>test</classpathScope>
+              <arguments>
+                <argument>-classpath</argument>
+                <classpath/>
+                <argument>dev.mobium.Tests</argument>
+              </arguments>
+            </configuration>
+          </execution>
+          <!-- The end-to-end flow, against a device: `./mvnw test-compile
+               exec:exec@e2e` with MOBIUM_E2E_DEVICE set. docs/checks/clients.sh
+               runs it. -->
+          <execution>
+            <id>e2e</id>
+            <goals><goal>exec</goal></goals>
+            <configuration>
+              <executable>${java.home}/bin/java</executable>
+              <classpathScope>test</classpathScope>
+              <arguments>
+                <argument>-classpath</argument>
+                <classpath/>
+                <argument>dev.mobium.E2E</argument>
+              </arguments>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-jar-plugin</artifactId>
+        <configuration>
+          <archive>
+            <manifest>
+              <!-- Implementation-Version is what the client reports to mobium
+                   as its own version, so it is stated once, above. -->
+              <addDefaultImplementationEntries>true</addDefaultImplementationEntries>
+            </manifest>
+            <manifestEntries>
+              <!-- A stable module name for anyone on the module path. -->
+              <Automatic-Module-Name>dev.mobium</Automatic-Module-Name>
+            </manifestEntries>
+          </archive>
+        </configuration>
+      </plugin>
+
+      <!-- Sources and javadoc jars on every build: Central requires both, and
+           an IDE shows them. -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-source-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>attach-sources</id>
+            <goals><goal>jar-no-fork</goal></goals>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-javadoc-plugin</artifactId>
+        <configuration>
+          <doclint>all</doclint>
+          <failOnWarnings>true</failOnWarnings>
+          <!-- javadoc stops reporting at 100 warnings by default, which reads
+               as a complete list and is not one. -->
+          <additionalOptions><additionalOption>-Xmaxwarns</additionalOption><additionalOption>10000</additionalOption></additionalOptions>
+          <quiet>true</quiet>
+        </configuration>
+        <executions>
+          <execution>
+            <id>attach-javadocs</id>
+            <goals><goal>jar</goal></goals>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
   </build>
+
+  <profiles>
+    <!--
+      Publishing to Maven Central, and nothing else: `./mvnw -P release deploy`.
+      Signs every artifact with the default GPG key and uploads the bundle to
+      the Central Portal, where it waits to be published by hand
+      (autoPublish is off) — so a deploy by mistake is still not a release.
+      Needs a `central` server with a Portal token in ~/.m2/settings.xml.
+      See clients/java/README.md, "Releasing".
+    -->
+    <profile>
+      <id>release</id>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-gpg-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>sign-artifacts</id>
+                <phase>verify</phase>
+                <goals><goal>sign</goal></goals>
+              </execution>
+            </executions>
+          </plugin>
+          <plugin>
+            <groupId>org.sonatype.central</groupId>
+            <artifactId>central-publishing-maven-plugin</artifactId>
+            <extensions>true</extensions>
+            <configuration>
+              <publishingServerId>central</publishingServerId>
+              <autoPublish>false</autoPublish>
+              <waitUntil>validated</waitUntil>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+  </profiles>
 </project>

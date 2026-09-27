@@ -10,7 +10,6 @@ from __future__ import annotations
 
 import json
 import os
-import shutil
 import subprocess
 import sys
 from typing import Any
@@ -20,10 +19,15 @@ from ._errors import InvalidArgumentError, MobiumError, error_from
 
 
 def find_binary(explicit: str | None = None) -> str:
-    """Locate the mobium binary.
+    """Locate the mobium binary: the explicit path, then MOBIUM_BIN_PATH,
+    then PATH — and nothing else.
 
     MOBIUM_BIN_PATH wins, so a test run can pin a specific build — the same
-    escape hatch vibium's clients have.
+    escape hatch vibium's clients have. The current directory is never
+    searched, not in ./bin and not through a relative PATH entry: a library
+    that runs whatever mobium sits where a test was started runs a binary
+    anyone could have planted there. PATH is walked here rather than through
+    shutil.which, which on Windows looks in the current directory first.
     """
     for candidate in (explicit, os.environ.get("MOBIUM_BIN_PATH")):
         if candidate:
@@ -31,12 +35,13 @@ def find_binary(explicit: str | None = None) -> str:
                 return candidate
             raise MobiumError(f"{candidate} is not an executable mobium binary")
 
-    found = shutil.which("mobium")
-    if found:
-        return found
-    for relative in ("./bin/mobium", "../bin/mobium", "../../bin/mobium"):
-        if os.path.isfile(relative) and os.access(relative, os.X_OK):
-            return os.path.abspath(relative)
+    name = "mobium.exe" if sys.platform == "win32" else "mobium"
+    for directory in os.environ.get("PATH", "").split(os.pathsep):
+        if not os.path.isabs(directory):
+            continue
+        found = os.path.join(directory, name)
+        if os.path.isfile(found) and os.access(found, os.X_OK):
+            return found
     raise MobiumError(
         "mobium not found — put it on PATH or set MOBIUM_BIN_PATH to the binary"
     )

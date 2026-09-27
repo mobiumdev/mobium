@@ -36,9 +36,18 @@ final class Json {
         return value;
     }
 
+    /**
+     * Deeper than any hierarchy a device reports -- a React Native screen is a
+     * few dozen levels -- and far short of the stack. The parser recurses, and
+     * past this a StackOverflowError would escape every catch written for a
+     * MobiumException.
+     */
+    static final int MAX_DEPTH = 1000;
+
     private static final class Parser {
         private final String s;
         private int pos;
+        private int depth;
 
         Parser(String s) { this.s = s; }
 
@@ -56,13 +65,22 @@ final class Json {
             if (done()) throw new MobiumException("unexpected end of JSON");
             char c = s.charAt(pos);
             switch (c) {
-                case '{': return object();
-                case '[': return array();
+                case '{': return nested(true);
+                case '[': return nested(false);
                 case '"': return string();
                 case 't': return literal("true", Boolean.TRUE);
                 case 'f': return literal("false", Boolean.FALSE);
                 case 'n': return literal("null", null);
                 default:  return number();
+            }
+        }
+
+        Object nested(boolean object) {
+            if (++depth > MAX_DEPTH) throw new MobiumException("JSON nested deeper than " + MAX_DEPTH + " levels");
+            try {
+                return object ? object() : array();
+            } finally {
+                depth--;
             }
         }
 
@@ -107,6 +125,7 @@ final class Json {
                 if (done()) throw new MobiumException("unterminated string in JSON");
                 char c = s.charAt(pos++);
                 if (c == '"') return b.toString();
+                if (c < 0x20) throw new MobiumException("raw control character in a JSON string at offset " + (pos - 1));
                 if (c != '\\') { b.append(c); continue; }
                 char esc = next();
                 switch (esc) {
@@ -123,7 +142,18 @@ final class Json {
                         // Surrogate pairs need no special handling: each half
                         // arrives as its own \\u escape and Java strings are
                         // UTF-16, so appending both in order is correct.
-                        b.append((char) Integer.parseInt(s.substring(pos, pos + 4), 16));
+                        // Four hex digits exactly. Integer.parseInt(_, 16)
+                        // also takes a sign, so "\\u+041" read as 'A', and it
+                        // throws NumberFormatException for anything else,
+                        // which got past every catch written for a
+                        // MobiumException and ended the call it arrived in.
+                        int code = 0;
+                        for (int k = 0; k < 4; k++) {
+                            int h = hexDigit(s.charAt(pos + k));
+                            if (h < 0) throw new MobiumException("malformed \\u escape at offset " + pos);
+                            code = code * 16 + h;
+                        }
+                        b.append((char) code);
                         pos += 4;
                         break;
                     default: throw new MobiumException("unknown escape \\" + esc);
@@ -131,26 +161,49 @@ final class Json {
             }
         }
 
+        // JSON's number grammar, exactly: -?(0|[1-9][0-9]*)(\.[0-9]+)?([eE][+-]?[0-9]+)?
+        // Anything looser -- "1-2", ".5", "01", "1." -- is refused as a
+        // MobiumException rather than guessed at, or thrown as a
+        // NumberFormatException nothing here would catch.
         Object number() {
             int start = pos;
-            if (peek() == '-') pos++;
+            if (!done() && s.charAt(pos) == '-') pos++;
+            if (done() || !digit(s.charAt(pos))) throw new MobiumException("expected a value at offset " + start);
+            if (s.charAt(pos) == '0') pos++;
+            else while (!done() && digit(s.charAt(pos))) pos++;
             boolean fractional = false;
-            while (!done()) {
-                char c = s.charAt(pos);
-                if (c >= '0' && c <= '9') { pos++; }
-                else if (c == '.' || c == 'e' || c == 'E' || c == '+' || c == '-') { fractional = true; pos++; }
-                else break;
+            if (!done() && s.charAt(pos) == '.') {
+                fractional = true;
+                pos++;
+                if (done() || !digit(s.charAt(pos))) throw new MobiumException("malformed number at offset " + start);
+                while (!done() && digit(s.charAt(pos))) pos++;
+            }
+            if (!done() && (s.charAt(pos) == 'e' || s.charAt(pos) == 'E')) {
+                fractional = true;
+                pos++;
+                if (!done() && (s.charAt(pos) == '+' || s.charAt(pos) == '-')) pos++;
+                if (done() || !digit(s.charAt(pos))) throw new MobiumException("malformed number at offset " + start);
+                while (!done() && digit(s.charAt(pos))) pos++;
             }
             String raw = s.substring(start, pos);
-            if (raw.isEmpty() || raw.equals("-")) {
-                throw new MobiumException("expected a value at offset " + start);
-            }
             // Integers come back as Long so a coordinate does not arrive as
-            // "540.0" when it is printed.
+            // "540.0" when it is printed; one too large for a long is kept as
+            // a double, as every other JSON reader does.
             if (!fractional) {
-                try { return Long.parseLong(raw); } catch (NumberFormatException ignored) { }
+                try { return Long.parseLong(raw); } catch (NumberFormatException tooBig) { /* a double, below */ }
             }
             return Double.parseDouble(raw);
+        }
+
+        static boolean digit(char c) { return c >= '0' && c <= '9'; }
+
+        // ASCII only: Character.digit also accepts other scripts' digits, such
+        // as a fullwidth '１'.
+        static int hexDigit(char c) {
+            if (c >= '0' && c <= '9') return c - '0';
+            if (c >= 'a' && c <= 'f') return c - 'a' + 10;
+            if (c >= 'A' && c <= 'F') return c - 'A' + 10;
+            return -1;
         }
 
         Object literal(String word, Object value) {
@@ -187,6 +240,14 @@ final class Json {
     private static void writeTo(StringBuilder b, Object value) {
         if (value == null) { b.append("null"); return; }
         if (value instanceof String) { writeString(b, (String) value); return; }
+        if (value instanceof Double || value instanceof Float) {
+            double d = ((Number) value).doubleValue();
+            // JSON has no NaN or Infinity; written bare they make the whole
+            // request unreadable, and the daemon would blame the pipe.
+            if (Double.isNaN(d) || Double.isInfinite(d)) {
+                throw new InvalidArgumentException(value + " is not a number JSON can carry", "", "", false, Map.of());
+            }
+        }
         if (value instanceof Boolean || value instanceof Number) { b.append(value); return; }
         if (value instanceof Map) {
             b.append('{');
@@ -262,7 +323,14 @@ final class Json {
 
     static int integer(Map<String, Object> m, String key) {
         Object v = m.get(key);
-        return v instanceof Number ? ((Number) v).intValue() : 0;
+        if (!(v instanceof Number)) return 0;
+        // Refused rather than wrapped: intValue() turns 2^31 into a negative
+        // coordinate, and a tap there lands somewhere nobody asked for.
+        double d = ((Number) v).doubleValue();
+        if (d < Integer.MIN_VALUE || d > Integer.MAX_VALUE) {
+            throw new MobiumException(key + " is " + v + ", out of range for an int");
+        }
+        return ((Number) v).intValue();
     }
 
     static boolean bool(Map<String, Object> m, String key) {

@@ -13,10 +13,15 @@ package dev.mobium;
  * as on iOS, which is different from the device having none.
  */
 public final class Location {
+    /** Degrees north; negative is south. */
     public final double latitude;
+    /** Degrees east; negative is west. */
     public final double longitude;
+    /** This fix was injected by a test provider. */
     public final boolean mock;
+    /** A test provider is installed now. */
     public final boolean mocking;
+    /** The platform could report a position at all. */
     public final boolean known;
 
     Location(double latitude, double longitude, boolean mock, boolean mocking, boolean known) {

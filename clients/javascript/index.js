@@ -10,8 +10,8 @@
  */
 
 import { spawn } from 'node:child_process'
-import { existsSync, accessSync, constants, readFileSync } from 'node:fs'
-import { resolve } from 'node:path'
+import { accessSync, constants, readFileSync, statSync } from 'node:fs'
+import { delimiter, isAbsolute, join, resolve } from 'node:path'
 import { createInterface } from 'node:readline'
 
 /**
@@ -132,8 +132,15 @@ export function errorFrom(text, structured) {
 }
 
 /**
- * Locate the mobium binary. MOBIUM_BIN_PATH wins so a test run can pin a
+ * Locate the mobium binary: the explicit path, then MOBIUM_BIN_PATH, then
+ * PATH — and nothing else. MOBIUM_BIN_PATH wins so a test run can pin a
  * specific build.
+ *
+ * The current directory is never searched, not in ./bin and not through a
+ * relative PATH entry: a library that runs whatever mobium sits where a test
+ * was started runs a binary anyone could have planted there. PATH is walked
+ * here, to an absolute path, rather than left to spawn, which on Windows
+ * looks in the current directory first.
  */
 export function findBinary(explicit) {
   for (const candidate of [explicit, process.env.MOBIUM_BIN_PATH]) {
@@ -145,11 +152,20 @@ export function findBinary(explicit) {
       throw new MobiumError(`${candidate} is not an executable mobium binary`)
     }
   }
-  for (const rel of ['./bin/mobium', '../bin/mobium', '../../bin/mobium']) {
-    if (existsSync(rel)) return resolve(rel)
+  const name = process.platform === 'win32' ? 'mobium.exe' : 'mobium'
+  for (const dir of (process.env.PATH || '').split(delimiter)) {
+    if (!isAbsolute(dir)) continue
+    const found = join(dir, name)
+    try {
+      if (statSync(found).isFile()) {
+        accessSync(found, constants.X_OK)
+        return found
+      }
+    } catch {
+      // Not here, or not executable; keep looking.
+    }
   }
-  // Fall back to PATH resolution by the shell.
-  return 'mobium'
+  throw new MobiumError('mobium not found — put it on PATH or set MOBIUM_BIN_PATH to the binary')
 }
 
 function textOf(result) {

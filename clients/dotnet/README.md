@@ -1,7 +1,7 @@
 # Mobium for .NET
 
-Drives native apps on Android emulators, Android phones and iOS simulators
-from C#.
+Drives native apps on Android emulators, Android phones, iOS simulators and
+iPhones from C#.
 
 ```csharp
 using Mobium;
@@ -112,6 +112,41 @@ using var device = Device.Builder()
 ```
 
 Omit both when one device is running, which is the usual case.
+
+## Threads, timeouts and closing
+
+One `Device` is one pipe to one device. It is safe to share between threads,
+but calls are **serialized**, one at a time, never interleaved: replies on the
+pipe are told apart only by id, so two in flight would read each other's
+answers.
+
+A call waits as long as the tool takes, which is unlimited by default because
+the first session on an iPhone builds WebDriverAgent and that takes minutes.
+To bound it:
+
+```csharp
+using var device = Device.Builder()
+    .CallTimeout(TimeSpan.FromMinutes(2))
+    .Connect();
+```
+
+A call that runs out **ends the connection**. A late answer to an abandoned
+call would otherwise be read as the answer to the next one, so every later
+call throws, saying the connection is no longer usable, and you connect again.
+That is cheap, because the device session lives in the daemon, not in this
+object. The same goes for mobium exiting mid-call. Set the timeout well above
+the longest `Until.Timeout` you use.
+
+`Dispose` closes the pipe and waits up to ten seconds for mobium to exit. It is
+safe to call twice, and calling it from another thread ends a call that is
+still waiting.
+
+## Nulls
+
+The package is annotated for nullable reference types. `WaitFor` and
+`ScrollTo` return `Element?`: waiting for something to disappear leaves
+nothing to return. A `null` passed where a value is required throws
+`InvalidArgumentException` naming the argument, before anything is sent.
 
 ## Anything not wrapped
 
