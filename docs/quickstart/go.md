@@ -12,7 +12,7 @@ Go 1.24 or later.
 
 ## 2. Install the client
 
-No client is on a package registry yet. Until the first release, install it from your clone of the repository — the path below assumes the clone is at `~/mobium`.
+The Go module is published through GitHub, so this works today.
 
 ```sh
 go mod init quickstart
@@ -172,4 +172,4 @@ The first start on a device is slow: it installs the UiAutomator2 server on Andr
 - `mobium.Connect` still exists: it opens a connection without touching the device, and `Close` leaves the session open.
 - With more than one device attached, `start` refuses to guess and lists them. Name one with `MOBIUM_DEVICE=<serial or UDID>`, which the example passes on as the device.
 
-Next: [the rest of the tool surface](../API.md), and [setting up phones and simulators](../SETUP.md).
+Next: [the rest of the tool surface](../API.md), and [setting up phones and simulators](../SETUP.md). Changing the client itself? [DEVELOPMENT.md](../DEVELOPMENT.md) is the contributor's guide.

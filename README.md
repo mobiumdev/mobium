@@ -35,16 +35,15 @@ person driving an emulator for it. People get the same commands.
 
 Requirements:
 
-- **Go 1.24+** to build
+- **Go 1.24+**, to install it — there are no prebuilt binaries yet
 - **Android:** platform-tools on `PATH` (or `ANDROID_HOME`, or
   `MOBIUM_ADB_PATH`), and an emulator or a phone with USB debugging on
 - **iOS:** full Xcode and a booted simulator — or an iPhone on a cable, with
   an Apple ID (a free one works) added to Xcode
 
 ```sh
-git clone https://github.com/mobiumdev/mobium.git && cd mobium
-make build          # -> bin/mobium
-bin/mobium doctor   # checks the environment; needs no device and no daemon
+go install github.com/mobiumdev/mobium/cmd/mobium@latest
+mobium doctor       # checks the environment; needs no device and no daemon
 ```
 
 ```
@@ -67,7 +66,9 @@ tapped @e5 at (540, 930)
 **New here? [docs/quickstart](docs/quickstart/README.md)** walks from nothing
 to a script that starts a session, launches an app, taps, screenshots and
 quits — for the command line and for each client, on Android and iOS, with
-the output and screenshots of it running.
+the output and screenshots of it running. **Contributing?**
+[docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) goes from a fresh clone to a change
+that passes CI.
 
 [docs/SETUP.md](docs/SETUP.md) covers emulators, Android phones over USB and
 Wi-Fi, iOS simulators and iPhones, and the setup traps whose error messages
@@ -316,6 +317,8 @@ is the protocol.
 
 | | |
 | --- | --- |
+| [docs/quickstart/](docs/quickstart/README.md) | using Mobium: install it and drive a device, from each client |
+| [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) | working on Mobium: toolchains, `make ci`, device checks, pull requests |
 | [docs/PHILOSOPHY.md](docs/PHILOSOPHY.md) | *mutatis mutandis*: where the motto comes from, and the one design rule |
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | the layers, the package graph, and one call end to end |
 | [docs/SETUP.md](docs/SETUP.md) | attaching an emulator, a phone or a simulator |

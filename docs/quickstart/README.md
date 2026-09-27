@@ -1,7 +1,9 @@
 # Quick start
 
-From nothing to a script that starts a session on a device, launches an app,
-taps something, takes a screenshot and quits — in the language you use.
+For people who want to use Mobium: from nothing to a script that starts a
+session on a device, launches an app, taps something, takes a screenshot and
+quits — in the language you use. Contributors want
+[DEVELOPMENT.md](../DEVELOPMENT.md).
 
 | After start | After the tap |
 | --- | --- |
@@ -36,26 +38,22 @@ what it printed.
 
 ## 1. Install mobium
 
-Until the first release there are no prebuilt binaries; mobium is built from
-source, which needs **Go 1.24 or later** ([go.dev/dl](https://go.dev/dl/)).
-The quickest way needs nothing else:
+Until the first release there are no prebuilt binaries: mobium installs with
+**Go 1.24 or later** ([go.dev/dl](https://go.dev/dl/)), and needs nothing else.
 
 ```sh
-go install github.com/mobiumdev/mobium/cmd/mobium@latest   # -> $(go env GOPATH)/bin/mobium
+go install github.com/mobiumdev/mobium/cmd/mobium@latest
 mobium --version
 ```
 
-Make sure `$(go env GOPATH)/bin` is on your `PATH`.
+It lands in `$(go env GOPATH)/bin`; make sure that is on your `PATH`.
 
-The client pages install their client from a clone of the repository, until
-the clients are on their package registries — so clone it too:
+Each client page says how to install that client. Python (with `git`) and Go
+install straight from GitHub today; JavaScript, Java and .NET need a clone of the
+repository until their first release on npm, Maven Central and NuGet.
 
-```sh
-git clone https://github.com/mobiumdev/mobium.git ~/mobium
-```
-
-`make build` in the clone builds the same binary into `~/mobium/bin`, if you
-would rather use that one.
+**Working on Mobium itself** — building from source, running the tests,
+sending a change? That is [DEVELOPMENT.md](../DEVELOPMENT.md), not this page.
 
 ## 2. Start a device
 

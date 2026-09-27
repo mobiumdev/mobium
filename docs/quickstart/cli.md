@@ -114,4 +114,4 @@ The first start on a device is slow: it installs the UiAutomator2 server on Andr
 - `mobium session status` lists the sessions open. `mobium daemon stop` ends all of them at once.
 - With more than one device attached, `start` refuses to guess and lists them. Name one with `MOBIUM_DEVICE=<serial or UDID>`, which the example passes on as the device.
 
-Next: [the rest of the tool surface](../API.md), and [setting up phones and simulators](../SETUP.md).
+Next: [the rest of the tool surface](../API.md), and [setting up phones and simulators](../SETUP.md). Changing the client itself? [DEVELOPMENT.md](../DEVELOPMENT.md) is the contributor's guide.
