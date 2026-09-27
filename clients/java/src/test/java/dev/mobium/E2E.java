@@ -37,7 +37,9 @@ public final class E2E {
         if (bin != null && !bin.isBlank()) {
             b.binary(bin);
         }
-        try (Mobium d = b.connect()) {
+        try (Mobium d = b.start()) {
+            check(d.session() != null && serial.equals(d.session().device()) && "android".equals(d.session().platform()),
+                    "start opens a session on the device");
             d.terminate(SETTINGS);
             d.launch(SETTINGS);
             check(SETTINGS.equals(d.current()), "launch brings Settings forward");
@@ -69,6 +71,12 @@ public final class E2E {
 
             d.terminate(SETTINGS);
             check(!SETTINGS.equals(d.current()), "terminate takes Settings away");
+        }
+        // try-with-resources quit: the session is gone from the daemon.
+        Mobium.Builder o = Mobium.builder();
+        if (bin != null && !bin.isBlank()) o.binary(bin);
+        try (Mobium other = o.connect()) {
+            check(other.sessions().stream().noneMatch(s -> serial.equals(s.get("device"))), "try-with-resources ended the session");
         }
         System.out.println("java: passed");
     }

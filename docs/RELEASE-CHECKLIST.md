@@ -4,7 +4,7 @@
 [CI workflow](../.github/workflows/ci.yml) runs on every push — formatting,
 vet, both modules' tests, the four non-Go clients' own tests, and six
 cross-compile targets. This file is the rest, and the rest is where most
-serious defects in this project have come from: 101 of 121 were found only by
+serious defects in this project have come from: 102 of 122 were found only by
 running against a real device.
 
 Work through it before tagging a release, on three substrates: an Android
@@ -88,20 +88,20 @@ Start the emulator, then `mobium daemon stop` so nothing serves a stale build.
       list in a few swipes, not fifteen
 - [ ] `mobium grant com.android.chrome all` grants every declared permission,
       confirmed with `adb shell dumpsys package com.android.chrome | grep granted=false`
-- [ ] `mobium --backend uiautomator map` works on an ordinary screen and
+- [ ] `mobium --driver uiautomator map` works on an ordinary screen and
       refuses the About page by name (see defect 25)
 - [ ] `mobium screenshot -o /tmp/x.png` writes a PNG whose coordinates agree
       with what `map` reported
 - [ ] `mobium appearance dark` then `light`, each confirmed by reading it back
 - [ ] `mobium apps` lists what is installed; `--system` includes the platform's
-- [ ] After a `--backend uiautomator` run, `adb shell ls /data/local/tmp` has
+- [ ] After a `--driver uiautomator` run, `adb shell ls /data/local/tmp` has
       no mobium file in it
 - [ ] `mobium uninstall com.android.settings` **fails**, naming
       DELETE_FAILED_INTERNAL_ERROR rather than reporting success
 
 ## iOS — a booted iPhone simulator
 
-- [ ] `mobium --backend webdriveragent map` on the home screen returns icons
+- [ ] `mobium --driver wda map` on the home screen returns icons
 - [ ] Wait for something already on screen, and across a cold app launch
 - [ ] `mobium scroll-to` reaches a Settings row below the fold, and tapping it
       opens that screen
@@ -139,8 +139,8 @@ first command builds and signs WebDriverAgent, which takes a minute or two.
 - [ ] `./docs/checks/crashes.sh <udid>` passes with MobiumApp installed: its
       logged line is in the captured log, and its Crash Demo's report is listed,
       read in full, and its cause found in the log rather than the report
-- [ ] `mobium --device <udid> current`, **without** `--backend`, names the
-      webdriveragent backend rather than saying there is no such device
+- [ ] `mobium --device <udid> current`, **without** `--driver`, names the
+      wda backend rather than saying there is no such device
       (defect 88)
 
 ## End-to-end

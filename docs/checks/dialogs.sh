@@ -25,7 +25,7 @@ APP=dev.mobium.mobiumapp
 
 case "$DEV" in
   ????????-????????????????) echo "a real iPhone cannot reset permissions from outside; use a simulator" >&2; exit 2 ;;
-  *-*-*-*-*) PLATFORM=ios; M="$ROOT/bin/mobium --backend webdriveragent --device $DEV"; RESET="$M reset-permissions $APP"; CAP=label ;;
+  *-*-*-*-*) PLATFORM=ios; M="$ROOT/bin/mobium --driver wda --device $DEV"; RESET="$M reset-permissions $APP"; CAP=label ;;
   *)         PLATFORM=android; M="$ROOT/bin/mobium --device $DEV"; RESET="$M reset-permissions"; CAP=text ;;
 esac
 echo "--- $DEV ($PLATFORM)"

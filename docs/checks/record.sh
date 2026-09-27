@@ -21,8 +21,8 @@ TMP="$(mktemp -d)"
 trap 'rm -rf "$TMP"' EXIT
 
 case "$DEV" in
-  ????????-????????????????) PLATFORM=iphone; M="$ROOT/bin/mobium --backend webdriveragent --device $DEV" ;;
-  *-*-*-*-*) PLATFORM=ios; M="$ROOT/bin/mobium --backend webdriveragent --device $DEV" ;;
+  ????????-????????????????) PLATFORM=iphone; M="$ROOT/bin/mobium --driver wda --device $DEV" ;;
+  *-*-*-*-*) PLATFORM=ios; M="$ROOT/bin/mobium --driver wda --device $DEV" ;;
   *)         PLATFORM=android; M="$ROOT/bin/mobium --device $DEV" ;;
 esac
 echo "--- $DEV ($PLATFORM)"

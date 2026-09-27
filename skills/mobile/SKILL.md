@@ -303,10 +303,10 @@ Every one of these can move the screen, so map again before acting.
 
 ### Choosing a device or backend
 - `--device <serial>` — when more than one device is running
-- `--backend uiautomator` — Android without installing anything (slower, and
+- `--driver uiautomator` — Android without installing anything (slower, and
   it cannot type)
-- `--backend webdriveragent` — iOS simulators and iPhones
-- `--backend <anything else>` — a third-party driver the user installed, as an
+- `--driver wda` — iOS simulators and iPhones
+- `--driver <anything else>` — a third-party driver the user installed, as an
   executable named `mobium-driver-<name>`. `mobium doctor` lists the ones it
   can find. Such a driver may not support everything: if it refuses something,
   it never advertised that capability and retrying will not help.
@@ -366,7 +366,7 @@ parsing the sentence: `--json` prints it (`"code": "no_such_element"`, with a
 - `… matches N elements — narrow it by appending ",role=button" …`
   Ambiguous locator. Add a role or map and use a ref.
 - `the uiautomator backend cannot type into an element`
-  Drop `--backend uiautomator`; the default backend can type.
+  Drop `--driver uiautomator`; the default backend can type.
 - `the <name> backend cannot …`
   That backend never advertised the capability. Switch backends; do not retry.
 - `a dialog is over the app — "…"`

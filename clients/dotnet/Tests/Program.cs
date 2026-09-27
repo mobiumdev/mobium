@@ -63,6 +63,7 @@ namespace Mobium.Tests
             AFailedHandshakeLeavesNoProcess();
             DisposeIsIdempotentAndEndsAWaitingCall();
             AnAnswerWithNoIdFailsTheCallInFlight();
+            StartOpensTheSessionAndQuitEndsIt();
 
             Console.WriteLine();
             Console.WriteLine($"{_checks} checks, {_failures} failed");
@@ -404,7 +405,7 @@ namespace Mobium.Tests
             // cases that differ from a naive join.
             const string serial = "my \"odd\" dev\\ice\\";
             Environment.SetEnvironmentVariable("MOBIUM_FAKE", "ok");
-            using var d = Device.Builder().Binary(FakeBinary()).OnDevice(serial).Backend("").Connect();
+            using var d = Device.Builder().Binary(FakeBinary()).OnDevice(serial).Driver("").Connect();
             var argv = Json.AsArray(d.Call("app_x", null)["argv"]);
             Eq("argv[0] is pipe", "pipe", argv.Count > 0 ? argv[0] : null);
             Eq("--device then the serial, byte for byte", serial, argv.Count > 2 ? argv[2] : null);
@@ -523,6 +524,30 @@ namespace Mobium.Tests
             Yes("an answer with no id fails the call as InvalidArgumentException", e != null);
             Yes("saying the request was unreadable", e != null && e.Message.Contains("could not read the request"));
             Eq("and the connection is still in step", "app_current", Json.Str(d.Call("app_current", null), "tool"));
+        }
+
+        private static void StartOpensTheSessionAndQuitEndsIt()
+        {
+            Environment.SetEnvironmentVariable("MOBIUM_FAKE", "ok");
+            var d = Device.Builder().Binary(FakeBinary()).Platform("ios").App("com.apple.Preferences").Start();
+            var s = d.Session;
+            Yes("start reports the device, platform, driver and app",
+                s != null && s.Device == "fake-device" && s.Platform == "ios" && s.Driver == "wda" && s.App == "com.apple.Preferences");
+            d.Quit();
+            Yes("a second quit does nothing", Throws<Exception>(() => d.Quit()) == null);
+            Yes("a call after quit fails", Throws<MobiumException>(() => d.Current()) != null);
+            using (var c = Device.Builder().Binary(FakeBinary()).Connect())
+                Yes("connect reports no session it did not start", c.Session == null);
+            Device kept;
+            using (var b = Device.Builder().Binary(FakeBinary()).Platform("android").Start())
+            {
+                kept = b;
+                Eq("start in a using block opens a session", "uiautomator2", b.Session?.Driver);
+            }
+            Yes("a using block quits on the way out", Throws<MobiumException>(() => kept.Current()) != null);
+            using (var b = Device.Builder().Binary(FakeBinary()).Platform("android").Start())
+                b.Quit();
+            Yes("disposing after an explicit quit does nothing", true);
         }
 
         // -- the harness ----------------------------------------------------

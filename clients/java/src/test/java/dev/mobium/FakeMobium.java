@@ -72,6 +72,27 @@ final class FakeMobium {
             String name = Json.str(params, "name");
             Object arguments = params.get("arguments");
             if (name.equals("slow")) Thread.sleep(300);
+            if (name.equals("app_session")) {
+                // Answers as the daemon does: start names the device it got,
+                // and echoes the platform and app it was asked for.
+                Map<String, Object> a = Json.asObject(arguments);
+                String action = Json.str(a, "action");
+                Map<String, Object> view = new LinkedHashMap<>();
+                view.put("action", action.isEmpty() ? "status" : action);
+                if (action.equals("start")) {
+                    String platform = Json.str(a, "platform").isEmpty() ? "android" : Json.str(a, "platform");
+                    view.put("device", "fake-device");
+                    view.put("platform", platform);
+                    view.put("driver", platform.equals("ios") ? "wda" : "uiautomator2");
+                    view.put("app", Json.str(a, "app"));
+                } else if (action.equals("end")) {
+                    view.put("device", Json.str(a, "device"));
+                    view.put("ended", true);
+                }
+                view.put("sessions", List.of());
+                reply(out, id, Map.of("content", List.of(Map.of("type", "text", "text", "session")), "structuredContent", view));
+                continue;
+            }
             if (mode.equals("noid") && name.equals("app_map")) {
                 out.println("{\"jsonrpc\":\"2.0\",\"error\":{\"code\":-32700,\"message\":\"Parse error\","
                         + "\"data\":\"invalid character 'N' looking for beginning of value\"}}");

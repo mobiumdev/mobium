@@ -10,6 +10,17 @@ this is what is not.
   transport is written; it has not yet been verified on a Windows machine, and
   until it has, Windows is unsupported. [WINDOWS.md](WINDOWS.md) is the state
   of it.
+- **Published client packages.** The Python, JavaScript, Java and .NET
+  clients install from a clone of this repository until they are on PyPI, npm,
+  Maven Central and NuGet; the [quick start](quickstart/README.md) says so
+  on every page. The build files already name them — `mobium` on PyPI and
+  npm, `dev.mobium:mobium` on Maven Central, `Mobium` on NuGet — and all four
+  were unclaimed on 2026-09-27; none is registered yet.
+- **The quick start on Linux, against a device.** Mobium builds and passes its
+  tests on Linux in CI; no emulator has been driven from Linux yet, so the
+  quick start calls Linux expected rather than verified.
+- **Video walkthroughs** of the quick start, one per client, once `start` and
+  `quit` have settled. The pages' examples and captured output are the script.
 - **Auto-wait, the rest of the actionability checks.** Actions already wait for
   a target to exist, be in view, stop moving and be enabled; refuse one under
   a dialog or the keyboard; and aim around, wait out or refuse a control the

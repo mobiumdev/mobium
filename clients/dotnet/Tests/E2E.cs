@@ -39,8 +39,10 @@ namespace Mobium.Tests
             var bin = Environment.GetEnvironmentVariable("MOBIUM_BIN_PATH");
             if (!string.IsNullOrWhiteSpace(bin)) builder.Binary(bin);
 
-            using (var d = builder.Connect())
+            using (var d = builder.Start())
             {
+                Check(d.Session != null && d.Session.Device == serial && d.Session.Platform == "android",
+                    "start opens a session on the device");
                 d.Terminate(Settings);
                 d.Launch(Settings);
                 Check(d.Current() == Settings, "launch brings Settings forward");
@@ -74,6 +76,16 @@ namespace Mobium.Tests
 
                 d.Terminate(Settings);
                 Check(d.Current() != Settings, "terminate takes Settings away");
+            }
+            // The using block quit: the session is gone from the daemon.
+            var o = Device.Builder();
+            if (!string.IsNullOrWhiteSpace(bin)) o.Binary(bin);
+            using (var other = o.Connect())
+            {
+                var open = other.Sessions();
+                var gone = true;
+                foreach (var s in open) if (Json.Str(s, "device") == serial) gone = false;
+                Check(gone, "the using block ended the session");
             }
             Console.WriteLine("dotnet: passed");
             return 0;

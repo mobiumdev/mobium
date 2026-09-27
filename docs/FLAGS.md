@@ -15,7 +15,7 @@ handler reads the keys it knows by name. A command writing
 `call["speeed"]` is therefore rejected loudly on one surface and
 silently ignored on the other — the one people use.
 
-`--device` and `--backend` are persistent flags that
+`--device` and `--driver` are persistent flags that
 `daemonCall` attaches to every call, so they are marked global and no
 command mentions them.
 
@@ -23,50 +23,50 @@ command mentions them.
 
 | Tool | Argument | Type | Set by |
 | --- | --- | --- | --- |
-| `app_accessibility` | `backend` | string | _global_ --backend |
 | `app_accessibility` | `device` | string | _global_ --device |
+| `app_accessibility` | `driver` | string | _global_ --driver |
 | `app_accessibility` | `setting` | string | accessibility |
 | `app_accessibility` | `value` | string | accessibility |
 | `app_alert` | `action` | string | alert |
-| `app_alert` | `backend` | string | _global_ --backend |
 | `app_alert` | `device` | string | _global_ --device |
+| `app_alert` | `driver` | string | _global_ --driver |
 | `app_alert` | `text` | string | alert |
 | `app_appearance` | `appearance` | string | appearance |
-| `app_appearance` | `backend` | string | _global_ --backend |
 | `app_appearance` | `device` | string | _global_ --device |
+| `app_appearance` | `driver` | string | _global_ --driver |
 | `app_call` | `action` | string | call |
-| `app_call` | `backend` | string | _global_ --backend |
 | `app_call` | `device` | string | _global_ --device |
+| `app_call` | `driver` | string | _global_ --driver |
 | `app_call` | `number` | string | call |
-| `app_check` | `backend` | string | _global_ --backend |
 | `app_check` | `checked` | boolean | check, uncheck |
 | `app_check` | `device` | string | _global_ --device |
+| `app_check` | `driver` | string | _global_ --driver |
 | `app_check` | `target` | string | check, uncheck |
 | `app_clear_data` | `app` | string | clear-data |
-| `app_clear_data` | `backend` | string | _global_ --backend |
 | `app_clear_data` | `device` | string | _global_ --device |
-| `app_clipboard` | `backend` | string | _global_ --backend |
+| `app_clear_data` | `driver` | string | _global_ --driver |
 | `app_clipboard` | `device` | string | _global_ --device |
+| `app_clipboard` | `driver` | string | _global_ --driver |
 | `app_clipboard` | `text` | string | clipboard |
-| `app_context` | `backend` | string | _global_ --backend |
 | `app_context` | `context` | string | context |
 | `app_context` | `device` | string | _global_ --device |
-| `app_contexts` | `backend` | string | _global_ --backend |
+| `app_context` | `driver` | string | _global_ --driver |
 | `app_contexts` | `device` | string | _global_ --device |
+| `app_contexts` | `driver` | string | _global_ --driver |
 | `app_crashes` | `app` | string | crashes |
-| `app_crashes` | `backend` | string | _global_ --backend |
 | `app_crashes` | `device` | string | _global_ --device |
+| `app_crashes` | `driver` | string | _global_ --driver |
 | `app_crashes` | `id` | string | crashes |
 | `app_crashes` | `limit` | integer | crashes |
-| `app_current` | `backend` | string | _global_ --backend |
 | `app_current` | `device` | string | _global_ --device |
-| `app_dialogs` | `backend` | string | _global_ --backend |
+| `app_current` | `driver` | string | _global_ --driver |
 | `app_dialogs` | `clear` | boolean | dialogs |
 | `app_dialogs` | `device` | string | _global_ --device |
+| `app_dialogs` | `driver` | string | _global_ --driver |
 | `app_dialogs` | `press` | string | dialogs |
 | `app_dialogs` | `when` | string | dialogs |
-| `app_drag` | `backend` | string | _global_ --backend |
 | `app_drag` | `device` | string | _global_ --device |
+| `app_drag` | `driver` | string | _global_ --driver |
 | `app_drag` | `duration_ms` | integer | drag |
 | `app_drag` | `from` | string | drag |
 | `app_drag` | `hold_ms` | integer | drag |
@@ -75,76 +75,76 @@ command mentions them.
 | `app_drag` | `x2` | integer | drag |
 | `app_drag` | `y1` | integer | drag |
 | `app_drag` | `y2` | integer | drag |
-| `app_eval` | `backend` | string | _global_ --backend |
 | `app_eval` | `device` | string | _global_ --device |
+| `app_eval` | `driver` | string | _global_ --driver |
 | `app_eval` | `expression` | string | eval |
-| `app_find` | `backend` | string | _global_ --backend |
 | `app_find` | `device` | string | _global_ --device |
+| `app_find` | `driver` | string | _global_ --driver |
 | `app_find` | `locator` | string | find |
 | `app_grant` | `app` | string | grant |
-| `app_grant` | `backend` | string | _global_ --backend |
 | `app_grant` | `device` | string | _global_ --device |
+| `app_grant` | `driver` | string | _global_ --driver |
 | `app_grant` | `permissions` | array | grant |
-| `app_install` | `backend` | string | _global_ --backend |
 | `app_install` | `device` | string | _global_ --device |
+| `app_install` | `driver` | string | _global_ --driver |
 | `app_install` | `path` | string | install |
-| `app_keyboard` | `backend` | string | _global_ --backend |
 | `app_keyboard` | `device` | string | _global_ --device |
+| `app_keyboard` | `driver` | string | _global_ --driver |
 | `app_keyboard` | `hide` | boolean | keyboard |
 | `app_keyboard` | `key` | string | keyboard |
 | `app_keyboard` | `text` | string | keyboard |
 | `app_launch` | `app` | string | launch |
-| `app_launch` | `backend` | string | _global_ --backend |
 | `app_launch` | `device` | string | _global_ --device |
-| `app_list_apps` | `backend` | string | _global_ --backend |
+| `app_launch` | `driver` | string | _global_ --driver |
 | `app_list_apps` | `device` | string | _global_ --device |
+| `app_list_apps` | `driver` | string | _global_ --driver |
 | `app_list_apps` | `system` | boolean | apps |
 | `app_locale` | `app` | string | locale |
-| `app_locale` | `backend` | string | _global_ --backend |
 | `app_locale` | `device` | string | _global_ --device |
+| `app_locale` | `driver` | string | _global_ --driver |
 | `app_locale` | `locale` | string | locale |
-| `app_location` | `backend` | string | _global_ --backend |
 | `app_location` | `clear` | boolean | location |
 | `app_location` | `device` | string | _global_ --device |
+| `app_location` | `driver` | string | _global_ --driver |
 | `app_location` | `gpx` | string | location |
 | `app_location` | `latitude` | number | location |
 | `app_location` | `longitude` | number | location |
 | `app_location` | `speed` | number | location |
 | `app_location` | `waypoints` | array | location |
-| `app_lock` | `backend` | string | _global_ --backend |
 | `app_lock` | `device` | string | _global_ --device |
+| `app_lock` | `driver` | string | _global_ --driver |
 | `app_lock` | `state` | string | lock |
 | `app_logs` | `app` | string | logs |
-| `app_logs` | `backend` | string | _global_ --backend |
 | `app_logs` | `device` | string | _global_ --device |
+| `app_logs` | `driver` | string | _global_ --driver |
 | `app_logs` | `level` | string | logs |
 | `app_logs` | `lines` | integer | logs |
 | `app_logs` | `source` | string | logs |
-| `app_long_press` | `backend` | string | _global_ --backend |
 | `app_long_press` | `device` | string | _global_ --device |
+| `app_long_press` | `driver` | string | _global_ --driver |
 | `app_long_press` | `duration_ms` | integer | long-press |
 | `app_long_press` | `target` | string | long-press |
 | `app_long_press` | `x` | integer | long-press |
 | `app_long_press` | `y` | integer | long-press |
-| `app_map` | `backend` | string | _global_ --backend |
 | `app_map` | `device` | string | _global_ --device |
-| `app_notifications` | `backend` | string | _global_ --backend |
+| `app_map` | `driver` | string | _global_ --driver |
 | `app_notifications` | `device` | string | _global_ --device |
+| `app_notifications` | `driver` | string | _global_ --driver |
 | `app_notifications` | `shade` | string | notifications |
 | `app_notifications` | `tag` | string | notifications |
 | `app_notifications` | `text` | string | notifications |
 | `app_notifications` | `title` | string | notifications |
-| `app_open_url` | `backend` | string | _global_ --backend |
 | `app_open_url` | `device` | string | _global_ --device |
+| `app_open_url` | `driver` | string | _global_ --driver |
 | `app_open_url` | `url` | string | open |
-| `app_orientation` | `backend` | string | _global_ --backend |
 | `app_orientation` | `device` | string | _global_ --device |
+| `app_orientation` | `driver` | string | _global_ --driver |
 | `app_orientation` | `orientation` | string | orientation |
-| `app_press` | `backend` | string | _global_ --backend |
 | `app_press` | `button` | string | press |
 | `app_press` | `device` | string | _global_ --device |
-| `app_press_drag` | `backend` | string | _global_ --backend |
+| `app_press` | `driver` | string | _global_ --driver |
 | `app_press_drag` | `device` | string | _global_ --device |
+| `app_press_drag` | `driver` | string | _global_ --driver |
 | `app_press_drag` | `duration_ms` | integer | press-drag |
 | `app_press_drag` | `from` | string | press-drag |
 | `app_press_drag` | `hold` | string | press-drag |
@@ -156,8 +156,8 @@ command mentions them.
 | `app_press_drag` | `y1` | integer | press-drag |
 | `app_press_drag` | `y2` | integer | press-drag |
 | `app_press_drag` | `y3` | integer | press-drag |
-| `app_press_tap` | `backend` | string | _global_ --backend |
 | `app_press_tap` | `device` | string | _global_ --device |
+| `app_press_tap` | `driver` | string | _global_ --driver |
 | `app_press_tap` | `hold` | string | press-tap |
 | `app_press_tap` | `lead_ms` | integer | press-tap |
 | `app_press_tap` | `tap` | string | press-tap |
@@ -166,79 +166,84 @@ command mentions them.
 | `app_press_tap` | `y1` | integer | press-tap |
 | `app_press_tap` | `y2` | integer | press-tap |
 | `app_record` | `action` | string | record |
-| `app_record` | `backend` | string | _global_ --backend |
 | `app_record` | `device` | string | _global_ --device |
+| `app_record` | `driver` | string | _global_ --driver |
 | `app_record` | `path` | string | record |
 | `app_reset_permissions` | `app` | string | reset-permissions |
-| `app_reset_permissions` | `backend` | string | _global_ --backend |
 | `app_reset_permissions` | `device` | string | _global_ --device |
+| `app_reset_permissions` | `driver` | string | _global_ --driver |
 | `app_revoke` | `app` | string | revoke |
-| `app_revoke` | `backend` | string | _global_ --backend |
 | `app_revoke` | `device` | string | _global_ --device |
+| `app_revoke` | `driver` | string | _global_ --driver |
 | `app_revoke` | `permissions` | array | revoke |
-| `app_rotate` | `backend` | string | _global_ --backend |
 | `app_rotate` | `degrees` | number | rotate |
 | `app_rotate` | `device` | string | _global_ --device |
+| `app_rotate` | `driver` | string | _global_ --driver |
 | `app_rotate` | `radius` | integer | rotate |
 | `app_rotate` | `target` | string | rotate |
-| `app_screen` | `backend` | string | _global_ --backend |
 | `app_screen` | `device` | string | _global_ --device |
+| `app_screen` | `driver` | string | _global_ --driver |
 | `app_screen` | `inspect` | boolean | screen |
 | `app_screen` | `profile` | string | screen |
-| `app_screenshot` | `backend` | string | _global_ --backend |
 | `app_screenshot` | `device` | string | _global_ --device |
+| `app_screenshot` | `driver` | string | _global_ --driver |
 | `app_screenshot` | `path` | string | screenshot |
-| `app_scroll_to` | `backend` | string | _global_ --backend |
 | `app_scroll_to` | `device` | string | _global_ --device |
 | `app_scroll_to` | `direction` | string | scroll-to |
+| `app_scroll_to` | `driver` | string | _global_ --driver |
 | `app_scroll_to` | `target` | string | scroll-to |
-| `app_sms` | `backend` | string | _global_ --backend |
+| `app_session` | `action` | string | session |
+| `app_session` | `app` | string | session |
+| `app_session` | `device` | string | _global_ --device |
+| `app_session` | `driver` | string | _global_ --driver |
+| `app_session` | `platform` | string | session |
 | `app_sms` | `device` | string | _global_ --device |
+| `app_sms` | `driver` | string | _global_ --driver |
 | `app_sms` | `from` | string | sms |
 | `app_sms` | `text` | string | sms |
-| `app_source` | `backend` | string | _global_ --backend |
 | `app_source` | `device` | string | _global_ --device |
-| `app_swipe` | `backend` | string | _global_ --backend |
+| `app_source` | `driver` | string | _global_ --driver |
 | `app_swipe` | `device` | string | _global_ --device |
 | `app_swipe` | `direction` | string | swipe |
+| `app_swipe` | `driver` | string | _global_ --driver |
 | `app_swipe` | `duration_ms` | integer | swipe |
 | `app_swipe` | `x1` | integer | swipe |
 | `app_swipe` | `x2` | integer | swipe |
 | `app_swipe` | `y1` | integer | swipe |
 | `app_swipe` | `y2` | integer | swipe |
-| `app_tap` | `backend` | string | _global_ --backend |
 | `app_tap` | `device` | string | _global_ --device |
 | `app_tap` | `double` | boolean | double-tap |
+| `app_tap` | `driver` | string | _global_ --driver |
 | `app_tap` | `fingers` | integer | tap |
 | `app_tap` | `target` | string | double-tap, tap |
 | `app_tap` | `x` | integer | double-tap, tap |
 | `app_tap` | `y` | integer | double-tap, tap |
 | `app_terminate` | `app` | string | terminate |
-| `app_terminate` | `backend` | string | _global_ --backend |
 | `app_terminate` | `device` | string | _global_ --device |
-| `app_text` | `backend` | string | _global_ --backend |
+| `app_terminate` | `driver` | string | _global_ --driver |
 | `app_text` | `device` | string | _global_ --device |
+| `app_text` | `driver` | string | _global_ --driver |
 | `app_text` | `target` | string | text |
-| `app_timezone` | `backend` | string | _global_ --backend |
 | `app_timezone` | `device` | string | _global_ --device |
+| `app_timezone` | `driver` | string | _global_ --driver |
 | `app_timezone` | `timezone` | string | timezone |
-| `app_type` | `backend` | string | _global_ --backend |
 | `app_type` | `clear` | boolean | type |
 | `app_type` | `device` | string | _global_ --device |
+| `app_type` | `driver` | string | _global_ --driver |
 | `app_type` | `target` | string | type |
 | `app_type` | `text` | string | type |
 | `app_uninstall` | `app` | string | uninstall |
-| `app_uninstall` | `backend` | string | _global_ --backend |
 | `app_uninstall` | `device` | string | _global_ --device |
-| `app_wait_for` | `backend` | string | _global_ --backend |
+| `app_uninstall` | `driver` | string | _global_ --driver |
 | `app_wait_for` | `condition` | string | wait |
 | `app_wait_for` | `device` | string | _global_ --device |
+| `app_wait_for` | `driver` | string | _global_ --driver |
 | `app_wait_for` | `target` | string | wait |
 | `app_wait_for` | `text` | string | wait |
 | `app_wait_for` | `timeout_ms` | integer | wait |
-| `app_zoom` | `backend` | string | _global_ --backend |
 | `app_zoom` | `device` | string | _global_ --device |
 | `app_zoom` | `direction` | string | zoom |
+| `app_zoom` | `driver` | string | _global_ --driver |
 | `app_zoom` | `from` | integer | zoom |
 | `app_zoom` | `target` | string | zoom |
 | `app_zoom` | `to` | integer | zoom |
@@ -295,6 +300,7 @@ arguments and the two global flags.
 | `screen` | app_screen | --inspect | inspect, profile |
 | `screenshot` | app_screenshot | --output | path |
 | `scroll-to` | app_scroll_to | --direction | direction, target |
+| `session` | app_session | --app --platform | action, app, platform |
 | `sms` | app_sms | --from | from, text |
 | `source` | app_source | — | — |
 | `start` | — | --idle-timeout | — |

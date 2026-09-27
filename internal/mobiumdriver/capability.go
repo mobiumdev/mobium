@@ -323,7 +323,7 @@ type Decliner interface {
 
 // Declined is the driver's own reason for lacking a capability, or nil when
 // it gives none and the caller's generic refusal stands. Without it a phone
-// answered "the webdriveragent backend cannot record the screen" — true of
+// answered "the wda backend cannot record the screen" — true of
 // the phone, false of the backend, and silent on why.
 func Declined(d Driver, capability string) error {
 	if dec, ok := d.(Decliner); ok {

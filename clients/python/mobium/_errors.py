@@ -82,7 +82,7 @@ class NoSuchAlertError(MobiumError):
 
 
 class UnsupportedError(MobiumError):
-    """This backend or platform cannot do it, and says why. Retrying cannot help."""
+    """This driver or platform cannot do it, and says why. Retrying cannot help."""
     code = "unsupported"
 
 

@@ -102,8 +102,9 @@ var commentPrefixes = map[string][]string{
 	"java":       {"//", "*", "/*"},
 }
 
-// clientSources are the four client libraries: where each lives, and how a
-// method definition looks in it.
+// clientSources are the five client libraries: where each lives, and how a
+// method definition looks in it — a package- or module-level function and a
+// builder's method included, which is where start lives in four of them.
 var clientSources = []struct {
 	Language string
 	File     string
@@ -111,19 +112,19 @@ var clientSources = []struct {
 }{
 	{
 		Language: "go", File: "clients/go/mobium.go",
-		method: regexp.MustCompile(`^func \(d \*Device\) ([A-Za-z]+)\(`),
+		method: regexp.MustCompile(`^func (?:\(d \*Device\) )?([A-Z][A-Za-z]*)\(`),
 	},
 	{
 		Language: "python", File: "clients/python/mobium/_device.py",
-		method: regexp.MustCompile(`^    def ([a-z_]+)\(`),
+		method: regexp.MustCompile(`^(?:    )?def ([a-z_]+)\(`),
 	},
 	{
 		Language: "javascript", File: "clients/javascript/index.js",
-		method: regexp.MustCompile(`^  (?:async )?([a-zA-Z]+)\(`),
+		method: regexp.MustCompile(`^(?:  (?:async )?|export (?:async )?function )([a-zA-Z]+)\(`),
 	},
 	{
 		Language: "java", File: "clients/java/src/main/java/dev/mobium/Mobium.java",
-		method: regexp.MustCompile(`^    public [A-Za-z<>, \[\]]+ ([a-zA-Z]+)\(`),
+		method: regexp.MustCompile(`^ {4}(?: {4})?public [A-Za-z<>, \[\]]+ ([a-zA-Z]+)\(`),
 	},
 	{
 		Language: "dotnet", File: "clients/dotnet/Mobium/Device.cs",

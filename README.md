@@ -64,6 +64,11 @@ $ mobium tap @e5
 tapped @e5 at (540, 930)
 ```
 
+**New here? [docs/quickstart](docs/quickstart/README.md)** walks from nothing
+to a script that starts a session, launches an app, taps, screenshots and
+quits — for the command line and for each client, on Android and iOS, with
+the output and screenshots of it running.
+
 [docs/SETUP.md](docs/SETUP.md) covers emulators, Android phones over USB and
 Wi-Fi, iOS simulators and iPhones, and the setup traps whose error messages
 name the wrong cause. `mobium doctor` checks the same list and names the fix.
@@ -154,7 +159,7 @@ Android 17, a Pixel 8 Pro on Android 17, an iPhone 17 Pro simulator on iOS
 [docs/checks/](docs/checks/) each drive a real device and assert on what
 happened rather than on an exit code.
 
-| | `uiautomator2` | `uiautomator` | `webdriveragent` |
+| | `uiautomator2` | `uiautomator` | `wda` |
 | --- | --- | --- | --- |
 | platform | Android (default) | Android | iOS simulator and iPhone |
 | installs on the device | two APKs, once | nothing | one runner, once |
@@ -165,7 +170,7 @@ happened rather than on an exit code.
 
 **Android** uses [Appium's UiAutomator2 server](https://github.com/appium/appium-uiautomator2-server)
 directly over HTTP — the same device-side server Appium uses, with no Node in
-between. Pick `--backend uiautomator` when you cannot install anything on the
+between. Pick `--driver uiautomator` when you cannot install anything on the
 device; it reads through `uiautomator dump`, which waits for the screen to go
 idle and so cannot read one that animates.
 
@@ -231,7 +236,7 @@ flowchart LR
     mcp["MCP client"] --> mcpcmd["mobium mcp"]
     daemon["daemon<br/>sessions, @refs"] --> agent
     mcpcmd --> agent["internal/agent<br/>every tool, written once"]
-    agent --> driver["internal/mobiumdriver<br/>uiautomator2 · uiautomator ·<br/>webdriveragent · external"]
+    agent --> driver["internal/mobiumdriver<br/>uiautomator2 · uiautomator ·<br/>wda · external"]
     agent --> webview["internal/webview<br/>CDP · Remote Web Inspector"]
     driver --> devices["emulators, phones,<br/>simulators, iPhones"]
     webview --> devices
@@ -262,10 +267,9 @@ npx skills add mobiumdev/mobium --skill mobile
 whole tool surface with no dependencies:
 
 ```python
-from mobium import connect
+from mobium import start
 
-with connect() as device:
-    device.launch("com.example.shop")
+with start(platform="android", app="com.example.shop") as device:   # quits when the block ends
     sign_in = device.wait_for("text=Sign in")
     device.tap(sign_in.ref)
 ```
@@ -273,11 +277,16 @@ with connect() as device:
 ```go
 import mobium "github.com/mobiumdev/mobium/clients/go"
 
-dev, err := mobium.Connect()
-defer dev.Close()
+dev, err := mobium.Start(ctx, mobium.WithPlatform("ios"), mobium.WithApp("com.example.shop"))
+defer dev.Quit(ctx)
 el, err := dev.WaitFor(ctx, "text=Sign in", nil)
 err = dev.Tap(ctx, el.Ref)
 ```
+
+`start` opens the session on the device and launches the app fresh; `quit`
+ends it and puts back anything it changed for the session, as Appium's new
+session and quit do. On the command line they are `mobium session start` and
+`mobium session end`.
 
 Every client spawns `mobium pipe`, which forwards to the shared daemon: a
 device-side server holds one session at a time, so a client with its own
@@ -293,7 +302,7 @@ has written yet — is a **driver**: an executable named `mobium-driver-<name>`
 on your `PATH`, in any language, speaking JSON-RPC on stdio.
 
 ```sh
-mobium map --backend roku
+mobium map --driver roku
 ```
 
 A driver needs three methods to be useful — `snapshot`, `screenshot` and

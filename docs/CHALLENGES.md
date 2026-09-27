@@ -7,7 +7,7 @@ the source.
 
 The pattern across them is the reason the document exists: **almost nothing
 here was found by reading code or by a test written from imagination.** Of
-121 defects, 101 were found only by running against a real device. The other
+122 defects, 102 were found only by running against a real device. The other
 twenty — 4, 5, 6, 14, 23, 24, 32, 35, 36, 39, 44, 50, 53, 54, 57, 66, 89, 99,
 100 and 121 — came from reading code, the compiler, a test, a linter,
 cross-checking a computed number against a screenshot, using the tooling on
@@ -743,7 +743,7 @@ a driver written from the specification alone.
 Two things worth keeping from it. **The limitation is in the mechanism, not in
 Mobium** — an independent implementation of the same approach hit the same
 wall in the same place. And **the protocol carried the diagnosis intact**: the
-driver's own sentence, including its advice to use `--backend uiautomator2`,
+driver's own sentence, including its advice to use `--driver uiautomator2`,
 reached the user verbatim with the driver's name in front of it, which is what
 the pass-through rule in [decisions/0003](decisions/0003-drivers-are-processes-not-plugins.md)
 is for.
@@ -2083,13 +2083,13 @@ heard of a simulator. The listing asks both. So the error was true of adb,
 false of the machine, and its remedy sent the caller to a page that
 contradicted it; followed literally, it loops, which is the rule about
 remedies this project already wrote down once. The reverse — an emulator's
-serial with `--backend webdriveragent` — failed the same way, as did a real
+serial with `--driver wda` — failed the same way, as did a real
 iPhone's UDID.
 
 A missing device for a named serial is now checked against the other
 platform before it is reported, and the error names the backend to use,
-spelled for both front doors: `pass backend "webdriveragent" (on the CLI,
---backend webdriveragent)`. It is `invalid_argument`, not `no_device`,
+spelled for both front doors: `pass backend "wda" (on the CLI,
+--driver wda)`. It is `invalid_argument`, not `no_device`,
 because the device is there and the combination is what is wrong. A serial
 neither platform knows keeps the old answer, which is right for it.
 Choosing the backend from the serial automatically would remove the error
@@ -2308,7 +2308,7 @@ landed where it was taken.
 
 **Found by:** `docs/checks/record.sh` on the iPhone 15 Plus, which asserts
 that a phone's refusal to record names its reason, and got "the
-webdriveragent backend cannot record the screen" — true of the phone, false
+wda backend cannot record the screen" — true of the phone, false
 of the backend, and silent on why.
 
 The reasons had existed all along, in WebDriverAgent's table of what only
@@ -2865,6 +2865,33 @@ Each client's tests start a fake `mobium` and check every row above; each
 protection was removed in turn to see its test fail, and JavaScript's suite has
 a watchdog, because the regression these tests guard against is a wait that
 never ends.
+
+### 122. A scroll right after going back found nothing that scrolls
+
+**Found by:** `docs/checks/clients.sh` on a Pixel 7 AVD, after the session
+work of 2026-09-27. Each client's flow presses back from Network & internet
+and scrolls Settings' main screen to About, and one client in five started
+failing there — a different one each run — with "no element matches
+text=About and nothing on this screen scrolls". Driven through the Python
+client in a loop it failed 3 times in 15, each about 60ms after back; the
+list was there a moment later. The same loop against the build before that
+work failed none in 15.
+
+The race was older than the change that exposed it. `app_scroll_to` decided
+"nothing scrolls" from one reading, while every action already retried its
+target through the implicit wait. It was hidden because every call naming a
+device first ran `adb devices` to resolve it, and that round trip was long
+enough for the screen to settle. Letting a call with no driver named reuse
+the session already open — needed so a session started with platform "ios"
+does not have its next call sent to Android — removed the round trip, and
+the verdict was reached mid-transition.
+
+"Nothing scrolls" now gets the implicit wait too, ending as soon as the
+target resolves or a scroll container appears. It costs nothing when the
+screen is ready: scroll-to About took 3.0-4.3s for its two swipes, the same
+as before. 0 of 15 failed, and three runs of `clients.sh` passed all five
+clients. A delay put back in front of the call would have hidden it again,
+which is what the adb round trip had been doing.
 
 ## Findings that were not defects
 

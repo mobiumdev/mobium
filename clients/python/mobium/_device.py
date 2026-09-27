@@ -66,14 +66,14 @@ class DeviceInfo:
 
 def connect(
     device: str | None = None,
-    backend: str | None = None,
+    driver: str | None = None,
     binary: str | None = None,
     call_timeout: float | None = None,
 ) -> "Device":
     """Start a mobium session.
 
     device: serial or UDID, when more than one is running.
-    backend: "uiautomator2" (default), "uiautomator", or "webdriveragent".
+    driver: "uiautomator2" (default), "uiautomator", or "wda".
     call_timeout: the longest, in seconds, any one call may take before the
         connection is given up, the handshake included. None, the default,
         waits as long as it takes: the first session on an iPhone builds
@@ -85,9 +85,65 @@ def connect(
     args: list[str] = []
     if device:
         args += ["--device", device]
-    if backend:
-        args += ["--backend", backend]
+    if driver:
+        args += ["--driver", driver]
     return Device(Connection(find_binary(binary), args, call_timeout))
+
+
+@dataclass(frozen=True)
+class Session:
+    """What start() opened: the device and how it is driven."""
+
+    device: str
+    platform: str
+    driver: str
+    reused: bool = False
+    """A session was already open on the device, and was kept."""
+    app: str = ""
+    """The app start() launched, if one was asked for."""
+
+
+def start(
+    platform: str | None = None,
+    device: str | None = None,
+    app: str | None = None,
+    driver: str | None = None,
+    binary: str | None = None,
+    call_timeout: float | None = None,
+) -> "Device":
+    """Connect and open the session on the device, as Appium's new session does.
+
+    platform: "android" or "ios"; "ios" picks wda, so the driver
+        need not be named.
+    device: serial or UDID, when more than one is running.
+    app: a package name (Android) or bundle id (iOS) to launch once the
+        session is up; start returns when it is in front.
+    driver, binary, call_timeout: as for connect().
+
+    Nothing requires it -- every call opens a session on first use -- but it
+    puts the slow first start (installing UiAutomator2, building
+    WebDriverAgent on an iPhone) where it was asked for. End it with quit(),
+    or use it in a with block, which quits on the way out:
+
+        with start(platform="android", app="com.android.settings") as device:
+            device.map()
+    """
+    d = connect(device=device, driver=driver, binary=binary, call_timeout=call_timeout)
+    args: dict[str, Any] = {"action": "start"}
+    if platform:
+        args["platform"] = platform
+    if app:
+        args["app"] = app
+    try:
+        got = d._data("app_session", args) or {}
+    except BaseException:
+        d.close()
+        raise
+    d.session = Session(
+        device=got.get("device", ""), platform=got.get("platform", ""),
+        driver=got.get("driver", ""), reused=bool(got.get("reused")), app=got.get("app", ""),
+    )
+    return d
 
 
 class Device:
@@ -95,17 +151,52 @@ class Device:
 
     def __init__(self, conn: Connection):
         self._conn = conn
+        self.session: Session | None = None
+        """What start() opened, or None for a Device from connect()."""
+        self._quit = False
 
     # -- lifecycle ---------------------------------------------------------
 
     def close(self) -> None:
+        """Close the connection. The device's session lives in the daemon and
+        stays open, for the next connect() or the CLI; quit() ends it."""
         self._conn.close()
+
+    def quit(self) -> None:
+        """End the session on the device, as Appium's quit does, and close the
+        connection.
+
+        The teardown is the daemon's own: accessibility settings put back, a
+        recording or route stopped, WebViews detached, the device-side server
+        stopped. Quitting a session that is not open succeeds, and a second
+        quit -- say, a with block ending after an explicit one -- does nothing.
+        """
+        if self._quit:
+            return
+        self._quit = True
+        args: dict[str, Any] = {"action": "end"}
+        if self.session is not None:
+            args["device"] = self.session.device
+        try:
+            self._call("app_session", args)
+        finally:
+            self.close()
+
+    def sessions(self) -> list[dict]:
+        """The sessions open on the daemon, each with device, platform and driver."""
+        return list((self._data("app_session", {"action": "status"}) or {}).get("sessions", []))
 
     def __enter__(self) -> "Device":
         return self
 
     def __exit__(self, *_: Any) -> None:
-        self.close()
+        # A device from start() quits, as its session was opened for this
+        # block; one from connect() only closes, leaving the session to
+        # whoever opened it.
+        if self.session is not None:
+            self.quit()
+        else:
+            self.close()
 
     # -- reading -----------------------------------------------------------
 
@@ -252,7 +343,7 @@ class Device:
 
         The same tool as tap with one argument set, so the target is resolved
         the same way and refused the same way when the screen has moved. The
-        uiautomator dump backend refuses it: the window is 40-300ms and
+        uiautomator dump driver refuses it: the window is 40-300ms and
         nothing there controls the interval between two adb calls.
         """
         if target is not None:

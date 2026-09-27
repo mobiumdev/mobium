@@ -52,7 +52,7 @@ for line in sys.stdin:
 Save it as `mobium-driver-mything`, `chmod +x`, put it on your `PATH`, and:
 
 ```
-mobium map --backend mything
+mobium map --driver mything
 ```
 
 **On Windows** there is no `#!` line and no execute bit: a file is runnable by
@@ -133,7 +133,7 @@ scroll, and most screens are longer than the screen.
 ## Developing without installing
 
 ```
-MOBIUM_DRIVER_MYTHING=./mobium-driver-mything mobium map --backend mything
+MOBIUM_DRIVER_MYTHING=./mobium-driver-mything mobium map --driver mything
 ```
 
 `mobium doctor` lists every `mobium-driver-*` it can find on your `PATH`, so
@@ -143,14 +143,14 @@ MOBIUM_DRIVER_MYTHING=./mobium-driver-mything mobium map --backend mything
 
 [`mobium-driver-adb`](mobium-driver-adb) is a complete, working driver in ~350
 lines of Python with no dependencies. It drives Android through plain `adb` —
-deliberately the same ground Mobium's own `--backend uiautomator` covers, so its
+deliberately the same ground Mobium's own `--driver uiautomator` covers, so its
 output can be diffed against a known-good implementation on the same screen.
 That diff is how you tell a driver that works from one that returns something
 plausible, and it is exactly how this one was checked:
 
 ```
-$ mobium map --backend adb        > external.txt   # the Python driver
-$ mobium map --backend uiautomator > builtin.txt   # mobium's own
+$ mobium map --driver adb        > external.txt   # the Python driver
+$ mobium map --driver uiautomator > builtin.txt   # mobium's own
 $ diff external.txt builtin.txt && echo IDENTICAL
 IDENTICAL
 ```
@@ -162,10 +162,10 @@ does not advertise were refused with a message naming the backend, and its own
 diagnosis of an unreadable screen reached the user verbatim:
 
 ```
-$ mobium type 'text=Search settings' hello --backend adb
+$ mobium type 'text=Search settings' hello --driver adb
 error: the adb backend cannot type into an element — use the uiautomator2 backend
 
-$ mobium map --backend adb          # on Settings > About, which ticks
+$ mobium map --driver adb          # on Settings > About, which ticks
 error: adb/uiautomator (reference driver): uiautomator dump gave up waiting for
 the screen to stop changing (ERROR: could not get idle state.) …
 ```

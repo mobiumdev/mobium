@@ -1,0 +1,10 @@
+waiting for WebDriverAgent to start...
+session on 457C7DC2-C706-45D9-8D68-1D26953E28B1 (ios, wda)
+  @e1 Apple Account, Sign in to access your iCloud data, the App Store, Apple services, and more. (button)
+  @e2 General (button)
+  @e3 Accessibility (button)
+  @e4 Action Button (button)
+  @e5 Apple Intelligence & Siri (button)
+opened General
+saved quickstart-ios.png
+session ended

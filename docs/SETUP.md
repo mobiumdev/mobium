@@ -291,7 +291,7 @@ xcodebuild -downloadPlatform iOS     # the runtime, if it is missing
 xcrun simctl list devices available
 xcrun simctl boot <udid>             # boots headless — no window appears
 open -a Simulator                    # only this puts it on screen
-mobium --backend webdriveragent --device <udid> map
+mobium --driver wda --device <udid> map
 ```
 
 **`simctl boot` shows you nothing.** It starts the runtime with no window, so
@@ -409,7 +409,7 @@ guess: set `MOBIUM_IOS_TEAM=<team id>`.
 
 ```sh
 mobium devices                                   # the phone is listed as "ios device"
-mobium --backend webdriveragent --device <udid> map
+mobium --driver wda --device <udid> map
 ```
 
 With exactly one iOS device available — one booted simulator, or one
@@ -477,7 +477,7 @@ On the machine, under `~/.mobium`:
 
 On an **Android** device, the default backend installs two APKs —
 `io.appium.uiautomator2.server` and `io.appium.uiautomator2.server.test`.
-Nothing else, and nothing at all with `--backend uiautomator`.
+Nothing else, and nothing at all with `--driver uiautomator`.
 
 On an **iOS simulator**, `com.facebook.WebDriverAgentRunner.xctrunner`.
 

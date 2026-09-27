@@ -40,33 +40,58 @@ import java.util.Map;
 public final class Mobium implements AutoCloseable {
 
     private final Connection conn;
+    // What start() opened, so quit() ends that device's session even when
+    // several are running. Null after connect().
+    private Session session;
+    private boolean quit;
 
     private Mobium(Connection conn) { this.conn = conn; }
 
     // -- connecting --------------------------------------------------------
 
     /**
-     * Starts a session against whichever device is running.
+     * Connects to mobium, for whichever device is running. It does not touch
+     * the device: the session there opens on the first call that needs it, or
+     * with {@link Builder#start()}.
      *
-     * @return a connected session; close it when done
+     * @return a connection; close it when done
      */
     public static Mobium connect() { return builder().connect(); }
 
     /**
-     * Configures a session.
+     * Configures a connection or a session.
      *
-     * @return a builder, which connects when asked
+     * @return a builder, which connects or starts when asked
      */
     public static Builder builder() { return new Builder(); }
 
-    /** Options for {@link Mobium#connect()}. */
+    /** Options for {@link Mobium#connect()} and {@link Builder#start()}. */
     public static final class Builder {
         private Builder() { }
 
         private String binary = "";
         private String device = "";
-        private String backend = "";
+        private String driver = "";
+        private String platform = "";
+        private String app = "";
         private Duration callTimeout;
+
+        /**
+         * The platform for {@link #start()}: {@code "android"} or {@code "ios"}.
+         * {@code "ios"} picks the wda driver, so none need be named.
+         *
+         * @param name {@code "android"} or {@code "ios"}
+         * @return this builder
+         */
+        public Builder platform(String name) { this.platform = name; return this; }
+
+        /**
+         * An app for {@link #start()} to launch once the session is up.
+         *
+         * @param id a package name (Android) or bundle id (iOS)
+         * @return this builder
+         */
+        public Builder app(String id) { this.app = id; return this; }
 
         /**
          * Pins the mobium executable, ahead of MOBIUM_BIN_PATH and PATH.
@@ -87,12 +112,12 @@ public final class Mobium implements AutoCloseable {
         /**
          * Chooses the driver: {@code uiautomator2} (default on Android),
          * {@code uiautomator} (installs nothing, slower, cannot type) or
-         * {@code webdriveragent} (iOS simulators and iPhones).
+         * {@code wda} (iOS simulators and iPhones).
          *
-         * @param name {@code "uiautomator2"}, {@code "uiautomator"} or {@code "webdriveragent"}
+         * @param name {@code "uiautomator2"}, {@code "uiautomator"} or {@code "wda"}
          * @return this builder
          */
-        public Builder backend(String name) { this.backend = name; return this; }
+        public Builder driver(String name) { this.driver = name; return this; }
 
         /**
          * The longest any one call may take before the connection is given
@@ -118,14 +143,47 @@ public final class Mobium implements AutoCloseable {
         }
 
         /**
-         * Starts the session.
+         * Connects and opens the session on the device, as Appium's new
+         * session does: the device-side server is started now and, given an
+         * {@link #app}, it is launched and in front when this returns.
          *
-         * @return a connected session; close it when done
+         * <p>Nothing requires it -- every call opens a session on first use --
+         * but it puts the slow first start (installing UiAutomator2, building
+         * WebDriverAgent on an iPhone) where it was asked for. End it with
+         * {@link Mobium#quit()}, or in try-with-resources, which quits:
+         *
+         * <pre>{@code
+         * try (Mobium device = Mobium.builder().platform("android").app("com.android.settings").start()) {
+         *     device.map();
+         * }
+         * }</pre>
+         *
+         * @return a device with its session open
+         */
+        public Mobium start() {
+            Mobium m = connect();
+            Map<String, Object> args = new LinkedHashMap<>();
+            args.put("action", "start");
+            if (!platform.isBlank()) args.put("platform", platform);
+            if (!app.isBlank()) args.put("app", app);
+            try {
+                m.session = Session.from(Connection.dataOf(m.conn.call("app_session", args)));
+            } catch (RuntimeException e) {
+                m.conn.close();
+                throw e;
+            }
+            return m;
+        }
+
+        /**
+         * Connects to mobium without touching the device.
+         *
+         * @return a connection; close it when done
          */
         public Mobium connect() {
             List<String> args = new ArrayList<>();
             if (!device.isBlank())  { args.add("--device");  args.add(device); }
-            if (!backend.isBlank()) { args.add("--backend"); args.add(backend); }
+            if (!driver.isBlank()) { args.add("--driver"); args.add(driver); }
             return new Mobium(new Connection(Connection.findBinary(binary), args, callTimeout));
         }
     }
@@ -342,7 +400,7 @@ public final class Mobium implements AutoCloseable {
      *
      * <p>The same tool as {@link #tap(String)} with one argument set, so the
      * target is resolved the same way and refused the same way when the screen
-     * has moved. The uiautomator dump backend refuses it: the window is
+     * has moved. The uiautomator dump driver refuses it: the window is
      * 40-300ms and nothing there controls the interval between two adb calls.
      *
      * @param target a ref from {@link #map()} such as {@code "@e5"}, or a locator such as {@code "text=Sign in"}
@@ -1239,7 +1297,56 @@ public final class Mobium implements AutoCloseable {
         return Connection.dataOf(conn.call(tool, arguments));
     }
 
-    @Override public void close() { conn.close(); }
+    /**
+     * What {@link Builder#start()} opened: the device, platform and driver.
+     *
+     * @return the session, or null for an instance from {@link #connect()}
+     */
+    public Session session() { return session; }
+
+    /**
+     * Ends the session on the device, as Appium's quit does, and closes the
+     * connection. The teardown is the daemon's own: accessibility settings put
+     * back, a recording or route stopped, WebViews detached, the device-side
+     * server stopped. Quitting a session that is not open succeeds, and a
+     * second quit -- say, try-with-resources closing after an explicit one --
+     * does nothing.
+     */
+    public void quit() {
+        if (quit) return;
+        quit = true;
+        Map<String, Object> args = new LinkedHashMap<>();
+        args.put("action", "end");
+        if (session != null) args.put("device", session.device());
+        try {
+            conn.call("app_session", args);
+        } finally {
+            conn.close();
+        }
+    }
+
+    /**
+     * The sessions open on the daemon.
+     *
+     * @return each with device, platform and driver
+     */
+    public List<Map<String, Object>> sessions() {
+        List<Map<String, Object>> out = new ArrayList<>();
+        for (Object o : Json.asArray(data("app_session", args("action", "status")).get("sessions"))) {
+            out.add(Json.asObject(o));
+        }
+        return out;
+    }
+
+    /**
+     * Quits an instance from {@link Builder#start()}, whose session was opened
+     * for this block; closes one from {@link #connect()}, leaving the session
+     * to whoever opened it.
+     */
+    @Override public void close() {
+        if (session != null) quit();
+        else if (!quit) conn.close();
+    }
 
     private void act(String tool, Map<String, Object> args) { conn.call(tool, args); }
 

@@ -321,7 +321,7 @@ func checkExternalDrivers() DoctorCheck {
 	if len(found) == 0 {
 		return note("third-party drivers",
 			"none on PATH — a driver is an executable named mobium-driver-<name>, "+
-				"used with --backend <name>")
+				"used with --driver <name>")
 	}
 	sort.Strings(found)
 	return ok("third-party drivers", "on PATH: "+strings.Join(found, ", "))
@@ -356,9 +356,9 @@ type DoctorCheck struct {
 // Unix it is the mode bits and the file is called exactly mobium-driver-x. On
 // Windows there are no execute bits — Go reports every file as 0666 or 0444 —
 // and executability is the extension, from PATHEXT: mobium-driver-x.exe or
-// .cmd is the driver `--backend x` finds, because that is what exec.LookPath
+// .cmd is the driver `--driver x` finds, because that is what exec.LookPath
 // does in FindDriver. Checking mode bits there reported "none on PATH" for a
-// driver `--backend` would have run.
+// driver `--driver` would have run.
 func driverName(file string, mode os.FileMode, goos, pathext string) (string, bool) {
 	if !strings.HasPrefix(file, "mobium-driver-") {
 		return "", false

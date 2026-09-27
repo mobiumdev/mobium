@@ -38,7 +38,7 @@ type ArgEntry struct {
 	// nothing does.
 	SetBy []string `json:"setBy,omitempty"`
 	// Global marks the two arguments every command sends without declaring
-	// them: --device and --backend are persistent flags that `daemonCall`
+	// them: --device and --driver are persistent flags that `daemonCall`
 	// attaches to every call, so no per-command code mentions them.
 	Global bool `json:"global,omitempty"`
 }
@@ -58,8 +58,8 @@ type CommandFlags struct {
 // globalArgs are attached by daemonCall from persistent flags rather than by
 // any command, so they are reachable everywhere and mentioned nowhere.
 var globalArgs = map[string]string{
-	"device":  "--device",
-	"backend": "--backend",
+	"device": "--device",
+	"driver": "--driver",
 }
 
 // CollectFlags reads the declared arguments from the schema and the sent

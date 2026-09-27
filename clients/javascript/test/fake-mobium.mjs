@@ -39,6 +39,21 @@ async function handle(msg) {
   if (mode === 'exit') process.exit(3)
   const { name, arguments: args } = msg.params
   if (name === 'slow') await new Promise((r) => setTimeout(r, 300))
+  if (name === 'app_session') {
+    // Answers as the daemon does: start names the device it got, and echoes
+    // the platform and app it was asked for.
+    let view
+    if (args.action === 'start') {
+      const platform = args.platform || 'android'
+      view = { action: 'start', device: 'fake-device', platform, driver: platform === 'ios' ? 'wda' : 'uiautomator2', app: args.app || '', sessions: [] }
+    } else if (args.action === 'end') {
+      view = { action: 'end', device: args.device || '', ended: true, sessions: [] }
+    } else {
+      view = { action: 'status', sessions: [] }
+    }
+    send({ jsonrpc: '2.0', id, result: { content: [{ type: 'text', text: args.action || 'status' }], structuredContent: view } })
+    return
+  }
   if (mode === 'noid' && name === 'app_map') {
     process.stdout.write('{"jsonrpc":"2.0","error":{"code":-32700,"message":"Parse error","data":"invalid character"}}\n')
     return

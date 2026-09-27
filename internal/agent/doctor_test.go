@@ -143,7 +143,7 @@ func TestDoctorFlagsADeviceThatCannotBeDriven(t *testing.T) {
 
 // A driver on Windows is mobium-driver-x.exe with no execute bits, because
 // Windows has none. Judging it by mode bits reported "none on PATH" for a
-// driver `--backend x` would have found.
+// driver `--driver x` would have found.
 func TestDriverNameFollowsThePlatformsIdeaOfExecutable(t *testing.T) {
 	const pathext = ".COM;.EXE;.BAT;.CMD"
 	for _, c := range []struct {

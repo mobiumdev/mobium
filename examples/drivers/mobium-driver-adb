@@ -23,11 +23,11 @@ docs/decisions/0003-drivers-are-processes-not-plugins.md:
 
 Install it by putting it on your PATH under this name, then:
 
-    mobium map --backend adb
+    mobium map --driver adb
 
 Or, without installing:
 
-    MOBIUM_DRIVER_ADB=./examples/drivers/mobium-driver-adb mobium map --backend adb
+    MOBIUM_DRIVER_ADB=./examples/drivers/mobium-driver-adb mobium map --driver adb
 """
 
 import base64
@@ -195,7 +195,7 @@ class Driver:
                     f"({reason}) — something on it animates or updates continuously, "
                     "such as the uptime counter on Settings > About. This driver "
                     "cannot read such a screen at all; mobium's built-in "
-                    "--backend uiautomator2 does not wait for idle and can."
+                    "--driver uiautomator2 does not wait for idle and can."
                 )
             raise DriverError(f"uiautomator dump produced no file: {reason}")
         xml = self.adb.run("exec-out", "cat", DUMP_PATH, binary=True)

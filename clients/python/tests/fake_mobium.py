@@ -51,6 +51,21 @@ for line in sys.stdin:
     name, args = msg["params"]["name"], msg["params"]["arguments"]
     if name == "slow":
         time.sleep(0.3)
+    if name == "app_session":
+        # Answers as the daemon does: start names the device it got, and
+        # echoes the platform and app it was asked for.
+        action = args.get("action")
+        if action == "start":
+            platform = args.get("platform") or "android"
+            view = {"action": "start", "device": "fake-device", "platform": platform,
+                    "driver": "wda" if platform == "ios" else "uiautomator2", "app": args.get("app", ""), "sessions": []}
+        elif action == "end":
+            view = {"action": "end", "device": args.get("device", ""), "ended": True, "sessions": []}
+        else:
+            view = {"action": "status", "sessions": []}
+        send({"jsonrpc": "2.0", "id": i, "result": {"content": [{"type": "text", "text": action or "status"}],
+                                                    "structuredContent": view}})
+        continue
     if mode == "noid" and name == "app_map":
         out.write('{"jsonrpc":"2.0","error":{"code":-32700,"message":"Parse error","data":"invalid character"}}\n')
         out.flush()

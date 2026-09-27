@@ -483,7 +483,7 @@ func TestServerErrorsKeepTheirW3CCode(t *testing.T) {
 }
 
 // A phone's refusal of a simulator-only capability names why, so the tool
-// layer does not answer "the webdriveragent backend cannot …" — true of the
+// layer does not answer "the wda backend cannot …" — true of the
 // phone, false of the backend, and silent on the reason.
 func TestAPhoneSaysWhyItDeclines(t *testing.T) {
 	phone := &WDA{phone: &device.Devicectl{}}

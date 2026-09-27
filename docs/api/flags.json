@@ -2,19 +2,19 @@
   "arguments": [
     {
       "tool": "app_accessibility",
-      "arg": "backend",
+      "arg": "device",
       "type": "string",
       "setBy": [
-        "--backend"
+        "--device"
       ],
       "global": true
     },
     {
       "tool": "app_accessibility",
-      "arg": "device",
+      "arg": "driver",
       "type": "string",
       "setBy": [
-        "--device"
+        "--driver"
       ],
       "global": true
     },
@@ -44,19 +44,19 @@
     },
     {
       "tool": "app_alert",
-      "arg": "backend",
+      "arg": "device",
       "type": "string",
       "setBy": [
-        "--backend"
+        "--device"
       ],
       "global": true
     },
     {
       "tool": "app_alert",
-      "arg": "device",
+      "arg": "driver",
       "type": "string",
       "setBy": [
-        "--device"
+        "--driver"
       ],
       "global": true
     },
@@ -78,19 +78,19 @@
     },
     {
       "tool": "app_appearance",
-      "arg": "backend",
+      "arg": "device",
       "type": "string",
       "setBy": [
-        "--backend"
+        "--device"
       ],
       "global": true
     },
     {
       "tool": "app_appearance",
-      "arg": "device",
+      "arg": "driver",
       "type": "string",
       "setBy": [
-        "--device"
+        "--driver"
       ],
       "global": true
     },
@@ -104,19 +104,19 @@
     },
     {
       "tool": "app_call",
-      "arg": "backend",
+      "arg": "device",
       "type": "string",
       "setBy": [
-        "--backend"
+        "--device"
       ],
       "global": true
     },
     {
       "tool": "app_call",
-      "arg": "device",
+      "arg": "driver",
       "type": "string",
       "setBy": [
-        "--device"
+        "--driver"
       ],
       "global": true
     },
@@ -127,15 +127,6 @@
       "setBy": [
         "call"
       ]
-    },
-    {
-      "tool": "app_check",
-      "arg": "backend",
-      "type": "string",
-      "setBy": [
-        "--backend"
-      ],
-      "global": true
     },
     {
       "tool": "app_check",
@@ -152,6 +143,15 @@
       "type": "string",
       "setBy": [
         "--device"
+      ],
+      "global": true
+    },
+    {
+      "tool": "app_check",
+      "arg": "driver",
+      "type": "string",
+      "setBy": [
+        "--driver"
       ],
       "global": true
     },
@@ -174,28 +174,19 @@
     },
     {
       "tool": "app_clear_data",
-      "arg": "backend",
+      "arg": "device",
       "type": "string",
       "setBy": [
-        "--backend"
+        "--device"
       ],
       "global": true
     },
     {
       "tool": "app_clear_data",
-      "arg": "device",
+      "arg": "driver",
       "type": "string",
       "setBy": [
-        "--device"
-      ],
-      "global": true
-    },
-    {
-      "tool": "app_clipboard",
-      "arg": "backend",
-      "type": "string",
-      "setBy": [
-        "--backend"
+        "--driver"
       ],
       "global": true
     },
@@ -205,6 +196,15 @@
       "type": "string",
       "setBy": [
         "--device"
+      ],
+      "global": true
+    },
+    {
+      "tool": "app_clipboard",
+      "arg": "driver",
+      "type": "string",
+      "setBy": [
+        "--driver"
       ],
       "global": true
     },
@@ -215,15 +215,6 @@
       "setBy": [
         "clipboard"
       ]
-    },
-    {
-      "tool": "app_context",
-      "arg": "backend",
-      "type": "string",
-      "setBy": [
-        "--backend"
-      ],
-      "global": true
     },
     {
       "tool": "app_context",
@@ -243,11 +234,11 @@
       "global": true
     },
     {
-      "tool": "app_contexts",
-      "arg": "backend",
+      "tool": "app_context",
+      "arg": "driver",
       "type": "string",
       "setBy": [
-        "--backend"
+        "--driver"
       ],
       "global": true
     },
@@ -257,6 +248,15 @@
       "type": "string",
       "setBy": [
         "--device"
+      ],
+      "global": true
+    },
+    {
+      "tool": "app_contexts",
+      "arg": "driver",
+      "type": "string",
+      "setBy": [
+        "--driver"
       ],
       "global": true
     },
@@ -270,19 +270,19 @@
     },
     {
       "tool": "app_crashes",
-      "arg": "backend",
+      "arg": "device",
       "type": "string",
       "setBy": [
-        "--backend"
+        "--device"
       ],
       "global": true
     },
     {
       "tool": "app_crashes",
-      "arg": "device",
+      "arg": "driver",
       "type": "string",
       "setBy": [
-        "--device"
+        "--driver"
       ],
       "global": true
     },
@@ -304,15 +304,6 @@
     },
     {
       "tool": "app_current",
-      "arg": "backend",
-      "type": "string",
-      "setBy": [
-        "--backend"
-      ],
-      "global": true
-    },
-    {
-      "tool": "app_current",
       "arg": "device",
       "type": "string",
       "setBy": [
@@ -321,11 +312,11 @@
       "global": true
     },
     {
-      "tool": "app_dialogs",
-      "arg": "backend",
+      "tool": "app_current",
+      "arg": "driver",
       "type": "string",
       "setBy": [
-        "--backend"
+        "--driver"
       ],
       "global": true
     },
@@ -348,6 +339,15 @@
     },
     {
       "tool": "app_dialogs",
+      "arg": "driver",
+      "type": "string",
+      "setBy": [
+        "--driver"
+      ],
+      "global": true
+    },
+    {
+      "tool": "app_dialogs",
       "arg": "press",
       "type": "string",
       "setBy": [
@@ -364,19 +364,19 @@
     },
     {
       "tool": "app_drag",
-      "arg": "backend",
+      "arg": "device",
       "type": "string",
       "setBy": [
-        "--backend"
+        "--device"
       ],
       "global": true
     },
     {
       "tool": "app_drag",
-      "arg": "device",
+      "arg": "driver",
       "type": "string",
       "setBy": [
-        "--device"
+        "--driver"
       ],
       "global": true
     },
@@ -446,19 +446,19 @@
     },
     {
       "tool": "app_eval",
-      "arg": "backend",
+      "arg": "device",
       "type": "string",
       "setBy": [
-        "--backend"
+        "--device"
       ],
       "global": true
     },
     {
       "tool": "app_eval",
-      "arg": "device",
+      "arg": "driver",
       "type": "string",
       "setBy": [
-        "--device"
+        "--driver"
       ],
       "global": true
     },
@@ -472,19 +472,19 @@
     },
     {
       "tool": "app_find",
-      "arg": "backend",
+      "arg": "device",
       "type": "string",
       "setBy": [
-        "--backend"
+        "--device"
       ],
       "global": true
     },
     {
       "tool": "app_find",
-      "arg": "device",
+      "arg": "driver",
       "type": "string",
       "setBy": [
-        "--device"
+        "--driver"
       ],
       "global": true
     },
@@ -506,19 +506,19 @@
     },
     {
       "tool": "app_grant",
-      "arg": "backend",
+      "arg": "device",
       "type": "string",
       "setBy": [
-        "--backend"
+        "--device"
       ],
       "global": true
     },
     {
       "tool": "app_grant",
-      "arg": "device",
+      "arg": "driver",
       "type": "string",
       "setBy": [
-        "--device"
+        "--driver"
       ],
       "global": true
     },
@@ -532,19 +532,19 @@
     },
     {
       "tool": "app_install",
-      "arg": "backend",
+      "arg": "device",
       "type": "string",
       "setBy": [
-        "--backend"
+        "--device"
       ],
       "global": true
     },
     {
       "tool": "app_install",
-      "arg": "device",
+      "arg": "driver",
       "type": "string",
       "setBy": [
-        "--device"
+        "--driver"
       ],
       "global": true
     },
@@ -558,19 +558,19 @@
     },
     {
       "tool": "app_keyboard",
-      "arg": "backend",
+      "arg": "device",
       "type": "string",
       "setBy": [
-        "--backend"
+        "--device"
       ],
       "global": true
     },
     {
       "tool": "app_keyboard",
-      "arg": "device",
+      "arg": "driver",
       "type": "string",
       "setBy": [
-        "--device"
+        "--driver"
       ],
       "global": true
     },
@@ -608,28 +608,19 @@
     },
     {
       "tool": "app_launch",
-      "arg": "backend",
+      "arg": "device",
       "type": "string",
       "setBy": [
-        "--backend"
+        "--device"
       ],
       "global": true
     },
     {
       "tool": "app_launch",
-      "arg": "device",
+      "arg": "driver",
       "type": "string",
       "setBy": [
-        "--device"
-      ],
-      "global": true
-    },
-    {
-      "tool": "app_list_apps",
-      "arg": "backend",
-      "type": "string",
-      "setBy": [
-        "--backend"
+        "--driver"
       ],
       "global": true
     },
@@ -639,6 +630,15 @@
       "type": "string",
       "setBy": [
         "--device"
+      ],
+      "global": true
+    },
+    {
+      "tool": "app_list_apps",
+      "arg": "driver",
+      "type": "string",
+      "setBy": [
+        "--driver"
       ],
       "global": true
     },
@@ -660,19 +660,19 @@
     },
     {
       "tool": "app_locale",
-      "arg": "backend",
+      "arg": "device",
       "type": "string",
       "setBy": [
-        "--backend"
+        "--device"
       ],
       "global": true
     },
     {
       "tool": "app_locale",
-      "arg": "device",
+      "arg": "driver",
       "type": "string",
       "setBy": [
-        "--device"
+        "--driver"
       ],
       "global": true
     },
@@ -683,15 +683,6 @@
       "setBy": [
         "locale"
       ]
-    },
-    {
-      "tool": "app_location",
-      "arg": "backend",
-      "type": "string",
-      "setBy": [
-        "--backend"
-      ],
-      "global": true
     },
     {
       "tool": "app_location",
@@ -707,6 +698,15 @@
       "type": "string",
       "setBy": [
         "--device"
+      ],
+      "global": true
+    },
+    {
+      "tool": "app_location",
+      "arg": "driver",
+      "type": "string",
+      "setBy": [
+        "--driver"
       ],
       "global": true
     },
@@ -752,19 +752,19 @@
     },
     {
       "tool": "app_lock",
-      "arg": "backend",
+      "arg": "device",
       "type": "string",
       "setBy": [
-        "--backend"
+        "--device"
       ],
       "global": true
     },
     {
       "tool": "app_lock",
-      "arg": "device",
+      "arg": "driver",
       "type": "string",
       "setBy": [
-        "--device"
+        "--driver"
       ],
       "global": true
     },
@@ -786,19 +786,19 @@
     },
     {
       "tool": "app_logs",
-      "arg": "backend",
+      "arg": "device",
       "type": "string",
       "setBy": [
-        "--backend"
+        "--device"
       ],
       "global": true
     },
     {
       "tool": "app_logs",
-      "arg": "device",
+      "arg": "driver",
       "type": "string",
       "setBy": [
-        "--device"
+        "--driver"
       ],
       "global": true
     },
@@ -828,19 +828,19 @@
     },
     {
       "tool": "app_long_press",
-      "arg": "backend",
+      "arg": "device",
       "type": "string",
       "setBy": [
-        "--backend"
+        "--device"
       ],
       "global": true
     },
     {
       "tool": "app_long_press",
-      "arg": "device",
+      "arg": "driver",
       "type": "string",
       "setBy": [
-        "--device"
+        "--driver"
       ],
       "global": true
     },
@@ -878,28 +878,19 @@
     },
     {
       "tool": "app_map",
-      "arg": "backend",
+      "arg": "device",
       "type": "string",
       "setBy": [
-        "--backend"
+        "--device"
       ],
       "global": true
     },
     {
       "tool": "app_map",
-      "arg": "device",
+      "arg": "driver",
       "type": "string",
       "setBy": [
-        "--device"
-      ],
-      "global": true
-    },
-    {
-      "tool": "app_notifications",
-      "arg": "backend",
-      "type": "string",
-      "setBy": [
-        "--backend"
+        "--driver"
       ],
       "global": true
     },
@@ -909,6 +900,15 @@
       "type": "string",
       "setBy": [
         "--device"
+      ],
+      "global": true
+    },
+    {
+      "tool": "app_notifications",
+      "arg": "driver",
+      "type": "string",
+      "setBy": [
+        "--driver"
       ],
       "global": true
     },
@@ -946,19 +946,19 @@
     },
     {
       "tool": "app_open_url",
-      "arg": "backend",
+      "arg": "device",
       "type": "string",
       "setBy": [
-        "--backend"
+        "--device"
       ],
       "global": true
     },
     {
       "tool": "app_open_url",
-      "arg": "device",
+      "arg": "driver",
       "type": "string",
       "setBy": [
-        "--device"
+        "--driver"
       ],
       "global": true
     },
@@ -972,19 +972,19 @@
     },
     {
       "tool": "app_orientation",
-      "arg": "backend",
+      "arg": "device",
       "type": "string",
       "setBy": [
-        "--backend"
+        "--device"
       ],
       "global": true
     },
     {
       "tool": "app_orientation",
-      "arg": "device",
+      "arg": "driver",
       "type": "string",
       "setBy": [
-        "--device"
+        "--driver"
       ],
       "global": true
     },
@@ -995,15 +995,6 @@
       "setBy": [
         "orientation"
       ]
-    },
-    {
-      "tool": "app_press",
-      "arg": "backend",
-      "type": "string",
-      "setBy": [
-        "--backend"
-      ],
-      "global": true
     },
     {
       "tool": "app_press",
@@ -1023,11 +1014,11 @@
       "global": true
     },
     {
-      "tool": "app_press_drag",
-      "arg": "backend",
+      "tool": "app_press",
+      "arg": "driver",
       "type": "string",
       "setBy": [
-        "--backend"
+        "--driver"
       ],
       "global": true
     },
@@ -1037,6 +1028,15 @@
       "type": "string",
       "setBy": [
         "--device"
+      ],
+      "global": true
+    },
+    {
+      "tool": "app_press_drag",
+      "arg": "driver",
+      "type": "string",
+      "setBy": [
+        "--driver"
       ],
       "global": true
     },
@@ -1130,19 +1130,19 @@
     },
     {
       "tool": "app_press_tap",
-      "arg": "backend",
+      "arg": "device",
       "type": "string",
       "setBy": [
-        "--backend"
+        "--device"
       ],
       "global": true
     },
     {
       "tool": "app_press_tap",
-      "arg": "device",
+      "arg": "driver",
       "type": "string",
       "setBy": [
-        "--device"
+        "--driver"
       ],
       "global": true
     },
@@ -1212,19 +1212,19 @@
     },
     {
       "tool": "app_record",
-      "arg": "backend",
+      "arg": "device",
       "type": "string",
       "setBy": [
-        "--backend"
+        "--device"
       ],
       "global": true
     },
     {
       "tool": "app_record",
-      "arg": "device",
+      "arg": "driver",
       "type": "string",
       "setBy": [
-        "--device"
+        "--driver"
       ],
       "global": true
     },
@@ -1246,19 +1246,19 @@
     },
     {
       "tool": "app_reset_permissions",
-      "arg": "backend",
+      "arg": "device",
       "type": "string",
       "setBy": [
-        "--backend"
+        "--device"
       ],
       "global": true
     },
     {
       "tool": "app_reset_permissions",
-      "arg": "device",
+      "arg": "driver",
       "type": "string",
       "setBy": [
-        "--device"
+        "--driver"
       ],
       "global": true
     },
@@ -1272,19 +1272,19 @@
     },
     {
       "tool": "app_revoke",
-      "arg": "backend",
+      "arg": "device",
       "type": "string",
       "setBy": [
-        "--backend"
+        "--device"
       ],
       "global": true
     },
     {
       "tool": "app_revoke",
-      "arg": "device",
+      "arg": "driver",
       "type": "string",
       "setBy": [
-        "--device"
+        "--driver"
       ],
       "global": true
     },
@@ -1295,15 +1295,6 @@
       "setBy": [
         "revoke"
       ]
-    },
-    {
-      "tool": "app_rotate",
-      "arg": "backend",
-      "type": "string",
-      "setBy": [
-        "--backend"
-      ],
-      "global": true
     },
     {
       "tool": "app_rotate",
@@ -1319,6 +1310,15 @@
       "type": "string",
       "setBy": [
         "--device"
+      ],
+      "global": true
+    },
+    {
+      "tool": "app_rotate",
+      "arg": "driver",
+      "type": "string",
+      "setBy": [
+        "--driver"
       ],
       "global": true
     },
@@ -1340,19 +1340,19 @@
     },
     {
       "tool": "app_screen",
-      "arg": "backend",
+      "arg": "device",
       "type": "string",
       "setBy": [
-        "--backend"
+        "--device"
       ],
       "global": true
     },
     {
       "tool": "app_screen",
-      "arg": "device",
+      "arg": "driver",
       "type": "string",
       "setBy": [
-        "--device"
+        "--driver"
       ],
       "global": true
     },
@@ -1374,19 +1374,19 @@
     },
     {
       "tool": "app_screenshot",
-      "arg": "backend",
+      "arg": "device",
       "type": "string",
       "setBy": [
-        "--backend"
+        "--device"
       ],
       "global": true
     },
     {
       "tool": "app_screenshot",
-      "arg": "device",
+      "arg": "driver",
       "type": "string",
       "setBy": [
-        "--device"
+        "--driver"
       ],
       "global": true
     },
@@ -1397,15 +1397,6 @@
       "setBy": [
         "screenshot"
       ]
-    },
-    {
-      "tool": "app_scroll_to",
-      "arg": "backend",
-      "type": "string",
-      "setBy": [
-        "--backend"
-      ],
-      "global": true
     },
     {
       "tool": "app_scroll_to",
@@ -1426,6 +1417,15 @@
     },
     {
       "tool": "app_scroll_to",
+      "arg": "driver",
+      "type": "string",
+      "setBy": [
+        "--driver"
+      ],
+      "global": true
+    },
+    {
+      "tool": "app_scroll_to",
       "arg": "target",
       "type": "string",
       "setBy": [
@@ -1433,13 +1433,46 @@
       ]
     },
     {
-      "tool": "app_sms",
-      "arg": "backend",
+      "tool": "app_session",
+      "arg": "action",
       "type": "string",
       "setBy": [
-        "--backend"
+        "session"
+      ]
+    },
+    {
+      "tool": "app_session",
+      "arg": "app",
+      "type": "string",
+      "setBy": [
+        "session"
+      ]
+    },
+    {
+      "tool": "app_session",
+      "arg": "device",
+      "type": "string",
+      "setBy": [
+        "--device"
       ],
       "global": true
+    },
+    {
+      "tool": "app_session",
+      "arg": "driver",
+      "type": "string",
+      "setBy": [
+        "--driver"
+      ],
+      "global": true
+    },
+    {
+      "tool": "app_session",
+      "arg": "platform",
+      "type": "string",
+      "setBy": [
+        "session"
+      ]
     },
     {
       "tool": "app_sms",
@@ -1447,6 +1480,15 @@
       "type": "string",
       "setBy": [
         "--device"
+      ],
+      "global": true
+    },
+    {
+      "tool": "app_sms",
+      "arg": "driver",
+      "type": "string",
+      "setBy": [
+        "--driver"
       ],
       "global": true
     },
@@ -1468,15 +1510,6 @@
     },
     {
       "tool": "app_source",
-      "arg": "backend",
-      "type": "string",
-      "setBy": [
-        "--backend"
-      ],
-      "global": true
-    },
-    {
-      "tool": "app_source",
       "arg": "device",
       "type": "string",
       "setBy": [
@@ -1485,11 +1518,11 @@
       "global": true
     },
     {
-      "tool": "app_swipe",
-      "arg": "backend",
+      "tool": "app_source",
+      "arg": "driver",
       "type": "string",
       "setBy": [
-        "--backend"
+        "--driver"
       ],
       "global": true
     },
@@ -1509,6 +1542,15 @@
       "setBy": [
         "swipe"
       ]
+    },
+    {
+      "tool": "app_swipe",
+      "arg": "driver",
+      "type": "string",
+      "setBy": [
+        "--driver"
+      ],
+      "global": true
     },
     {
       "tool": "app_swipe",
@@ -1552,15 +1594,6 @@
     },
     {
       "tool": "app_tap",
-      "arg": "backend",
-      "type": "string",
-      "setBy": [
-        "--backend"
-      ],
-      "global": true
-    },
-    {
-      "tool": "app_tap",
       "arg": "device",
       "type": "string",
       "setBy": [
@@ -1575,6 +1608,15 @@
       "setBy": [
         "double-tap"
       ]
+    },
+    {
+      "tool": "app_tap",
+      "arg": "driver",
+      "type": "string",
+      "setBy": [
+        "--driver"
+      ],
+      "global": true
     },
     {
       "tool": "app_tap",
@@ -1621,28 +1663,19 @@
     },
     {
       "tool": "app_terminate",
-      "arg": "backend",
+      "arg": "device",
       "type": "string",
       "setBy": [
-        "--backend"
+        "--device"
       ],
       "global": true
     },
     {
       "tool": "app_terminate",
-      "arg": "device",
+      "arg": "driver",
       "type": "string",
       "setBy": [
-        "--device"
-      ],
-      "global": true
-    },
-    {
-      "tool": "app_text",
-      "arg": "backend",
-      "type": "string",
-      "setBy": [
-        "--backend"
+        "--driver"
       ],
       "global": true
     },
@@ -1652,6 +1685,15 @@
       "type": "string",
       "setBy": [
         "--device"
+      ],
+      "global": true
+    },
+    {
+      "tool": "app_text",
+      "arg": "driver",
+      "type": "string",
+      "setBy": [
+        "--driver"
       ],
       "global": true
     },
@@ -1665,19 +1707,19 @@
     },
     {
       "tool": "app_timezone",
-      "arg": "backend",
+      "arg": "device",
       "type": "string",
       "setBy": [
-        "--backend"
+        "--device"
       ],
       "global": true
     },
     {
       "tool": "app_timezone",
-      "arg": "device",
+      "arg": "driver",
       "type": "string",
       "setBy": [
-        "--device"
+        "--driver"
       ],
       "global": true
     },
@@ -1688,15 +1730,6 @@
       "setBy": [
         "timezone"
       ]
-    },
-    {
-      "tool": "app_type",
-      "arg": "backend",
-      "type": "string",
-      "setBy": [
-        "--backend"
-      ],
-      "global": true
     },
     {
       "tool": "app_type",
@@ -1712,6 +1745,15 @@
       "type": "string",
       "setBy": [
         "--device"
+      ],
+      "global": true
+    },
+    {
+      "tool": "app_type",
+      "arg": "driver",
+      "type": "string",
+      "setBy": [
+        "--driver"
       ],
       "global": true
     },
@@ -1741,15 +1783,6 @@
     },
     {
       "tool": "app_uninstall",
-      "arg": "backend",
-      "type": "string",
-      "setBy": [
-        "--backend"
-      ],
-      "global": true
-    },
-    {
-      "tool": "app_uninstall",
       "arg": "device",
       "type": "string",
       "setBy": [
@@ -1758,11 +1791,11 @@
       "global": true
     },
     {
-      "tool": "app_wait_for",
-      "arg": "backend",
+      "tool": "app_uninstall",
+      "arg": "driver",
       "type": "string",
       "setBy": [
-        "--backend"
+        "--driver"
       ],
       "global": true
     },
@@ -1780,6 +1813,15 @@
       "type": "string",
       "setBy": [
         "--device"
+      ],
+      "global": true
+    },
+    {
+      "tool": "app_wait_for",
+      "arg": "driver",
+      "type": "string",
+      "setBy": [
+        "--driver"
       ],
       "global": true
     },
@@ -1809,15 +1851,6 @@
     },
     {
       "tool": "app_zoom",
-      "arg": "backend",
-      "type": "string",
-      "setBy": [
-        "--backend"
-      ],
-      "global": true
-    },
-    {
-      "tool": "app_zoom",
       "arg": "device",
       "type": "string",
       "setBy": [
@@ -1832,6 +1865,15 @@
       "setBy": [
         "zoom"
       ]
+    },
+    {
+      "tool": "app_zoom",
+      "arg": "driver",
+      "type": "string",
+      "setBy": [
+        "--driver"
+      ],
+      "global": true
     },
     {
       "tool": "app_zoom",
@@ -2361,6 +2403,21 @@
       "sends": [
         "direction",
         "target"
+      ]
+    },
+    {
+      "command": "session",
+      "tools": [
+        "app_session"
+      ],
+      "flags": [
+        "--app",
+        "--platform"
+      ],
+      "sends": [
+        "action",
+        "app",
+        "platform"
       ]
     },
     {

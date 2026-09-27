@@ -30,7 +30,7 @@
 set -e
 DEV="${1:?usage: third-party-app-ios.sh <iphone-udid>}"
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
-M="$ROOT/bin/mobium --backend webdriveragent --device $DEV"
+M="$ROOT/bin/mobium --driver wda --device $DEV"
 APP=org.wikimedia.wikipedia
 fail() { echo "FAIL: $*" >&2; exit 1; }
 

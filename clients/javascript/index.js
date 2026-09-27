@@ -1,12 +1,12 @@
 /**
- * Mobium — native mobile app automation on virtual devices.
+ * Mobium — native mobile app automation on emulators, simulators and phones.
  *
- *   import { connect } from 'mobium'
+ *   import { start } from 'mobium'
  *
- *   const device = await connect()
+ *   const device = await start({ platform: 'android', app: 'com.android.settings' })
  *   for (const el of await device.map()) console.log(el.ref, el.label)
  *   await device.tap('@e1')
- *   await device.close()
+ *   await device.quit()
  */
 
 import { spawn } from 'node:child_process'
@@ -81,7 +81,7 @@ export class NoSuchAlertError extends MobiumError {
   static code = 'no_such_alert'
 }
 
-/** This backend or platform cannot do it, and says why. Retrying cannot help. */
+/** This driver or platform cannot do it, and says why. Retrying cannot help. */
 export class UnsupportedError extends MobiumError {
   static code = 'unsupported'
 }
@@ -212,7 +212,8 @@ function toElements(data) {
 }
 
 /**
- * Start a mobium session.
+ * Connect to mobium. It does not touch the device: the session there opens on
+ * the first call that needs it, or with `start()`.
  *
  * The transport is `mobium pipe`, which forwards to the shared daemon rather
  * than starting a session of its own: a device-side server holds one session
@@ -225,13 +226,46 @@ function toElements(data) {
  * read as the next call's -- and every call after rejects, saying so; connect
  * again. Set it well above the longest `waitFor` timeout you use.
  */
-export async function connect({ device, backend, binary, callTimeoutMs } = {}) {
+/**
+ * Connect and open the session on the device, as Appium's new session does:
+ * the device-side server is started now and, given an app, it is launched and
+ * in front when this resolves. End it with `quit()`.
+ *
+ * `platform` is "android" or "ios"; "ios" picks the wda driver, so none need
+ * be named. `device`, `driver`, `binary` and `callTimeoutMs` are as for
+ * `connect()`. Nothing requires it — every call opens a session on first use —
+ * but it puts the slow first start (installing UiAutomator2, building
+ * WebDriverAgent on an iPhone) where it was asked for.
+ *
+ *   const device = await start({ platform: 'android', app: 'com.android.settings' })
+ *   try { await device.map() } finally { await device.quit() }
+ */
+export async function start({ platform, device, app, driver, binary, callTimeoutMs } = {}) {
+  const d = await connect({ device, driver, binary, callTimeoutMs })
+  const args = { action: 'start' }
+  if (platform) args.platform = platform
+  if (app) args.app = app
+  let got
+  try {
+    got = (await d.conn.callTool('app_session', args)).structuredContent || {}
+  } catch (e) {
+    await d.close()
+    throw e
+  }
+  d.session = {
+    device: got.device || '', platform: got.platform || '', driver: got.driver || '',
+    reused: Boolean(got.reused), app: got.app || '',
+  }
+  return d
+}
+
+export async function connect({ device, driver, binary, callTimeoutMs } = {}) {
   if (callTimeoutMs !== undefined && !(callTimeoutMs > 0)) {
     throw new InvalidArgumentError('callTimeoutMs must be a positive number of milliseconds')
   }
   const args = ['pipe']
   if (device) args.push('--device', device)
-  if (backend) args.push('--backend', backend)
+  if (driver) args.push('--driver', driver)
 
   const child = spawn(findBinary(binary), args, {
     // Progress notes about downloading a device-side server go to stderr;
@@ -426,6 +460,8 @@ class Connection {
 export class Device {
   constructor(conn) {
     this.conn = conn
+    /** What `start()` opened — device, platform, driver — or null after `connect()`. */
+    this.session = null
   }
 
   async #text(tool, args) {
@@ -562,7 +598,7 @@ export class Device {
    *
    * The same tool as tap with one argument set, so the target is resolved the
    * same way and refused the same way when the screen has moved. The
-   * uiautomator dump backend refuses it: the window is 40-300ms and nothing
+   * uiautomator dump driver refuses it: the window is 40-300ms and nothing
    * there controls the interval between two adb calls.
    */
   async doubleTap(target, point) {
@@ -1210,10 +1246,37 @@ export class Device {
   }
 
   /**
-   * Closes the connection and resolves once mobium has exited. Safe to call
-   * more than once, and while a call is still waiting: that call is rejected.
+   * Closes the connection and resolves once mobium has exited. The device's
+   * session lives in the daemon and stays open, for the next `connect()` or the
+   * CLI; `quit()` ends it. Safe to call more than once, and while a call is
+   * still waiting: that call is rejected.
    */
   close() {
     return this.conn.close()
+  }
+
+  /**
+   * Ends the session on the device, as Appium's quit does, and closes the
+   * connection. The teardown is the daemon's own: accessibility settings put
+   * back, a recording or route stopped, WebViews detached, the device-side
+   * server stopped. Quitting a session that is not open succeeds, and a
+   * second quit does nothing.
+   */
+  async quit() {
+    // A second quit does nothing, rather than failing on a closed connection.
+    if (this.quitted) return
+    this.quitted = true
+    const args = { action: 'end' }
+    if (this.session) args.device = this.session.device
+    try {
+      await this.conn.callTool('app_session', args)
+    } finally {
+      await this.close()
+    }
+  }
+
+  /** The sessions open on the daemon, each with device, platform and driver. */
+  async sessions() {
+    return (await this.#data('app_session', { action: 'status' }))?.sessions || []
   }
 }

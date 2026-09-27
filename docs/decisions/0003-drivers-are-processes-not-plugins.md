@@ -196,7 +196,7 @@ explanation, not a code to look up.
 
 ## Discovery
 
-`--backend roku` looks for a built-in backend of that name first, then for an
+`--driver roku` looks for a built-in backend of that name first, then for an
 executable named **`mobium-driver-roku`** on `PATH`. Git and kubectl both do
 this, it needs no registry, no config file and no install step beyond putting a
 file somewhere, and it makes the failure legible: "no built-in backend named

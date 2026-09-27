@@ -224,6 +224,8 @@ func (h *Handlers) dispatch(ctx context.Context, name string, args map[string]in
 		return h.press(ctx, args)
 	case "app_lock":
 		return h.lock(ctx, args)
+	case "app_session":
+		return h.sessionTool(ctx, args)
 	case "app_call":
 		return h.call(ctx, args)
 	case "app_sms":
@@ -450,7 +452,7 @@ func (h *Handlers) tapOn(ctx context.Context, s *session, args map[string]interf
 			return nil, mobiumerr.New(mobiumerr.Unsupported, "the %s backend cannot double-tap: it taps through "+
 				"one adb call at a time, and nothing there controls the interval "+
 				"between two of them — the platform reads taps 40 to 300ms apart as "+
-				"one gesture and anything else as two. Switch to --backend uiautomator2",
+				"one gesture and anything else as two. Switch to --driver uiautomator2",
 				s.backend)
 		}
 		touch = dt.DoubleTap
@@ -467,7 +469,7 @@ func (h *Handlers) tapOn(ctx context.Context, s *session, args map[string]interf
 		mt, ok := mobiumdriver.AsMultiToucher(driver)
 		if !ok {
 			return nil, mobiumerr.New(mobiumerr.Unsupported, "the %s backend cannot put several fingers down at once — "+
-				"switch to --backend uiautomator2 on Android, or use an iOS device", s.backend)
+				"switch to --driver uiautomator2 on Android, or use an iOS device", s.backend)
 		}
 		tree, err := driver.Snapshot(ctx)
 		if err != nil {
@@ -1240,7 +1242,7 @@ func (h *Handlers) typeTextOn(ctx context.Context, s *session, args map[string]i
 	typer, ok := mobiumdriver.AsTextEntry(s.driver)
 	if !ok {
 		return nil, mobiumerr.New(mobiumerr.Unsupported, "the %s backend cannot type into an element — "+
-			"use the uiautomator2 backend (`--backend uiautomator2`, the default)", s.backend)
+			"use the uiautomator2 backend (`--driver uiautomator2`, the default)", s.backend)
 	}
 
 	target := stringArg(args, "target")

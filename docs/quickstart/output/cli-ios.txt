@@ -1,0 +1,11 @@
+waiting for WebDriverAgent to start...
+session started on 457C7DC2-C706-45D9-8D68-1D26953E28B1 (ios, wda); com.apple.Preferences was launched fresh and is in the foreground
+@e1 Apple Account, Sign in to access your iCloud data, the App Store, Apple services, and more. (button)
+@e2 General (button)
+@e3 Accessibility (button)
+@e4 Action Button (button)
+@e5 Apple Intelligence & Siri (button)
+tapped @e2 at (603, 958)
+label=About,role=button is visible after 408ms — @e4 About (button)
+saved ./quickstart-ios.png (332702 bytes)
+session ended on 457C7DC2-C706-45D9-8D68-1D26953E28B1; anything it changed for the session is put back
