@@ -163,7 +163,7 @@ func TestInspectorFollowsAppsThatComeAndGo(t *testing.T) {
 	close(msgs)
 	i.watch(msgs, func() {})
 
-	got := i.knownApps()
+	got, _ := i.knownApps()
 	if len(got) != 1 || got["PID:200"] != "dev.mobium.mobiumapp" {
 		t.Errorf("apps are %v, want only the relaunched PID:200", got)
 	}

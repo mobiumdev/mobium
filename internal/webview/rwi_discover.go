@@ -124,7 +124,17 @@ func (in *inspector) announceAndLearnApps(ctx context.Context) (map[string]strin
 // back. It still is not quite, because the replies are separate messages that
 // may interleave with unrelated chatter, so they are matched by application id
 // rather than by arrival order.
-func (in *inspector) listPages(ctx context.Context, apps map[string]string) ([]iosPage, error) {
+//
+// Waiting for every application stalled whenever one never answers. Changing
+// an accessibility setting on an iPhone brought com.apple.AppStore.Widgets
+// into the set, and it answers no listing: every app_contexts then took the
+// whole setup timeout, and an attach twice that, while the six other
+// applications had answered in no measurable time (CHALLENGES 116). So the
+// first answer may take the setup timeout, since a cold WebView can be slow,
+// but once one has come the rest get listingGrace from the last; and an
+// application in quiet — one that stayed silent before — is still asked and
+// not waited for. What did not answer is returned, for the caller to remember.
+func (in *inspector) listPages(ctx context.Context, apps map[string]string, quiet map[string]bool) ([]iosPage, []string, error) {
 	msgs, unsubscribe := in.subscribe()
 	defer unsubscribe()
 
@@ -133,27 +143,49 @@ func (in *inspector) listPages(ctx context.Context, apps map[string]string) ([]i
 			"WIRConnectionIdentifierKey":  in.id,
 			"WIRApplicationIdentifierKey": id,
 		}); err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 	}
 	if len(apps) == 0 {
-		return nil, nil
+		return nil, nil, nil
 	}
 
 	answered := map[string]bool{}
 	seen := map[string]bool{}
 	var pages []iosPage
+	unanswered := func() []string {
+		var out []string
+		for id := range apps {
+			if !answered[id] {
+				out = append(out, id)
+			}
+		}
+		sort.Strings(out)
+		return out
+	}
+	// done is every application not known to be silent having answered.
+	done := func() bool {
+		for id := range apps {
+			if !answered[id] && !quiet[id] {
+				return false
+			}
+		}
+		return true
+	}
 
 	deadline := time.After(rwiSetupTimeout)
+	var graceC <-chan time.Time
 	for {
 		select {
 		case <-ctx.Done():
-			return pages, ctx.Err()
+			return pages, unanswered(), ctx.Err()
 		case <-deadline:
-			return pages, nil
+			return pages, unanswered(), nil
+		case <-graceC:
+			return pages, unanswered(), nil
 		case msg, ok := <-msgs:
 			if !ok {
-				return pages, in.failure("listing pages")
+				return pages, unanswered(), in.failure("listing pages")
 			}
 			if msg.Selector != "_rpc_applicationSentListing:" {
 				continue
@@ -182,9 +214,10 @@ func (in *inspector) listPages(ctx context.Context, apps map[string]string) ([]i
 				seen[key] = true
 				pages = append(pages, p)
 			}
-			if len(answered) >= len(apps) {
-				return pages, nil
+			if done() {
+				return pages, unanswered(), nil
 			}
+			graceC = time.After(listingGrace)
 		}
 	}
 }
@@ -237,11 +270,15 @@ func (in *inspector) failure(doing string) error {
 // terminated and launched again, so its WebView disappeared from
 // `app_contexts` until the daemon restarted — found by a check that relaunches
 // MobiumApp between sections, on an iPhone 17 Pro simulator. CHALLENGES 83.
+//
+// **And an application that never answers a listing is remembered**, so it
+// is asked each time and not waited for (CHALLENGES 116).
 type Inspector struct {
 	in *inspector
 
-	mu   sync.Mutex
-	apps map[string]string
+	mu     sync.Mutex
+	apps   map[string]string
+	silent map[string]bool
 }
 
 // openWith announces on a fresh connection, learns the applications, and
@@ -256,7 +293,7 @@ func openWith(ctx context.Context, in *inspector) (*Inspector, error) {
 		in.Close()
 		return nil, err
 	}
-	i := &Inspector{in: in, apps: apps}
+	i := &Inspector{in: in, apps: apps, silent: map[string]bool{}}
 	go i.watch(msgs, unsubscribe)
 	return i, nil
 }
@@ -273,26 +310,64 @@ func (i *Inspector) watch(msgs <-chan rwiMessage, unsubscribe func()) {
 				i.apps[id] = bundle
 			}
 			i.mu.Unlock()
+		case "_rpc_applicationSentListing:":
+			// An application marked silent that answers after all — too late
+			// for the listing that asked, which had stopped waiting for it —
+			// is waited for again from the next one. Without this, one that
+			// merely answered late stayed silent and its pages were never
+			// seen again.
+			if id, ok := msg.Argument["WIRApplicationIdentifierKey"].(string); ok {
+				i.mu.Lock()
+				delete(i.silent, id)
+				i.mu.Unlock()
+			}
 		case "_rpc_applicationDisconnected:":
 			if id, ok := msg.Argument["WIRApplicationIdentifierKey"].(string); ok {
 				i.mu.Lock()
 				delete(i.apps, id)
+				delete(i.silent, id)
 				i.mu.Unlock()
 			}
 		}
 	}
 }
 
-// knownApps is a copy of the current set, so a listing is not raced by an
-// announcement arriving in the middle of it.
-func (i *Inspector) knownApps() map[string]string {
+// knownApps is a copy of the current set, and of which of them are silent,
+// so a listing is not raced by an announcement arriving in the middle of it.
+func (i *Inspector) knownApps() (map[string]string, map[string]bool) {
 	i.mu.Lock()
 	defer i.mu.Unlock()
-	out := make(map[string]string, len(i.apps))
+	apps := make(map[string]string, len(i.apps))
 	for k, v := range i.apps {
-		out[k] = v
+		apps[k] = v
 	}
-	return out
+	quiet := make(map[string]bool, len(i.silent))
+	for k := range i.silent {
+		quiet[k] = true
+	}
+	return apps, quiet
+}
+
+// list asks every known application for its pages, then records which of
+// them stayed silent: marked when one misses a listing, cleared the moment it
+// answers one.
+func (i *Inspector) list(ctx context.Context) ([]iosPage, error) {
+	apps, quiet := i.knownApps()
+	pages, unanswered, err := i.in.listPages(ctx, apps, quiet)
+	missed := map[string]bool{}
+	for _, id := range unanswered {
+		missed[id] = true
+	}
+	i.mu.Lock()
+	for id := range apps {
+		if missed[id] {
+			i.silent[id] = true
+		} else {
+			delete(i.silent, id)
+		}
+	}
+	i.mu.Unlock()
+	return pages, err
 }
 
 // OpenInspector connects to a booted simulator's web inspector.
@@ -324,7 +399,7 @@ func (i *Inspector) Close() error { return i.in.Close() }
 
 // Contexts lists every inspectable page, in the shape app_contexts uses.
 func (i *Inspector) Contexts(ctx context.Context) ([]Context, error) {
-	pages, err := i.in.listPages(ctx, i.knownApps())
+	pages, err := i.list(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -333,7 +408,7 @@ func (i *Inspector) Contexts(ctx context.Context) ([]Context, error) {
 
 // Pages is Contexts without the presentation, for Attach.
 func (i *Inspector) Pages(ctx context.Context) ([]iosPage, error) {
-	return i.in.listPages(ctx, i.knownApps())
+	return i.list(ctx)
 }
 
 func contextsFromPages(pages []iosPage) []Context {
