@@ -54,6 +54,13 @@ func fakeMobium() {
 			continue // a notification
 		}
 		reply := map[string]any{"jsonrpc": "2.0", "id": *req.ID}
+		if scenario == "noid" && req.Method == "tools/call" && req.Params.Name == "app_map" {
+			// What mobium pipe answers to a line it cannot parse: an error
+			// with no id, as JSON-RPC requires.
+			out.WriteString(`{"jsonrpc":"2.0","error":{"code":-32700,"message":"Parse error","data":"invalid character 'N' looking for beginning of value"}}` + "\n")
+			out.Flush()
+			continue
+		}
 		switch {
 		case req.Method == "initialize":
 			reply["result"] = map[string]any{"protocolVersion": "2024-11-05"}
@@ -345,6 +352,26 @@ func TestCancelingEndsTheConnection(t *testing.T) {
 	}
 	if !strings.Contains(err.Error(), "no longer usable") {
 		t.Errorf("error %q does not explain that the connection is gone", err)
+	}
+}
+
+func TestAnAnswerWithNoIDFailsTheCallInFlight(t *testing.T) {
+	// mobium answers a request it cannot parse with an error that has no id.
+	// Skipped as a notification would be, it left the call waiting forever.
+	dev := connectFake(t, "noid")
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	_, err := dev.Map(ctx)
+	var e *Error
+	if !errors.As(err, &e) || e.Code != CodeInvalidArgument {
+		t.Fatalf("err = %v, want an invalid_argument error, not a wait", err)
+	}
+	if !strings.Contains(err.Error(), "could not read the request") {
+		t.Errorf("error %q does not say the request was unreadable", err)
+	}
+	// The pipe answered exactly that request, so the connection is still in step.
+	if _, err := dev.Current(context.Background()); err != nil {
+		t.Errorf("the next call failed: %v", err)
 	}
 }
 

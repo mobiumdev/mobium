@@ -164,6 +164,15 @@ type rpcError struct {
 	Data    json.RawMessage `json:"data,omitempty"`
 }
 
+// rpcDetail is an error's data as ": detail", or nothing.
+func rpcDetail(e *rpcError) string {
+	var detail string
+	if len(e.Data) > 0 && json.Unmarshal(e.Data, &detail) == nil && detail != "" {
+		return ": " + detail
+	}
+	return ""
+}
+
 type rpcResponse struct {
 	ID     *int            `json:"id"`
 	Result json.RawMessage `json:"result"`
@@ -208,19 +217,24 @@ func (c *conn) request(ctx context.Context, method string, params map[string]any
 			if err := json.Unmarshal(line, &resp); err != nil {
 				continue // not a message we can read; keep looking
 			}
+			if resp.ID == nil && resp.Error != nil {
+				// An error with no id is mobium saying it could not read a
+				// request at all, which JSON-RPC answers without an id. The
+				// pipe answers one request at a time, in order, and mu keeps
+				// one in flight, so it is this call's answer: skipping it, as
+				// a notification is skipped, left the call waiting forever.
+				answered <- reply{err: &Error{
+					Reason: "mobium could not read the request: " + resp.Error.Message + rpcDetail(resp.Error),
+					Code:   CodeInvalidArgument,
+				}}
+				return
+			}
 			if resp.ID == nil || *resp.ID != id {
 				continue // a notification, or a reply to something else
 			}
 			if resp.Error != nil {
-				msg := resp.Error.Message
-				if len(resp.Error.Data) > 0 {
-					var detail string
-					if json.Unmarshal(resp.Error.Data, &detail) == nil && detail != "" {
-						msg += ": " + detail
-					}
-				}
 				// A protocol error: the request itself was refused.
-				answered <- reply{err: &Error{Reason: msg, Code: CodeInvalidArgument}}
+				answered <- reply{err: &Error{Reason: resp.Error.Message + rpcDetail(resp.Error), Code: CodeInvalidArgument}}
 				return
 			}
 			answered <- reply{raw: resp.Result}

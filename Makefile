@@ -64,7 +64,9 @@ clients:
 	  || exit 1
 	@echo "clients parse"
 	@node clients/javascript/test/errors.test.mjs
+	@node clients/javascript/test/connection.test.mjs
 	@python3 clients/python/tests/test_errors.py
+	@python3 clients/python/tests/test_connection.py
 
 # crosscompile is the check that Windows and Linux still build. Windows has no
 # daemon transport (see docs/WINDOWS.md) but everything must still compile for

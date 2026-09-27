@@ -10,8 +10,10 @@ from __future__ import annotations
 
 import json
 import os
+import queue
 import subprocess
 import sys
+import threading
 from typing import Any
 
 
@@ -48,22 +50,69 @@ def find_binary(explicit: str | None = None) -> str:
 
 
 class Connection:
-    """A live `mobium pipe` subprocess."""
+    """A live `mobium pipe` subprocess.
 
-    def __init__(self, binary: str, args: list[str]):
-        self._proc = subprocess.Popen(
-            [binary, "pipe", *args],
-            stdin=subprocess.PIPE,
-            stdout=subprocess.PIPE,
-            # Progress notes about downloading a device-side server go to
-            # stderr; passing them through keeps a slow first run explicable
-            # instead of looking like a hang.
-            stderr=None,
-            text=True,
-            bufsize=1,
-        )
+    Safe to share between threads, one call at a time: there is one pipe and
+    replies are told apart only by id, so calls are serialized rather than
+    interleaved.
+    """
+
+    def __init__(self, binary: str, args: list[str], call_timeout: float | None = None):
+        if call_timeout is not None and not call_timeout > 0:
+            raise ValueError("call_timeout must be a positive number of seconds, or None")
+        self._timeout = call_timeout
+        try:
+            self._proc = subprocess.Popen(
+                [binary, "pipe", *args],
+                stdin=subprocess.PIPE,
+                stdout=subprocess.PIPE,
+                # Progress notes about downloading a device-side server go to
+                # stderr; passing them through keeps a slow first run
+                # explicable instead of looking like a hang.
+                stderr=None,
+                encoding="utf-8",
+                bufsize=1,
+            )
+        except OSError as e:
+            raise MobiumError(f"could not start {binary}: {e}") from e
         self._next_id = 0
-        self._initialize()
+
+        # _gate serializes whole request/response pairs, as the Go client's
+        # mutex does: two calls in flight would race to read each other's
+        # answer.
+        self._gate = threading.Lock()
+        # _dead says why the connection can no longer be used, once something
+        # has made that true: it was closed, mobium exited, or a call timed
+        # out half-way. A call abandoned half-way cannot be resynchronized --
+        # its answer would be read as the answer to the next one -- so the
+        # connection ends, and every call after says so.
+        self._dead: str | None = None
+        self._closed = False
+
+        # Every line mobium writes, in order, put here by one reader thread,
+        # so a call can wait for the next one with a deadline. _END comes last.
+        self._lines: queue.Queue[str | object] = queue.Queue()
+        reader = threading.Thread(target=self._read, name="mobium-pipe-reader", daemon=True)
+        reader.start()
+
+        # A handshake that fails leaves a process nobody will ever close, so
+        # it is ended here rather than leaked -- measured: a refused handshake
+        # left mobium running.
+        try:
+            self._initialize()
+        except BaseException:
+            self.close()
+            raise
+
+    def _read(self) -> None:
+        assert self._proc.stdout is not None
+        try:
+            for line in self._proc.stdout:
+                self._lines.put(line)
+        except (OSError, ValueError):
+            pass
+        finally:
+            self._lines.put(_END)
 
     def _initialize(self) -> None:
         self.request(
@@ -76,17 +125,58 @@ class Connection:
         )
         self._notify("notifications/initialized")
 
+    def _die(self, why: str) -> MobiumError:
+        """Mark the connection unusable, end mobium, and return the error that says why."""
+        if self._dead is None:
+            self._dead = why
+        try:
+            self._proc.kill()
+        except OSError:
+            pass
+        return MobiumError(why)
+
     def _write(self, payload: dict[str, Any]) -> None:
         if self._proc.poll() is not None:
-            raise MobiumError(f"mobium exited with status {self._proc.returncode}")
+            raise self._die(f"mobium exited with status {self._proc.returncode}")
+        try:
+            # allow_nan=False: JSON has no NaN or Infinity, and written bare
+            # mobium cannot parse the line and answers with no id -- measured,
+            # set_location(nan, 0) then waited forever.
+            line = json.dumps(payload, allow_nan=False) + "\n"
+        except ValueError as e:
+            raise InvalidArgumentError(f"{e}: JSON has no NaN or Infinity") from None
         assert self._proc.stdin is not None
-        self._proc.stdin.write(json.dumps(payload) + "\n")
-        self._proc.stdin.flush()
+        try:
+            self._proc.stdin.write(line)
+            self._proc.stdin.flush()
+        except (OSError, ValueError) as e:
+            raise self._die(f"mobium closed the connection: {e}") from e
 
     def _notify(self, method: str) -> None:
-        self._write({"jsonrpc": "2.0", "method": method})
+        with self._gate:
+            self._write({"jsonrpc": "2.0", "method": method})
+
+    def _next_line(self, method: str) -> str | None:
+        try:
+            line = self._lines.get(timeout=self._timeout)
+        except queue.Empty:
+            raise self._die(
+                f"{method} got no answer within {self._timeout}s, so the connection was closed: "
+                "a reply arriving later would be read as the answer to the next call. "
+                "Connect again, with a longer call_timeout if the device is slow"
+            ) from None
+        if line is _END:
+            self._lines.put(_END)  # every later read sees the end too
+            return None
+        return line  # type: ignore[return-value]
 
     def request(self, method: str, params: dict[str, Any] | None = None) -> Any:
+        with self._gate:
+            if self._dead is not None:
+                raise MobiumError(f"this mobium connection is no longer usable: {self._dead}")
+            return self._request(method, params)
+
+    def _request(self, method: str, params: dict[str, Any] | None) -> Any:
         self._next_id += 1
         message_id = self._next_id
         payload: dict[str, Any] = {"jsonrpc": "2.0", "id": message_id, "method": method}
@@ -94,19 +184,37 @@ class Connection:
             payload["params"] = params
         self._write(payload)
 
-        assert self._proc.stdout is not None
         while True:
-            line = self._proc.stdout.readline()
-            if not line:
-                raise MobiumError("mobium closed the connection without responding")
+            line = self._next_line(method)
+            if line is None:
+                status = ""
+                try:
+                    status = f" (it exited with status {self._proc.wait(timeout=2)})"
+                except subprocess.TimeoutExpired:
+                    pass
+                raise self._die(f"mobium closed the connection without answering {method}{status}")
             try:
                 message = json.loads(line)
-            except json.JSONDecodeError:
-                continue
-            if message.get("id") != message_id:
+            except (ValueError, RecursionError):
+                continue  # not a message we can read; keep looking
+            if not isinstance(message, dict):
+                continue  # JSON, but not a message: null, a number
+            got = message.get("id")
+            if got is None and isinstance(message.get("error"), dict):
+                # An error with no id is mobium saying it could not read a
+                # request at all, which JSON-RPC answers without an id. The
+                # pipe answers one request at a time, in order, and the gate
+                # keeps one in flight, so it is this call's answer: skipping
+                # it, as a notification is skipped, left the call waiting
+                # forever.
+                err = message["error"]
+                raise InvalidArgumentError(
+                    f"mobium could not read the request: {err.get('message')}: {err.get('data', '')}".strip(": ")
+                )
+            if got != message_id or isinstance(got, bool):
                 continue  # a notification, or a reply to something else
             if "error" in message:
-                err = message["error"]
+                err = message["error"] if isinstance(message["error"], dict) else {"message": str(message["error"])}
                 # A protocol error: the request itself was refused.
                 raise InvalidArgumentError(f"{err.get('message')}: {err.get('data', '')}".strip(": "))
             return message.get("result")
@@ -114,6 +222,8 @@ class Connection:
     def call_tool(self, name: str, arguments: dict[str, Any] | None = None) -> dict[str, Any]:
         """Run a tool, raising when the tool itself reports failure."""
         result = self.request("tools/call", {"name": name, "arguments": arguments or {}})
+        if not isinstance(result, dict):
+            raise MobiumError(f"mobium answered {name} with {type(result).__name__}, not a result")
         # A failing tool answers with isError rather than a protocol error, so
         # the reason is in the content and has to be lifted out deliberately.
         if result.get("isError"):
@@ -121,13 +231,30 @@ class Connection:
         return result
 
     def close(self) -> None:
-        if self._proc.poll() is None:
-            try:
-                assert self._proc.stdin is not None
-                self._proc.stdin.close()
-                self._proc.wait(timeout=10)
-            except Exception:
-                self._proc.kill()
+        """Ask mobium to exit and wait for it, killing it after ten seconds.
+
+        Safe to call more than once, and from another thread while a call is
+        waiting: that call then fails, saying the connection was closed.
+        """
+        if self._closed:
+            return
+        self._closed = True
+        if self._dead is None:
+            self._dead = "it was closed"
+        try:
+            assert self._proc.stdin is not None
+            self._proc.stdin.close()
+        except (OSError, ValueError):
+            pass
+        try:
+            self._proc.wait(timeout=10)
+        except subprocess.TimeoutExpired:
+            self._proc.kill()
+            self._proc.wait()
+
+
+# The reader's last item: stdout closed or failed.
+_END = object()
 
 
 def _text_of(result: dict[str, Any]) -> str:

@@ -52,6 +52,7 @@ public final class Tests {
         anExitMidCallIsReportedWithItsStatus();
         aFailedHandshakeLeavesNoProcess();
         closeIsIdempotentAndEndsAWaitingCall();
+        anAnswerWithNoIdFailsTheCallInFlight();
 
         System.out.printf("%n%d checks, %d failed%n", checks, failures);
         if (failures > 0) System.exit(1);
@@ -418,6 +419,20 @@ public final class Tests {
         MobiumException after = throwsA(MobiumException.class, () -> c.call("app_map", null));
         yes("a call after close says the connection was closed",
                 after != null && after.getMessage().contains("closed"));
+    }
+
+    static void anAnswerWithNoIdFailsTheCallInFlight() {
+        // mobium answers a request it cannot parse with an error that has no
+        // id. Skipped as a notification would be, it left the call waiting
+        // forever; the timeout is only there so a regression fails rather
+        // than hangs.
+        try (Connection c = FakeProcess.connect("noid", Duration.ofSeconds(5), null)) {
+            InvalidArgumentException e = throwsA(InvalidArgumentException.class, () -> c.call("app_map", null));
+            yes("an answer with no id fails the call as InvalidArgumentException", e != null);
+            yes("saying the request was unreadable", e != null && e.getMessage().contains("could not read the request"));
+            eq("and the connection is still in step", "app_current",
+                    Json.str(Connection.dataOf(c.call("app_current", null)), "tool"));
+        }
     }
 
     private static void eq(String what, Object want, Object got) {

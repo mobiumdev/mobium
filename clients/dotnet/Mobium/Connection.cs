@@ -239,7 +239,20 @@ namespace Mobium
                     continue; // not a message we can read; keep looking
                 }
 
-                if (!message.TryGetValue("id", out var gotId) || !(gotId is long got) || got != id)
+                message.TryGetValue("id", out var gotId);
+                if (gotId == null && message.TryGetValue("error", out var unread) && unread != null)
+                {
+                    // An error with no id is mobium saying it could not read a request at all,
+                    // which JSON-RPC answers without an id. The pipe answers one
+                    // request at a time, in order, and the gate keeps one in
+                    // flight, so it is this call's answer: skipping it, as a
+                    // notification is skipped, left the call waiting forever.
+                    var u = Json.AsObject(unread);
+                    var d = Json.Str(u, "data");
+                    throw new InvalidArgumentException("mobium could not read the request: " + Json.Str(u, "message")
+                        + (d.Length == 0 ? "" : ": " + d), "", "", false, null);
+                }
+                if (!(gotId is long got) || got != id)
                     continue; // a notification, or a reply to something else
 
                 if (message.TryGetValue("error", out var error) && error != null)

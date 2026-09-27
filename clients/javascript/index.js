@@ -217,8 +217,18 @@ function toElements(data) {
  * The transport is `mobium pipe`, which forwards to the shared daemon rather
  * than starting a session of its own: a device-side server holds one session
  * at a time, so a client with its own would invalidate the CLI's.
+ *
+ * `callTimeoutMs` is the longest any one call may take before the connection
+ * is given up, the handshake included. Unset, the default, waits as long as it
+ * takes: the first session on an iPhone builds WebDriverAgent, which takes
+ * minutes. A call that runs out ends the connection -- a late answer would be
+ * read as the next call's -- and every call after rejects, saying so; connect
+ * again. Set it well above the longest `waitFor` timeout you use.
  */
-export async function connect({ device, backend, binary } = {}) {
+export async function connect({ device, backend, binary, callTimeoutMs } = {}) {
+  if (callTimeoutMs !== undefined && !(callTimeoutMs > 0)) {
+    throw new InvalidArgumentError('callTimeoutMs must be a positive number of milliseconds')
+  }
   const args = ['pipe']
   if (device) args.push('--device', device)
   if (backend) args.push('--backend', backend)
@@ -229,84 +239,186 @@ export async function connect({ device, backend, binary } = {}) {
     stdio: ['pipe', 'pipe', 'inherit'],
   })
 
-  const conn = new Connection(child)
-  await conn.request('initialize', {
-    protocolVersion: '2024-11-05',
-    capabilities: {},
-    clientInfo: { name: 'mobium-js', version: '0.1.0' },
-  })
+  const conn = new Connection(child, callTimeoutMs)
+  try {
+    await conn.request('initialize', {
+      protocolVersion: '2024-11-05',
+      capabilities: {},
+      clientInfo: { name: 'mobium-js', version: '0.1.0' },
+    })
+  } catch (e) {
+    // A handshake that fails leaves a process nobody will ever close -- and a
+    // child that keeps Node's event loop alive, so the script cannot exit.
+    // Measured: a refused handshake left mobium running.
+    conn.kill()
+    throw e
+  }
   conn.notify('notifications/initialized')
   return new Device(conn)
 }
 
+/**
+ * JSON for the wire, refusing NaN and Infinity. JSON has neither, and
+ * JSON.stringify writes them as null, so setLocation(NaN, 0) reached the
+ * daemon as a null latitude and came back as "latitude must be a number".
+ */
+function wire(payload) {
+  return JSON.stringify(payload, (key, value) => {
+    if (typeof value === 'number' && !Number.isFinite(value)) {
+      throw new InvalidArgumentError(`${key || 'a value'} is ${value}, which JSON cannot carry`)
+    }
+    return value
+  })
+}
+
 class Connection {
-  constructor(child) {
+  constructor(child, callTimeoutMs) {
     this.child = child
+    this.timeoutMs = callTimeoutMs
     this.nextId = 0
+    // Every request in flight, in the order it was written. The pipe answers
+    // one request at a time, in order, so the first entry is the one the
+    // next unnumbered answer belongs to.
     this.pending = new Map()
-    this.closed = false
+    // Why the connection can no longer be used, once something has made that
+    // true: it was closed, mobium exited or could not start, or a call timed
+    // out. A call abandoned half-way cannot be resynchronized, so the
+    // connection ends and every call after says so.
+    this.dead = null
+    this.exited = new Promise((resolve) => { this.markExited = resolve })
 
     this.reader = createInterface({ input: child.stdout })
     this.reader.on('line', (line) => this.#onLine(line))
 
-    child.on('exit', (code) => {
-      this.closed = true
-      // Reject anything still waiting, or a caller hangs forever on a
-      // process that has already gone.
-      for (const { reject } of this.pending.values()) {
-        reject(new MobiumError(`mobium exited with status ${code}`))
-      }
-      this.pending.clear()
+    // Without these listeners an 'error' event is thrown, and ends the
+    // caller's process: measured for a binary that cannot start, and for a
+    // call written after close().
+    child.on('error', (e) => {
+      this.#die(`could not run mobium: ${e.message}`)
+      // 'exit' may not follow an 'error', and close() waits for this.
+      this.markExited()
+    })
+    child.stdin.on('error', (e) => this.#die(`mobium closed the connection: ${e.message}`))
+    child.on('exit', (code, signal) => {
+      this.#die(this.dead ? this.dead : `mobium exited with status ${code ?? signal}`)
+      this.markExited()
     })
   }
 
+  #die(why) {
+    if (!this.dead) this.dead = why
+    for (const { reject, timer } of this.pending.values()) {
+      clearTimeout(timer)
+      reject(new MobiumError(this.dead))
+    }
+    this.pending.clear()
+    if (this.child.exitCode === null && this.child.signalCode === null) this.child.kill()
+  }
+
+  #settle(id, fn) {
+    const entry = this.pending.get(id)
+    if (!entry) return
+    this.pending.delete(id)
+    clearTimeout(entry.timer)
+    fn(entry)
+  }
+
   #onLine(line) {
+    // Nothing here may throw: this runs in an event listener, where an
+    // exception is uncaught and ends the process. Measured: a line reading
+    // `null` did, at `message.id`.
     if (!line.trim()) return
     let message
     try {
       message = JSON.parse(line)
     } catch {
+      return // not a message we can read
+    }
+    if (message === null || typeof message !== 'object' || Array.isArray(message)) return
+    const error = message.error && typeof message.error === 'object' ? message.error : null
+    if (message.id === undefined || message.id === null) {
+      if (!error) return // a notification
+      // An error with no id is mobium saying it could not read a request at
+      // all, which JSON-RPC answers without an id. Skipped as a notification
+      // is, it left the call waiting forever.
+      const [first] = this.pending.keys()
+      if (first === undefined) return
+      this.#settle(first, ({ reject }) => reject(new InvalidArgumentError(
+        `mobium could not read the request: ${error.message}${error.data ? `: ${error.data}` : ''}`)))
       return
     }
-    const entry = this.pending.get(message.id)
-    if (!entry) return // a notification, or a stale reply
-    this.pending.delete(message.id)
-    if (message.error) {
-      const { message: m, data } = message.error
-      // A protocol error: the request itself was refused.
-      entry.reject(new InvalidArgumentError(data ? `${m}: ${data}` : m))
-    } else {
-      entry.resolve(message.result)
-    }
+    this.#settle(message.id, ({ resolve, reject }) => {
+      if (error) {
+        // A protocol error: the request itself was refused.
+        reject(new InvalidArgumentError(error.data ? `${error.message}: ${error.data}` : String(error.message)))
+      } else {
+        resolve(message.result)
+      }
+    })
   }
 
   notify(method) {
-    if (this.closed) return
+    if (this.dead) return
     this.child.stdin.write(JSON.stringify({ jsonrpc: '2.0', method }) + '\n')
   }
 
   request(method, params) {
-    if (this.closed) return Promise.reject(new MobiumError('mobium is not running'))
+    if (this.dead) return Promise.reject(new MobiumError(`this mobium connection is no longer usable: ${this.dead}`))
     const id = ++this.nextId
     const payload = { jsonrpc: '2.0', id, method }
     if (params !== undefined) payload.params = params
+    let line
+    try {
+      line = wire(payload) + '\n'
+    } catch (e) {
+      return Promise.reject(e)
+    }
 
     return new Promise((resolve, reject) => {
-      this.pending.set(id, { resolve, reject })
-      this.child.stdin.write(JSON.stringify(payload) + '\n')
+      let timer
+      if (this.timeoutMs) {
+        timer = setTimeout(() => {
+          this.#die(`${method} got no answer within ${this.timeoutMs / 1000}s, so the connection was closed: ` +
+            'a reply arriving later would be read as the answer to the next call. ' +
+            'Connect again, with a longer callTimeoutMs if the device is slow')
+        }, this.timeoutMs)
+      }
+      this.pending.set(id, { resolve, reject, timer })
+      this.child.stdin.write(line)
     })
   }
 
   async callTool(name, args) {
     const result = await this.request('tools/call', { name, arguments: args || {} })
+    if (result === null || typeof result !== 'object') {
+      throw new MobiumError(`mobium answered ${name} with ${result}, not a result`)
+    }
     // A failing tool answers with isError rather than a protocol error, so
     // the reason has to be lifted out deliberately.
     if (result.isError) throw errorFrom(textOf(result), result.structuredContent)
     return result
   }
 
+  /** Ends mobium at once, for a connection that never became usable. */
+  kill() {
+    if (!this.dead) this.dead = 'it could not be set up'
+    this.child.kill()
+  }
+
+  /**
+   * Asks mobium to exit and resolves once it has, killing it after ten
+   * seconds. Safe to call more than once; a call still waiting is rejected,
+   * saying the connection was closed.
+   */
   close() {
-    if (!this.closed) this.child.stdin.end()
+    if (!this.dead) {
+      this.dead = 'it was closed'
+      this.child.stdin.end()
+      const force = setTimeout(() => this.child.kill(), 10000)
+      force.unref()
+      this.exited.then(() => clearTimeout(force))
+    }
+    return this.exited
   }
 }
 
@@ -1097,7 +1209,11 @@ export class Device {
     return this.#text('app_context', name ? { context: name } : {})
   }
 
+  /**
+   * Closes the connection and resolves once mobium has exited. Safe to call
+   * more than once, and while a call is still waiting: that call is rejected.
+   */
   close() {
-    this.conn.close()
+    return this.conn.close()
   }
 }

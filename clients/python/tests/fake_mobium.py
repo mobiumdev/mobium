@@ -1,0 +1,63 @@
+"""A stand-in for `mobium pipe`, so the connection's failure paths are
+exercised against a real subprocess with no device.
+
+MOBIUM_FAKE picks the behavior:
+  ok      answer every call, first writing lines that must be skipped: a
+          notification, a line that is not JSON, JSON that is not a message
+          (null, a number), 100000 levels of nesting, and a reply to another
+          id. Tool "slow" answers after 300ms.
+  hang    answer the handshake, never a tool call
+  exit    answer the handshake, exit with status 3 on the first tool call
+  mute    never answer anything, the handshake included
+  refuse  answer the handshake with a protocol error, then wait for stdin
+  noid    answer app_map as mobium answers a line it cannot parse -- an error
+          with no id -- and every other call normally
+MOBIUM_FAKE_PIDFILE, when set, receives this process's id.
+"""
+import json
+import os
+import sys
+import time
+
+mode = os.environ.get("MOBIUM_FAKE", "ok")
+if os.environ.get("MOBIUM_FAKE_PIDFILE"):
+    with open(os.environ["MOBIUM_FAKE_PIDFILE"], "w") as f:
+        f.write(str(os.getpid()))
+out = sys.stdout
+
+
+def send(obj):
+    out.write(json.dumps(obj) + "\n")
+    out.flush()
+
+
+for line in sys.stdin:
+    msg = json.loads(line)
+    if "id" not in msg:
+        continue
+    i, method = msg["id"], msg["method"]
+    if mode == "mute":
+        continue
+    if method == "initialize":
+        if mode == "refuse":
+            send({"jsonrpc": "2.0", "id": i, "error": {"code": -32602, "message": "unsupported protocol version"}})
+        else:
+            send({"jsonrpc": "2.0", "id": i, "result": {}})
+        continue
+    if mode == "hang":
+        continue
+    if mode == "exit":
+        sys.exit(3)
+    name, args = msg["params"]["name"], msg["params"]["arguments"]
+    if name == "slow":
+        time.sleep(0.3)
+    if mode == "noid" and name == "app_map":
+        out.write('{"jsonrpc":"2.0","error":{"code":-32700,"message":"Parse error","data":"invalid character"}}\n')
+        out.flush()
+        continue
+    out.write('{"jsonrpc":"2.0","method":"notifications/message","params":{}}\n')
+    out.write("progress: this line is not JSON\n")
+    out.write("null\n5\n" + "[" * 100000 + "]" * 100000 + "\n")
+    send({"jsonrpc": "2.0", "id": i + 1000, "result": {"wrong": True}})
+    send({"jsonrpc": "2.0", "id": i, "result": {"content": [{"type": "text", "text": "ok " + name}],
+                                                "structuredContent": {"tool": name, "echo": args}}})

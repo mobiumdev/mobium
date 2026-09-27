@@ -68,18 +68,26 @@ def connect(
     device: str | None = None,
     backend: str | None = None,
     binary: str | None = None,
+    call_timeout: float | None = None,
 ) -> "Device":
     """Start a mobium session.
 
     device: serial or UDID, when more than one is running.
     backend: "uiautomator2" (default), "uiautomator", or "webdriveragent".
+    call_timeout: the longest, in seconds, any one call may take before the
+        connection is given up, the handshake included. None, the default,
+        waits as long as it takes: the first session on an iPhone builds
+        WebDriverAgent, which takes minutes. A call that runs out ends the
+        connection -- a late answer would be read as the next call's -- and
+        every call after raises, saying so; connect again. Set it well above
+        the longest wait_for timeout you use.
     """
     args: list[str] = []
     if device:
         args += ["--device", device]
     if backend:
         args += ["--backend", backend]
-    return Device(Connection(find_binary(binary), args))
+    return Device(Connection(find_binary(binary), args, call_timeout))
 
 
 class Device:
