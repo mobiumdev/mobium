@@ -202,7 +202,69 @@ func ParseAndroid(data []byte) (*Tree, error) {
 	if len(root.Children) == 1 {
 		root.Bounds = root.Children[0].Bounds
 	}
+	foldCheckableRows(root)
 	return tree, nil
+}
+
+// foldCheckableRows makes an Android settings row one control, named by the
+// row and carrying the switch's state — what foldSwitchRows does for iOS.
+//
+// Android's Settings draws a row as a clickable layout holding its title and,
+// in a side frame, a switch that is not clickable, has no name and carries
+// the state. map listed both: "Bold text (button)", which had no state, and
+// "switchWidget (switch, unchecked)", named for its resource id and reachable
+// only by position. Measured on a Pixel 7 AVD (Android 15), on Display size
+// and text, and on Color and motion. Unlike iOS, the row is what a tap
+// operates here — tapping it toggles the switch — so the row stays the
+// target and takes the widget's role and state (CHALLENGES 120).
+//
+// Only a row with exactly one such widget and no other control inside it is
+// folded: a row with a second button in it is two controls, and saying so is
+// map's job.
+func foldCheckableRows(n *Node) {
+	for _, c := range n.Children {
+		foldCheckableRows(c)
+	}
+	if !n.Clickable || n.Checkable {
+		return
+	}
+	var widget *Node
+	others := false
+	var walk func(*Node)
+	walk = func(x *Node) {
+		for _, c := range x.Children {
+			if c.Clickable || c.LongClickable {
+				others = true
+			}
+			if c.Checkable {
+				if widget != nil {
+					others = true
+				}
+				widget = c
+			}
+			walk(c)
+		}
+	}
+	walk(n)
+	if widget == nil || others || widget.Label != "" || !unnamedSwitchText(widget.Text) {
+		return
+	}
+	role := roleOf(widget)
+	if role != "switch" && role != "checkbox" && role != "radio" {
+		return
+	}
+	n.Checkable, n.Checked, n.DeclaredRole = true, widget.Checked, role
+	widget.Checkable = false
+}
+
+// unnamedSwitchText reports whether a switch's text names nothing: empty, or
+// the ON/OFF some Android versions print on the thumb.
+func unnamedSwitchText(t string) bool {
+	switch strings.ToUpper(strings.TrimSpace(t)) {
+	case "", "ON", "OFF":
+		return true
+	}
+	return false
 }
 
 // attr reads one attribute, returning "" when absent — UiAutomator2 omits
