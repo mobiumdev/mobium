@@ -16,11 +16,7 @@ import sys
 
 HERE = pathlib.Path(__file__).resolve().parent
 
-INSTALL_FROM_CLONE = (
-    "No client is on a package registry yet. Until the first release, install it "
-    "from your clone of the repository — the path below assumes the clone is at "
-    "`~/mobium`."
-)
+CLONE = "git clone https://github.com/mobiumdev/mobium.git ~/mobium"
 
 CLIENTS = [
     {
@@ -41,7 +37,11 @@ CLIENTS = [
     {
         "slug": "python", "name": "Python", "file": "python/quickstart.py", "lang": "python",
         "needs": "Python 3.9 or later.",
-        "install": "python3 -m venv .venv\n.venv/bin/pip install ~/mobium/clients/python",
+        "install_note": "Not on PyPI yet — pip installs it straight from GitHub, which needs "
+                        "`git` on your `PATH`. After the first release this becomes "
+                        "`pip install mobium`.",
+        "install": ('python3 -m venv .venv\n'
+                    '.venv/bin/pip install "mobium @ git+https://github.com/mobiumdev/mobium.git#subdirectory=clients/python"'),
         "run": {"dir": "", "cmd": "MOBIUM_PLATFORM={p} .venv/bin/python quickstart.py"},
         "start": "`start(platform=..., app=...)`",
         "quit": "`device.quit()`, or leaving the `with` block",
@@ -56,7 +56,10 @@ CLIENTS = [
     {
         "slug": "javascript", "name": "JavaScript", "file": "javascript/quickstart.mjs", "lang": "js",
         "needs": "Node.js 18 or later.",
-        "install": "npm init -y\nnpm install ~/mobium/clients/javascript",
+        "install_note": "Not on npm yet, and npm cannot install a package from a folder "
+                        "inside a repository, so until the first release it installs from "
+                        "a clone. After the release this becomes `npm install mobium`.",
+        "install": CLONE + "\nnpm init -y\nnpm install ~/mobium/clients/javascript",
         "run": {"dir": "", "cmd": "MOBIUM_PLATFORM={p} node quickstart.mjs"},
         "start": "`await start({ platform, app })`",
         "quit": "`await device.quit()`",
@@ -70,6 +73,7 @@ CLIENTS = [
     {
         "slug": "go", "name": "Go", "file": "go/main.go", "lang": "go",
         "needs": "Go 1.24 or later.",
+        "install_note": "The Go module is published through GitHub, so this works today.",
         "install": "go mod init quickstart\ngo get github.com/mobiumdev/mobium/clients/go",
         "run": {"dir": "", "cmd": "MOBIUM_PLATFORM={p} go run ."},
         "start": "`mobium.Start(ctx, mobium.WithPlatform(...), mobium.WithApp(...))`",
@@ -86,7 +90,10 @@ CLIENTS = [
     {
         "slug": "java", "name": "Java", "file": "java/Quickstart.java", "lang": "java",
         "needs": "Java 17 or later.",
-        "install": "cd ~/mobium/clients/java && ./mvnw install -DskipTests && cd -",
+        "install_note": "Not on Maven Central yet. Until the first release it installs "
+                        "into your local Maven repository from a clone; after it, the "
+                        "dependency below resolves from Central with no clone at all.",
+        "install": CLONE + "\ncd ~/mobium/clients/java && ./mvnw install -DskipTests && cd -",
         "run": {
             "dir": "",
             "cmd": "MOBIUM_PLATFORM={p} java -cp ~/.m2/repository/dev/mobium/mobium/0.1.0-SNAPSHOT/mobium-0.1.0-SNAPSHOT.jar Quickstart.java",
@@ -117,7 +124,10 @@ CLIENTS = [
         "slug": "dotnet", "name": ".NET", "file": "dotnet/Program.cs", "lang": "csharp",
         "needs": "The .NET SDK 8 or later. The package targets netstandard2.0, so it "
                  "also runs on .NET Framework 4.6.1+.",
-        "install": ("dotnet pack ~/mobium/clients/dotnet/Mobium -o ~/mobium-packages\n"
+        "install_note": "Not on NuGet yet. Until the first release it installs from a local "
+                        "package built from a clone; after it, `dotnet add package Mobium` "
+                        "needs nothing else.",
+        "install": (CLONE + "\ndotnet pack ~/mobium/clients/dotnet/Mobium -o ~/mobium-packages\n"
                     "dotnet new console -o quickstart && cd quickstart\n"
                     "dotnet add package Mobium --version 0.1.0 --source ~/mobium-packages"),
         "run": {"dir": "", "cmd": "MOBIUM_PLATFORM={p} dotnet run"},
@@ -158,7 +168,7 @@ def page(c):
         lines += [
             "## 2. Install the client",
             "",
-            INSTALL_FROM_CLONE,
+            c["install_note"],
             "",
             "```sh",
             c["install"],
@@ -221,7 +231,8 @@ def page(c):
         "passes on as the device.",
         "",
         "Next: [the rest of the tool surface](../API.md), and "
-        "[setting up phones and simulators](../SETUP.md).",
+        "[setting up phones and simulators](../SETUP.md). Changing the client "
+        "itself? [DEVELOPMENT.md](../DEVELOPMENT.md) is the contributor's guide.",
         "",
     ]
     return "\n".join(lines)

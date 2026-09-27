@@ -12,9 +12,10 @@ The .NET SDK 8 or later. The package targets netstandard2.0, so it also runs on 
 
 ## 2. Install the client
 
-No client is on a package registry yet. Until the first release, install it from your clone of the repository — the path below assumes the clone is at `~/mobium`.
+Not on NuGet yet. Until the first release it installs from a local package built from a clone; after it, `dotnet add package Mobium` needs nothing else.
 
 ```sh
+git clone https://github.com/mobiumdev/mobium.git ~/mobium
 dotnet pack ~/mobium/clients/dotnet/Mobium -o ~/mobium-packages
 dotnet new console -o quickstart && cd quickstart
 dotnet add package Mobium --version 0.1.0 --source ~/mobium-packages
@@ -135,4 +136,4 @@ The first start on a device is slow: it installs the UiAutomator2 server on Andr
 - A `using` block around `Start()` quits when it ends, even on an exception. Around `Connect()` it only closes the connection.
 - With more than one device attached, `start` refuses to guess and lists them. Name one with `MOBIUM_DEVICE=<serial or UDID>`, which the example passes on as the device.
 
-Next: [the rest of the tool surface](../API.md), and [setting up phones and simulators](../SETUP.md).
+Next: [the rest of the tool surface](../API.md), and [setting up phones and simulators](../SETUP.md). Changing the client itself? [DEVELOPMENT.md](../DEVELOPMENT.md) is the contributor's guide.

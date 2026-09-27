@@ -12,9 +12,10 @@ Java 17 or later.
 
 ## 2. Install the client
 
-No client is on a package registry yet. Until the first release, install it from your clone of the repository — the path below assumes the clone is at `~/mobium`.
+Not on Maven Central yet. Until the first release it installs into your local Maven repository from a clone; after it, the dependency below resolves from Central with no clone at all.
 
 ```sh
+git clone https://github.com/mobiumdev/mobium.git ~/mobium
 cd ~/mobium/clients/java && ./mvnw install -DskipTests && cd -
 ```
 
@@ -170,4 +171,4 @@ The first start on a device is slow: it installs the UiAutomator2 server on Andr
 - try-with-resources around `start()` quits when it ends. Around `connect()` it only closes the connection, leaving the session open.
 - With more than one device attached, `start` refuses to guess and lists them. Name one with `MOBIUM_DEVICE=<serial or UDID>`, which the example passes on as the device.
 
-Next: [the rest of the tool surface](../API.md), and [setting up phones and simulators](../SETUP.md).
+Next: [the rest of the tool surface](../API.md), and [setting up phones and simulators](../SETUP.md). Changing the client itself? [DEVELOPMENT.md](../DEVELOPMENT.md) is the contributor's guide.

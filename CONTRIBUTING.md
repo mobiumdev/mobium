@@ -24,6 +24,10 @@ Anderson's "The Three-Cornered Wheel" — and the rule applied across the codeba
 
 ## Building and testing
 
+[docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) is the step-by-step version: the
+toolchains, a fresh clone to a passing `make ci`, driving a device, working on
+a client, and sending a pull request. In short:
+
 ```sh
 make build   # -> bin/mobium
 make ci      # what CI runs: gofmt, vet, lint, tests, client checks,
