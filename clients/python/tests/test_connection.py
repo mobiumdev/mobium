@@ -12,7 +12,7 @@ import time
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent.parent))
 
-from mobium import InvalidArgumentError, MobiumError, connect  # noqa: E402
+from mobium import InvalidArgumentError, MobiumError, connect, start  # noqa: E402
 from mobium._rpc import Connection  # noqa: E402
 
 HERE = pathlib.Path(__file__).resolve().parent
@@ -76,14 +76,14 @@ def one(n):
         answers[n] = type(e).__name__
 
 
-start = time.monotonic()
+t0 = time.monotonic()
 threads = [threading.Thread(target=one, args=(i,)) for i in range(8)]
 for t in threads:
     t.start()
 for t in threads:
     t.join(20)
 check(answers == list(range(8)), f"8 threads did not each get their own answer: {answers}")
-check(time.monotonic() - start >= 8 * 0.3 - 0.05, "8 slow calls did not run one at a time")
+check(time.monotonic() - t0 >= 8 * 0.3 - 0.05, "8 slow calls did not run one at a time")
 c.close()
 
 # -- NaN is refused, not sent bare ----------------------------------------
@@ -104,9 +104,9 @@ c.close()
 # -- a timed-out call ends the connection --------------------------------
 check(raises(ValueError, lambda: Connection(FAKE, [], 0)) is not None, "call_timeout=0 was accepted")
 c = fake("hang", timeout=0.5)
-start = time.monotonic()
+t0 = time.monotonic()
 e = raises(MobiumError, lambda: c.call_tool("app_map"))
-check(e is not None and time.monotonic() - start < 5, "a call with no answer did not time out")
+check(e is not None and time.monotonic() - t0 < 5, "a call with no answer did not time out")
 check(e is not None and "call_timeout" in str(e), f"the timeout does not say what to do: {e}")
 e = raises(MobiumError, lambda: c.call_tool("app_map"))
 check(e is not None and "no longer usable" in str(e), f"the next call was not refused: {e}")
@@ -121,9 +121,9 @@ check(e is not None and "no longer usable" in str(e), f"the connection did not s
 c.close()
 
 # -- a failed handshake leaves no process --------------------------------
-start = time.monotonic()
+t0 = time.monotonic()
 e = raises(MobiumError, lambda: fake("mute", timeout=0.5))
-check(e is not None and time.monotonic() - start < 5, "a silent handshake did not fail within call_timeout")
+check(e is not None and time.monotonic() - t0 < 5, "a silent handshake did not fail within call_timeout")
 # Refused rather than silent: a timeout kills the process on its own, so
 # only a handshake that fails some other way shows whether the constructor
 # cleans up after itself. Measured before the fix: it did not.
@@ -154,6 +154,25 @@ check(not t.is_alive() and seen and seen[0] is not None, "close from another thr
 c.close()
 e = raises(MobiumError, lambda: c.call_tool("app_map"))
 check(e is not None and "closed" in str(e), f"a call after close does not say it was closed: {e}")
+
+# -- start opens the session, quit ends it --------------------------------
+os.environ["MOBIUM_FAKE"] = "ok"
+d = start(platform="ios", app="com.apple.Preferences", binary=FAKE)
+s = d.session
+check(s is not None and (s.device, s.platform, s.driver, s.app) == ("fake-device", "ios", "wda", "com.apple.Preferences"),
+      f"start did not report the device, platform, driver and app it was given: {s}")
+d.quit()
+check(raises(Exception, d.quit) is None, "a second quit raised")
+check(raises(MobiumError, d.map) is not None, "a call after quit succeeded")
+check(connect(binary=FAKE).session is None, "connect reported a session it did not start")
+
+# -- a with block around start() quits on the way out ------------------------
+with start(platform="android", binary=FAKE) as d:
+    check(d.session is not None and d.session.driver == "uiautomator2", "start in a with block did not open a session")
+check(raises(MobiumError, d.map) is not None, "the with block did not quit")
+with start(platform="android", binary=FAKE) as d:
+    d.quit()
+check(True, "a with block after an explicit quit did not raise")
 
 os.remove(FAKE)
 if failures:

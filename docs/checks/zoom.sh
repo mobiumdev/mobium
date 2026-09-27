@@ -24,12 +24,12 @@ DEV="${1:?usage: zoom.sh <udid|serial>}"
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 case "$DEV" in
   [0-9A-Fa-f]*-[0-9A-Fa-f]*-[0-9A-Fa-f]*-[0-9A-Fa-f]*-[0-9A-Fa-f]*)
-    BACKEND="--backend webdriveragent"; PLATFORM=ios ;;
+    BACKEND="--driver wda"; PLATFORM=ios ;;
   # A real iPhone's UDID is two groups, 00008120-0001234567890ABC. Without
   # this, a phone was taken for an Android serial and the check failed on
   # "not installed" (2026-09-23) -- mobium-app.sh had the fix, these did not.
   [0-9A-Fa-f][0-9A-Fa-f][0-9A-Fa-f][0-9A-Fa-f][0-9A-Fa-f][0-9A-Fa-f][0-9A-Fa-f][0-9A-Fa-f]-[0-9A-Fa-f]*)
-    BACKEND="--backend webdriveragent"; PLATFORM=ios ;;
+    BACKEND="--driver wda"; PLATFORM=ios ;;
   *)
     BACKEND=""; PLATFORM=android ;;
 esac

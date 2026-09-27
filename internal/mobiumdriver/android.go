@@ -94,7 +94,7 @@ func (a *Android) dumpOnce(ctx context.Context) ([]byte, error) {
 			// second (CHALLENGES 109), where uiautomator waits for idle forever.
 			return nil, mobiumerr.New(mobiumerr.Timeout, "uiautomator dump gave up waiting for the screen to stop "+
 				"changing (%s) — something on it animates or updates continuously. "+
-				"Use --backend uiautomator2, which waits for idle at most half a second.", reason)
+				"Use --driver uiautomator2, which waits for idle at most half a second.", reason)
 		}
 		if reason == "" {
 			reason = "no output"

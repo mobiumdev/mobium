@@ -3,7 +3,7 @@ package dev.mobium;
 import java.util.Map;
 
 /**
- * This backend or platform cannot do it, and says why. Retrying cannot help.
+ * This driver or platform cannot do it, and says why. Retrying cannot help.
  *
  * <p>Error code {@code unsupported}. See {@link MobiumException}.
  */

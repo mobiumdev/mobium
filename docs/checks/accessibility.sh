@@ -23,8 +23,8 @@ APP=dev.mobium.mobiumapp
 export MOBIUM_SESSION="${MOBIUM_SESSION:-a11ycheck}"
 
 case "$DEV" in
-  ????????-????????????????) PLATFORM=phone; M="$ROOT/bin/mobium --backend webdriveragent --device $DEV" ;;
-  *-*-*-*-*)                 PLATFORM=ios;   M="$ROOT/bin/mobium --backend webdriveragent --device $DEV" ;;
+  ????????-????????????????) PLATFORM=phone; M="$ROOT/bin/mobium --driver wda --device $DEV" ;;
+  *-*-*-*-*)                 PLATFORM=ios;   M="$ROOT/bin/mobium --driver wda --device $DEV" ;;
   *)                         PLATFORM=android; M="$ROOT/bin/mobium --device $DEV" ;;
 esac
 echo "--- $DEV ($PLATFORM)"

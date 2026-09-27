@@ -154,7 +154,7 @@ assertion, because everything downstream would agree with it.
 
 So the load-bearing step is a **diff against a known-good implementation on the
 same screen**. The reference driver deliberately covers the same ground as
-`--backend uiautomator`, so the two maps must be identical, and the script
+`--driver uiautomator`, so the two maps must be identical, and the script
 compares them line for line with the daemon stopped in between — leaving it up
 would hand the second map the first backend's cached session, and the diff
 would be comparing a backend against itself, which passes.

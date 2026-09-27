@@ -19,8 +19,8 @@ json() { python3 -c "import json,sys; d=json.load(sys.stdin); print($1)"; }
 APP=dev.mobium.mobiumapp
 
 case "$DEV" in
-  ????????-????????????????) PLATFORM=iphone; M="$ROOT/bin/mobium --backend webdriveragent --device $DEV" ;;
-  *-*-*-*-*) PLATFORM=ios; M="$ROOT/bin/mobium --backend webdriveragent --device $DEV" ;;
+  ????????-????????????????) PLATFORM=iphone; M="$ROOT/bin/mobium --driver wda --device $DEV" ;;
+  *-*-*-*-*) PLATFORM=ios; M="$ROOT/bin/mobium --driver wda --device $DEV" ;;
   *)         PLATFORM=android; M="$ROOT/bin/mobium --device $DEV" ;;
 esac
 echo "--- $DEV ($PLATFORM)"

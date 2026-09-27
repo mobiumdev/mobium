@@ -23,7 +23,7 @@ const (
 	// snapshot costs a couple of seconds and it cannot type.
 	BackendDump Backend = "uiautomator"
 	// BackendWDA is WebDriverAgent on an iOS simulator or a real iPhone.
-	BackendWDA Backend = "webdriveragent"
+	BackendWDA Backend = "wda"
 )
 
 // DefaultBackend is UiAutomator2, on the same reasoning as vibium downloading
@@ -58,12 +58,18 @@ func ParseBackend(s string) (Backend, error) {
 	// PATH for something that was never going to be there.
 	for _, b := range builtinBackends {
 		if strings.EqualFold(string(name), string(b)) {
-			return "", mobiumerr.New(mobiumerr.InvalidArgument, "no backend is called %q — did you mean %q? "+
-				"(backend names are lower case)", s, b)
+			return "", mobiumerr.New(mobiumerr.InvalidArgument, "no driver is called %q — did you mean %q? "+
+				"(driver names are lower case)", s, b)
 		}
 	}
+	// The iOS driver's name before it was shortened. Unrefused, it would be
+	// taken for a third-party driver and fail later, looking for
+	// mobium-driver-webdriveragent on PATH — the wrong cause.
+	if strings.EqualFold(string(name), "webdriveragent") {
+		return "", mobiumerr.New(mobiumerr.InvalidArgument, "the iOS driver is called %q (WebDriverAgent)", BackendWDA)
+	}
 	if strings.ContainsAny(string(name), " /\\") {
-		return "", mobiumerr.New(mobiumerr.InvalidArgument, "%q is not a backend name (want %q, %q, %q, or the name of a "+
+		return "", mobiumerr.New(mobiumerr.InvalidArgument, "%q is not a driver name (want %q, %q, %q, or the name of a "+
 			"driver installed as mobium-driver-<name>)", s, BackendUIA2, BackendDump, BackendWDA)
 	}
 	return name, nil
@@ -181,12 +187,22 @@ func (h *Handlers) sessionFor(ctx context.Context, args map[string]interface{}) 
 	}
 
 	backend := h.backend
-	if b := stringArg(args, "backend"); b != "" {
+	if b := stringArg(args, "driver"); b != "" {
 		parsed, err := ParseBackend(b)
 		if err != nil {
 			return nil, err
 		}
 		backend = parsed
+	} else if open := h.openSessionFor(serial); open != nil && backend == DefaultBackend {
+		// No driver named: the session already open is the context, as it is
+		// in Appium. Without this, a session started with platform "ios" was
+		// followed by a call with no driver, which took Android's default
+		// and failed asking for "wda" — from every client, since platform is
+		// sent only with start.
+		if open.healthy(ctx) {
+			return open, nil
+		}
+		backend, serial = open.backend, open.dev.Serial
 	}
 
 	if backend == BackendWDA {
@@ -224,13 +240,34 @@ func (h *Handlers) sessionFor(ctx context.Context, args map[string]interface{}) 
 		d := mobiumdriver.NewUIA2(adb)
 		if err := d.Start(ctx, h.progress); err != nil {
 			return nil, fmt.Errorf("%w\n\nTo run without the UiAutomator2 server, "+
-				"use --backend uiautomator (slower, and it cannot type).", err)
+				"use --driver uiautomator (slower, and it cannot type).", err)
 		}
 		s.driver = d
 	}
 
 	h.sessions[dev.Serial] = s
 	return s, nil
+}
+
+// openSessionFor is the session a call naming no driver belongs to: the one
+// open on the device it names, or, when it names none, the only one open.
+// With several open and no device named there is no such session, and the
+// call is resolved as it always was.
+func (h *Handlers) openSessionFor(serial string) *session {
+	if serial != "" {
+		for key, s := range h.sessions {
+			if key == serial || s.dev.Serial == serial {
+				return s
+			}
+		}
+		return nil
+	}
+	if len(h.sessions) == 1 {
+		for _, s := range h.sessions {
+			return s
+		}
+	}
+	return nil
 }
 
 // externalSessionFor spawns a third-party driver and caches the session.
@@ -331,8 +368,8 @@ func onOtherPlatform(ctx context.Context, serial string, err error, wasAndroid b
 	}
 	if wasAndroid {
 		if kind := iosKind(ctx, serial); kind != "" {
-			return mobiumerr.New(mobiumerr.InvalidArgument, "%s is %s, and iOS is driven by the %s backend — "+
-				"pass backend %q (on the CLI, --backend %s)", serial, kind, BackendWDA, BackendWDA, BackendWDA)
+			return mobiumerr.New(mobiumerr.InvalidArgument, "%s is %s, and iOS is driven by the %s driver — "+
+				"pass driver %q or platform \"ios\" (on the CLI, --driver %s)", serial, kind, BackendWDA, BackendWDA, BackendWDA)
 		}
 		return err
 	}
@@ -343,8 +380,8 @@ func onOtherPlatform(ctx context.Context, serial string, err error, wasAndroid b
 			if d.Emulator {
 				kind = "an Android emulator"
 			}
-			return mobiumerr.New(mobiumerr.InvalidArgument, "%s is %s, which the %s backend cannot drive — "+
-				"leave the backend unset for Android", serial, kind, BackendWDA)
+			return mobiumerr.New(mobiumerr.InvalidArgument, "%s is %s, which the %s driver cannot drive — "+
+				"pass platform \"android\", or leave the platform and driver unset", serial, kind, BackendWDA)
 		}
 	}
 	return err
@@ -374,5 +411,5 @@ func cannot(s *session, capability, what string) error {
 	if err := mobiumdriver.Declined(s.driver, capability); err != nil {
 		return err
 	}
-	return mobiumerr.New(mobiumerr.Unsupported, "the %s backend cannot %s", s.backend, what)
+	return mobiumerr.New(mobiumerr.Unsupported, "the %s driver cannot %s", s.backend, what)
 }

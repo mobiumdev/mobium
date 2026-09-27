@@ -18,11 +18,11 @@ differently.
 
 | | |
 | --- | --- |
-| Tools | **52** |
-| CLI commands registered | 57 |
-| …visible in `mobium --help` | 56 |
+| Tools | **53** |
+| CLI commands registered | 58 |
+| …visible in `mobium --help` | 57 |
 | …hidden | 1 (pipe) |
-| Command constructors in source | 60 (includes `daemon start`, `stop`, `status`) |
+| Command constructors in source | 61 (includes `daemon start`, `stop`, `status`) |
 | Client libraries | 5 |
 
 Those three command counts differ on purpose, and the arithmetic is asserted
@@ -75,27 +75,28 @@ been wrong twice.
 | 39 | `app_screen` | `screen` | `Screen` | `screen` | `screen` | `screen` |
 | 40 | `app_screenshot` | `screenshot` | `Screenshot` | `screenshot` | `screenshot` | `screenshot` |
 | 41 | `app_scroll_to` | `scroll-to` | `ScrollTo` | `scroll_to` | `scrollTo` | `scrollTo` |
-| 42 | `app_sms` | `sms` | `SendSMS` | `sms` | `sms` | `sms` |
-| 43 | `app_source` | `source` | `Source` | `source` | `source` | `source` |
-| 44 | `app_swipe` | `swipe` | `Swipe` | `swipe` | `swipe` | `swipe` |
-| 45 | `app_tap` | `tap, double-tap, double-tap` | `Tap` | `tap` | `tap` | `tap` |
-| 46 | `app_terminate` | `terminate` | `Terminate` | `terminate` | `terminate` | `terminate` |
-| 47 | `app_text` | `text` | `Text` | `text` | `text` | `text` |
-| 48 | `app_timezone` | `timezone` | `Timezone` | `timezone` | `timezone` | `timezone` |
-| 49 | `app_type` | `type` | `Type` | `type` | `type` | `type` |
-| 50 | `app_uninstall` | `uninstall` | `Uninstall` | `uninstall` | `uninstall` | `uninstall` |
-| 51 | `app_wait_for` | `wait` | `WaitFor` | `wait_for` | `waitFor` | `waitFor` |
-| 52 | `app_zoom` | `zoom` | `Zoom` | `zoom` | `zoom` | `zoom` |
+| 42 | `app_session` | `session` | `Start` | `start` | `start` | `start` |
+| 43 | `app_sms` | `sms` | `SendSMS` | `sms` | `sms` | `sms` |
+| 44 | `app_source` | `source` | `Source` | `source` | `source` | `source` |
+| 45 | `app_swipe` | `swipe` | `Swipe` | `swipe` | `swipe` | `swipe` |
+| 46 | `app_tap` | `tap, double-tap, double-tap` | `Tap` | `tap` | `tap` | `tap` |
+| 47 | `app_terminate` | `terminate` | `Terminate` | `terminate` | `terminate` | `terminate` |
+| 48 | `app_text` | `text` | `Text` | `text` | `text` | `text` |
+| 49 | `app_timezone` | `timezone` | `Timezone` | `timezone` | `timezone` | `timezone` |
+| 50 | `app_type` | `type` | `Type` | `type` | `type` | `type` |
+| 51 | `app_uninstall` | `uninstall` | `Uninstall` | `uninstall` | `uninstall` | `uninstall` |
+| 52 | `app_wait_for` | `wait` | `WaitFor` | `wait_for` | `waitFor` | `waitFor` |
+| 53 | `app_zoom` | `zoom` | `Zoom` | `zoom` | `zoom` | `zoom` |
 
 ## Client coverage
 
 | Client | Source | Tools reached |
 | --- | --- | --- |
-| go | [clients/go/mobium.go](../clients/go/mobium.go) | 52 / 52 |
-| python | [clients/python/mobium/_device.py](../clients/python/mobium/_device.py) | 52 / 52 |
-| javascript | [clients/javascript/index.js](../clients/javascript/index.js) | 52 / 52 |
-| java | [clients/java/src/main/java/dev/mobium/Mobium.java](../clients/java/src/main/java/dev/mobium/Mobium.java) | 52 / 52 |
-| dotnet | [clients/dotnet/Mobium/Device.cs](../clients/dotnet/Mobium/Device.cs) | 52 / 52 |
+| go | [clients/go/mobium.go](../clients/go/mobium.go) | 53 / 53 |
+| python | [clients/python/mobium/_device.py](../clients/python/mobium/_device.py) | 53 / 53 |
+| javascript | [clients/javascript/index.js](../clients/javascript/index.js) | 53 / 53 |
+| java | [clients/java/src/main/java/dev/mobium/Mobium.java](../clients/java/src/main/java/dev/mobium/Mobium.java) | 53 / 53 |
+| dotnet | [clients/dotnet/Mobium/Device.cs](../clients/dotnet/Mobium/Device.cs) | 53 / 53 |
 
 ## Commands that dispatch no tool
 

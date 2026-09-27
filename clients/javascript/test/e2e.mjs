@@ -25,7 +25,8 @@ if (!serial) {
   process.exit(0)
 }
 
-const d = await m.connect({ device: serial, binary: process.env.MOBIUM_BIN_PATH })
+const d = await m.start({ device: serial, binary: process.env.MOBIUM_BIN_PATH })
+check(d.session && d.session.device === serial && d.session.platform === 'android', 'start opens a session on the device')
 try {
   await d.terminate(SETTINGS)
   await d.launch(SETTINGS)
@@ -60,5 +61,9 @@ try {
   check((await d.current()) !== SETTINGS, 'terminate takes Settings away')
   console.log('javascript: passed')
 } finally {
-  d.close()
+  await d.quit()
 }
+// quit ended the session in the daemon, not only this connection.
+const other = await m.connect({ binary: process.env.MOBIUM_BIN_PATH })
+check((await other.sessions()).every((s) => s.device !== serial), 'quit ends the session')
+await other.close()

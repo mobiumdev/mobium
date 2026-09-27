@@ -29,7 +29,7 @@ APP=dev.mobium.mobiumapp
 
 case "$DEV" in
   ????????-????????????????) echo "a real iPhone's Reduce Motion cannot be set from outside; use a simulator" >&2; exit 2 ;;
-  *-*-*-*-*) PLATFORM=ios; M="$ROOT/bin/mobium --backend webdriveragent --device $DEV" ;;
+  *-*-*-*-*) PLATFORM=ios; M="$ROOT/bin/mobium --driver wda --device $DEV" ;;
   *)         PLATFORM=android; M="$ROOT/bin/mobium --device $DEV" ;;
 esac
 echo "--- $DEV ($PLATFORM)"

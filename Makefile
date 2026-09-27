@@ -1,7 +1,7 @@
 BIN := bin/mobium
 VERSION := $(shell cat VERSION 2>/dev/null || echo dev)
 
-.PHONY: all build test fmt fmt-check vet lint clients java crosscompile api api-check flags flags-check docs-check ci clean
+.PHONY: all build test fmt fmt-check vet lint clients java crosscompile api api-check flags flags-check quickstart docs-check ci clean
 
 all: build test
 
@@ -161,12 +161,20 @@ flags-check:
 # and a tool whose input vocabulary is the thing it removes will consume its
 # own documentation. See CHALLENGES, "a spelling sweep that ate its own
 # documentation".
+# quickstart builds the per-client quick-start pages from their examples and
+# the output those examples printed on a real emulator and simulator, so a page
+# cannot show code that did not run. docs-check fails if one is out of date.
+quickstart:
+	@python3 docs/quickstart/build.py
+
 docs-check:
 	@python3 docs/checks/american-spelling.py scan $$(git ls-files) >/dev/null \
 		|| { python3 docs/checks/american-spelling.py scan $$(git ls-files); exit 1; }
 	@python3 docs/checks/doc-links.py $$(git ls-files '*.md') >/dev/null \
 		|| { python3 docs/checks/doc-links.py $$(git ls-files '*.md'); exit 1; }
-	@echo "docs: spelling and anchors clean"
+	@python3 docs/quickstart/build.py --check >/dev/null \
+		|| { python3 docs/quickstart/build.py --check; exit 1; }
+	@echo "docs: spelling, anchors and quick-start pages clean"
 
 ci: fmt-check vet lint test clients crosscompile java api-check flags-check docs-check dotnet
 

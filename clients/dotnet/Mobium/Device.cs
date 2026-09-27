@@ -34,15 +34,26 @@ namespace Mobium
     public sealed class Device : IDisposable
     {
         private readonly Connection _conn;
+        private bool _quit;
 
         internal Device(Connection conn) { _conn = conn; }
 
+        /// <summary>
+        /// What <see cref="DeviceBuilder.Start"/> opened — device, platform,
+        /// driver — or null for a device from <see cref="Connect"/>.
+        /// </summary>
+        public Session? Session { get; internal set; }
+
         // -- connecting -----------------------------------------------------
 
-        /// <summary>Starts a session against whichever device is running.</summary>
+        /// <summary>
+        /// Connects to mobium, for whichever device is running. It does not
+        /// touch the device: the session there opens on the first call that
+        /// needs it, or with <see cref="DeviceBuilder.Start"/>.
+        /// </summary>
         public static Device Connect() => Builder().Connect();
 
-        /// <summary>Configures a session.</summary>
+        /// <summary>Configures a connection or a session.</summary>
         public static DeviceBuilder Builder() => new DeviceBuilder();
 
         // -- reading --------------------------------------------------------
@@ -178,7 +189,7 @@ namespace Mobium
         /// Taps twice, as one gesture rather than as two taps. The same tool
         /// as <see cref="Tap(string)"/> with one argument set, so the target
         /// is resolved the same way and refused the same way when the screen
-        /// has moved. The uiautomator dump backend refuses it: the window is
+        /// has moved. The uiautomator dump driver refuses it: the window is
         /// 40-300ms and nothing there controls the interval between two adb
         /// calls.
         /// </summary>
@@ -766,10 +777,60 @@ namespace Mobium
         }
 
         /// <summary>
-        /// Closes the pipe and waits for mobium to exit. The device session
-        /// itself lives in the daemon and outlives this object.
+        /// Quits a device from <see cref="DeviceBuilder.Start"/>, whose session
+        /// was opened for this <c>using</c> block. For one from
+        /// <see cref="Connect"/>, closes the pipe and waits for mobium to exit,
+        /// leaving the session in the daemon to whoever opened it.
         /// </summary>
-        public void Dispose() => _conn.Dispose();
+        public void Dispose()
+        {
+            if (Session != null) Quit();
+            else if (!_quit) _conn.Dispose();
+        }
+
+        /// <summary>
+        /// Ends the session on the device, as Appium's quit does, and closes
+        /// the connection. The teardown is the daemon's own: accessibility
+        /// settings put back, a recording or route stopped, WebViews detached,
+        /// the device-side server stopped. Quitting a session that is not open
+        /// succeeds, and a second quit — a <c>using</c> block ending after an
+        /// explicit one — does nothing.
+        /// </summary>
+        public void Quit()
+        {
+            if (_quit) return;
+            _quit = true;
+            var args = Args("action", "end");
+            if (Session != null) args["device"] = Session.Device;
+            try
+            {
+                _conn.Call("app_session", args);
+            }
+            finally
+            {
+                _conn.Dispose();
+            }
+        }
+
+        /// <summary>The sessions open on the daemon, each with device, platform and driver.</summary>
+        public IList<IDictionary<string, object?>> Sessions() =>
+            Maps(Field("app_session", Args("action", "status"), "sessions"));
+
+        internal void OpenSession(string platform, string app)
+        {
+            var args = Args("action", "start");
+            if (!string.IsNullOrWhiteSpace(platform)) args["platform"] = platform;
+            if (!string.IsNullOrWhiteSpace(app)) args["app"] = app;
+            try
+            {
+                Session = Session.From(Data("app_session", args));
+            }
+            catch
+            {
+                _conn.Dispose();
+                throw;
+            }
+        }
 
         // -- internals ---------------------------------------------------------
 
@@ -843,7 +904,9 @@ namespace Mobium
     {
         private string _binary = "";
         private string _device = "";
-        private string _backend = "";
+        private string _driver = "";
+        private string _platform = "";
+        private string _app = "";
         private TimeSpan _timeout = System.Threading.Timeout.InfiniteTimeSpan;
 
         /// <summary>Pins the mobium executable, ahead of MOBIUM_BIN_PATH and PATH.</summary>
@@ -855,9 +918,9 @@ namespace Mobium
         /// <summary>
         /// Chooses the driver: <c>uiautomator2</c> (default on Android),
         /// <c>uiautomator</c> (installs nothing, slower, cannot type) or
-        /// <c>webdriveragent</c> (iOS simulators and iPhones).
+        /// <c>wda</c> (iOS simulators and iPhones).
         /// </summary>
-        public DeviceBuilder Backend(string name) { _backend = name ?? ""; return this; }
+        public DeviceBuilder Driver(string name) { _driver = name ?? ""; return this; }
 
         /// <summary>
         /// The longest any one call may take before the connection is given
@@ -880,12 +943,43 @@ namespace Mobium
             return this;
         }
 
-        /// <summary>Starts the session.</summary>
+        /// <summary>
+        /// The platform for <see cref="Start"/>: <c>android</c> or <c>ios</c>.
+        /// <c>ios</c> picks the wda driver, so none need be named.
+        /// </summary>
+        public DeviceBuilder Platform(string name) { _platform = name ?? ""; return this; }
+
+        /// <summary>An app for <see cref="Start"/> to launch once the session is up: a package name (Android) or bundle id (iOS).</summary>
+        public DeviceBuilder App(string id) { _app = id ?? ""; return this; }
+
+        /// <summary>
+        /// Connects and opens the session on the device, as Appium's new
+        /// session does: the device-side server is started now and, given an
+        /// <see cref="App"/>, it is launched and in front when this returns.
+        /// </summary>
+        /// <remarks>
+        /// Nothing requires it — every call opens a session on first use — but
+        /// it puts the slow first start (installing UiAutomator2, building
+        /// WebDriverAgent on an iPhone) where it was asked for. End it with
+        /// <see cref="Device.Quit"/>, or a <c>using</c> block, which quits:
+        /// <code>
+        /// using var device = Device.Builder().Platform("android").App("com.android.settings").Start();
+        /// device.Map();
+        /// </code>
+        /// </remarks>
+        public Device Start()
+        {
+            var device = Connect();
+            device.OpenSession(_platform, _app);
+            return device;
+        }
+
+        /// <summary>Connects to mobium without touching the device.</summary>
         public Device Connect()
         {
             var args = new List<string>();
             if (!string.IsNullOrWhiteSpace(_device)) { args.Add("--device"); args.Add(_device); }
-            if (!string.IsNullOrWhiteSpace(_backend)) { args.Add("--backend"); args.Add(_backend); }
+            if (!string.IsNullOrWhiteSpace(_driver)) { args.Add("--driver"); args.Add(_driver); }
             return new Device(new Connection(Connection.FindBinary(_binary), args, _timeout));
         }
     }

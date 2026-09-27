@@ -43,9 +43,9 @@ func main() {
 
 	root.PersistentFlags().StringVar(&deviceSerial, "device", "",
 		"Target device serial (default: the only running device)")
-	root.PersistentFlags().StringVar(&backendName, "backend", "",
+	root.PersistentFlags().StringVar(&backendName, "driver", "",
 		"Driver: uiautomator2 (default, Android), uiautomator (Android, installs nothing), "+
-			"webdriveragent (iOS simulators and iPhones), or the name of a third-party driver "+
+			"wda (WebDriverAgent: iOS simulators and iPhones), or the name of a third-party driver "+
 			"installed as mobium-driver-<name>")
 	root.PersistentFlags().BoolVar(&jsonOutput, "json", false, "Emit JSON instead of text")
 	root.PersistentFlags().BoolVarP(&verbose, "verbose", "v", false, "Log what mobium is doing to stderr")
@@ -87,6 +87,7 @@ func main() {
 		newLocaleCmd(),
 		newPressCmd(),
 		newLockCmd(),
+		newSessionCmd(),
 		newCallCmd(),
 		newSMSCmd(),
 		newTimezoneCmd(),

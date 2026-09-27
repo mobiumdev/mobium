@@ -93,16 +93,22 @@ type DeviceInfo struct {
 // serialized, because there is one pipe underneath.
 type Device struct {
 	conn *conn
+	// started is what Start opened, so Quit ends that device's session even
+	// when several are running. Nil after Connect.
+	started *Session
+	quit    bool
 }
 
-// Option configures Connect.
+// Option configures Connect and Start.
 type Option func(*settings)
 
 type settings struct {
-	binary  string
-	serial  string
-	backend string
-	args    []string
+	binary   string
+	serial   string
+	driver   string
+	platform string
+	app      string
+	args     []string
 }
 
 // WithBinary pins the mobium executable, ahead of MOBIUM_BIN_PATH and PATH.
@@ -112,12 +118,100 @@ func WithBinary(path string) Option { return func(s *settings) { s.binary = path
 // device is running.
 func WithDevice(serial string) Option { return func(s *settings) { s.serial = serial } }
 
-// WithBackend chooses the driver: "uiautomator2" (default on Android),
-// "uiautomator" (installs nothing, slower, cannot type) or "webdriveragent"
-// (iOS simulators).
-func WithBackend(name string) Option { return func(s *settings) { s.backend = name } }
+// WithDriver chooses the driver: "uiautomator2" (default on Android),
+// "uiautomator" (installs nothing, slower, cannot type) or "wda"
+// (iOS simulators and iPhones).
+func WithDriver(name string) Option { return func(s *settings) { s.driver = name } }
 
-// Connect starts a mobium session.
+// WithPlatform names the platform for Start: "android" or "ios". "ios" picks
+// wda, so the driver need not be named.
+func WithPlatform(name string) Option { return func(s *settings) { s.platform = name } }
+
+// WithApp is an app for Start to launch once the session is up, by package
+// name (Android) or bundle id (iOS).
+func WithApp(id string) Option { return func(s *settings) { s.app = id } }
+
+// Session is what Start found: the device and how it is driven.
+type Session struct {
+	Device   string `json:"device"`
+	Platform string `json:"platform"`
+	Driver   string `json:"driver"`
+	// Reused says a session was already open on the device and was kept.
+	Reused bool `json:"reused"`
+	// App is the app Start launched, if one was asked for.
+	App string `json:"app"`
+}
+
+// Start connects and opens the session on the device, as Appium's new
+// session does: the device-side server is started now, and the app, if one
+// was named with WithApp, launched and in front. End it with Quit.
+//
+// Nothing requires it — every call opens a session on first use — but it puts
+// the slow first start (installing UiAutomator2, building WebDriverAgent on
+// an iPhone) where it was asked for, and says which device it got.
+func Start(ctx context.Context, opts ...Option) (*Device, error) {
+	var s settings
+	for _, opt := range opts {
+		opt(&s)
+	}
+	d, err := Connect(opts...)
+	if err != nil {
+		return nil, err
+	}
+	args := map[string]any{"action": "start"}
+	if s.platform != "" {
+		args["platform"] = s.platform
+	}
+	if s.app != "" {
+		args["app"] = s.app
+	}
+	var out Session
+	if err := d.data(ctx, "app_session", args, &out); err != nil {
+		d.Close()
+		return nil, err
+	}
+	d.started = &out
+	return d, nil
+}
+
+// Session is what Start opened — the device, platform and driver it got — or
+// nil for a Device from Connect.
+func (d *Device) Session() *Session { return d.started }
+
+// Quit ends the session on the device, as Appium's quit does, and closes the
+// connection. The session's teardown is the daemon's own: accessibility
+// settings put back, a recording or route stopped, WebViews detached, the
+// device-side server stopped. Quitting a session that is not open succeeds,
+// and a second Quit — a deferred one after an explicit one, say — does nothing.
+func (d *Device) Quit(ctx context.Context) error {
+	if d.quit {
+		return nil
+	}
+	d.quit = true
+	args := map[string]any{"action": "end"}
+	if d.started != nil {
+		args["device"] = d.started.Device
+	}
+	err := d.act(ctx, "app_session", args)
+	if cerr := d.Close(); err == nil {
+		err = cerr
+	}
+	return err
+}
+
+// Sessions lists the sessions open on the daemon: device, platform, driver.
+func (d *Device) Sessions(ctx context.Context) ([]Session, error) {
+	var out struct {
+		Sessions []Session `json:"sessions"`
+	}
+	if err := d.data(ctx, "app_session", map[string]any{"action": "status"}, &out); err != nil {
+		return nil, err
+	}
+	return out.Sessions, nil
+}
+
+// Connect opens a connection to mobium. It does not touch the device: the
+// session there opens on the first call that needs it, or with Start.
 //
 // The transport is `mobium pipe`, which forwards to the shared daemon rather
 // than starting a session of its own: a device-side server holds one session
@@ -134,8 +228,8 @@ func Connect(opts ...Option) (*Device, error) {
 	if s.serial != "" {
 		s.args = append(s.args, "--device", s.serial)
 	}
-	if s.backend != "" {
-		s.args = append(s.args, "--backend", s.backend)
+	if s.driver != "" {
+		s.args = append(s.args, "--driver", s.driver)
 	}
 	c, err := dial(binary, s.args)
 	if err != nil {
@@ -144,7 +238,8 @@ func Connect(opts ...Option) (*Device, error) {
 	return &Device{conn: c}, nil
 }
 
-// Close ends the session.
+// Close closes the connection. The device's session lives in the daemon and
+// stays open, for the next Connect or the CLI; Quit ends it.
 func (d *Device) Close() error { return d.conn.Close() }
 
 // -- reading ---------------------------------------------------------------
@@ -305,7 +400,7 @@ func (d *Device) TapPoint(ctx context.Context, x, y int) error {
 //
 // The same tool as Tap with one argument set, so the target is resolved the
 // same way and refused the same way when the screen has moved. The uiautomator
-// dump backend refuses it: nothing there controls the interval.
+// dump driver refuses it: nothing there controls the interval.
 func (d *Device) DoubleTap(ctx context.Context, target string) error {
 	return d.act(ctx, "app_tap", map[string]any{"target": target, "double": true})
 }

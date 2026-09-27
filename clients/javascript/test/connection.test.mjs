@@ -134,6 +134,22 @@ const within = (p, ms) => Promise.race([settle(p), new Promise((r) => setTimeout
   check(after.ok === false && /closed/.test(after.e.message), `a call after close does not say it was closed: ${JSON.stringify(after)}`)
 }
 
+// -- start opens the session, quit ends it --------------------------------
+{
+  process.env.MOBIUM_FAKE = 'ok'
+  const d = await m.start({ platform: 'ios', app: 'com.apple.Preferences', binary: FAKE })
+  const s = d.session
+  check(s && s.device === 'fake-device' && s.platform === 'ios' && s.driver === 'wda' && s.app === 'com.apple.Preferences',
+    `start did not report the device, platform, driver and app it was given: ${JSON.stringify(s)}`)
+  await d.quit()
+  check((await settle(d.quit())).ok, 'a second quit rejected')
+  const after = await within(d.map(), 3000)
+  check(after.ok === false, 'a call after quit succeeded')
+  const c = await m.connect({ binary: FAKE })
+  check(c.session === null, 'connect reported a session it did not start')
+  await c.close()
+}
+
 report()
 
 function report() {

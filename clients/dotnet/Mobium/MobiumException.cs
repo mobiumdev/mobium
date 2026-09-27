@@ -186,7 +186,7 @@ namespace Mobium
             : base(message, tool, ErrorCode, remedy, retryable, details) { }
     }
 
-    /// <summary>This backend or platform cannot do it, and says why. Retrying cannot help. Error code <c>unsupported</c>.</summary>
+    /// <summary>This driver or platform cannot do it, and says why. Retrying cannot help. Error code <c>unsupported</c>.</summary>
     public sealed class UnsupportedException : MobiumException
     {
         /// <summary>The wire code this exception stands for.</summary>

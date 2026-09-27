@@ -6,9 +6,7 @@ iPhones, over the same tool layer the CLI and the MCP server use.
 ```java
 import dev.mobium.*;
 
-try (Mobium device = Mobium.connect()) {
-    device.launch("com.example.shop");
-
+try (Mobium device = Mobium.builder().platform("android").app("com.example.shop").start()) {
     Element signIn = device.waitFor("text=Sign in");
     device.tap(signIn.ref());
 
@@ -16,8 +14,15 @@ try (Mobium device = Mobium.connect()) {
     device.tap("text=Continue");
 
     assert device.current().equals("com.example.shop");
-}
+}   // try-with-resources quits: the session on the device ends here
 ```
+
+`start()` opens the session on the device and launches the app fresh, as
+Appium's new session does; `quit()` — or the end of try-with-resources — ends
+it. `Mobium.connect()` opens a connection without touching the device, and
+its `close()` leaves the session open for whoever started it. The
+[quick start](../../docs/quickstart/java.md) walks through it on Android and
+iOS.
 
 Requires Java 17+ and the `mobium` binary on `PATH`, or `MOBIUM_BIN_PATH`
 pointing at it. The current directory is never searched for it.

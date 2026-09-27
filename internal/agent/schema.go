@@ -19,12 +19,12 @@ func deviceParam() map[string]interface{} {
 
 func withDevice(props map[string]interface{}) map[string]interface{} {
 	props["device"] = deviceParam()
-	props["backend"] = map[string]interface{}{
+	props["driver"] = map[string]interface{}{
 		"type": "string",
 		"description": "Driver to use: \"uiautomator2\" (default for Android; fast, installs " +
 			"a server APK on first use), \"uiautomator\" (Android, installs nothing, slower, " +
-			"cannot type), or \"webdriveragent\" (iOS simulators).",
-		"enum": []string{"uiautomator2", "uiautomator", "webdriveragent"},
+			"cannot type), or \"wda\" (WebDriverAgent: iOS simulators and iPhones).",
+		"enum": []string{"uiautomator2", "uiautomator", "wda"},
 	}
 	return props
 }
@@ -85,7 +85,7 @@ func GetToolSchemas() []Tool {
 						"description": "Tap twice, close enough together that the platform " +
 							"reads one gesture rather than two taps. Everything else is " +
 							"identical, including how the target is resolved. The " +
-							"uiautomator dump backend refuses this: it taps one adb call " +
+							"uiautomator dump driver refuses this: it taps one adb call " +
 							"at a time and nothing there controls the 40-300ms interval " +
 							"the gesture is made of.",
 					},
@@ -191,7 +191,7 @@ func GetToolSchemas() []Tool {
 			Description: "Type text into a specific element. The element is located on the " +
 				"device, so the text goes where you aimed it rather than wherever focus " +
 				"happens to be, and quotes, spaces and non-ASCII survive intact. Pass an " +
-				"empty string to clear the field. Requires the uiautomator2 backend.",
+				"empty string to clear the field. Requires the uiautomator2 driver.",
 			InputSchema: map[string]interface{}{
 				"type": "object",
 				"properties": withDevice(map[string]interface{}{
@@ -1093,6 +1093,42 @@ func GetToolSchemas() []Tool {
 						"type":        "string",
 						"description": "\"lock\" or \"unlock\". Omit to read.",
 						"enum":        []string{"lock", "unlock"},
+					},
+				}),
+				"additionalProperties": false,
+			},
+		},
+		{
+			Name: "app_session",
+			Description: "Start or end the session on a device, as Appium's new session and quit " +
+				"do. Every other tool opens a session on first use, so this is never required; " +
+				"it is for putting the slow first start — installing UiAutomator2, building " +
+				"WebDriverAgent on an iPhone — where you asked for it, and for ending one " +
+				"device's session without stopping the daemon. \"start\" opens it (or keeps " +
+				"one already open, reported as reused) and, given an app, launches it fresh — " +
+				"stopped first if it was running, as Appium does, so the session begins at the " +
+				"app's first screen; its data is kept — and waits for it to be in front. \"end\" closes it with the daemon's own teardown: " +
+				"accessibility settings put back, a recording or route stopped, WebViews " +
+				"detached, the device-side server stopped, and the device's refs and dialog " +
+				"rules forgotten. Ending a session that is not open succeeds and says so. " +
+				"\"status\", or no action, lists the sessions open.",
+			InputSchema: map[string]interface{}{
+				"type": "object",
+				"properties": withDevice(map[string]interface{}{
+					"action": map[string]interface{}{
+						"type":        "string",
+						"description": "\"start\", \"end\" or \"status\". Omit to read the status.",
+						"enum":        []string{"start", "end", "status"},
+					},
+					"platform": map[string]interface{}{
+						"type": "string",
+						"description": "\"android\" or \"ios\". With start, \"ios\" picks " +
+							"wda, so a driver need not be named.",
+						"enum": []string{"android", "ios"},
+					},
+					"app": map[string]interface{}{
+						"type":        "string",
+						"description": "With start: a package name or bundle id to launch fresh once the session is up — stopped first if running, data kept.",
 					},
 				}),
 				"additionalProperties": false,

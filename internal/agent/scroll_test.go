@@ -624,3 +624,18 @@ func TestAFoundTargetIsSwipedInByTheDistanceItIsOut(t *testing.T) {
 		t.Error("nudged with no target")
 	}
 }
+
+func TestScrollToWaitsOutAScreenStillChanging(t *testing.T) {
+	// Measured on Settings: 60ms after back, the screen read as having
+	// nothing scrollable, and a moment later the list was there. Deciding
+	// "nothing scrolls" from that one reading failed 3 times in 15.
+	h, sess, _ := withFake(t, screen(t, ""), screen(t, "Target"))
+	h.implicitWait = 2 * time.Second
+	res, err := scrollTo(h, sess, map[string]interface{}{"target": "text=Target"})
+	if err != nil {
+		t.Fatalf("a target that arrived a moment later was reported missing: %v", err)
+	}
+	if v, ok := res.StructuredContent.(ScrollView); ok && v.Element == nil {
+		t.Error("the element was found but not returned")
+	}
+}

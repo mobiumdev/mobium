@@ -141,6 +141,31 @@ func (h *Handlers) scrollIntoView(ctx context.Context, s *session, loc uitree.Lo
 	if !matchedNothing(resolveErr) && !errors.Is(resolveErr, errOffScreen) {
 		return nil, nil, 0, resolveErr
 	}
+	// A screen in the middle of changing can read, for a moment, as having
+	// nothing that scrolls: measured on Settings, a scroll-to 60ms after
+	// pressing back failed 3 times in 15, and the list was there a moment
+	// later. So "nothing scrolls" gets the implicit wait actions already
+	// have, and ends as soon as the target resolves or a container appears.
+	// Hidden until 2026-09-27 by an adb round trip before every call, which
+	// the session reuse in sessionFor removed.
+	deadline := time.Now().Add(h.implicitWait)
+	for container == nil && time.Now().Before(deadline) {
+		select {
+		case <-ctx.Done():
+			return nil, nil, 0, ctx.Err()
+		case <-time.After(pollInterval):
+		}
+		if tree, err = s.driver.Snapshot(ctx); err != nil {
+			return nil, nil, 0, err
+		}
+		container = scrollContainer(tree)
+		if n, resolveErr = resolvedAndVisible(loc, tree, container); resolveErr == nil {
+			return n, tree, 0, nil
+		}
+		if !matchedNothing(resolveErr) && !errors.Is(resolveErr, errOffScreen) {
+			return nil, nil, 0, resolveErr
+		}
+	}
 	if container == nil {
 		// Distinguish the two ways this fails. A screen with nothing
 		// scrollable cannot be searched by scrolling, and saying so is more

@@ -37,9 +37,9 @@ json() { python3 -c "import json,sys; d=json.load(sys.stdin); print($1)"; }
 
 case "$DEV" in
   *-*-*-*-*) PLATFORM=ios; APP=com.apple.Preferences
-             M="$ROOT/bin/mobium --backend webdriveragent --device $DEV" ;;
+             M="$ROOT/bin/mobium --driver wda --device $DEV" ;;
   ????????-????????????????) PLATFORM=iphone; APP=com.apple.Preferences
-             M="$ROOT/bin/mobium --backend webdriveragent --device $DEV" ;;
+             M="$ROOT/bin/mobium --driver wda --device $DEV" ;;
   *)         PLATFORM=android; APP=com.google.android.apps.messaging
              M="$ROOT/bin/mobium --device $DEV" ;;
 esac

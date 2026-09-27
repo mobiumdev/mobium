@@ -28,7 +28,7 @@ func daemonCall(tool string, args map[string]interface{}) (*agent.ToolsCallResul
 		if _, err := agent.ParseBackend(backendName); err != nil {
 			return nil, err
 		}
-		args["backend"] = backendName
+		args["driver"] = backendName
 	}
 	// A relative path means the caller's directory, and only the caller
 	// knows it: the daemon resolves one against its own, which is wherever

@@ -115,6 +115,28 @@ func fakeTool(name string, args map[string]any, scenario string) map[string]any 
 	}
 
 	switch name {
+	case "app_session":
+		// Answers as the daemon does: start names the device it got, and
+		// echoes the platform and app it was asked for.
+		switch args["action"] {
+		case "start":
+			platform, _ := args["platform"].(string)
+			if platform == "" {
+				platform = "android"
+			}
+			driver := "uiautomator2"
+			if platform == "ios" {
+				driver = "wda"
+			}
+			app, _ := args["app"].(string)
+			return text("session started", map[string]any{"action": "start", "device": "fake-device",
+				"platform": platform, "driver": driver, "app": app, "sessions": []any{}})
+		case "end":
+			return text("session ended", map[string]any{"action": "end", "device": args["device"], "ended": true, "sessions": []any{}})
+		default:
+			return text("no session is open", map[string]any{"action": "status", "sessions": []any{}})
+		}
+
 	case "app_map", "app_find":
 		return text("@e3 Sign in (button)", map[string]any{
 			"elements": []any{button}, "context": "NATIVE_APP", "device": "emulator-5554",
@@ -372,6 +394,36 @@ func TestAnAnswerWithNoIDFailsTheCallInFlight(t *testing.T) {
 	// The pipe answered exactly that request, so the connection is still in step.
 	if _, err := dev.Current(context.Background()); err != nil {
 		t.Errorf("the next call failed: %v", err)
+	}
+}
+
+func TestStartOpensTheSessionAndQuitEndsIt(t *testing.T) {
+	t.Setenv(mobiumFakeEnv, "1")
+	ctx := context.Background()
+	dev, err := Start(ctx, WithBinary(os.Args[0]), WithPlatform("ios"), WithApp("com.apple.Preferences"))
+	if err != nil {
+		t.Fatalf("start: %v", err)
+	}
+	s := dev.Session()
+	if s == nil || s.Device != "fake-device" || s.Platform != "ios" || s.Driver != "wda" || s.App != "com.apple.Preferences" {
+		t.Fatalf("session = %+v, want the device, platform, driver and app start was given", s)
+	}
+	if err := dev.Quit(ctx); err != nil {
+		t.Fatalf("quit: %v", err)
+	}
+	// A deferred Quit after an explicit one does nothing.
+	if err := dev.Quit(ctx); err != nil {
+		t.Errorf("a second quit failed: %v", err)
+	}
+	if _, err := dev.Map(ctx); err == nil {
+		t.Error("a call after quit succeeded")
+	}
+}
+
+func TestADeviceFromConnectHasNoSession(t *testing.T) {
+	dev := connectFake(t, "")
+	if dev.Session() != nil {
+		t.Error("Connect reported a session it did not start")
 	}
 }
 

@@ -1,0 +1,10 @@
+waiting for the UiAutomator2 server to start...
+session on emulator-5554 (android, uiautomator2)
+  @e1 settings_homepage_container (list)
+  @e2 Profile picture, double tap to open Google Account (button)
+  @e3 Search settings (button)
+  @e4 main_content_scrollable_container (list)
+  @e5 Network & internet Mobile, Wi‑Fi, hotspot (button)
+opened Network & internet
+saved quickstart-android.png
+session ended

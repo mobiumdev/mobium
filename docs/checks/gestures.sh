@@ -22,12 +22,12 @@ DEV="${1:?usage: gestures.sh <udid|serial>}"
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 case "$DEV" in
   [0-9A-Fa-f]*-[0-9A-Fa-f]*-[0-9A-Fa-f]*-[0-9A-Fa-f]*-[0-9A-Fa-f]*)
-    BACKEND="--backend webdriveragent"; PLATFORM=ios ;;
+    BACKEND="--driver wda"; PLATFORM=ios ;;
   # A real iPhone's UDID is two groups, 00008120-0001234567890ABC. Without
   # this, a phone was taken for an Android serial and the check failed on
   # "not installed" (2026-09-23) -- mobium-app.sh had the fix, these did not.
   [0-9A-Fa-f][0-9A-Fa-f][0-9A-Fa-f][0-9A-Fa-f][0-9A-Fa-f][0-9A-Fa-f][0-9A-Fa-f][0-9A-Fa-f]-[0-9A-Fa-f]*)
-    BACKEND="--backend webdriveragent"; PLATFORM=ios ;;
+    BACKEND="--driver wda"; PLATFORM=ios ;;
   *)
     BACKEND=""; PLATFORM=android ;;
 esac
@@ -426,18 +426,18 @@ echo "    3-finger tap   3 fingers counted; a plain tap counts one        ok"
 # wrong place.
 if [ "$PLATFORM" = android ]; then
   open_gesture 'Drag'
-  "$ROOT/bin/mobium" --backend uiautomator --device "$DEV" \
+  "$ROOT/bin/mobium" --driver uiautomator --device "$DEV" \
     drag 'label=Drag source' 'label=Drop zone' 2>&1 | grep -qi 'hold' \
     || fail "the dump backend did not refuse a drag, or refused without saying \
 that a swipe has no hold"
-  "$ROOT/bin/mobium" --backend uiautomator --device "$DEV" \
+  "$ROOT/bin/mobium" --driver uiautomator --device "$DEV" \
     double-tap 'label=Drag source' 2>&1 | grep -qi 'interval' \
     || fail "the dump backend did not refuse a double tap, or refused without \
 naming the interval"
-  "$ROOT/bin/mobium" --backend uiautomator --device "$DEV" \
+  "$ROOT/bin/mobium" --driver uiautomator --device "$DEV" \
     press-tap 'label=Drag source' 'label=Drop zone' 2>&1 | grep -qi 'second finger' \
     || fail "the dump backend did not refuse press-tap, or refused without saying why"
-  "$ROOT/bin/mobium" --backend uiautomator --device "$DEV" \
+  "$ROOT/bin/mobium" --driver uiautomator --device "$DEV" \
     tap 'label=Drag source' --fingers 2 2>&1 | grep -qi 'several fingers' \
     || fail "the dump backend did not refuse a two-finger tap, or refused without saying why"
   echo "    dump backend   refuses all four, each for its own reason        ok"

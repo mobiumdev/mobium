@@ -1,0 +1,11 @@
+waiting for the UiAutomator2 server to start...
+session started on emulator-5554 (android, uiautomator2); com.android.settings was launched fresh and is in the foreground
+@e1 settings_homepage_container (list)
+@e2 Profile picture, double tap to open Google Account (button)
+@e3 Search settings (button)
+@e4 main_content_scrollable_container (list)
+@e5 Network & internet Mobile, Wi‑Fi, hotspot (button)
+tapped @e5 at (540, 893)
+text=Internet is visible after 789ms — @e3 Internet AndroidWifi (button)
+saved ./quickstart-android.png (150382 bytes)
+session ended on emulator-5554; anything it changed for the session is put back

@@ -5,7 +5,7 @@
 # docs/decisions/0003 alone, in a different language, importing nothing from
 # this repository, sees the same screen mobium's own backend sees. The
 # load-bearing step is the diff: `examples/drivers/mobium-driver-adb` covers
-# deliberately the same ground as --backend uiautomator, so the two maps can be
+# deliberately the same ground as --driver uiautomator, so the two maps can be
 # compared on one screen. A driver that returns something plausible but wrong
 # passes every check except that one.
 #
@@ -33,22 +33,22 @@ echo "--- $DEV"
 
 # A known screen both backends can read. Settings' root has no ticking clock;
 # its About page does, which is why that one is not used here (defect 25).
-$M --backend adb terminate com.android.settings >/dev/null
-$M --backend adb launch com.android.settings >/dev/null
+$M --driver adb terminate com.android.settings >/dev/null
+$M --driver adb launch com.android.settings >/dev/null
 
 # The daemon holds one session per device, so the backend is switched with the
 # daemon stopped. Leaving it up would hand the second map the first backend's
 # cached session and the diff would be comparing a backend against itself —
 # which would pass.
-$M --backend adb map | grep '^@' > "$TMP/external" || fail "the external driver could not map"
+$M --driver adb map | grep '^@' > "$TMP/external" || fail "the external driver could not map"
 "$ROOT/bin/mobium" daemon stop >/dev/null 2>&1 || true
-$M --backend uiautomator map | grep '^@' > "$TMP/builtin" || fail "the built-in backend could not map"
+$M --driver uiautomator map | grep '^@' > "$TMP/builtin" || fail "the built-in backend could not map"
 "$ROOT/bin/mobium" daemon stop >/dev/null 2>&1 || true
 
 n=$(wc -l < "$TMP/external" | tr -d ' ')
 [ "$n" -gt 3 ] || fail "the external driver mapped only $n elements; the screen is wrong"
 if diff -u "$TMP/builtin" "$TMP/external" > "$TMP/diff"; then
-  echo "    map            $n elements, identical to --backend uiautomator  ok"
+  echo "    map            $n elements, identical to --driver uiautomator  ok"
 else
   cat "$TMP/diff" >&2
   fail "the two backends disagree about the same screen"
@@ -56,7 +56,7 @@ fi
 
 # Gestures, advertised. scroll-to needs several swipes and re-reads the
 # hierarchy between each, so it exercises the pipe under repetition.
-$M --backend adb scroll-to 'text=About' >/dev/null || fail "scroll-to through the driver"
+$M --driver adb scroll-to 'text=About' >/dev/null || fail "scroll-to through the driver"
 echo "    scroll-to      reached an element below the fold                ok"
 
 # A tap that changes the screen, verified by reading the screen rather than by
@@ -66,14 +66,14 @@ echo "    scroll-to      reached an element below the fold                ok"
 # and scrolling is downward-only, so a target above the fold would be
 # unreachable. Settings also resumes wherever it was last left, so terminating
 # is what actually resets it — launching alone does not.
-$M --backend adb terminate com.android.settings >/dev/null
-$M --backend adb launch com.android.settings >/dev/null
-$M --backend adb tap 'text=Connected devices' >/dev/null
-$M --backend adb map | grep -q 'Pair new device' || fail "the tap did not open Connected devices"
+$M --driver adb terminate com.android.settings >/dev/null
+$M --driver adb launch com.android.settings >/dev/null
+$M --driver adb tap 'text=Connected devices' >/dev/null
+$M --driver adb map | grep -q 'Pair new device' || fail "the tap did not open Connected devices"
 echo "    tap            opened Connected devices, confirmed by re-reading ok"
 
 # Screenshot: a real PNG of a real size, not an error message where the image goes.
-$M --backend adb screenshot -o "$TMP/shot.png" >/dev/null
+$M --driver adb screenshot -o "$TMP/shot.png" >/dev/null
 # Compared as bytes. `head -c 8 … | grep -q PNG` looks like it works and does
 # not: grep skips binary input on several implementations, so a perfectly good
 # PNG failed this check while `file` reported it correctly.
@@ -84,25 +84,25 @@ size=$(wc -c < "$TMP/shot.png" | tr -d ' ')
 echo "    screenshot     $size bytes of PNG                              ok"
 
 # Inventory, advertised.
-$M --backend adb apps | grep -q . || fail "listing apps through the driver"
+$M --driver adb apps | grep -q . || fail "listing apps through the driver"
 echo "    apps           listed                                          ok"
 
 # And the point of capability negotiation: what the driver did NOT advertise
 # must be refused with advice, not attempted and failed.
-if $M --backend adb type 'testid=x' hello >/dev/null 2>&1; then
+if $M --driver adb type 'testid=x' hello >/dev/null 2>&1; then
   fail "text entry was attempted against a driver that never advertised it"
 fi
-$M --backend adb type 'testid=x' hello 2>&1 | grep -q 'cannot type' \
+$M --driver adb type 'testid=x' hello 2>&1 | grep -q 'cannot type' \
   || fail "the refusal did not explain itself"
 echo "    text entry     refused, as never advertised                     ok"
 
-if $M --backend adb appearance >/dev/null 2>&1; then
+if $M --driver adb appearance >/dev/null 2>&1; then
   fail "appearance was attempted against a driver that never advertised it"
 fi
 echo "    appearance     refused, as never advertised                     ok"
 
 # A driver nobody installed must say where it looked.
-if out=$(env -u MOBIUM_DRIVER_ADB PATH=/usr/bin:/bin "$ROOT/bin/mobium" --backend nosuch map 2>&1); then
+if out=$(env -u MOBIUM_DRIVER_ADB PATH=/usr/bin:/bin "$ROOT/bin/mobium" --driver nosuch map 2>&1); then
   fail "a backend with no driver behind it succeeded"
 fi
 echo "$out" | grep -q 'mobium-driver-nosuch' || fail "the missing-driver message does not name what it looked for"

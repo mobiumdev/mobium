@@ -51,7 +51,7 @@ func (h *Handlers) dragOn(ctx context.Context, s *session, args map[string]inter
 	if !ok {
 		return nil, mobiumerr.New(mobiumerr.Unsupported, "the %s backend cannot drag: it can swipe, but a swipe "+
 			"has no hold at either end and a drag is mostly the holds — switch to "+
-			"--backend uiautomator2", s.backend)
+			"--driver uiautomator2", s.backend)
 	}
 
 	hold := time.Duration(intArgOr(args, "hold_ms", int(dragHold.Milliseconds()))) * time.Millisecond

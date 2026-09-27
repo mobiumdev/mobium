@@ -35,7 +35,9 @@ def main() -> None:
         print("MOBIUM_E2E_DEVICE is not set; skipping")
         return
     binary = os.environ.get("MOBIUM_BIN_PATH")
-    with mobium.connect(device=serial, binary=binary) as d:
+    with mobium.start(device=serial, binary=binary) as d:
+        check(d.session is not None and d.session.device == serial and d.session.platform == "android",
+              "start opens a session on the device")
         d.terminate(SETTINGS)
         d.launch(SETTINGS)
         check(d.current() == SETTINGS, "launch brings Settings forward")
@@ -68,6 +70,10 @@ def main() -> None:
 
         d.terminate(SETTINGS)
         check(d.current() != SETTINGS, "terminate takes Settings away")
+    # The with block quit: the session is gone from the daemon, not only
+    # this connection.
+    with mobium.connect(binary=binary) as other:
+        check(all(s["device"] != serial for s in other.sessions()), "the with block ended the session")
     print("python: passed")
 
 

@@ -65,7 +65,7 @@ func NewWDAPhone(phone *device.Devicectl) *WDA {
 	return &WDA{phone: phone, w3c: newW3CClient(requestTimeout), scale: 1}
 }
 
-func (w *WDA) Name() string { return "ios/webdriveragent" }
+func (w *WDA) Name() string { return "ios/wda" }
 
 // Start installs and launches the runner, then opens a session.
 func (w *WDA) Start(ctx context.Context, progress func(string)) error {

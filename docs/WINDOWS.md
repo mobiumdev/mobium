@@ -156,7 +156,7 @@ Fixed, each with a test that runs on every platform:
 - **`doctor` could not see a Windows driver.** It judged
   `mobium-driver-*` files by execute bits, which Windows does not have — Go
   reports every file as 0666 — so it said "none on PATH" for a driver that
-  `--backend` would have run, and would have named one `x.exe` if it had seen
+  `--driver` would have run, and would have named one `x.exe` if it had seen
   it. It now uses `PATHEXT`, the rule `exec.LookPath` uses to find it.
 - **Quoted environment paths.** `set ANDROID_HOME="C:\Program Files\Android"`
   in `cmd.exe` keeps the quotes as part of the value, and every lookup under

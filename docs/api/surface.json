@@ -494,6 +494,18 @@
     },
     {
       "n": 42,
+      "tool": "app_session",
+      "cli": "session",
+      "clients": {
+        "dotnet": "Quit",
+        "go": "Start",
+        "java": "start",
+        "javascript": "start",
+        "python": "start"
+      }
+    },
+    {
+      "n": 43,
       "tool": "app_sms",
       "cli": "sms",
       "clients": {
@@ -505,7 +517,7 @@
       }
     },
     {
-      "n": 43,
+      "n": 44,
       "tool": "app_source",
       "cli": "source",
       "clients": {
@@ -517,7 +529,7 @@
       }
     },
     {
-      "n": 44,
+      "n": 45,
       "tool": "app_swipe",
       "cli": "swipe",
       "clients": {
@@ -529,7 +541,7 @@
       }
     },
     {
-      "n": 45,
+      "n": 46,
       "tool": "app_tap",
       "cli": "tap, double-tap, double-tap",
       "clients": {
@@ -541,7 +553,7 @@
       }
     },
     {
-      "n": 46,
+      "n": 47,
       "tool": "app_terminate",
       "cli": "terminate",
       "clients": {
@@ -553,7 +565,7 @@
       }
     },
     {
-      "n": 47,
+      "n": 48,
       "tool": "app_text",
       "cli": "text",
       "clients": {
@@ -565,7 +577,7 @@
       }
     },
     {
-      "n": 48,
+      "n": 49,
       "tool": "app_timezone",
       "cli": "timezone",
       "clients": {
@@ -577,7 +589,7 @@
       }
     },
     {
-      "n": 49,
+      "n": 50,
       "tool": "app_type",
       "cli": "type",
       "clients": {
@@ -589,7 +601,7 @@
       }
     },
     {
-      "n": 50,
+      "n": 51,
       "tool": "app_uninstall",
       "cli": "uninstall",
       "clients": {
@@ -601,7 +613,7 @@
       }
     },
     {
-      "n": 51,
+      "n": 52,
       "tool": "app_wait_for",
       "cli": "wait",
       "clients": {
@@ -613,7 +625,7 @@
       }
     },
     {
-      "n": 52,
+      "n": 53,
       "tool": "app_zoom",
       "cli": "zoom",
       "clients": {
@@ -629,37 +641,37 @@
     {
       "language": "go",
       "file": "clients/go/mobium.go",
-      "covers": 52
+      "covers": 53
     },
     {
       "language": "python",
       "file": "clients/python/mobium/_device.py",
-      "covers": 52
+      "covers": 53
     },
     {
       "language": "javascript",
       "file": "clients/javascript/index.js",
-      "covers": 52
+      "covers": 53
     },
     {
       "language": "java",
       "file": "clients/java/src/main/java/dev/mobium/Mobium.java",
-      "covers": 52
+      "covers": 53
     },
     {
       "language": "dotnet",
       "file": "clients/dotnet/Mobium/Device.cs",
-      "covers": 52
+      "covers": 53
     }
   ],
   "counts": {
-    "tools": 52,
-    "cliRegistered": 57,
-    "cliVisible": 56,
+    "tools": 53,
+    "cliRegistered": 58,
+    "cliVisible": 57,
     "cliHidden": [
       "pipe"
     ],
-    "cliConstructors": 60,
+    "cliConstructors": 61,
     "clients": 5
   },
   "cliWithoutTool": [

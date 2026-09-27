@@ -42,7 +42,7 @@
 #   xcodebuild -workspace ios/MobiumApp.xcworkspace -scheme MobiumApp \
 #     -configuration Release -destination id=<udid> -allowProvisioningUpdates \
 #     DEVELOPMENT_TEAM=<team> CODE_SIGN_STYLE=Automatic -derivedDataPath build/device
-#   mobium --backend webdriveragent --device <udid> install \
+#   mobium --driver wda --device <udid> install \
 #     build/device/Build/Products/Release-iphoneos/MobiumApp.app
 # and to rerun on a phone from a clean state, pass that same bundle:
 #   MOBIUMAPP_BUNDLE=<path>/MobiumApp.app docs/checks/mobium-app.sh <udid>
@@ -63,9 +63,9 @@ ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 PHONE=""
 case "$DEV" in
   [0-9A-Fa-f]*-[0-9A-Fa-f]*-[0-9A-Fa-f]*-[0-9A-Fa-f]*-[0-9A-Fa-f]*)
-    BACKEND="--backend webdriveragent"; PLATFORM=ios ;;
+    BACKEND="--driver wda"; PLATFORM=ios ;;
   [0-9A-Fa-f][0-9A-Fa-f][0-9A-Fa-f][0-9A-Fa-f][0-9A-Fa-f][0-9A-Fa-f][0-9A-Fa-f][0-9A-Fa-f]-[0-9A-Fa-f]*)
-    BACKEND="--backend webdriveragent"; PLATFORM=ios; PHONE=1 ;;
+    BACKEND="--driver wda"; PLATFORM=ios; PHONE=1 ;;
   *)
     BACKEND=""; PLATFORM=android ;;
 esac

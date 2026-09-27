@@ -1,14 +1,14 @@
-"""Mobium — native mobile app automation on virtual devices.
+"""Mobium — native mobile app automation on emulators, simulators and phones.
 
-    from mobium import connect
+    from mobium import start
 
-    with connect() as device:
+    with start(platform="android", app="com.android.settings") as device:
         for element in device.map():
             print(element.ref, element.label)
         device.tap("@e1")
 """
 
-from ._device import Bounds, Device, DeviceInfo, Element, connect
+from ._device import Bounds, Device, DeviceInfo, Element, Session, connect, start
 from ._errors import (
     AmbiguousLocatorError,
     DeviceNotReadyError,
@@ -28,7 +28,7 @@ from ._errors import (
 )
 
 __all__ = [
-    "connect", "Device", "DeviceInfo", "Element", "Bounds",
+    "start", "connect", "Session", "Device", "DeviceInfo", "Element", "Bounds",
     "MobiumError", "NoDeviceError", "DeviceNotReadyError", "ToolchainMissingError",
     "NoSuchElementError", "AmbiguousLocatorError", "ElementNotReachableError",
     "NoSuchContextError", "NoSuchAlertError", "UnsupportedError", "NotConfirmedError",

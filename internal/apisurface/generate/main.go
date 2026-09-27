@@ -118,7 +118,7 @@ handler reads the keys it knows by name. A command writing
 ` + "`call[\"speeed\"]`" + ` is therefore rejected loudly on one surface and
 silently ignored on the other — the one people use.
 
-` + "`--device`" + ` and ` + "`--backend`" + ` are persistent flags that
+` + "`--device`" + ` and ` + "`--driver`" + ` are persistent flags that
 ` + "`daemonCall`" + ` attaches to every call, so they are marked global and no
 command mentions them.
 

@@ -73,6 +73,32 @@ namespace Mobium.Tests
                 var name = msg["params"]!["name"]!.GetValue<string>();
                 var args = msg["params"]!["arguments"]!.DeepClone();
                 if (name == "slow") Thread.Sleep(300);
+                if (name == "app_session")
+                {
+                    // Answers as the daemon does: start names the device it
+                    // got, and echoes the platform and app it was asked for.
+                    var action = (string?)args?["action"] ?? "";
+                    var view = new JsonObject { ["action"] = action.Length == 0 ? "status" : action, ["sessions"] = new JsonArray() };
+                    if (action == "start")
+                    {
+                        var platform = (string?)args?["platform"] ?? "android";
+                        view["device"] = "fake-device";
+                        view["platform"] = platform;
+                        view["driver"] = platform == "ios" ? "wda" : "uiautomator2";
+                        view["app"] = (string?)args?["app"] ?? "";
+                    }
+                    else if (action == "end")
+                    {
+                        view["device"] = (string?)args?["device"] ?? "";
+                        view["ended"] = true;
+                    }
+                    Reply(stdout, id, new JsonObject
+                    {
+                        ["content"] = new JsonArray(new JsonObject { ["type"] = "text", ["text"] = "session" }),
+                        ["structuredContent"] = view,
+                    });
+                    continue;
+                }
                 if (mode == "noid" && name == "app_map")
                 {
                     stdout.WriteLine("{\"jsonrpc\":\"2.0\",\"error\":{\"code\":-32700,\"message\":\"Parse error\",\"data\":\"invalid character 'N'\"}}");

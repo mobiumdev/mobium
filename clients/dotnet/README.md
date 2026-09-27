@@ -6,13 +6,20 @@ iPhones from C#.
 ```csharp
 using Mobium;
 
-using var device = Device.Connect();
+using var device = Device.Builder().Platform("android").App("com.example.shop").Start();
 
-device.Launch("com.example.shop");
 var signIn = device.WaitFor("text=Sign in");
 device.Tap(signIn.Ref);
 device.Type("role=input", "someone@example.com");
+// the using block quits: the session on the device ends here
 ```
+
+`Start()` opens the session on the device and launches the app fresh, as
+Appium's new session does; `Quit()` — or the end of the `using` block — ends
+it. `Device.Connect()` opens a connection without touching the device, and
+disposing it leaves the session open for whoever started it. The
+[quick start](../../docs/quickstart/dotnet.md) walks through it on Android
+and iOS.
 
 ## What it needs
 
@@ -107,7 +114,7 @@ catch (MobiumException e)
 ```csharp
 using var device = Device.Builder()
     .OnDevice("emulator-5554")
-    .Backend("uiautomator2")
+    .Driver("uiautomator2")
     .Connect();
 ```
 

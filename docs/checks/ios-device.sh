@@ -26,7 +26,7 @@ DEV="$1"
 if [ -z "$DEV" ]; then echo "usage: $0 <udid>   (see: mobium devices)" >&2; exit 2; fi
 
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
-M="$ROOT/bin/mobium --backend webdriveragent --device $DEV"
+M="$ROOT/bin/mobium --driver wda --device $DEV"
 fail() { echo "FAIL: $*" >&2; exit 1; }
 now() { python3 -c 'import time; print(time.time())'; }
 since() { python3 -c "import time; print(round(time.time() - $1, 1))"; }

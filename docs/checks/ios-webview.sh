@@ -16,7 +16,7 @@
 set -e
 UDID="${1:-booted}"
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
-M="$ROOT/bin/mobium --backend webdriveragent"
+M="$ROOT/bin/mobium --driver wda"
 # Named, not left to selection: with a phone connected as well as the
 # simulator, "the iOS device" is two devices and every command is refused.
 [ "$UDID" = booted ] || M="$M --device $UDID"

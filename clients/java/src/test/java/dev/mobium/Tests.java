@@ -53,6 +53,7 @@ public final class Tests {
         aFailedHandshakeLeavesNoProcess();
         closeIsIdempotentAndEndsAWaitingCall();
         anAnswerWithNoIdFailsTheCallInFlight();
+        startOpensTheSessionAndQuitEndsIt();
 
         System.out.printf("%n%d checks, %d failed%n", checks, failures);
         if (failures > 0) System.exit(1);
@@ -433,6 +434,30 @@ public final class Tests {
             eq("and the connection is still in step", "app_current",
                     Json.str(Connection.dataOf(c.call("app_current", null)), "tool"));
         }
+    }
+
+    static void startOpensTheSessionAndQuitEndsIt() {
+        String fake = FakeProcess.launcher("ok", null);
+        Mobium d = Mobium.builder().binary(fake).platform("ios").app("com.apple.Preferences").start();
+        Session s = d.session();
+        eq("start reports the device, platform, driver and app",
+                new Session("fake-device", "ios", "wda", false, "com.apple.Preferences"), s);
+        d.quit();
+        yes("a second quit does nothing", throwsA(RuntimeException.class, d::quit) == null);
+        yes("a call after quit fails", throwsA(MobiumException.class, d::current) != null);
+        try (Mobium c = Mobium.builder().binary(fake).connect()) {
+            yes("connect reports no session it did not start", c.session() == null);
+        }
+        Mobium[] kept = new Mobium[1];
+        try (Mobium b = Mobium.builder().binary(fake).platform("android").start()) {
+            kept[0] = b;
+            eq("start in try-with-resources opens a session", "uiautomator2", b.session().driver());
+        }
+        yes("try-with-resources quits on the way out", throwsA(MobiumException.class, kept[0]::current) != null);
+        try (Mobium b = Mobium.builder().binary(fake).platform("android").start()) {
+            b.quit();
+        }
+        yes("closing after an explicit quit does nothing", true);
     }
 
     private static void eq(String what, Object want, Object got) {

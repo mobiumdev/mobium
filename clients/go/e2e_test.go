@@ -26,11 +26,14 @@ func TestEndToEnd(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
 
-	d, err := Connect(WithDevice(serial), WithBinary(os.Getenv("MOBIUM_BIN_PATH")))
+	d, err := Start(ctx, WithDevice(serial), WithBinary(os.Getenv("MOBIUM_BIN_PATH")))
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer d.Close()
+	defer d.Quit(ctx)
+	if s := d.Session(); s == nil || s.Device != serial || s.Platform != "android" {
+		t.Fatalf("start opened %+v, want a session on %s", s, serial)
+	}
 	must := func(err error, what string) {
 		t.Helper()
 		if err != nil {
@@ -80,5 +83,20 @@ func TestEndToEnd(t *testing.T) {
 	must(d.Terminate(ctx, settings), "terminate")
 	if app, _ := d.Current(ctx); app == settings {
 		t.Fatal("terminate left Settings in front")
+	}
+
+	// Quit ends the session in the daemon, not only this connection.
+	must(d.Quit(ctx), "quit")
+	other, err := Connect(WithBinary(os.Getenv("MOBIUM_BIN_PATH")))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer other.Close()
+	open, err := other.Sessions(ctx)
+	must(err, "sessions")
+	for _, s := range open {
+		if s.Device == serial {
+			t.Fatalf("quit left a session open on %s", serial)
+		}
 	}
 }

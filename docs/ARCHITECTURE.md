@@ -40,7 +40,7 @@ flowchart TB
     subgraph drivers["internal/mobiumdriver — the only platform-specific layer"]
         uia2["uiautomator2<br/>Android default"]
         dump["uiautomator<br/>Android, installs nothing"]
-        wda["webdriveragent<br/>iOS simulator and iPhone"]
+        wda["wda<br/>iOS simulator and iPhone"]
         ext["external driver<br/>mobium-driver-NAME"]
     end
 

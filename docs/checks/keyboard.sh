@@ -23,7 +23,7 @@ APP=dev.mobium.mobiumapp
 
 case "$DEV" in
   *-*-*-*-*|????????-????????????????) PLATFORM=ios
-             M="$ROOT/bin/mobium --backend webdriveragent --device $DEV"
+             M="$ROOT/bin/mobium --driver wda --device $DEV"
              PASSWORD="role=password" ;;
   *)         PLATFORM=android; M="$ROOT/bin/mobium --device $DEV"
              PASSWORD="testid=password" ;;
