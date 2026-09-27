@@ -10,12 +10,20 @@ this is what is not.
   transport is written; it has not yet been verified on a Windows machine, and
   until it has, Windows is unsupported. [WINDOWS.md](WINDOWS.md) is the state
   of it.
-- **Published client packages.** The Python, JavaScript, Java and .NET
-  clients install from a clone of this repository until they are on PyPI, npm,
-  Maven Central and NuGet; the [quick start](quickstart/README.md) says so
-  on every page. The build files already name them — `mobium` on PyPI and
-  npm, `dev.mobium:mobium` on Maven Central, `Mobium` on NuGet — and all four
-  were unclaimed on 2026-09-27; none is registered yet.
+- **Published client packages.** Every client builds, as its registry would
+  receive it, into a package that carries the LICENSE, a README and full
+  metadata, and each has been installed from that package into a clean project
+  and run on an Android emulator and an iOS simulator — the Java one from both
+  Maven and Gradle. What remains is the release itself: accounts and tokens on
+  PyPI, npm, NuGet and the Maven Central Portal (the `dev.mobium` namespace is
+  verified by a TXT record on `mobium.dev`), a GPG key for Maven Central, and a
+  tag — `v0.1.0`, and `clients/go/v0.1.0` for the Go module. All four names
+  were unclaimed on 2026-09-27.
+- **Prebuilt `mobium` binaries.** `go install
+  github.com/mobiumdev/mobium/cmd/mobium@latest` works, but needs Go; someone
+  installing a client from PyPI or npm should not have to have it. Releases
+  with checksummed binaries for macOS and Linux, and possibly a Homebrew tap,
+  are the missing piece — and the prerequisite for publishing the clients.
 - **The quick start on Linux, against a device.** Mobium builds and passes its
   tests on Linux in CI; no emulator has been driven from Linux yet, so the
   quick start calls Linux expected rather than verified.

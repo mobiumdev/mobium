@@ -1,19 +1,22 @@
-// Package mobium drives native apps on Android emulators and iOS simulators.
+// Package mobium drives native apps on Android emulators, Android phones, iOS
+// simulators and iPhones.
 //
 // It speaks to the same tool layer the CLI and the MCP server use, over
 // `mobium pipe`, so a Go program and a command cannot drift apart. The mobium
-// binary has to be on PATH, or named by MOBIUM_BIN_PATH.
+// binary has to be on PATH, or named by MOBIUM_BIN_PATH:
 //
-//	dev, err := mobium.Connect()
+//	go install github.com/mobiumdev/mobium/cmd/mobium@latest
+//
+// Start opens a session on the device and launches the app fresh, as Appium's
+// new session does; Quit ends it:
+//
+//	ctx := context.Background()
+//	dev, err := mobium.Start(ctx, mobium.WithPlatform("android"), mobium.WithApp("com.example.shop"))
 //	if err != nil {
 //		log.Fatal(err)
 //	}
-//	defer dev.Close()
+//	defer dev.Quit(ctx)
 //
-//	ctx := context.Background()
-//	if err := dev.Launch(ctx, "com.example.shop"); err != nil {
-//		log.Fatal(err)
-//	}
 //	el, err := dev.WaitFor(ctx, "text=Sign in", nil)
 //	if err != nil {
 //		log.Fatal(err)
@@ -21,6 +24,9 @@
 //	if err := dev.Tap(ctx, el.Ref); err != nil {
 //		log.Fatal(err)
 //	}
+//
+// Connect opens a connection without touching the device, and its Close
+// leaves the session open for whoever started it.
 //
 // Refs like "@e1" are only valid for the screen they were taken from. Every
 // action re-resolves its target immediately before acting and retries briefly

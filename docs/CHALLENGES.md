@@ -7,12 +7,12 @@ the source.
 
 The pattern across them is the reason the document exists: **almost nothing
 here was found by reading code or by a test written from imagination.** Of
-122 defects, 102 were found only by running against a real device. The other
-twenty — 4, 5, 6, 14, 23, 24, 32, 35, 36, 39, 44, 50, 53, 54, 57, 66, 89, 99,
-100 and 121 — came from reading code, the compiler, a test, a linter,
+123 defects, 102 were found only by running against a real device. The other
+twenty-one — 4, 5, 6, 14, 23, 24, 32, 35, 36, 39, 44, 50, 53, 54, 57, 66, 89,
+99, 100, 121 and 123 — came from reading code, the compiler, a test, a linter,
 cross-checking a computed number against a screenshot, using the tooling on
 itself, typing a negative number at a command line, and driving the clients
-against a stand-in daemon.
+against a stand-in daemon, and CI on Windows.
 
 Read it before writing a test that asserts platform behavior.
 
@@ -2892,6 +2892,26 @@ screen is ready: scroll-to About took 3.0-4.3s for its two swipes, the same
 as before. 0 of 15 failed, and three runs of `clients.sh` passed all five
 clients. A delay put back in front of the call would have hidden it again,
 which is what the adb round trip had been doing.
+
+### 123. On Windows, disposing a .NET connection could crash the call it ended
+
+**Found by:** the `windows-latest` CI job, on the fourth pull request it ran
+for, having passed the three before. `DisposeIsIdempotentAndEndsAWaitingCall`
+disposes a connection from one thread while another waits on a call, and the
+run ended with an unhandled `COMException`: "The handle is invalid."
+
+The waiting call, reaching the end of stdout, read the process's exit code to
+put it in its message. `Dispose` on the other thread closes stdin, waits for
+mobium to exit and disposes the `Process` — and when that came first, the
+read touched a closed handle. On macOS and Linux that throws
+`InvalidOperationException`, which was caught; on Windows it is a
+`COMException`, which was not. The same read sat in the error path that ends a
+connection, guarded the same way.
+
+The exit status is now read best-effort, catching what each platform throws
+for a process that has exited, been killed or been disposed; the call fails as
+the disposed call it is. Only Windows could show this, and only when the two
+threads crossed — which is what that CI job exists for.
 
 ## Findings that were not defects
 

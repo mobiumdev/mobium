@@ -98,9 +98,17 @@ CLIENTS = [
             "project, depend on it with:\n\n"
             "  ```xml\n  <dependency>\n    <groupId>dev.mobium</groupId>\n"
             "    <artifactId>mobium</artifactId>\n    <version>0.1.0-SNAPSHOT</version>\n"
-            "    <scope>test</scope>\n  </dependency>\n  ```\n\n"
-            "  or in Gradle, `testImplementation(\"dev.mobium:mobium:0.1.0-SNAPSHOT\")` "
-            "with `mavenLocal()` among your repositories.",
+            "  </dependency>\n  ```\n\n"
+            "  That is the scope this example runs with, from `src/main/java`; in a test "
+            "suite, add `<scope>test</scope>` (Gradle: `testImplementation`).\n\n"
+            "  In Gradle — verified with Gradle 9.8, running this example on both "
+            "platforms — `build.gradle.kts`:\n\n"
+            "  ```kotlin\n  plugins { application }\n\n"
+            "  repositories {\n      mavenLocal()     // until dev.mobium:mobium is on Maven Central\n"
+            "      mavenCentral()\n  }\n\n"
+            "  dependencies { implementation(\"dev.mobium:mobium:0.1.0-SNAPSHOT\") }\n\n"
+            "  application { mainClass = \"Quickstart\" }\n  ```\n\n"
+            "  with `Quickstart.java` in `src/main/java/`, then `gradle run`.",
             "try-with-resources around `start()` quits when it ends. Around "
             "`connect()` it only closes the connection, leaving the session open.",
         ],

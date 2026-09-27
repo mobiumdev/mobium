@@ -65,6 +65,17 @@
   -->
 
   <build>
+    <!-- The repository's LICENSE, in every jar's META-INF: MIT asks for the
+         notice in every copy, and a jar is one. Read from the root rather
+         than copied, so there is one file to keep current. -->
+    <resources>
+      <resource>
+        <directory>../..</directory>
+        <includes><include>LICENSE</include></includes>
+        <targetPath>META-INF</targetPath>
+      </resource>
+    </resources>
+
     <!-- Every plugin pinned, including the ones Maven would otherwise choose
          for itself, so a newer Maven cannot change what this builds. -->
     <pluginManagement>

@@ -141,6 +141,36 @@ namespace Mobium
             }
         }
 
+        /// <summary>
+        /// " (it exited with status N)", or nothing when that cannot be read.
+        /// </summary>
+        /// <remarks>
+        /// A courtesy, never a reason to fail: <see cref="Dispose"/> on another
+        /// thread can dispose the process between the end of stdout and this
+        /// read. On macOS and Linux that throws InvalidOperationException; on
+        /// Windows a COMException, "the handle is invalid" — measured in CI,
+        /// where it escaped and ended the test run instead of letting the
+        /// waiting call fail as disposed.
+        /// </remarks>
+        private string ExitStatus()
+        {
+            try
+            {
+                if (_process.WaitForExit(2000)) return " (it exited with status " + _process.ExitCode + ")";
+            }
+            catch (Exception e) when (IsGone(e))
+            {
+                // No status to report.
+            }
+            return "";
+        }
+
+        // What touching a process that has exited, been killed or been disposed
+        // under us throws, depending on the platform.
+        private static bool IsGone(Exception e) =>
+            e is InvalidOperationException || e is System.ComponentModel.Win32Exception
+            || e is System.Runtime.InteropServices.COMException || e is ObjectDisposedException;
+
         /// <summary>Marks the connection unusable and returns the exception that says why.</summary>
         private MobiumException Die(string why, Exception? cause = null)
         {
@@ -149,7 +179,7 @@ namespace Mobium
             {
                 if (!_process.HasExited) _process.Kill();
             }
-            catch (Exception e) when (e is InvalidOperationException || e is System.ComponentModel.Win32Exception)
+            catch (Exception e) when (IsGone(e))
             {
                 // Already gone, or going.
             }
@@ -216,18 +246,7 @@ namespace Mobium
             {
                 var line = ReadLine(method);
                 if (line == null)
-                {
-                    var status = "";
-                    try
-                    {
-                        if (_process.WaitForExit(2000)) status = " (it exited with status " + _process.ExitCode + ")";
-                    }
-                    catch (InvalidOperationException)
-                    {
-                        // No status to report.
-                    }
-                    throw Die("mobium closed the connection without answering " + method + status);
-                }
+                    throw Die("mobium closed the connection without answering " + method + ExitStatus());
 
                 IDictionary<string, object?> message;
                 try
@@ -331,7 +350,7 @@ namespace Mobium
             {
                 if (!_process.WaitForExit(10000)) _process.Kill();
             }
-            catch (Exception e) when (e is InvalidOperationException || e is System.ComponentModel.Win32Exception)
+            catch (Exception e) when (IsGone(e))
             {
                 // Already gone.
             }
