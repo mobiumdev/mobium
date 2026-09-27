@@ -7,7 +7,7 @@ the source.
 
 The pattern across them is the reason the document exists: **almost nothing
 here was found by reading code or by a test written from imagination.** Of
-114 defects, 95 were found only by running against a real device. The other
+115 defects, 96 were found only by running against a real device. The other
 nineteen — 4, 5, 6, 14, 23, 24, 32, 35, 36, 39, 44, 50, 53, 54, 57, 66, 89, 99
 and 100 — came from reading code, the compiler, a test, a linter,
 cross-checking a computed number against a screenshot, using the tooling on
@@ -2627,6 +2627,64 @@ wholly inside its container — the loop now swipes only the distance it is
 out, plus an eighth of the list, from whichever side it is on. Three taps
 from a fresh screen landed three times. The full swipe is still what
 searches for a target nobody has found yet.
+
+### 115. A tap under the app's own overlay reported success
+
+**Found by:** MobiumApp's Obstruction Demo, built for the purpose after the
+Dialog Demo's pinned button was seen covering the camera button while both
+platforms called both visible. Each case is a target with a known cover,
+every cover itself pressable, and one line saying which of them a tap
+really reached. On a Pixel 7 AVD and an iPhone 17 Pro simulator, `tap`
+answered "tapped" eight times out of eight, and six of those touched
+something else: the full cover, the cover over the center, a plain view that
+swallowed the tap, an overlay hidden from accessibility, a translucent scrim
+and a toast.
+
+Mobium already refused a target under a system dialog (105) and under the
+keyboard (107). The app's own view was the kind it could not see, and what
+decided the fix was what each tree can tell apart:
+
+| Cover | Tap went to | Android tree | iOS tree |
+| --- | --- | --- | --- |
+| a pressable over all of it | the cover | a clickable Button | a Button; target `visible=false` |
+| a pressable over the center | the cover | a clickable Button | a Button; target still visible |
+| over the edge, center clear | the target | nothing over the center | nothing |
+| `pointerEvents="none"` | **the target** | a non-clickable ViewGroup | an Other; target `visible=false` |
+| a plain view, no handler | **nowhere** | a non-clickable ViewGroup | an Other; target `visible=false` |
+| a pressable hidden from accessibility | the overlay | a clickable, unnamed ViewGroup | **not in the tree** |
+| a translucent scrim | the scrim | a clickable Button | a Button; target `visible=false` |
+
+The pass-through and the plain view are identical in both trees — attribute
+for attribute on iOS, and by nothing but `drawing-order` on Android — yet one
+lets the tap through and the other eats it. So nothing in a tree says
+whether a cover takes touches, and a rule that refused whatever is drawn over
+the point would have refused the pass-through case, which works. And iOS's
+`visible` is visual, not touchable: it hides the pass-through target and
+shows the one whose center is covered.
+
+What each tree can say is whether a cover is itself a **control** — clickable
+on Android, a control's element type on iOS, where `Clickable` also holds for
+an accessible Other. So, before a tap, long press or `check`: a control over
+all of the target is waited for within the implicit wait, which is what makes
+the toast work, and then refused as `element_not_reachable`, naming the cover;
+a control over the center only is aimed around, at the clear point nearest
+the center, as EarlGrey does; and something over the point that is not a
+control is tapped through and reported in the result, `cover` in the
+structured half. Measured again after the change, every row went the way
+the table says it should, on both platforms, except one: on iOS the overlay
+hidden from accessibility is still tapped, because WebDriverAgent's tree does
+not contain it. That is recorded as the rule's blind spot, and a test
+asserts it so it stays known.
+
+The first version reported a non-control cover over nearly every target on
+every captured screen — iOS puts a later, transparent XCUIElementTypeWindow
+or Other over whole screens, and the Android launcher its drag layer. A
+note on everything is a note on nothing. One is now made only for a cover
+inside the target's parent, no more than twice its size, over a target that
+is not a scroll container. Run over the twelve other captured screens — three
+real apps, the launcher, SpringBoard, Settings, alerts and the keyboard — the
+rule changes nothing, and a test holds it to that, with the obstruction
+screens as the control that it can fail.
 
 ## Findings that were not defects
 

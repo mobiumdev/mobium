@@ -74,6 +74,9 @@ type ActionView struct {
 	X       int    `json:"x"`
 	Y       int    `json:"y"`
 	Context string `json:"context,omitempty"`
+	// Cover is what the app had drawn over the target, when anything was:
+	// a control the touch was aimed around, or a view that may take it.
+	Cover *CoverView `json:"cover,omitempty"`
 }
 
 // ScreenshotView is the result of app_screenshot when written to disk.

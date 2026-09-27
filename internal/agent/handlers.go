@@ -505,16 +505,20 @@ func (h *Handlers) tapOn(ctx context.Context, s *session, args map[string]interf
 	// Re-snapshot and re-resolve rather than replaying the coordinates the
 	// map recorded: the screen moves between calls, and a tap at a stale
 	// point silently hits whatever now occupies it.
-	node, _, err := h.resolveNode(ctx, s, target)
+	//
+	// And aim where the touch will reach it: the app may have drawn
+	// something over its center (CHALLENGES 115).
+	_, aim, err := h.resolveAim(ctx, s, target)
 	if err != nil {
 		return nil, err
 	}
-	tx, ty := node.Bounds.Center()
+	tx, ty := aim.X, aim.Y
 	if err := touch(ctx, tx, ty); err != nil {
 		return nil, err
 	}
-	return Result(fmt.Sprintf("%s %s at (%d, %d)", verb, target, tx, ty),
-		ActionView{Action: action, Target: target, X: tx, Y: ty}), nil
+	note, cover := aimNote(aim)
+	return Result(fmt.Sprintf("%s %s at (%d, %d)%s", verb, target, tx, ty, note),
+		ActionView{Action: action, Target: target, X: tx, Y: ty, Cover: cover}), nil
 }
 
 // fingerRow places n fingers side by side about (x, y), a tenth of the screen
@@ -1365,16 +1369,17 @@ func (h *Handlers) longPress(ctx context.Context, args map[string]interface{}) (
 			ActionView{Action: "long_press", X: x, Y: y}), nil
 	}
 
-	node, _, err := h.resolveNode(ctx, s, target)
+	_, aim, err := h.resolveAim(ctx, s, target)
 	if err != nil {
 		return nil, err
 	}
-	x, y := node.Bounds.Center()
+	x, y := aim.X, aim.Y
 	if err := gest.LongPress(ctx, x, y, duration); err != nil {
 		return nil, err
 	}
-	return Result(fmt.Sprintf("long-pressed %s at (%d, %d) for %s", target, x, y, duration),
-		ActionView{Action: "long_press", Target: target, X: x, Y: y}), nil
+	note, cover := aimNote(aim)
+	return Result(fmt.Sprintf("long-pressed %s at (%d, %d) for %s%s", target, x, y, duration, note),
+		ActionView{Action: "long_press", Target: target, X: x, Y: y, Cover: cover}), nil
 }
 
 func boolArg(args map[string]interface{}, key string) bool {

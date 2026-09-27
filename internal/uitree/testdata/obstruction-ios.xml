@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<XCUIElementTypeApplication type="XCUIElementTypeApplication" name="MobiumApp" label="MobiumApp" enabled="true" visible="true" accessible="false" x="0" y="0" width="402" height="874" index="0" traits="" processId="49724" bundleId="dev.mobium.mobiumapp">
+  <XCUIElementTypeWindow type="XCUIElementTypeWindow" enabled="true" visible="true" accessible="false" x="0" y="0" width="402" height="874" index="0" traits="">
+    <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="0" y="0" width="402" height="874" index="0" traits="">
+      <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="0" y="0" width="402" height="874" index="0" traits="">
+        <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="0" y="0" width="402" height="874" index="0" traits="">
+          <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="0" y="0" width="402" height="874" index="0" traits="">
+            <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="0" y="0" width="402" height="874" index="0" traits="">
+              <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="0" y="0" width="402" height="874" index="0" traits="">
+                <XCUIElementTypeButton type="XCUIElementTypeButton" name="backBtn" label="Back" enabled="true" visible="true" accessible="true" x="16" y="78" width="370" height="48" index="0" traits="Button">
+                  <XCUIElementTypeStaticText type="XCUIElementTypeStaticText" value="Back" name="Back" label="Back" enabled="true" visible="true" accessible="false" x="30" y="92" width="342" height="20" index="0" traits="StaticText">
+                    <XCUIElementTypeStaticText type="XCUIElementTypeStaticText" value="Back" name="Back" label="Back" enabled="true" visible="true" accessible="false" x="30" y="92" width="342" height="20" index="0" traits="StaticText"/>
+                  </XCUIElementTypeStaticText>
+                </XCUIElementTypeButton>
+                <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="0" y="135" width="402" height="706" index="1" traits="">
+                  <XCUIElementTypeScrollView type="XCUIElementTypeScrollView" enabled="true" visible="true" accessible="false" x="0" y="135" width="402" height="706" index="0" traits="">
+                    <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="0" y="135" width="402" height="935" index="0" traits="">
+                      <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="0" y="135" width="402" height="935" index="0" traits="">
+                        <XCUIElementTypeStaticText type="XCUIElementTypeStaticText" value="Each button has something drawn over it. The line says which one a tap really reached." name="Each button has something drawn over it. The line says which one a tap really reached." label="Each button has something drawn over it. The line says which one a tap really reached." enabled="true" visible="true" accessible="false" x="16" y="151" width="370" height="43" index="0" traits="StaticText">
+                          <XCUIElementTypeStaticText type="XCUIElementTypeStaticText" value="Each button has something drawn over it. The line says which one a tap really reached." name="Each button has something drawn over it. The line says which one a tap really reached." label="Each button has something drawn over it. The line says which one a tap really reached." enabled="true" visible="true" accessible="true" x="16" y="151" width="370" height="43" index="0" traits="StaticText"/>
+                        </XCUIElementTypeStaticText>
+                        <XCUIElementTypeStaticText type="XCUIElementTypeStaticText" value="0: nothing yet" name="obstructionOutcome" label="0: nothing yet" enabled="true" visible="true" accessible="false" x="16" y="209" width="370" height="20" index="1" traits="StaticText">
+                          <XCUIElementTypeStaticText type="XCUIElementTypeStaticText" value="0: nothing yet" name="0: nothing yet" label="0: nothing yet" enabled="true" visible="true" accessible="true" x="16" y="209" width="370" height="20" index="0" traits="StaticText"/>
+                        </XCUIElementTypeStaticText>
+                        <XCUIElementTypeStaticText type="XCUIElementTypeStaticText" value="Fully covered" name="Fully covered" label="Fully covered" enabled="true" visible="true" accessible="false" x="16" y="244" width="370" height="18" index="2" traits="StaticText">
+                          <XCUIElementTypeStaticText type="XCUIElementTypeStaticText" value="Fully covered" name="Fully covered" label="Fully covered" enabled="true" visible="true" accessible="true" x="16" y="244" width="370" height="18" index="0" traits="StaticText"/>
+                        </XCUIElementTypeStaticText>
+                        <XCUIElementTypeButton type="XCUIElementTypeButton" name="fullTarget" label="Fully covered" enabled="true" visible="false" accessible="true" x="16" y="265" width="370" height="49" index="3" traits="Button"/>
+                        <XCUIElementTypeButton type="XCUIElementTypeButton" name="fullCover" label="full cover" enabled="true" visible="true" accessible="true" x="16" y="265" width="370" height="49" index="4" traits="Button"/>
+                        <XCUIElementTypeStaticText type="XCUIElementTypeStaticText" value="Center covered" name="Center covered" label="Center covered" enabled="true" visible="true" accessible="false" x="16" y="323" width="370" height="18" index="5" traits="StaticText">
+                          <XCUIElementTypeStaticText type="XCUIElementTypeStaticText" value="Center covered" name="Center covered" label="Center covered" enabled="true" visible="true" accessible="true" x="16" y="323" width="370" height="18" index="0" traits="StaticText"/>
+                        </XCUIElementTypeStaticText>
+                        <XCUIElementTypeButton type="XCUIElementTypeButton" name="halfTarget" label="Center covered" enabled="true" visible="true" accessible="true" x="16" y="344" width="370" height="48" index="6" traits="Button"/>
+                        <XCUIElementTypeButton type="XCUIElementTypeButton" name="halfCover" label="half cover" enabled="true" visible="true" accessible="true" x="16" y="344" width="222" height="48" index="7" traits="Button"/>
+                        <XCUIElementTypeStaticText type="XCUIElementTypeStaticText" value="Edge covered, center clear" name="Edge covered, center clear" label="Edge covered, center clear" enabled="true" visible="true" accessible="false" x="16" y="401" width="370" height="18" index="8" traits="StaticText">
+                          <XCUIElementTypeStaticText type="XCUIElementTypeStaticText" value="Edge covered, center clear" name="Edge covered, center clear" label="Edge covered, center clear" enabled="true" visible="true" accessible="true" x="16" y="401" width="370" height="18" index="0" traits="StaticText"/>
+                        </XCUIElementTypeStaticText>
+                        <XCUIElementTypeButton type="XCUIElementTypeButton" name="edgeTarget" label="Edge covered" enabled="true" visible="true" accessible="true" x="16" y="422" width="370" height="48" index="9" traits="Button"/>
+                        <XCUIElementTypeButton type="XCUIElementTypeButton" name="edgeCover" label="edge cover" enabled="true" visible="true" accessible="true" x="16" y="422" width="93" height="48" index="10" traits="Button"/>
+                        <XCUIElementTypeStaticText type="XCUIElementTypeStaticText" value="Covered by a view that takes no touches" name="Covered by a view that takes no touches" label="Covered by a view that takes no touches" enabled="true" visible="true" accessible="false" x="16" y="479" width="370" height="18" index="11" traits="StaticText">
+                          <XCUIElementTypeStaticText type="XCUIElementTypeStaticText" value="Covered by a view that takes no touches" name="Covered by a view that takes no touches" label="Covered by a view that takes no touches" enabled="true" visible="true" accessible="true" x="16" y="479" width="370" height="18" index="0" traits="StaticText"/>
+                        </XCUIElementTypeStaticText>
+                        <XCUIElementTypeButton type="XCUIElementTypeButton" name="passTarget" label="Pass-through" enabled="true" visible="false" accessible="true" x="16" y="500" width="370" height="49" index="12" traits="Button"/>
+                        <XCUIElementTypeOther type="XCUIElementTypeOther" name="passCover" label="pass-through cover" enabled="true" visible="true" accessible="true" x="16" y="500" width="370" height="49" index="13" traits=""/>
+                        <XCUIElementTypeStaticText type="XCUIElementTypeStaticText" value="Covered by a plain view" name="Covered by a plain view" label="Covered by a plain view" enabled="true" visible="true" accessible="false" x="16" y="557" width="370" height="18" index="14" traits="StaticText">
+                          <XCUIElementTypeStaticText type="XCUIElementTypeStaticText" value="Covered by a plain view" name="Covered by a plain view" label="Covered by a plain view" enabled="true" visible="true" accessible="true" x="16" y="557" width="370" height="18" index="0" traits="StaticText"/>
+                        </XCUIElementTypeStaticText>
+                        <XCUIElementTypeButton type="XCUIElementTypeButton" name="plainTarget" label="Under a plain view" enabled="true" visible="false" accessible="true" x="16" y="578" width="370" height="49" index="15" traits="Button"/>
+                        <XCUIElementTypeOther type="XCUIElementTypeOther" name="plainCover" label="plain cover" enabled="true" visible="true" accessible="true" x="16" y="578" width="370" height="49" index="16" traits=""/>
+                        <XCUIElementTypeStaticText type="XCUIElementTypeStaticText" value="A view with no touch handler of its own: it reports nothing when tapped, and the button under it gets nothing either — so a tap here should leave the line above unchanged." name="A view with no touch handler of its own: it reports nothing when tapped, and the button under it gets nothing either — so a tap here should leave the line above unchanged." label="A view with no touch handler of its own: it reports nothing when tapped, and the button under it gets nothing either — so a tap here should leave the line above unchanged." enabled="true" visible="true" accessible="false" x="16" y="648" width="370" height="68" index="17" traits="StaticText">
+                          <XCUIElementTypeStaticText type="XCUIElementTypeStaticText" value="A view with no touch handler of its own: it reports nothing when tapped, and the button under it gets nothing either — so a tap here should leave the line above unchanged." name="A view with no touch handler of its own: it reports nothing when tapped, and the button under it gets nothing either — so a tap here should leave the line above unchanged." label="A view with no touch handler of its own: it reports nothing when tapped, and the button under it gets nothing either — so a tap here should leave the line above unchanged." enabled="true" visible="true" accessible="true" x="16" y="648" width="370" height="68" index="0" traits="StaticText"/>
+                        </XCUIElementTypeStaticText>
+                        <XCUIElementTypeStaticText type="XCUIElementTypeStaticText" value="Under an overlay hidden from accessibility" name="Under an overlay hidden from accessibility" label="Under an overlay hidden from accessibility" enabled="true" visible="true" accessible="false" x="16" y="715" width="370" height="18" index="18" traits="StaticText">
+                          <XCUIElementTypeStaticText type="XCUIElementTypeStaticText" value="Under an overlay hidden from accessibility" name="Under an overlay hidden from accessibility" label="Under an overlay hidden from accessibility" enabled="true" visible="true" accessible="true" x="16" y="715" width="370" height="18" index="0" traits="StaticText"/>
+                        </XCUIElementTypeStaticText>
+                        <XCUIElementTypeButton type="XCUIElementTypeButton" name="hiddenTarget" label="Under a hidden overlay" enabled="true" visible="true" accessible="true" x="16" y="736" width="370" height="48" index="19" traits="Button"/>
+                        <XCUIElementTypeStaticText type="XCUIElementTypeStaticText" value="Under a translucent scrim" name="Under a translucent scrim" label="Under a translucent scrim" enabled="true" visible="true" accessible="false" x="16" y="793" width="370" height="18" index="20" traits="StaticText">
+                          <XCUIElementTypeStaticText type="XCUIElementTypeStaticText" value="Under a translucent scrim" name="Under a translucent scrim" label="Under a translucent scrim" enabled="true" visible="true" accessible="true" x="16" y="793" width="370" height="18" index="0" traits="StaticText"/>
+                        </XCUIElementTypeStaticText>
+                        <XCUIElementTypeButton type="XCUIElementTypeButton" name="scrimTarget" label="Under a scrim" enabled="true" visible="false" accessible="true" x="16" y="814" width="370" height="48" index="21" traits="Button"/>
+                        <XCUIElementTypeButton type="XCUIElementTypeButton" name="scrimCover" label="scrim" enabled="true" visible="true" accessible="true" x="16" y="814" width="370" height="48" index="22" traits="Button"/>
+                        <XCUIElementTypeStaticText type="XCUIElementTypeStaticText" value="Covered for a moment" name="Covered for a moment" label="Covered for a moment" enabled="true" visible="false" accessible="false" x="16" y="872" width="370" height="18" index="23" traits="StaticText">
+                          <XCUIElementTypeStaticText type="XCUIElementTypeStaticText" value="Covered for a moment" name="Covered for a moment" label="Covered for a moment" enabled="true" visible="false" accessible="true" x="16" y="872" width="370" height="18" index="0" traits="StaticText"/>
+                        </XCUIElementTypeStaticText>
+                        <XCUIElementTypeButton type="XCUIElementTypeButton" name="toastBtn" label="Show a toast" enabled="true" visible="false" accessible="true" x="16" y="893" width="370" height="48" index="24" traits="Button"/>
+                        <XCUIElementTypeButton type="XCUIElementTypeButton" name="toastTarget" label="Under a toast" enabled="true" visible="false" accessible="true" x="16" y="950" width="370" height="48" index="25" traits="Button"/>
+                        <XCUIElementTypeStaticText type="XCUIElementTypeStaticText" value="The toast covers the button below it for 1.5 seconds and takes touches while it is up." name="The toast covers the button below it for 1.5 seconds and takes touches while it is up." label="The toast covers the button below it for 1.5 seconds and takes touches while it is up." enabled="true" visible="false" accessible="false" x="16" y="1019" width="370" height="35" index="26" traits="StaticText">
+                          <XCUIElementTypeStaticText type="XCUIElementTypeStaticText" value="The toast covers the button below it for 1.5 seconds and takes touches while it is up." name="The toast covers the button below it for 1.5 seconds and takes touches while it is up." label="The toast covers the button below it for 1.5 seconds and takes touches while it is up." enabled="true" visible="false" accessible="true" x="16" y="1019" width="370" height="35" index="0" traits="StaticText"/>
+                        </XCUIElementTypeStaticText>
+                      </XCUIElementTypeOther>
+                    </XCUIElementTypeOther>
+                    <XCUIElementTypeOther type="XCUIElementTypeOther" value="0%" name="Vertical scroll bar, 2 pages" label="Vertical scroll bar, 2 pages" enabled="true" visible="true" accessible="false" x="369" y="146" width="30" height="666" index="1" traits="Adjustable">
+                      <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="396" y="149" width="3" height="499" index="0" traits=""/>
+                    </XCUIElementTypeOther>
+                    <XCUIElementTypeOther type="XCUIElementTypeOther" value="0%" name="Horizontal scroll bar, 1 page" label="Horizontal scroll bar, 1 page" enabled="true" visible="true" accessible="false" x="28" y="807" width="346" height="31" index="2" traits="Adjustable">
+                      <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="31" y="834" width="340" height="4" index="0" traits=""/>
+                    </XCUIElementTypeOther>
+                    <XCUIElementTypeOther type="XCUIElementTypeOther" value="0%" name="Vertical scroll bar, 2 pages" label="Vertical scroll bar, 2 pages" enabled="true" visible="true" accessible="false" x="369" y="146" width="30" height="666" index="3" traits="Adjustable">
+                      <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="396" y="149" width="3" height="499" index="0" traits=""/>
+                    </XCUIElementTypeOther>
+                    <XCUIElementTypeOther type="XCUIElementTypeOther" value="0%" name="Horizontal scroll bar, 1 page" label="Horizontal scroll bar, 1 page" enabled="true" visible="true" accessible="false" x="28" y="807" width="346" height="31" index="4" traits="Adjustable">
+                      <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="31" y="834" width="340" height="4" index="0" traits=""/>
+                    </XCUIElementTypeOther>
+                  </XCUIElementTypeScrollView>
+                </XCUIElementTypeOther>
+              </XCUIElementTypeOther>
+            </XCUIElementTypeOther>
+          </XCUIElementTypeOther>
+        </XCUIElementTypeOther>
+      </XCUIElementTypeOther>
+    </XCUIElementTypeOther>
+  </XCUIElementTypeWindow>
+</XCUIElementTypeApplication>
+
