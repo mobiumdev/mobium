@@ -14,7 +14,11 @@ import (
 //
 // Coordinates come back in CSS pixels from getBoundingClientRect, which is
 // what the viewport metrics are expressed in, so the two can be reconciled.
-const mapScript = `(() => {
+// candidatesJS declares __mobiumCandidates(): the elements map lists, in the
+// order it lists them. Shared with the actionability check, which picks its
+// element by the same index, so the two can never disagree about which
+// element a ref means.
+const candidatesJS = `function __mobiumCandidates() {
   const sel = 'a,button,input,select,textarea,summary,[role=button],[role=link],[role=checkbox],[role=tab],[onclick],[contenteditable=true]';
   const out = [];
   document.querySelectorAll(sel).forEach(e => {
@@ -22,6 +26,16 @@ const mapScript = `(() => {
     if (r.width <= 0 || r.height <= 0) return;
     const st = getComputedStyle(e);
     if (st.visibility === 'hidden' || st.display === 'none' || st.opacity === '0') return;
+    out.push(e);
+  });
+  return out;
+}`
+
+const mapScript = `(() => {
+  ` + candidatesJS + `
+  const out = [];
+  __mobiumCandidates().forEach(e => {
+    const r = e.getBoundingClientRect();
     const label = (e.innerText || e.value || e.getAttribute('aria-label') ||
                    e.getAttribute('placeholder') || e.getAttribute('title') ||
                    e.getAttribute('alt') || '').trim().replace(/\s+/g, ' ').slice(0, 60);

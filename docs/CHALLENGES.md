@@ -7,7 +7,7 @@ the source.
 
 The pattern across them is the reason the document exists: **almost nothing
 here was found by reading code or by a test written from imagination.** Of
-117 defects, 98 were found only by running against a real device. The other
+118 defects, 99 were found only by running against a real device. The other
 nineteen — 4, 5, 6, 14, 23, 24, 32, 35, 36, 39, 44, 50, 53, 54, 57, 66, 89, 99
 and 100 — came from reading code, the compiler, a test, a linter,
 cross-checking a computed number against a screenshot, using the tooling on
@@ -2735,6 +2735,44 @@ now switches it back through simctl, which is what tells a running app, and
 then restores both keys raw, deleting any that were absent. On Android the
 same promise needed the same care from the start — most of these settings are
 unset on a fresh emulator, not off — and a snapshot deletes them again.
+
+### 118. A tap inside a WebView was never checked, and went wherever the page put it
+
+**Found by:** MobiumApp's Actionability page, the Obstruction Demo's web
+counterpart, built once native actions had learned to wait and to refuse.
+In a WebView none of that applied: a tap resolved its ref to the element's
+rectangle and touched the center. On a Pixel 7 AVD and an iPhone 17 Pro
+simulator, `tap` answered "tapped" nine times out of nine:
+
+| Target | What the tap reached |
+| --- | --- |
+| sliding in over two seconds | the target, 0.6s in, while it moved |
+| disabled | nothing |
+| disabled for two seconds after Arm | nothing — tapped while still disabled |
+| `aria-disabled` | the target's handler |
+| fully covered | the cover |
+| center covered | the cover |
+| under `pointer-events: none` | the target — the negative control |
+| under a plain div | nothing |
+| below the fold | nothing — touched at y=6221 on a 2400-pixel screen, and on iOS the three lowest missed the WebView altogether |
+
+Every web tap, multi-finger tap and drag source now goes through Vibium's
+checks, run in the page: visible, enabled (`disabled`, `aria-disabled`, a
+disabled fieldset), holding still across two readings 50ms apart, and
+receiving events — `document.elementFromPoint` at the in-view center. Two
+things are Mobium's: the element is scrolled into view first, and a covered
+center is aimed around at the clear point nearest it, as a native target is
+(115). A check that fails is waited out within the implicit wait and then
+refused as "`@e7` failed check receivesEvents: covered by "full cover"".
+`aria-disabled` is refused although the page's handler would have run,
+because Playwright and Vibium refuse it and a page that honors the attribute
+would not act. Unlike a native tree, a page hit-tests, so the plain div that
+a native screen can only report is refused here.
+
+Measured again after the change on the emulator, the simulator and a Pixel 8
+Pro: every row as intended. `docs/checks/web-actionability.sh` asserts each
+from what the page says it received, and fails against the previous binary
+at the first case.
 
 ## Findings that were not defects
 

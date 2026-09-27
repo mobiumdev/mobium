@@ -174,11 +174,10 @@ func (h *Handlers) points(ctx context.Context, s *session, args map[string]inter
 		target := stringArg(args, k)
 		names[i] = target
 		if s.web != nil {
-			rect, err := h.resolveWeb(ctx, s, target)
+			x, y, _, err := h.aimWeb(ctx, s, target)
 			if err != nil {
 				return nil, nil, err
 			}
-			x, y := rect.Center()
 			pts[i] = mobiumdriver.Point{X: x, Y: y}
 			continue
 		}
