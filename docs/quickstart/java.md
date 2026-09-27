@@ -146,11 +146,27 @@ The first start on a device is slow: it installs the UiAutomator2 server on Andr
     <groupId>dev.mobium</groupId>
     <artifactId>mobium</artifactId>
     <version>0.1.0-SNAPSHOT</version>
-    <scope>test</scope>
   </dependency>
   ```
 
-  or in Gradle, `testImplementation("dev.mobium:mobium:0.1.0-SNAPSHOT")` with `mavenLocal()` among your repositories.
+  That is the scope this example runs with, from `src/main/java`; in a test suite, add `<scope>test</scope>` (Gradle: `testImplementation`).
+
+  In Gradle — verified with Gradle 9.8, running this example on both platforms — `build.gradle.kts`:
+
+  ```kotlin
+  plugins { application }
+
+  repositories {
+      mavenLocal()     // until dev.mobium:mobium is on Maven Central
+      mavenCentral()
+  }
+
+  dependencies { implementation("dev.mobium:mobium:0.1.0-SNAPSHOT") }
+
+  application { mainClass = "Quickstart" }
+  ```
+
+  with `Quickstart.java` in `src/main/java/`, then `gradle run`.
 - try-with-resources around `start()` quits when it ends. Around `connect()` it only closes the connection, leaving the session open.
 - With more than one device attached, `start` refuses to guess and lists them. Name one with `MOBIUM_DEVICE=<serial or UDID>`, which the example passes on as the device.
 

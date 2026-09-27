@@ -1,7 +1,7 @@
 BIN := bin/mobium
 VERSION := $(shell cat VERSION 2>/dev/null || echo dev)
 
-.PHONY: all build test fmt fmt-check vet lint clients java crosscompile api api-check flags flags-check quickstart docs-check ci clean
+.PHONY: all build test fmt fmt-check vet lint clients java crosscompile api api-check flags flags-check quickstart license-check docs-check ci clean
 
 all: build test
 
@@ -65,6 +65,7 @@ clients:
 	@echo "clients parse"
 	@node clients/javascript/test/errors.test.mjs
 	@node clients/javascript/test/connection.test.mjs
+	@node clients/javascript/test/types.test.mjs
 	@python3 clients/python/tests/test_errors.py
 	@python3 clients/python/tests/test_connection.py
 
@@ -167,6 +168,18 @@ flags-check:
 quickstart:
 	@python3 docs/quickstart/build.py
 
+# license-check fails if a client's copy of LICENSE differs from the root's.
+# Python, npm and Go package a client from its own folder, so each carries a
+# copy — MIT asks for the notice in every copy of the software — and a copy is
+# only worth having while it is the same text.
+LICENSE_COPIES := clients/python/LICENSE clients/javascript/LICENSE clients/go/LICENSE
+
+license-check:
+	@for f in $(LICENSE_COPIES); do \
+		cmp -s LICENSE $$f || { echo "$$f differs from LICENSE: cp LICENSE $$f"; exit 1; }; \
+	done
+	@echo "license copies match"
+
 docs-check:
 	@python3 docs/checks/american-spelling.py scan $$(git ls-files) >/dev/null \
 		|| { python3 docs/checks/american-spelling.py scan $$(git ls-files); exit 1; }
@@ -176,7 +189,7 @@ docs-check:
 		|| { python3 docs/quickstart/build.py --check; exit 1; }
 	@echo "docs: spelling, anchors and quick-start pages clean"
 
-ci: fmt-check vet lint test clients crosscompile java api-check flags-check docs-check dotnet
+ci: fmt-check vet lint test clients crosscompile java api-check flags-check license-check docs-check dotnet
 
 clean:
 	rm -rf bin clients/java/target
