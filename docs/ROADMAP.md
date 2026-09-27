@@ -11,10 +11,11 @@ this is what is not.
   until it has, Windows is unsupported. [WINDOWS.md](WINDOWS.md) is the state
   of it.
 - **Auto-wait, the rest of the actionability checks.** Actions already wait for
-  a target to exist, be in view, stop moving and be enabled, and refuse one
-  under a dialog or the keyboard. Still to come:
-  - *Receives events* on native screens — detecting an app's own overlay over
-    the target, which needs geometry and drawing order rather than a flag.
+  a target to exist, be in view, stop moving and be enabled; refuse one under
+  a dialog or the keyboard; and aim around, wait out or refuse a control the
+  app drew over it ([CHALLENGES 115](CHALLENGES.md)). Still to come:
+  - An overlay hidden from accessibility on iOS, which WebDriverAgent's tree
+    does not contain, so a tap under one still lands on it.
   - The same checks *inside WebViews*, run in the page, with the tap staying a
     real touch.
   - One error shape for a failed check — "failed check X: reason".

@@ -107,7 +107,10 @@ screenshot can be tapped directly.
 Before acting, every action waits for its target to exist, be in view, stop
 moving and be enabled, and scrolls to it if it is off screen. It refuses —
 rather than taps — a target under a dialog or the keyboard, and `type` refuses
-what is certainly not a text field. `wait` blocks for an element to appear,
+what is certainly not a text field. When the app itself has drawn a control
+over the target, a tap aims at a clear part of it, waits for the cover to go,
+or refuses and names the cover; anything else drawn over the point is
+reported in the result. `wait` blocks for an element to appear,
 disappear or read a certain way, so no flow needs a sleep.
 
 A backend that cannot do something correctly says so and names the fix,

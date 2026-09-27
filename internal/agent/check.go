@@ -74,8 +74,13 @@ func (h *Handlers) checkOn(ctx context.Context, s *session, args map[string]inte
 		return Result(fmt.Sprintf("%s is already %s", target, stateWord(want)), view), nil
 	}
 
-	tx, ty := node.Bounds.Center()
-	if err := s.driver.Tap(ctx, tx, ty); err != nil {
+	// Aimed like any tap, so a control the app drew over this one is not
+	// pressed in its place (CHALLENGES 115).
+	_, aim, err := h.resolveAim(ctx, s, target)
+	if err != nil {
+		return nil, err
+	}
+	if err := s.driver.Tap(ctx, aim.X, aim.Y); err != nil {
 		return nil, err
 	}
 
