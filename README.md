@@ -113,7 +113,9 @@ or refuses and names the cover; anything else drawn over the point is
 reported in the result. Inside a WebView the page itself is asked, with
 Vibium's checks: the element is scrolled into view, and a tap waits for it to
 be visible, enabled, still and not covered — the page's own hit test says
-what is on top — and otherwise refuses with the check that failed. `wait` blocks for an element to appear,
+what is on top — and otherwise refuses with the check that failed. `type` there fills a field the way Vibium's
+fill does: only a field that can take text, confirmed by reading it back, a
+password never echoed. `wait` blocks for an element to appear,
 disappear or read a certain way, so no flow needs a sleep.
 
 A backend that cannot do something correctly says so and names the fix,

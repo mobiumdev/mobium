@@ -1225,6 +1225,18 @@ func (h *Handlers) typeText(ctx context.Context, args map[string]interface{}) (*
 
 // typeTextOn is app_type once the device is resolved.
 func (h *Handlers) typeTextOn(ctx context.Context, s *session, args map[string]interface{}) (*ToolsCallResult, error) {
+	// Inside a WebView the page takes the text itself (webType), so no
+	// native text entry is needed — and the native ref table is the wrong
+	// place to look a web ref up: it answered "unknown ref @e1 — the last map
+	// found no elements" for a field the page's map had just listed.
+	if s.web != nil {
+		target := stringArg(args, "target")
+		text, hasText := args["text"].(string)
+		if target == "" || !hasText {
+			return nil, mobiumerr.New(mobiumerr.InvalidArgument, "app_type needs a target (a @ref from app_map) and text")
+		}
+		return h.webType(ctx, s, target, text)
+	}
 	typer, ok := mobiumdriver.AsTextEntry(s.driver)
 	if !ok {
 		return nil, mobiumerr.New(mobiumerr.Unsupported, "the %s backend cannot type into an element — "+

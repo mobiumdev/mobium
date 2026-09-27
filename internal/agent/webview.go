@@ -477,3 +477,56 @@ func webCheckFailed(target string, a *webview.Actionability, waited time.Duratio
 		WithDetail("check", a.Check).
 		WithDetail("reason", a.Reason)
 }
+
+// webType is app_type inside a WebView: Vibium's fill. The page is asked
+// whether the field can take text — visible and in view, enabled, editable —
+// and then its value is set the way a framework's controlled input hears it,
+// with the input and change events typing would have caused, and read back.
+// Visibility and enablement are waited out within the implicit wait, as for a
+// tap; a field that is not a text field at all is refused at once, as native
+// app_type refuses one. A password is never echoed.
+func (h *Handlers) webType(ctx context.Context, s *session, target, text string) (*ToolsCallResult, error) {
+	deadline := time.Now().Add(h.implicitWait)
+	for {
+		_, index, _, err := h.findWeb(ctx, s, target)
+		if err != nil {
+			return nil, err
+		}
+		f, err := webview.Fill(ctx, s.web, index, text)
+		if err != nil {
+			return nil, err
+		}
+		switch {
+		case f.Status == "not_found":
+			return nil, mobiumerr.New(mobiumerr.NoSuchElement, "%s is no longer on the page — the content changed, run app_map again", target)
+		case f.Status == "failed" && f.Check == "editable":
+			return nil, mobiumerr.New(mobiumerr.InvalidArgument, "%s failed check editable: %s — app_type types into a "+
+				"text field; to press anything else, use app_tap", target, f.Reason).
+				WithRemedy("app_tap to press it; app_type for a text field").
+				WithDetail("check", "editable").
+				WithDetail("reason", f.Reason)
+		case f.Status == "ok" && !f.Matches:
+			return nil, mobiumerr.New(mobiumerr.NotConfirmed, "set %s and read it back different — the page "+
+				"rewrote or refused the value", target)
+		case f.Status == "ok":
+			if f.Password {
+				return Result(fmt.Sprintf("typed %d characters into %s in %s, a password field — not echoed",
+					len([]rune(text)), target, s.webCtx), ActionView{Action: "type", Target: target, Context: s.webCtx}), nil
+			}
+			verb := fmt.Sprintf("typed %q into", text)
+			if text == "" {
+				verb = "cleared"
+			}
+			return Result(fmt.Sprintf("%s %s in %s", verb, target, s.webCtx),
+				ActionView{Action: "type", Target: target, Context: s.webCtx}), nil
+		}
+		if time.Now().After(deadline) {
+			return nil, webCheckFailed(target, &webview.Actionability{Status: f.Status, Check: f.Check, Reason: f.Reason}, h.implicitWait)
+		}
+		select {
+		case <-ctx.Done():
+			return nil, ctx.Err()
+		case <-time.After(100 * time.Millisecond):
+		}
+	}
+}

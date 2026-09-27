@@ -36,7 +36,12 @@ const mapScript = `(() => {
   const out = [];
   __mobiumCandidates().forEach(e => {
     const r = e.getBoundingClientRect();
-    const label = (e.innerText || e.value || e.getAttribute('aria-label') ||
+    // A checkbox or radio's value is usually "on", which is not a name; the
+    // label a person reads is. Only for those two: every other field keeps
+    // what it shows.
+    const t = (e.getAttribute('type') || '').toLowerCase();
+    const named = (t === 'checkbox' || t === 'radio') && e.labels && e.labels.length ? e.labels[0].innerText : '';
+    const label = (named || e.innerText || e.value || e.getAttribute('aria-label') ||
                    e.getAttribute('placeholder') || e.getAttribute('title') ||
                    e.getAttribute('alt') || '').trim().replace(/\s+/g, ' ').slice(0, 60);
     out.push({

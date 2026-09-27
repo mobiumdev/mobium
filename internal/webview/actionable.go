@@ -119,3 +119,82 @@ func CheckActionable(ctx context.Context, p Page, index int) (*Actionability, er
 	}
 	return &a, nil
 }
+
+// Filled is what a page says after text was put into one of its fields.
+type Filled struct {
+	Status string `json:"status"`
+	Check  string `json:"check,omitempty"`
+	Reason string `json:"reason,omitempty"`
+	// Matches says the field now holds exactly the text; Password says it is
+	// a password field, whose value is never sent back — only whether it
+	// matches.
+	Matches  bool `json:"matches"`
+	Password bool `json:"password"`
+}
+
+// fillScript is Vibium's fill: the checks a fill needs — visible, enabled,
+// editable — then the value set through the element type's own native setter,
+// which is what a framework's controlled input listens to, and the input and
+// change events a person's typing would have caused. Then read back.
+const fillScript = `(() => {
+  ` + candidatesJS + `
+  const el = __mobiumCandidates()[%d];
+  const value = %s;
+  if (!el) return JSON.stringify({status:'not_found'});
+  const fail = (check, reason) => JSON.stringify({status:'failed', check, reason});
+  let rect = el.getBoundingClientRect();
+  if (rect.top < 0 || rect.left < 0 || rect.bottom > window.innerHeight || rect.right > window.innerWidth) {
+    el.scrollIntoView({block: 'center', inline: 'center', behavior: 'instant'});
+    rect = el.getBoundingClientRect();
+  }
+  if (rect.width === 0 || rect.height === 0) return fail('visible', 'zero size');
+  const style = getComputedStyle(el);
+  if (style.visibility === 'hidden' || style.display === 'none') return fail('visible', 'hidden');
+  if (el.disabled === true) return fail('enabled', 'disabled attribute');
+  if (el.getAttribute('aria-disabled') === 'true') return fail('enabled', 'aria-disabled');
+  if (el.readOnly === true) return fail('editable', 'readonly attribute');
+  if (el.getAttribute('aria-readonly') === 'true') return fail('editable', 'aria-readonly');
+  const tag = el.tagName.toLowerCase();
+  if (tag === 'input') {
+    const t = (el.type || 'text').toLowerCase();
+    if (!` + fillableInputTypesJS + `.includes(t)) return fail('editable', 'input type ' + t + ' is not a text field');
+  } else if (tag !== 'textarea' && !el.isContentEditable) {
+    return fail('editable', 'not a text field');
+  }
+  el.focus();
+  if (el.isContentEditable && tag !== 'input' && tag !== 'textarea') {
+    el.textContent = value;
+  } else {
+    const proto = el instanceof HTMLTextAreaElement ? HTMLTextAreaElement.prototype : HTMLInputElement.prototype;
+    const setter = Object.getOwnPropertyDescriptor(proto, 'value').set;
+    setter.call(el, value);
+  }
+  el.dispatchEvent(new Event('input', {bubbles: true}));
+  el.dispatchEvent(new Event('change', {bubbles: true}));
+  const now = el.isContentEditable && tag !== 'input' && tag !== 'textarea' ? el.textContent : el.value;
+  return JSON.stringify({status: 'ok', matches: now === value, password: tag === 'input' && el.type === 'password'});
+})()`
+
+// fillableInputTypesJS is Vibium's list of the input types a fill can set:
+// text-like inputs and the value-bearing pickers, not checkboxes, radios,
+// files or buttons.
+const fillableInputTypesJS = `['text','password','email','number','search','tel','url',` +
+	`'range','color','date','time','datetime-local','month','week']`
+
+// Fill puts text into the index-th element of the map, after the page says it
+// can take it, and reports whether it now holds exactly that.
+func Fill(ctx context.Context, p Page, index int, value string) (*Filled, error) {
+	quoted, err := json.Marshal(value)
+	if err != nil {
+		return nil, err
+	}
+	raw, err := p.Evaluate(ctx, fmt.Sprintf(fillScript, index, quoted))
+	if err != nil {
+		return nil, err
+	}
+	var f Filled
+	if err := json.Unmarshal([]byte(raw), &f); err != nil {
+		return nil, mobiumerr.New(mobiumerr.DeviceServer, "could not read the page's answer to a fill: %w", err)
+	}
+	return &f, nil
+}

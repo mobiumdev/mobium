@@ -7,7 +7,7 @@ the source.
 
 The pattern across them is the reason the document exists: **almost nothing
 here was found by reading code or by a test written from imagination.** Of
-118 defects, 99 were found only by running against a real device. The other
+119 defects, 100 were found only by running against a real device. The other
 nineteen — 4, 5, 6, 14, 23, 24, 32, 35, 36, 39, 44, 50, 53, 54, 57, 66, 89, 99
 and 100 — came from reading code, the compiler, a test, a linter,
 cross-checking a computed number against a screenshot, using the tooling on
@@ -2773,6 +2773,32 @@ Measured again after the change on the emulator, the simulator and a Pixel 8
 Pro: every row as intended. `docs/checks/web-actionability.sh` asserts each
 from what the page says it received, and fails against the previous binary
 at the first case.
+
+### 119. Typing into a WebView blamed the map, and a checkbox was named "on"
+
+**Found by:** MobiumApp's Web form page, built to measure typing into a page
+once taps there were checked (118). `type` had no WebView path: it looked a
+web ref up in the native table, found it empty, and answered "unknown ref @e1
+— the last map found no elements" for a field the page's map had just
+listed. Following that advice — map again — could never help. Nothing ever
+reached the page, on an emulator or a simulator.
+
+`type` inside a WebView is now Vibium's fill. The page is asked whether the
+field can take text — visible and in view, enabled, editable: not
+`readonly`, not `aria-readonly`, and an input type that holds text — and the
+value is set through the element type's own native setter, which is what a
+framework's controlled input listens to, with the `input` and `change`
+events typing would have caused. The page then reads it back. A password is
+confirmed by the page and never sent back or echoed: the answer says only
+whether it matches. Text a device shell would mangle — an apostrophe, an
+ampersand, non-ASCII — arrives exactly, since it travels as a JSON string.
+
+The same page showed `map` naming its checkbox "on" — the input's `value`,
+which a checkbox sets to "on" by default. A checkbox or radio is now named by
+its label, as a person reads it; every other field keeps what it shows.
+
+`docs/checks/web-type.sh` checks each field from what the page holds, and
+fails against the previous binary at the checkbox's name.
 
 ## Findings that were not defects
 
