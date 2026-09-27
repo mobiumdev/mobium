@@ -81,6 +81,7 @@ func main() {
 		newRevokeCmd(),
 		newResetPermissionsCmd(),
 		newAppearanceCmd(),
+		newAccessibilityCmd(),
 		newOrientationCmd(),
 		newScreenCmd(),
 		newLocaleCmd(),

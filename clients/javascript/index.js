@@ -653,6 +653,26 @@ export class Device {
   }
 
   /**
+   * Read the accessibility settings, or change one for the session.
+   *
+   * With no argument, resolves to an object of every setting the device has
+   * — reduce_motion, bold_text, increase_contrast and the rest. With a
+   * setting, to its value; with a setting and a value, changes it, confirmed
+   * by reading it back, and resolves to the new value. A switch takes 'on' or
+   * 'off'; text_size a category such as 'accessibility-large' (iOS);
+   * text_scale a number such as '1.3' (Android). Every change is put back
+   * when the session ends. A real iPhone rejects. Changing one discards the
+   * refs from the last map.
+   */
+  async accessibility(setting, value) {
+    const args = {}
+    if (setting) args.setting = setting
+    if (value !== undefined && value !== null) args.value = String(value)
+    const data = (await this.#data('app_accessibility', args)) || {}
+    return setting ? data.value || '' : data.settings || {}
+  }
+
+  /**
    * Which way the screen is turned, as `{ orientation, locked }`.
    *
    * A screen that merely happens to be portrait can rotate under you, so the

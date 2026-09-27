@@ -126,7 +126,7 @@ the wrong string.
 | Acting | tap, double tap, type, swipe, long press, drag and drop, two-finger zoom and rotate; `check`/`uncheck` reach a state and confirm it |
 | Waiting | `wait` for appear, disappear, text, enabled or disabled |
 | Apps | launch, terminate, install, uninstall, list, clear data, open a URL or deep link, foreground app |
-| Device state | permissions, appearance, orientation, per-app language, hardware buttons, screen lock, simulated calls and messages, notifications, timezone, clipboard, geolocation and routes |
+| Device state | permissions, appearance, accessibility settings for the session (reduce motion, bold text, contrast, text size and more; a simulator and Android), orientation, per-app language, hardware buttons, screen lock, simulated calls and messages, notifications, timezone, clipboard, geolocation and routes |
 | Dialogs | `alert` reads, answers and types into a system or app dialog; `dialogs` declares answers for one that gets in an action's way |
 | Diagnostics | device logs, crash reports and ANRs, screen recording, `doctor` |
 
@@ -169,8 +169,9 @@ idle and so cannot read one that animates.
 with `simctl`. **A real iPhone** takes the same backend: turn on Developer
 Mode and Settings > Developer > Enable UI Automation, add an Apple ID to
 Xcode, and the first command builds and signs WebDriverAgent for your team.
-Controls that only `simctl` has — permissions, appearance, clipboard,
-simulated location — are refused on a phone with the reason.
+Controls that only `simctl` has — permissions, appearance, accessibility
+settings, clipboard, simulated location — are refused on a phone with the
+reason.
 [docs/SETUP.md](docs/SETUP.md#ios-real-device) has the steps.
 
 **Windows is not supported yet.** Everything cross-compiles for Windows, and

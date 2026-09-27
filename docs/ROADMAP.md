@@ -20,6 +20,14 @@ this is what is not.
     real touch.
   - One error shape for a failed check — "failed check X: reason".
   - More states to `wait` for: checked, focused, a value.
+- **Android Settings' switches map without a name.** On a Pixel 7 AVD, the
+  switch beside "Remove animations", "Bold text" and "High contrast text"
+  maps as `switchWidget`, the name of its view, rather than by its row —
+  the same shape iOS 26's Settings had before CHALLENGES 82. A caller has to
+  reach it by position.
+- **Accessibility settings on a real iPhone.** `app_accessibility` works on a
+  simulator and on Android; on a phone nothing outside changes them, and the
+  Settings screens are the route.
 - **Network conditions.** Android only when it lands: the emulator console can
   throttle and read back, while `simctl` has no network control.
 - **Session recording and `diff map`.** Screen recording is done; a filmstrip of

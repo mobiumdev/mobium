@@ -7,7 +7,7 @@ the source.
 
 The pattern across them is the reason the document exists: **almost nothing
 here was found by reading code or by a test written from imagination.** Of
-116 defects, 97 were found only by running against a real device. The other
+117 defects, 98 were found only by running against a real device. The other
 nineteen — 4, 5, 6, 14, 23, 24, 32, 35, 36, 39, 44, 50, 53, 54, 57, 66, 89, 99
 and 100 — came from reading code, the compiler, a test, a linter,
 cross-checking a computed number against a screenshot, using the tooling on
@@ -2719,6 +2719,22 @@ silent application is found, then 0.4s; attach 0.4s throughout.
 
 The code was the same in every earlier version; nothing had changed an
 accessibility setting on a phone while a daemon held the connection.
+
+### 117. Putting Increase Contrast back left the simulator changed
+
+**Found by:** the round trip `app_accessibility` promises — every raw value
+back as it was once the session ends — diffed on an iPhone 17 Pro simulator.
+Every setting read back as it had been, and the preferences domain still
+differed: two keys that had been absent, `DarkenSystemColors` and
+`PointerIncreasedContrastEnabled`, were now there, both 0.
+
+`simctl ui increase_contrast` stores the setting in both, and turning it off
+writes them as 0 rather than removing them. The setting means the same; the
+simulator is not the same, and "put back as it was" is the claim. The undo
+now switches it back through simctl, which is what tells a running app, and
+then restores both keys raw, deleting any that were absent. On Android the
+same promise needed the same care from the start — most of these settings are
+unset on a fresh emulator, not off — and a snapshot deletes them again.
 
 ## Findings that were not defects
 

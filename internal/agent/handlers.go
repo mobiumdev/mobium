@@ -212,6 +212,8 @@ func (h *Handlers) dispatch(ctx context.Context, name string, args map[string]in
 		return h.resetPermissions(ctx, args)
 	case "app_appearance":
 		return h.appearance(ctx, args)
+	case "app_accessibility":
+		return h.accessibility(ctx, args)
 	case "app_orientation":
 		return h.orientation(ctx, args)
 	case "app_screen":

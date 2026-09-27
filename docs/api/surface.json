@@ -2,6 +2,18 @@
   "tools": [
     {
       "n": 1,
+      "tool": "app_accessibility",
+      "cli": "accessibility",
+      "clients": {
+        "dotnet": "Accessibility",
+        "go": "Accessibility",
+        "java": "accessibility",
+        "javascript": "accessibility",
+        "python": "accessibility"
+      }
+    },
+    {
+      "n": 2,
       "tool": "app_alert",
       "cli": "alert",
       "clients": {
@@ -13,7 +25,7 @@
       }
     },
     {
-      "n": 2,
+      "n": 3,
       "tool": "app_appearance",
       "cli": "appearance",
       "clients": {
@@ -25,7 +37,7 @@
       }
     },
     {
-      "n": 3,
+      "n": 4,
       "tool": "app_call",
       "cli": "call",
       "clients": {
@@ -37,7 +49,7 @@
       }
     },
     {
-      "n": 4,
+      "n": 5,
       "tool": "app_check",
       "cli": "check, uncheck",
       "clients": {
@@ -49,7 +61,7 @@
       }
     },
     {
-      "n": 5,
+      "n": 6,
       "tool": "app_clear_data",
       "cli": "clear-data",
       "clients": {
@@ -61,7 +73,7 @@
       }
     },
     {
-      "n": 6,
+      "n": 7,
       "tool": "app_clipboard",
       "cli": "clipboard",
       "clients": {
@@ -73,7 +85,7 @@
       }
     },
     {
-      "n": 7,
+      "n": 8,
       "tool": "app_context",
       "cli": "context",
       "clients": {
@@ -85,7 +97,7 @@
       }
     },
     {
-      "n": 8,
+      "n": 9,
       "tool": "app_contexts",
       "cli": "contexts",
       "clients": {
@@ -97,7 +109,7 @@
       }
     },
     {
-      "n": 9,
+      "n": 10,
       "tool": "app_crashes",
       "cli": "crashes",
       "clients": {
@@ -109,7 +121,7 @@
       }
     },
     {
-      "n": 10,
+      "n": 11,
       "tool": "app_current",
       "cli": "current",
       "clients": {
@@ -121,7 +133,7 @@
       }
     },
     {
-      "n": 11,
+      "n": 12,
       "tool": "app_devices",
       "cli": "devices",
       "clients": {
@@ -133,7 +145,7 @@
       }
     },
     {
-      "n": 12,
+      "n": 13,
       "tool": "app_dialogs",
       "cli": "dialogs",
       "clients": {
@@ -145,7 +157,7 @@
       }
     },
     {
-      "n": 13,
+      "n": 14,
       "tool": "app_doctor",
       "cli": "doctor",
       "clients": {
@@ -157,7 +169,7 @@
       }
     },
     {
-      "n": 14,
+      "n": 15,
       "tool": "app_drag",
       "cli": "drag",
       "clients": {
@@ -169,7 +181,7 @@
       }
     },
     {
-      "n": 15,
+      "n": 16,
       "tool": "app_eval",
       "cli": "eval",
       "clients": {
@@ -181,7 +193,7 @@
       }
     },
     {
-      "n": 16,
+      "n": 17,
       "tool": "app_find",
       "cli": "find",
       "clients": {
@@ -193,7 +205,7 @@
       }
     },
     {
-      "n": 17,
+      "n": 18,
       "tool": "app_grant",
       "cli": "grant",
       "clients": {
@@ -205,7 +217,7 @@
       }
     },
     {
-      "n": 18,
+      "n": 19,
       "tool": "app_install",
       "cli": "install",
       "clients": {
@@ -217,7 +229,7 @@
       }
     },
     {
-      "n": 19,
+      "n": 20,
       "tool": "app_keyboard",
       "cli": "keyboard",
       "clients": {
@@ -229,7 +241,7 @@
       }
     },
     {
-      "n": 20,
+      "n": 21,
       "tool": "app_launch",
       "cli": "launch",
       "clients": {
@@ -241,7 +253,7 @@
       }
     },
     {
-      "n": 21,
+      "n": 22,
       "tool": "app_list_apps",
       "cli": "apps",
       "clients": {
@@ -253,7 +265,7 @@
       }
     },
     {
-      "n": 22,
+      "n": 23,
       "tool": "app_locale",
       "cli": "locale",
       "clients": {
@@ -265,7 +277,7 @@
       }
     },
     {
-      "n": 23,
+      "n": 24,
       "tool": "app_location",
       "cli": "location",
       "clients": {
@@ -277,7 +289,7 @@
       }
     },
     {
-      "n": 24,
+      "n": 25,
       "tool": "app_lock",
       "cli": "lock",
       "clients": {
@@ -289,7 +301,7 @@
       }
     },
     {
-      "n": 25,
+      "n": 26,
       "tool": "app_logs",
       "cli": "logs",
       "clients": {
@@ -301,7 +313,7 @@
       }
     },
     {
-      "n": 26,
+      "n": 27,
       "tool": "app_long_press",
       "cli": "long-press",
       "clients": {
@@ -313,7 +325,7 @@
       }
     },
     {
-      "n": 27,
+      "n": 28,
       "tool": "app_map",
       "cli": "map",
       "clients": {
@@ -325,7 +337,7 @@
       }
     },
     {
-      "n": 28,
+      "n": 29,
       "tool": "app_notifications",
       "cli": "notifications",
       "clients": {
@@ -337,7 +349,7 @@
       }
     },
     {
-      "n": 29,
+      "n": 30,
       "tool": "app_open_url",
       "cli": "open",
       "clients": {
@@ -349,7 +361,7 @@
       }
     },
     {
-      "n": 30,
+      "n": 31,
       "tool": "app_orientation",
       "cli": "orientation",
       "clients": {
@@ -361,7 +373,7 @@
       }
     },
     {
-      "n": 31,
+      "n": 32,
       "tool": "app_press",
       "cli": "press",
       "clients": {
@@ -373,7 +385,7 @@
       }
     },
     {
-      "n": 32,
+      "n": 33,
       "tool": "app_press_drag",
       "cli": "press-drag",
       "clients": {
@@ -385,7 +397,7 @@
       }
     },
     {
-      "n": 33,
+      "n": 34,
       "tool": "app_press_tap",
       "cli": "press-tap",
       "clients": {
@@ -397,7 +409,7 @@
       }
     },
     {
-      "n": 34,
+      "n": 35,
       "tool": "app_record",
       "cli": "record",
       "clients": {
@@ -409,7 +421,7 @@
       }
     },
     {
-      "n": 35,
+      "n": 36,
       "tool": "app_reset_permissions",
       "cli": "reset-permissions",
       "clients": {
@@ -421,7 +433,7 @@
       }
     },
     {
-      "n": 36,
+      "n": 37,
       "tool": "app_revoke",
       "cli": "revoke",
       "clients": {
@@ -433,7 +445,7 @@
       }
     },
     {
-      "n": 37,
+      "n": 38,
       "tool": "app_rotate",
       "cli": "rotate",
       "clients": {
@@ -445,7 +457,7 @@
       }
     },
     {
-      "n": 38,
+      "n": 39,
       "tool": "app_screen",
       "cli": "screen",
       "clients": {
@@ -457,7 +469,7 @@
       }
     },
     {
-      "n": 39,
+      "n": 40,
       "tool": "app_screenshot",
       "cli": "screenshot",
       "clients": {
@@ -469,7 +481,7 @@
       }
     },
     {
-      "n": 40,
+      "n": 41,
       "tool": "app_scroll_to",
       "cli": "scroll-to",
       "clients": {
@@ -481,7 +493,7 @@
       }
     },
     {
-      "n": 41,
+      "n": 42,
       "tool": "app_sms",
       "cli": "sms",
       "clients": {
@@ -493,7 +505,7 @@
       }
     },
     {
-      "n": 42,
+      "n": 43,
       "tool": "app_source",
       "cli": "source",
       "clients": {
@@ -505,7 +517,7 @@
       }
     },
     {
-      "n": 43,
+      "n": 44,
       "tool": "app_swipe",
       "cli": "swipe",
       "clients": {
@@ -517,7 +529,7 @@
       }
     },
     {
-      "n": 44,
+      "n": 45,
       "tool": "app_tap",
       "cli": "tap, double-tap, double-tap",
       "clients": {
@@ -529,7 +541,7 @@
       }
     },
     {
-      "n": 45,
+      "n": 46,
       "tool": "app_terminate",
       "cli": "terminate",
       "clients": {
@@ -541,7 +553,7 @@
       }
     },
     {
-      "n": 46,
+      "n": 47,
       "tool": "app_text",
       "cli": "text",
       "clients": {
@@ -553,7 +565,7 @@
       }
     },
     {
-      "n": 47,
+      "n": 48,
       "tool": "app_timezone",
       "cli": "timezone",
       "clients": {
@@ -565,7 +577,7 @@
       }
     },
     {
-      "n": 48,
+      "n": 49,
       "tool": "app_type",
       "cli": "type",
       "clients": {
@@ -577,7 +589,7 @@
       }
     },
     {
-      "n": 49,
+      "n": 50,
       "tool": "app_uninstall",
       "cli": "uninstall",
       "clients": {
@@ -589,7 +601,7 @@
       }
     },
     {
-      "n": 50,
+      "n": 51,
       "tool": "app_wait_for",
       "cli": "wait",
       "clients": {
@@ -601,7 +613,7 @@
       }
     },
     {
-      "n": 51,
+      "n": 52,
       "tool": "app_zoom",
       "cli": "zoom",
       "clients": {
@@ -617,37 +629,37 @@
     {
       "language": "go",
       "file": "clients/go/mobium.go",
-      "covers": 51
+      "covers": 52
     },
     {
       "language": "python",
       "file": "clients/python/mobium/_device.py",
-      "covers": 51
+      "covers": 52
     },
     {
       "language": "javascript",
       "file": "clients/javascript/index.js",
-      "covers": 51
+      "covers": 52
     },
     {
       "language": "java",
       "file": "clients/java/src/main/java/dev/mobium/Mobium.java",
-      "covers": 51
+      "covers": 52
     },
     {
       "language": "dotnet",
       "file": "clients/dotnet/Mobium/Device.cs",
-      "covers": 51
+      "covers": 52
     }
   ],
   "counts": {
-    "tools": 51,
-    "cliRegistered": 56,
-    "cliVisible": 55,
+    "tools": 52,
+    "cliRegistered": 57,
+    "cliVisible": 56,
     "cliHidden": [
       "pipe"
     ],
-    "cliConstructors": 59,
+    "cliConstructors": 60,
     "clients": 5
   },
   "cliWithoutTool": [

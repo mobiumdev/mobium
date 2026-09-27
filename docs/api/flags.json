@@ -1,6 +1,40 @@
 {
   "arguments": [
     {
+      "tool": "app_accessibility",
+      "arg": "backend",
+      "type": "string",
+      "setBy": [
+        "--backend"
+      ],
+      "global": true
+    },
+    {
+      "tool": "app_accessibility",
+      "arg": "device",
+      "type": "string",
+      "setBy": [
+        "--device"
+      ],
+      "global": true
+    },
+    {
+      "tool": "app_accessibility",
+      "arg": "setting",
+      "type": "string",
+      "setBy": [
+        "accessibility"
+      ]
+    },
+    {
+      "tool": "app_accessibility",
+      "arg": "value",
+      "type": "string",
+      "setBy": [
+        "accessibility"
+      ]
+    },
+    {
       "tool": "app_alert",
       "arg": "action",
       "type": "string",
@@ -1825,6 +1859,16 @@
     }
   ],
   "commands": [
+    {
+      "command": "accessibility",
+      "tools": [
+        "app_accessibility"
+      ],
+      "sends": [
+        "setting",
+        "value"
+      ]
+    },
     {
       "command": "alert",
       "tools": [
