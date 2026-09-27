@@ -7,7 +7,7 @@ the source.
 
 The pattern across them is the reason the document exists: **almost nothing
 here was found by reading code or by a test written from imagination.** Of
-115 defects, 96 were found only by running against a real device. The other
+116 defects, 97 were found only by running against a real device. The other
 nineteen — 4, 5, 6, 14, 23, 24, 32, 35, 36, 39, 44, 50, 53, 54, 57, 66, 89, 99
 and 100 — came from reading code, the compiler, a test, a linter,
 cross-checking a computed number against a screenshot, using the tooling on
@@ -2685,6 +2685,40 @@ is not a scroll container. Run over the twelve other captured screens — three
 real apps, the launcher, SpringBoard, Settings, alerts and the keyboard — the
 rule changes nothing, and a test holds it to that, with the obstruction
 screens as the control that it can fail.
+
+### 116. After an accessibility setting changed, every WebView lookup took 25 seconds
+
+**Found by:** testing MobiumApp's Motion Demo on the iPhone 15 Plus with
+Reduce Motion off and then on. The web page reported its tap arriving 78
+seconds after it loaded. Timed step by step, `contexts` took 25.4s and an
+attach 50.5s — constant to a tenth of a second, which is a timeout firing,
+not a slow phone — and both were back to 0.4s once the daemon restarted.
+
+It was not Reduce Motion: the stall followed any real change to an
+accessibility setting, in either direction, and a trip to Settings that
+changed nothing did not cause it. A probe that timed each application's
+answer to a listing named the cause. Before the change, six applications
+were known to the web inspector and all answered at once. After it, a
+seventh had joined — `com.apple.AppStore.Widgets` — and it answers no
+listing. `listPages` waited for every known application to answer, up to
+`rwiSetupTimeout`, 25 seconds: `contexts` lists once, and an attach lists
+and then sets up, so it waited twice. The live applications' pages were
+there all along, which is why it eventually worked.
+
+A listing now waits up to the setup timeout for the first answer, since a
+cold WebView can be slow, and then gives the rest two seconds from the last
+answer. An application that misses that is remembered as silent: it is
+still asked each time and not waited for. The first version stopped there
+and was wrong in a way a test run thirty times showed — a silent
+application that started answering always answered after the listing had
+stopped listening, so it stayed silent and its pages were never seen
+again. The inspector's watch, which sees every message on the connection,
+now clears the mark on any listing it answers, late or not. Measured again
+on the phone after a real change each way: `contexts` 2.5s once, while the
+silent application is found, then 0.4s; attach 0.4s throughout.
+
+The code was the same in every earlier version; nothing had changed an
+accessibility setting on a phone while a daemon held the connection.
 
 ## Findings that were not defects
 

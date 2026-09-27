@@ -36,6 +36,11 @@ import (
 // rwiTimeout bounds one round trip once a page is attached.
 const rwiTimeout = 30 * time.Second
 
+// listingGrace is how long the rest of the applications get to answer a
+// listing once one has: every live one answers in no measurable time, and
+// one that never does held every listing to rwiSetupTimeout (CHALLENGES 116).
+const listingGrace = 2 * time.Second
+
 // rwiSetupTimeout bounds the whole announce-list-attach conversation. It is
 // generous because a cold WebView can take seconds to publish a listing.
 const rwiSetupTimeout = 25 * time.Second
