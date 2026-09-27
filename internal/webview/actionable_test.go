@@ -2,6 +2,7 @@ package webview
 
 import (
 	"context"
+	"encoding/json"
 	"strings"
 	"testing"
 )
@@ -46,5 +47,31 @@ func TestTheActionabilityCheckUsesMapsCandidates(t *testing.T) {
 func TestAnUnreadableActionabilityAnswerIsAnError(t *testing.T) {
 	if _, err := CheckActionable(context.Background(), &cannedPage{answer: "undefined"}, 0); err == nil {
 		t.Error("an unreadable answer was accepted")
+	}
+}
+
+// A fill's answer never carries a field's value: a password is reported only
+// as matching or not, which is what lets app_type confirm one without ever
+// holding it in a result.
+func TestAFillNeverSendsTheValueBack(t *testing.T) {
+	f := &cannedPage{answer: `{"status":"ok","matches":true,"password":true}`}
+	got, err := Fill(context.Background(), f, 3, `it's "quoted" & café`)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !got.Matches || !got.Password {
+		t.Errorf("parsed %+v", got)
+	}
+	// The value reaches the page as one JSON string literal — quotes, & and
+	// non-ASCII intact — decoded here rather than matched, since JSON may
+	// spell & as \u0026.
+	start := strings.Index(f.got, "const value = ") + len("const value = ")
+	end := strings.Index(f.got[start:], ";\n") + start
+	var decoded string
+	if err := json.Unmarshal([]byte(f.got[start:end]), &decoded); err != nil || decoded != `it's "quoted" & café` {
+		t.Errorf("the value reached the page as %s (decoded %q, %v)", f.got[start:end], decoded, err)
+	}
+	if strings.Contains(fillScript, "value: el.value") || strings.Contains(fillScript, "now,") {
+		t.Error("the fill script sends a field's value back")
 	}
 }
