@@ -316,6 +316,7 @@ is the protocol.
 
 | | |
 | --- | --- |
+| [docs/PHILOSOPHY.md](docs/PHILOSOPHY.md) | *mutatis mutandis*: where the motto comes from, and the one design rule |
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | the layers, the package graph, and one call end to end |
 | [docs/SETUP.md](docs/SETUP.md) | attaching an emulator, a phone or a simulator |
 | [docs/SHUTDOWN.md](docs/SHUTDOWN.md) | stopping without orphaning a device session |

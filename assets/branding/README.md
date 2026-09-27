@@ -127,7 +127,8 @@ a device; one locator vocabulary is compiled per platform instead of a dialect
 per platform; one tool layer serves a CLI, an MCP surface and five clients; and
 a third-party driver inherits waiting, scrolling and `@ref`s by changing only
 the platform layer beneath them. Each of those is the same argument with the
-necessary changes made.
+necessary changes made. Its origin, in Poul Anderson's "The Three-Cornered
+Wheel", is in [docs/PHILOSOPHY.md](../../docs/PHILOSOPHY.md).
 
 Set it in italics, capitalized as a sentence — *Mutatis mutandis* — and do not
 translate it inline in display use; the gloss belongs in body text, as above.
