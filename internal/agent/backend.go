@@ -39,7 +39,7 @@ var builtinBackends = []Backend{BackendUIA2, BackendDump, BackendWDA}
 
 // ParseBackend validates a backend name.
 //
-// An unrecognised name is not an error here. It is a candidate external
+// An unrecognized name is not an error here. It is a candidate external
 // driver, and whether one exists is decided when a session is opened — that is
 // where PATH can be reported in the failure, and where the user finds out
 // while doing something rather than while typing.

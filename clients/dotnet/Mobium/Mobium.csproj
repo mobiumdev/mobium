@@ -24,14 +24,32 @@
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <AnalysisLevel>latest</AnalysisLevel>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <Nullable>enable</Nullable>
 
     <PackageId>Mobium</PackageId>
     <Version>0.1.0</Version>
     <Authors>Mobium</Authors>
-    <Description>Drives native apps on Android emulators, Android phones and iOS simulators, over the mobium CLI. No dependencies.</Description>
+    <Description>Drives native apps on Android emulators, Android phones, iOS simulators and iPhones, over the mobium CLI. No dependencies.</Description>
+    <Copyright>Copyright (c) 2026 Lana Begunova</Copyright>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageProjectUrl>https://github.com/mobiumdev/mobium</PackageProjectUrl>
     <RepositoryUrl>https://github.com/mobiumdev/mobium</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageTags>mobile;automation;testing;android;ios;appium;uiautomator2;webdriveragent;mcp</PackageTags>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+
+    <!-- Symbols go in a .snupkg beside the package, so a stack trace from a
+         consumer's test run points at a line here. Deterministic, so the same
+         source builds the same bytes. SourceLink is left out on purpose: it is
+         a NuGet package, and this project restores nothing. -->
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+    <Deterministic>true</Deterministic>
   </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="../README.md" Pack="true" PackagePath="/" />
+  </ItemGroup>
 
   <ItemGroup>
     <!-- The tests exercise Json and Connection.FindBinary, which are internal

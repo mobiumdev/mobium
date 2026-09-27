@@ -123,7 +123,7 @@ func TestPollUntilStopsOnFatalError(t *testing.T) {
 	}
 }
 
-func TestPollUntilHonoursCancellation(t *testing.T) {
+func TestPollUntilHonorsCancellation(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
 	err := pollUntil(ctx, time.Minute, func(context.Context) (bool, error) { return false, nil })

@@ -305,7 +305,7 @@ func TestUIA2HealthyFalseBeforeStart(t *testing.T) {
 	}
 }
 
-func TestStaleSessionIsRecognised(t *testing.T) {
+func TestStaleSessionIsRecognized(t *testing.T) {
 	// The exact wording differs between servers and versions, so the check is
 	// deliberately broad. Getting this wrong means either never recovering,
 	// or reopening the session on every ordinary failure.

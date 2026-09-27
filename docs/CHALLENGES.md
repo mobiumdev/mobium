@@ -3048,7 +3048,7 @@ Worth recording because each one closed off an approach that looked obvious.
   falling back for the rest would make scrolling behave differently depending
   on how the caller happened to name the element, so the loop is the whole
   implementation on every backend.
-- **A canceled call cannot be resynchronised on one pipe.** The Go client
+- **A canceled call cannot be resynchronized on one pipe.** The Go client
   takes a `context.Context`, as a Go caller expects. But replies are told apart
   only by id, so a call abandoned half-way would have its answer read as the
   answer to the next one. Canceling therefore ends the connection, and the
@@ -3061,7 +3061,9 @@ Worth recording because each one closed off an approach that looked obvious.
   things that actually break — control characters, whole numbers staying
   whole so a coordinate does not arrive as `540.0`, and the non-breaking
   hyphen in Android's own "Wi‑Fi" surviving a round trip. Its tests have no
-  framework either, so the client is checkable with `javac` alone.
+  framework either — a main method the Maven build runs in its `test` phase —
+  so not even a test-scope dependency is needed, and the build's enforcer
+  fails on any dependency at all.
 - **iOS WebViews were written off too early.** The note that WKWebView needs
   "a third protocol, reached through `com.apple.webinspectord_sim`" was
   recorded without anyone checking what that is, and the phrase did the work

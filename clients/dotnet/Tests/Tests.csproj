@@ -16,6 +16,7 @@
     <OutputType>Exe</OutputType>
     <LangVersion>latest</LangVersion>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <Nullable>enable</Nullable>
     <RootNamespace>Mobium.Tests</RootNamespace>
     <AssemblyName>Mobium.Tests</AssemblyName>
   </PropertyGroup>

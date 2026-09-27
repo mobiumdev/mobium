@@ -19,7 +19,7 @@ func TestParseBackend(t *testing.T) {
 		{"uiautomator2", BackendUIA2, false},
 		{"uiautomator", BackendDump, false},
 		{"  uiautomator2  ", BackendUIA2, false},
-		// An unrecognised name is not an error here any more: it is the name
+		// An unrecognized name is not an error here any more: it is the name
 		// of a possible third-party driver, and whether one exists is decided
 		// when a session opens, where PATH can be named in the failure. See
 		// docs/decisions/0003.

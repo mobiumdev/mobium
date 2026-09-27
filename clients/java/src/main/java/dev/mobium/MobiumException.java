@@ -24,17 +24,37 @@ public class MobiumException extends RuntimeException {
 
     /** The tool that failed, or empty for a transport-level failure. */
     private final String tool;
+    /** The error code, or {@code "error"} when unclassified. */
     private final String code;
+    /** What to do about it, or empty. */
     private final String remedy;
+    /** Whether the same call, made again unchanged, can succeed. */
     private final boolean retryable;
     private final transient Map<String, Object> details;
 
+    /**
+     * A transport-level failure, with no tool to blame.
+     *
+     * @param message what went wrong
+     */
     public MobiumException(String message) { this(message, ""); }
 
+    /**
+     * A named tool reported that it could not do what was asked.
+     *
+     * @param message what went wrong
+     * @param tool    the tool that failed
+     */
     public MobiumException(String message, String tool) {
         this(message, tool, "error", "", false, Map.of());
     }
 
+    /**
+     * A failure caused by something further down.
+     *
+     * @param message what went wrong
+     * @param cause   the failure underneath
+     */
     public MobiumException(String message, Throwable cause) {
         super(message, cause);
         this.tool = "";
@@ -54,19 +74,39 @@ public class MobiumException extends RuntimeException {
         this.details = details == null ? Map.of() : details;
     }
 
-    /** The tool that failed, or an empty string. */
+    /**
+     * The tool that failed, or an empty string.
+     *
+     * @return the tool's name, or an empty string for a transport failure
+     */
     public String tool() { return tool; }
 
-    /** The error code: {@code "no_such_element"}, {@code "timeout"}, ... — {@code "error"} when unclassified. */
+    /**
+     * The error code: {@code "no_such_element"}, {@code "timeout"}, ... — {@code "error"} when unclassified.
+     *
+     * @return the code, or {@code "error"} when unclassified
+     */
     public String code() { return code; }
 
-    /** What to do about it, or an empty string. */
+    /**
+     * What to do about it, or an empty string.
+     *
+     * @return the remedy, or an empty string
+     */
     public String remedy() { return remedy; }
 
-    /** Whether the same call, made again unchanged, can reasonably succeed. */
+    /**
+     * Whether the same call, made again unchanged, can reasonably succeed.
+     *
+     * @return true when retrying unchanged can help
+     */
     public boolean retryable() { return retryable; }
 
-    /** Machine-readable facts: the locator, the W3C code a device server sent. */
+    /**
+     * Machine-readable facts: the locator, the W3C code a device server sent.
+     *
+     * @return the facts, never null
+     */
     public Map<String, Object> details() { return details; }
 
     /**

@@ -38,10 +38,15 @@ func (e *Error) Error() string {
 	return e.Tool + ": " + e.Reason
 }
 
-// FindBinary locates the mobium executable.
+// FindBinary locates the mobium executable: the explicit path, then
+// MOBIUM_BIN_PATH, then PATH — and nothing else.
 //
 // MOBIUM_BIN_PATH wins, so a test run can pin a specific build — the same
-// escape hatch the other clients have.
+// escape hatch the other clients have. The current directory is never
+// searched, not even through a relative PATH entry: a library that runs
+// whatever ./bin/mobium happens to sit where a test was started runs a
+// binary anyone could have planted there. exec.LookPath already refuses a
+// result from a relative PATH entry (exec.ErrDot).
 func FindBinary(explicit string) (string, error) {
 	for _, candidate := range []string{explicit, os.Getenv("MOBIUM_BIN_PATH")} {
 		if candidate == "" {
@@ -52,13 +57,8 @@ func FindBinary(explicit string) (string, error) {
 		}
 		return "", fmt.Errorf("%s is not an executable mobium binary", candidate)
 	}
-	if found, err := exec.LookPath("mobium"); err == nil {
+	if found, err := exec.LookPath("mobium"); err == nil && filepath.IsAbs(found) {
 		return found, nil
-	}
-	for _, rel := range []string{"./bin/mobium", "../bin/mobium", "../../bin/mobium"} {
-		if executable(rel) {
-			return filepath.Abs(rel)
-		}
 	}
 	return "", errors.New("mobium not found — put it on PATH or set MOBIUM_BIN_PATH to the binary")
 }
@@ -233,7 +233,7 @@ func (c *conn) request(ctx context.Context, method string, params map[string]any
 		return r.raw, r.err
 	case <-ctx.Done():
 		// There is one pipe and replies are told apart only by id, so a call
-		// abandoned half-way cannot be resynchronised: the answer to it would
+		// abandoned half-way cannot be resynchronized: the answer to it would
 		// be read as the answer to the next one. Canceling therefore ends
 		// the connection rather than leaving it subtly wrong, and the next
 		// call says so plainly. Give the session a generous context, or none.

@@ -30,5 +30,42 @@ check(u.constructor === m.MobiumError && u.code === 'something_new', 'unknown co
 const o = m.errorFrom('plain text', undefined)
 check(o.constructor === m.MobiumError && o.code === 'error', 'text-only failure mishandled')
 
+// The binary is never looked for in the current directory, in ./bin or
+// through a relative PATH entry: anything could have been planted there.
+{
+  const { mkdtempSync, mkdirSync, writeFileSync, chmodSync, rmSync } = await import('node:fs')
+  const { join } = await import('node:path')
+  const { tmpdir } = await import('node:os')
+  const saved = { cwd: process.cwd(), path: process.env.PATH, bin: process.env.MOBIUM_BIN_PATH }
+  const tmp = mkdtempSync(join(tmpdir(), 'mobium-'))
+  const name = process.platform === 'win32' ? 'mobium.exe' : 'mobium'
+  for (const where of [tmp, join(tmp, 'bin')]) {
+    mkdirSync(where, { recursive: true })
+    writeFileSync(join(where, name), '#!/bin/sh\nexit 99\n')
+    chmodSync(join(where, name), 0o755)
+  }
+  try {
+    delete process.env.MOBIUM_BIN_PATH
+    process.chdir(tmp)
+    for (const path of ['.', 'bin', './bin', '']) {
+      process.env.PATH = path
+      try {
+        const found = m.findBinary()
+        check(false, `PATH=${JSON.stringify(path)}: found ${found}, a binary in the current directory`)
+      } catch (e) {
+        check(e instanceof m.MobiumError, `PATH=${JSON.stringify(path)}: threw ${e}`)
+      }
+    }
+    // The positive control: the same file, by its absolute directory.
+    process.env.PATH = join(tmp, 'bin')
+    check(m.findBinary() === join(tmp, 'bin', name), 'an absolute PATH entry was not searched')
+  } finally {
+    process.chdir(saved.cwd)
+    process.env.PATH = saved.path
+    if (saved.bin !== undefined) process.env.MOBIUM_BIN_PATH = saved.bin
+    rmSync(tmp, { recursive: true, force: true })
+  }
+}
+
 if (failures.length) { console.log(failures.map(f => 'FAIL: ' + f).join('\n')); process.exit(1) }
 console.log(`javascript errors: ${codes.length} codes mapped, all checks passed`)

@@ -21,10 +21,10 @@ namespace Mobium
     public sealed class Until
     {
         private readonly string _condition;
-        private readonly string _text;
+        private readonly string? _text;
         private readonly TimeSpan? _timeout;
 
-        private Until(string condition, string text, TimeSpan? timeout)
+        private Until(string condition, string? text, TimeSpan? timeout)
         {
             _condition = condition; _text = text; _timeout = timeout;
         }
@@ -41,9 +41,9 @@ namespace Mobium
         /// <summary>How long before giving up. Ten seconds by default, two minutes at most.</summary>
         public Until Timeout(TimeSpan d) => new Until(_condition, _text, d);
 
-        internal IDictionary<string, object> Args(string target)
+        internal IDictionary<string, object?> Args(string target)
         {
-            var m = new Dictionary<string, object>(StringComparer.Ordinal)
+            var m = new Dictionary<string, object?>(StringComparer.Ordinal)
             {
                 ["target"] = target,
                 ["condition"] = _condition,

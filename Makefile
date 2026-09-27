@@ -80,22 +80,22 @@ crosscompile:
 	done
 	@echo "cross-compiles"
 
-# java builds and checks the Java client with javac alone — no Maven, no
-# network. Skipped with a note when there is no JDK, because most people
-# working on the Go here will not have one and should not be blocked by it.
+# java builds, tests and packages the Java client the way it is published:
+# through the Maven wrapper, which fetches a pinned, checksum-verified Maven
+# on first use. `verify` compiles with -Xlint:all -Werror, runs the tests,
+# builds the jar, sources and javadoc jars with javadoc's doclint on and
+# warnings fatal, and fails if the client has acquired a dependency. Skipped
+# with a note when there is no JDK, because most people working on the Go
+# here will not have one and should not be blocked by it.
 JAVA_HOME_GUESS := $(shell /usr/libexec/java_home 2>/dev/null || echo /opt/homebrew/opt/openjdk@21/libexec/openjdk.jdk/Contents/Home)
-JAVAC := $(shell command -v javac 2>/dev/null || echo $(JAVA_HOME_GUESS)/bin/javac)
 JAVA  := $(shell command -v java  2>/dev/null || echo $(JAVA_HOME_GUESS)/bin/java)
 
 java:
-	@if [ ! -x "$(JAVAC)" ]; then \
+	@if [ ! -x "$(JAVA)" ]; then \
 		echo "no JDK found, skipping the Java client (set JAVA_HOME or install one)"; \
 		exit 0; \
 	fi; \
-	rm -rf clients/java/target/classes && mkdir -p clients/java/target/classes && \
-	"$(JAVAC)" --release 17 -Xlint:all -Werror -d clients/java/target/classes \
-		$$(find clients/java/src -name '*.java') && \
-	"$(JAVA)" -cp clients/java/target/classes dev.mobium.Tests
+	cd clients/java && ./mvnw -B --no-transfer-progress -q verify
 
 # ci is everything that runs without a device. Keep this the single definition
 # of that, so the workflow and a person checking before a commit cannot drift.

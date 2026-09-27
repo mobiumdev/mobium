@@ -1,7 +1,11 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Diagnostics;
+using System.Linq;
 using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
 using Mobium;
 
 namespace Mobium.Tests
@@ -23,6 +27,7 @@ namespace Mobium.Tests
         private static int Main(string[] args)
         {
             if (args.Length > 0 && args[0] == "e2e") return E2E.Run();
+            if (args.Length > 0 && args[0] == "pipe") return FakeMobium.Run();
             JsonRoundTripsStrings();
             JsonEscapesControlCharacters();
             JsonKeepsNonAsciiIntact();
@@ -32,13 +37,31 @@ namespace Mobium.Tests
             JsonWritesNumbersWithoutTheCulturesOpinion();
             StdioIsUtf8WhateverTheConsoleThinks();
             ElementReadsAToolResult();
-            BoundsComputeTheirCentre();
+            BoundsComputeTheirCenter();
             UntilBuildsItsArguments();
             FindBinaryRejectsSomethingThatIsNotOne();
+            FindBinaryNeverSearchesTheCurrentDirectory();
             ArgumentsSurviveSpacesAndQuotes();
             EveryErrorCodeHasItsException();
             AToolFailureKeepsCodeRemedyAndDetails();
             AnUnknownOrMissingCodeIsTheBaseException();
+            JsonRefusesNestingThatWouldOverflowTheStack();
+            JsonNumbersFollowTheGrammar();
+            JsonEscapesAreExact();
+            JsonIntegerRefusesWhatDoesNotFit();
+            JsonWritesNoNumberJsonCannotCarry();
+            TheClientReportsItsAssemblyVersion();
+            CallTimeoutMustBePositive();
+
+            // The connection, against this program standing in for mobium.
+            ItSkipsWhatIsNotTheAnswer();
+            ArgumentsArriveExactlyThroughARealProcess();
+            ConcurrentCallsAreSerialized();
+            ANullArgumentIsRefusedBeforeItIsSent();
+            ATimedOutCallEndsTheConnection();
+            AnExitMidCallIsReportedWithItsStatus();
+            AFailedHandshakeLeavesNoProcess();
+            DisposeIsIdempotentAndEndsAWaitingCall();
 
             Console.WriteLine();
             Console.WriteLine($"{_checks} checks, {_failures} failed");
@@ -168,7 +191,7 @@ namespace Mobium.Tests
             Eq("toString without a role", "@e2 Search", e.ToString());
         }
 
-        private static void BoundsComputeTheirCentre()
+        private static void BoundsComputeTheirCenter()
         {
             var b = new Bounds(100, 200, 300, 280);
             Eq("center x", 200, b.CenterX);
@@ -205,6 +228,44 @@ namespace Mobium.Tests
             Yes("a path that is not a binary is refused", threw);
         }
 
+        private static void FindBinaryNeverSearchesTheCurrentDirectory()
+        {
+            // Not in ./bin, and not through a relative PATH entry, which is
+            // the current directory by another name: anything could have been
+            // planted there.
+            var name = OperatingSystem.IsWindows() ? "mobium.exe" : "mobium";
+            var tmp = Path.Combine(Path.GetTempPath(), "mobium-" + Guid.NewGuid());
+            foreach (var where in new[] { tmp, Path.Combine(tmp, "bin") })
+            {
+                Directory.CreateDirectory(where);
+                File.WriteAllText(Path.Combine(where, name), "#!/bin/sh\nexit 99\n");
+            }
+            var cwd = Directory.GetCurrentDirectory();
+            var path = Environment.GetEnvironmentVariable("PATH");
+            var bin = Environment.GetEnvironmentVariable("MOBIUM_BIN_PATH");
+            try
+            {
+                Environment.SetEnvironmentVariable("MOBIUM_BIN_PATH", null);
+                Directory.SetCurrentDirectory(tmp);
+                foreach (var entry in new[] { ".", "bin", "./bin", "", "C:bin", "\\bin" })
+                {
+                    Environment.SetEnvironmentVariable("PATH", entry);
+                    var found = Throws<MobiumException>(() => Connection.FindBinary(null)) != null;
+                    Yes("PATH=" + Describe(entry) + " does not reach the current directory", found);
+                }
+                // The positive control: the same file, by its absolute directory.
+                Environment.SetEnvironmentVariable("PATH", Path.Combine(tmp, "bin"));
+                Eq("an absolute PATH entry is searched", Path.Combine(tmp, "bin", name), Connection.FindBinary(null));
+            }
+            finally
+            {
+                Directory.SetCurrentDirectory(cwd);
+                Environment.SetEnvironmentVariable("PATH", path);
+                Environment.SetEnvironmentVariable("MOBIUM_BIN_PATH", bin);
+                Directory.Delete(tmp, true);
+            }
+        }
+
         private static void ArgumentsSurviveSpacesAndQuotes()
         {
             // netstandard2.0 has no ArgumentList, so Connection joins the
@@ -226,6 +287,228 @@ namespace Mobium.Tests
                 Connection.BuildArguments(new[] { "a\\b c" }));
             Eq("trailing backslashes are doubled", "\"a b\\\\\"",
                 Connection.BuildArguments(new[] { "a b\\" }));
+        }
+
+        // -- hardening: the JSON reader --------------------------------------
+
+        private static void JsonRefusesNestingThatWouldOverflowTheStack()
+        {
+            // A stack overflow in .NET ends the process; it cannot be caught.
+            // So nesting past the limit must be an ordinary exception.
+            var deep = new string('[', 200000) + new string(']', 200000);
+            var threw = false;
+            try { Json.Parse(deep); } catch (MobiumException) { threw = true; }
+            Yes("200000 levels of nesting is refused, not a crash", threw);
+            var ok = new string('[', Json.MaxDepth) + new string(']', Json.MaxDepth);
+            Yes("nesting at the limit parses", Json.Parse(ok) is IList<object?>);
+        }
+
+        private static void JsonNumbersFollowTheGrammar()
+        {
+            foreach (var bad in new[] { "+1", "01", "1.", ".5", "-", "1e", "1e+", "--1", "1-2", "0x10" })
+            {
+                var threw = false;
+                try { Json.Parse(bad); } catch (MobiumException) { threw = true; }
+                Yes("number " + bad + " is refused", threw);
+            }
+            Eq("zero", 0L, Json.Parse("0"));
+            Eq("negative zero is a long", 0L, Json.Parse("-0"));
+            Eq("exponent with a sign", -500d, Json.Parse("-0.5e+3"));
+            Yes("too big for a long becomes a double", Json.Parse("99999999999999999999") is double);
+        }
+
+        private static void JsonEscapesAreExact()
+        {
+            Eq("\\u with four digits", "A", Json.Parse("\"\\u0041\""));
+            foreach (var bad in new[] { "\"\\u 41a\"", "\"\\u+041\"", "\"\\u00g1\"", "\"\\u004\"", "\"a\u0001b\"" })
+            {
+                var threw = false;
+                try { Json.Parse(bad); } catch (MobiumException) { threw = true; }
+                Yes("string " + Describe(bad) + " is refused", threw);
+            }
+            // A surrogate pair arrives as two escapes and must come out whole.
+            Eq("surrogate pair", "\U0001F41B", Json.Parse("\"\\ud83d\\udc1b\""));
+        }
+
+        private static void JsonIntegerRefusesWhatDoesNotFit()
+        {
+            var m = Json.AsObject(Json.Parse("{\"x\":2147483648,\"y\":2147483647}"));
+            Eq("int.MaxValue fits", int.MaxValue, Json.Integer(m, "y"));
+            var threw = false;
+            try { Json.Integer(m, "x"); } catch (MobiumException) { threw = true; }
+            Yes("2^31 is refused rather than wrapped negative", threw);
+        }
+
+        private static void JsonWritesNoNumberJsonCannotCarry()
+        {
+            foreach (var d in new[] { double.NaN, double.PositiveInfinity })
+            {
+                var refused = Throws<InvalidArgumentException>(() => Json.Write(new Dictionary<string, object?> { ["latitude"] = d })) != null;
+                Yes(d + " is refused rather than written bare", refused);
+            }
+        }
+
+        private static void TheClientReportsItsAssemblyVersion()
+        {
+            // One version, in Mobium.csproj; the handshake reads it from there.
+            Eq("clientInfo version", "0.1.0", Connection.ClientVersion);
+        }
+
+        private static void CallTimeoutMustBePositive()
+        {
+            foreach (var bad in new[] { TimeSpan.Zero, TimeSpan.FromSeconds(-1) })
+            {
+                var threw = false;
+                try { Device.Builder().CallTimeout(bad); } catch (ArgumentOutOfRangeException) { threw = true; }
+                Yes("CallTimeout(" + bad + ") is refused", threw);
+            }
+            Device.Builder().CallTimeout(Timeout.InfiniteTimeSpan);
+            Yes("CallTimeout(Infinite) is accepted", true);
+        }
+
+        // -- hardening: the connection, against a fake mobium ---------------
+
+        private static string FakeBinary() =>
+            Path.Combine(AppContext.BaseDirectory, OperatingSystem.IsWindows() ? "Mobium.Tests.exe" : "Mobium.Tests");
+
+        private static Device Fake(string mode, TimeSpan? timeout = null, string? pidFile = null)
+        {
+            Environment.SetEnvironmentVariable("MOBIUM_FAKE", mode);
+            Environment.SetEnvironmentVariable("MOBIUM_FAKE_PIDFILE", pidFile);
+            var b = Device.Builder().Binary(FakeBinary());
+            if (timeout.HasValue) b.CallTimeout(timeout.Value);
+            return b.Connect();
+        }
+
+        private static T? Throws<T>(Action a) where T : Exception
+        {
+            try { a(); } catch (T e) { return e; }
+            return null;
+        }
+
+        private static void ItSkipsWhatIsNotTheAnswer()
+        {
+            using var d = Fake("ok");
+            var r = d.Call("app_echo", new Dictionary<string, object?> { ["k"] = "v" });
+            Eq("the answer, past a notification, a non-JSON line and another id's reply", "app_echo", Json.Str(r, "tool"));
+            Eq("arguments arrive", "v", Json.Str(Json.AsObject(r["echo"]), "k"));
+        }
+
+        private static void ArgumentsArriveExactlyThroughARealProcess()
+        {
+            // BuildArguments is checked above against the strings it builds;
+            // this checks what a started process actually receives, which on
+            // Windows is CommandLineToArgvW's reading of it and elsewhere
+            // .NET's own. Backslashes before a quote and at the end are the
+            // cases that differ from a naive join.
+            const string serial = "my \"odd\" dev\\ice\\";
+            Environment.SetEnvironmentVariable("MOBIUM_FAKE", "ok");
+            using var d = Device.Builder().Binary(FakeBinary()).OnDevice(serial).Backend("").Connect();
+            var argv = Json.AsArray(d.Call("app_x", null)["argv"]);
+            Eq("argv[0] is pipe", "pipe", argv.Count > 0 ? argv[0] : null);
+            Eq("--device then the serial, byte for byte", serial, argv.Count > 2 ? argv[2] : null);
+            Eq("nothing else", 3, argv.Count);
+        }
+
+        private static void ConcurrentCallsAreSerialized()
+        {
+            // Two calls in flight on one pipe would read each other's answer.
+            using var d = Fake("ok");
+            var answers = new string[8];
+            var threads = Enumerable.Range(0, answers.Length).Select(i => new Thread(() =>
+            {
+                // An exception on a worker thread would end the run rather
+                // than fail a check, so it is kept as the answer instead.
+                try
+                {
+                    var r = d.Call("slow", new Dictionary<string, object?> { ["n"] = (long)i });
+                    answers[i] = Json.Str(Json.AsObject(r["echo"]), "n");
+                }
+                catch (Exception e)
+                {
+                    answers[i] = e.GetType().Name;
+                }
+            })).ToList();
+            var clock = Stopwatch.StartNew();
+            threads.ForEach(t => t.Start());
+            threads.ForEach(t => t.Join());
+            Yes("each of 8 threads got its own answer",
+                Enumerable.Range(0, answers.Length).All(i => answers[i] == i.ToString()));
+            Yes("they ran one at a time (8 x 300ms)", clock.ElapsedMilliseconds >= 8 * 300 - 50);
+        }
+
+        private static void ANullArgumentIsRefusedBeforeItIsSent()
+        {
+            using var d = Fake("ok");
+            var e = Throws<InvalidArgumentException>(() => d.Tap(null!));
+            Yes("a null target is InvalidArgumentException", e != null);
+            Yes("naming the argument", e != null && e.Message.Contains("target"));
+            Yes("a null inside a params array is refused",
+                Throws<InvalidArgumentException>(() => d.Grant("com.example", "camera", null!)) != null);
+            Yes("a null waypoint is refused",
+                Throws<InvalidArgumentException>(() => d.FollowRoute(new[] { new[] { 1d, 2d }, null! }, 0)) != null);
+            Yes("an empty tool name is refused",
+                Throws<InvalidArgumentException>(() => d.Call(" ", null)) != null);
+            Eq("and the connection is still fine", "app_current", Json.Str(d.Call("app_current", null), "tool"));
+        }
+
+        private static void ATimedOutCallEndsTheConnection()
+        {
+            using var d = Fake("hang", TimeSpan.FromMilliseconds(500));
+            var clock = Stopwatch.StartNew();
+            var first = Throws<MobiumException>(() => d.Call("app_map", null));
+            Yes("a call with no answer times out", first != null && clock.ElapsedMilliseconds < 5000);
+            Yes("saying why the connection is closed", first != null && first.Message.Contains("CallTimeout"));
+            var second = Throws<MobiumException>(() => d.Call("app_map", null));
+            Yes("the next call is refused, not read out of step",
+                second != null && second.Message.Contains("no longer usable"));
+        }
+
+        private static void AnExitMidCallIsReportedWithItsStatus()
+        {
+            using var d = Fake("exit");
+            var e = Throws<MobiumException>(() => d.Call("app_map", null));
+            Yes("an exit mid-call names the status", e != null && e.Message.Contains("status 3"));
+            var again = Throws<MobiumException>(() => d.Call("app_map", null));
+            Yes("and the connection stays closed", again != null && again.Message.Contains("no longer usable"));
+        }
+
+        private static void AFailedHandshakeLeavesNoProcess()
+        {
+            var pidFile = Path.Combine(Path.GetTempPath(), "mobium-fake-" + Guid.NewGuid() + ".pid");
+            try
+            {
+                // Refused rather than silent: a timeout kills the process on
+                // its own, so only a handshake that fails some other way shows
+                // whether Connect cleans up after itself.
+                var clock = Stopwatch.StartNew();
+                var silent = Throws<MobiumException>(() => Fake("mute", TimeSpan.FromMilliseconds(500)).Dispose());
+                Yes("a silent handshake fails Connect within CallTimeout", silent != null && clock.ElapsedMilliseconds < 5000);
+                var e = Throws<MobiumException>(() => Fake("refuse", null, pidFile).Dispose());
+                Yes("a refused handshake fails Connect", e != null);
+                var pid = int.Parse(File.ReadAllText(pidFile));
+                var gone = Throws<ArgumentException>(() => Process.GetProcessById(pid)) != null
+                           || Process.GetProcessById(pid).WaitForExit(5000);
+                Yes("and the process it started is not left running", gone);
+            }
+            finally
+            {
+                File.Delete(pidFile);
+            }
+        }
+
+        private static void DisposeIsIdempotentAndEndsAWaitingCall()
+        {
+            var d = Fake("hang");
+            var waiting = Task.Run(() => Throws<MobiumException>(() => d.Call("app_map", null)));
+            Thread.Sleep(300);
+            d.Dispose();
+            Yes("Dispose from another thread ends a waiting call", waiting.Wait(15000) && waiting.Result != null);
+            d.Dispose();
+            Yes("a second Dispose is harmless", true);
+            var after = Throws<MobiumException>(() => d.Call("app_map", null));
+            Yes("a call after Dispose is a MobiumException saying so",
+                after != null && after.Message.Contains("disposed"));
         }
 
         // -- the harness ----------------------------------------------------
@@ -271,7 +554,7 @@ namespace Mobium.Tests
             Eq("a daemon that sends no code gives error", "error", MobiumException.From("plain", "app_tap", null).Code);
         }
 
-        private static void Eq(string what, object want, object got)
+        private static void Eq(string what, object? want, object? got)
         {
             _checks++;
             if (Equals(want, got))
@@ -295,10 +578,10 @@ namespace Mobium.Tests
             Console.WriteLine($"FAIL {what}");
         }
 
-        private static string Describe(object o)
+        private static string Describe(object? o)
         {
             if (o == null) return "null";
-            var s = o.ToString();
+            var s = o.ToString() ?? "";
             if (o is string) s = "\"" + s.Replace("\n", "\\n").Replace("\t", "\\t") + "\"";
             return s.Length == 0 ? "\"\"" : s;
         }

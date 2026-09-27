@@ -32,7 +32,10 @@ namespace Mobium.Tests
                 Console.WriteLine("MOBIUM_E2E_DEVICE is not set; skipping");
                 return 0;
             }
-            var builder = Device.Builder().OnDevice(serial);
+            // A CallTimeout, generous enough never to fire, so the timed read
+            // path meets the real daemon here; the unit tests' fake covers
+            // the untimed one and every failure.
+            var builder = Device.Builder().OnDevice(serial).CallTimeout(TimeSpan.FromMinutes(5));
             var bin = Environment.GetEnvironmentVariable("MOBIUM_BIN_PATH");
             if (!string.IsNullOrWhiteSpace(bin)) builder.Binary(bin);
 
@@ -44,7 +47,7 @@ namespace Mobium.Tests
 
                 var found = d.WaitFor("text=Network & internet");
                 Check(found != null && found.Ref.StartsWith("@e", StringComparison.Ordinal), "WaitFor returns a ref");
-                d.Tap(found.Ref);
+                d.Tap(found!.Ref);
                 // A tap returns when delivered, not when the next screen is up.
                 Check(d.WaitFor("text=Internet") != null, "tapping the ref opens its screen");
 

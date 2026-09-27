@@ -351,11 +351,11 @@ func TestUnknownCapabilityIsIgnoredNotFatal(t *testing.T) {
 	t.Setenv("MOBIUM_FAKE_MODE", "unknown-cap")
 	d := NewExternal("fake", driverBinary, "")
 	if err := d.Start(context.Background(), func(s string) { said = append(said, s) }); err != nil {
-		t.Fatalf("an unrecognised capability should not stop a driver: %v", err)
+		t.Fatalf("an unrecognized capability should not stop a driver: %v", err)
 	}
 	defer d.Close()
 	if d.HasCapability("teleportation") {
-		t.Error("an unrecognised capability was recorded as usable")
+		t.Error("an unrecognized capability was recorded as usable")
 	}
 	// Ignoring it silently is how a driver author loses an afternoon.
 	if !strings.Contains(strings.Join(said, "\n"), "teleportation") {

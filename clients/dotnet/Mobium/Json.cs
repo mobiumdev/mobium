@@ -22,14 +22,14 @@ namespace Mobium
     {
         // -- writing ------------------------------------------------------
 
-        internal static string Write(object value)
+        internal static string Write(object? value)
         {
             var b = new StringBuilder();
             WriteValue(b, value);
             return b.ToString();
         }
 
-        private static void WriteValue(StringBuilder b, object v)
+        private static void WriteValue(StringBuilder b, object? v)
         {
             switch (v)
             {
@@ -42,7 +42,7 @@ namespace Mobium
                 case bool t:
                     b.Append(t ? "true" : "false");
                     return;
-                case IDictionary<string, object> map:
+                case IDictionary<string, object?> map:
                     b.Append('{');
                     var first = true;
                     foreach (var kv in map)
@@ -66,6 +66,14 @@ namespace Mobium
                     }
                     b.Append(']');
                     return;
+                // JSON has no NaN or Infinity; written bare they make the whole
+                // request unreadable, and the daemon would blame the pipe.
+                case double d when double.IsNaN(d) || double.IsInfinity(d):
+                    throw new InvalidArgumentException(d.ToString(CultureInfo.InvariantCulture) + " is not a number JSON can carry",
+                        "", "", false, null);
+                case float f when float.IsNaN(f) || float.IsInfinity(f):
+                    throw new InvalidArgumentException(f.ToString(CultureInfo.InvariantCulture) + " is not a number JSON can carry",
+                        "", "", false, null);
                 case double d:
                     b.Append(d.ToString("R", CultureInfo.InvariantCulture));
                     return;
@@ -110,7 +118,7 @@ namespace Mobium
 
         // -- reading ------------------------------------------------------
 
-        internal static object Parse(string text)
+        internal static object? Parse(string text)
         {
             var p = new Parser(text);
             p.SkipWhitespace();
@@ -120,19 +128,19 @@ namespace Mobium
             return v;
         }
 
-        internal static IDictionary<string, object> AsObject(object v) =>
-            v as IDictionary<string, object> ?? new Dictionary<string, object>();
+        internal static IDictionary<string, object?> AsObject(object? v) =>
+            v as IDictionary<string, object?> ?? new Dictionary<string, object?>();
 
-        internal static IList<object> AsArray(object v) =>
-            v as IList<object> ?? new List<object>();
+        internal static IList<object?> AsArray(object? v) =>
+            v as IList<object?> ?? new List<object?>();
 
-        internal static string Str(IDictionary<string, object> m, string key) =>
+        internal static string Str(IDictionary<string, object?>? m, string key) =>
             m != null && m.TryGetValue(key, out var v) && v != null ? v as string ?? Convert.ToString(v, CultureInfo.InvariantCulture) : "";
 
-        internal static bool Bool(IDictionary<string, object> m, string key) =>
+        internal static bool Bool(IDictionary<string, object?>? m, string key) =>
             m != null && m.TryGetValue(key, out var v) && v is bool b && b;
 
-        internal static double Number(IDictionary<string, object> m, string key)
+        internal static double Number(IDictionary<string, object?>? m, string key)
         {
             if (m == null || !m.TryGetValue(key, out var v) || v == null) return 0d;
             switch (v)
@@ -144,22 +152,35 @@ namespace Mobium
             }
         }
 
-        internal static int Integer(IDictionary<string, object> m, string key)
+        internal static int Integer(IDictionary<string, object?>? m, string key)
         {
             if (m == null || !m.TryGetValue(key, out var v) || v == null) return 0;
+            // A value out of int's range is refused rather than wrapped: an
+            // unchecked cast turns 2^31 into a negative coordinate, and a tap
+            // there lands somewhere nobody asked for.
             switch (v)
             {
-                case long l: return (int)l;
+                case long l when l >= int.MinValue && l <= int.MaxValue: return (int)l;
                 case int i: return i;
-                case double d: return (int)d;
+                case double d when d >= int.MinValue && d <= int.MaxValue: return (int)d;
+                case long _:
+                case double _:
+                    throw new MobiumException(key + " is " + Convert.ToString(v, CultureInfo.InvariantCulture) + ", out of range for an int");
                 default: return 0;
             }
         }
+
+        // Deeper than any hierarchy a device reports -- a React Native screen
+        // is a few dozen levels -- and far short of the stack. The parser
+        // recurses, and in .NET a stack overflow is not an exception: it ends
+        // the process, test host and all, with nothing to catch.
+        internal const int MaxDepth = 1000;
 
         private sealed class Parser
         {
             private readonly string _s;
             private int _i;
+            private int _depth;
 
             internal Parser(string s) { _s = s ?? ""; }
 
@@ -170,13 +191,13 @@ namespace Mobium
                 while (_i < _s.Length && (_s[_i] == ' ' || _s[_i] == '\t' || _s[_i] == '\n' || _s[_i] == '\r')) _i++;
             }
 
-            internal object ReadValue()
+            internal object? ReadValue()
             {
                 if (AtEnd) throw new MobiumException("unexpected end of JSON");
                 switch (_s[_i])
                 {
-                    case '{': return ReadObject();
-                    case '[': return ReadArray();
+                    case '{': return Nested(ReadObject);
+                    case '[': return Nested(ReadArray);
                     case '"': return ReadString();
                     case 't': return ReadLiteral("true", true);
                     case 'f': return ReadLiteral("false", false);
@@ -185,7 +206,20 @@ namespace Mobium
                 }
             }
 
-            private object ReadLiteral(string word, object value)
+            private object Nested<T>(Func<T> read) where T : class
+            {
+                if (++_depth > MaxDepth) throw new MobiumException("JSON nested deeper than " + MaxDepth + " levels");
+                try
+                {
+                    return read();
+                }
+                finally
+                {
+                    _depth--;
+                }
+            }
+
+            private object? ReadLiteral(string word, object? value)
             {
                 if (_i + word.Length > _s.Length || string.CompareOrdinal(_s, _i, word, 0, word.Length) != 0)
                     throw new MobiumException("malformed JSON literal");
@@ -193,9 +227,9 @@ namespace Mobium
                 return value;
             }
 
-            private IDictionary<string, object> ReadObject()
+            private IDictionary<string, object?> ReadObject()
             {
-                var m = new Dictionary<string, object>(StringComparer.Ordinal);
+                var m = new Dictionary<string, object?>(StringComparer.Ordinal);
                 _i++; // {
                 SkipWhitespace();
                 if (!AtEnd && _s[_i] == '}') { _i++; return m; }
@@ -217,9 +251,9 @@ namespace Mobium
                 }
             }
 
-            private IList<object> ReadArray()
+            private IList<object?> ReadArray()
             {
-                var list = new List<object>();
+                var list = new List<object?>();
                 _i++; // [
                 SkipWhitespace();
                 if (!AtEnd && _s[_i] == ']') { _i++; return list; }
@@ -244,6 +278,7 @@ namespace Mobium
                     if (AtEnd) throw new MobiumException("unterminated JSON string");
                     var c = _s[_i++];
                     if (c == '"') return b.ToString();
+                    if (c < 0x20) throw new MobiumException("raw control character in a JSON string");
                     if (c != '\\') { b.Append(c); continue; }
                     if (AtEnd) throw new MobiumException("unterminated JSON escape");
                     var e = _s[_i++];
@@ -259,9 +294,16 @@ namespace Mobium
                         case 'f': b.Append('\f'); break;
                         case 'u':
                             if (_i + 4 > _s.Length) throw new MobiumException("truncated \\u escape");
-                            var hex = _s.Substring(_i, 4);
-                            if (!int.TryParse(hex, NumberStyles.HexNumber, CultureInfo.InvariantCulture, out var code))
-                                throw new MobiumException("malformed \\u escape");
+                            // Four hex digits exactly. NumberStyles.HexNumber also
+                            // allows surrounding whitespace, so "\\u 41a" would
+                            // have read as U+041A.
+                            var code = 0;
+                            for (var k = 0; k < 4; k++)
+                            {
+                                var h = HexDigit(_s[_i + k]);
+                                if (h < 0) throw new MobiumException("malformed \\u escape");
+                                code = code * 16 + h;
+                            }
                             _i += 4;
                             b.Append((char)code);
                             break;
@@ -271,28 +313,47 @@ namespace Mobium
                 }
             }
 
+            private static int HexDigit(char c) =>
+                c >= '0' && c <= '9' ? c - '0'
+                : c >= 'a' && c <= 'f' ? c - 'a' + 10
+                : c >= 'A' && c <= 'F' ? c - 'A' + 10
+                : -1;
+
+            // JSON's number grammar, exactly: -?(0|[1-9][0-9]*)(\.[0-9]+)?([eE][+-]?[0-9]+)?
+            // Anything looser -- a leading '+', "01", "1.", "--1" -- is refused
+            // rather than guessed at.
             private object ReadNumber()
             {
                 var start = _i;
-                if (!AtEnd && (_s[_i] == '-' || _s[_i] == '+')) _i++;
+                if (!AtEnd && _s[_i] == '-') _i++;
+                if (AtEnd || !IsDigit(_s[_i])) throw new MobiumException("expected a JSON value");
+                if (_s[_i] == '0') _i++;
+                else while (!AtEnd && IsDigit(_s[_i])) _i++;
                 var isReal = false;
-                while (!AtEnd)
+                if (!AtEnd && _s[_i] == '.')
                 {
-                    var c = _s[_i];
-                    if (c >= '0' && c <= '9') { _i++; continue; }
-                    // A '.', 'e' or 'E' makes it a real number. A '+' or '-'
-                    // here is an exponent's sign and changes nothing: what
-                    // matters is that 540 stays a long and 1.5 does not.
-                    if (c == '.' || c == 'e' || c == 'E') { isReal = true; _i++; continue; }
-                    if (c == '+' || c == '-') { _i++; continue; }
-                    break;
+                    isReal = true;
+                    _i++;
+                    if (AtEnd || !IsDigit(_s[_i])) throw new MobiumException("malformed JSON number");
+                    while (!AtEnd && IsDigit(_s[_i])) _i++;
+                }
+                if (!AtEnd && (_s[_i] == 'e' || _s[_i] == 'E'))
+                {
+                    isReal = true;
+                    _i++;
+                    if (!AtEnd && (_s[_i] == '+' || _s[_i] == '-')) _i++;
+                    if (AtEnd || !IsDigit(_s[_i])) throw new MobiumException("malformed JSON number");
+                    while (!AtEnd && IsDigit(_s[_i])) _i++;
                 }
                 var raw = _s.Substring(start, _i - start);
-                if (raw.Length == 0) throw new MobiumException("expected a JSON value");
-                if (!isReal && long.TryParse(raw, NumberStyles.Integer, CultureInfo.InvariantCulture, out var l)) return l;
+                // Whole numbers stay long; one too large for a long is kept as
+                // a double rather than refused, as every other JSON reader does.
+                if (!isReal && long.TryParse(raw, NumberStyles.AllowLeadingSign, CultureInfo.InvariantCulture, out var l)) return l;
                 if (double.TryParse(raw, NumberStyles.Float, CultureInfo.InvariantCulture, out var d)) return d;
                 throw new MobiumException("malformed JSON number " + raw);
             }
+
+            private static bool IsDigit(char c) => c >= '0' && c <= '9';
         }
     }
 }
