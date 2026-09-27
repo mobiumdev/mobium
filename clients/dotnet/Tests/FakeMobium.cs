@@ -29,6 +29,8 @@ namespace Mobium.Tests
     /// <item><c>mute</c> never answers anything, the handshake included.</item>
     /// <item><c>argv</c> answers every call with the arguments this process
     /// was started with, so quoting can be checked by what arrived.</item>
+    /// <item><c>noid</c> answers <c>app_map</c> as mobium answers a line it
+    /// cannot parse -- an error with no id -- and every other call normally.</item>
     /// <item><c>refuse</c> answers the handshake with a protocol error, and
     /// then waits for stdin to close like a real daemon would.</item>
     /// </list>
@@ -71,6 +73,11 @@ namespace Mobium.Tests
                 var name = msg["params"]!["name"]!.GetValue<string>();
                 var args = msg["params"]!["arguments"]!.DeepClone();
                 if (name == "slow") Thread.Sleep(300);
+                if (mode == "noid" && name == "app_map")
+                {
+                    stdout.WriteLine("{\"jsonrpc\":\"2.0\",\"error\":{\"code\":-32700,\"message\":\"Parse error\",\"data\":\"invalid character 'N'\"}}");
+                    continue;
+                }
 
                 stdout.WriteLine("{\"jsonrpc\":\"2.0\",\"method\":\"notifications/message\",\"params\":{}}");
                 stdout.WriteLine("progress: this line is not JSON");

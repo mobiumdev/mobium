@@ -2,9 +2,9 @@
 
 **What CI cannot check.** Everything device-free is in `make ci`, which the
 [CI workflow](../.github/workflows/ci.yml) runs on every push — formatting,
-vet, both modules' tests, the two non-Go clients parsing, and six
-cross-compile targets. This file is the rest, and the rest is where every
-serious defect in this project has come from: 101 of 120 were found only by
+vet, both modules' tests, the four non-Go clients' own tests, and six
+cross-compile targets. This file is the rest, and the rest is where most
+serious defects in this project have come from: 101 of 121 were found only by
 running against a real device.
 
 Work through it before tagging a release, on three substrates: an Android

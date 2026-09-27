@@ -27,6 +27,8 @@ import java.util.Map;
  * <li>{@code exit} answers the handshake and exits with status 3 on the first
  * tool call.
  * <li>{@code mute} never answers anything, the handshake included.
+ * <li>{@code noid} answers {@code app_map} as mobium answers a line it cannot
+ * parse -- an error with no id -- and every other call normally.
  * <li>{@code refuse} answers the handshake with a protocol error, then waits
  * for stdin to close as a real daemon would.
  * </ul>
@@ -70,6 +72,11 @@ final class FakeMobium {
             String name = Json.str(params, "name");
             Object arguments = params.get("arguments");
             if (name.equals("slow")) Thread.sleep(300);
+            if (mode.equals("noid") && name.equals("app_map")) {
+                out.println("{\"jsonrpc\":\"2.0\",\"error\":{\"code\":-32700,\"message\":\"Parse error\","
+                        + "\"data\":\"invalid character 'N' looking for beginning of value\"}}");
+                continue;
+            }
 
             out.println("{\"jsonrpc\":\"2.0\",\"method\":\"notifications/message\",\"params\":{}}");
             out.println("progress: this line is not JSON");

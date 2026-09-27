@@ -62,6 +62,7 @@ namespace Mobium.Tests
             AnExitMidCallIsReportedWithItsStatus();
             AFailedHandshakeLeavesNoProcess();
             DisposeIsIdempotentAndEndsAWaitingCall();
+            AnAnswerWithNoIdFailsTheCallInFlight();
 
             Console.WriteLine();
             Console.WriteLine($"{_checks} checks, {_failures} failed");
@@ -509,6 +510,19 @@ namespace Mobium.Tests
             var after = Throws<MobiumException>(() => d.Call("app_map", null));
             Yes("a call after Dispose is a MobiumException saying so",
                 after != null && after.Message.Contains("disposed"));
+        }
+
+        private static void AnAnswerWithNoIdFailsTheCallInFlight()
+        {
+            // mobium answers a request it cannot parse with an error that has
+            // no id. Skipped as a notification would be, it left the call
+            // waiting forever; the timeout only turns a regression into a
+            // failure rather than a hang.
+            using var d = Fake("noid", TimeSpan.FromSeconds(5));
+            var e = Throws<InvalidArgumentException>(() => d.Call("app_map", null));
+            Yes("an answer with no id fails the call as InvalidArgumentException", e != null);
+            Yes("saying the request was unreadable", e != null && e.Message.Contains("could not read the request"));
+            Eq("and the connection is still in step", "app_current", Json.Str(d.Call("app_current", null), "tool"));
         }
 
         // -- the harness ----------------------------------------------------

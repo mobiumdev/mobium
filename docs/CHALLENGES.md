@@ -7,11 +7,12 @@ the source.
 
 The pattern across them is the reason the document exists: **almost nothing
 here was found by reading code or by a test written from imagination.** Of
-120 defects, 101 were found only by running against a real device. The other
-nineteen — 4, 5, 6, 14, 23, 24, 32, 35, 36, 39, 44, 50, 53, 54, 57, 66, 89, 99
-and 100 — came from reading code, the compiler, a test, a linter,
+121 defects, 101 were found only by running against a real device. The other
+twenty — 4, 5, 6, 14, 23, 24, 32, 35, 36, 39, 44, 50, 53, 54, 57, 66, 89, 99,
+100 and 121 — came from reading code, the compiler, a test, a linter,
 cross-checking a computed number against a screenshot, using the tooling on
-itself, and typing a negative number at a command line.
+itself, typing a negative number at a command line, and driving the clients
+against a stand-in daemon.
 
 Read it before writing a test that asserts platform behavior.
 
@@ -2819,6 +2820,51 @@ Only a row with exactly one such widget and no other control inside is
 folded: Dark theme's row opens a page and has its own named, clickable
 switch, and still maps as the two controls it is. `check` on the folded
 Bold text row turned it on — Android stored 300 — and `uncheck` off again.
+
+### 121. The clients hung, crashed and leaked on an ordinary bad day
+
+**Found by:** driving each client's real connection against a stand-in
+`mobium pipe` on a real subprocess, before the .NET, Java, Python and
+JavaScript clients went public, and then checking the one case that mattered
+most against the real pipe. Nothing here needed a device; all of it would
+have reached users. Five clients, written against one protocol, each had its
+own subset:
+
+| What | Where | What happened |
+| --- | --- | --- |
+| Two threads calling at once | Java | two requests arrived on one line; mobium could parse neither and every call failed |
+| | .NET, Python | unlocked; Python's never failed in 160 calls, because the pipe answers in order |
+| A daemon that stops answering | all but Go | the call waited forever, with no way to bound it |
+| A refused handshake | Java, .NET, Python, JavaScript | the `mobium` process was left running — in Node, holding the event loop open so the script could not exit |
+| `NaN` in an argument | Python | written bare; the pipe answered "Parse error" **with no id**, the client skipped it as a notification, and `set_location(nan, 0)` waited forever — measured against the real pipe |
+| | JavaScript | written as `null`, refused as "latitude must be a number" |
+| A line that is JSON but not a message | Python, JavaScript | `null` on stdout raised in Python and, in Node, threw inside an event listener — which ends the caller's process |
+| A malformed `\u` escape on stdout | Java | `NumberFormatException` escaped the catch written for unreadable lines and ended the call |
+| Deep nesting | .NET, Java | a stack overflow — uncatchable in .NET, where it ends the process |
+| A write after `close()`, or a binary that cannot start | JavaScript | an `error` event with no listener: the caller's process ended |
+| `2^31` read as an int | .NET, Java | wrapped negative: a coordinate on the other side of the screen |
+| Looking for the binary | all five | `./bin/mobium`, `../bin` and `../../bin` relative to wherever a test started, and any relative `PATH` entry, were searched — a binary anyone could plant |
+
+The id-less error is the one that generalizes. JSON-RPC answers a request it
+cannot parse with an error and no id, because it could not read the id. Every
+client skipped any message without its own id, which is right for a
+notification and wrong for that, so any unreadable request — not only `NaN` —
+left its call waiting forever. The pipe answers one request at a time, in
+order, so an id-less error is the answer to the oldest request in flight, and
+all five clients now fail that call with it.
+
+The rest is the Go client's design carried to the other four, changed only
+where the language must: one call at a time on the pipe; an optional call
+timeout that **ends the connection** rather than abandoning a call, since a
+late answer would be read as the next call's; a connection that stays broken
+and says why; a failed handshake that stops the process it started; a `close`
+that is safe twice and ends a waiting call; a JSON reader that follows the
+grammar, caps nesting and refuses to wrap an integer; and a binary searched for
+only by explicit path, `MOBIUM_BIN_PATH` and absolute `PATH` directories.
+Each client's tests start a fake `mobium` and check every row above; each
+protection was removed in turn to see its test fail, and JavaScript's suite has
+a watchdog, because the regression these tests guard against is a wait that
+never ends.
 
 ## Findings that were not defects
 

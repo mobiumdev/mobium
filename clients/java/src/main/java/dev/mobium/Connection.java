@@ -201,6 +201,17 @@ final class Connection implements AutoCloseable {
                 continue; // not a message we can read; keep looking
             }
             Object gotId = message.get("id");
+            if (gotId == null && message.get("error") != null) {
+                // An error with no id is mobium saying it could not read a request at all,
+                // which JSON-RPC answers without an id. The pipe answers one
+                // request at a time, in order, and the gate keeps one in
+                // flight, so it is this call's answer: skipping it, as a
+                // notification is skipped, left the call waiting forever.
+                Map<String, Object> e = Json.asObject(message.get("error"));
+                String detail = Json.str(e, "data");
+                throw new InvalidArgumentException("mobium could not read the request: " + Json.str(e, "message")
+                        + (detail.isEmpty() ? "" : ": " + detail), "", "", false, Map.of());
+            }
             if (!(gotId instanceof Long) || (Long) gotId != id) {
                 continue; // a notification, or a reply to something else
             }
