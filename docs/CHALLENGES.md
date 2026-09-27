@@ -7,7 +7,7 @@ the source.
 
 The pattern across them is the reason the document exists: **almost nothing
 here was found by reading code or by a test written from imagination.** Of
-119 defects, 100 were found only by running against a real device. The other
+120 defects, 101 were found only by running against a real device. The other
 nineteen — 4, 5, 6, 14, 23, 24, 32, 35, 36, 39, 44, 50, 53, 54, 57, 66, 89, 99
 and 100 — came from reading code, the compiler, a test, a linter,
 cross-checking a computed number against a screenshot, using the tooling on
@@ -2799,6 +2799,26 @@ its label, as a person reads it; every other field keeps what it shows.
 
 `docs/checks/web-type.sh` checks each field from what the page holds, and
 fails against the previous binary at the checkbox's name.
+
+### 120. An Android settings switch was named for its resource id
+
+**Found by:** driving Android's Settings > Accessibility for
+`app_accessibility` on a Pixel 7 AVD. Display size and text mapped "Bold
+text (button)" and, beside it, "switchWidget (switch, unchecked)"; Color and
+motion did the same for Remove animations. A settings row is a clickable
+layout holding its title and, in a side frame, a switch that is not
+clickable, has no text and carries the state — so map offered a row with no
+state and a state with no name, reachable only by position. It is CHALLENGES
+82's shape, on the other platform.
+
+Android's parser now folds such a row into one control, as the iOS parser
+folds its switch rows: named by the row, with the switch's role and checked
+state. The row stays the target, because on Android the row is what a tap
+operates — tapping it toggles the switch — where on iOS the words do nothing.
+Only a row with exactly one such widget and no other control inside is
+folded: Dark theme's row opens a page and has its own named, clickable
+switch, and still maps as the two controls it is. `check` on the folded
+Bold text row turned it on — Android stored 300 — and `uncheck` off again.
 
 ## Findings that were not defects
 
