@@ -56,6 +56,7 @@ const (
 	CapRecording        = "recording"
 	CapClearData        = "clearData"
 	CapSource           = "source"
+	CapAccessibility    = "accessibility"
 )
 
 // KnownCapabilities is every capability Mobium understands, for diagnostics
@@ -67,7 +68,7 @@ var KnownCapabilities = []string{
 	CapGeolocation, CapGeolocationState, CapRoutes,
 	CapClipboard, CapClipboardRead, CapAlerts, CapPinch,
 	CapDoubleTap, CapDrag, CapMultiTouch, CapDeviceLogs, CapCrashes, CapKeyboard, CapRecording,
-	CapClearData, CapSource,
+	CapClearData, CapSource, CapAccessibility,
 }
 
 // has reports whether d claims the capability. A driver that does not report
@@ -102,6 +103,13 @@ func AsAppControl(d Driver) (AppControl, bool) {
 func AsAppearance(d Driver) (Appearance, bool) {
 	a, ok := d.(Appearance)
 	return a, ok && has(d, CapAppearance)
+}
+
+// AsAccessibility returns the driver's accessibility-settings support, if it
+// has any.
+func AsAccessibility(d Driver) (Accessibility, bool) {
+	a, ok := d.(Accessibility)
+	return a, ok && has(d, CapAccessibility)
 }
 
 // AsAppInventory returns the driver's install listing support, if it has any.

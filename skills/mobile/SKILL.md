@@ -142,6 +142,21 @@ hard-coded colors break, so a flow is worth running in both:
 
 Switching discards the refs from the last map, so map again afterwards.
 
+Accessibility settings are the same kind of rendering change, and each lasts
+only for the session — the device is put back exactly as it was when it ends:
+
+- `mobium accessibility` — every setting the device has, as it is now
+- `mobium accessibility bold_text on` — reduce_motion, bold_text,
+  increase_contrast, invert_colors, grayscale and the rest take on or off
+- `mobium accessibility text_size accessibility-large` (iOS) /
+  `text_scale 1.3` (Android) — text size is a category on one and a scale on
+  the other, and each says so if given the other's
+
+An iOS simulator and Android only. On a real iPhone nothing outside can change
+these, and the refusal names the Settings screens, which you can drive with
+`check`. On Android a text-size change restarts the running app's screen, so
+map again afterwards.
+
 ### Acting
 
 Every action waits, for up to two seconds, until its target is on screen,

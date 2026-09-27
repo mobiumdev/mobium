@@ -342,6 +342,40 @@ namespace Mobium
             Json.Str(Data("app_appearance", Args("appearance", mode)), "appearance");
 
         /// <summary>
+        /// Every accessibility setting the device has, by name — reduce_motion,
+        /// bold_text, increase_contrast and the rest. A setting the platform
+        /// lacks is absent.
+        /// </summary>
+        public IDictionary<string, string> Accessibility()
+        {
+            var data = Data("app_accessibility", null);
+            var result = new Dictionary<string, string>();
+            if (data != null && data.TryGetValue("settings", out var raw) && raw != null)
+            {
+                foreach (var e in Json.AsObject(raw))
+                {
+                    result[e.Key] = Convert.ToString(e.Value, System.Globalization.CultureInfo.InvariantCulture);
+                }
+            }
+            return result;
+        }
+
+        /// <summary>One accessibility setting.</summary>
+        public string Accessibility(string setting) =>
+            Json.Str(Data("app_accessibility", Args("setting", setting)), "value");
+
+        /// <summary>
+        /// Changes one accessibility setting for the rest of the session and
+        /// returns its new value, confirmed by reading it back; the device is
+        /// put back as it was when the session ends. A switch takes
+        /// <c>"on"</c> or <c>"off"</c>; text_size a category (iOS);
+        /// text_scale a number such as <c>"1.3"</c> (Android). A real iPhone
+        /// refuses. Discards the refs from the last map.
+        /// </summary>
+        public string SetAccessibility(string setting, string value) =>
+            Json.Str(Data("app_accessibility", Args("setting", setting, "value", value)), "value");
+
+        /// <summary>
         /// Which way the screen is turned. A screen that merely happens to be
         /// portrait can rotate under you, so <see cref="OrientationLocked"/>
         /// is a separate question.

@@ -442,6 +442,28 @@ class Device:
         data = self._data("app_appearance", {"appearance": mode} if mode else None) or {}
         return data.get("appearance", "")
 
+    def accessibility(self, setting: str | None = None, value: str | None = None):
+        """Read the accessibility settings, or change one for the session.
+
+        With no argument, returns a dict of every setting the device has —
+        reduce_motion, bold_text, increase_contrast and the rest. With a
+        setting, returns its value; with a setting and a value, changes it,
+        confirmed by reading it back, and returns the new value. A switch takes
+        "on" or "off"; text_size a category such as "accessibility-large"
+        (iOS); text_scale a number such as "1.3" (Android). Every change is
+        put back when the session ends. A real iPhone raises. Changing one
+        discards the refs from the last map.
+        """
+        args = {}
+        if setting:
+            args["setting"] = setting
+        if value is not None:
+            args["value"] = value
+        data = self._data("app_accessibility", args or None) or {}
+        if not setting:
+            return data.get("settings", {})
+        return data.get("value", "")
+
     def orientation(self) -> tuple[str, bool]:
         """Which way the screen is turned, and whether that is pinned.
 

@@ -1210,6 +1210,37 @@ func GetToolSchemas() []Tool {
 			},
 		},
 		{
+			Name: "app_accessibility",
+			Description: "Read the device's accessibility settings, or change one for the rest of the " +
+				"session: reduce_motion, bold_text, increase_contrast, reduce_transparency, " +
+				"button_shapes, differentiate_without_color, invert_colors, grayscale, and text size — " +
+				"text_size, a named category, on iOS, and text_scale, a number, on Android. Call with no " +
+				"argument to read them all, with a setting to read one, and with a setting and a value " +
+				"to change it; each change is confirmed by reading it back and put back exactly as it " +
+				"was when the session ends. Settings a platform lacks are refused with the reason. An " +
+				"iOS simulator and Android are supported; on a real iPhone nothing outside can change " +
+				"these, and the refusal names the Settings route instead. Changing one invalidates the " +
+				"refs from the previous screen.",
+			InputSchema: map[string]interface{}{
+				"type": "object",
+				"properties": withDevice(map[string]interface{}{
+					"setting": map[string]interface{}{
+						"type":        "string",
+						"description": "Which setting. Omit to read them all.",
+						"enum": []string{"reduce_motion", "bold_text", "increase_contrast", "reduce_transparency",
+							"button_shapes", "differentiate_without_color", "invert_colors", "grayscale",
+							"text_size", "text_scale"},
+					},
+					"value": map[string]interface{}{
+						"type": "string",
+						"description": "\"on\" or \"off\" for a switch; a category such as \"accessibility-large\" " +
+							"for text_size; a number such as \"1.3\" for text_scale. Omit to read.",
+					},
+				}),
+				"additionalProperties": false,
+			},
+		},
+		{
 			Name: "app_list_apps",
 			Description: "List the apps installed on the device, with their id, version and " +
 				"whether they came with the platform. By default only apps someone installed, " +

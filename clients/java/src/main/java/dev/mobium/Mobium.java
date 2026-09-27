@@ -408,6 +408,39 @@ public final class Mobium implements AutoCloseable {
     }
 
     /**
+     * Every accessibility setting the device has, by name — reduce_motion,
+     * bold_text, increase_contrast and the rest. A setting the platform lacks
+     * is absent.
+     */
+    public Map<String, String> accessibility() {
+        Map<String, Object> settings = Json.asObject(data("app_accessibility", null).get("settings"));
+        Map<String, String> out = new java.util.LinkedHashMap<>();
+        if (settings != null) {
+            for (Map.Entry<String, Object> e : settings.entrySet()) {
+                out.put(e.getKey(), String.valueOf(e.getValue()));
+            }
+        }
+        return out;
+    }
+
+    /** One accessibility setting. */
+    public String accessibility(String setting) {
+        return Json.str(data("app_accessibility", Map.of("setting", setting)), "value");
+    }
+
+    /**
+     * Changes one accessibility setting for the rest of the session and
+     * returns its new value, confirmed by reading it back; the device is put
+     * back as it was when the session ends. A switch takes {@code "on"} or
+     * {@code "off"}; text_size a category (iOS); text_scale a number such as
+     * {@code "1.3"} (Android). A real iPhone refuses. Discards the refs from
+     * the last map.
+     */
+    public String setAccessibility(String setting, String value) {
+        return Json.str(data("app_accessibility", Map.of("setting", setting, "value", value)), "value");
+    }
+
+    /**
      * Which way the screen is turned. A screen that merely happens to be
      * portrait can rotate under you, so {@link #orientationLocked()} is a
      * separate question.

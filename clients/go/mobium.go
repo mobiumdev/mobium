@@ -587,6 +587,46 @@ func (d *Device) Appearance(ctx context.Context, mode string) (string, error) {
 	return out.Appearance, nil
 }
 
+// Accessibility reads every accessibility setting the device has, by name —
+// reduce_motion, bold_text, increase_contrast and the rest; see
+// SetAccessibility. A setting the platform lacks is simply absent.
+func (d *Device) Accessibility(ctx context.Context) (map[string]string, error) {
+	var out struct {
+		Settings map[string]string `json:"settings"`
+	}
+	if err := d.data(ctx, "app_accessibility", map[string]any{}, &out); err != nil {
+		return nil, err
+	}
+	return out.Settings, nil
+}
+
+// AccessibilitySetting reads one accessibility setting.
+func (d *Device) AccessibilitySetting(ctx context.Context, setting string) (string, error) {
+	var out struct {
+		Value string `json:"value"`
+	}
+	if err := d.data(ctx, "app_accessibility", map[string]any{"setting": setting}, &out); err != nil {
+		return "", err
+	}
+	return out.Value, nil
+}
+
+// SetAccessibility changes one accessibility setting for the rest of the
+// session and returns its new value, confirmed by reading it back; the device
+// is put back as it was when the session ends. A switch takes "on" or "off";
+// text_size a category such as "accessibility-large" (iOS); text_scale a
+// number such as "1.3" (Android). A real iPhone refuses. Changing one
+// discards the refs from the last Map.
+func (d *Device) SetAccessibility(ctx context.Context, setting, value string) (string, error) {
+	var out struct {
+		Value string `json:"value"`
+	}
+	if err := d.data(ctx, "app_accessibility", map[string]any{"setting": setting, "value": value}, &out); err != nil {
+		return "", err
+	}
+	return out.Value, nil
+}
+
 // Screen is one device's screen, and what is wrong with the layout on it.
 type Screen struct {
 	Width  int `json:"width"`

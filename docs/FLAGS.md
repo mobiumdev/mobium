@@ -23,6 +23,10 @@ command mentions them.
 
 | Tool | Argument | Type | Set by |
 | --- | --- | --- | --- |
+| `app_accessibility` | `backend` | string | _global_ --backend |
+| `app_accessibility` | `device` | string | _global_ --device |
+| `app_accessibility` | `setting` | string | accessibility |
+| `app_accessibility` | `value` | string | accessibility |
 | `app_alert` | `action` | string | alert |
 | `app_alert` | `backend` | string | _global_ --backend |
 | `app_alert` | `device` | string | _global_ --device |
@@ -246,6 +250,7 @@ arguments and the two global flags.
 
 | Command | Tools | Flags | Sends |
 | --- | --- | --- | --- |
+| `accessibility` | app_accessibility | — | setting, value |
 | `alert` | app_alert | --text | action, text |
 | `appearance` | app_appearance | — | appearance |
 | `apps` | app_list_apps | --system | system |

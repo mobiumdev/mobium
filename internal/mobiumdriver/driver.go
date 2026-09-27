@@ -281,6 +281,16 @@ type Appearance interface {
 	SetAppearance(ctx context.Context, mode string) error
 }
 
+// Accessibility is implemented by backends that can read and change the
+// device's accessibility settings, in device's shared vocabulary.
+type Accessibility interface {
+	// AccessibilitySetting reads one setting.
+	AccessibilitySetting(ctx context.Context, name string) (string, error)
+	// SetAccessibilitySetting changes one, confirms it, and returns how to
+	// put it back exactly as it was found.
+	SetAccessibilitySetting(ctx context.Context, name, value string) (device.AXUndo, error)
+}
+
 // Orientation is implemented by backends that can read and change which way
 // the screen is turned.
 //

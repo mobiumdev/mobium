@@ -151,6 +151,19 @@ var simulatorOnly = map[string]string{
 	// has no way to delete from it.
 	CapClearData: "clear an app's data (simctl; devicectl cannot delete from an app's container — " +
 		"uninstalling and reinstalling the app is the reset a phone has)",
+	// WebDriverAgent's one accessibility setting, reduceMotion, answers a
+	// write on a phone with success and changes nothing — measured twice,
+	// against the Settings switch and an app. The Settings screens are
+	// driveable, which is the route that works.
+	CapAccessibility: "change accessibility settings from outside (simctl)",
+}
+
+// phoneRemedies replaces "that needs a simulator" where a phone has a route
+// of its own that works.
+var phoneRemedies = map[string]string{
+	CapAccessibility: "a real iPhone's accessibility settings cannot be changed from outside — WebDriverAgent's " +
+		"one such setting, reduceMotion, reports success on a phone and changes nothing. Drive " +
+		"Settings > Accessibility instead, with app_check or app_uncheck on the switch, or use a simulator",
 }
 
 // HasCapability declines, on a phone, what only a simulator can do. On a
@@ -198,6 +211,9 @@ func (w *WDA) DeclineReason(capability string) error {
 func (w *WDA) simOnly(capability string) error {
 	if w.sim != nil {
 		return nil
+	}
+	if remedy, ok := phoneRemedies[capability]; ok {
+		return mobiumerr.New(mobiumerr.Unsupported, "%s", remedy)
 	}
 	return mobiumerr.New(mobiumerr.Unsupported, "a real iPhone cannot %s here — that needs a simulator",
 		simulatorOnly[capability])

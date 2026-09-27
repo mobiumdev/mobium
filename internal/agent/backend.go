@@ -113,6 +113,10 @@ type session struct {
 	// filtering in the page and leaving the other levels buffered.
 	logMarks map[string]time.Time
 
+	// axUndo puts back each accessibility setting this session changed, as
+	// it was found; run when the session ends (app_accessibility).
+	axUndo map[string]device.AXUndo
+
 	// recording is a screen recording in progress, or nil. One per device.
 	recording device.Recording
 }
@@ -146,6 +150,8 @@ func (s *session) close() {
 		s.recording = nil
 	}
 	s.stopRoute()
+	// Before the driver closes: an undo needs the device to reach.
+	s.restoreAccessibility()
 	s.closeWeb()
 	if s.insp != nil {
 		s.insp.Close()
