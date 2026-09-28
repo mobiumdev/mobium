@@ -41,10 +41,25 @@ usually wrong (see [CHALLENGES](CHALLENGES.md)).
 
 | Risk | Here | Done | Open |
 | --- | --- | --- | --- |
-| **Tool misuse and privilege abuse** | Anything on the Mac that can reach what Mobium reaches can drive the device | The daemon's socket is owner-only (`0600`, in a `0700` directory); `--remote` forwards it over SSH to an owner-only socket | **To measure:** UiAutomator2's server is reached through `adb forward tcp:0`, which adb binds to localhost — so any local process may be able to drive the phone without Mobium. WebDriverAgent listens on a local port for a simulator and answers HTTP over the CoreDevice tunnel for a phone, unauthenticated. Who can reach each, and what they could do |
+| **Tool misuse and privilege abuse** | Anything that can reach the automation servers can drive the device without Mobium; none of them authenticates | The daemon's socket is owner-only (`0600`, in a `0700` directory); `--remote` forwards it over SSH to an owner-only socket. The simulator's WebDriverAgent server binds `127.0.0.1` (CHALLENGES 152) | See "Measured" below: what is still reachable, from where |
 | **Tool descriptions as instructions** | An agent reads tool schemas as guidance | Mobium's own are in this repository and reviewed like code | A third-party driver declares its own capabilities and could misstate them; what an agent sees from a driver is not reviewed here |
 | **Memory and context poisoning** | Screen text carried from one call into the next | — | The same marking as LLM01, so it stays data across calls |
 | **Human trust exploitation** | A confident report of an action that did not happen | Read-back confirmation, and refusals that say why | — |
+
+## Measured
+
+Measured 2026-09-28 with read-only requests, on the Pixel 7 AVD and the
+iPhone 17 Pro simulator, the Mac's firewall off. A server "answering" means
+it returned its status without credentials; reading the screen or acting
+needs nothing more.
+
+| Server | Listens on | Reachable from | Lifetime | State |
+| --- | --- | --- | --- | --- |
+| UiAutomator2, the Mac end of `adb forward` | `127.0.0.1` | Any process of any user on the Mac — it returned the whole screen's hierarchy through the running session. Not from the LAN: refused | Stops with the daemon | Local exposure, **open**: UiAutomator2 has no authentication |
+| UiAutomator2, on the device (port 6790) | **Every interface** (`[::]:6790`) | The device itself, on localhost and on its own network address. The emulator's network is behind its own NAT, so not from the LAN there | Stops with the daemon | **To measure on a real phone on Wi-Fi**, where the same binding would put it on the network. Whether an ordinary app can reach it: **inconclusive** — `su` to an app's uid keeps `su`'s groups and context, and a uid that should have had no network got through too, so the test could not fail |
+| WebDriverAgent server, simulator | `127.0.0.1` since `USE_IP` (was every interface) | Any process on the Mac; the LAN was refused after the change, and answered before it | Stops with the session | Local exposure, as UiAutomator2's |
+| WebDriverAgent MJPEG stream, simulator | **Every interface** — it ignores `USE_IP` | **The LAN**: it answered from the Mac's network address | Stops with the session | **Open**. Mobium does not use the stream; closing it needs WebDriverAgent to bind it as it binds the server. Until then, the macOS firewall is the mitigation |
+| WebDriverAgent on a real iPhone | — | — | — | **To measure**: whether it answers on the phone's Wi-Fi address |
 
 ## The mobile side
 

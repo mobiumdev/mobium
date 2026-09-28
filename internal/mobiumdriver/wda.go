@@ -111,6 +111,7 @@ func (w *WDA) Start(ctx context.Context, progress func(string)) error {
 	if err := w.sim.LaunchAppWithEnv(ctx, device.WDABundleID, map[string]string{
 		"USE_PORT":          fmt.Sprint(ports[0]),
 		"MJPEG_SERVER_PORT": fmt.Sprint(ports[1]),
+		"USE_IP":            "127.0.0.1",
 	}); err != nil {
 		return fmt.Errorf("launch WebDriverAgent: %w", err)
 	}

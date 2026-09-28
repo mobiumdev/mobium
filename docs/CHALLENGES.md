@@ -7,7 +7,7 @@ the source.
 
 The pattern across them is the reason the document exists: **almost nothing
 here was found by reading code or by a test written from imagination.** Of
-151 defects, 120 were found only by running against a real device. The other
+152 defects, 121 were found only by running against a real device. The other
 thirty-one — 4, 5, 6, 14, 23, 24, 32, 35, 36, 39, 44, 50, 53, 54, 57, 66, 89,
 99, 100, 121, 123, 129, 130, 133, 134, 139, 140, 141, 142, 144 and 150 — came from reading code, the compiler, a test, a linter,
 cross-checking a computed number against a screenshot, using the tooling on
@@ -3433,6 +3433,24 @@ and `dialogs.sh`, discarding the reset's output under `set -e`, stopped
 after its share-sheet row with nothing on screen. Such a permission is now
 kept and named, since a fresh install has it too, and the check says why a
 reset failed.
+
+### 152. The simulator's WebDriverAgent answered anyone on the network
+
+**Found by:** measuring the open items of the threat model on the iPhone 17
+Pro simulator, with the Mac's firewall off, as it was.
+
+A simulator shares the Mac's network stack, and WebDriverAgent listened on
+every interface — `*:port` in `lsof`. From the Mac's own LAN address, its
+`/status` answered with the live session's id, `/source` returned the whole
+screen, and the session could have been driven; anything on the same network
+could do the same while a session ran. WebDriverAgent binds one interface
+when `USE_IP` names it, and Mobium already passed `USE_PORT` the same way
+(148), so the runner is now launched with `USE_IP=127.0.0.1`: afterwards the
+server listened on `127.0.0.1` only, and the LAN address was refused. Its
+MJPEG screen stream did not follow — WebDriverAgent 16.12.8 creates that
+socket without an interface, whatever `USE_IP` says — and still answers from
+the network. Mobium does not use the stream; closing it needs WebDriverAgent
+to honor `USE_IP` there too, and is open in the threat model.
 
 ## Findings that were not defects
 
