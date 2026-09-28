@@ -3291,7 +3291,10 @@ window alone, had the same wait time out. `wait` now uses the action's
 predicate: what a dialog covers is not on screen, so waiting for it to be
 visible times out naming the dialog, and waiting for it to be hidden
 succeeds, on both platforms. The test is the captured sheet with the covered
-target marked visible, as the phone had it; it fails without the change.
+target marked visible, as the phone had it; it fails without the change. On
+the phone, under the sheet: visible timed out naming "Save Password?",
+hidden held in 745ms, and once the sheet was answered the text was visible
+in 471ms.
 
 ## Findings that were not defects
 
