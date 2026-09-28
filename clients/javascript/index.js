@@ -812,6 +812,15 @@ export class Device {
   }
 
   /**
+   * Shakes an emulator or simulator — what shake-to-undo and shake-to-report
+   * listen for. Whether the app reacts is up to its own detector, so check
+   * the screen after. A real phone refuses.
+   */
+  async shake() {
+    await this.#text('app_shake', {})
+  }
+
+  /**
    * One app's state: `not_installed`, `not_running`, `background` or
    * `foreground`, for any app. An app under its own permission prompt is
    * still in front, and `covered_by` names the prompt's process. On iOS a

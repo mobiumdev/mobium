@@ -710,6 +710,13 @@ func (d *Device) DeviceTime(ctx context.Context) (DeviceClock, error) {
 	return out, err
 }
 
+// Shake shakes an emulator or simulator — what shake-to-undo and
+// shake-to-report listen for. Whether the app reacts is up to its own
+// detector, so check the screen after. A real phone returns an error.
+func (d *Device) Shake(ctx context.Context) error {
+	return d.act(ctx, "app_shake", map[string]any{})
+}
+
 // AppStatus is one app's state, from AppState.
 type AppStatus struct {
 	// State is "not_installed", "not_running", "background" or "foreground".

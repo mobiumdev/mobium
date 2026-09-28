@@ -1649,6 +1649,24 @@
       ]
     },
     {
+      "tool": "app_shake",
+      "arg": "device",
+      "type": "string",
+      "setBy": [
+        "--device"
+      ],
+      "global": true
+    },
+    {
+      "tool": "app_shake",
+      "arg": "driver",
+      "type": "string",
+      "setBy": [
+        "--driver"
+      ],
+      "global": true
+    },
+    {
       "tool": "app_sms",
       "arg": "device",
       "type": "string",
@@ -2728,6 +2746,12 @@
         "action",
         "app",
         "platform"
+      ]
+    },
+    {
+      "command": "shake",
+      "tools": [
+        "app_shake"
       ]
     },
     {

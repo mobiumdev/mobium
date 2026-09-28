@@ -56,6 +56,9 @@ you cannot do it for them from mobium. Say so rather than retrying.
 - `mobium current` — which app is in the foreground
 - `mobium state <package|bundle-id>` — any app: not installed, not running,
   background or foreground
+- `mobium shake` — shake an emulator or simulator (shake-to-undo, a debug
+  menu); a real phone refuses. Check the screen after: whether the app
+  reacts is its own detector's business
 - `mobium background 5` — send the app in front away for 5 seconds and bring
   it back where it was: how a resume path is tested
 - `mobium launch <package|bundle-id>` — open an app

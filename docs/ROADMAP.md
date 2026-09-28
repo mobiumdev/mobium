@@ -68,9 +68,6 @@ this is what is not.
 - **Battery and the device's clock** (written down 2026-09-28): the level
   and whether it is charging, and the time as the device has it, which is
   what a test of a timezone or a clock-dependent screen checks against.
-- **Shake** (written down 2026-09-28): the gesture behind shake-to-undo and
-  shake-to-report. A simulator can be sent one; nothing outside a real phone
-  can shake it, so a phone would refuse.
 - **Pulling a file off the device** (written down 2026-09-28), the other
   half of seeding one below: an export, a log an app wrote, a download.
 - **Booting and shutting down emulators and simulators** (written down

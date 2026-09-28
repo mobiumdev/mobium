@@ -547,6 +547,13 @@ class Device:
         """
         return self._data("app_time") or {}
 
+    def shake(self) -> None:
+        """Shake an emulator or simulator — what shake-to-undo and
+        shake-to-report listen for. Whether the app reacts is up to its own
+        detector, so check the screen after. A real phone refuses.
+        """
+        self._call("app_shake")
+
     def app_state(self, app: str) -> dict:
         """One app's state: ``not_installed``, ``not_running``, ``background``
         or ``foreground``, for any app.
