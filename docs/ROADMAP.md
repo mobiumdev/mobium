@@ -86,6 +86,33 @@ this is what is not.
   change read back. Measured on a Pixel 9 Pro Fold emulator, where all four
   postures could be set and read ([FORMFLUX.md](FORMFLUX.md#foldables));
   whether a real foldable's shell may set it is the open question.
+- **A mobium grid, and running mobium remotely** (written down 2026-09-28).
+  Stage 0 is done, and needed no code: clients start `mobium pipe`, and
+  `MOBIUM_BIN_PATH` may name any executable, so a short script that runs
+  `mobium pipe` on another machine over SSH makes an unchanged client
+  remote. Tried against the same Mac standing in for a node, with a key
+  accepted only from localhost: the node started a daemon of its own, and
+  a Python client's session, `map`, text and route by waypoints worked, and
+  a screenshot's bytes came back. What broke is every argument that is a
+  file path, because the node reads or writes it on its own disk:
+  `screenshot` and `record` saved to the node's working directory and
+  reported the node's path, and `install` looked for the app there; the
+  CLI's GPX file is the same case. Relative paths showed it even on one
+  machine; between two, absolute ones would too.
+  1. **Stage 1: files as content.** Those four arguments carry the file —
+     an upload for `install` and a GPX route, the bytes back for a
+     screenshot or a recording — instead of a path on the daemon's disk.
+     Worth doing without a grid.
+  2. **Stage 2: a remote transport,** `mobium pipe --remote <node>`,
+     authenticated and encrypted — possibly SSH itself, since it already is
+     both. The daemon's socket stays owner-only and local.
+  3. **Stage 3: a router,** Selenium Grid's shape: a registry of nodes and
+     their devices, a lease that keeps a device to one run, routing a
+     session by platform and model, a queue when nothing matches is free,
+     and dead nodes noticed. The node side exists — a daemon beside its
+     devices, one per run, ports that do not collide (CHALLENGES 148). iOS
+     nodes are Macs, and phones are on their USB, so a grid is a set of
+     machines, as Appium's is.
 - **MobiumApp on AWS Device Farm, on its free trial** (written down
   2026-09-28, nothing measured yet) — the first devices Mobium would drive
   that nobody here owns. What the plan rests on, and must be checked against
