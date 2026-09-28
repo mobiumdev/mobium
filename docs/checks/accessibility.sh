@@ -53,8 +53,17 @@ raw() {
 }
 state() { $M text testid=a11yState; }
 
+# live prints what the running system applies, which the raw values do not
+# say: an unset key deleted again read back unset while the text stayed bold
+# (CHALLENGES 143). Android's configuration carries the font weight.
+live() {
+  if [ "$PLATFORM" = android ]; then
+    adb -s "$DEV" shell dumpsys window 2>/dev/null | grep -o -E 'fontWeightAdjustment=[-0-9]+|fontScale=[0-9.]+' | sort -u
+  fi
+}
 $M daemon stop >/dev/null 2>&1 || true
 BEFORE=$(raw)
+LIVE_BEFORE=$(live)
 trap '$M daemon stop >/dev/null 2>&1 || true' EXIT
 
 # What each platform has, and the value each is changed to. The last column
@@ -115,4 +124,8 @@ AFTER=$(raw)
   diff /tmp/a11y-before.$$ /tmp/a11y-after.$$ >&2; rm -f /tmp/a11y-before.$$ /tmp/a11y-after.$$;
   fail "the device was not put back as it was"; }
 row "session ended" "every raw value as it was before"
+sleep 2
+LIVE_AFTER=$(live)
+[ "$LIVE_BEFORE" = "$LIVE_AFTER" ] || fail "the raw values were put back and the screen was not: $(echo $LIVE_BEFORE) before, $(echo $LIVE_AFTER) after"
+[ "$PLATFORM" = android ] && row "on screen" "the font weight the system applies, as before"
 echo PASS

@@ -7,7 +7,7 @@ the source.
 
 The pattern across them is the reason the document exists: **almost nothing
 here was found by reading code or by a test written from imagination.** Of
-142 defects, 113 were found only by running against a real device. The other
+143 defects, 114 were found only by running against a real device. The other
 twenty-nine — 4, 5, 6, 14, 23, 24, 32, 35, 36, 39, 44, 50, 53, 54, 57, 66, 89,
 99, 100, 121, 123, 129, 130, 133, 134, 139, 140, 141 and 142 — came from reading code, the compiler, a test, a linter,
 cross-checking a computed number against a screenshot, using the tooling on
@@ -3234,6 +3234,24 @@ client refused the one in the current directory, as it should, and then had
 nothing. It now searches `PATH`'s absolute directories one at a time. The
 test had passed its negative half on Windows by finding nothing, because the
 planted binary had no `.exe`; it now plants one.
+
+### 143. Bold text stayed on after the session had put it back
+
+**Found by:** Lana, looking at her Pixel 8 Pro after `accessibility.sh` had
+passed on it, and asking whether the text was still bold. It was.
+
+An accessibility setting's undo restores the raw values it found, and a key
+that was unset is deleted again. Deleting a key tells the running system
+nothing: bold text put on and then deleted read back unset while the phone's
+configuration still said `fontWeightAdjustment=300`, and every app went on
+drawing bold text. The check compared raw values only, so it passed on
+exactly this. An unset key is now restored by first writing what Android's
+own switch writes for off — which the system hears — and then deleting it,
+which leaves the row as found; measured on the phone: unset, and
+`fontWeightAdjustment=0`. The check also compares the font weight the
+system applies before and after, and with the old undo it fails, on the
+Pixel, naming 300. The iOS simulator's undo also deletes keys it found
+unset; whether a running iOS app hears that has not been measured.
 
 ## Findings that were not defects
 
