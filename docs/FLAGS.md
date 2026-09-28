@@ -294,7 +294,7 @@ arguments and the two global flags.
 | `fill` | app_fill | — | target, text |
 | `find` | app_find | — | locator |
 | `grant` | app_grant | — | app, permissions |
-| `grid` | — | --holder | — |
+| `grid` | — | --holder --want | — |
 | `install` | app_install | — | path |
 | `keyboard` | app_keyboard | --hide --key --text | hide, key, text |
 | `launch` | app_launch | — | app |
@@ -323,6 +323,7 @@ arguments and the two global flags.
 | `sms` | app_sms | --from | from, text |
 | `source` | app_source | — | — |
 | `start` | — | --idle-timeout | — |
+| `status` | — | — | — |
 | `status` | — | — | running |
 | `stop` | — | — | status |
 | `storage` | app_storage, app_storage, app_storage | --output | action, state |
@@ -332,6 +333,7 @@ arguments and the two global flags.
 | `text` | app_text | — | target |
 | `timezone` | app_timezone | — | timezone |
 | `type` | app_type | — | target, text |
+| `ui` | — | --port | — |
 | `uncheck` | app_check | — | checked, target |
 | `uninstall` | app_uninstall | — | app |
 | `up` | — | — | — |

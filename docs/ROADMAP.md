@@ -139,11 +139,14 @@ this is what is not.
      a run on the node that bypassed the grid was refused, naming the
      holder. Still to do: one device per run holds as anywhere, and nothing
      yet shares one session between two runs.
-  5. **A grid UI** (written down 2026-09-28): a page showing each node, its
-     devices, who holds each lease and for how long, and what is queued —
-     the view Selenium Grid's console gives. Built from the same
-     `mobium grid node` answer the router reads, so it can never disagree
-     with what routing does.
+  5. **A grid UI — done, 2026-09-28.** `mobium grid status` and `mobium grid
+     ui`, a page on `127.0.0.1` refreshed every few seconds: each node, its
+     devices, who holds each lease and for how long, the nodes down, and the
+     runs waiting — each queued run leaves a note on the nodes it asked,
+     which lapses by itself. Both read the answer routing reads. Building it
+     showed the grid listing a real iPhone as free: a node now lends a
+     physical phone only with `MOBIUM_GRID_PHONES=1` in its own
+     environment.
   6. **Docker for remote** (written down 2026-09-28): a node in a container —
      an Android emulator with mobium and an SSH server beside it — so a grid
      can be stood up without a spare machine, and torn down with it. Android

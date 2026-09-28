@@ -2270,7 +2270,8 @@
     {
       "command": "grid",
       "flags": [
-        "--holder"
+        "--holder",
+        "--want"
       ]
     },
     {
@@ -2605,6 +2606,9 @@
       ]
     },
     {
+      "command": "status"
+    },
+    {
       "command": "status",
       "sends": [
         "running"
@@ -2699,6 +2703,12 @@
       "sends": [
         "target",
         "text"
+      ]
+    },
+    {
+      "command": "ui",
+      "flags": [
+        "--port"
       ]
     },
     {

@@ -50,8 +50,10 @@ func gridNodes() []string {
 // nodeStatus is what `mobium grid node --json` prints: the devices here, and
 // which of them a run holds.
 type nodeStatus struct {
-	Devices []gridDevice      `json:"devices"`
-	Leases  map[string]string `json:"leases"` // serial -> holder, live leases only
+	Devices []gridDevice          `json:"devices"`
+	Leases  map[string]string     `json:"leases"` // serial -> holder, live leases only
+	Held    map[string]grid.Lease `json:"held"`   // serial -> the lease in full, for a grid's view
+	Waiting []grid.Waiting        `json:"waiting"`
 }
 
 // gridDevice is a device as a grid routes it: what `devices` reports, and
@@ -59,13 +61,21 @@ type nodeStatus struct {
 type gridDevice struct {
 	agent.DeviceView
 	OS string `json:"os,omitempty"`
+	// Offered says the node lends this device to the grid: every emulator
+	// and simulator, and a physical phone only when the node's own
+	// environment says MOBIUM_GRID_PHONES=1. A phone plugged into a node is
+	// usually somebody's, and a grid run that took it would install, tap and
+	// change settings on it — so it is the node's choice, never the caller's.
+	Offered bool `json:"offered"`
 }
 
 func newGridCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:    "grid",
-		Short:  "The node's half of a mobium grid, run over SSH by the caller's mobium",
-		Hidden: true,
+		Use:   "grid",
+		Short: "Look at the grid MOBIUM_GRID names: its nodes, devices, leases and queue",
+		Long: "`mobium grid status` prints it, and `mobium grid ui` serves it as a page on this\n" +
+			"machine. The other subcommands are the node's half of the grid, which the\n" +
+			"caller's mobium runs over SSH.",
 	}
 	var holder string
 	node := &cobra.Command{
@@ -82,9 +92,16 @@ func newGridCmd() *cobra.Command {
 			}
 			var st nodeStatus
 			for _, d := range dv.Devices {
-				st.Devices = append(st.Devices, gridDevice{DeviceView: d, OS: deviceOS(d)})
+				st.Devices = append(st.Devices, gridDevice{DeviceView: d, OS: deviceOS(d),
+					Offered: d.Emulator || os.Getenv("MOBIUM_GRID_PHONES") == "1"})
 			}
 			if st.Leases, err = grid.Live(); err != nil {
+				return err
+			}
+			if st.Held, err = grid.LiveLeases(); err != nil {
+				return err
+			}
+			if st.Waiting, err = grid.Queue(); err != nil {
 				return err
 			}
 			return printJSON(st)
@@ -112,7 +129,22 @@ func newGridCmd() *cobra.Command {
 		c.Flags().StringVar(&holder, "holder", "", "who holds the lease")
 		_ = c.MarkFlagRequired("holder")
 	}
-	cmd.AddCommand(node, lease, release)
+	var want string
+	wait := &cobra.Command{
+		Use:  "wait <holder>",
+		Args: cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error { return grid.Wait(args[0], want) },
+	}
+	wait.Flags().StringVar(&want, "want", "", "what the run is waiting for")
+	unwait := &cobra.Command{
+		Use:  "unwait <holder>",
+		Args: cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error { return grid.Unwait(args[0]) },
+	}
+	for _, c := range []*cobra.Command{node, lease, release, wait, unwait} {
+		c.Hidden = true
+	}
+	cmd.AddCommand(node, lease, release, wait, unwait, newGridStatusCmd(), newGridUICmd())
 	return cmd
 }
 
@@ -153,6 +185,15 @@ func routeGrid(args map[string]interface{}) error {
 	}
 	nodes := gridNodes()
 	deadline := time.Now().Add(wait)
+	want := describeWant(serial, platform)
+	// A queued run leaves a note on each node it can reach, so a grid's view
+	// shows the queue; it lapses by itself if this run dies.
+	var noted []string
+	defer func() {
+		for _, n := range noted {
+			_ = sshSession(n, "", "grid unwait "+gridHolder).Run()
+		}
+	}()
 
 	for {
 		statuses, down := askNodes(nodes)
@@ -164,6 +205,10 @@ func routeGrid(args map[string]interface{}) error {
 			}
 			for _, d := range st.Devices {
 				if !deviceReady(d.DeviceView) || (serial != "" && d.ID != serial) || (platform != "" && d.Platform != platform) || !matches(d) {
+					continue
+				}
+				if !d.Offered {
+					busy = append(busy, fmt.Sprintf("%s on %s (a phone the node does not offer; MOBIUM_GRID_PHONES=1 there lends it)", d.ID, node))
 					continue
 				}
 				if h, held := st.Leases[grid.Key(d.ID)]; held {
@@ -180,6 +225,12 @@ func routeGrid(args map[string]interface{}) error {
 		}
 		if time.Now().After(deadline) {
 			return noDevice(serial, platform, wait, busy, down)
+		}
+		noted = noted[:0]
+		for n := range statuses {
+			if sshSession(n, "", "grid wait "+gridHolder+" --want "+shellWord(want)).Run() == nil {
+				noted = append(noted, n)
+			}
 		}
 		time.Sleep(2 * time.Second)
 	}
@@ -329,7 +380,9 @@ func newHolder() string {
 	return "g" + hex.EncodeToString(b)
 }
 
-func noDevice(serial, platform string, wait time.Duration, busy, down []string) error {
+// describeWant says what a run asks the grid for, as its error and the
+// queue both show it.
+func describeWant(serial, platform string) string {
 	want := "a device"
 	switch {
 	case serial != "":
@@ -343,6 +396,11 @@ func noDevice(serial, platform string, wait time.Duration, busy, down []string) 
 	if o := os.Getenv("MOBIUM_GRID_OS"); o != "" {
 		want += ", OS " + o
 	}
+	return want
+}
+
+func noDevice(serial, platform string, wait time.Duration, busy, down []string) error {
+	want := describeWant(serial, platform)
 	msg := fmt.Sprintf("no node in MOBIUM_GRID had %s free within %s", want, wait)
 	if len(busy) > 0 {
 		msg += "; busy: " + strings.Join(busy, ", ")

@@ -596,6 +596,29 @@ on the node refuses a device leased to another: a `mobium --device` run on
 the node that goes around the grid is told the device belongs to a grid run
 until that run ends. The run's daemon stops with it.
 
+**A node lends its emulators and simulators, and a phone only when it says
+so.** A phone plugged into a node is usually somebody's, and a grid run on it
+would install, tap and change settings; so a physical device is routed to
+only when the node's own environment sets `MOBIUM_GRID_PHONES=1` — the
+node's choice, never the caller's. Until then it is listed as not offered,
+and a run that asks for it by serial is told so.
+
+**`mobium grid status`** prints each node's devices — platform, OS, model,
+state — who holds each and for how long, the nodes not answering, and the
+runs waiting. **`mobium grid ui`** serves the same as a page, refreshed every
+few seconds, on `127.0.0.1` only. Both read the nodes' own answers, the ones
+routing reads, so neither can disagree with where runs go.
+
+```
+$ mobium grid status
+NODE      DEVICE         PLATFORM  OS          MODEL               STATE      HELD BY
+lab-mac   emulator-5554  android   Android 15  sdk_gphone64_arm64  device     g5c1e9a07 for 42s
+lab-mac   emulator-5556  android   Android 17  sdk_gphone64_arm64  device     free
+
+waiting:
+  g0d4f2b11 wants an android device, OS 15, waiting 9s (seen by lab-mac)
+```
+
 A lease is renewed every 20 seconds while its run lives, released when it
 ends, and free again 60 seconds after a run that died without releasing it.
 A run killed outright takes its SSH forward with it, and the next run clears

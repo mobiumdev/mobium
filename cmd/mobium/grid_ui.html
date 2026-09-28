@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mobium Grid</title>
+<style>
+  :root {
+    --bg: #fbfbfd; --panel: #ffffff; --ink: #141826; --muted: #5b6275;
+    --line: #e3e5ec; --free: #1f7a4d; --held: #3552fd; --down: #b42318; --wait: #8a5a00;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0f1220; --panel: #171b2d; --ink: #e8eaf2; --muted: #a2a8bb;
+      --line: #2a3048; --free: #4cc38a; --held: #8ea2ff; --down: #ff8a80; --wait: #f0b54a;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink);
+    font: 15px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+  main { max-width: 1100px; margin: 0 auto; padding: 24px 16px 48px; }
+  header { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+  h1 { font-size: 22px; margin: 0; }
+  .at { color: var(--muted); font-size: 13px; }
+  .summary { display: flex; gap: 12px; flex-wrap: wrap; margin: 16px 0 24px; }
+  .tile { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 10px 14px; min-width: 110px; }
+  .tile b { display: block; font-size: 22px; }
+  .tile span { color: var(--muted); font-size: 13px; }
+  section { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; margin-bottom: 16px; overflow: hidden; }
+  section h2 { font-size: 16px; margin: 0; padding: 12px 16px; border-bottom: 1px solid var(--line);
+    display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+  .scroll { overflow-x: auto; }
+  table { border-collapse: collapse; width: 100%; font-size: 14px; }
+  th, td { text-align: left; padding: 8px 16px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+  th { color: var(--muted); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: .03em; }
+  tr:last-child td { border-bottom: 0; }
+  .free { color: var(--free); font-weight: 600; }
+  .held { color: var(--held); font-weight: 600; }
+  .down { color: var(--down); padding: 12px 16px; }
+  .wait { color: var(--wait); }
+  .waiting { padding: 10px 16px; border-top: 1px solid var(--line); font-size: 14px; }
+  .empty { color: var(--muted); padding: 12px 16px; }
+  code { font-size: 13px; }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>Mobium Grid</h1>
+    <div class="at" id="at">reading the nodes…</div>
+  </header>
+  <div class="summary" id="summary"></div>
+  <div id="nodes"></div>
+</main>
+<script>
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const ago = t => {
+  const s = Math.max(0, Math.round((Date.now() - new Date(t)) / 1000));
+  return s < 60 ? s + "s" : s < 3600 ? Math.floor(s / 60) + "m " + (s % 60) + "s" : Math.floor(s / 3600) + "h " + Math.floor(s % 3600 / 60) + "m";
+};
+function render(v) {
+  let devices = 0, held = 0, waiting = 0, down = 0;
+  const out = [];
+  for (const n of v.nodes || []) {
+    if (!n.up) {
+      down++;
+      out.push(`<section><h2><span>${esc(n.name)}</span><span class="down">not answering</span></h2>
+        <div class="down">${esc(n.error)}</div></section>`);
+      continue;
+    }
+    const rows = (n.devices || []).map(d => {
+      devices++;
+      if (d.lease) held++;
+      const state = d.lease
+        ? `<span class="held">${esc(d.lease.holder)}</span> for ${ago(d.lease.since)}`
+        : d.offered ? `<span class="free">free</span>` : `<span class="at">not offered — a phone</span>`;
+      return `<tr><td><code>${esc(d.id)}</code></td><td>${esc(d.platform)}</td><td>${esc(d.os)}</td>
+        <td>${esc(d.model)}</td><td>${esc(d.state)}</td><td>${state}</td></tr>`;
+    }).join("");
+    const q = (n.waiting || []).map(w => { waiting++;
+      return `<div class="waiting"><span class="wait">waiting</span> ${esc(w.holder)} wants ${esc(w.want)}, for ${ago(w.since)}</div>`; }).join("");
+    out.push(`<section><h2><span>${esc(n.name)}</span><span class="at">${(n.devices || []).length} devices</span></h2>
+      ${rows ? `<div class="scroll"><table><thead><tr><th>Device</th><th>Platform</th><th>OS</th><th>Model</th><th>State</th><th>Held by</th></tr></thead><tbody>${rows}</tbody></table></div>` : `<div class="empty">no devices</div>`}
+      ${q}</section>`);
+  }
+  document.getElementById("nodes").innerHTML = out.join("");
+  document.getElementById("summary").innerHTML = [
+    [devices, "devices"], [held, "held"], [waiting, "waiting"], [down, "nodes down"],
+  ].map(([n, l]) => `<div class="tile"><b>${n}</b><span>${l}</span></div>`).join("");
+  document.getElementById("at").textContent = "as of " + new Date(v.at).toLocaleTimeString();
+}
+async function tick() {
+  try { render(await (await fetch("status.json", {cache: "no-store"})).json()); }
+  catch (e) { document.getElementById("at").textContent = "no answer from mobium grid ui: " + e; }
+}
+tick(); setInterval(tick, 3000);
+</script>
+</body>
+</html>

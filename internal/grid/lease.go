@@ -19,6 +19,14 @@ import (
 // so a lease past it belongs to a run that stopped, most likely by dying.
 const TTL = 60 * time.Second
 
+// Lease is a live lease as a node reports it: its holder, when it was taken,
+// and when its holder last renewed it.
+type Lease struct {
+	Holder  string    `json:"holder"`
+	Since   time.Time `json:"since"`
+	Renewed time.Time `json:"renewed"`
+}
+
 // Answer is what taking a lease says: whether it was given, and to whom.
 type Answer struct {
 	OK     bool   `json:"ok"`
@@ -55,7 +63,9 @@ func Take(serial, holder string) (Answer, error) {
 	}
 	for attempt := 0; attempt < 2; attempt++ {
 		if w, err := os.OpenFile(f, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0o600); err == nil {
-			_, err = w.WriteString(holder)
+			// The holder, then when it took the device; a renewal moves only
+			// the file's time, so the start survives it.
+			_, err = w.WriteString(holder + "\n" + time.Now().UTC().Format(time.RFC3339))
 			w.Close()
 			return Answer{OK: err == nil, Holder: holder}, err
 		}
@@ -102,6 +112,19 @@ func Holder(serial string) (string, bool) {
 
 // Live maps each leased device's key to its holder, live leases only.
 func Live() (map[string]string, error) {
+	leases, err := LiveLeases()
+	if err != nil {
+		return nil, err
+	}
+	out := map[string]string{}
+	for k, l := range leases {
+		out[k] = l.Holder
+	}
+	return out, nil
+}
+
+// LiveLeases maps each leased device's key to its lease, live ones only.
+func LiveLeases() (map[string]Lease, error) {
 	d, err := dir()
 	if err != nil {
 		return nil, err
@@ -110,21 +133,33 @@ func Live() (map[string]string, error) {
 	if err != nil {
 		return nil, err
 	}
-	out := map[string]string{}
+	out := map[string]Lease{}
 	for _, e := range entries {
-		held, info, err := read(filepath.Join(d, e.Name()))
-		if err == nil && time.Since(info.ModTime()) < TTL {
-			out[e.Name()] = held
+		f := filepath.Join(d, e.Name())
+		held, info, err := read(f)
+		if err != nil || time.Since(info.ModTime()) >= TTL {
+			continue
 		}
+		l := Lease{Holder: held, Since: info.ModTime(), Renewed: info.ModTime()}
+		if b, err := os.ReadFile(f); err == nil {
+			if parts := strings.SplitN(strings.TrimSpace(string(b)), "\n", 2); len(parts) == 2 {
+				if t, err := time.Parse(time.RFC3339, parts[1]); err == nil {
+					l.Since = t
+				}
+			}
+		}
+		out[e.Name()] = l
 	}
 	return out, nil
 }
 
+// read returns a lease file's holder — its first line — and the file's info.
 func read(f string) (string, os.FileInfo, error) {
 	info, err := os.Stat(f)
 	if err != nil {
 		return "", nil, err
 	}
 	b, err := os.ReadFile(f)
-	return strings.TrimSpace(string(b)), info, err
+	holder := strings.TrimSpace(strings.SplitN(string(b), "\n", 2)[0])
+	return holder, info, err
 }
