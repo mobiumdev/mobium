@@ -1495,6 +1495,52 @@ func GetToolSchemas() []Tool {
 			},
 		},
 		{
+			Name: "app_batch",
+			Description: "Run several tools in order, on one device, in one call — a known " +
+				"sequence such as tap, type, tap, without a round trip for each. Every step is " +
+				"the call it would be on its own: {\"name\": a tool, \"arguments\": what that " +
+				"tool takes}, resolving its target against a fresh snapshot and waiting as usual. " +
+				"Every step is checked before the first runs — an unknown tool, or an argument " +
+				"its tool does not take, refuses the whole batch with nothing done. It **stops " +
+				"at the first failure**, which is reported with that step's own error code, its " +
+				"number, and what ran before it; nothing after it runs, because the screen the " +
+				"next step expected is not the one it would meet. The answer lists each step's " +
+				"text and data in order. The device is the batch's: give it here, not per step. " +
+				"A screenshot with no path comes back as an image after the text. Use it for " +
+				"steps whose outcome you do not " +
+				"need to see before choosing the next. A ref means what the last app_map said " +
+				"when its step runs, and an app_map step inside the batch replaces them, so " +
+				"after one prefer locators (\"text=Sign in\") to refs.",
+			InputSchema: map[string]interface{}{
+				"type": "object",
+				"properties": withDevice(map[string]interface{}{
+					"steps": map[string]interface{}{
+						"type":        "array",
+						"description": "The calls to make, in order.",
+						"minItems":    1,
+						"maxItems":    maxBatchSteps,
+						"items": map[string]interface{}{
+							"type": "object",
+							"properties": map[string]interface{}{
+								"name": map[string]interface{}{
+									"type":        "string",
+									"description": "A tool, e.g. \"app_tap\".",
+								},
+								"arguments": map[string]interface{}{
+									"type":        "object",
+									"description": "That tool's arguments, as it would take them called alone, without device or driver.",
+								},
+							},
+							"required":             []string{"name"},
+							"additionalProperties": false,
+						},
+					},
+				}),
+				"required":             []string{"steps"},
+				"additionalProperties": false,
+			},
+		},
+		{
 			Name: "app_doctor",
 			Description: "Check that the environment mobium needs is present, and say what is " +
 				"wrong with it. Needs no device — its whole job is to be runnable when nothing " +

@@ -52,11 +52,14 @@ var GoWireTypes = map[string][2]string{
 	"Session":        {"internal/agent", "SessionView"},
 	"StorageItem":    {"internal/webview", "StorageItem"},
 	"StorageState":   {"internal/agent", "StorageState"},
+	"StepResult":     {"internal/agent", "BatchStep"},
 }
 
 // GoWireTypeExemptions are Go client types with JSON tags that decode no
 // daemon result, with the reason.
-var GoWireTypeExemptions = map[string]string{}
+var GoWireTypeExemptions = map[string]string{
+	"Step": "sent, never decoded: a batch's steps, which the daemon reads as app_batch's arguments",
+}
 
 // jsonKeys reads every struct with JSON tags in the non-test Go files of dir,
 // as type name to the keys its fields decode. On the client's side only

@@ -309,6 +309,40 @@ namespace Mobium
             Data("app_clear_data", Args("app", app));
 
         /// <summary>
+        /// One step for <see cref="Batch"/>: a tool and the arguments it
+        /// takes on its own.
+        /// </summary>
+        public static IDictionary<string, object?> Step(string tool, IDictionary<string, object?>? arguments = null)
+        {
+            if (string.IsNullOrWhiteSpace(tool))
+                throw new InvalidArgumentException("a step needs a tool name", "", "", false, null);
+            return new Dictionary<string, object?>(StringComparer.Ordinal)
+            {
+                ["name"] = tool,
+                ["arguments"] = arguments ?? new Dictionary<string, object?>(StringComparer.Ordinal),
+            };
+        }
+
+        /// <summary>
+        /// Runs several tools in order, on this device, in one call:
+        /// <code>
+        /// device.Batch(
+        ///     Device.Step("app_tap", new Dictionary&lt;string, object?&gt; { ["target"] = "text=Sign in" }),
+        ///     Device.Step("app_wait_for", new Dictionary&lt;string, object?&gt; { ["target"] = "text=Welcome" }));
+        /// </code>
+        /// Every step is checked before the first runs, and the batch stops at
+        /// the first failure, throwing that step's own exception; its
+        /// <c>Details</c> hold <c>step</c> and what <c>completed</c> before it.
+        /// Returns each step's <c>name</c>, <c>text</c> and <c>data</c>, in order.
+        /// </summary>
+        public IList<IDictionary<string, object?>> Batch(params IDictionary<string, object?>[] steps)
+        {
+            if (steps == null || steps.Length == 0)
+                throw new InvalidArgumentException("a batch needs at least one step", "", "", false, null);
+            return Maps(Field("app_batch", Args("steps", new List<object?>(steps)), "steps"));
+        }
+
+        /// <summary>
         /// Opens a URL or deep link — the quickest way to a specific screen —
         /// and returns the app that ended up in the foreground.
         /// </summary>

@@ -615,6 +615,47 @@ public final class Mobium implements AutoCloseable {
     }
 
     /**
+     * One step for {@link #batch(List)}: a tool and the arguments it takes on
+     * its own.
+     *
+     * @param tool      the tool, e.g. {@code "app_tap"}
+     * @param arguments its arguments, or null for none
+     * @return the step
+     */
+    public static Map<String, Object> step(String tool, Map<String, Object> arguments) {
+        if (tool == null || tool.isBlank()) throw invalid("a step needs a tool name");
+        Map<String, Object> s = new LinkedHashMap<>();
+        s.put("name", tool);
+        s.put("arguments", arguments == null ? new LinkedHashMap<String, Object>() : arguments);
+        return s;
+    }
+
+    /**
+     * Runs several tools in order, on this device, in one call:
+     *
+     * <pre>{@code
+     * device.batch(List.of(
+     *     Mobium.step("app_tap", Map.of("target", "text=Sign in")),
+     *     Mobium.step("app_wait_for", Map.of("target", "text=Welcome"))));
+     * }</pre>
+     *
+     * Every step is checked before the first runs, and the batch stops at the
+     * first failure, throwing that step's own exception; its {@code details()}
+     * hold {@code step} and what {@code completed} before it.
+     *
+     * @param steps the steps, each from {@link #step(String, Map)}
+     * @return each step's {@code name}, {@code text} and {@code data}, in order
+     */
+    public List<Map<String, Object>> batch(List<Map<String, Object>> steps) {
+        if (steps == null || steps.isEmpty()) throw invalid("a batch needs at least one step");
+        List<Map<String, Object>> out = new ArrayList<>();
+        for (Object o : Json.asArray(data("app_batch", args("steps", new ArrayList<Object>(steps))).get("steps"))) {
+            out.add(Json.asObject(o));
+        }
+        return out;
+    }
+
+    /**
      * Opens a URL or deep link — the quickest way to a specific screen — and
      * returns the app that ended up in the foreground.
      *

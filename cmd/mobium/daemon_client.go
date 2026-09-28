@@ -36,30 +36,9 @@ func daemonCall(tool string, args map[string]interface{}) (*agent.ToolsCallResul
 		}
 		args["driver"] = backendName
 	}
-	// A relative path means the caller's directory, and only the caller
-	// knows it: the daemon resolves one against its own, which is wherever
-	// it happened to start. `mobium screenshot -o rel.png` run in one
-	// directory saved into another, reporting the wrong path as a success.
-	// Resolved here because the CLI and every client (through `pipe`) come
-	// through this one function.
-	for _, key := range agent.PathArguments[tool] {
-		if p, ok := args[key].(string); ok && p != "" && !filepath.IsAbs(p) {
-			if abs, err := filepath.Abs(p); err == nil {
-				args[key] = abs
-			}
-		}
-	}
-
-	// When the daemon's disk is not the caller's, a path means a file on the
-	// wrong machine: send the file's content instead, and save what comes
-	// back where the caller asked.
-	finish := func(r *agent.ToolsCallResult) (*agent.ToolsCallResult, error) { return r, nil }
-	if filesAsContent() {
-		f, err := sendFilesAsContent(tool, args)
-		if err != nil {
-			return nil, err
-		}
-		finish = f
+	finish, err := prepareFiles(tool, args)
+	if err != nil {
+		return nil, err
 	}
 
 	result, err := daemon.Call(tool, args)
@@ -87,6 +66,41 @@ func daemonCall(tool string, args map[string]interface{}) (*agent.ToolsCallResul
 		return nil, err
 	}
 	return finish(result)
+}
+
+// prepareFiles readies a call's file arguments for a daemon that may not
+// share the caller's directory or disk, and returns what to do with the
+// result. A batch's steps are calls too, and each is readied as one.
+func prepareFiles(tool string, args map[string]interface{}) (func(*agent.ToolsCallResult) (*agent.ToolsCallResult, error), error) {
+	if tool == "app_batch" {
+		return prepareBatchFiles(args)
+	}
+	// A relative path means the caller's directory, and only the caller
+	// knows it: the daemon resolves one against its own, which is wherever
+	// it happened to start. `mobium screenshot -o rel.png` run in one
+	// directory saved into another, reporting the wrong path as a success.
+	// Resolved here because the CLI and every client (through `pipe`) come
+	// through this one function.
+	for _, key := range agent.PathArguments[tool] {
+		if p, ok := args[key].(string); ok && p != "" && !filepath.IsAbs(p) {
+			if abs, err := filepath.Abs(p); err == nil {
+				args[key] = abs
+			}
+		}
+	}
+
+	// When the daemon's disk is not the caller's, a path means a file on the
+	// wrong machine: send the file's content instead, and save what comes
+	// back where the caller asked.
+	finish := func(r *agent.ToolsCallResult) (*agent.ToolsCallResult, error) { return r, nil }
+	if filesAsContent() {
+		f, err := sendFilesAsContent(tool, args)
+		if err != nil {
+			return nil, err
+		}
+		finish = f
+	}
+	return finish, nil
 }
 
 // autoStartDaemon spawns a detached daemon and waits for it to answer.
