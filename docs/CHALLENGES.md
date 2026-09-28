@@ -7,7 +7,7 @@ the source.
 
 The pattern across them is the reason the document exists: **almost nothing
 here was found by reading code or by a test written from imagination.** Of
-153 defects, 122 were found only by running against a real device. The other
+154 defects, 123 were found only by running against a real device. The other
 thirty-one — 4, 5, 6, 14, 23, 24, 32, 35, 36, 39, 44, 50, 53, 54, 57, 66, 89,
 99, 100, 121, 123, 129, 130, 133, 134, 139, 140, 141, 142, 144 and 150 — came from reading code, the compiler, a test, a linter,
 cross-checking a computed number against a screenshot, using the tooling on
@@ -3482,6 +3482,33 @@ After the rebuild both ports answered over the tunnel and both refused the
 Wi-Fi address, and `ios-device.sh` passed. The simulator's runner is
 Appium's prebuilt release, unpatched; there the Mac's firewall is the
 mitigation (152).
+
+### 154. A real Android phone's UiAutomator2 server answered anyone on its Wi-Fi
+
+**Found by:** the threat model's open item, measured on the Pixel 8 Pro,
+Android 17, on the same Wi-Fi as the Mac.
+
+The UiAutomator2 server listens on every interface of the phone — `*:6790`,
+and its MJPEG stream on `*:7810` — and from the Mac, over Wi-Fi rather than
+adb, `/status` answered "ready to accept commands" and the stream answered
+too: while a session ran, anything on the network could read the screen and
+drive the phone, with no credential. Both stopped within two seconds of the
+daemon stopping. Its Wi-Fi was on `wlan1`, not `wlan0`, and the first probe,
+looking at `wlan0`, found no address and "no answer" — which was not a
+result, as a probe that could not have succeeded never is. The phone's
+global cellular IPv6 address did not answer from the internet either, and
+that is not a result for the same reason: nothing known to answer there was
+tried first.
+
+Unlike WebDriverAgent (153), the server has no setting that chooses an
+interface: it calls Netty's `bind(port)`, and Mobium installs Appium's
+prebuilt APK rather than building it. Binding it to `127.0.0.1` would lose
+nothing — `adb forward` reaches the server on the device's localhost — so
+the fix is upstream: a bind address the server reads, as WebDriverAgent
+reads `USE_IP`. Until then the dump backend, `--driver uiautomator`, is the
+way to drive a phone with nothing listening: measured on the same phone, a
+dump session added no listening socket, where a UiAutomator2 session added
+both.
 
 ## Findings that were not defects
 
