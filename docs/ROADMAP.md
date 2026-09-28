@@ -100,6 +100,36 @@ this is what is not.
   change read back. Measured on a Pixel 9 Pro Fold emulator, where all four
   postures could be set and read ([FORMFLUX.md](FORMFLUX.md#foldables));
   whether a real foldable's shell may set it is the open question.
+- **MobiumApp on AWS Device Farm, on its free trial** (written down
+  2026-09-28, nothing measured yet) — the first devices Mobium would drive
+  that nobody here owns. What the plan rests on, and must be checked against
+  AWS's current terms before any run: a one-time free allowance of device
+  minutes for a new account, and a *custom test environment*, where a test
+  spec runs shell commands on a host with the device attached (Linux and adb
+  for Android, macOS for iOS). Set a billing alarm at $1 first, so the end of
+  the allowance is a notification and not a bill.
+  1. **Android first.** Upload MobiumApp's release APK as the app, and as the
+     test package a zip of a `mobium` binary built for the host's OS and
+     architecture (find out which, first) with `docs/checks/`. The test spec
+     runs `mobium devices`, then `login.sh`, `web-type.sh`, `obstruction.sh`
+     and `dialogs.sh` against the attached serial, with `MOBIUMAPP_BUNDLE`
+     set to wherever the host puts the app, and copies the output into the
+     run's logs. A real phone takes the checks' phone branches, which is
+     what they are for.
+  2. **Measure before trusting.** Whether the host's adb reaches the device
+     as a plain serial; whether the UiAutomator2 server may be installed;
+     whether a device is wiped between runs, which decides whether
+     `reset-permissions` is safe there. Each is a question with a device's
+     answer, not a guess.
+  3. **iOS second, and harder.** Mobium builds WebDriverAgent from source and
+     signs it with a team from the local keychain; a farm's host has neither,
+     and re-signs uploaded apps with its own identity. The route to find out
+     is whether the host provides a signed WebDriverAgent — farms that run
+     Appium must — and whether Mobium can be pointed at a runner it did not
+     build. Until that is answered, iOS on a farm is a question, not a step.
+  4. **Budget.** A check takes two to five minutes of device time, so a trial
+     of the size last seen covers a few hundred runs. Spend it on breadth — a
+     handful of models neither of the phones here resembles — not on repeats.
 - **Fire TV** (written down 2026-09-28, nothing measured yet). Fire OS is
   Android — 7 is Android 9, 8 is Android 11 — reached by `adb connect
   <tv>:5555` once ADB debugging is on, so discovery, the hierarchy, locators,
