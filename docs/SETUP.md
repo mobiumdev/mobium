@@ -23,14 +23,41 @@ no Xcode on a machine doing Android work is normal, not a problem.
 
 ## Contents
 
+- [Installing a release](#installing-a-release) — no Go needed, from the first release
 - [Android emulator](#android-emulator)
 - [Android real device](#android-real-device)
 - [iOS simulator](#ios-simulator)
 - [iOS real device](#ios-real-device) — native screens, WebViews and Safari
 - [Parallel runs](#parallel-runs) — one daemon for each
+- [Driving another machine's devices](#driving-another-machines-devices) — `--remote`, and a grid
 - [What Mobium installs, and removing it](#what-mobium-installs-and-removing-it)
 
 ---
+
+## Installing a release
+
+From the first tagged release on, each one carries mobium prebuilt for
+macOS, Linux and Windows, on amd64 and arm64, so installing it needs no Go:
+`mobium_<version>_<os>_<arch>.tar.gz` (`.zip` for Windows), each holding the
+binary, the license and its notices, and the README, and `SHA256SUMS` over
+all of them. The binary is static — nothing else to install with it.
+
+```sh
+v=0.1.0; os=darwin; arch=arm64          # or linux / windows, amd64
+base=https://github.com/mobiumdev/mobium/releases/download/v$v
+curl -LO "$base/mobium_${v}_${os}_${arch}.tar.gz" -LO "$base/SHA256SUMS"
+shasum -a 256 -c --ignore-missing SHA256SUMS   # must say OK
+tar -xzf "mobium_${v}_${os}_${arch}.tar.gz"
+mv "mobium_${v}_${os}_${arch}/mobium" /usr/local/bin/   # or anywhere on PATH
+mobium --version
+```
+
+**On macOS, download with `curl`, not a browser.** The binaries are not
+notarized — that needs an Apple Developer Program membership — and macOS
+blocks a quarantined, un-notarized download from a browser at first launch.
+`curl` does not quarantine what it saves. For a copy that came through a
+browser, `xattr -d com.apple.quarantine mobium` lifts it, after checking its
+checksum.
 
 ## Android emulator
 
@@ -558,6 +585,39 @@ that matches, a run waits, asking again every two seconds, up to
 `MOBIUM_GRID_WAIT` (default `60s`), and then says what was busy and which
 nodes did not answer. A node that does not answer within five seconds is
 left out, and routing goes on without it.
+
+`MOBIUM_GRID_MODEL` narrows it to a model — part of its name, in any case —
+and `MOBIUM_GRID_OS` to an OS version, matched at the start of a word, so
+`17` means Android 17 and its point releases and `iOS 26` an iOS 26 runtime.
+
+**The node enforces a lease; mobium does not merely respect it.** Each run
+gets a daemon of its own on its node, named by its lease, and every daemon
+on the node refuses a device leased to another: a `mobium --device` run on
+the node that goes around the grid is told the device belongs to a grid run
+until that run ends. The run's daemon stops with it.
+
+**A node lends its emulators and simulators, and a phone only when it says
+so.** A phone plugged into a node is usually somebody's, and a grid run on it
+would install, tap and change settings; so a physical device is routed to
+only when the node's own environment sets `MOBIUM_GRID_PHONES=1` — the
+node's choice, never the caller's. Until then it is listed as not offered,
+and a run that asks for it by serial is told so.
+
+**`mobium grid status`** prints each node's devices — platform, OS, model,
+state — who holds each and for how long, the nodes not answering, and the
+runs waiting. **`mobium grid ui`** serves the same as a page, refreshed every
+few seconds, on `127.0.0.1` only. Both read the nodes' own answers, the ones
+routing reads, so neither can disagree with where runs go.
+
+```
+$ mobium grid status
+NODE      DEVICE         PLATFORM  OS          MODEL               STATE      HELD BY
+lab-mac   emulator-5554  android   Android 15  sdk_gphone64_arm64  device     g5c1e9a07 for 42s
+lab-mac   emulator-5556  android   Android 17  sdk_gphone64_arm64  device     free
+
+waiting:
+  g0d4f2b11 wants an android device, OS 15, waiting 9s (seen by lab-mac)
+```
 
 A lease is renewed every 20 seconds while its run lives, released when it
 ends, and free again 60 seconds after a run that died without releasing it.

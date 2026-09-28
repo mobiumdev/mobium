@@ -1,7 +1,7 @@
 BIN := bin/mobium
 VERSION := $(shell cat VERSION 2>/dev/null || echo dev)
 
-.PHONY: all build test fmt fmt-check vet lint clients java crosscompile api api-check flags flags-check quickstart license-check docs-check ci clean
+.PHONY: all build dist test fmt fmt-check vet lint clients java crosscompile api api-check flags flags-check quickstart license-check docs-check ci clean
 
 all: build test
 
@@ -73,6 +73,28 @@ clients:
 # daemon transport (see docs/WINDOWS.md) but everything must still compile for
 # it, and that has broken before without anyone on a Mac noticing.
 CROSS := windows/amd64 windows/arm64 linux/amd64 linux/arm64 darwin/amd64 darwin/arm64
+
+# dist builds the release archives: every CROSS target, static and with no
+# build paths in it, as mobium_<version>_<os>_<arch> — a .tar.gz, or a .zip
+# for Windows — holding the binary, the license and its notices, and the
+# README, with SHA256SUMS over them all. `make dist VERSION=0.1.0` for a
+# release; the release workflow runs it on a tag.
+DIST := dist
+
+dist:
+	@rm -rf $(DIST) && mkdir -p $(DIST)
+	@for t in $(CROSS); do \
+		os=$${t%/*}; arch=$${t#*/}; ext=""; [ $$os = windows ] && ext=.exe; \
+		name=mobium_$(VERSION)_$${os}_$${arch}; dir=$(DIST)/$$name; mkdir -p $$dir; \
+		CGO_ENABLED=0 GOOS=$$os GOARCH=$$arch go build -trimpath \
+			-ldflags "-s -w -X main.version=$(VERSION)" -o $$dir/mobium$$ext ./cmd/mobium || exit 1; \
+		cp LICENSE THIRD_PARTY_NOTICES.md README.md $$dir/; \
+		if [ $$os = windows ]; then (cd $(DIST) && zip -qr $$name.zip $$name) || exit 1; \
+		else tar -C $(DIST) -czf $(DIST)/$$name.tar.gz $$name || exit 1; fi; \
+		rm -rf $$dir; echo "  $$name"; \
+	done
+	@cd $(DIST) && shasum -a 256 mobium_* > SHA256SUMS
+	@echo "wrote $(DIST)/SHA256SUMS"
 
 crosscompile:
 	@for t in $(CROSS); do \

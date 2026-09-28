@@ -22,11 +22,15 @@ this is what is not.
   verified by a TXT record on `mobium.dev`), a GPG key for Maven Central, and a
   tag — `v0.1.0`, and `clients/go/v0.1.0` for the Go module. All four names
   were unclaimed on 2026-09-27.
-- **Prebuilt `mobium` binaries.** `go install
-  github.com/mobiumdev/mobium/cmd/mobium@latest` works, but needs Go; someone
-  installing a client from PyPI or npm should not have to have it. Releases
-  with checksummed binaries for macOS and Linux, and possibly a Homebrew tap,
-  are the missing piece — and the prerequisite for publishing the clients.
+- **Prebuilt `mobium` binaries — built, waiting on the first tag.**
+  `make dist` builds all six platforms, static and without build paths, into
+  archives with the license, notices and README and a `SHA256SUMS`; the
+  release workflow runs it on a `v*` tag, checks every archive and the Linux
+  binary's `--version`, and attaches them to the release, and on a pull
+  request does all of that but the release. What is left: the tag, which is
+  a decision, not a step; a Homebrew tap; and notarizing the macOS binaries,
+  which needs an Apple Developer Program membership — until then
+  [SETUP.md](SETUP.md#installing-a-release) says to download with `curl`.
 - **The quick start on Linux, against a device.** Mobium builds and passes its
   tests on Linux in CI; no emulator has been driven from Linux yet, so the
   quick start calls Linux expected rather than verified.
@@ -128,16 +132,21 @@ this is what is not.
      device up to `MOBIUM_GRID_WAIT`; a node that does not answer is left out.
      A `kill -9` left an SSH forward running for good until the forward
      read a pipe its parent holds ([SETUP.md](SETUP.md#a-grid)).
-  4. **Still to do.** Routing by model and OS version, not only platform and
-     serial. Leases are honored by mobium, not enforced by the node's
-     daemon, so a run that ignores the grid can still take a leased device.
-     And one device per run holds on a node's daemon as anywhere — nothing
+  4. **Model, OS and enforcement — done, 2026-09-28.** `MOBIUM_GRID_MODEL`
+     and `MOBIUM_GRID_OS` route by model and OS version, the node reporting
+     each device's. Each run gets a daemon of its own on its node, named by
+     its lease, and every daemon there refuses a device leased to another —
+     a run on the node that bypassed the grid was refused, naming the
+     holder. Still to do: one device per run holds as anywhere, and nothing
      yet shares one session between two runs.
-  5. **A grid UI** (written down 2026-09-28): a page showing each node, its
-     devices, who holds each lease and for how long, and what is queued —
-     the view Selenium Grid's console gives. Built from the same
-     `mobium grid node` answer the router reads, so it can never disagree
-     with what routing does.
+  5. **A grid UI — done, 2026-09-28.** `mobium grid status` and `mobium grid
+     ui`, a page on `127.0.0.1` refreshed every few seconds: each node, its
+     devices, who holds each lease and for how long, the nodes down, and the
+     runs waiting — each queued run leaves a note on the nodes it asked,
+     which lapses by itself. Both read the answer routing reads. Building it
+     showed the grid listing a real iPhone as free: a node now lends a
+     physical phone only with `MOBIUM_GRID_PHONES=1` in its own
+     environment.
   6. **Docker for remote** (written down 2026-09-28): a node in a container —
      an Android emulator with mobium and an SSH server beside it — so a grid
      can be stood up without a spare machine, and torn down with it. Android

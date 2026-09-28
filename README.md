@@ -35,7 +35,8 @@ person driving an emulator for it. People get the same commands.
 
 Requirements:
 
-- **Go 1.24+**, to install it — there are no prebuilt binaries yet
+- **Go 1.24+**, to install it — prebuilt binaries arrive with the first
+  release ([SETUP.md](docs/SETUP.md#installing-a-release))
 - **Android:** platform-tools on `PATH` (or `ANDROID_HOME`, or
   `MOBIUM_ADB_PATH`), and an emulator or a phone with USB debugging on
 - **iOS:** full Xcode and a booted simulator — or an iPhone on a cable, with

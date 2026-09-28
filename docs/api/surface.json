@@ -703,12 +703,11 @@
   "counts": {
     "tools": 56,
     "cliRegistered": 62,
-    "cliVisible": 60,
+    "cliVisible": 61,
     "cliHidden": [
-      "grid",
       "pipe"
     ],
-    "cliConstructors": 66,
+    "cliConstructors": 68,
     "clients": 5
   },
   "cliWithoutTool": [
@@ -718,7 +717,9 @@
     "pipe",
     "start",
     "status",
+    "status",
     "stop",
+    "ui",
     "up"
   ]
 }

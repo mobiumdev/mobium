@@ -166,9 +166,16 @@ func sshExec(args ...string) *exec.Cmd {
 // sshCommand runs `mobium <sub>` on a node, in the session this process
 // uses, as MOBIUM_REMOTE_BIN says the node's shell runs mobium.
 func sshCommand(node, sub string) *exec.Cmd {
+	return sshSession(node, paths.SessionName(), sub)
+}
+
+// sshSession is sshCommand in a named session on the node: "" is the node's
+// default daemon, which a grid's queries and leases use, so asking which
+// devices are free never starts a daemon of a run's own.
+func sshSession(node, session, sub string) *exec.Cmd {
 	remote := remoteBin() + " " + sub
-	if s := paths.SessionName(); s != "" {
-		remote = "MOBIUM_SESSION=" + s + " " + remote
+	if session != "" {
+		remote = "MOBIUM_SESSION=" + session + " " + remote
 	}
 	return sshExec("-T", node, remote)
 }
