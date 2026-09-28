@@ -287,3 +287,18 @@ func TestTheWireTypeCheckCanFail(t *testing.T) {
 		t.Errorf("problems = %v, want the renamed key reported", problems)
 	}
 }
+
+// A command is listed once per tool, however many times it dispatches it:
+// double-tap calls app_tap on two paths, and docs/API.md once read
+// "tap, double-tap, double-tap".
+func TestEachCommandListedOncePerTool(t *testing.T) {
+	for _, e := range sweep(t).Tools {
+		seen := map[string]bool{}
+		for _, c := range strings.Split(e.CLI, ", ") {
+			if c != "" && seen[c] {
+				t.Errorf("%s lists %q twice: %q", e.Name, c, e.CLI)
+			}
+			seen[c] = true
+		}
+	}
+}

@@ -627,7 +627,7 @@
     {
       "n": 53,
       "tool": "app_tap",
-      "cli": "tap, double-tap, double-tap",
+      "cli": "tap, double-tap",
       "clients": {
         "dotnet": "Tap",
         "go": "Tap",

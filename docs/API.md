@@ -86,7 +86,7 @@ been wrong twice.
 | 50 | `app_state` | `state` | `AppState` | `app_state` | `appState` | `appState` |
 | 51 | `app_storage` | `storage` | `Storage` | `storage` | `storage` | `storage` |
 | 52 | `app_swipe` | `swipe` | `Swipe` | `swipe` | `swipe` | `swipe` |
-| 53 | `app_tap` | `tap, double-tap, double-tap` | `Tap` | `tap` | `tap` | `tap` |
+| 53 | `app_tap` | `tap, double-tap` | `Tap` | `tap` | `tap` | `tap` |
 | 54 | `app_terminate` | `terminate` | `Terminate` | `terminate` | `terminate` | `terminate` |
 | 55 | `app_text` | `text` | `Text` | `text` | `text` | `text` |
 | 56 | `app_time` | `time` | `DeviceTime` | `device_time` | `deviceTime` | `deviceTime` |

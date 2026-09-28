@@ -19,6 +19,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -245,10 +246,13 @@ func collectCLI(dir string) (map[string]string, ExtraCommands, int, error) {
 				}
 				for _, t := range tools {
 					// A command that dispatches several tools is recorded
-					// against each, so neither looks unreachable.
+					// against each, so neither looks unreachable — and once
+					// per tool, however many times it calls it: double-tap
+					// calls app_tap on two paths, and comparing the name with
+					// the whole list so far listed it twice.
 					if byTool[t] == "" {
 						byTool[t] = use
-					} else if byTool[t] != use {
+					} else if !slices.Contains(strings.Split(byTool[t], ", "), use) {
 						byTool[t] += ", " + use
 					}
 				}
