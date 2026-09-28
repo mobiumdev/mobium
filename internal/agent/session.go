@@ -28,6 +28,10 @@ type SessionView struct {
 	// ClosedTabs counts the browser tabs end closed, the ones the session
 	// opened, as the browser confirmed each close.
 	ClosedTabs int `json:"closed_tabs,omitempty"`
+	// Exposure says what else can reach the device while the session is
+	// open, where something can: a real Android phone's UiAutomator2 server
+	// listens on the phone's network as well as adb (CHALLENGES 154).
+	Exposure string `json:"exposure,omitempty"`
 	// Ended says end closed a session; false means there was none to close.
 	Ended    bool          `json:"ended"`
 	Sessions []SessionInfo `json:"sessions"`
@@ -123,6 +127,10 @@ func (h *Handlers) sessionStart(ctx context.Context, args map[string]interface{}
 		verb = "already open"
 	}
 	text := fmt.Sprintf("session %s on %s (%s, %s)", verb, view.Device, view.Platform, view.Driver)
+	if exposure := sessionExposure(s); exposure != "" {
+		view.Exposure = exposure
+		text += "\nnote: " + exposure
+	}
 
 	if app := stringArg(args, "app"); app != "" {
 		// Stopped first, as Appium's UiAutomator2 driver stops the app before
@@ -334,4 +342,20 @@ func sessionPlatform(s *session) string {
 	default:
 		return string(s.backend)
 	}
+}
+
+// sessionExposure names what can reach the device while this session is open,
+// beyond Mobium. On a real Android phone, UiAutomator2's server and its screen
+// stream listen on every interface, and on the Pixel 8 Pro both answered from
+// another machine on its Wi-Fi with no credential (CHALLENGES 154). The server
+// has no setting that binds it, so the exposure is named rather than hidden,
+// with the one driver that opens no port. An emulator's network is behind
+// its own NAT, and the other drivers listen nowhere a network reaches.
+func sessionExposure(s *session) string {
+	if s.backend != BackendUIA2 || s.dev == nil || s.dev.Emulator {
+		return ""
+	}
+	return "until this session ends, the UiAutomator2 server on the phone answers on the phone's network " +
+		"too — anyone on the same Wi-Fi can read its screen and drive it. --driver uiautomator opens no port, " +
+		"at about 2s a screen read and without typing"
 }

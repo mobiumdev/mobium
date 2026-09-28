@@ -7,7 +7,7 @@ the source.
 
 The pattern across them is the reason the document exists: **almost nothing
 here was found by reading code or by a test written from imagination.** Of
-151 defects, 120 were found only by running against a real device. The other
+154 defects, 123 were found only by running against a real device. The other
 thirty-one — 4, 5, 6, 14, 23, 24, 32, 35, 36, 39, 44, 50, 53, 54, 57, 66, 89,
 99, 100, 121, 123, 129, 130, 133, 134, 139, 140, 141, 142, 144 and 150 — came from reading code, the compiler, a test, a linter,
 cross-checking a computed number against a screenshot, using the tooling on
@@ -3433,6 +3433,92 @@ and `dialogs.sh`, discarding the reset's output under `set -e`, stopped
 after its share-sheet row with nothing on screen. Such a permission is now
 kept and named, since a fresh install has it too, and the check says why a
 reset failed.
+
+### 152. The simulator's WebDriverAgent answered anyone on the network
+
+**Found by:** measuring the open items of the threat model on the iPhone 17
+Pro simulator, with the Mac's firewall off, as it was.
+
+A simulator shares the Mac's network stack, and WebDriverAgent listened on
+every interface — `*:port` in `lsof`. From the Mac's own LAN address, its
+`/status` answered with the live session's id, `/source` returned the whole
+screen, and the session could have been driven; anything on the same network
+could do the same while a session ran. WebDriverAgent binds one interface
+when `USE_IP` names it, and Mobium already passed `USE_PORT` the same way
+(148), so the runner is now launched with `USE_IP=127.0.0.1`: afterwards the
+server listened on `127.0.0.1` only, and the LAN address was refused. Its
+MJPEG screen stream did not follow — WebDriverAgent 16.12.8 creates that
+socket without an interface, whatever `USE_IP` says — and still answers from
+the network. Mobium does not use the stream; closing it needs WebDriverAgent
+to honor `USE_IP` there too, and is open in the threat model.
+
+### 153. A real iPhone's WebDriverAgent answered anyone on its Wi-Fi
+
+**Found by:** the threat model's open item, measured on the iPhone 15 Plus:
+the runner's `/status`, which reports the phone's Wi-Fi address, was asked
+again at that address from the Mac, over the network rather than the cable.
+
+It answered with the live session. The runner listened on every interface of
+the phone, so while a session ran, anything on the same Wi-Fi could read the
+screen and drive the phone — tap, type, open apps — with no credential; its
+MJPEG stream on 9100 answered the same way. It stopped within two seconds of
+the daemon stopping, so the exposure was a session long. The Mac's firewall
+cannot help: this is the phone's interface. The runner is now started with
+`TEST_RUNNER_USE_IP`, which xcodebuild hands it as `USE_IP`, set to the
+phone's address on the CoreDevice tunnel — the only address Mobium uses.
+That address exists only while something asks for the device, and changes
+with every connection (it dropped after about 20 seconds idle and came back
+different), so Mobium brings the tunnel up with `devicectl device info
+details` just before launching, refuses to start rather than start unbound
+when no address comes, and relaunches once if the tunnel reconnects during
+start-up. Afterwards the server answered on the tunnel and refused the Wi-Fi
+address. The stream still answered on Wi-Fi: WebDriverAgent never applies
+`USE_IP` to it, the same as on a simulator (152). Its socket can bind one
+interface and the server never tells it which, so Mobium, which builds the
+phone's runner from the pinned source, adds that one line to `FBWebServer.m`
+after verifying the source and before building, refuses to build if the line
+it attaches to is gone, and rebuilds a phone's runner built before the patch.
+After the rebuild both ports answered over the tunnel and both refused the
+Wi-Fi address, and `ios-device.sh` passed. The simulator's runner is
+Appium's prebuilt release, unpatched; there the Mac's firewall is the
+mitigation (152).
+
+A runner already running when a session starts is used rather than started
+again, and one from before this fix listens everywhere. So one found running
+is asked for the phone's Wi-Fi address and tried there from the Mac: one of
+Mobium's own that answers is stopped and replaced by one bound to the tunnel,
+and anyone else's — Xcode's, a terminal's — is refused as `device_not_ready`
+with the reason, and left running, since it is not Mobium's to stop. Both
+measured on the iPhone 15 Plus with an unbound runner started by hand: ours
+answered on Wi-Fi before and not after, with one runner left; the other was
+refused and still running.
+
+### 154. A real Android phone's UiAutomator2 server answered anyone on its Wi-Fi
+
+**Found by:** the threat model's open item, measured on the Pixel 8 Pro,
+Android 17, on the same Wi-Fi as the Mac.
+
+The UiAutomator2 server listens on every interface of the phone — `*:6790`,
+and its MJPEG stream on `*:7810` — and from the Mac, over Wi-Fi rather than
+adb, `/status` answered "ready to accept commands" and the stream answered
+too: while a session ran, anything on the network could read the screen and
+drive the phone, with no credential. Both stopped within two seconds of the
+daemon stopping. Its Wi-Fi was on `wlan1`, not `wlan0`, and the first probe,
+looking at `wlan0`, found no address and "no answer" — which was not a
+result, as a probe that could not have succeeded never is. The phone's
+global cellular IPv6 address did not answer from the internet either, and
+that is not a result for the same reason: nothing known to answer there was
+tried first.
+
+Unlike WebDriverAgent (153), the server has no setting that chooses an
+interface: it calls Netty's `bind(port)`, and Mobium installs Appium's
+prebuilt APK rather than building it. Binding it to `127.0.0.1` would lose
+nothing — `adb forward` reaches the server on the device's localhost — so
+the fix is upstream: a bind address the server reads, as WebDriverAgent
+reads `USE_IP`. Until then the dump backend, `--driver uiautomator`, is the
+way to drive a phone with nothing listening: measured on the same phone, a
+dump session added no listening socket, where a UiAutomator2 session added
+both.
 
 ## Findings that were not defects
 

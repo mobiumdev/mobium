@@ -159,12 +159,17 @@ func PhoneWDALog(team, udid string) string {
 func EnsurePhoneWDA(ctx context.Context, team, udid string, progress func(string)) (string, error) {
 	dir := phoneWDADir(team, udid)
 	derived := filepath.Join(dir, "build")
-	if run, err := findXCTestRun(derived); err == nil {
+	if run, err := findXCTestRun(derived); err == nil && builtAtCurrentPatch(dir) {
 		return run, nil
 	}
+	// Built before the current patch, or not at all: from scratch.
+	_ = os.RemoveAll(derived)
 
 	src, err := ensureWDASource(ctx, progress)
 	if err != nil {
+		return "", err
+	}
+	if err := patchWDASource(src); err != nil {
 		return "", err
 	}
 	if err := os.MkdirAll(dir, 0o755); err != nil {
@@ -199,6 +204,9 @@ func EnsurePhoneWDA(ctx context.Context, team, udid string, progress func(string
 	runErr := cmd.Run()
 
 	if run, err := findXCTestRun(derived); err == nil && runErr == nil {
+		if err := os.WriteFile(patchMarker(dir), []byte(wdaPatchLevel+"\n"), 0o644); err != nil {
+			return "", err
+		}
 		return run, nil
 	}
 	return "", mobiumerr.New(mobiumerr.ToolchainMissing, "building WebDriverAgent failed: %s. The full log is %s",
@@ -442,13 +450,23 @@ func orphanedRunner(ps, buildRoot, udid string) int {
 // StartPhoneWDA launches the runner. It is deliberately not bound to the
 // caller's context: the process outlives the request that started it and
 // ends when the session does.
-func StartPhoneWDA(xctestrun, udid, logPath string) (*PhoneRunner, error) {
+//
+// bindIP is the address the runner's server listens on — the phone's end of
+// the CoreDevice tunnel. Left to itself, WebDriverAgent listens on every
+// interface, and on Wi-Fi it answered anyone on the network with the live
+// session (CHALLENGES 153). xcodebuild hands TEST_RUNNER_-prefixed
+// variables to the runner without the prefix, so this reaches it as USE_IP.
+func StartPhoneWDA(xctestrun, udid, logPath, bindIP string) (*PhoneRunner, error) {
+	if bindIP == "" {
+		return nil, mobiumerr.New(mobiumerr.Internal, "no address to bind WebDriverAgent to on %s", udid)
+	}
 	logFile, err := os.Create(logPath)
 	if err != nil {
 		return nil, err
 	}
 	cmd := exec.Command("xcodebuild", "test-without-building",
 		"-xctestrun", xctestrun, "-destination", "id="+udid)
+	cmd.Env = append(os.Environ(), "TEST_RUNNER_USE_IP="+bindIP)
 	cmd.Stdout = logFile
 	cmd.Stderr = logFile
 	if err := cmd.Start(); err != nil {

@@ -22,3 +22,12 @@ func TestOrphanedRunnerIsOnlyOursAndOnlyOrphaned(t *testing.T) {
 		t.Errorf("adopted %d, which is a live daemon's, Xcode's, or another phone's", got)
 	}
 }
+
+// A runner with no address to bind to would listen on every interface of the
+// phone, which answered anyone on its Wi-Fi (CHALLENGES 153). It is refused
+// before anything is launched.
+func TestStartPhoneWDARefusesToStartUnbound(t *testing.T) {
+	if _, err := StartPhoneWDA("unused.xctestrun", "udid", t.TempDir()+"/run.log", ""); err == nil {
+		t.Fatal("a runner was started with no address to bind to")
+	}
+}

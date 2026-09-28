@@ -333,6 +333,8 @@ is the protocol.
 | [docs/GESTURES.md](docs/GESTURES.md) | every touch gesture and what each platform did |
 | [docs/FORMFLUX.md](docs/FORMFLUX.md) | one device impersonating many screens |
 | [docs/CHALLENGES.md](docs/CHALLENGES.md) | platform behaviors found while building this, and how each is handled |
+| [docs/THREAT-MODEL.md](docs/THREAT-MODEL.md) | what can go wrong when an agent drives a phone, and what is done and open |
+| [docs/upstream/](docs/upstream/README.md) | problems in projects Mobium depends on, written up with a patch |
 | [docs/WINDOWS.md](docs/WINDOWS.md) | the state of Windows support |
 | [docs/ROADMAP.md](docs/ROADMAP.md) | what is next |
 | [docs/RELEASE-CHECKLIST.md](docs/RELEASE-CHECKLIST.md) | the device checks CI cannot run |
