@@ -129,6 +129,23 @@ n=$(pgrep -fl "mobium daemon" 2>/dev/null \
       | awk '$2 ~ /(^|\/)mobium$/ && $3 == "daemon"' | wc -l | tr -d ' ')
 [ "$n" = "0" ] && note "mobium daemon" "none" || bad "mobium daemon" "$n running"
 
+# A client's pipe, or an MCP server, outliving its client. Since 2026-09-27 a
+# pipe ends the sessions its client started when the client goes away, so one
+# still running means a client is — or a pipe that could not exit.
+n=$(pgrep -fl "mobium (pipe|mcp)" 2>/dev/null \
+      | awk '$2 ~ /(^|\/)mobium$/ && ($3 == "pipe" || $3 == "mcp")' | wc -l | tr -d ' ')
+[ "$n" = "0" ] && note "mobium pipe/mcp" "none" || bad "mobium pipe/mcp" "$n running (a client is still attached)"
+
+# The real iPhone's WebDriverAgent runner: an xcodebuild the session owns,
+# which a daemon killed without tearing down leaves running, and the next
+# daemon then reuses as not its own and never stops.
+n=$(pgrep -f "xcodebuild test-without-building -xctestrun .*webdriveragent-device" 2>/dev/null | wc -l | tr -d ' ')
+[ "$n" = "0" ] && note "iphone wda runner" "none" || bad "iphone wda runner" "$n xcodebuild running"
+
+# A simulator recording the daemon started and did not stop.
+n=$(pgrep -f "simctl io .* recordVideo" 2>/dev/null | wc -l | tr -d ' ')
+[ "$n" = "0" ] && note "simulator recordings" "none" || bad "simulator recordings" "$n recording"
+
 # -avd narrows this to emulators. A bare qemu match would catch any VM.
 n=$(pgrep -f "qemu-system.*-avd" 2>/dev/null | wc -l | tr -d ' ')
 [ "$n" = "0" ] && note "android emulators" "none" || bad "android emulators" "$n running"
@@ -151,8 +168,11 @@ n=$(xcrun simctl list devices booted 2>/dev/null | grep -c Booted)
 n=$(pgrep -f "CoreSimulator/Profiles/Runtimes" 2>/dev/null | wc -l | tr -d ' ')
 [ "$n" = "0" ] && note "simulator runtimes" "none" || bad "simulator runtimes" "$n running"
 
-if [ -d "$HOME/.mobium/daemon" ]; then
-  n=$(ls -A "$HOME/.mobium/daemon" 2>/dev/null | wc -l | tr -d ' ')
+# MOBIUM_HOME moves the state directory, and a check of the default one
+# while the daemon used another reported "cleared" for files it never looked at.
+state="${MOBIUM_HOME:-$HOME/.mobium}"
+if [ -d "$state/daemon" ]; then
+  n=$(ls -A "$state/daemon" 2>/dev/null | wc -l | tr -d ' ')
   [ "$n" = "0" ] && note "daemon socket/pid" "cleared" || bad "daemon socket/pid" "$n file(s) left"
 fi
 

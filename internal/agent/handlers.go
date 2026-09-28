@@ -124,6 +124,12 @@ func (h *Handlers) SetProgress(fn func(string)) {
 func (h *Handlers) Close() {
 	h.mu.Lock()
 	defer h.mu.Unlock()
+	// Shutting down ends every session, so each stops what its start
+	// launched, as app_session end does. Not in closeSessions: switching
+	// drivers closes sessions too, and is not the end of anything.
+	for _, s := range h.sessions {
+		_, _ = h.stopLaunched(s)
+	}
 	h.closeSessions()
 }
 

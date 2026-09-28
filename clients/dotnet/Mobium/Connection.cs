@@ -30,6 +30,11 @@ namespace Mobium
         // answer.
         private readonly object _gate = new object();
 
+        // _writeLock keeps one message whole on the pipe. Dispose writes a
+        // detach while a call may hold _gate, and must not wait for it:
+        // Dispose is how another thread gives up on a call that hangs.
+        private readonly object _writeLock = new object();
+
         // _dead says why the connection can no longer be used, once something
         // has made that true: it was disposed, mobium exited, or a call timed
         // out half-way. A call abandoned half-way cannot be resynchronized --
@@ -131,9 +136,12 @@ namespace Mobium
                 throw Die("mobium exited with status " + _process.ExitCode);
             try
             {
-                _stdin.Write(Json.Write(payload));
-                _stdin.Write('\n');
-                _stdin.Flush();
+                lock (_writeLock)
+                {
+                    _stdin.Write(Json.Write(payload));
+                    _stdin.Write('\n');
+                    _stdin.Flush();
+                }
             }
             catch (Exception e) when (e is IOException || e is ObjectDisposedException)
             {
@@ -337,6 +345,21 @@ namespace Mobium
             if (_disposed) return;
             _disposed = true;
             if (_dead == null) _dead = "it was disposed";
+            try
+            {
+                // mobium ends the sessions a client started when the client
+                // goes away, and a crash closes stdin just as this does -- so
+                // say first that this is a deliberate close, or it would quit.
+                lock (_writeLock)
+                {
+                    _stdin.Write("{\"jsonrpc\":\"2.0\",\"method\":\"mobium/detach\"}\n");
+                    _stdin.Flush();
+                }
+            }
+            catch (Exception e) when (e is IOException || e is ObjectDisposedException)
+            {
+                // A pipe already gone has nobody left to tell.
+            }
             try
             {
                 // Closing stdin is how mobium is asked to exit.

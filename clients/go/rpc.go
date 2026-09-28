@@ -85,6 +85,11 @@ type conn struct {
 	mu     sync.Mutex
 	nextID int
 
+	// writeMu keeps one message whole on the pipe. Close writes a detach
+	// while a call may hold mu, and must not wait for it: Close is how a
+	// caller gives up on a call that hangs.
+	writeMu sync.Mutex
+
 	// dead records why the connection can no longer be used, once something
 	// has made that true. Guarded separately from mu because it is read by
 	// the next caller while the previous one may still hold mu.
@@ -152,6 +157,8 @@ func (c *conn) write(payload map[string]any) error {
 	if err != nil {
 		return err
 	}
+	c.writeMu.Lock()
+	defer c.writeMu.Unlock()
 	if _, err := c.stdin.Write(append(data, '\n')); err != nil {
 		return fmt.Errorf("mobium closed the connection: %w", err)
 	}
@@ -313,10 +320,15 @@ const closeGrace = 10 * time.Second
 
 // Close shuts the subprocess down, closing its stdin so it can exit cleanly
 // and killing it only if it will not.
+//
+// It tells mobium first that the client is leaving on purpose. mobium ends
+// the sessions a client started when the client goes away — a crash closes
+// stdin just as this does — so without the detach, Close would quit.
 func (c *conn) Close() error {
 	if c.cmd == nil || c.cmd.Process == nil {
 		return nil
 	}
+	_ = c.write(map[string]any{"jsonrpc": "2.0", "method": "mobium/detach"})
 	_ = c.stdin.Close()
 	done := make(chan error, 1)
 	go func() { done <- c.cmd.Wait() }()

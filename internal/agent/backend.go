@@ -105,12 +105,24 @@ type session struct {
 	// ten-second floor under listing contexts and switching between them.
 	insp *webview.Inspector
 
-	// route cancels a route this session is stepping itself. Only Android
-	// uses it: simctl owns the timer on iOS, so there is nothing here to
-	// stop. One route at a time per device — starting another replaces it,
-	// because two things driving one position is not a state anyone can
-	// reason about.
+	// route stops a route in progress: on Android it cancels the stepping
+	// this session does itself, and on iOS, where simctl owns the timer, it
+	// clears the simulated location, which is simctl's only way to stop one.
+	// One route at a time per device — starting another replaces it, because
+	// two things driving one position is not a state anyone can reason about.
 	route context.CancelFunc
+
+	// launched is the app app_session start launched, which the session's
+	// end stops again: a browser left running keeps the pages the session
+	// opened, and the next session's contexts list them. Apps the session
+	// did not launch are not its to stop.
+	launched string
+
+	// openedTabs are the browser tabs app_open_url opened in the app start
+	// launched, on Android, which the end closes before stopping it: a
+	// browser restores its tabs on the next launch, measured with Chrome.
+	// Only these — a tab the user already had is not the session's.
+	openedTabs []webview.Context
 
 	// logMarks is how far app_logs has read the device log, keyed by the
 	// filter it read with, as the device's clock reported it. Per filter

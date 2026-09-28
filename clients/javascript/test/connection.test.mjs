@@ -159,6 +159,22 @@ const within = (p, ms) => Promise.race([settle(p), new Promise((r) => setTimeout
   await c.close()
 }
 
+// -- close() says it is leaving on purpose ------------------------------------
+// mobium ends the sessions a client started when the client goes away, and a
+// crash closes stdin just as close() does; without the detach, close() quits.
+{
+  const log = join(dir, 'notify.log')
+  process.env.MOBIUM_FAKE = 'ok'
+  process.env.MOBIUM_FAKE_NOTIFYLOG = log
+  const d = await m.connect({ binary: FAKE })
+  await d.close()
+  process.env.MOBIUM_FAKE_NOTIFYLOG = ''
+  let sent = []
+  try { sent = readFileSync(log, 'utf8').split('\n').filter(Boolean) } catch {}
+  check(sent.join(',') === 'notifications/initialized,mobium/detach',
+    `close() sent ${JSON.stringify(sent)}, not the handshake's notification and then mobium/detach`)
+}
+
 report()
 
 function report() {

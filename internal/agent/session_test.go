@@ -5,6 +5,7 @@ import (
 	"errors"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/mobiumdev/mobium/internal/device"
 	"github.com/mobiumdev/mobium/internal/mobiumerr"
@@ -197,5 +198,113 @@ func TestACallNamingNoDriverUsesTheSessionOpen(t *testing.T) {
 	}
 	if s := h.openSessionFor("emulator-5554"); s != other {
 		t.Error("naming the device did not find its session")
+	}
+}
+
+// appDriver is a fakeDriver that manages apps, recording what it stopped.
+type appDriver struct {
+	fakeDriver
+	terminated []string
+	failWith   error
+}
+
+func (d *appDriver) Launch(ctx context.Context, app string) error { return nil }
+func (d *appDriver) Terminate(ctx context.Context, app string) error {
+	if d.failWith != nil {
+		return d.failWith
+	}
+	d.terminated = append(d.terminated, app)
+	return nil
+}
+func (d *appDriver) Install(ctx context.Context, path string) error { return nil }
+func (d *appDriver) OpenURL(ctx context.Context, url string) error  { return nil }
+
+// A browser a session launched and left running keeps the pages it opened,
+// and the next session's contexts listed them — measured with Safari, whose
+// "fresh" launch restores every tab. So the end stops what the start
+// launched, and nothing else.
+func TestEndingStopsTheAppTheStartLaunched(t *testing.T) {
+	h := NewHandlers()
+	d := &appDriver{}
+	h.sessions["emulator-5554"] = &session{dev: &device.Device{Serial: "emulator-5554"}, driver: d, backend: BackendUIA2, launched: "com.android.chrome"}
+	v, err := sessionCall(t, h, map[string]interface{}{"action": "end", "device": "emulator-5554"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Join(d.terminated, ",") != "com.android.chrome" || v.Terminated != "com.android.chrome" {
+		t.Errorf("stopped %v, reported %q; want com.android.chrome both times", d.terminated, v.Terminated)
+	}
+
+	// A session that launched nothing stops nothing.
+	d = &appDriver{}
+	h.sessions["emulator-5554"] = &session{dev: &device.Device{Serial: "emulator-5554"}, driver: d, backend: BackendUIA2}
+	if v, err = sessionCall(t, h, map[string]interface{}{"action": "end", "device": "emulator-5554"}); err != nil || len(d.terminated) != 0 || v.Terminated != "" {
+		t.Errorf("a session that launched nothing stopped %v (reported %q, %v)", d.terminated, v.Terminated, err)
+	}
+
+	// One that cannot be stopped does not keep the session open: ending it
+	// is what was asked, and the result says what was left running.
+	d = &appDriver{failWith: errors.New("device offline")}
+	h.sessions["emulator-5554"] = &session{dev: &device.Device{Serial: "emulator-5554"}, driver: d, backend: BackendUIA2, launched: "com.android.chrome"}
+	res, err := h.sessionTool(context.Background(), map[string]interface{}{"action": "end", "device": "emulator-5554"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, open := h.sessions["emulator-5554"]; open {
+		t.Error("the session stayed open because its app could not be stopped")
+	}
+	if text := res.Content[0].Text; !strings.Contains(text, "could not be stopped: device offline") {
+		t.Errorf("the result does not say the app was left running: %q", text)
+	}
+	if res.StructuredContent.(SessionView).Terminated != "" {
+		t.Error("an app that was not stopped was reported as stopped")
+	}
+}
+
+// routeDriver plays routes the way simctl does — itself — and counts clears.
+type routeDriver struct {
+	fakeDriver
+	clears int
+}
+
+func (d *routeDriver) SetLocation(ctx context.Context, lat, lon float64) error { return nil }
+func (d *routeDriver) ClearLocation(ctx context.Context) error {
+	d.clears++
+	return nil
+}
+func (d *routeDriver) StartRoute(ctx context.Context, pts []device.Point, speed float64) error {
+	return nil
+}
+
+// simctl plays a route itself, so ending the session left it playing while
+// the result said "a route stopped". The end now clears it — simctl's only
+// way to stop one — unless it has already finished.
+func TestEndingStopsARouteTheSimulatorIsPlaying(t *testing.T) {
+	for _, c := range []struct {
+		name   string
+		speed  float64
+		clears int
+	}{
+		{"still playing", 1, 1},    // about 20 minutes of route
+		{"finished", 1_000_000, 0}, // over in about a millisecond
+	} {
+		h := NewHandlers()
+		d := &routeDriver{}
+		s := &session{dev: &device.Device{Serial: "SIM-1"}, driver: d, backend: BackendWDA}
+		h.sessions["SIM-1"] = s
+		_, err := h.locationOn(context.Background(), s, map[string]interface{}{
+			"waypoints": []interface{}{[]interface{}{51.5007, -0.1246}, []interface{}{51.5081, -0.1100}},
+			"speed":     c.speed,
+		})
+		if err != nil {
+			t.Fatalf("%s: %v", c.name, err)
+		}
+		time.Sleep(20 * time.Millisecond)
+		if _, err := sessionCall(t, h, map[string]interface{}{"action": "end", "device": "SIM-1"}); err != nil {
+			t.Fatal(err)
+		}
+		if d.clears != c.clears {
+			t.Errorf("%s: the end cleared the location %d times, want %d", c.name, d.clears, c.clears)
+		}
 	}
 }

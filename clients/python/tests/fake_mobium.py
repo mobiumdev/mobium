@@ -13,6 +13,7 @@ MOBIUM_FAKE picks the behavior:
   noid    answer app_map as mobium answers a line it cannot parse -- an error
           with no id -- and every other call normally
 MOBIUM_FAKE_PIDFILE, when set, receives this process's id.
+MOBIUM_FAKE_NOTIFYLOG, when set, has each notification's method appended.
 """
 import json
 import os
@@ -34,6 +35,9 @@ def send(obj):
 for line in sys.stdin:
     msg = json.loads(line)
     if "id" not in msg:
+        if os.environ.get("MOBIUM_FAKE_NOTIFYLOG") and "method" in msg:
+            with open(os.environ["MOBIUM_FAKE_NOTIFYLOG"], "a") as f:
+                f.write(msg["method"] + "\n")
         continue
     i, method = msg["id"], msg["method"]
     if mode == "mute":

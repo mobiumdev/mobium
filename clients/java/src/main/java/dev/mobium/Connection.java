@@ -268,6 +268,17 @@ final class Connection implements AutoCloseable {
         if (!closed.compareAndSet(false, true)) return;
         if (dead == null) dead = "it was closed";
         try {
+            // mobium ends the sessions a client started when the client goes
+            // away, and a crash closes stdin just as this does -- so say
+            // first that this is a deliberate close, or it would quit. One
+            // write of the whole line, as write() does, so a call on another
+            // thread cannot get between its halves.
+            stdin.write("{\"jsonrpc\":\"2.0\",\"method\":\"mobium/detach\"}\n");
+            stdin.flush();
+        } catch (IOException ignored) {
+            // A pipe already gone has nobody left to tell.
+        }
+        try {
             stdin.close();
         } catch (IOException ignored) {
             // Closing stdin is how mobium is asked to exit; if that fails the

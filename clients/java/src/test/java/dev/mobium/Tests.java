@@ -35,6 +35,11 @@ public final class Tests {
         findBinaryRejectsSomethingThatIsNotOne();
         pathSearchSkipsRelativeDirectories();
         everyErrorCodeHasItsException();
+        try {
+            closeDetaches();
+        } catch (java.io.IOException e) {
+            throw new java.io.UncheckedIOException(e);
+        }
         aToolFailureKeepsCodeRemedyAndDetails();
         anUnknownOrMissingCodeIsTheBaseException();
         jsonRefusesNestingThatWouldOverflowTheStack();
@@ -463,6 +468,19 @@ public final class Tests {
             b.quit();
         }
         yes("closing after an explicit quit does nothing", true);
+
+    }
+
+    private static void closeDetaches() throws java.io.IOException {
+        // mobium ends the sessions a client started when the client goes
+        // away, and a crash closes stdin just as close() does; without the
+        // detach, close() would quit.
+        java.nio.file.Path log = java.nio.file.Files.createTempFile("mobium-notify", ".log");
+        java.nio.file.Files.delete(log);
+        Mobium.builder().binary(FakeProcess.launcher("ok", null, log)).connect().close();
+        String sent = java.nio.file.Files.exists(log) ? java.nio.file.Files.readString(log).trim().replace("\n", ",") : "";
+        eq("close() sends the handshake's notification and then mobium/detach",
+                "notifications/initialized,mobium/detach", sent);
     }
 
     private static void eq(String what, Object want, Object got) {

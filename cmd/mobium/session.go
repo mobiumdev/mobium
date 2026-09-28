@@ -17,8 +17,10 @@ func newSessionCmd() *cobra.Command {
 			"is kept.\n\n" +
 			"end closes one device's session with the daemon's own teardown:\n" +
 			"accessibility settings put back, a recording or route stopped, WebViews\n" +
-			"detached, the device-side server stopped. Ending a session that is not\n" +
-			"open succeeds and says so. `mobium daemon stop` ends every device's.\n\n" +
+			"detached, the device-side server stopped, and the app --app launched\n" +
+			"stopped too — apps it did not launch are left alone. Ending a session\n" +
+			"that is not open succeeds and says so. `mobium daemon stop` ends every\n" +
+			"device's.\n\n" +
 			"With no argument, or status, lists the sessions open.",
 		Example: `  mobium session start --device emulator-5554 --app com.android.settings
   mobium session start --platform ios --app com.apple.Preferences

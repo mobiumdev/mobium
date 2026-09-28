@@ -2,17 +2,18 @@ package main
 
 import (
 	"encoding/json"
+	"strings"
 	"testing"
 
 	"github.com/mobiumdev/mobium/internal/agent"
 )
 
-// handlePipeMessage answers the handshake locally and forwards only tool
+// The pipe answers the handshake locally and forwards only tool
 // calls, so the protocol half is testable without a device.
 
 func decode(t *testing.T, msg string) *agent.Response {
 	t.Helper()
-	return handlePipeMessage([]byte(msg))
+	return newPipe(daemonCall).handle([]byte(msg))
 }
 
 func TestPipeAnswersInitialize(t *testing.T) {
@@ -97,5 +98,97 @@ func TestPipeResponsesAreValidJSON(t *testing.T) {
 		if _, err := json.Marshal(resp); err != nil {
 			t.Errorf("response to %s does not marshal: %v", msg, err)
 		}
+	}
+}
+
+// fakeDaemon answers app_session as the daemon does, and records every call.
+type fakeDaemon struct {
+	calls []string
+	open  map[string]bool
+}
+
+func (f *fakeDaemon) call(tool string, args map[string]interface{}) (*agent.ToolsCallResult, error) {
+	device, _ := args["device"].(string)
+	action, _ := args["action"].(string)
+	f.calls = append(f.calls, tool+" "+action+" "+device)
+	if tool != "app_session" {
+		return agent.Result("ok", nil), nil
+	}
+	view := agent.SessionView{Action: action, Device: device}
+	switch action {
+	case "start":
+		view.Reused = f.open[device]
+		f.open[device] = true
+	case "end":
+		view.Ended = f.open[device]
+		delete(f.open, device)
+	}
+	return agent.Result(action, view), nil
+}
+
+func (f *fakeDaemon) ended() []string {
+	var out []string
+	for _, c := range f.calls {
+		if strings.HasPrefix(c, "app_session end ") {
+			out = append(out, strings.TrimPrefix(c, "app_session end "))
+		}
+	}
+	return out
+}
+
+func startCall(device string) string {
+	return `{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"app_session","arguments":{"action":"start","device":"` + device + `"}}}`
+}
+
+// A client that goes away without quit() — a crash, or a script that just
+// returns — closes stdin exactly as close() does. The session it started
+// used to stay open until the daemon went idle for 30 minutes.
+func TestPipeEndsTheSessionsItsClientStarted(t *testing.T) {
+	f := &fakeDaemon{open: map[string]bool{}}
+	p := newPipe(f.call)
+	p.handle([]byte(startCall("emulator-5554")))
+	p.handle([]byte(startCall("SIM-1")))
+	p.release()
+	if got := f.ended(); strings.Join(got, ",") != "SIM-1,emulator-5554" {
+		t.Errorf("ended %v, want both sessions the client started", got)
+	}
+	// Once: SIGTERM and the deferred release can both reach it.
+	p.release()
+	if got := f.ended(); len(got) != 2 {
+		t.Errorf("a second release ended again: %v", got)
+	}
+}
+
+func TestPipeLeavesWhatItDidNotStartOrWasToldToKeep(t *testing.T) {
+	// A session already open when the client started it belongs to whoever
+	// opened it — another client, or the CLI.
+	f := &fakeDaemon{open: map[string]bool{"emulator-5554": true}}
+	p := newPipe(f.call)
+	p.handle([]byte(startCall("emulator-5554")))
+	p.release()
+	if got := f.ended(); len(got) != 0 {
+		t.Errorf("ended a reused session: %v", got)
+	}
+
+	// One the client ended itself is not ended twice.
+	f = &fakeDaemon{open: map[string]bool{}}
+	p = newPipe(f.call)
+	p.handle([]byte(startCall("emulator-5554")))
+	p.handle([]byte(`{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"app_session","arguments":{"action":"end","device":"emulator-5554"}}}`))
+	p.release()
+	if got := f.ended(); len(got) != 1 {
+		t.Errorf("ended %v, want only the client's own quit", got)
+	}
+
+	// close() detaches first: the documented "close leaves the session open".
+	f = &fakeDaemon{open: map[string]bool{}}
+	p = newPipe(f.call)
+	p.handle([]byte(startCall("emulator-5554")))
+	if resp := p.handle([]byte(`{"jsonrpc":"2.0","method":"` + DetachMethod + `"}`)); resp != nil {
+		t.Errorf("detach, a notification, was answered: %+v", resp)
+	}
+	p.release()
+	if got := f.ended(); len(got) != 0 {
+		t.Errorf("a detached client's session was ended: %v", got)
 	}
 }

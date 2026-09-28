@@ -55,6 +55,7 @@ namespace Mobium.Tests
 
             // The connection, against this program standing in for mobium.
             ItSkipsWhatIsNotTheAnswer();
+            DisposingDetachesBeforeItGoes();
             ArgumentsArriveExactlyThroughARealProcess();
             ConcurrentCallsAreSerialized();
             ANullArgumentIsRefusedBeforeItIsSent();
@@ -391,6 +392,27 @@ namespace Mobium.Tests
         {
             try { a(); } catch (T e) { return e; }
             return null;
+        }
+
+        // mobium ends the sessions a client started when the client goes away,
+        // and a crash closes stdin just as Dispose does; without the detach,
+        // Dispose would quit.
+        private static void DisposingDetachesBeforeItGoes()
+        {
+            var log = Path.Combine(Path.GetTempPath(), "mobium-notify-" + Guid.NewGuid().ToString("N") + ".log");
+            Environment.SetEnvironmentVariable("MOBIUM_FAKE_NOTIFYLOG", log);
+            try
+            {
+                Fake("ok").Dispose();
+            }
+            finally
+            {
+                Environment.SetEnvironmentVariable("MOBIUM_FAKE_NOTIFYLOG", null);
+            }
+            var sent = File.Exists(log) ? string.Join(",", File.ReadAllLines(log)) : "";
+            Eq("Dispose sends the handshake's notification and then mobium/detach",
+                "notifications/initialized,mobium/detach", sent);
+            if (File.Exists(log)) File.Delete(log);
         }
 
         private static void ItSkipsWhatIsNotTheAnswer()

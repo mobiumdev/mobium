@@ -176,6 +176,20 @@ func (h *Handlers) startRoute(ctx context.Context, s *session, ctrl mobiumdriver
 		if err := runner.StartRoute(ctx, pts, speed); err != nil {
 			return nil, err
 		}
+		// simctl plays the route itself, and ending the session left it
+		// playing: the position went on moving after "a route stopped".
+		// Clearing is simctl's only way to stop one, and it clears the
+		// position too — unlike Android, which keeps the last fix. A route
+		// that has already finished is left where it ended.
+		ends := time.Now().Add(took)
+		s.route = func() {
+			if time.Now().After(ends) {
+				return
+			}
+			cctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+			defer cancel()
+			_ = ctrl.ClearLocation(cctx)
+		}
 		return Result(fmt.Sprintf("following %d waypoints at %.0f m/s, about %s — "+
 			"the simulator interpolates this itself. It reports that the waypoints "+
 			"parsed, not that an app sees the device move; read that from inside an app",

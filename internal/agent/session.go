@@ -5,8 +5,10 @@ import (
 	"fmt"
 	"sort"
 	"strings"
+	"time"
 
 	"github.com/mobiumdev/mobium/internal/mobiumerr"
+	"github.com/mobiumdev/mobium/internal/webview"
 )
 
 // SessionView is what app_session answers: the session it started, ended or
@@ -21,6 +23,11 @@ type SessionView struct {
 	Reused bool `json:"reused,omitempty"`
 	// App is the app start launched, when one was asked for.
 	App string `json:"app,omitempty"`
+	// Terminated is the app end stopped: the one start launched.
+	Terminated string `json:"terminated,omitempty"`
+	// ClosedTabs counts the browser tabs end closed, the ones the session
+	// opened, as the browser confirmed each close.
+	ClosedTabs int `json:"closed_tabs,omitempty"`
 	// Ended says end closed a session; false means there was none to close.
 	Ended    bool          `json:"ended"`
 	Sessions []SessionInfo `json:"sessions"`
@@ -139,6 +146,7 @@ func (h *Handlers) sessionStart(ctx context.Context, args map[string]interface{}
 			return nil, fmt.Errorf("the session on %s is open, but launching %s failed: %w", view.Device, app, err)
 		}
 		view.App = app
+		s.launched = app
 		text += "; " + app + " was launched fresh and is in the foreground"
 	}
 	return Result(text, view), nil
@@ -179,12 +187,118 @@ func (h *Handlers) sessionEnd(args map[string]interface{}) (*ToolsCallResult, er
 
 	s := h.sessions[keys[0]]
 	view := SessionView{Action: "end", Device: s.dev.Serial, Platform: sessionPlatform(s), Driver: string(s.backend), Ended: true}
+	closed, stopped := h.stopLaunched(s)
+	view.ClosedTabs = closed
 	s.close()
 	delete(h.sessions, keys[0])
 	delete(h.refs, s.dev.Serial)
 	delete(h.dialogRules, s.dev.Serial)
 	view.Sessions = h.openSessions()
-	return Result(fmt.Sprintf("session ended on %s; anything it changed for the session is put back", view.Device), view), nil
+	text := fmt.Sprintf("session ended on %s; anything it changed for the session is put back", view.Device)
+	if closed > 0 {
+		text += fmt.Sprintf("; closed the %d tab(s) it opened", closed)
+	}
+	switch {
+	case stopped == nil && s.launched != "":
+		view.Terminated = s.launched
+		text += "; " + s.launched + ", which the session launched, was stopped"
+	case stopped != nil:
+		// The session still ends: that is what was asked, and it did.
+		text += fmt.Sprintf("; %s, which the session launched, could not be stopped: %v", s.launched, stopped)
+	}
+	return Result(text, view), nil
+}
+
+// endTerminateTimeout bounds stopping the launched app on the way out, so an
+// unresponsive device cannot hold up the end of a session. Half the daemon's
+// budget for closing every session at shutdown, so the rest of the teardown
+// still runs within it.
+const endTerminateTimeout = 10 * time.Second
+
+// stopLaunched stops the app the session's start launched, before the driver
+// goes: terminating needs the device, and on iOS the driver is how.
+func (h *Handlers) stopLaunched(s *session) (closedTabs int, err error) {
+	if s.launched == "" {
+		return 0, nil
+	}
+	ctrl, err := h.appControl(s)
+	if err != nil {
+		return 0, err
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), endTerminateTimeout)
+	defer cancel()
+	s.closeWeb()
+	closedTabs = h.closeOpenedTabs(ctx, s)
+	return closedTabs, ctrl.Terminate(ctx, s.launched)
+}
+
+// tabsWait bounds how long an open waits for the tab it made to be listed.
+// Chrome publishes the target after the page starts loading, which is after
+// the browser is in front.
+const tabsWait = 3 * time.Second
+
+// tabsBefore lists the page targets before an open, when the open may land
+// in a browser the session launched, so the tabs it adds can be told apart
+// from the ones already there. Android only: Safari's tabs cannot be closed
+// from outside, and the list is not worth reading for them.
+func (h *Handlers) tabsBefore(ctx context.Context, s *session) map[string]bool {
+	if s.launched == "" || (s.backend != BackendUIA2 && s.backend != BackendDump) {
+		return nil
+	}
+	seen := map[string]bool{}
+	if ctxs, err := h.webContexts(ctx, s); err == nil {
+		for _, c := range ctxs {
+			seen[c.Socket+" "+c.TargetID] = true
+		}
+	}
+	return seen
+}
+
+// trackOpenedTabs records the tabs an open added to the browser the session
+// launched. before is nil when there is nothing to track.
+func (h *Handlers) trackOpenedTabs(ctx context.Context, s *session, app string, before map[string]bool) {
+	if before == nil || app != s.launched {
+		return
+	}
+	for deadline := time.Now().Add(tabsWait); ; time.Sleep(200 * time.Millisecond) {
+		ctxs, err := h.webContexts(ctx, s)
+		var added []webview.Context
+		for _, c := range ctxs {
+			if c.TargetID != "" && !before[c.Socket+" "+c.TargetID] {
+				added = append(added, c)
+			}
+		}
+		if err == nil && len(added) > 0 {
+			s.openedTabs = append(s.openedTabs, added...)
+			return
+		}
+		// Chrome reuses a tab for a URL it already has open, and then there
+		// is nothing new to wait for.
+		if time.Now().After(deadline) || ctx.Err() != nil {
+			return
+		}
+	}
+}
+
+// closeOpenedTabs closes the tabs the session opened. Best effort: the
+// browser is stopped next either way, and a tab already closed by the
+// caller is not a failure of the session's end.
+func (h *Handlers) closeOpenedTabs(ctx context.Context, s *session) int {
+	if len(s.openedTabs) == 0 {
+		return 0
+	}
+	adb, err := h.adbFor(ctx, s)
+	if err != nil {
+		return 0
+	}
+	closed := 0
+	for _, t := range s.openedTabs {
+		if webview.CloseTarget(ctx, adb, t.Socket, t.TargetID) == nil {
+			closed++
+		}
+	}
+	s.openedTabs = nil
+	return closed
 }
 
 func (h *Handlers) sessionStatus() *ToolsCallResult {

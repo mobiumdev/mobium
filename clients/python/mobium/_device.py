@@ -170,8 +170,11 @@ class Device:
 
         The teardown is the daemon's own: accessibility settings put back, a
         recording or route stopped, WebViews detached, the device-side server
-        stopped. Quitting a session that is not open succeeds, and a second
-        quit -- say, a with block ending after an explicit one -- does nothing.
+        stopped, and the app start() launched, if any, stopped too. Quitting a
+        session that is not open succeeds, and a second quit -- say, a with
+        block ending after an explicit one -- does nothing. A script that exits
+        without quit() or close() has the sessions it started ended for it:
+        mobium sees the client go.
         """
         if self._quit:
             return

@@ -34,6 +34,8 @@ namespace Mobium.Tests
     /// <item><c>refuse</c> answers the handshake with a protocol error, and
     /// then waits for stdin to close like a real daemon would.</item>
     /// </list>
+    /// <c>MOBIUM_FAKE_NOTIFYLOG</c>, when set, has each notification's method
+    /// appended.
     /// <c>MOBIUM_FAKE_PIDFILE</c>, when set, receives this process's id, so a
     /// test can tell whether it was left running.
     /// </remarks>
@@ -52,7 +54,14 @@ namespace Mobium.Tests
             while ((line = stdin.ReadLine()) != null)
             {
                 var msg = JsonNode.Parse(line)!.AsObject();
-                if (!msg.TryGetPropertyValue("id", out var idNode) || idNode == null) continue; // a notification
+                if (!msg.TryGetPropertyValue("id", out var idNode) || idNode == null)
+                {
+                    // A notification.
+                    var log = Environment.GetEnvironmentVariable("MOBIUM_FAKE_NOTIFYLOG");
+                    if (!string.IsNullOrEmpty(log) && msg["method"] != null)
+                        File.AppendAllText(log, msg["method"]!.GetValue<string>() + "\n");
+                    continue;
+                }
                 var id = idNode.GetValue<long>();
                 var method = msg["method"]!.GetValue<string>();
 

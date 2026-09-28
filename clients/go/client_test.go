@@ -51,6 +51,12 @@ func fakeMobium() {
 			} `json:"params"`
 		}
 		if json.Unmarshal(line, &req) != nil || req.ID == nil {
+			if path := os.Getenv(fakeNotifyLogEnv); path != "" && req.Method != "" {
+				if f, err := os.OpenFile(path, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o600); err == nil {
+					f.WriteString(req.Method + "\n")
+					f.Close()
+				}
+			}
 			continue // a notification
 		}
 		reply := map[string]any{"jsonrpc": "2.0", "id": *req.ID}
@@ -182,6 +188,29 @@ func fakeTool(name string, args map[string]any, scenario string) map[string]any 
 	default:
 		// Every acting tool: prose plus an action view.
 		return text(name+" ok", map[string]any{"action": name, "x": 200, "y": 240})
+	}
+}
+
+// fakeNotifyLogEnv names a file the fake appends each notification's method
+// to, so a test can see what the client said without a reply to carry it.
+const fakeNotifyLogEnv = "MOBIUM_FAKE_NOTIFY_LOG"
+
+// mobium ends the sessions a client started once the client goes away, and a
+// crash closes stdin exactly as Close does — so Close says first that it is
+// leaving on purpose, or it would quit.
+func TestCloseDetachesBeforeItGoes(t *testing.T) {
+	log := filepath.Join(t.TempDir(), "notify.log")
+	t.Setenv(fakeNotifyLogEnv, log)
+	dev := connectFake(t, "")
+	if err := dev.Close(); err != nil {
+		t.Fatal(err)
+	}
+	data, err := os.ReadFile(log)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := strings.Fields(string(data)); len(got) != 2 || got[0] != "notifications/initialized" || got[1] != "mobium/detach" {
+		t.Errorf("notifications %v, want the handshake's and then mobium/detach", got)
 	}
 }
 

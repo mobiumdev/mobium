@@ -81,6 +81,10 @@ class Connection:
         # mutex does: two calls in flight would race to read each other's
         # answer.
         self._gate = threading.Lock()
+        # _write_lock keeps one message whole on the pipe. close() writes a
+        # detach while a call may hold _gate, and must not wait for it:
+        # close() is how another thread gives up on a call that hangs.
+        self._write_lock = threading.Lock()
         # _dead says why the connection can no longer be used, once something
         # has made that true: it was closed, mobium exited, or a call timed
         # out half-way. A call abandoned half-way cannot be resynchronized --
@@ -147,8 +151,9 @@ class Connection:
             raise InvalidArgumentError(f"{e}: JSON has no NaN or Infinity") from None
         assert self._proc.stdin is not None
         try:
-            self._proc.stdin.write(line)
-            self._proc.stdin.flush()
+            with self._write_lock:
+                self._proc.stdin.write(line)
+                self._proc.stdin.flush()
         except (OSError, ValueError) as e:
             raise self._die(f"mobium closed the connection: {e}") from e
 
@@ -243,6 +248,15 @@ class Connection:
             self._dead = "it was closed"
         try:
             assert self._proc.stdin is not None
+            # mobium ends the sessions a client started when the client goes
+            # away, and a crash closes stdin just as this does -- so say
+            # first that this is a deliberate close, or it would quit.
+            with self._write_lock:
+                self._proc.stdin.write(json.dumps({"jsonrpc": "2.0", "method": "mobium/detach"}) + "\n")
+                self._proc.stdin.flush()
+        except (OSError, ValueError):
+            pass
+        try:
             self._proc.stdin.close()
         except (OSError, ValueError):
             pass

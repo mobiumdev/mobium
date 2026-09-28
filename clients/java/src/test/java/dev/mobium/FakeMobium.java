@@ -32,6 +32,8 @@ import java.util.Map;
  * <li>{@code refuse} answers the handshake with a protocol error, then waits
  * for stdin to close as a real daemon would.
  * </ul>
+ * {@code MOBIUM_FAKE_NOTIFYLOG}, when set, has each notification's method
+ * appended.
  * {@code MOBIUM_FAKE_PIDFILE}, when set, receives this process's id, so a test
  * can tell whether it was left running.
  */
@@ -52,7 +54,14 @@ final class FakeMobium {
         while ((line = in.readLine()) != null) {
             Map<String, Object> msg = Json.asObject(Json.parse(line));
             Object id = msg.get("id");
-            if (id == null) continue; // a notification
+            if (id == null) { // a notification
+                String log = System.getenv("MOBIUM_FAKE_NOTIFYLOG");
+                if (log != null && !log.isEmpty() && msg.get("method") != null) {
+                    Files.writeString(Path.of(log), Json.str(msg, "method") + "\n",
+                            java.nio.file.StandardOpenOption.CREATE, java.nio.file.StandardOpenOption.APPEND);
+                }
+                continue;
+            }
             String method = Json.str(msg, "method");
 
             if (mode.equals("mute")) continue;
