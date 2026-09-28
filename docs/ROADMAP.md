@@ -27,20 +27,6 @@ this is what is not.
   between the taps rather than paused. The other gesture found with this
   one, a tap above the Android keyboard, was the app moving its button
   (CHALLENGES, "Findings that were not defects").
-- **Android contexts include other apps' pages.** iOS lists only the app in
-  front since CHALLENGES 138, from WebKit's own active flag. Android lists
-  every debuggable page on the device, Chrome's tabs included, and has no
-  such flag in `/json/list`; what tells a page on screen from one behind has
-  to be measured there, custom tabs included, before the same rule applies.
-- **A page attached while its app goes behind.** CHALLENGES 138 refuses
-  switching to a page whose app is not in front; a page already attached when
-  its app leaves the screen is not yet noticed, and a tap into it is aimed
-  through whatever WebView is in front.
-- **`wait` sees what a dialog covers; `text` refuses it.** On the iPhone,
-  with "Save Password?" over MobiumApp, `wait testid=welcomeText` reported it
-  visible in 816ms while `text` refused it as under the dialog. On Android the
-  dialog's window is all there is, so the same `wait` would time out. One
-  answer for both, and a check that asserts it.
 - **Published client packages.** Every client builds, as its registry would
   receive it, into a package that carries the LICENSE, a README and full
   metadata, and each has been installed from that package into a clean project

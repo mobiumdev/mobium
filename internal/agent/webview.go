@@ -137,6 +137,10 @@ func (h *Handlers) switchContext(ctx context.Context, args map[string]interface{
 		}
 		s.web = sess
 		s.webCtx = c.ID
+		s.webApp = c.App
+		if s.insp != nil {
+			s.webAppID, _, _ = strings.Cut(c.Socket, "/")
+		}
 		// Start capturing the console now rather than when logs are first
 		// read: anything the page logs before the shim is installed is gone,
 		// so the earliest possible moment is the only sensible one. A failure
@@ -161,10 +165,22 @@ func (h *Handlers) switchContext(ctx context.Context, args map[string]interface{
 
 // webFrame reconciles the page's CSS pixels with the device screen, using the
 // native WebView element as ground truth for origin and scale.
+//
+// It refuses once the attached page's app has left the screen: the page is
+// still attached and still answers, but the WebView found below is the front
+// app's, so a point computed from it lands on whatever is there. CHALLENGES 144.
 func (h *Handlers) webFrame(ctx context.Context, s *session) (*webview.Frame, error) {
 	tree, err := s.driver.Snapshot(ctx)
 	if err != nil {
 		return nil, err
+	}
+	if front := tree.Package(); s.pageBehind(front) {
+		return nil, mobiumerr.New(mobiumerr.DeviceNotReady,
+			"%s belongs to %s, which is no longer in front (%s is), so its page is not on screen and a tap "+
+				"into it would land on whatever is", s.webCtx, s.webApp, front).
+			WithRemedy(fmt.Sprintf("app_launch %s to bring it back, then app_context %s again, since launching "+
+				"detaches the page; or app_context %s", s.webApp, s.webCtx, webview.NativeContext)).
+			WithDetail("app", s.webApp)
 	}
 	var host *uitree.Node
 	for _, n := range tree.All() {
@@ -338,6 +354,17 @@ func (h *Handlers) adbFor(ctx context.Context, s *session) (*device.ADB, error) 
 	return adb, err
 }
 
+// pageBehind says the attached page's app is not the one in front: on iOS by
+// WebKit's own active flag, as contexts decides it (CHALLENGES 138), and on
+// Android by the foreground package, since Android has no such flag. Unknown
+// on either side is not behind: nothing is refused on a guess.
+func (s *session) pageBehind(front string) bool {
+	if s.insp != nil && s.webAppID != "" {
+		return s.insp.AppBehind(s.webAppID)
+	}
+	return s.webApp != "" && front != "" && s.webApp != front
+}
+
 // webContexts lists the attachable web contexts for whichever platform this
 // session is on.
 //
@@ -360,6 +387,19 @@ func (h *Handlers) webContexts(ctx context.Context, s *session) ([]webview.Conte
 			return nil, aerr
 		}
 		found, err = webview.Contexts(ctx, adb)
+		if err == nil {
+			// Android lists every debuggable page on the device and says
+			// nothing of which is on screen, so a page is behind when its
+			// package is not the one in front — the same answer iOS gets
+			// from WebKit. A custom tab is Chrome's page and Chrome's window.
+			if tree, terr := s.driver.Snapshot(ctx); terr == nil {
+				if front := tree.Package(); front != "" {
+					for i := range found {
+						found[i].Behind = found[i].App != "" && found[i].App != front
+					}
+				}
+			}
+		}
 	}
 	if err != nil {
 		return nil, err

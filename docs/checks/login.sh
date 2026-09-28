@@ -29,7 +29,15 @@ echo "--- $DEV ($PLATFORM)"
 
 # says <testid> <text>: the element is on screen and reads exactly that.
 says() {
-  $M wait "testid=$1" --timeout 5s >/dev/null 2>&1 || fail "$1 never appeared, waiting for \"$2\""
+  # The sheet can arrive before the wait as well as before the read, and
+  # what it covers is not on screen to either.
+  if ! out=$($M wait "testid=$1" --timeout 5s 2>&1); then
+    case "$out" in
+      *"Save Password"*) save_password
+        $M wait "testid=$1" --timeout 5s >/dev/null 2>&1 || fail "$1 never appeared, waiting for \"$2\"" ;;
+      *) fail "$1 never appeared, waiting for \"$2\": $out" ;;
+    esac
+  fi
   if ! got=$($M text "testid=$1" 2>&1); then
     case "$got" in
       *"Save Password"*) save_password; got=$($M text "testid=$1") ;;

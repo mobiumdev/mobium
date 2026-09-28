@@ -7,9 +7,9 @@ the source.
 
 The pattern across them is the reason the document exists: **almost nothing
 here was found by reading code or by a test written from imagination.** Of
-143 defects, 114 were found only by running against a real device. The other
-twenty-nine — 4, 5, 6, 14, 23, 24, 32, 35, 36, 39, 44, 50, 53, 54, 57, 66, 89,
-99, 100, 121, 123, 129, 130, 133, 134, 139, 140, 141 and 142 — came from reading code, the compiler, a test, a linter,
+145 defects, 115 were found only by running against a real device. The other
+thirty — 4, 5, 6, 14, 23, 24, 32, 35, 36, 39, 44, 50, 53, 54, 57, 66, 89,
+99, 100, 121, 123, 129, 130, 133, 134, 139, 140, 141, 142 and 144 — came from reading code, the compiler, a test, a linter,
 cross-checking a computed number against a screenshot, using the tooling on
 itself, typing a negative number at a command line, and driving the clients
 against a stand-in daemon, and CI on Windows.
@@ -3184,6 +3184,14 @@ guess. `contexts` lists only pages in front and names the rest on a line of
 their own; `context` refuses one behind as `device_not_ready`, and the remedy,
 `app_launch` its app, was followed on the phone and reached Safari's page.
 
+Android had the same defect and no flag to fix it with: `/json/list` says
+nothing of which page is on screen. It has the foreground package instead,
+which a snapshot already carries, so a page is behind when its app is not
+the one in front — a custom tab is Chrome's page in Chrome's window, so the
+rule holds for it. On the Pixel 8 Pro with MobiumApp in front, the listing
+before the change offered three Chrome tabs beside MobiumApp's page, and
+after it named them on their own line.
+
 ### 139. On Windows, stopping the daemon never finished
 
 **Found by:** the first run of the daemon tests on a GitHub-hosted Windows
@@ -3252,6 +3260,38 @@ which leaves the row as found; measured on the phone: unset, and
 system applies before and after, and with the old undo it fails, on the
 Pixel, naming 300. The iOS simulator's undo also deletes keys it found
 unset; whether a running iOS app hears that has not been measured.
+
+### 144. A page stayed attached, and aimed, after its app left the screen
+
+**Found by:** fixing 138, which refused switching to a page behind and did
+nothing for a page already attached when its app went.
+
+A web action turns the page's coordinates into the screen's through the
+largest WebView in the native hierarchy — which, once another app is in
+front, is that app's. A tap into the attached page was aimed through it and
+reported. Every action that computes a web coordinate now asks, at that
+moment, whether the page's app is still in front — WebKit's flag on iOS,
+the foreground package on Android — and refuses if not, naming both apps.
+On the Pixel, with MobiumApp's page attached and Chrome brought forward from
+outside, the tap was refused. Its first remedy said to launch the app, and
+following it tapped the native screen: launching detaches the page. The
+remedy now says to switch back to the page after launching, and following
+that landed the tap in it.
+
+### 145. `wait` saw what a dialog covered, which everything else refused
+
+**Found by:** the login demo on the iPhone 15 Plus, with iOS's "Save
+Password?" sheet over it: `wait` reported the welcome text visible in 816ms,
+and `text` refused it as under the dialog.
+
+An action decides by the dialog: anything outside a visible alert or sheet
+is covered (105). `wait` decided by each node's own visibility flag, which
+iOS left true under the sheet — while Android, whose tree holds the dialog's
+window alone, had the same wait time out. `wait` now uses the action's
+predicate: what a dialog covers is not on screen, so waiting for it to be
+visible times out naming the dialog, and waiting for it to be hidden
+succeeds, on both platforms. The test is the captured sheet with the covered
+target marked visible, as the phone had it; it fails without the change.
 
 ## Findings that were not defects
 
