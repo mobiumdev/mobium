@@ -22,11 +22,15 @@ this is what is not.
   verified by a TXT record on `mobium.dev`), a GPG key for Maven Central, and a
   tag — `v0.1.0`, and `clients/go/v0.1.0` for the Go module. All four names
   were unclaimed on 2026-09-27.
-- **Prebuilt `mobium` binaries.** `go install
-  github.com/mobiumdev/mobium/cmd/mobium@latest` works, but needs Go; someone
-  installing a client from PyPI or npm should not have to have it. Releases
-  with checksummed binaries for macOS and Linux, and possibly a Homebrew tap,
-  are the missing piece — and the prerequisite for publishing the clients.
+- **Prebuilt `mobium` binaries — built, waiting on the first tag.**
+  `make dist` builds all six platforms, static and without build paths, into
+  archives with the license, notices and README and a `SHA256SUMS`; the
+  release workflow runs it on a `v*` tag, checks every archive and the Linux
+  binary's `--version`, and attaches them to the release, and on a pull
+  request does all of that but the release. What is left: the tag, which is
+  a decision, not a step; a Homebrew tap; and notarizing the macOS binaries,
+  which needs an Apple Developer Program membership — until then
+  [SETUP.md](SETUP.md#installing-a-release) says to download with `curl`.
 - **The quick start on Linux, against a device.** Mobium builds and passes its
   tests on Linux in CI; no emulator has been driven from Linux yet, so the
   quick start calls Linux expected rather than verified.

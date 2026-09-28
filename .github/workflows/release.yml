@@ -1,0 +1,91 @@
+# Prebuilt binaries, so installing mobium does not need Go.
+#
+# A tag `v<version>` builds every platform with `make dist`, checks the
+# archives against SHA256SUMS and runs the Linux binary to see it reports
+# the tag's version, then attaches them to a GitHub Release of that tag.
+# A pull request that touches this file or the Makefile does everything but
+# the release, so the build is proven before a tag ever needs it.
+#
+# Nothing here signs or notarizes the macOS binaries: that needs an Apple
+# Developer Program membership. docs/SETUP.md says what that means for
+# someone who downloads one.
+
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+  pull_request:
+    paths:
+      - Makefile
+      - .github/workflows/release.yml
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build and verify the release archives
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+          cache-dependency-path: |
+            go.sum
+            clients/go/go.sum
+
+      # The tag names the version, without its leading v; a pull request
+      # gets one that cannot be mistaken for a release.
+      - name: Version
+        run: |
+          if [ "${GITHUB_REF_TYPE}" = tag ]; then v="${GITHUB_REF_NAME#v}"; else v="0.0.0-pr${{ github.event.number }}"; fi
+          echo "VERSION=$v" >> "$GITHUB_ENV"
+
+      - name: Test what is being released
+        run: make test
+
+      - name: make dist
+        run: make dist VERSION="$VERSION"
+
+      # Read back, not assumed: every archive against its checksum, and the
+      # binary asked what version it is.
+      - name: Verify
+        run: |
+          cd dist
+          shasum -a 256 -c SHA256SUMS
+          tar -xzf "mobium_${VERSION}_linux_amd64.tar.gz"
+          got=$("./mobium_${VERSION}_linux_amd64/mobium" --version)
+          echo "$got"
+          [ "$got" = "mobium version $VERSION" ] || { echo "the binary says '$got', not $VERSION"; exit 1; }
+          rm -rf "mobium_${VERSION}_linux_amd64"
+          ls -l
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/
+          if-no-files-found: error
+
+  publish:
+    name: Publish the release
+    needs: build
+    if: github.ref_type == 'tag'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist
+
+      - name: Create the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" dist/* \
+            --repo "$GITHUB_REPOSITORY" --verify-tag --title "mobium ${GITHUB_REF_NAME}" \
+            --notes "Prebuilt mobium for macOS, Linux and Windows, amd64 and arm64. Check a download against SHA256SUMS. The macOS binaries are not notarized; see docs/SETUP.md."

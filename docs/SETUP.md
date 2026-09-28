@@ -23,14 +23,41 @@ no Xcode on a machine doing Android work is normal, not a problem.
 
 ## Contents
 
+- [Installing a release](#installing-a-release) — no Go needed, from the first release
 - [Android emulator](#android-emulator)
 - [Android real device](#android-real-device)
 - [iOS simulator](#ios-simulator)
 - [iOS real device](#ios-real-device) — native screens, WebViews and Safari
 - [Parallel runs](#parallel-runs) — one daemon for each
+- [Driving another machine's devices](#driving-another-machines-devices) — `--remote`, and a grid
 - [What Mobium installs, and removing it](#what-mobium-installs-and-removing-it)
 
 ---
+
+## Installing a release
+
+From the first tagged release on, each one carries mobium prebuilt for
+macOS, Linux and Windows, on amd64 and arm64, so installing it needs no Go:
+`mobium_<version>_<os>_<arch>.tar.gz` (`.zip` for Windows), each holding the
+binary, the license and its notices, and the README, and `SHA256SUMS` over
+all of them. The binary is static — nothing else to install with it.
+
+```sh
+v=0.1.0; os=darwin; arch=arm64          # or linux / windows, amd64
+base=https://github.com/mobiumdev/mobium/releases/download/v$v
+curl -LO "$base/mobium_${v}_${os}_${arch}.tar.gz" -LO "$base/SHA256SUMS"
+shasum -a 256 -c --ignore-missing SHA256SUMS   # must say OK
+tar -xzf "mobium_${v}_${os}_${arch}.tar.gz"
+mv "mobium_${v}_${os}_${arch}/mobium" /usr/local/bin/   # or anywhere on PATH
+mobium --version
+```
+
+**On macOS, download with `curl`, not a browser.** The binaries are not
+notarized — that needs an Apple Developer Program membership — and macOS
+blocks a quarantined, un-notarized download from a browser at first launch.
+`curl` does not quarantine what it saves. For a copy that came through a
+browser, `xattr -d com.apple.quarantine mobium` lifts it, after checking its
+checksum.
 
 ## Android emulator
 

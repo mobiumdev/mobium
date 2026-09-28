@@ -1,4 +1,5 @@
 bin/
+dist/
 # Screenshots land here constantly during device work, so PNGs are ignored by
 # default and the branding is excepted rather than the rule loosened.
 *.png
