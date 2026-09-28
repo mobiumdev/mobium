@@ -24,7 +24,10 @@
 #     refused, not tapped.
 #
 # Needs MobiumApp with the OTP Demo installed. About four minutes: the
-# expiry waits a minute.
+# expiry waits a minute. With MobiumApp's notifications off the code is read
+# from the screen instead, and the row says so. On a phone that is worth
+# knowing: a reinstall did not bring the prompt back, as it does on a
+# simulator — the iPhone kept the denial — so the switch is in Settings.
 set -e
 DEV="$1"
 if [ -z "$DEV" ]; then echo "usage: $0 <serial|udid>" >&2; exit 2; fi
@@ -34,7 +37,7 @@ row() { printf '    %-16s %-56s ok\n' "$1" "$2"; }
 APP=dev.mobium.mobiumapp
 
 case "$DEV" in
-  ????????-????????????????) PLATFORM=ios; PHONE=1; M="$ROOT/bin/mobium --driver wda --device $DEV" ;;
+  ????????-????????????????) PLATFORM=ios; M="$ROOT/bin/mobium --driver wda --device $DEV" ;;
   *-*-*-*-*) PLATFORM=ios; M="$ROOT/bin/mobium --driver wda --device $DEV" ;;
   *) PLATFORM=android; M="$ROOT/bin/mobium --device $DEV" ;;
 esac
@@ -68,13 +71,17 @@ allow_notifications() {
   fi
 }
 
-# send: press Send, and read the code where it arrived.
+# send: press Send, and read the code where it arrived — first, because a
+# banner is up for about five seconds. With "cooldown", then press it again:
+# Resend is disabled for 20 seconds after a send.
 send() {
   $M tap testid=otpSend >/dev/null
   allow_notifications
   CODE=""
   i=0
-  while [ -z "$CODE" ] && [ $i -lt 20 ]; do
+  # The app says when it could not post; there is no banner to wait for.
+  case "$(out)" in *"notifications are off"*) i=10 ;; esac
+  while [ -z "$CODE" ] && [ $i -lt 10 ]; do
     if [ "$PLATFORM" = android ]; then
       CODE=$($M --json notifications 2>/dev/null | python3 -c "
 import json,sys,re
@@ -100,6 +107,11 @@ print(m.group(1) if m else '')")
   [ -n "$CODE" ] || fail "no code arrived"
   # While the banner is up the app is still what is read (CHALLENGES 155).
   $M wait testid=otpOutcome >/dev/null
+  if [ "$1" = cooldown ]; then
+    set +e; r=$($M tap testid=otpSend 2>&1); set -e
+    echo "$r" | grep -q "disabled" || fail "Resend was pressed during its cooldown: $r"
+    row "cooldown" "Resend refused while the screen disables it"
+  fi
 }
 
 wrong() { python3 -c "print(str((int('$CODE') + 1) % 1000000).zfill(6))"; }
@@ -112,14 +124,10 @@ $M tap testid=otpVerifyField >/dev/null
 row "control" "no code sent, and it says so"
 
 # --- the code, read where it arrives -----------------------------------------
-send
+# --- and a control the screen disables -------------------------------------
+send cooldown
 case "$(out)" in sent*) ;; *) fail "after sending, the outcome was \"$(out)\"" ;; esac
 row "arrives" "read from $VIA"
-
-# --- a disabled control -----------------------------------------------------
-set +e; r=$($M tap testid=otpSend 2>&1); set -e
-echo "$r" | grep -q "disabled" || fail "Resend was pressed during its cooldown: $r"
-row "cooldown" "Resend refused while the screen disables it"
 
 # --- digit by digit ---------------------------------------------------------
 i=0

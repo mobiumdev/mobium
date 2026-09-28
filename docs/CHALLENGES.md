@@ -3553,7 +3553,10 @@ fails is now asked again as the node's own app. And `background` sent the app
 away and brought SpringBoard back, leaving the app in the background and the
 call reporting that it never returned; it now names the app it is
 deactivating. Both measured under a fresh banner on the simulator, two runs
-in two, and failing before.
+in two, and failing before. On the iPhone 15 Plus, iOS 26.6.2, `otp.sh` read
+the code through the banner and passed. It needed MobiumApp's notifications
+switched on in Settings: the phone had kept an earlier denial through a
+reinstall, where a simulator asks again.
 
 ### 156. Typing into a field that moves focus on was misread as dropped keystrokes
 
@@ -3574,8 +3577,9 @@ typing is reported as done when every character arrived and, when one did
 not, as `not_confirmed` naming what each field took and what never arrived,
 with the remedy that works — type into each field in turn. Nothing is typed
 twice. Measured on the simulator, six runs: five arrived whole and were
-reported typed, one lost a digit and named it, and none retried. Android is
-unaffected: it sets a field's text at once, and the app spreads it.
+reported typed, one lost a digit and named it, and none retried. On the
+iPhone 15 Plus the whole code arrived and was reported typed, in each of three
+runs of `otp.sh`. Android is unaffected: it sets a field's text at once, and the app spreads it.
 
 ### 157. An iOS background of a minute or more timed out
 
@@ -3590,7 +3594,7 @@ waiting on this side, so the same 62 seconds passed there, and nothing ever
 asked iOS for more than a few. That request is now given the duration on top
 of its timeout; a unit test holds a request past a short timeout and shows it
 fails without the extension first. Measured: the 62-second background
-passed on the simulator.
+passed on the simulator and on the iPhone 15 Plus.
 
 ## Findings that were not defects
 
