@@ -58,8 +58,14 @@ needs nothing more.
 | UiAutomator2, the Mac end of `adb forward` | `127.0.0.1` | Any process of any user on the Mac — it returned the whole screen's hierarchy through the running session. Not from the LAN: refused | Stops with the daemon | Local exposure, **open**: UiAutomator2 has no authentication |
 | UiAutomator2, on the device (port 6790) | **Every interface** (`[::]:6790`) | The device itself, on localhost and on its own network address. The emulator's network is behind its own NAT, so not from the LAN there | Stops with the daemon | **To measure on a real phone on Wi-Fi**, where the same binding would put it on the network. Whether an ordinary app can reach it: **inconclusive** — `su` to an app's uid keeps `su`'s groups and context, and a uid that should have had no network got through too, so the test could not fail |
 | WebDriverAgent server, simulator | `127.0.0.1` since `USE_IP` (was every interface) | Any process on the Mac; the LAN was refused after the change, and answered before it | Stops with the session | Local exposure, as UiAutomator2's |
-| WebDriverAgent MJPEG stream, simulator | **Every interface** — it ignores `USE_IP` | **The LAN**: it answered from the Mac's network address | Stops with the session | **Open**. Mobium does not use the stream; closing it needs WebDriverAgent to bind it as it binds the server. Until then, the macOS firewall is the mitigation |
-| WebDriverAgent on a real iPhone | — | — | — | **To measure**: whether it answers on the phone's Wi-Fi address |
+| WebDriverAgent MJPEG stream, simulator | **Every interface** — it ignores `USE_IP` | **The LAN**: an iPhone on the same Wi-Fi opened the Mac's address in Safari and got a live 1206×2622 frame of the simulator's screen | Stops with the session | **Open** in Mobium: it does not use the stream, and closing it needs WebDriverAgent to bind it as it binds the server. **Mitigated by the macOS firewall, measured:** with the runner set to "Block incoming connections", the same probe from the iPhone got "the network connection was lost" while the Mac itself still read the stream. The firewall had allowed the runner by itself — "Automatically allow downloaded signed software" is on by default — and a reinstalled runner is a new path, allowed again unless that option is off |
+| WebDriverAgent on a real iPhone (port 8100, and its stream on 9100) | Every interface of the phone | **The LAN**: from the Mac over Wi-Fi, `/status` answered with the live session, and the stream answered | Stopped within 2s of the daemon stopping | **Open.** Anyone on the phone's Wi-Fi can watch and drive the phone while a session runs, and the Mac's firewall cannot help — this is the phone's interface. The fix is to bind it to the CoreDevice tunnel's address, which exists only once something has asked for the device, so the runner has to start after the tunnel is up |
+
+The "LAN" probes of the simulator were first made from the Mac's own network
+address, which the firewall does not filter — traffic to yourself never
+arrives from outside. They showed what each socket was bound to, not who
+could reach it; only a second device on the network, the iPhone, could
+answer that.
 
 ## The mobile side
 
