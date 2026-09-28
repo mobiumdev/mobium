@@ -7,6 +7,7 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 	"time"
@@ -511,12 +512,16 @@ func plantMobium(t *testing.T, dir string) string {
 	if err := os.MkdirAll(dir, 0o755); err != nil {
 		t.Fatal(err)
 	}
-	p := filepath.Join(dir, "mobium")
+	// Named as Windows names a program, or there the negative half of the
+	// test below would pass by finding nothing at all.
+	p := filepath.Join(dir, "mobium"+exeSuffix)
 	if err := os.WriteFile(p, []byte("#!/bin/sh\nexit 99\n"), 0o755); err != nil {
 		t.Fatal(err)
 	}
 	return p
 }
+
+var exeSuffix = map[bool]string{true: ".exe"}[runtime.GOOS == "windows"]
 
 func TestFindBinaryNeverSearchesTheCurrentDirectory(t *testing.T) {
 	t.Setenv("MOBIUM_BIN_PATH", "")
@@ -532,7 +537,7 @@ func TestFindBinaryNeverSearchesTheCurrentDirectory(t *testing.T) {
 	}
 	// The positive control: the same file, on PATH by its absolute directory.
 	t.Setenv("PATH", filepath.Join(dir, "bin"))
-	if found, err := FindBinary(""); err != nil || found != filepath.Join(dir, "bin", "mobium") {
+	if found, err := FindBinary(""); err != nil || found != filepath.Join(dir, "bin", "mobium"+exeSuffix) {
 		t.Errorf("an absolute PATH entry was not searched: %q, %v", found, err)
 	}
 }
