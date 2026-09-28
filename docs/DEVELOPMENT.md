@@ -58,17 +58,17 @@ build. On a fresh clone it printed, among its other lines:
 gofmt clean
 clients parse
 javascript errors: 14 codes mapped, all checks passed
-javascript connection: 26 checks passed
-javascript types: 20 exports and 71 Device methods declared
+javascript connection: 27 checks passed
+javascript types: 20 exports and 77 Device methods declared
 python errors: 14 codes mapped, all checks passed
-python connection: 27 checks passed
-147 checks, 0 failed
+python connection: 28 checks passed
+148 checks, 0 failed
 license copies match
 docs: spelling, anchors and quick-start pages clean
-168 checks, 0 failed
+169 checks, 0 failed
 ```
 
-The `147` is the Java client's suite and the second `168` the .NET client's.
+The `148` is the Java client's suite and the second `169` the .NET client's.
 It also covers `go vet`, the linter, both Go modules' tests, cross-compilation
 for six targets, and the checks that the generated docs are current.
 
