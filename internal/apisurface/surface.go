@@ -227,6 +227,17 @@ func collectCLI(dir string) (map[string]string, ExtraCommands, int, error) {
 	var extra ExtraCommands
 	count := 0
 
+	// A command is named by its whole path — `daemon status`, `grid status`
+	// — since a subcommand's own word repeats: two lines of `status` once
+	// named two different commands (docs/API.md). The parent is whichever
+	// command's constructor passes this one to AddCommand.
+	type command struct {
+		use   string
+		tools []string
+	}
+	commands := map[string]command{}
+	var order []string // declaration order, which the rows keep
+	parentOf := map[string]string{}
 	for _, pkg := range pkgs {
 		for _, file := range pkg.Files {
 			for _, decl := range file.Decls {
@@ -236,26 +247,46 @@ func collectCLI(dir string) (map[string]string, ExtraCommands, int, error) {
 					continue
 				}
 				use, tools := inspectCommand(fn)
-				if use == "" {
-					continue
+				commands[fn.Name.Name] = command{use, tools}
+				order = append(order, fn.Name.Name)
+				for _, child := range addedCommands(fn) {
+					parentOf[child] = fn.Name.Name
 				}
-				count++
-				if len(tools) == 0 {
-					extra = append(extra, use)
-					continue
-				}
-				for _, t := range tools {
-					// A command that dispatches several tools is recorded
-					// against each, so neither looks unreachable — and once
-					// per tool, however many times it calls it: double-tap
-					// calls app_tap on two paths, and comparing the name with
-					// the whole list so far listed it twice.
-					if byTool[t] == "" {
-						byTool[t] = use
-					} else if !slices.Contains(strings.Split(byTool[t], ", "), use) {
-						byTool[t] += ", " + use
-					}
-				}
+			}
+		}
+	}
+	path := func(fn string) string {
+		var words []string
+		for seen := map[string]bool{}; fn != "" && !seen[fn]; fn = parentOf[fn] {
+			seen[fn] = true
+			if c, ok := commands[fn]; ok && c.use != "" {
+				words = append([]string{c.use}, words...)
+			}
+		}
+		return strings.Join(words, " ")
+	}
+
+	for _, fn := range order {
+		c := commands[fn]
+		if c.use == "" {
+			continue
+		}
+		use := path(fn)
+		count++
+		if len(c.tools) == 0 {
+			extra = append(extra, use)
+			continue
+		}
+		for _, t := range c.tools {
+			// A command that dispatches several tools is recorded
+			// against each, so neither looks unreachable — and once
+			// per tool, however many times it calls it: double-tap
+			// calls app_tap on two paths, and comparing the name with
+			// the whole list so far listed it twice.
+			if byTool[t] == "" {
+				byTool[t] = use
+			} else if !slices.Contains(strings.Split(byTool[t], ", "), use) {
+				byTool[t] += ", " + use
 			}
 		}
 	}
@@ -340,6 +371,31 @@ func isHidden(fn *ast.FuncDecl) bool {
 
 // inspectCommand pulls the command word and the tools it dispatches out of one
 // constructor.
+// addedCommands names the command constructors a function passes to
+// AddCommand: `cmd.AddCommand(newDaemonStartCmd(), ...)`.
+func addedCommands(fn *ast.FuncDecl) []string {
+	var out []string
+	ast.Inspect(fn, func(n ast.Node) bool {
+		call, ok := n.(*ast.CallExpr)
+		if !ok {
+			return true
+		}
+		sel, ok := call.Fun.(*ast.SelectorExpr)
+		if !ok || sel.Sel.Name != "AddCommand" {
+			return true
+		}
+		for _, a := range call.Args {
+			if c, ok := a.(*ast.CallExpr); ok {
+				if id, ok := c.Fun.(*ast.Ident); ok {
+					out = append(out, id.Name)
+				}
+			}
+		}
+		return true
+	})
+	return out
+}
+
 func inspectCommand(fn *ast.FuncDecl) (string, []string) {
 	var use string
 	var tools []string

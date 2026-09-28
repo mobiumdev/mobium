@@ -61,9 +61,8 @@ func TestEveryToolIsReachableFromTheCLI(t *testing.T) {
 // up as a failure rather than blending in.
 func TestCLICommandsWithoutAToolAreTheProcessOnes(t *testing.T) {
 	expected := map[string]bool{
-		"daemon": true, "start": true, "status": true, "stop": true, "up": true,
-		"grid": true, "node": true, "lease": true, "release": true,
-		"wait": true, "unwait": true, "ui": true,
+		"daemon": true, "daemon start": true, "daemon status": true, "daemon stop": true, "daemon up": true,
+		"grid": true, "grid status": true, "grid ui": true,
 		"mcp": true, "pipe": true,
 	}
 	for _, cmd := range sweep(t).Extra {
@@ -299,6 +298,24 @@ func TestEachCommandListedOncePerTool(t *testing.T) {
 				t.Errorf("%s lists %q twice: %q", e.Name, c, e.CLI)
 			}
 			seen[c] = true
+		}
+	}
+}
+
+// Every command is named by its whole path, and none twice: `daemon status`
+// and `grid status` were once both listed as `status`.
+func TestCommandsAreNamedByTheirPath(t *testing.T) {
+	s := sweep(t)
+	seen := map[string]bool{}
+	for _, c := range s.Extra {
+		if seen[c] {
+			t.Errorf("%q is listed twice among the commands that dispatch no tool", c)
+		}
+		seen[c] = true
+	}
+	for _, want := range []string{"daemon status", "grid status"} {
+		if !seen[want] {
+			t.Errorf("%q is not listed; got %v", want, s.Extra)
 		}
 	}
 }

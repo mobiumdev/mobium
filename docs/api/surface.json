@@ -784,14 +784,14 @@
   },
   "cliWithoutTool": [
     "daemon",
+    "daemon start",
+    "daemon status",
+    "daemon stop",
+    "daemon up",
     "grid",
+    "grid status",
+    "grid ui",
     "mcp",
-    "pipe",
-    "start",
-    "status",
-    "status",
-    "stop",
-    "ui",
-    "up"
+    "pipe"
   ]
 }
