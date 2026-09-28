@@ -182,8 +182,18 @@ os.environ["MOBIUM_FAKE_NOTIFYLOG"] = log
 connect(binary=FAKE).close()
 os.environ["MOBIUM_FAKE_NOTIFYLOG"] = ""
 sent = pathlib.Path(log).read_text().split() if os.path.exists(log) else []
-check(sent == ["notifications/initialized", "mobium/detach"],
+check(sent == ["session=", "notifications/initialized", "mobium/detach"],
       f"close() sent {sent}, not the handshake's notification and then mobium/detach")
+
+# -- session= gives the connection a daemon of its own ------------------------
+log = os.path.join(tempfile.mkdtemp(prefix="mobium-notify-"), "log")
+os.environ["MOBIUM_FAKE_NOTIFYLOG"] = log
+os.environ["MOBIUM_SESSION"] = "outer"
+connect(binary=FAKE, session="run7").close()
+os.environ.pop("MOBIUM_SESSION")
+os.environ["MOBIUM_FAKE_NOTIFYLOG"] = ""
+sent = pathlib.Path(log).read_text().split() if os.path.exists(log) else []
+check(sent[:1] == ["session=run7"], f"the pipe saw {sent[:1]}, want MOBIUM_SESSION=run7 over the environment's")
 
 os.remove(FAKE)
 if failures:

@@ -131,6 +131,51 @@ func HasClassRole(n *Node, role string) bool { return hasRole(n, role, false) }
 
 func hasRole(n *Node, role string, clickableFallback bool) bool {
 	role = strings.ToLower(role)
+	if hasNamedRole(n, role, clickableFallback) {
+		return true
+	}
+	// map names a node by what it does when no class says what it is — a
+	// scrollable one is a list, a touchable one a button — and a locator has
+	// to find it by the role map printed. It did not on iOS: every Cell,
+	// keyboard key and React Native view printed as (button) and matched no
+	// role=button, so in Safari's share sheet "Add to Home Screen (button)"
+	// could not be found by label and role, and map fell back to a path 22
+	// levels deep. 93 entries across the captured hierarchies, one of them
+	// Android's (a GridView map calls a list). CHALLENGES 136.
+	return clickableFallback && role != "" && fallbackRole(n) == role
+}
+
+// fallbackRole is the role map gives a node from its behavior alone. A text
+// field is never a button, however touchable: typing into what a locator
+// called a button is the mistake the input role exists to prevent. Nor is a
+// row that holds a real button: iOS Settings draws "About" as a touchable
+// Cell around a Button of the same label, and calling both buttons made
+// `label=About,role=button` ambiguous — the Button inside answers it, as it
+// always did, and a tap on it lands in the row.
+func fallbackRole(n *Node) string {
+	if n.Password || hasNamedRole(n, "input", false) {
+		return ""
+	}
+	if n.Scrollable {
+		return "list"
+	}
+	if n.Clickable && !hasNamedDescendant(n, "button") {
+		return "button"
+	}
+	return ""
+}
+
+func hasNamedDescendant(n *Node, role string) bool {
+	for _, c := range n.Children {
+		if hasNamedRole(c, role, false) || hasNamedDescendant(c, role) {
+			return true
+		}
+	}
+	return false
+}
+
+// hasNamedRole is the role a node's class, or its own declaration, names.
+func hasNamedRole(n *Node, role string, clickableFallback bool) bool {
 
 	// The platform says which fields hold a secret, on both platforms —
 	// `password="true"` on Android, XCUIElementTypeSecureTextField on iOS —

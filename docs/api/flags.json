@@ -261,6 +261,48 @@
       "global": true
     },
     {
+      "tool": "app_cookies",
+      "arg": "action",
+      "type": "string",
+      "setBy": [
+        "cookies"
+      ]
+    },
+    {
+      "tool": "app_cookies",
+      "arg": "cookies",
+      "type": "array",
+      "setBy": [
+        "cookies"
+      ]
+    },
+    {
+      "tool": "app_cookies",
+      "arg": "device",
+      "type": "string",
+      "setBy": [
+        "--device"
+      ],
+      "global": true
+    },
+    {
+      "tool": "app_cookies",
+      "arg": "driver",
+      "type": "string",
+      "setBy": [
+        "--driver"
+      ],
+      "global": true
+    },
+    {
+      "tool": "app_cookies",
+      "arg": "name",
+      "type": "string",
+      "setBy": [
+        "cookies"
+      ]
+    },
+    {
       "tool": "app_crashes",
       "arg": "app",
       "type": "string",
@@ -1527,6 +1569,40 @@
       "global": true
     },
     {
+      "tool": "app_storage",
+      "arg": "action",
+      "type": "string",
+      "setBy": [
+        "storage"
+      ]
+    },
+    {
+      "tool": "app_storage",
+      "arg": "device",
+      "type": "string",
+      "setBy": [
+        "--device"
+      ],
+      "global": true
+    },
+    {
+      "tool": "app_storage",
+      "arg": "driver",
+      "type": "string",
+      "setBy": [
+        "--driver"
+      ],
+      "global": true
+    },
+    {
+      "tool": "app_storage",
+      "arg": "state",
+      "type": "object",
+      "setBy": [
+        "storage"
+      ]
+    },
+    {
       "tool": "app_swipe",
       "arg": "device",
       "type": "string",
@@ -2002,6 +2078,27 @@
       ]
     },
     {
+      "command": "cookies",
+      "tools": [
+        "app_cookies",
+        "app_cookies",
+        "app_cookies"
+      ],
+      "flags": [
+        "--domain",
+        "--expires",
+        "--http-only",
+        "--path",
+        "--same-site",
+        "--secure"
+      ],
+      "sends": [
+        "action",
+        "cookies",
+        "name"
+      ]
+    },
+    {
       "command": "crashes",
       "tools": [
         "app_crashes"
@@ -2455,6 +2552,21 @@
       "command": "stop",
       "sends": [
         "status"
+      ]
+    },
+    {
+      "command": "storage",
+      "tools": [
+        "app_storage",
+        "app_storage",
+        "app_storage"
+      ],
+      "flags": [
+        "--output"
+      ],
+      "sends": [
+        "action",
+        "state"
       ]
     },
     {

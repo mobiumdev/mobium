@@ -7,7 +7,7 @@ the source.
 
 The pattern across them is the reason the document exists: **almost nothing
 here was found by reading code or by a test written from imagination.** Of
-135 defects, 110 were found only by running against a real device. The other
+137 defects, 112 were found only by running against a real device. The other
 twenty-five — 4, 5, 6, 14, 23, 24, 32, 35, 36, 39, 44, 50, 53, 54, 57, 66, 89,
 99, 100, 121, 123, 129, 130, 133 and 134 — came from reading code, the compiler, a test, a linter,
 cross-checking a computed number against a screenshot, using the tooling on
@@ -3116,9 +3116,60 @@ parent; both are left alone. On the phone: the orphan was taken over and
 stopped by the next session's end, and after another crash by `daemon stop`,
 with a fresh runner starting normally in between.
 
+### 136. On iOS, the role `map` printed was not one a locator could find
+
+**Found by:** installing a web app from Safari on the iPhone 17 Pro
+simulator: `map` listed "Add to Home Screen (button)", and
+`label=Add to Home Screen,role=button` found nothing, so `scroll-to` with it
+scrolled to the end of the list and gave up.
+
+`map` names a node by what it does when no class names it — a touchable one
+is a button, a scrollable one a list — and the locator matcher did that on
+Android only. On iOS it matched element types alone, so every Cell, keyboard
+key and React Native view printed as `(button)` and matched no
+`role=button`: 93 entries across the captured hierarchies, plus one Android
+GridView printed as a list. And since the label alone matched the Cell, its
+Image and its StaticText, `map` fell back to a path 22 levels deep. The
+matcher now applies the same fallbacks, except to a text field, and except
+to a row that holds a real button — iOS Settings draws "About" as a Cell
+around a Button of the same label, and calling both buttons made
+`label=About,role=button` ambiguous. A test holds the rule over every
+captured hierarchy; without the change it reports all 93. On the simulator,
+`scroll-to` and `tap` with that locator reached the row and opened the Add to
+Home Screen dialog, and `map` now derives the locator itself.
+
+### 137. A web context's name was its position in the listing
+
+**Found by:** switching to a Safari page by the name the previous listing
+gave it, on the iPhone 17 Pro simulator, and attaching a different page.
+
+Both transports numbered pages in listing order — iOS numbering all of them
+once there were two — so a tab opening between two calls renamed the rest.
+An installed PWA and the Chrome tab it came from were both
+`WEBVIEW_com.android.chrome`, told apart by position alone. A session now
+keeps each page's name by the page's own identity — its devtools socket and
+CDP target on Android, its application and page on iOS — for as long as the
+page is listed, and a new page takes the first free name. A page that goes
+frees its name, so a relaunched app's WebView, which Android publishes on a
+new socket, comes back under the name it had. On the simulator, opening a
+second tab left the first page's name as it was, and switching by it reached
+that page.
+
 ## Findings that were not defects
 
 Worth recording because each one closed off an approach that looked obvious.
+
+- **A tap on Log In above the keyboard reached the app, and the app moved the
+  button.** On a headless Android emulator, with the soft keyboard up over
+  MobiumApp's Login Demo, `tap testid=loginBtn` was reported as tapped and
+  the login never ran, in some runs and not others. The layout differed
+  between runs: when the password field's "meets the requirements" notice
+  was not yet showing, it appeared on the field's blur — which the tap
+  itself causes — and pushed Log In below the keyboard while the press was
+  still down, and React Native cancels a press whose target slides out from
+  under it. A finger does the same. Blurring the field first, the tap
+  reached the app five runs in five. It is the app's layout shift, and a
+  useful control for one.
 
 - **Four things the Dialog Demo measured that are the platforms' own.**
   Android's share API resolves "shared" however its sheet closed — Back gave

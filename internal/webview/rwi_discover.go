@@ -440,6 +440,7 @@ func contextsFromPages(pages []iosPage) []Context {
 		}
 		out = append(out, Context{
 			ID:    fmt.Sprintf("WEBVIEW_%s", bundle),
+			Base:  fmt.Sprintf("WEBVIEW_%s", bundle),
 			Title: p.Title,
 			URL:   p.URL,
 			// Reused to carry the identifiers back to Attach, which is what

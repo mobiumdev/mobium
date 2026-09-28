@@ -85,6 +85,7 @@ type evaluator interface {
 // protocol is underneath.
 type Page interface {
 	evaluator
+	CookieJar
 	LayoutMetrics(ctx context.Context) (*Metrics, error)
 	Map(ctx context.Context) ([]Element, error)
 	Text(ctx context.Context) (string, error)

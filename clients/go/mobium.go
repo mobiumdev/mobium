@@ -117,6 +117,7 @@ type settings struct {
 	driver   string
 	platform string
 	app      string
+	session  string
 	args     []string
 }
 
@@ -135,6 +136,14 @@ func WithDriver(name string) Option { return func(s *settings) { s.driver = name
 // WithPlatform names the platform for Start: "android" or "ios". "ios" picks
 // wda, so the driver need not be named.
 func WithPlatform(name string) Option { return func(s *settings) { s.platform = name } }
+
+// WithSession gives this connection a daemon of its own, named name, as
+// MOBIUM_SESSION does. One daemon serves one call at a time across every
+// device, so two test runs driving two devices at once should each have one:
+// sharing, an emulator's 15 maps took 22.3s behind a simulator's, against
+// 0.3s on a daemon of its own. The name is part of a socket path, so keep it
+// short.
+func WithSession(name string) Option { return func(s *settings) { s.session = name } }
 
 // WithApp is an app for Start to launch once the session is up, by package
 // name (Android) or bundle id (iOS).
@@ -244,7 +253,7 @@ func Connect(opts ...Option) (*Device, error) {
 	if s.driver != "" {
 		s.args = append(s.args, "--driver", s.driver)
 	}
-	c, err := dial(binary, s.args)
+	c, err := dial(binary, s.args, s.session)
 	if err != nil {
 		return nil, err
 	}
@@ -1309,6 +1318,93 @@ func (d *Device) Eval(ctx context.Context, expression string) (string, error) {
 		return "", err
 	}
 	return out.Value, nil
+}
+
+// Cookie is one of a page's cookies. The JSON keys are Playwright's and
+// Vibium's, so a storage state saved by either restores here.
+type Cookie struct {
+	Name   string `json:"name"`
+	Value  string `json:"value"`
+	Domain string `json:"domain,omitempty"`
+	Path   string `json:"path,omitempty"`
+	// Expires is seconds since the epoch; 0 is a session cookie.
+	Expires  float64 `json:"expires,omitempty"`
+	HTTPOnly bool    `json:"httpOnly,omitempty"`
+	Secure   bool    `json:"secure,omitempty"`
+	// SameSite is "Strict", "Lax" or "None"; empty leaves the browser's own.
+	SameSite string `json:"sameSite,omitempty"`
+}
+
+// StorageItem is one key of localStorage or sessionStorage.
+type StorageItem struct {
+	Name  string `json:"name"`
+	Value string `json:"value"`
+}
+
+// OriginStorage is one origin's web storage.
+type OriginStorage struct {
+	Origin         string        `json:"origin"`
+	LocalStorage   []StorageItem `json:"localStorage"`
+	SessionStorage []StorageItem `json:"sessionStorage"`
+}
+
+// StorageState is a page's cookies and web storage, in the shape Playwright
+// and Vibium save.
+type StorageState struct {
+	Cookies []Cookie        `json:"cookies"`
+	Origins []OriginStorage `json:"origins"`
+}
+
+// Cookies lists the current WebView's cookies — the ones its page's URL is
+// sent, HttpOnly ones included. Needs a web context: Context first.
+func (d *Device) Cookies(ctx context.Context) ([]Cookie, error) {
+	var out struct {
+		Cookies []Cookie `json:"cookies"`
+	}
+	if err := d.data(ctx, "app_cookies", map[string]any{"action": "get"}, &out); err != nil {
+		return nil, err
+	}
+	return out.Cookies, nil
+}
+
+// SetCookies sets each cookie on the current page and reads the store back,
+// so one the browser accepted and stored expired fails as NotConfirmed.
+func (d *Device) SetCookies(ctx context.Context, cookies ...Cookie) error {
+	return d.data(ctx, "app_cookies", map[string]any{"action": "set", "cookies": cookies}, nil)
+}
+
+// ClearCookies deletes the current page's cookies, or with a name only those
+// called that.
+func (d *Device) ClearCookies(ctx context.Context, name ...string) error {
+	args := map[string]any{"action": "clear"}
+	if len(name) > 0 && name[0] != "" {
+		args["name"] = name[0]
+	}
+	return d.data(ctx, "app_cookies", args, nil)
+}
+
+// Storage answers the current page's storage state: its cookies and its
+// origin's localStorage and sessionStorage.
+func (d *Device) Storage(ctx context.Context) (*StorageState, error) {
+	var out struct {
+		State StorageState `json:"state"`
+	}
+	if err := d.data(ctx, "app_storage", map[string]any{"action": "get"}, &out); err != nil {
+		return nil, err
+	}
+	return &out.State, nil
+}
+
+// SetStorage restores a saved state: its cookies, and each origin's storage
+// into the page only if the page is on that origin.
+func (d *Device) SetStorage(ctx context.Context, state StorageState) error {
+	return d.data(ctx, "app_storage", map[string]any{"action": "restore", "state": state}, nil)
+}
+
+// ClearStorage empties the current page's cookies, localStorage and
+// sessionStorage.
+func (d *Device) ClearStorage(ctx context.Context) error {
+	return d.data(ctx, "app_storage", map[string]any{"action": "clear"}, nil)
 }
 
 // Notification is one entry in the shade.

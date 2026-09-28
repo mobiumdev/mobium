@@ -25,6 +25,9 @@ if os.environ.get("MOBIUM_FAKE_PIDFILE"):
     with open(os.environ["MOBIUM_FAKE_PIDFILE"], "w") as f:
         f.write(str(os.getpid()))
 out = sys.stdout
+if os.environ.get("MOBIUM_FAKE_NOTIFYLOG"):
+    with open(os.environ["MOBIUM_FAKE_NOTIFYLOG"], "a") as f:
+        f.write("session=" + os.environ.get("MOBIUM_SESSION", "") + "\n")
 
 
 def send(obj):

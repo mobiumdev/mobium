@@ -124,6 +124,12 @@ type session struct {
 	// Only these — a tab the user already had is not the session's.
 	openedTabs []webview.Context
 
+	// ctxNames holds the name each listed web page was given, by the page's
+	// own identity, so a page keeps its name while it is there. Numbering by
+	// position renamed pages whenever a tab opened, and a name read from one
+	// listing attached a different page in the next.
+	ctxNames map[string]string
+
 	// logMarks is how far app_logs has read the device log, keyed by the
 	// filter it read with, as the device's clock reported it. Per filter
 	// because a read narrowed to one app must not mark the rest of the

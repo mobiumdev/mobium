@@ -321,18 +321,74 @@ func (h *Handlers) adbFor(ctx context.Context, s *session) (*device.ADB, error) 
 // property lists — and this is the only place above the transport that knows
 // there are two. Everything after it works on `webview.Page`.
 func (h *Handlers) webContexts(ctx context.Context, s *session) ([]webview.Context, error) {
+	var found []webview.Context
+	var err error
 	if s.backend == BackendWDA {
-		insp, err := h.inspectorFor(ctx, s)
-		if err != nil {
-			return nil, err
+		insp, ierr := h.inspectorFor(ctx, s)
+		if ierr != nil {
+			return nil, ierr
 		}
-		return insp.Contexts(ctx)
+		found, err = insp.Contexts(ctx)
+	} else {
+		adb, aerr := h.adbFor(ctx, s)
+		if aerr != nil {
+			return nil, aerr
+		}
+		found, err = webview.Contexts(ctx, adb)
 	}
-	adb, err := h.adbFor(ctx, s)
 	if err != nil {
 		return nil, err
 	}
-	return webview.Contexts(ctx, adb)
+	s.nameContexts(found)
+	return found, nil
+}
+
+// nameContexts gives each page the name it was first given in this session,
+// and a new page the first name nobody has had: WEBVIEW_<app>, then _1, _2.
+//
+// Both transports number pages by their position in a listing, which moves:
+// a Safari tab opening between two calls renumbered the rest, and a name
+// taken from one listing attached another page (2026-09-27). A page's own
+// identity — its devtools socket and CDP target on Android, its application
+// and page on iOS — holds still, so names are kept by that for as long as the
+// page is listed. Once it is not, its name is free again: an app relaunched
+// gets a new devtools socket, and its WebView should come back under the
+// name it had, not as _1. CHALLENGES 137.
+func (s *session) nameContexts(found []webview.Context) {
+	if s.ctxNames == nil {
+		s.ctxNames = map[string]string{}
+	}
+	key := func(c webview.Context) string { return c.Socket + "|" + c.TargetID }
+	listed := map[string]bool{}
+	for _, c := range found {
+		listed[key(c)] = true
+	}
+	// Names of pages that have gone are free; the rest are held first, so a
+	// page arriving in this listing cannot take a name a listed page has.
+	taken := map[string]bool{}
+	for k, name := range s.ctxNames {
+		if listed[k] {
+			taken[name] = true
+		} else {
+			delete(s.ctxNames, k)
+		}
+	}
+	for i := range found {
+		c := &found[i]
+		if c.Base == "" {
+			continue
+		}
+		if name, ok := s.ctxNames[key(*c)]; ok {
+			c.ID = name
+			continue
+		}
+		name := c.Base
+		for n := 1; taken[name]; n++ {
+			name = fmt.Sprintf("%s_%d", c.Base, n)
+		}
+		s.ctxNames[key(*c)], taken[name] = name, true
+		c.ID = name
+	}
 }
 
 // inspectorFor returns the session's web inspector connection, opening it on

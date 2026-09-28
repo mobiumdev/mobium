@@ -107,6 +107,8 @@ func main() {
 		newKeyboardCmd(),
 		newRecordCmd(),
 		newEvalCmd(),
+		newCookiesCmd(),
+		newStorageCmd(),
 		newContextsCmd(),
 		newContextCmd(),
 		newTypeCmd(),

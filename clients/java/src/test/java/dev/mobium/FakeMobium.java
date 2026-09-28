@@ -47,6 +47,12 @@ final class FakeMobium {
         if (pidFile != null && !pidFile.isEmpty()) {
             Files.writeString(Path.of(pidFile), Long.toString(ProcessHandle.current().pid()));
         }
+        String notifyLog = System.getenv("MOBIUM_FAKE_NOTIFYLOG");
+        if (notifyLog != null && !notifyLog.isEmpty()) {
+            String session = System.getenv().getOrDefault("MOBIUM_SESSION", "");
+            Files.writeString(Path.of(notifyLog), "session=" + session + "\n",
+                    java.nio.file.StandardOpenOption.CREATE, java.nio.file.StandardOpenOption.APPEND);
+        }
         BufferedReader in = new BufferedReader(new InputStreamReader(System.in, StandardCharsets.UTF_8));
         PrintStream out = new PrintStream(System.out, true, StandardCharsets.UTF_8);
 
