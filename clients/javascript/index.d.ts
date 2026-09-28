@@ -217,6 +217,8 @@ export class Device {
   battery(): Promise<Data>
   /** What time the device thinks it is, in its own zone. */
   deviceTime(): Promise<Data>
+  /** Shakes an emulator or simulator; a real phone refuses. */
+  shake(): Promise<void>
   /** One app's state: not_installed, not_running, background or foreground. */
   appState(app: string): Promise<Data>
   /** Sends the app in front away for seconds and brings it back. */

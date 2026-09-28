@@ -357,6 +357,13 @@ namespace Mobium
         public IDictionary<string, object?> DeviceTime() => Data("app_time", null);
 
         /// <summary>
+        /// Shakes an emulator or simulator — what shake-to-undo and
+        /// shake-to-report listen for. Whether the app reacts is up to its own
+        /// detector, so check the screen after. A real phone refuses.
+        /// </summary>
+        public void Shake() => Act("app_shake", Args());
+
+        /// <summary>
         /// One app's state, for any app: <c>state</c> is not_installed,
         /// not_running, background or foreground. An app under its own
         /// permission prompt is still in front, and <c>covered_by</c> names

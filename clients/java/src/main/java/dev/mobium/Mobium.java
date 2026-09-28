@@ -678,6 +678,15 @@ public final class Mobium implements AutoCloseable {
     }
 
     /**
+     * Shakes an emulator or simulator — what shake-to-undo and shake-to-report
+     * listen for. Whether the app reacts is up to its own detector, so check
+     * the screen after. A real phone refuses.
+     */
+    public void shake() {
+        act("app_shake", args());
+    }
+
+    /**
      * One app's state, for any app: {@code state} is not_installed,
      * not_running, background or foreground. An app under its own permission
      * prompt is still in front, and {@code covered_by} names the prompt's

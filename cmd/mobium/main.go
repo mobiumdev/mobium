@@ -146,6 +146,7 @@ func main() {
 		newBackgroundCmd(),
 		newBatteryCmd(),
 		newTimeCmd(),
+		newShakeCmd(),
 	)
 
 	err := root.Execute()

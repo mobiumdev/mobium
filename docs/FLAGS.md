@@ -219,6 +219,8 @@ command mentions them.
 | `app_session` | `device` | string | _global_ --device |
 | `app_session` | `driver` | string | _global_ --driver |
 | `app_session` | `platform` | string | session |
+| `app_shake` | `device` | string | _global_ --device |
+| `app_shake` | `driver` | string | _global_ --driver |
 | `app_sms` | `device` | string | _global_ --device |
 | `app_sms` | `driver` | string | _global_ --driver |
 | `app_sms` | `from` | string | sms |
@@ -337,6 +339,7 @@ arguments and the two global flags.
 | `screenshot` | app_screenshot | --output | path |
 | `scroll-to` | app_scroll_to | --direction | direction, target |
 | `session` | app_session | --app --platform | action, app, platform |
+| `shake` | app_shake | — | — |
 | `sms` | app_sms | --from | from, text |
 | `source` | app_source | — | — |
 | `start` | — | --idle-timeout | — |

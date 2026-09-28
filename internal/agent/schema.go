@@ -1565,6 +1565,21 @@ func GetToolSchemas() []Tool {
 			},
 		},
 		{
+			Name: "app_shake",
+			Description: "Shake the device — what shake-to-undo, shake-to-report and a debug " +
+				"menu listen for. An iOS simulator is sent the shake its Device menu sends, " +
+				"which UIKit delivers as a motion event; an Android emulator's accelerometer is " +
+				"swung side to side for about 1.5s and put back at rest, which an app's shake " +
+				"detector sees as a shake. Whether the app reacts is its detector's business: " +
+				"check the screen after. A real phone refuses — nothing outside it can move its " +
+				"sensors.",
+			InputSchema: map[string]interface{}{
+				"type":                 "object",
+				"properties":           withDevice(map[string]interface{}{}),
+				"additionalProperties": false,
+			},
+		},
+		{
 			Name: "app_state",
 			Description: "What state one app is in: not_installed, not_running, background or " +
 				"foreground — for any app, where app_current names only the one in front. In " +
