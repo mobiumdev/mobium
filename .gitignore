@@ -4,6 +4,7 @@ dist/
 # default and the branding is excepted rather than the rule loosened.
 *.png
 !assets/branding/*.png
+!clients/dotnet/Mobium/icon.png
 *.zip
 .DS_Store
 clients/java/target/

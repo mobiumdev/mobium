@@ -85,6 +85,49 @@ adb wait-for-device
 export JAVA_HOME=/opt/homebrew/opt/openjdk@21/libexec/openjdk.jdk/Contents/Home
 ```
 
+### On Linux
+
+Google ships the command-line tools as a zip, and the emulator and
+`platform-tools` for Linux **only for x86_64** — the SDK repository has no
+Linux arm64 build of either (checked 2026-09-28) — so an arm64 Linux machine
+cannot run the emulator. The emulator needs KVM: your user must be able to
+open `/dev/kvm` (usually by being in the `kvm` group).
+
+```sh
+mkdir -p ~/android-sdk/cmdline-tools && cd ~/android-sdk/cmdline-tools
+curl -LO https://dl.google.com/android/repository/commandlinetools-linux-16111833_latest.zip
+unzip commandlinetools-linux-16111833_latest.zip && mv cmdline-tools latest
+
+export ANDROID_HOME=~/android-sdk
+export ANDROID_SDK_ROOT=$ANDROID_HOME
+export PATH="$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/emulator:$ANDROID_HOME/platform-tools:$PATH"
+
+sdkmanager --install "emulator" "platform-tools" \
+  "system-images;android-35;google_apis;x86_64"
+
+avdmanager create avd -n mobium-test -d pixel_7 \
+  -k "system-images;android-35;google_apis;x86_64"
+
+emulator -avd mobium-test -no-snapshot-save -no-boot-anim &
+adb wait-for-device
+```
+
+Run that way on Ubuntu 24.04 on 2026-09-28, with a JDK 17, and every
+quick-start page passed. Three things it showed:
+
+- **`sdkmanager` says it is deprecated** and hands over to the new Android
+  CLI (`android sdk`), downloading it on first use. It still installs what it
+  is asked for; `--licenses` is no longer needed.
+- **The Pixel 7 profile needs 12GB free** for its data partition. With less,
+  `emulator` exits at once with `Not enough space to create userdata
+  partition` — in its log, not on the terminal — and `adb wait-for-device`
+  waits forever for a device that is not coming.
+- **On two cores it is slow the first time.** The emulator warns that it
+  wants four. On a freshly booted one, the first tap into Network & internet
+  took 10.5 seconds to open the screen — past the quick start's 10-second
+  wait once in two runs — and 4.3 seconds later on; on a Mac it takes under
+  one.
+
 ### Running headless
 
 Add `-no-window`. Everything mobium does works unchanged, screenshots

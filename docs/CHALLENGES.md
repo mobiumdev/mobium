@@ -7,12 +7,13 @@ the source.
 
 The pattern across them is the reason the document exists: **almost nothing
 here was found by reading code or by a test written from imagination.** Of
-149 defects, 119 were found only by running against a real device. The other
-thirty — 4, 5, 6, 14, 23, 24, 32, 35, 36, 39, 44, 50, 53, 54, 57, 66, 89,
-99, 100, 121, 123, 129, 130, 133, 134, 139, 140, 141, 142 and 144 — came from reading code, the compiler, a test, a linter,
+150 defects, 119 were found only by running against a real device. The other
+thirty-one — 4, 5, 6, 14, 23, 24, 32, 35, 36, 39, 44, 50, 53, 54, 57, 66, 89,
+99, 100, 121, 123, 129, 130, 133, 134, 139, 140, 141, 142, 144 and 150 — came from reading code, the compiler, a test, a linter,
 cross-checking a computed number against a screenshot, using the tooling on
 itself, typing a negative number at a command line, and driving the clients
-against a stand-in daemon, and CI on Windows.
+against a stand-in daemon, CI on Windows, and following the quick start from
+a fresh clone.
 
 Read it before writing a test that asserts platform behavior.
 
@@ -3388,6 +3389,20 @@ used to assert one press. Neither form makes a WebView fire `dblclick`. On
 the iPhone 15 Plus afterwards: two presses 197ms apart, against the person's
 200, two separate taps 1298ms apart, and the page two clicks, three times in
 three.
+
+### 150. The .NET package could not be built from a clone
+
+**Found by:** following the quick start on a fresh Linux machine, which
+clones the repository as the .NET page says to: `dotnet pack` failed with
+`NU5019: File not found: .../Mobium/icon.png`.
+
+The package's icon was added with the package metadata (#11), and
+`.gitignore` ignores every `*.png`, because screenshots land in the tree
+constantly during device work — so the icon was never committed. Every
+check that packed the client, the one that installed it into a clean project
+included, ran in a checkout that had the file on disk, so none could fail.
+The icon is excepted beside the branding, and committed. A clean clone is
+the fixture a user has; a working tree is not.
 
 ## Findings that were not defects
 

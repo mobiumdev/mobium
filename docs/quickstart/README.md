@@ -33,7 +33,7 @@ what it printed.
 | | Android emulator or phone | iOS simulator or iPhone |
 | --- | --- | --- |
 | **macOS** | Yes | Yes — needs Xcode |
-| **Linux** | Expected to work: Mobium builds and passes its tests on Linux in CI, but has not yet been run against a device there | No — iOS needs Xcode, which runs only on macOS |
+| **Linux** | Yes — every page below run on Ubuntu 24.04, x86_64, against an Android 15 emulator. [SETUP.md](../SETUP.md#on-linux) has the emulator's Linux steps | No — iOS needs Xcode, which runs only on macOS |
 | **Windows** | Not yet: the code is written and compiles, and has not run on Windows. See [WINDOWS.md](../WINDOWS.md) | No — no Xcode |
 
 ## 1. Install mobium
