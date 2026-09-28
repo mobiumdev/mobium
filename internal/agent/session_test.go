@@ -308,3 +308,23 @@ func TestEndingStopsARouteTheSimulatorIsPlaying(t *testing.T) {
 		}
 	}
 }
+
+// Only a UiAutomator2 session on a real Android phone names an exposure: an
+// emulator is behind its own NAT, and the dump driver listens nowhere.
+func TestSessionExposureOnlyOnARealPhonesServer(t *testing.T) {
+	for _, c := range []struct {
+		backend  Backend
+		emulator bool
+		want     bool
+	}{
+		{BackendUIA2, false, true},
+		{BackendUIA2, true, false},
+		{BackendDump, false, false},
+		{BackendWDA, false, false},
+	} {
+		s := &session{backend: c.backend, dev: &device.Device{Serial: "x", Emulator: c.emulator}}
+		if got := sessionExposure(s) != ""; got != c.want {
+			t.Errorf("%s, emulator=%v: exposure named %v, want %v", c.backend, c.emulator, got, c.want)
+		}
+	}
+}

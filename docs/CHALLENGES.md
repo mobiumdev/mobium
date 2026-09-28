@@ -3483,6 +3483,16 @@ Wi-Fi address, and `ios-device.sh` passed. The simulator's runner is
 Appium's prebuilt release, unpatched; there the Mac's firewall is the
 mitigation (152).
 
+A runner already running when a session starts is used rather than started
+again, and one from before this fix listens everywhere. So one found running
+is asked for the phone's Wi-Fi address and tried there from the Mac: one of
+Mobium's own that answers is stopped and replaced by one bound to the tunnel,
+and anyone else's — Xcode's, a terminal's — is refused as `device_not_ready`
+with the reason, and left running, since it is not Mobium's to stop. Both
+measured on the iPhone 15 Plus with an unbound runner started by hand: ours
+answered on Wi-Fi before and not after, with one runner left; the other was
+refused and still running.
+
 ### 154. A real Android phone's UiAutomator2 server answered anyone on its Wi-Fi
 
 **Found by:** the threat model's open item, measured on the Pixel 8 Pro,

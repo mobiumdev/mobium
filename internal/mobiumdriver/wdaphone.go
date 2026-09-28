@@ -6,6 +6,7 @@ import (
 	"encoding/base64"
 	"fmt"
 	"github.com/mobiumdev/mobium/internal/mobiumerr"
+	"net"
 	"net/http"
 	"time"
 
@@ -55,7 +56,22 @@ func (w *WDA) startPhone(ctx context.Context, progress func(string)) error {
 		cancel()
 		if ready {
 			w.runner = device.AdoptPhoneRunner(ctx, p.UDID)
-			return nil
+			if !w.answersOnWiFi(ctx) {
+				return nil
+			}
+			// It listens on the phone's network as well as the cable, as every
+			// runner did before CHALLENGES 153. One of ours is replaced by one
+			// bound to the tunnel; someone else's is not ours to stop.
+			if w.runner == nil {
+				return mobiumerr.New(mobiumerr.DeviceNotReady, "a WebDriverAgent that Mobium did not start is "+
+					"running on %s and answers on the phone's Wi-Fi, so anyone on that network could drive the "+
+					"phone through it; Mobium will not use it", p.Name).
+					WithRemedy("stop it — end the Xcode test or the xcodebuild that runs it — and run the " +
+						"command again; Mobium then starts its own, reachable only over the cable")
+			}
+			w.runner.Stop()
+			w.runner = nil
+			w.w3c.setBase("")
 		}
 	}
 
@@ -311,4 +327,34 @@ func (w *WDA) setActiveAppHint(ctx context.Context, bundleID string) error {
 		map[string]interface{}{"settings": map[string]interface{}{
 			"defaultActiveApplication": bundleID,
 		}}, nil)
+}
+
+// answersOnWiFi reports whether the runner in front of this session also
+// answers at the phone's Wi-Fi address, which it reports in its status. A
+// phone with no Wi-Fi address, or a runner that does not answer there within
+// a moment, is not reachable that way.
+func (w *WDA) answersOnWiFi(ctx context.Context) bool {
+	var st struct {
+		Value struct {
+			IOS struct {
+				IP string `json:"ip"`
+			} `json:"ios"`
+		} `json:"value"`
+	}
+	if err := w.w3c.do(ctx, http.MethodGet, "/status", nil, &st); err != nil || st.Value.IOS.IP == "" {
+		return false
+	}
+	quick, cancel := context.WithTimeout(ctx, 2*time.Second)
+	defer cancel()
+	req, err := http.NewRequestWithContext(quick, http.MethodGet,
+		fmt.Sprintf("http://%s/status", net.JoinHostPort(st.Value.IOS.IP, fmt.Sprint(device.WDAPort))), nil)
+	if err != nil {
+		return false
+	}
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return false
+	}
+	resp.Body.Close()
+	return resp.StatusCode == http.StatusOK
 }
