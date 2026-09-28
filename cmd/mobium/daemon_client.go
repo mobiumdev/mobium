@@ -10,6 +10,7 @@ import (
 
 	"github.com/mobiumdev/mobium/internal/agent"
 	"github.com/mobiumdev/mobium/internal/daemon"
+	"github.com/mobiumdev/mobium/internal/mobiumerr"
 )
 
 // daemonIdleTimeout is how long an auto-started daemon lives without work.
@@ -64,6 +65,12 @@ func daemonCall(tool string, args map[string]interface{}) (*agent.ToolsCallResul
 	// daemon.
 	if !daemon.IsConnectionError(err) {
 		return nil, err
+	}
+	// Through a forward, the daemon is the node's: starting one here would
+	// drive this machine's devices under the node's name.
+	if remoteActive {
+		return nil, mobiumerr.New(mobiumerr.DeviceNotReady, "the node's daemon stopped answering through the SSH forward: %v", err).
+			WithRemedy("run the command again; `mobium daemon up` on the node says whether its daemon is running")
 	}
 
 	daemon.CleanStale()

@@ -2715,6 +2715,9 @@
       ]
     },
     {
+      "command": "up"
+    },
+    {
       "command": "wait",
       "tools": [
         "app_wait_for"

@@ -114,12 +114,13 @@ this is what is not.
      unchanged Python client, against the node's daemon, every file landing
      in the caller's folder and none on the node. Tried against this Mac
      standing in for a node.
-  2. **Stage 2: a remote transport,** `mobium pipe --remote <node>`,
-     authenticated and encrypted. Stage 1's run says it can be SSH's own
-     socket forwarding, set up and torn down by mobium — with
-     `MOBIUM_FILES=content` set for the caller, the node's daemon started
-     under its own home, and the forward's owner-only socket checked. The
-     daemon's own socket stays owner-only and local to the node.
+  2. **Stage 2: a remote transport — done, 2026-09-28.** `--remote <node>`,
+     or `MOBIUM_REMOTE`, on every command and on `mobium pipe`: mobium runs
+     `mobium daemon up` on the node over SSH, forwards the socket it names
+     to an owner-only one here, sets `MOBIUM_FILES=content`, and removes both
+     on the way out. A call the node does not answer fails rather than start
+     a daemon here. An unchanged Python client went remote with the
+     environment variable alone ([SETUP.md](SETUP.md#driving-another-machines-devices)).
   3. **Stage 3: a router,** Selenium Grid's shape: a registry of nodes and
      their devices, a lease that keeps a device to one run, routing a
      session by platform and model, a queue when nothing matches is free,

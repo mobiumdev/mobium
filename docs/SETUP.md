@@ -513,6 +513,38 @@ WebView. Measured on 2026-09-28 with two emulators on two daemons: forwards
 on host ports 52360 and 52527, both to their own device's 6790, and ten
 `map` calls on each at once, each seeing only its own screen.
 
+## Driving another machine's devices
+
+**`--remote <node>`, or `MOBIUM_REMOTE=<node>`, drives the devices plugged
+into another machine**, over SSH. Every command takes it, and so does
+`mobium pipe`, which is how all five clients connect — so a client goes
+remote with the environment variable alone, and no change to its code.
+
+What happens: mobium asks the node, over SSH, to have a daemon running and
+say where it listens (`mobium daemon up`); forwards that socket to one in a
+private directory here, owner-only; and sends every call through it. Nothing
+new listens on a network — SSH authenticates and encrypts, and the node's
+daemon socket stays owner-only on the node. Files travel as content
+(`MOBIUM_FILES=content`, set for you): `install`'s app and a GPX route go to
+the node, and a screenshot or a recording comes back and is saved where you
+asked. If the node's daemon stops answering, the call fails; a daemon is
+never started here in its place, which would drive this machine's devices
+under the node's name.
+
+What it needs:
+
+| | |
+| --- | --- |
+| **SSH without a prompt** | key-based login to the node; mobium runs SSH with `BatchMode=yes`, because a prompt would land in the stream a client speaks. `MOBIUM_SSH` replaces the `ssh` command, options included — `ssh -i ~/.ssh/node_key` |
+| **mobium on the node** | reachable by the node's non-interactive shell. `MOBIUM_REMOTE_BIN` is what that shell runs as mobium, and may set its environment — `PATH=/opt/homebrew/bin:$PATH ~/bin/mobium` — when adb or Xcode's tools are not on the default `PATH` there |
+| **macOS or Linux here** | the forward ends in a Unix socket; on Windows `--remote` refuses, and says so |
+
+Commands about this machine stay here: `daemon`, `doctor` and `mcp` ignore
+`--remote`. One device still belongs to one run at a time, on the node as
+anywhere. Verified with this Mac standing in for a node: the CLI and an
+unchanged Python client ran sessions, maps, installs, screenshots and
+recordings on the node's daemon, every file landing on the caller's side.
+
 ## What Mobium installs, and removing it
 
 On the machine, under `~/.mobium`:

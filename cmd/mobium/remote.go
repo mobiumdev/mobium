@@ -1,0 +1,160 @@
+package main
+
+import (
+	"bytes"
+	"encoding/json"
+	"fmt"
+	"os"
+	"os/exec"
+	"path/filepath"
+	"strings"
+	"time"
+
+	"github.com/mobiumdev/mobium/internal/daemon"
+	"github.com/mobiumdev/mobium/internal/mobiumerr"
+	"github.com/mobiumdev/mobium/internal/paths"
+)
+
+// remoteNode is the machine whose daemon this command drives: --remote, or
+// MOBIUM_REMOTE. Empty means this machine.
+var remoteNode string
+
+// remoteActive says the daemon is a node's, reached through a forward; a
+// connection that fails is then the node's to explain, and a local daemon
+// must not be started in its place — that would drive this machine's
+// devices while the caller believed it was driving the node's.
+var remoteActive bool
+
+// cleanups run on every way out of the process, so a forward and its
+// directory never outlive the command that made them.
+var cleanups []func()
+
+func runCleanups() {
+	for i := len(cleanups) - 1; i >= 0; i-- {
+		cleanups[i]()
+	}
+	cleanups = nil
+}
+
+// localOnly are the commands that are about this machine, and stay here.
+var localOnly = map[string]bool{"daemon": true, "doctor": true, "mcp": true, "version": true, "help": true, "completion": true}
+
+// upStatus is what `mobium daemon up --json` prints on the node.
+type upStatus struct {
+	Socket  string `json:"socket"`
+	PID     int    `json:"pid"`
+	Version string `json:"version"`
+}
+
+// openRemote reaches a node's daemon over SSH: it asks the node to have a
+// daemon running and say where it listens, forwards that socket to one in a
+// private directory here, and points this process at it, with file arguments
+// traveling as content (MOBIUM_FILES), since the node's disk is not this
+// one. SSH is the transport because it already authenticates and encrypts,
+// and the daemon's own socket stays owner-only on the node: nothing new
+// listens on a network. Measured by hand first, against this Mac standing in
+// for a node — ROADMAP, "A mobium grid".
+func openRemote(node string) error {
+	if err := remoteSupported(); err != nil {
+		return err
+	}
+	ssh := strings.Fields(os.Getenv("MOBIUM_SSH"))
+	if len(ssh) == 0 {
+		ssh = []string{"ssh"}
+	}
+	bin := os.Getenv("MOBIUM_REMOTE_BIN")
+	if bin == "" {
+		bin = "mobium"
+	}
+	// Never a prompt: a password or host-key question would be read from,
+	// and answered into, the stream a client speaks JSON-RPC on.
+	opts := []string{"-o", "BatchMode=yes", "-o", "ServerAliveInterval=15"}
+
+	remoteCmd := bin + " daemon up --json"
+	if s := paths.SessionName(); s != "" {
+		remoteCmd = "MOBIUM_SESSION=" + s + " " + remoteCmd
+	}
+	// sshArgs is ssh's own arguments with these after them, in a new slice
+	// each time, so one call's arguments never land in another's.
+	sshArgs := func(extra ...string) []string {
+		a := append([]string{}, ssh[1:]...)
+		a = append(a, opts...)
+		return append(a, extra...)
+	}
+	up := exec.Command(ssh[0], sshArgs("-T", node, remoteCmd)...)
+	var out, errb bytes.Buffer
+	up.Stdout, up.Stderr = &out, &errb
+	if err := up.Run(); err != nil {
+		return mobiumerr.New(mobiumerr.DeviceNotReady, "could not reach mobium on %s over SSH: %v — %s", node, err,
+			strings.TrimSpace(errb.String())).
+			WithRemedy(fmt.Sprintf("check that `ssh %s %s --version` works without a prompt; "+
+				"MOBIUM_REMOTE_BIN is what the node's shell runs as mobium", node, bin))
+	}
+	var st upStatus
+	if err := json.Unmarshal(out.Bytes(), &st); err != nil || st.Socket == "" {
+		return mobiumerr.New(mobiumerr.DeviceServer, "mobium on %s did not say where its daemon listens: %q", node,
+			strings.TrimSpace(out.String()))
+	}
+	if st.Version != version {
+		fmt.Fprintf(os.Stderr, "mobium: %s runs mobium %s, and this is %s\n", node, st.Version, version)
+	}
+
+	// A private home here, short enough for a socket path: the OS caps
+	// those at about 104 bytes, and the temporary directory macOS gives
+	// every process is most of that already.
+	home, err := os.MkdirTemp(remoteTempRoot(), "mbr-")
+	if err != nil {
+		return err
+	}
+	cleanups = append(cleanups, func() { _ = os.RemoveAll(home) })
+	if err := os.MkdirAll(filepath.Join(home, "daemon"), 0o700); err != nil {
+		return err
+	}
+	if err := os.Setenv("MOBIUM_HOME", home); err != nil {
+		return err
+	}
+	local, err := paths.SocketPath()
+	if err != nil {
+		return err
+	}
+
+	fwd := exec.Command(ssh[0], sshArgs("-N", "-o", "ExitOnForwardFailure=yes", "-o", "StreamLocalBindUnlink=yes",
+		"-L", local+":"+st.Socket, node)...)
+	var fwdErr bytes.Buffer
+	fwd.Stderr = &fwdErr
+	// Its own process group: a Ctrl-C meant for a client must not end the
+	// forward before the client's own cleanup has used it to end its session.
+	setOwnGroup(fwd)
+	if err := fwd.Start(); err != nil {
+		return fmt.Errorf("start the SSH forward: %w", err)
+	}
+	done := make(chan struct{})
+	go func() { _ = fwd.Wait(); close(done) }()
+	cleanups = append(cleanups, func() {
+		_ = fwd.Process.Kill()
+		<-done
+	})
+
+	deadline := time.Now().Add(15 * time.Second)
+	for {
+		if _, err := daemon.Status(); err == nil {
+			break
+		}
+		select {
+		case <-done:
+			return mobiumerr.New(mobiumerr.DeviceNotReady, "the SSH forward to %s ended: %s", node, strings.TrimSpace(fwdErr.String()))
+		default:
+		}
+		if time.Now().After(deadline) {
+			return mobiumerr.New(mobiumerr.Timeout, "no answer from %s's daemon through the forward within 15s", node)
+		}
+		time.Sleep(50 * time.Millisecond)
+	}
+	// The forward's socket carries commands that drive the node's devices;
+	// nobody else on this machine should be able to use it either.
+	if info, err := os.Stat(local); err != nil || info.Mode().Perm()&0o077 != 0 {
+		return mobiumerr.New(mobiumerr.DeviceServer, "the forwarded socket %s is not owner-only", local)
+	}
+	remoteActive = true
+	return os.Setenv("MOBIUM_FILES", "content")
+}

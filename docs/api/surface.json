@@ -707,7 +707,7 @@
     "cliHidden": [
       "pipe"
     ],
-    "cliConstructors": 64,
+    "cliConstructors": 65,
     "clients": 5
   },
   "cliWithoutTool": [
@@ -716,6 +716,7 @@
     "pipe",
     "start",
     "status",
-    "stop"
+    "stop",
+    "up"
   ]
 }

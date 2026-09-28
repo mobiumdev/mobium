@@ -61,7 +61,7 @@ func TestEveryToolIsReachableFromTheCLI(t *testing.T) {
 // up as a failure rather than blending in.
 func TestCLICommandsWithoutAToolAreTheProcessOnes(t *testing.T) {
 	expected := map[string]bool{
-		"daemon": true, "start": true, "status": true, "stop": true,
+		"daemon": true, "start": true, "status": true, "stop": true, "up": true,
 		"mcp": true, "pipe": true,
 	}
 	for _, cmd := range sweep(t).Extra {

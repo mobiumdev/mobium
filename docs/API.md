@@ -22,7 +22,7 @@ differently.
 | CLI commands registered | 61 |
 | …visible in `mobium --help` | 60 |
 | …hidden | 1 (pipe) |
-| Command constructors in source | 64 (includes `daemon start`, `stop`, `status`) |
+| Command constructors in source | 65 (includes `daemon start`, `stop`, `status`) |
 | Client libraries | 5 |
 
 Those three command counts differ on purpose, and the arithmetic is asserted
@@ -109,6 +109,7 @@ been wrong twice.
 - `start`
 - `status`
 - `stop`
+- `up`
 
 
 These run the process rather than the device — the daemon's own lifecycle, and

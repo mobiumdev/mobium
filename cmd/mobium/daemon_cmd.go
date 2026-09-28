@@ -21,7 +21,7 @@ func newDaemonCmd() *cobra.Command {
 		Long: "Commands normally start the daemon on demand and it exits when idle.\n" +
 			"These subcommands are for inspecting or controlling it directly.",
 	}
-	cmd.AddCommand(newDaemonStartCmd(), newDaemonStopCmd(), newDaemonStatusCmd())
+	cmd.AddCommand(newDaemonStartCmd(), newDaemonStopCmd(), newDaemonStatusCmd(), newDaemonUpCmd())
 	return cmd
 }
 
@@ -135,6 +135,34 @@ func newDaemonStatusCmd() *cobra.Command {
 			if status.Session != "" {
 				fmt.Printf("  session %s\n", status.Session)
 			}
+			return nil
+		},
+	}
+}
+
+// newDaemonUpCmd makes sure a daemon is running and says where it listens.
+// It is what `--remote` runs on the node over SSH, before forwarding that
+// socket to the caller's machine.
+func newDaemonUpCmd() *cobra.Command {
+	return &cobra.Command{
+		Use:   "up",
+		Short: "Start the daemon if it is not running, and print where it listens",
+		Args:  cobra.NoArgs,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			status, err := daemon.Status()
+			if err != nil {
+				daemon.CleanStale()
+				if err := autoStartDaemon(); err != nil {
+					return err
+				}
+				if status, err = daemon.Status(); err != nil {
+					return err
+				}
+			}
+			if jsonOutput {
+				return printJSON(upStatus{Socket: status.Socket, PID: status.PID, Version: status.Version})
+			}
+			fmt.Printf("Daemon running (pid %d)\n  socket  %s\n", status.PID, status.Socket)
 			return nil
 		},
 	}

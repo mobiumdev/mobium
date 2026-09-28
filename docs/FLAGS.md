@@ -333,5 +333,6 @@ arguments and the two global flags.
 | `type` | app_type | — | target, text |
 | `uncheck` | app_check | — | checked, target |
 | `uninstall` | app_uninstall | — | app |
+| `up` | — | — | — |
 | `wait` | app_wait_for | --for --text --timeout | condition, target, text, timeout_ms |
 | `zoom` | app_zoom | --from --target --to | direction, from, target, to |
