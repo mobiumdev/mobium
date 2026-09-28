@@ -136,6 +136,13 @@ not — `camera` and `notifications` have no iOS simulator equivalent,
 than a silent no-op. On Android the grant is verified by reading the state
 back, and anything the app never declared is reported as skipped.
 
+### Battery and clock
+
+- `mobium battery` — level, charging state, and on Android what powers it; an
+  iOS simulator has no battery and says so
+- `mobium time` — the device's clock in its own zone; a simulator's is the
+  Mac's, and the answer says so
+
 ### Light and dark
 
 Dark mode is a different rendering of every screen and is where contrast and

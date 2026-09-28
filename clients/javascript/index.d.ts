@@ -213,6 +213,10 @@ export class Device {
   clearData(app: string): Promise<Data>
   /** Runs several tools in order in one call; stops at the first failure. */
   batch(steps: BatchStep[]): Promise<BatchStepResult[]>
+  /** The battery: level, state, and on Android what it is plugged into. */
+  battery(): Promise<Data>
+  /** What time the device thinks it is, in its own zone. */
+  deviceTime(): Promise<Data>
   /** One app's state: not_installed, not_running, background or foreground. */
   appState(app: string): Promise<Data>
   /** Sends the app in front away for seconds and brings it back. */

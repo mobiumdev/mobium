@@ -155,6 +155,24 @@
       ]
     },
     {
+      "tool": "app_battery",
+      "arg": "device",
+      "type": "string",
+      "setBy": [
+        "--device"
+      ],
+      "global": true
+    },
+    {
+      "tool": "app_battery",
+      "arg": "driver",
+      "type": "string",
+      "setBy": [
+        "--driver"
+      ],
+      "global": true
+    },
+    {
       "tool": "app_call",
       "arg": "action",
       "type": "string",
@@ -1922,6 +1940,24 @@
       ]
     },
     {
+      "tool": "app_time",
+      "arg": "device",
+      "type": "string",
+      "setBy": [
+        "--device"
+      ],
+      "global": true
+    },
+    {
+      "tool": "app_time",
+      "arg": "driver",
+      "type": "string",
+      "setBy": [
+        "--driver"
+      ],
+      "global": true
+    },
+    {
       "tool": "app_timezone",
       "arg": "device",
       "type": "string",
@@ -2173,6 +2209,12 @@
       ],
       "sends": [
         "steps"
+      ]
+    },
+    {
+      "command": "battery",
+      "tools": [
+        "app_battery"
       ]
     },
     {
@@ -2801,6 +2843,12 @@
       ],
       "sends": [
         "target"
+      ]
+    },
+    {
+      "command": "time",
+      "tools": [
+        "app_time"
       ]
     },
     {

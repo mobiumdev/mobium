@@ -343,6 +343,20 @@ namespace Mobium
         }
 
         /// <summary>
+        /// The battery: <c>level</c> in percent, <c>state</c> (charging,
+        /// discharging, not_charging, full or unknown) and on Android
+        /// <c>plugged</c>. An iOS simulator has none: <c>present</c> is false.
+        /// </summary>
+        public IDictionary<string, object?> Battery() => Data("app_battery", null);
+
+        /// <summary>
+        /// What time the device thinks it is: <c>time</c> (RFC 3339, in its
+        /// own offset), <c>zone</c>, and <c>clock</c> — "device", or "mac" on
+        /// an iOS simulator, which has no clock of its own.
+        /// </summary>
+        public IDictionary<string, object?> DeviceTime() => Data("app_time", null);
+
+        /// <summary>
         /// One app's state, for any app: <c>state</c> is not_installed,
         /// not_running, background or foreground. An app under its own
         /// permission prompt is still in front, and <c>covered_by</c> names

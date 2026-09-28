@@ -1541,6 +1541,30 @@ func GetToolSchemas() []Tool {
 			},
 		},
 		{
+			Name: "app_battery",
+			Description: "Read the battery: level in percent, whether it is charging, " +
+				"discharging, not charging or full, and on Android what it is plugged into. " +
+				"An iOS simulator has no battery and says so rather than giving a number.",
+			InputSchema: map[string]interface{}{
+				"type":                 "object",
+				"properties":           withDevice(map[string]interface{}{}),
+				"additionalProperties": false,
+			},
+		},
+		{
+			Name: "app_time",
+			Description: "What time the device thinks it is, in its own zone — what a " +
+				"clock-dependent screen shows, and what a test of scheduling or a timezone " +
+				"change checks against. A phone and an emulator read their own clock; an iOS " +
+				"simulator has none and reads the Mac's, and says so. To change the zone, " +
+				"app_timezone.",
+			InputSchema: map[string]interface{}{
+				"type":                 "object",
+				"properties":           withDevice(map[string]interface{}{}),
+				"additionalProperties": false,
+			},
+		},
+		{
 			Name: "app_state",
 			Description: "What state one app is in: not_installed, not_running, background or " +
 				"foreground — for any app, where app_current names only the one in front. In " +
