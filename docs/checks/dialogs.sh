@@ -14,8 +14,10 @@
 # keyboard (CHALLENGES 105 and its keyboard half).
 #
 # Needs MobiumApp installed (mobiumdev/mobium-app). A real iPhone cannot reset
-# permissions from outside, so there it needs MOBIUMAPP_BUNDLE and reinstalls
-# the app instead; its clipboard cannot be seeded, so paste is not checked.
+# permissions from outside, and a real Android phone's reset is device-wide,
+# so on either it needs MOBIUMAPP_BUNDLE (the .app or .apk) and reinstalls the
+# app instead. An iPhone's clipboard cannot be seeded, so paste is not
+# checked there.
 set -e
 DEV="$1"
 if [ -z "$DEV" ]; then echo "usage: $0 <serial|udid>" >&2; exit 2; fi
@@ -32,7 +34,13 @@ case "$DEV" in
     PLATFORM=ios; PHONE=1; M="$ROOT/bin/mobium --driver wda --device $DEV"
     RESET=reinstall; CAP=label ;;
   *-*-*-*-*) PLATFORM=ios; M="$ROOT/bin/mobium --driver wda --device $DEV"; RESET="$M reset-permissions $APP"; CAP=label ;;
-  *)         PLATFORM=android; M="$ROOT/bin/mobium --device $DEV"; RESET="$M reset-permissions"; CAP=text ;;
+  emulator-*) PLATFORM=android; M="$ROOT/bin/mobium --device $DEV"; RESET="$M reset-permissions"; CAP=text ;;
+  *)
+    # Android's permission reset is device-wide: on a person's phone it would
+    # reset every app's, not MobiumApp's. So a real phone reinstalls the app,
+    # as an iPhone does, and needs the build to do it.
+    [ -n "$MOBIUMAPP_BUNDLE" ] || { echo "on a real Android phone set MOBIUMAPP_BUNDLE=<path to MobiumApp's .apk>: Android's permission reset is device-wide, so the app is reinstalled instead" >&2; exit 2; }
+    PLATFORM=android; PHONE=1; M="$ROOT/bin/mobium --device $DEV"; RESET=reinstall; CAP=text ;;
 esac
 echo "--- $DEV ($PLATFORM)"
 reinstall() { $M uninstall "$APP" >/dev/null 2>&1 || true; $M install "$MOBIUMAPP_BUNDLE" >/dev/null; }
@@ -158,10 +166,10 @@ CLIP='seeded by mobium'
 # below <button>: bring a button under the fold into view, once the screen
 # has come up — a scroll sent while it is still arriving scrolls Home.
 below() { $M wait testid=dialogOutcome >/dev/null; $M scroll-to "testid=$1" >/dev/null; }
-if [ -n "$PHONE" ]; then
-  # A phone's clipboard cannot be written from outside, so nothing can put
+if [ -n "$PHONE" ] && [ "$PLATFORM" = ios ]; then
+  # An iPhone's clipboard cannot be written from outside, so nothing can put
   # another app's text there for the prompt to be about.
-  printf '    %-18s %s\n' "paste" "NOT CHECKED — a phone's clipboard cannot be seeded from outside"
+  printf '    %-18s %s\n' "paste" "NOT CHECKED — an iPhone's clipboard cannot be seeded from outside"
 elif ! $M clipboard "$CLIP" >/dev/null; then
   fail "the clipboard could not be seeded"
 elif [ "$PLATFORM" = ios ]; then

@@ -45,8 +45,15 @@ reduce() { # reduce on|off
   [ -n "$PHONE" ] && return 0
   if [ "$PLATFORM" = android ]; then
     [ -z "$ORIG_SCALE" ] && ORIG_SCALE=$(adb -s "$DEV" shell settings get global transition_animation_scale | tr -d '\r')
-    [ "$1" = on ] && adb -s "$DEV" shell settings put global transition_animation_scale 0 \
-      || adb -s "$DEV" shell settings put global transition_animation_scale "${ORIG_SCALE:-1.0}"
+    if [ "$1" = on ]; then
+      adb -s "$DEV" shell settings put global transition_animation_scale 0
+    elif [ "$ORIG_SCALE" = null ]; then
+      # Never set on this device: deleted again, not written as "null" —
+      # on somebody's phone that would be a setting the check invented.
+      adb -s "$DEV" shell settings delete global transition_animation_scale >/dev/null
+    else
+      adb -s "$DEV" shell settings put global transition_animation_scale "${ORIG_SCALE:-1.0}"
+    fi
   else
     sid=$(curl -s localhost:8100/status | python3 -c 'import json,sys; print(json.load(sys.stdin)["sessionId"])')
     v=false; [ "$1" = on ] && v=true

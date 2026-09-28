@@ -87,6 +87,27 @@ alerts, the action and share sheets, camera, location and App Tracking
 Transparency prompts, rules and refusals — except paste, **NOT CHECKED**
 because a phone's clipboard cannot be seeded from outside.
 
+**Every check that runs on Android passed on the Pixel 8 Pro, Android 17, on
+2026-09-27**, with MobiumApp rebuilt from `mobiumdev/mobium-app`: the six in
+the table, and `login.sh`, `keyboard.sh`, `autowait.sh`, `obstruction.sh`,
+`web-actionability.sh`, `web-type.sh`, `source.sh`, `crashes.sh`,
+`accessibility.sh`, `clear-data.sh`, `dialogs.sh`, `gestures.sh`, `zoom.sh`,
+`mobium-app.sh` (with `MOBIUM_NETWORK_TESTS=1`) and `clients.sh`, all five
+clients — the Java one timed out once waiting for Settings' first screen and
+passed on the rerun, cause not found. A phone is somebody's, and four checks
+had to learn that: `dialogs.sh` and `mobium-app.sh` reset permissions with
+Android's reset, which is **device-wide**, and on a phone now reinstall the
+app or revoke its one permission instead; `device-state.sh` locked a phone
+that has a PIN, which cannot be unlocked from outside, and now asks first
+(`cmd lock_settings verify`, answered without locking) and says the lock
+round-trip is **NOT CHECKED**; and `autowait.sh` restores an animation scale
+that was never set by deleting it. `third-party-app.sh` reads Wikipedia's
+article natively on a phone, since a user build publishes a WebView only if
+the app opts in and the F-Droid build does not — no devtools socket at all,
+measured — and follows a link through the app's preview sheet. `crashes.sh`
+skips the ANR, which needs a root adb a retail phone does not have, and says
+so.
+
 `mobium-app.sh` needs MobiumApp built and installed, so it has no row either.
 **On the iPhone 15 Plus it passed on 2026-09-23**, 30 steps in 3m31s, from a
 fresh install it makes itself when given `MOBIUMAPP_BUNDLE` — **WebViews

@@ -115,6 +115,34 @@ for e in json.load(sys.stdin)["elements"]:
 [ -n "$ref" ] || fail "the Ada Lovelace result is not in the map"
 $M tap "$ref" >/dev/null
 sleep 6
+
+# A real phone is a user build, and there a WebView publishes to DevTools only
+# if the app opted in; an emulator's debug image publishes every one, which
+# is why the WebView half below runs there. Measured on a Pixel 8 Pro: the
+# article on screen, no devtools socket at all. So a phone reads the article
+# natively and follows a link by tapping it, as third-party-app-ios.sh does
+# for the App Store build.
+case "$DEV" in emulator-*) ;; *)
+  $M wait 'text=Charles Babbage' --timeout 60s >/dev/null || fail "the article did not load"
+  if $M contexts | grep -q "WEBVIEW_$APP"; then
+    echo "    webview        Wikipedia now opts into inspection — this check can attach and should"
+  else
+    echo "    webview        not inspectable: a release build on a user-build phone   ok"
+  fi
+  r=$($M map | awk '/ Charles Babbage \(button\)/{print $1; exit}')
+  [ -n "$r" ] || fail "the Charles Babbage link is not in the map"
+  $M tap "$r" >/dev/null
+  # Android's Wikipedia answers a link with a preview sheet, not a page.
+  $M wait 'text=Read article' --timeout 30s >/dev/null || fail "tapping the link raised no preview"
+  $M tap 'text=Read article' >/dev/null
+  # His article's own short description: his name alone is on hers too.
+  $M wait 'text=English mathematician, philosopher, and engineer (1791–1871)' --timeout 120s >/dev/null \
+    || fail "following the Charles Babbage link did not reach his article"
+  echo "    follow link    a native tap on a web link, previewed, then read  ok"
+  echo "--- passed"
+  exit 0 ;;
+esac
+
 $M contexts | grep -q "WEBVIEW_$APP" || fail "no WebView context in a hybrid app"
 url=$($M contexts | grep "WEBVIEW_$APP" | sed 's/.* //')
 case "$url" in
