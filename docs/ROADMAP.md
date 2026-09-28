@@ -31,9 +31,6 @@ this is what is not.
   a decision, not a step; a Homebrew tap; and notarizing the macOS binaries,
   which needs an Apple Developer Program membership — until then
   [SETUP.md](SETUP.md#installing-a-release) says to download with `curl`.
-- **The quick start on Linux, against a device.** Mobium builds and passes its
-  tests on Linux in CI; no emulator has been driven from Linux yet, so the
-  quick start calls Linux expected rather than verified.
 - **Video walkthroughs** of the quick start, one per client, once `start` and
   `quit` have settled. The pages' examples and captured output are the script.
 - **Auto-wait, the rest of the actionability checks.** Actions already wait for
