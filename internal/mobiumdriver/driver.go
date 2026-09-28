@@ -425,6 +425,13 @@ type SourceReader interface {
 	Source(ctx context.Context) (Source, error)
 }
 
+// AppPermissionResetter is implemented by backends that reset one app's
+// permissions and can say what the reset left as it was. Built-in only: an
+// external driver resets through Permissions.
+type AppPermissionResetter interface {
+	ResetAppPermissions(ctx context.Context, appID string) (device.PermissionReset, error)
+}
+
 // DataClearer is implemented by backends that can delete an app's data and
 // leave it installed — the state of a fresh install, without reinstalling.
 type DataClearer interface {

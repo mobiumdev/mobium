@@ -294,6 +294,13 @@ func AsDataClearer(d Driver) (DataClearer, bool) {
 	return c, ok && has(d, CapClearData)
 }
 
+// AsAppPermissionResetter returns the driver's per-app permission reset with
+// its report, if any; it goes with the permissions capability.
+func AsAppPermissionResetter(d Driver) (AppPermissionResetter, bool) {
+	r, ok := d.(AppPermissionResetter)
+	return r, ok && has(d, CapPermissions)
+}
+
 // AsKeyboardRegioner returns the driver's view of where the keyboard is, if
 // any; it goes with the keyboard capability.
 func AsKeyboardRegioner(d Driver) (KeyboardRegioner, bool) {

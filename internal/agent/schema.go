@@ -504,17 +504,20 @@ func GetToolSchemas() []Tool {
 		},
 		{
 			Name: "app_reset_permissions",
-			Description: "Put permissions back to their defaults, so the app prompts again on " +
-				"next use. iOS can reset one app; Android cannot — `pm reset-permissions` is " +
-				"device-wide, so on Android omit the app, and naming one is refused rather " +
-				"than resetting every app behind your back.",
+			Description: "Put permissions back to asking, so the app prompts again on next " +
+				"use. Name an app to reset only that app's — on Android every runtime permission " +
+				"it declares is revoked and the person's answers cleared, including the \"don't " +
+				"ask again\" that two denials leave, and each is read back; one the system or a " +
+				"device policy fixed is kept and named. Revoking a granted permission on Android " +
+				"stops the app, as it does from Settings. Omit the app to reset every app on the " +
+				"device.",
 			InputSchema: map[string]interface{}{
 				"type": "object",
 				"properties": withDevice(map[string]interface{}{
 					"app": map[string]interface{}{
 						"type": "string",
-						"description": "Bundle id to reset (iOS only). Omit to reset every app, " +
-							"which is the only form Android supports.",
+						"description": "Package name on Android or bundle id on iOS, to reset " +
+							"only that app. Omit to reset every app.",
 					},
 				}),
 				"additionalProperties": false,

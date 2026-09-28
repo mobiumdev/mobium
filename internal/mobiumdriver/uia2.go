@@ -438,18 +438,21 @@ func (u *UIA2) SetPermission(ctx context.Context, appID, permission string, gran
 	return u.adb.SetPermission(ctx, appID, permission, grant)
 }
 
-// ResetPermissions reverts runtime permissions to their defaults.
-//
-// `pm reset-permissions` is device-wide and has no per-package form, so a
-// request to reset one app is refused rather than quietly clobbering every
-// other app's permissions too.
+// ResetPermissions reverts runtime permissions to asking. With an app, that
+// app's alone — revoked, and the person's answers cleared (see
+// device.ADB.ResetAppPermissions); without one, every app's, which is what
+// `pm reset-permissions` does and the only form it has.
 func (u *UIA2) ResetPermissions(ctx context.Context, appID string) error {
 	if appID != "" {
-		return mobiumerr.New(mobiumerr.Unsupported, "Android cannot reset permissions for one app — "+
-			"`pm reset-permissions` is device-wide. Reset every app by omitting the app, "+
-			"or revoke the specific permissions you want back to denied.")
+		_, err := u.adb.ResetAppPermissions(ctx, appID)
+		return err
 	}
 	return u.adb.ResetPermissions(ctx)
+}
+
+// ResetAppPermissions resets one app's, and says what it left as it was.
+func (u *UIA2) ResetAppPermissions(ctx context.Context, appID string) (device.PermissionReset, error) {
+	return u.adb.ResetAppPermissions(ctx, appID)
 }
 
 // PermissionState reports what the app declares and what it has.

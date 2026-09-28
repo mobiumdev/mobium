@@ -123,7 +123,8 @@ rather than trying to tap through it:
 - `mobium grant com.example.shop all` — everything the app declares
 - `mobium grant com.example.shop camera location` — just these
 - `mobium revoke com.example.shop location` — test the app without it
-- `mobium reset-permissions` — back to prompting (device-wide on Android)
+- `mobium reset-permissions com.example.shop` — that app back to prompting,
+  "don't ask again" included; with no app, every app on the device
 
 Names are the same on both platforms where both have the thing. Where they do
 not — `camera` and `notifications` have no iOS simulator equivalent,

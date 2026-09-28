@@ -43,11 +43,14 @@ func newResetPermissionsCmd() *cobra.Command {
 		Use:   "reset-permissions [app]",
 		Short: "Put permissions back to their defaults",
 		Long: "The app prompts again on next use.\n\n" +
-			"iOS can reset one app. Android cannot — `pm reset-permissions` is\n" +
-			"device-wide — so on Android omit the app. Naming one there is refused\n" +
-			"rather than resetting every app behind your back.",
-		Example: `  mobium reset-permissions                 # every app
-  mobium reset-permissions com.example.Shop  # iOS only`,
+			"Name an app to reset only that app's. On Android each runtime permission\n" +
+			"it declares is revoked and the answers recorded against it cleared —\n" +
+			"including the \"don't ask again\" two denials leave — and read back; one\n" +
+			"the system or a device policy fixed is kept and named. Revoking a granted\n" +
+			"permission stops the app, as it does from Settings. With no app, every\n" +
+			"app on the device is reset.",
+		Example: `  mobium reset-permissions com.example.shop  # one app
+  mobium reset-permissions                   # every app on the device`,
 		Args: cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			call := map[string]interface{}{}

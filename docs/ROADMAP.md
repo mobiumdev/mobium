@@ -163,15 +163,14 @@ this is what is not.
      test package a zip of a `mobium` binary built for the host's OS and
      architecture (find out which, first) with `docs/checks/`. The test spec
      runs `mobium devices`, then `login.sh`, `web-type.sh`, `obstruction.sh`
-     and `dialogs.sh` against the attached serial, with `MOBIUMAPP_BUNDLE`
-     set to wherever the host puts the app, and copies the output into the
+     and `dialogs.sh` against the attached serial, and copies the output into the
      run's logs. A real phone takes the checks' phone branches, which is
-     what they are for.
+     what they are for; since `reset-permissions` names the app, `dialogs.sh`
+     no longer needs the APK on an Android phone.
   2. **Measure before trusting.** Whether the host's adb reaches the device
      as a plain serial; whether the UiAutomator2 server may be installed;
-     whether a device is wiped between runs, which decides whether
-     `reset-permissions` is safe there. Each is a question with a device's
-     answer, not a guess.
+     whether a device is wiped between runs. Each is a question with a
+     device's answer, not a guess.
   3. **iOS second, and harder.** Mobium builds WebDriverAgent from source and
      signs it with a team from the local keychain; a farm's host has neither,
      and re-signs uploaded apps with its own identity. The route to find out

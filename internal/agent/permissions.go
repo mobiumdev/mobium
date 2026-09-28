@@ -2,11 +2,13 @@ package agent
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"github.com/mobiumdev/mobium/internal/mobiumerr"
 	"sort"
 	"strings"
 
+	"github.com/mobiumdev/mobium/internal/device"
 	"github.com/mobiumdev/mobium/internal/mobiumdriver"
 )
 
@@ -355,16 +357,79 @@ func (h *Handlers) resetPermissions(ctx context.Context, args map[string]interfa
 		return nil, cannot(s, mobiumdriver.CapPermissions, "change permissions")
 	}
 	app := stringArg(args, "app")
-	if err := ctrl.ResetPermissions(ctx, app); err != nil {
+	var left device.PermissionReset
+	if r, ok := mobiumdriver.AsAppPermissionResetter(s.driver); ok && app != "" {
+		if left, err = r.ResetAppPermissions(ctx, app); err != nil {
+			return nil, err
+		}
+	} else if err := ctrl.ResetPermissions(ctx, app); err != nil {
 		return nil, err
 	}
-	target := "every app on the device"
-	if app != "" {
-		target = app
+	view := PermissionView{App: app, Device: s.dev.Serial, Reset: true}
+	if app == "" {
+		return Result("reset permissions for every app on the device", view), nil
 	}
-	return Result("reset permissions for "+target,
-		PermissionView{App: app, Device: s.dev.Serial, Reset: true}), nil
+
+	// Where the platform can say, say what each permission is now. One still
+	// granted after a reset is one nobody can change: the system or a device
+	// policy fixed it.
+	reader, ok := mobiumdriver.AsPermissionReader(s.driver)
+	if !ok {
+		return Result("reset permissions for "+app, view), nil
+	}
+	state, err := reader.PermissionState(ctx, app)
+	if errors.Is(err, device.ErrNoRuntimePermissions) {
+		return Result(app+" declares no runtime permissions, so it had none to reset", view), nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	names := make([]string, 0, len(state))
+	for n := range state {
+		names = append(names, n)
+	}
+	sort.Strings(names)
+	why := map[string]string{}
+	for _, n := range left.PlatformGranted {
+		why[n] = keptByPlatform
+	}
+	var reset []string
+	kept := map[string][]string{}
+	for _, n := range names {
+		e := PermissionEntry{Name: n, Applied: !state[n]}
+		if state[n] {
+			e.Skipped = keptFixed
+			if w, ok := why[n]; ok {
+				e.Skipped = w
+			}
+			kept[e.Skipped] = append(kept[e.Skipped], shortPermission(n))
+		} else {
+			reset = append(reset, shortPermission(n))
+		}
+		view.Permissions = append(view.Permissions, e)
+	}
+	msg := fmt.Sprintf("reset %d permission%s for %s to asking", len(reset), plural(len(reset)), app)
+	if len(reset) > 0 {
+		msg += ": " + strings.Join(reset, ", ")
+	}
+	for _, reason := range []string{keptFixed, keptByPlatform} {
+		if len(kept[reason]) > 0 {
+			msg += "\nkept " + strings.Join(kept[reason], ", ") + ": " + reason
+		}
+	}
+	if left.ApproximateKept {
+		view.ApproximateKept = true
+		msg += "\nkept the choice of approximate location, which the location prompt will preselect: " +
+			"Android has no command that clears it for one app, and reset-permissions with no app does"
+	}
+	return Result(msg, view), nil
 }
+
+// Why a permission is still granted after one app's reset.
+const (
+	keptFixed      = "fixed by the system or a device policy"
+	keptByPlatform = "granted by Android itself until the app asks for it, as on a fresh install"
+)
 
 // permissionSummary is the prose a CLI user reads.
 func permissionSummary(v PermissionView, verified bool) string {
@@ -417,6 +482,9 @@ type PermissionView struct {
 	Granted     bool              `json:"granted,omitempty"`
 	Reset       bool              `json:"reset,omitempty"`
 	Permissions []PermissionEntry `json:"permissions,omitempty"`
+	// ApproximateKept is, after resetting one Android app, a person's choice
+	// of approximate location that the reset could not clear.
+	ApproximateKept bool `json:"approximate_kept,omitempty"`
 }
 
 // PermissionEntry is what happened to one permission.

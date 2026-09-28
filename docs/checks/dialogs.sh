@@ -13,10 +13,10 @@
 # for every kind. Then the refusals: a target under a dialog, and under the
 # keyboard (CHALLENGES 105 and its keyboard half).
 #
-# Needs MobiumApp installed (mobiumdev/mobium-app). A real iPhone cannot reset
-# permissions from outside, and a real Android phone's reset is device-wide,
-# so on either it needs MOBIUMAPP_BUNDLE (the .app or .apk) and reinstalls the
-# app instead. An iPhone's clipboard cannot be seeded, so paste is not
+# Needs MobiumApp installed (mobiumdev/mobium-app). Permissions are reset for
+# MobiumApp alone, on a phone too — except a real iPhone, which cannot reset
+# them from outside, so there it needs MOBIUMAPP_BUNDLE (the .app) and
+# reinstalls the app instead. An iPhone's clipboard cannot be seeded, so paste is not
 # checked there.
 set -e
 DEV="$1"
@@ -34,16 +34,17 @@ case "$DEV" in
     PLATFORM=ios; PHONE=1; M="$ROOT/bin/mobium --driver wda --device $DEV"
     RESET=reinstall; CAP=label ;;
   *-*-*-*-*) PLATFORM=ios; M="$ROOT/bin/mobium --driver wda --device $DEV"; RESET="$M reset-permissions $APP"; CAP=label ;;
-  emulator-*) PLATFORM=android; M="$ROOT/bin/mobium --device $DEV"; RESET="$M reset-permissions"; CAP=text ;;
+  emulator-*) PLATFORM=android; M="$ROOT/bin/mobium --device $DEV"; RESET="$M reset-permissions $APP"; CAP=text ;;
   *)
-    # Android's permission reset is device-wide: on a person's phone it would
-    # reset every app's, not MobiumApp's. So a real phone reinstalls the app,
-    # as an iPhone does, and needs the build to do it.
-    [ -n "$MOBIUMAPP_BUNDLE" ] || { echo "on a real Android phone set MOBIUMAPP_BUNDLE=<path to MobiumApp's .apk>: Android's permission reset is device-wide, so the app is reinstalled instead" >&2; exit 2; }
-    PLATFORM=android; PHONE=1; M="$ROOT/bin/mobium --device $DEV"; RESET=reinstall; CAP=text ;;
+    # A reset names the app, so on a person's phone only MobiumApp's
+    # permissions go back to asking.
+    PLATFORM=android; PHONE=1; M="$ROOT/bin/mobium --device $DEV"; RESET="$M reset-permissions $APP"; CAP=text ;;
 esac
 echo "--- $DEV ($PLATFORM)"
 reinstall() { $M uninstall "$APP" >/dev/null 2>&1 || true; $M install "$MOBIUMAPP_BUNDLE" >/dev/null; }
+# A reset that fails says why: under set -e with its output discarded, the
+# check once stopped after "share sheet" with nothing on the screen.
+reset_perms() { $RESET >/dev/null || fail "resetting MobiumApp's permissions failed (above)"; }
 
 fresh() {
   $M alert dismiss >/dev/null 2>&1 || true
@@ -145,16 +146,16 @@ row "share sheet" "no alert to app_alert; closed without it"
 
 # Camera, the permission both platforms reset: accept grants and dismiss
 # denies on both. Location is the one that inverts on iOS (CHALLENGES 63).
-$RESET >/dev/null 2>&1; verb cameraBtn dismiss "camera: denied"
-$RESET >/dev/null 2>&1; verb cameraBtn accept "camera: granted"
+reset_perms; verb cameraBtn dismiss "camera: denied"
+reset_perms; verb cameraBtn accept "camera: granted"
 row "camera" "dismiss denied, accept granted"
 if [ "$PLATFORM" = ios ]; then
-  $RESET >/dev/null 2>&1; verb locationBtn accept "location: denied"
+  reset_perms; verb locationBtn accept "location: denied"
   row "location" "accept denied: Don't Allow is last of three"
-  $RESET >/dev/null 2>&1; verb trackingBtn dismiss "tracking: denied"
+  reset_perms; verb trackingBtn dismiss "tracking: denied"
   row "tracking" "App Tracking Transparency, from SpringBoard"
 else
-  $RESET >/dev/null 2>&1; verb locationBtn accept "location: granted"
+  reset_perms; verb locationBtn accept "location: granted"
   row "location" "accept granted: the positive button"
 fi
 
