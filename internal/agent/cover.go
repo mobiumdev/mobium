@@ -13,6 +13,10 @@ import (
 // the cover has gone — a toast, a snackbar, a sheet on its way out.
 var coverPoll = 200 * time.Millisecond
 
+// bannerTimeout bounds the wait for an iOS notification banner to go from
+// over a target.
+var bannerTimeout = 10 * time.Second
+
 // CoverView is what an action met over its target: a control it aimed around,
 // or something that is not a control and may take the tap. Omitted when
 // nothing was drawn over the point touched.
@@ -44,7 +48,14 @@ func (h *Handlers) resolveAim(ctx context.Context, s *session, target string) (*
 		if aim.Blocker == nil {
 			return node, aim, nil
 		}
-		if time.Since(start) >= h.implicitWait {
+		// A notification banner goes by itself, in five to eight seconds
+		// measured — longer than the implicit wait — so it is waited out,
+		// as Android's clipboard preview is (CHALLENGES 113, 155).
+		budget := h.implicitWait
+		if uitree.IsNotificationBanner(aim.Blocker) && budget < bannerTimeout {
+			budget = bannerTimeout
+		}
+		if time.Since(start) >= budget {
 			return nil, uitree.Aim{}, h.coveredBy(s, target, aim.Blocker, time.Since(start))
 		}
 		select {

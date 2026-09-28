@@ -65,10 +65,10 @@ func findSpread(tree *uitree.Tree, target *uitree.Node, text string) (spread, bo
 // missing returns the characters of want absent from got, when got is want
 // with some characters left out and nothing added or reordered.
 func missing(want, got string) (string, bool) {
-	w, g := []rune(want), []rune(got)
+	g := []rune(got)
 	var lost []rune
 	j := 0
-	for _, r := range w {
+	for _, r := range want {
 		if j < len(g) && g[j] == r {
 			j++
 			continue

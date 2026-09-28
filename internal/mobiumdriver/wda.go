@@ -279,6 +279,13 @@ func (w *WDA) Snapshot(ctx context.Context) (*uitree.Tree, error) {
 	if w.phone != nil {
 		w.settleExpected(ctx, tree.Package())
 	}
+	// A notification banner makes SpringBoard what WebDriverAgent reads, for
+	// seconds, over an app that is still on screen (CHALLENGES 155).
+	if app, banner := bannerOver(tree); app != "" {
+		if under, ok := w.underBanner(ctx, app, banner); ok {
+			tree = under
+		}
+	}
 	// WDA reports points; everything above this layer works in device pixels,
 	// which is also what screenshots are in.
 	tree.Scale(w.scale)

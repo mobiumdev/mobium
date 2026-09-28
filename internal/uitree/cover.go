@@ -53,6 +53,9 @@ func IsControl(n *Node) bool {
 	if n == nil {
 		return false
 	}
+	if IsNotificationBanner(n) {
+		return true
+	}
 	if isIOSClass(n.Class) {
 		return iosControlTypes[n.Class]
 	}
@@ -222,4 +225,12 @@ func Describe(n *Node) string {
 		return d
 	}
 	return n.ShortClass()
+}
+
+// IsNotificationBanner reports an iOS notification banner, laid over an app
+// by the driver while SpringBoard shows one (CHALLENGES 155). SpringBoard
+// types it Other, but it is a control: a tap on it opens the notification,
+// and a tap meant for what it covers lands on it.
+func IsNotificationBanner(n *Node) bool {
+	return n != nil && n.TestID == "NotificationShortLookView"
 }

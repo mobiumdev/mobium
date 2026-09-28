@@ -7,7 +7,7 @@ the source.
 
 The pattern across them is the reason the document exists: **almost nothing
 here was found by reading code or by a test written from imagination.** Of
-154 defects, 123 were found only by running against a real device. The other
+156 defects, 125 were found only by running against a real device. The other
 thirty-one — 4, 5, 6, 14, 23, 24, 32, 35, 36, 39, 44, 50, 53, 54, 57, 66, 89,
 99, 100, 121, 123, 129, 130, 133, 134, 139, 140, 141, 142, 144 and 150 — came from reading code, the compiler, a test, a linter,
 cross-checking a computed number against a screenshot, using the tooling on
@@ -3519,6 +3519,53 @@ reads `USE_IP`. Until then the dump backend, `--driver uiautomator`, is the
 way to drive a phone with nothing listening: measured on the same phone, a
 dump session added no listening socket, where a UiAutomator2 session added
 both.
+
+### 155. A notification banner hid the app under it on iOS
+
+**Found by:** MobiumApp's OTP Demo on the iPhone 17 Pro simulator, iOS 26.5,
+reading the outcome right after the app posted its code as a notification.
+
+While the banner was up — about five seconds — every read answered with
+SpringBoard: `current` named it, `text testid=otpOutcome` found nothing, and
+`map` listed the banner and nothing of the app behind it, which was still in
+front and still taking touches. WebDriverAgent reads the application it
+believes is active, and while a banner shows it believes SpringBoard. Worse,
+a tap aimed at the app's Back button under the banner was reported as done
+and did nothing: the check that refuses a target under a dialog (105) did not
+count the banner, because it is an `XCUIElementTypeOther` reported not
+visible, and both of those excluded it.
+
+The banner names its app: SpringBoard's tree holds a hidden
+`card:<bundle>:sceneID…` next to the `NotificationShortLookView`. So a read
+that finds one asks WebDriverAgent for that app's tree instead, by the same
+`defaultActiveApplication` hint a launch uses (71), puts the hint back, and
+grafts the banner onto the app's tree as a control on top — the code it
+carries stays readable in `map`. An action whose target is under it waits up
+to ten seconds for the banner to go before refusing, rather than the dialog
+budget; measured, a Back tap under a fresh banner waited about 5.5 seconds and
+then navigated, two runs in two.
+
+### 156. Typing into a field that moves focus on was misread as dropped keystrokes
+
+**Found by:** the same screen, typing a whole six-digit code into the first
+of six one-digit boxes on the simulator — which is what a person's password
+manager does, and what a test author writes first.
+
+The app moves focus to the next box as each digit arrives, so XCUITest's
+keystrokes followed it: the first box held `1`, the rest the other digits, or
+all but one of them. `SetText` read the first box back, saw `1` where it
+typed `123456`, and took it for iOS dropping a keystroke (61) — so it retried,
+typing the whole code again into boxes that already held digits, and then
+reported a failure that blamed the platform. Every part of that was wrong.
+
+Now the first mismatch looks at the text-entry fields after the target, in
+document order: if the typed text is spread across them in sequence, the
+typing is reported as done when every character arrived and, when one did
+not, as `not_confirmed` naming what each field took and what never arrived,
+with the remedy that works — type into each field in turn. Nothing is typed
+twice. Measured on the simulator, six runs: five arrived whole and were
+reported typed, one lost a digit and named it, and none retried. Android is
+unaffected: it sets a field's text at once, and the app spreads it.
 
 ## Findings that were not defects
 
