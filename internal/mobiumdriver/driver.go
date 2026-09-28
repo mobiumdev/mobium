@@ -443,6 +443,17 @@ type AppStates interface {
 	Background(ctx context.Context, appID string, d time.Duration) error
 }
 
+// BatteryReader is implemented by backends that can read the battery.
+type BatteryReader interface {
+	Battery(ctx context.Context) (device.Battery, error)
+}
+
+// DeviceClock is implemented by backends that can say what time the device
+// thinks it is, and in what zone.
+type DeviceClock interface {
+	Now(ctx context.Context) (device.ClockReading, error)
+}
+
 // DataClearer is implemented by backends that can delete an app's data and
 // leave it installed — the state of a fresh install, without reinstalling.
 type DataClearer interface {

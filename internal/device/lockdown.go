@@ -134,8 +134,9 @@ func muxDeviceID(ctx context.Context, udid string) (int64, error) {
 			}
 		}
 	}
-	return 0, mobiumerr.New(mobiumerr.DeviceNotReady, "usbmuxd does not list %s — WebViews on a phone need it connected "+
-		"by cable", udid)
+	return 0, mobiumerr.New(mobiumerr.DeviceNotReady, "usbmuxd does not list %s — what lockdown serves (WebViews, "+
+		"the device log, crash reports, the clock) needs the phone connected by cable", udid).
+		WithRemedy("connect the iPhone with a cable, unlocked and trusting this Mac")
 }
 
 // muxConnect opens a stream to a port on the device.
@@ -249,37 +250,72 @@ func WebInspectorConn(ctx context.Context, udid string) (net.Conn, error) {
 	return LockdownService(ctx, udid, "com.apple.webinspector")
 }
 
+// lockdownSession connects to a paired phone's lockdown and starts a session,
+// under TLS when lockdown asks for it. The caller closes the connection.
+func lockdownSession(ctx context.Context, udid string) (net.Conn, int64, *pairRecord, error) {
+	id, err := muxDeviceID(ctx, udid)
+	if err != nil {
+		return nil, 0, nil, err
+	}
+	rec, err := readPairRecord(ctx, udid)
+	if err != nil {
+		return nil, 0, nil, err
+	}
+	ld, err := muxConnect(ctx, id, lockdownPort)
+	if err != nil {
+		return nil, 0, nil, err
+	}
+	sess, err := lockdownCall(ld, map[string]any{
+		"Request": "StartSession", "HostID": rec.hostID, "SystemBUID": rec.systemBUID,
+	})
+	if err != nil {
+		ld.Close()
+		return nil, 0, nil, err
+	}
+	if on, _ := sess["EnableSessionSSL"].(bool); on {
+		tconn, err := lockdownTLS(ld, rec)
+		if err != nil {
+			ld.Close()
+			return nil, 0, nil, err
+		}
+		return tconn, id, rec, nil
+	}
+	return ld, id, rec, nil
+}
+
+// LockdownValues reads values lockdown keeps about a paired phone — such as
+// TimeIntervalSince1970, the phone's own clock — in one session.
+func LockdownValues(ctx context.Context, udid string, keys ...string) (map[string]any, error) {
+	lconn, _, _, err := lockdownSession(ctx, udid)
+	if err != nil {
+		return nil, err
+	}
+	defer lconn.Close()
+	out := map[string]any{}
+	for _, k := range keys {
+		m, err := lockdownCall(lconn, map[string]any{"Request": "GetValue", "Key": k})
+		if err != nil {
+			return nil, err
+		}
+		v, ok := m["Value"]
+		if !ok {
+			return nil, mobiumerr.New(mobiumerr.DeviceServer, "lockdown has no value for %s", k)
+		}
+		out[k] = v
+	}
+	return out, nil
+}
+
 // LockdownService asks a paired phone's lockdown to start a service and
 // returns a stream to it, under TLS when the service asks for it. Every
 // service a phone offers over USB without a developer tunnel is reached this
 // way; only the name differs.
 func LockdownService(ctx context.Context, udid, service string) (net.Conn, error) {
-	id, err := muxDeviceID(ctx, udid)
+	lconn, id, rec, err := lockdownSession(ctx, udid)
 	if err != nil {
 		return nil, err
 	}
-	rec, err := readPairRecord(ctx, udid)
-	if err != nil {
-		return nil, err
-	}
-
-	ld, err := muxConnect(ctx, id, lockdownPort)
-	if err != nil {
-		return nil, err
-	}
-	defer ld.Close()
-	sess, err := lockdownCall(ld, map[string]any{
-		"Request": "StartSession", "HostID": rec.hostID, "SystemBUID": rec.systemBUID,
-	})
-	if err != nil {
-		return nil, err
-	}
-	lconn := ld
-	if on, _ := sess["EnableSessionSSL"].(bool); on {
-		if lconn, err = lockdownTLS(ld, rec); err != nil {
-			return nil, err
-		}
-	}
+	defer lconn.Close()
 	svc, err := lockdownCall(lconn, map[string]any{
 		"Request": "StartService", "Service": service,
 	})

@@ -291,6 +291,10 @@ func (h *Handlers) dispatch(ctx context.Context, name string, args map[string]in
 		return h.doctor(ctx, args)
 	case "app_batch":
 		return h.batch(ctx, args)
+	case "app_battery":
+		return h.battery(ctx, args)
+	case "app_time":
+		return h.deviceTime(ctx, args)
 	case "app_state":
 		return h.appState(ctx, args)
 	case "app_background":

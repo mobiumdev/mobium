@@ -41,6 +41,8 @@ command mentions them.
 | `app_batch` | `device` | string | _global_ --device |
 | `app_batch` | `driver` | string | _global_ --driver |
 | `app_batch` | `steps` | array | batch |
+| `app_battery` | `device` | string | _global_ --device |
+| `app_battery` | `driver` | string | _global_ --driver |
 | `app_call` | `action` | string | call |
 | `app_call` | `device` | string | _global_ --device |
 | `app_call` | `driver` | string | _global_ --driver |
@@ -251,6 +253,8 @@ command mentions them.
 | `app_text` | `device` | string | _global_ --device |
 | `app_text` | `driver` | string | _global_ --driver |
 | `app_text` | `target` | string | text |
+| `app_time` | `device` | string | _global_ --device |
+| `app_time` | `driver` | string | _global_ --driver |
 | `app_timezone` | `device` | string | _global_ --device |
 | `app_timezone` | `driver` | string | _global_ --driver |
 | `app_timezone` | `timezone` | string | timezone |
@@ -287,6 +291,7 @@ arguments and the two global flags.
 | `apps` | app_list_apps | --system | system |
 | `background` | app_background | --app | app, seconds |
 | `batch` | app_batch | — | steps |
+| `battery` | app_battery | — | — |
 | `call` | app_call | --number | action, number |
 | `check` | app_check | — | checked, target |
 | `clear-data` | app_clear_data | — | app |
@@ -344,6 +349,7 @@ arguments and the two global flags.
 | `tap` | app_tap, app_tap | --fingers | fingers, target, x, y |
 | `terminate` | app_terminate | — | app |
 | `text` | app_text | — | target |
+| `time` | app_time | — | — |
 | `timezone` | app_timezone | — | timezone |
 | `type` | app_type | — | target, text |
 | `ui` | — | --port | — |

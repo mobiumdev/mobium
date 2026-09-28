@@ -795,6 +795,23 @@ export class Device {
   }
 
   /**
+   * The battery: `level` in percent, `state` (charging, discharging,
+   * not_charging, full or unknown) and on Android `plugged`. An iOS
+   * simulator has none: `present` is false.
+   */
+  async battery() {
+    return (await this.#data('app_battery')) || {}
+  }
+
+  /**
+   * What time the device thinks it is: `time` (RFC 3339, in its own offset),
+   * `zone`, and `clock` — "device", or "mac" on an iOS simulator.
+   */
+  async deviceTime() {
+    return (await this.#data('app_time')) || {}
+  }
+
+  /**
    * One app's state: `not_installed`, `not_running`, `background` or
    * `foreground`, for any app. An app under its own permission prompt is
    * still in front, and `covered_by` names the prompt's process. On iOS a

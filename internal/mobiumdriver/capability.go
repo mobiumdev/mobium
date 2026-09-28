@@ -58,6 +58,8 @@ const (
 	CapSource           = "source"
 	CapAccessibility    = "accessibility"
 	CapAppState         = "appState"
+	CapBattery          = "battery"
+	CapDeviceClock      = "deviceClock"
 )
 
 // KnownCapabilities is every capability Mobium understands, for diagnostics
@@ -69,7 +71,7 @@ var KnownCapabilities = []string{
 	CapGeolocation, CapGeolocationState, CapRoutes,
 	CapClipboard, CapClipboardRead, CapAlerts, CapPinch,
 	CapDoubleTap, CapDrag, CapMultiTouch, CapDeviceLogs, CapCrashes, CapKeyboard, CapRecording,
-	CapClearData, CapSource, CapAccessibility, CapAppState,
+	CapClearData, CapSource, CapAccessibility, CapAppState, CapBattery, CapDeviceClock,
 }
 
 // has reports whether d claims the capability. A driver that does not report
@@ -307,6 +309,18 @@ func AsAppPermissionResetter(d Driver) (AppPermissionResetter, bool) {
 func AsAppStates(d Driver) (AppStates, bool) {
 	a, ok := d.(AppStates)
 	return a, ok && has(d, CapAppState)
+}
+
+// AsBatteryReader returns the driver's battery reading, if any.
+func AsBatteryReader(d Driver) (BatteryReader, bool) {
+	b, ok := d.(BatteryReader)
+	return b, ok && has(d, CapBattery)
+}
+
+// AsDeviceClock returns the driver's reading of the device's clock, if any.
+func AsDeviceClock(d Driver) (DeviceClock, bool) {
+	c, ok := d.(DeviceClock)
+	return c, ok && has(d, CapDeviceClock)
 }
 
 // AsKeyboardRegioner returns the driver's view of where the keyboard is, if

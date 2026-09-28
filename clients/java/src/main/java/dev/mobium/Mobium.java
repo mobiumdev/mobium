@@ -656,6 +656,28 @@ public final class Mobium implements AutoCloseable {
     }
 
     /**
+     * The battery: {@code level} in percent, {@code state} (charging,
+     * discharging, not_charging, full or unknown) and on Android
+     * {@code plugged}. An iOS simulator has none: {@code present} is false.
+     *
+     * @return the battery
+     */
+    public Map<String, Object> battery() {
+        return data("app_battery", null);
+    }
+
+    /**
+     * What time the device thinks it is: {@code time} (RFC 3339, in its own
+     * offset), {@code zone}, and {@code clock} — "device", or "mac" on an iOS
+     * simulator, which has no clock of its own.
+     *
+     * @return the device's clock
+     */
+    public Map<String, Object> deviceTime() {
+        return data("app_time", null);
+    }
+
+    /**
      * One app's state, for any app: {@code state} is not_installed,
      * not_running, background or foreground. An app under its own permission
      * prompt is still in front, and {@code covered_by} names the prompt's

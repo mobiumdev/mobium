@@ -533,6 +533,20 @@ class Device:
         data = self._data("app_batch", {"steps": wire}) or {}
         return list(data.get("steps") or [])
 
+    def battery(self) -> dict:
+        """The battery: ``level`` in percent, ``state`` (charging,
+        discharging, not_charging, full or unknown) and on Android
+        ``plugged``. An iOS simulator has none: ``present`` is False.
+        """
+        return self._data("app_battery") or {}
+
+    def device_time(self) -> dict:
+        """What time the device thinks it is: ``time`` (RFC 3339, in its
+        own offset), ``zone``, and ``clock`` — "device", or "mac" on an iOS
+        simulator, which has no clock of its own.
+        """
+        return self._data("app_time") or {}
+
     def app_state(self, app: str) -> dict:
         """One app's state: ``not_installed``, ``not_running``, ``background``
         or ``foreground``, for any app.

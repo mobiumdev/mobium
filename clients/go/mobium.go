@@ -674,6 +674,42 @@ func (d *Device) Batch(ctx context.Context, steps ...Step) ([]StepResult, error)
 	return out.Steps, err
 }
 
+// BatteryStatus is the battery, from Battery.
+type BatteryStatus struct {
+	// Present is false on a device with no battery — an iOS simulator.
+	Present bool `json:"present"`
+	// Level is the charge in percent; nil when there is no battery.
+	Level *int `json:"level,omitempty"`
+	// State is "charging", "discharging", "not_charging", "full" or "unknown".
+	State string `json:"state"`
+	// Plugged is what powers it, on Android; empty on iOS.
+	Plugged string `json:"plugged,omitempty"`
+}
+
+// Battery reads the battery.
+func (d *Device) Battery(ctx context.Context) (BatteryStatus, error) {
+	var out BatteryStatus
+	err := d.data(ctx, "app_battery", map[string]any{}, &out)
+	return out, err
+}
+
+// DeviceClock is the device's clock, from DeviceTime.
+type DeviceClock struct {
+	// Time is RFC 3339 with milliseconds, in the device's own offset.
+	Time string `json:"time"`
+	// Zone is the device's IANA timezone.
+	Zone string `json:"zone,omitempty"`
+	// Clock is "device", or "mac" on an iOS simulator, which has none.
+	Clock string `json:"clock"`
+}
+
+// DeviceTime reads what time the device thinks it is.
+func (d *Device) DeviceTime(ctx context.Context) (DeviceClock, error) {
+	var out DeviceClock
+	err := d.data(ctx, "app_time", map[string]any{}, &out)
+	return out, err
+}
+
 // AppStatus is one app's state, from AppState.
 type AppStatus struct {
 	// State is "not_installed", "not_running", "background" or "foreground".

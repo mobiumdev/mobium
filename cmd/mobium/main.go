@@ -144,6 +144,8 @@ func main() {
 		newBatchCmd(),
 		newStateCmd(),
 		newBackgroundCmd(),
+		newBatteryCmd(),
+		newTimeCmd(),
 	)
 
 	err := root.Execute()
