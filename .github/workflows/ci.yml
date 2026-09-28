@@ -128,12 +128,12 @@ jobs:
 
       # Not `make build`: its output has no .exe, and Windows will not run it.
       - name: Build mobium.exe
-        if: ${{ !cancelled() }}
+        if: success() || failure()
         shell: bash
         run: go build -o bin/mobium.exe ./cmd/mobium
 
       - name: Smoke test
-        if: ${{ !cancelled() }}
+        if: success() || failure()
         shell: bash
         run: |
           set -euo pipefail
@@ -171,6 +171,6 @@ jobs:
       # Everything else. Much of it is not yet written for Windows -- fakes
       # that are shell scripts, executable bits -- and this is what says so.
       - name: make test
-        if: ${{ !cancelled() }}
+        if: success() || failure()
         shell: bash
         run: make test

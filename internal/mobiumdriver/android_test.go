@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/mobiumdev/mobium/internal/device"
+	"github.com/mobiumdev/mobium/internal/fakecmd"
 )
 
 // fakeADB writes a stand-in adb that logs its arguments and replays canned
@@ -17,12 +18,7 @@ func fakeADB(t *testing.T, script string) (*device.ADB, string) {
 	t.Helper()
 	dir := t.TempDir()
 	logPath := filepath.Join(dir, "calls.log")
-	bin := filepath.Join(dir, "adb")
-
-	body := "#!/bin/sh\necho \"$@\" >> " + logPath + "\n" + script
-	if err := os.WriteFile(bin, []byte(body), 0o755); err != nil {
-		t.Fatal(err)
-	}
+	bin := fakecmd.Script(t, dir, "adb", "echo \"$@\" >> "+fakecmd.Path(logPath)+"\n"+script)
 	t.Setenv("MOBIUM_ADB_PATH", bin)
 
 	adb, err := device.New("emulator-5554")

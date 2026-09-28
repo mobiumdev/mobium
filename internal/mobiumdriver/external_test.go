@@ -5,9 +5,12 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/mobiumdev/mobium/internal/fakecmd"
 )
 
 // The driver protocol is the one part of Mobium meant to be implemented by
@@ -24,6 +27,9 @@ func TestMain(m *testing.M) {
 		panic(err)
 	}
 	driverBinary = filepath.Join(dir, "mobium-driver-fake")
+	if runtime.GOOS == "windows" {
+		driverBinary += ".exe"
+	}
 	build := exec.Command("go", "build", "-o", driverBinary, "./testdata/fakedriver")
 	if out, err := build.CombinedOutput(); err != nil {
 		// Not a skip: a reference driver that does not compile is a broken
@@ -382,10 +388,7 @@ func TestFindDriver(t *testing.T) {
 
 	t.Run("found on PATH by convention", func(t *testing.T) {
 		dir := t.TempDir()
-		exe := filepath.Join(dir, "mobium-driver-tizen")
-		if err := os.WriteFile(exe, []byte("#!/bin/sh\n"), 0o755); err != nil {
-			t.Fatal(err)
-		}
+		exe := fakecmd.Script(t, dir, "mobium-driver-tizen", "")
 		t.Setenv("PATH", dir)
 		got, err := FindDriver("tizen")
 		if err != nil || got != exe {
