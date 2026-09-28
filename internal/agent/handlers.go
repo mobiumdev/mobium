@@ -161,7 +161,12 @@ func (h *Handlers) Call(name string, args map[string]interface{}) (*ToolsCallRes
 	h.mu.Lock()
 	defer h.mu.Unlock()
 
-	ctx, cancel := context.WithTimeout(context.Background(), callTimeout)
+	// A batch has no deadline of its own: each of its steps has the whole
+	// call timeout, as it would called alone.
+	ctx, cancel := context.WithCancel(context.Background())
+	if name != "app_batch" {
+		ctx, cancel = context.WithTimeout(ctx, callTimeout)
+	}
 	defer cancel()
 
 	h.handled = nil
@@ -284,6 +289,8 @@ func (h *Handlers) dispatch(ctx context.Context, name string, args map[string]in
 		return h.dialogs(ctx, args)
 	case "app_doctor":
 		return h.doctor(ctx, args)
+	case "app_batch":
+		return h.batch(ctx, args)
 	default:
 		return nil, mobiumerr.New(mobiumerr.InvalidArgument, "unknown tool %q (have: %s)", name, strings.Join(ToolNames(), ", "))
 	}

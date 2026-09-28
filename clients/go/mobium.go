@@ -36,6 +36,7 @@ package mobium
 import (
 	"context"
 	"encoding/base64"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
@@ -637,6 +638,40 @@ func (d *Device) ClearData(ctx context.Context, app string) (ClearedData, error)
 	var out ClearedData
 	err := d.data(ctx, "app_clear_data", map[string]any{"app": app}, &out)
 	return out, err
+}
+
+// Step is one call in a Batch: a tool and the arguments it takes on its own.
+type Step struct {
+	Name      string         `json:"name"`
+	Arguments map[string]any `json:"arguments,omitempty"`
+}
+
+// StepResult is one step's answer in a Batch: its text, and its data as the
+// tool's own result, to decode with json.Unmarshal into what that tool
+// returns. Image says it answered with an image — a screenshot with no path.
+type StepResult struct {
+	Name  string          `json:"name"`
+	Text  string          `json:"text"`
+	Data  json.RawMessage `json:"data,omitempty"`
+	Image bool            `json:"image,omitempty"`
+}
+
+// Batch runs several tools in order, on this device, in one call:
+//
+//	d.Batch(ctx,
+//		mobium.Step{Name: "app_tap", Arguments: map[string]any{"target": "text=Sign in"}},
+//		mobium.Step{Name: "app_wait_for", Arguments: map[string]any{"target": "text=Welcome"}},
+//	)
+//
+// Every step is checked before the first runs, and the batch stops at the
+// first failure with that step's own error; its Details hold "step" and what
+// "completed" before it.
+func (d *Device) Batch(ctx context.Context, steps ...Step) ([]StepResult, error) {
+	var out struct {
+		Steps []StepResult `json:"steps"`
+	}
+	err := d.data(ctx, "app_batch", map[string]any{"steps": steps}, &out)
+	return out.Steps, err
 }
 
 // OpenURL opens a URL or deep link — the quickest way to a specific screen —

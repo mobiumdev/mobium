@@ -506,6 +506,33 @@ class Device:
         """
         return self._data("app_clear_data", {"app": app}) or {}
 
+    def batch(self, steps: list[Any]) -> list[dict]:
+        """Run several tools in order, on this device, in one call.
+
+        Each step is ``(tool, arguments)`` or ``{"name": tool, "arguments":
+        {...}}``, with the arguments that tool takes called on its own::
+
+            device.batch([
+                ("app_tap", {"target": "text=Sign in"}),
+                ("app_fill", {"target": "testid=user", "text": "mobium"}),
+                ("app_wait_for", {"target": "text=Welcome"}),
+            ])
+
+        Every step is checked before the first runs, and the batch stops at
+        the first failure, raising that step's own exception; its
+        ``details`` hold ``step`` and what ``completed`` before it. Returns
+        each step's ``name``, ``text`` and ``data``, in order.
+        """
+        wire = []
+        for s in steps:
+            if isinstance(s, tuple):
+                name, args = s
+                wire.append({"name": name, "arguments": args or {}})
+            else:
+                wire.append(s)
+        data = self._data("app_batch", {"steps": wire}) or {}
+        return list(data.get("steps") or [])
+
     def open_url(self, url: str) -> None:
         """Open a URL or deep link — the quickest way to a specific screen."""
         self._call("app_open_url", {"url": url})

@@ -774,6 +774,26 @@ export class Device {
     return (await this.#data('app_clear_data', { app })) || {}
   }
 
+  /**
+   * Runs several tools in order, on this device, in one call. Each step is
+   * `{ name, arguments }` — a tool and the arguments it takes on its own:
+   *
+   *   await device.batch([
+   *     { name: 'app_tap', arguments: { target: 'text=Sign in' } },
+   *     { name: 'app_fill', arguments: { target: 'testid=user', text: 'mobium' } },
+   *     { name: 'app_wait_for', arguments: { target: 'text=Welcome' } },
+   *   ])
+   *
+   * Every step is checked before the first runs, and the batch stops at the
+   * first failure, throwing that step's own error; its `details` hold `step`
+   * and what `completed` before it. Resolves to each step's `name`, `text`
+   * and `data`, in order.
+   */
+  async batch(steps) {
+    const data = (await this.#data('app_batch', { steps })) || {}
+    return data.steps || []
+  }
+
   /** Open a URL or deep link — the quickest way to a specific screen. */
   async openUrl(url) {
     await this.#text('app_open_url', { url })

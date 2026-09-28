@@ -102,3 +102,61 @@ func TestFilesTravelAsContent(t *testing.T) {
 		t.Error("a start was rewritten")
 	}
 }
+
+// A batch's steps are calls too: each step's relative path is made the
+// caller's, and with the daemon elsewhere each step's file travels as
+// content and comes back saved where that step asked — while a step that
+// asked for its image inline keeps it.
+func TestBatchStepsFilesAreEachReadied(t *testing.T) {
+	dir := t.TempDir()
+	t.Chdir(dir)
+	t.Setenv("MOBIUM_FILES", "content")
+
+	gpx := filepath.Join(dir, "r.gpx")
+	os.WriteFile(gpx, []byte("<gpx/>"), 0o644)
+	route := map[string]interface{}{"gpx": "r.gpx"}
+	saved := map[string]interface{}{"path": "shots/a.png"}
+	args := map[string]interface{}{"steps": []interface{}{
+		map[string]interface{}{"name": "app_location", "arguments": route},
+		map[string]interface{}{"name": "app_screenshot", "arguments": saved},
+		map[string]interface{}{"name": "app_screenshot"},
+	}}
+	finish, err := prepareFiles("app_batch", args)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if route["gpx"] != nil || route["gpx_data"] != "<gpx/>" {
+		t.Errorf("step 1 was not readied: %v", route)
+	}
+	if saved["path"] != nil {
+		t.Errorf("step 2's path went to the daemon: %v", saved)
+	}
+
+	png := func(s string) agent.Content {
+		return agent.Content{Type: "image", Data: base64.StdEncoding.EncodeToString([]byte(s)), MimeType: "image/png"}
+	}
+	back := agent.BatchResult(agent.BatchView{Steps: []agent.BatchStep{
+		{Name: "app_location", Text: "following 2 points"},
+		{Name: "app_screenshot", Image: true},
+		{Name: "app_screenshot", Image: true},
+	}}, []agent.Content{png("first"), png("second")})
+	r, err := finish(back)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := filepath.Join(dir, "shots", "a.png")
+	if b, _ := os.ReadFile(want); string(b) != "first" {
+		t.Errorf("step 2's screenshot was saved as %q", b)
+	}
+	if len(r.Content) != 2 || r.Content[1].Type != "image" {
+		t.Fatalf("content = %+v, want the text and step 3's image", r.Content)
+	}
+	if b, _ := base64.StdEncoding.DecodeString(r.Content[1].Data); string(b) != "second" {
+		t.Errorf("the image kept is %q, want step 3's", b)
+	}
+	text := r.Content[0].Text
+	if !strings.Contains(text, "2. app_screenshot: ") || !strings.Contains(text, want) ||
+		!strings.Contains(text, "3. app_screenshot: image 1 below") {
+		t.Errorf("text = %q", text)
+	}
+}

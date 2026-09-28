@@ -177,6 +177,17 @@ passed to `type`.
 - `mobium long-press @e4` — open a context menu
 - `mobium screenshot -o shot.png` — capture the screen
 
+### Several steps in one call
+
+- `mobium batch steps.json` (or `-` for stdin) — run a known sequence in one
+  call: `[{"name": "app_tap", "arguments": {"target": "text=Sign in"}}, ...]`,
+  each step a tool and the arguments it takes on its own
+
+Every step is checked before the first runs, and the batch stops at the
+first failure with that step's own error and exit status. Use it for steps
+whose outcome you do not need to read before choosing the next; after an
+`app_map` step, prefer locators to refs, since the map replaces them.
+
 ### Locators
 
 Locators work the same on both platforms, so one script targets either:

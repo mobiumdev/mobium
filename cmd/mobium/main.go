@@ -141,6 +141,7 @@ func main() {
 		newPipeCmd(),
 		newMCPCmd(),
 		newGridCmd(),
+		newBatchCmd(),
 	)
 
 	err := root.Execute()

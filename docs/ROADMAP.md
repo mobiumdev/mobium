@@ -68,6 +68,21 @@ this is what is not.
   each call to its device's own lock would remove the wait in one daemon, and
   means reworking how every handler touches shared state.
 
+- **An app's state, and sending it to the background** (written down
+  2026-09-28): not installed, not running, in the background or in front,
+  per app rather than only the one in front; and backgrounding it for a
+  number of seconds, which is how a resume path is tested.
+- **Battery and the device's clock** (written down 2026-09-28): the level
+  and whether it is charging, and the time as the device has it, which is
+  what a test of a timezone or a clock-dependent screen checks against.
+- **Shake** (written down 2026-09-28): the gesture behind shake-to-undo and
+  shake-to-report. A simulator can be sent one; nothing outside a real phone
+  can shake it, so a phone would refuse.
+- **Pulling a file off the device** (written down 2026-09-28), the other
+  half of seeding one below: an export, a log an app wrote, a download.
+- **Booting and shutting down emulators and simulators** (written down
+  2026-09-28). `devices` lists them; starting one is still the platform's
+  own command.
 - **Seeing an app's outgoing intents** on Android, so a test can assert that
   "share" asked for the chooser with the right text, without stubbing it.
 - **Sliders**, and range sliders, as a first-class action.

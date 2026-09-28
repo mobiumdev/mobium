@@ -34,6 +34,9 @@ command mentions them.
 | `app_appearance` | `appearance` | string | appearance |
 | `app_appearance` | `device` | string | _global_ --device |
 | `app_appearance` | `driver` | string | _global_ --driver |
+| `app_batch` | `device` | string | _global_ --device |
+| `app_batch` | `driver` | string | _global_ --driver |
+| `app_batch` | `steps` | array | batch |
 | `app_call` | `action` | string | call |
 | `app_call` | `device` | string | _global_ --device |
 | `app_call` | `driver` | string | _global_ --driver |
@@ -275,6 +278,7 @@ arguments and the two global flags.
 | `alert` | app_alert | --text | action, text |
 | `appearance` | app_appearance | — | appearance |
 | `apps` | app_list_apps | --system | system |
+| `batch` | app_batch | — | steps |
 | `call` | app_call | --number | action, number |
 | `check` | app_check | — | checked, target |
 | `clear-data` | app_clear_data | — | app |

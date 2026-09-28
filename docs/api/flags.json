@@ -95,6 +95,32 @@
       "global": true
     },
     {
+      "tool": "app_batch",
+      "arg": "device",
+      "type": "string",
+      "setBy": [
+        "--device"
+      ],
+      "global": true
+    },
+    {
+      "tool": "app_batch",
+      "arg": "driver",
+      "type": "string",
+      "setBy": [
+        "--driver"
+      ],
+      "global": true
+    },
+    {
+      "tool": "app_batch",
+      "arg": "steps",
+      "type": "array",
+      "setBy": [
+        "batch"
+      ]
+    },
+    {
       "tool": "app_call",
       "arg": "action",
       "type": "string",
@@ -2065,6 +2091,15 @@
       ],
       "sends": [
         "system"
+      ]
+    },
+    {
+      "command": "batch",
+      "tools": [
+        "app_batch"
+      ],
+      "sends": [
+        "steps"
       ]
     },
     {

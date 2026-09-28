@@ -96,6 +96,21 @@ export interface Point {
 /** A tool's structured answer, for the calls that return one as is. */
 export type Data = Record<string, unknown>
 
+/** One call in a batch: a tool and the arguments it takes on its own. */
+export interface BatchStep {
+  name: string
+  arguments?: Data
+}
+
+/** One step's answer in a batch. */
+export interface BatchStepResult {
+  name: string
+  text: string
+  data?: unknown
+  /** The step answered with an image — a screenshot with no path. */
+  image?: boolean
+}
+
 // -- options ---------------------------------------------------------------
 
 export interface ConnectOptions {
@@ -196,6 +211,8 @@ export class Device {
   install(path: string): Promise<string>
   uninstall(app: string): Promise<void>
   clearData(app: string): Promise<Data>
+  /** Runs several tools in order in one call; stops at the first failure. */
+  batch(steps: BatchStep[]): Promise<BatchStepResult[]>
   openUrl(url: string): Promise<void>
   apps(options?: { system?: boolean }): Promise<Data[]>
 

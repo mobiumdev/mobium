@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/mobiumdev/mobium/internal/agent"
 	"github.com/mobiumdev/mobium/internal/device"
@@ -148,4 +149,74 @@ func remarshal(from interface{}, to interface{}) error {
 		return err
 	}
 	return json.Unmarshal(raw, to)
+}
+
+// prepareBatchFiles readies each step of a batch as prepareFiles readies a
+// call of its own, and returns what applies each step's finish to that
+// step's answer — saving a screenshot where the step asked, say — before the
+// batch's answer is rebuilt around them.
+func prepareBatchFiles(args map[string]interface{}) (func(*agent.ToolsCallResult) (*agent.ToolsCallResult, error), error) {
+	steps, _ := args["steps"].([]interface{})
+	finishes := make([]func(*agent.ToolsCallResult) (*agent.ToolsCallResult, error), len(steps))
+	for i, item := range steps {
+		// A malformed step is left for the daemon, which refuses it with
+		// its number before anything runs.
+		obj, _ := item.(map[string]interface{})
+		name, _ := obj["name"].(string)
+		stepArgs, _ := obj["arguments"].(map[string]interface{})
+		if name == "" || name == "app_batch" || stepArgs == nil {
+			continue
+		}
+		f, err := prepareFiles(name, stepArgs)
+		if err != nil {
+			return nil, fmt.Errorf("step %d (%s): %w", i+1, name, err)
+		}
+		finishes[i] = f
+	}
+	return func(r *agent.ToolsCallResult) (*agent.ToolsCallResult, error) {
+		if r.IsError {
+			return r, nil
+		}
+		var v agent.BatchView
+		if err := remarshal(r.StructuredContent, &v); err != nil {
+			return r, nil
+		}
+		var in, out []agent.Content
+		for _, c := range r.Content {
+			if c.Type == "image" {
+				in = append(in, c)
+			}
+		}
+		for i := range v.Steps {
+			st := &v.Steps[i]
+			one := &agent.ToolsCallResult{Content: []agent.Content{{Type: "text", Text: st.Text}},
+				StructuredContent: st.Data}
+			if st.Image && len(in) > 0 {
+				one.Content = append(one.Content, in[0])
+				in = in[1:]
+			}
+			if i < len(finishes) && finishes[i] != nil {
+				done, err := finishes[i](one)
+				if err != nil {
+					return nil, fmt.Errorf("step %d (%s): %w", i+1, st.Name, err)
+				}
+				one = done
+			}
+			st.Text, st.Data, st.Image = "", one.StructuredContent, false
+			var texts []string
+			for _, c := range one.Content {
+				switch c.Type {
+				case "text":
+					if c.Text != "" {
+						texts = append(texts, c.Text)
+					}
+				case "image":
+					out = append(out, c)
+					st.Image = true
+				}
+			}
+			st.Text = strings.Join(texts, "\n")
+		}
+		return agent.BatchResult(v, out), nil
+	}, nil
 }
