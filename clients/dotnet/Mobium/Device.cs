@@ -345,9 +345,9 @@ namespace Mobium
             Act("app_revoke", Args("app", app, "permissions", permissions));
 
         /// <summary>
-        /// Puts permissions back to their defaults. iOS can reset one app;
-        /// Android cannot — <c>pm reset-permissions</c> is device-wide — so
-        /// pass <c>null</c> there rather than an app.
+        /// Puts permissions back to asking. Naming an app resets only that
+        /// app's, on both platforms; on Android that stops the app if it had a
+        /// permission granted. Pass <c>null</c> to reset every app on the device.
         /// </summary>
         public void ResetPermissions(string app) =>
             Act("app_reset_permissions", app == null ? Args() : Args("app", app));

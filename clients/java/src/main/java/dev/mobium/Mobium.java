@@ -675,11 +675,11 @@ public final class Mobium implements AutoCloseable {
     }
 
     /**
-     * Puts permissions back to their defaults. iOS can reset one app; Android
-     * cannot — {@code pm reset-permissions} is device-wide — so pass
-     * {@code null} there rather than an app.
+     * Puts permissions back to asking. Naming an app resets only that app's,
+     * on both platforms; on Android that stops the app if it had a permission
+     * granted.
      *
-     * @param app the app on iOS; null on Android, where the reset is device-wide
+     * @param app the package name or bundle id; null to reset every app on the device
      */
     public void resetPermissions(String app) {
         act("app_reset_permissions", app == null ? args() : args("app", app));

@@ -811,9 +811,9 @@ export class Device {
   /**
    * Put permissions back to their defaults, so the app prompts again.
    *
-   * iOS can reset one app. Android cannot — `pm reset-permissions` is
-   * device-wide — so omit app there; naming one throws rather than resetting
-   * every app on the device.
+   * Naming an app resets only that app's, on both platforms; on Android that
+   * stops the app if it had a permission granted. Omit app to reset every app
+   * on the device.
    */
   async resetPermissions(app) {
     await this.#text('app_reset_permissions', app ? { app } : {})

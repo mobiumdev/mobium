@@ -672,9 +672,9 @@ func (d *Device) Revoke(ctx context.Context, app string, permissions ...string) 
 // ResetPermissions puts permissions back to their defaults, so the app
 // prompts again on next use.
 //
-// iOS can reset one app. Android cannot — `pm reset-permissions` is
-// device-wide — so pass "" there; naming an app returns an error rather than
-// resetting every app on the device.
+// Naming an app resets only that app's, on both platforms; on Android that
+// stops the app if it had a permission granted. Pass "" to reset every app
+// on the device.
 func (d *Device) ResetPermissions(ctx context.Context, app string) error {
 	args := map[string]any{}
 	if app != "" {

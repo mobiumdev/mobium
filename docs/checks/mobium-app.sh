@@ -495,17 +495,10 @@ fi
 #
 # Reset first, and before typing rather than after: the permission has already
 # been granted by the location section above, so without this the dialog never
-# appears -- and `pm reset-permissions` can restart the app, which would
-# destroy the very state being measured and pass for the wrong reason.
-if [ "$PLATFORM" = "ios" ]; then
-  $M reset-permissions "$APP" >/dev/null 2>&1 || true
-elif [ -n "$ANDROID_PHONE" ]; then
-  # Android's reset is device-wide, and on a person's phone would reset
-  # every app's permissions. Revoking this one is enough for the dialog.
-  $M revoke "$APP" location >/dev/null 2>&1 || true
-else
-  $M reset-permissions >/dev/null 2>&1 || true
-fi
+# appears -- and a reset can end the app's process on Android, which would
+# destroy the very state being measured and pass for the wrong reason. It
+# names the app, so on a person's phone nothing else is touched.
+$M reset-permissions "$APP" >/dev/null 2>&1 || true
 $M terminate $APP >/dev/null 2>&1 || true
 $M launch $APP >/dev/null
 sleep 2

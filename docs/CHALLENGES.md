@@ -7,7 +7,7 @@ the source.
 
 The pattern across them is the reason the document exists: **almost nothing
 here was found by reading code or by a test written from imagination.** Of
-150 defects, 119 were found only by running against a real device. The other
+151 defects, 120 were found only by running against a real device. The other
 thirty-one — 4, 5, 6, 14, 23, 24, 32, 35, 36, 39, 44, 50, 53, 54, 57, 66, 89,
 99, 100, 121, 123, 129, 130, 133, 134, 139, 140, 141, 142, 144 and 150 — came from reading code, the compiler, a test, a linter,
 cross-checking a computed number against a screenshot, using the tooling on
@@ -3403,6 +3403,36 @@ check that packed the client, the one that installed it into a clean project
 included, ran in a checkout that had the file on disk, so none could fail.
 The icon is excepted beside the branding, and committed. A clean clone is
 the fixture a user has; a working tree is not.
+
+### 151. A per-app permission reset that could not see what it failed to clear
+
+**Found by:** running `mobium-app.sh` after `dialogs.sh` on the Pixel 7 AVD,
+the first time both reset MobiumApp's permissions alone. The location check
+failed: the app had approximate location only, and the reset had said it put
+every permission back to asking.
+
+Android prints a permission flag it has no name for as a number, and after a
+person chooses approximate location the line ends `|524288]`. The pattern
+read the flags as capitals and pipes, so it failed to match the list at all
+and every flag on the line read as absent: the reset saw no `USER_SET` to
+clear, and its read-back — the same parser — saw none left. It now reads
+whatever sits between the brackets. The number is the choice of precise or
+approximate, which the next prompt preselects; `pm clear-permission-flags`
+takes five named flags and not that one, and nothing else clears it for one
+app, so after an approximate choice the reset now says it kept it. After a
+precise choice the prompt preselects precise, as on a fresh install, and
+nothing is said. A read-back that shares its parser with the write is not a
+second opinion.
+
+The Pixel 8 Pro, on Android 17, added two things the AVD had not shown. It
+names the flag — `SELECTED_LOCATION_ACCURACY` where Android 15 printed the
+number — so both are read. And it grants MobiumApp `ACCESS_LOCAL_NETWORK` by
+itself, `REVOKE_WHEN_REQUESTED` with no answer recorded, which `pm revoke`
+leaves granted while exiting 0; the read-back refused the reset, rightly,
+and `dialogs.sh`, discarding the reset's output under `set -e`, stopped
+after its share-sheet row with nothing on screen. Such a permission is now
+kept and named, since a fresh install has it too, and the check says why a
+reset failed.
 
 ## Findings that were not defects
 

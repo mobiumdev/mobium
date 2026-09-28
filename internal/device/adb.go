@@ -539,10 +539,15 @@ func (a *ADB) RuntimePermissions(ctx context.Context, pkg string) (map[string]bo
 		perms[m[1]] = m[2] == "true"
 	}
 	if len(perms) == 0 {
-		return nil, mobiumerr.New(mobiumerr.InvalidArgument, "%s declares no runtime permissions", pkg)
+		return nil, mobiumerr.Wrap(mobiumerr.InvalidArgument, ErrNoRuntimePermissions,
+			"%s declares no runtime permissions", pkg)
 	}
 	return perms, nil
 }
+
+// ErrNoRuntimePermissions is the cause when an app declares none: a grant
+// has nothing to grant, and a reset had nothing to reset.
+var ErrNoRuntimePermissions = mobiumerr.New(mobiumerr.InvalidArgument, "no runtime permissions declared")
 
 // SetPermission grants or revokes one runtime permission.
 //

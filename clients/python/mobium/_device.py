@@ -539,9 +539,9 @@ class Device:
     def reset_permissions(self, app: str | None = None) -> None:
         """Put permissions back to their defaults, so the app prompts again.
 
-        iOS can reset one app. Android cannot — `pm reset-permissions` is
-        device-wide — so omit app there; naming one raises rather than
-        resetting every app on the device.
+        Naming an app resets only that app's, on both platforms; on Android
+        that stops the app if it had a permission granted. Omit app to reset
+        every app on the device.
         """
         self._call("app_reset_permissions", {"app": app} if app else None)
 

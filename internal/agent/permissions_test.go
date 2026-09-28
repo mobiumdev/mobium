@@ -5,7 +5,9 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/mobiumdev/mobium/internal/device"
 	"github.com/mobiumdev/mobium/internal/mobiumdriver"
+	"github.com/mobiumdev/mobium/internal/mobiumerr"
 )
 
 // permDriver is a device whose permission state can be inspected and changed,
@@ -18,6 +20,10 @@ type permDriver struct {
 	// changes nothing, which is how `pm grant` behaves for one the app never
 	// declared.
 	silentlyIgnores string
+	// fixed names permissions the system decides, which a reset leaves.
+	fixed map[string]bool
+	// none means the app declares no runtime permissions at all.
+	none bool
 }
 
 func (d *permDriver) SetPermission(ctx context.Context, appID, perm string, grant bool) error {
@@ -33,10 +39,18 @@ func (d *permDriver) SetPermission(ctx context.Context, appID, perm string, gran
 
 func (d *permDriver) ResetPermissions(ctx context.Context, appID string) error {
 	d.calls = append(d.calls, "reset "+appID)
+	for k := range d.state {
+		if !d.fixed[k] {
+			d.state[k] = false
+		}
+	}
 	return nil
 }
 
 func (d *permDriver) PermissionState(ctx context.Context, appID string) (map[string]bool, error) {
+	if d.none {
+		return nil, mobiumerr.Wrap(mobiumerr.InvalidArgument, device.ErrNoRuntimePermissions, "%s declares none", appID)
+	}
 	out := map[string]bool{}
 	for k, v := range d.state {
 		out[k] = v
@@ -250,5 +264,55 @@ func TestCommaSeparatedPermissionsAreAccepted(t *testing.T) {
 	}
 	if len(d.calls) != 2 {
 		t.Errorf("calls = %v", d.calls)
+	}
+}
+
+// Resetting one app says, per permission, what it is now — read back, not
+// assumed — and names the ones the system fixed, which nobody can reset.
+func TestResetOneAppReportsEachPermission(t *testing.T) {
+	h, _, d := withPerms(t, BackendUIA2, map[string]bool{
+		"android.permission.CAMERA":               true,
+		"android.permission.ACCESS_FINE_LOCATION": true,
+		"android.permission.POST_NOTIFICATIONS":   true,
+	})
+	d.fixed = map[string]bool{"android.permission.POST_NOTIFICATIONS": true}
+	res, err := h.Call("app_reset_permissions", map[string]interface{}{"app": "org.example"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(d.calls) != 1 || d.calls[0] != "reset org.example" {
+		t.Errorf("calls = %v, want one reset of the app", d.calls)
+	}
+	text := res.Content[0].Text
+	if !strings.Contains(text, "reset 2 permissions for org.example to asking: ACCESS_FINE_LOCATION, CAMERA") ||
+		!strings.Contains(text, "kept POST_NOTIFICATIONS: fixed by the system") {
+		t.Errorf("text = %q", text)
+	}
+	v := res.StructuredContent.(PermissionView)
+	if len(v.Permissions) != 3 {
+		t.Fatalf("entries = %+v", v.Permissions)
+	}
+	for _, e := range v.Permissions {
+		fixed := e.Name == "android.permission.POST_NOTIFICATIONS"
+		if e.Applied == fixed || (e.Skipped != "") != fixed {
+			t.Errorf("%+v: applied and skipped disagree with it being fixed=%v", e, fixed)
+		}
+	}
+}
+
+func TestResetOneAppWithNoPermissionsIsNotAFailure(t *testing.T) {
+	h, _, d := withPerms(t, BackendUIA2, nil)
+	d.none = true
+	res, err := h.Call("app_reset_permissions", map[string]interface{}{"app": "org.example"})
+	if err != nil || !strings.Contains(res.Content[0].Text, "had none to reset") {
+		t.Errorf("%v, %v", res, err)
+	}
+}
+
+func TestResetEveryAppSaysSo(t *testing.T) {
+	h, _, d := withPerms(t, BackendUIA2, map[string]bool{"android.permission.CAMERA": true})
+	res, err := h.Call("app_reset_permissions", map[string]interface{}{})
+	if err != nil || res.Content[0].Text != "reset permissions for every app on the device" || d.calls[0] != "reset " {
+		t.Errorf("%v, %v, calls %v", res, err, d.calls)
 	}
 }

@@ -96,8 +96,8 @@ the table, and `login.sh`, `keyboard.sh`, `autowait.sh`, `obstruction.sh`,
 clients — the Java one timed out once waiting for Settings' first screen and
 passed on the rerun, cause not found. A phone is somebody's, and four checks
 had to learn that: `dialogs.sh` and `mobium-app.sh` reset permissions with
-Android's reset, which is **device-wide**, and on a phone now reinstall the
-app or revoke its one permission instead; `device-state.sh` locked a phone
+Android's reset, which is **device-wide**, and now reset MobiumApp's alone,
+which `reset-permissions <app>` does on Android since 2026-09-28; `device-state.sh` locked a phone
 that has a PIN, which cannot be unlocked from outside, and now asks first
 (`cmd lock_settings verify`, answered without locking) and says the lock
 round-trip is **NOT CHECKED**; and `autowait.sh` restores an animation scale
