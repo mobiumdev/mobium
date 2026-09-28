@@ -12,3 +12,8 @@ clients/java/target/
 # .NET build output. bin/ at the top of this file already covers
 # clients/dotnet/*/bin, but obj/ holds the restore and codegen caches.
 clients/dotnet/**/obj/
+
+# Python bytecode, written whenever the client runs; four files slipped in
+# with #31.
+__pycache__/
+*.pyc
