@@ -347,8 +347,17 @@ func GetToolSchemas() []Tool {
 						"type":        "string",
 						"description": "Local path to the .apk or .app.",
 					},
+					"content": map[string]interface{}{
+						"type": "string",
+						"description": "The app itself, base64, instead of a path: a .apk, or a .app " +
+							"directory as a .tar.gz. For a daemon on another machine; the CLI " +
+							"and pipe send it from a path.",
+					},
+					"name": map[string]interface{}{
+						"type":        "string",
+						"description": "With content: the file's name, such as \"app.apk\" or \"MobiumApp.app.tar.gz\".",
+					},
 				}),
-				"required":             []string{"path"},
 				"additionalProperties": false,
 			},
 		},
@@ -666,6 +675,12 @@ func GetToolSchemas() []Tool {
 					"path": map[string]interface{}{
 						"type":        "string",
 						"description": "Where to save the video, on stop — an .mp4 on this machine.",
+					},
+					"return_data": map[string]interface{}{
+						"type": "boolean",
+						"description": "On stop without a path: return the video, base64, instead of " +
+							"saving it — for a daemon on another machine; the CLI and pipe ask for it " +
+							"and save it where the caller said.",
 					},
 				}),
 				"additionalProperties": false,
@@ -1132,6 +1147,11 @@ func GetToolSchemas() []Tool {
 						"description": "Path to a GPX file to follow instead of waypoints. " +
 							"Track points are used first, then route points, then loose " +
 							"waypoints.",
+					},
+					"gpx_data": map[string]interface{}{
+						"type": "string",
+						"description": "A GPX document's content, instead of gpx's path — for a daemon " +
+							"on another machine; the CLI and pipe send it from a path.",
 					},
 					"speed": map[string]interface{}{
 						"type":        "number",

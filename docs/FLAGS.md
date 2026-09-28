@@ -94,8 +94,10 @@ command mentions them.
 | `app_grant` | `device` | string | _global_ --device |
 | `app_grant` | `driver` | string | _global_ --driver |
 | `app_grant` | `permissions` | array | grant |
+| `app_install` | `content` | string | — |
 | `app_install` | `device` | string | _global_ --device |
 | `app_install` | `driver` | string | _global_ --driver |
+| `app_install` | `name` | string | — |
 | `app_install` | `path` | string | install |
 | `app_keyboard` | `device` | string | _global_ --device |
 | `app_keyboard` | `driver` | string | _global_ --driver |
@@ -116,6 +118,7 @@ command mentions them.
 | `app_location` | `device` | string | _global_ --device |
 | `app_location` | `driver` | string | _global_ --driver |
 | `app_location` | `gpx` | string | location |
+| `app_location` | `gpx_data` | string | — |
 | `app_location` | `latitude` | number | location |
 | `app_location` | `longitude` | number | location |
 | `app_location` | `speed` | number | location |
@@ -178,6 +181,7 @@ command mentions them.
 | `app_record` | `device` | string | _global_ --device |
 | `app_record` | `driver` | string | _global_ --driver |
 | `app_record` | `path` | string | record |
+| `app_record` | `return_data` | boolean | — |
 | `app_reset_permissions` | `app` | string | reset-permissions |
 | `app_reset_permissions` | `device` | string | _global_ --device |
 | `app_reset_permissions` | `driver` | string | _global_ --driver |

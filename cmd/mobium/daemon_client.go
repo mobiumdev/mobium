@@ -44,9 +44,21 @@ func daemonCall(tool string, args map[string]interface{}) (*agent.ToolsCallResul
 		}
 	}
 
+	// When the daemon's disk is not the caller's, a path means a file on the
+	// wrong machine: send the file's content instead, and save what comes
+	// back where the caller asked.
+	finish := func(r *agent.ToolsCallResult) (*agent.ToolsCallResult, error) { return r, nil }
+	if filesAsContent() {
+		f, err := sendFilesAsContent(tool, args)
+		if err != nil {
+			return nil, err
+		}
+		finish = f
+	}
+
 	result, err := daemon.Call(tool, args)
 	if err == nil {
-		return result, nil
+		return finish(result)
 	}
 	// A tool that ran and failed is an answer, not a reason to start a second
 	// daemon.
@@ -58,7 +70,11 @@ func daemonCall(tool string, args map[string]interface{}) (*agent.ToolsCallResul
 	if err := autoStartDaemon(); err != nil {
 		return nil, err
 	}
-	return daemon.Call(tool, args)
+	result, err = daemon.Call(tool, args)
+	if err != nil {
+		return nil, err
+	}
+	return finish(result)
 }
 
 // autoStartDaemon spawns a detached daemon and waits for it to answer.

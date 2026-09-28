@@ -51,9 +51,15 @@ func parseGPX(path string) ([]device.Point, error) {
 	if err != nil {
 		return nil, fmt.Errorf("cannot read %s: %w", path, err)
 	}
+	return parseGPXData(raw, path)
+}
+
+// parseGPXData reads a route from a GPX document's bytes — the file's content,
+// sent by a caller whose disk is not the daemon's. source names it in errors.
+func parseGPXData(raw []byte, source string) ([]device.Point, error) {
 	var f gpxFile
 	if err := xml.Unmarshal(raw, &f); err != nil {
-		return nil, fmt.Errorf("%s is not readable as GPX: %w", path, err)
+		return nil, fmt.Errorf("%s is not readable as GPX: %w", source, err)
 	}
 	var out []device.Point
 	for _, t := range f.Tracks {
@@ -72,7 +78,7 @@ func parseGPX(path string) ([]device.Point, error) {
 		out = append(out, device.Point{Lat: p.Lat, Lon: p.Lon})
 	}
 	if len(out) == 0 {
-		return nil, mobiumerr.New(mobiumerr.InvalidArgument, "%s has no track points, route points or waypoints", path)
+		return nil, mobiumerr.New(mobiumerr.InvalidArgument, "%s has no track points, route points or waypoints", source)
 	}
 	return out, nil
 }

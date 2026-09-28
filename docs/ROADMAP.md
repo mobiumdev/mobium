@@ -99,13 +99,27 @@ this is what is not.
   reported the node's path, and `install` looked for the app there; the
   CLI's GPX file is the same case. Relative paths showed it even on one
   machine; between two, absolute ones would too.
-  1. **Stage 1: files as content.** Those four arguments carry the file —
-     an upload for `install` and a GPX route, the bytes back for a
-     screenshot or a recording — instead of a path on the daemon's disk.
-     Worth doing without a grid.
+  1. **Stage 1: files as content — done, 2026-09-28.** With
+     `MOBIUM_FILES=content`, the CLI and `pipe` send `install`'s app (a
+     `.app` directory as a `.tar.gz`, links kept) and a GPX route as their
+     content, and have a screenshot or a recording come back and saved where
+     the caller asked, answering as the daemon would have; the daemon writes
+     what it receives to a temporary directory and removes it. Verified on an
+     Android emulator and an iPhone simulator, and through an unchanged
+     Python client. It works where the conversion runs — the caller's own
+     `mobium` — so it needs a transport that keeps that process local. SSH
+     already is one: forwarding a node daemon's socket to a local path
+     (`ssh -L <local.sock>:<node.sock>`) and pointing `MOBIUM_HOME` at it
+     ran the CLI's install, GPX route, recording and screenshot, and an
+     unchanged Python client, against the node's daemon, every file landing
+     in the caller's folder and none on the node. Tried against this Mac
+     standing in for a node.
   2. **Stage 2: a remote transport,** `mobium pipe --remote <node>`,
-     authenticated and encrypted — possibly SSH itself, since it already is
-     both. The daemon's socket stays owner-only and local.
+     authenticated and encrypted. Stage 1's run says it can be SSH's own
+     socket forwarding, set up and torn down by mobium — with
+     `MOBIUM_FILES=content` set for the caller, the node's daemon started
+     under its own home, and the forward's owner-only socket checked. The
+     daemon's own socket stays owner-only and local to the node.
   3. **Stage 3: a router,** Selenium Grid's shape: a registry of nodes and
      their devices, a lease that keeps a device to one run, routing a
      session by platform and model, a queue when nothing matches is free,
