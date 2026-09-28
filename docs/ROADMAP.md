@@ -88,6 +88,11 @@ this is what is not.
 - **Uploads and downloads** through the system file pickers.
 - **Frames and iframes** inside a WebView.
 - **Accessibility checks** as a side effect of the actions already being taken.
+- **The iPad's home screen.** On iPadOS 26 WebDriverAgent reports the Dock's
+  folder service as the app in front on the home screen, with nothing to
+  map, where an iPhone reports SpringBoard, so anything that confirms Home by
+  SpringBoard coming forward would read it as a failure. Measured on the
+  iPad mini simulator (CHALLENGES 147); a real iPad not tried.
 - **Fold posture as device state** (written down 2026-09-28), as rotation
   is: read with `cmd device_state state`, set by its override, and each
   change read back. Measured on a Pixel 9 Pro Fold emulator, where all four

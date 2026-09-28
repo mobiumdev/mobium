@@ -111,11 +111,40 @@ func (w *WDA) Start(ctx context.Context, progress func(string)) error {
 	if progress != nil {
 		progress("waiting for WebDriverAgent to start")
 	}
+	// On an iPad the runner's test does not start until the runner leaves
+	// the foreground: on iPadOS 26 it stays in front as a window, and XCTest
+	// logged "Running tests..." and nothing after it, where an iPhone's goes
+	// to the background by itself and carries on. Measured on the iPad mini
+	// (A17 Pro) and iPad Air simulators, iOS 26.5: the server came up three
+	// seconds after another app was brought forward, and never before. So
+	// if it is not answering soon, Settings is opened and closed, which
+	// leaves the home screen in front — the runner's cue. An iPhone answers
+	// before this and never sees it. CHALLENGES 147.
+	if !w.readyWithin(ctx, wdaNudgeAfter) {
+		_ = w.sim.LaunchApp(ctx, "com.apple.Preferences")
+		_ = w.sim.TerminateApp(ctx, "com.apple.Preferences")
+	}
 	if err := w.waitReady(ctx); err != nil {
 		w.teardownLocked(ctx)
 		return err
 	}
 	return w.openLocked(ctx)
+}
+
+// wdaNudgeAfter is how long a simulator's runner gets to answer on its own
+// before it is sent to the background. An iPhone's answered in 6s, cold.
+const wdaNudgeAfter = 10 * time.Second
+
+// readyWithin reports whether the runner answers within d.
+func (w *WDA) readyWithin(ctx context.Context, d time.Duration) bool {
+	deadline := time.Now().Add(d)
+	for time.Now().Before(deadline) && ctx.Err() == nil {
+		if w.w3c.ready(ctx) {
+			return true
+		}
+		time.Sleep(250 * time.Millisecond)
+	}
+	return false
 }
 
 // openLocked opens a session on a runner that is answering, and reads the

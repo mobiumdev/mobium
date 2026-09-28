@@ -7,7 +7,7 @@ the source.
 
 The pattern across them is the reason the document exists: **almost nothing
 here was found by reading code or by a test written from imagination.** Of
-146 defects, 116 were found only by running against a real device. The other
+147 defects, 117 were found only by running against a real device. The other
 thirty — 4, 5, 6, 14, 23, 24, 32, 35, 36, 39, 44, 50, 53, 54, 57, 66, 89,
 99, 100, 121, 123, 129, 130, 133, 134, 139, 140, 141, 142 and 144 — came from reading code, the compiler, a test, a linter,
 cross-checking a computed number against a screenshot, using the tooling on
@@ -3316,6 +3316,26 @@ that the check ran; `TestDeviceCatchesThePlantedTargets` now asserts, on
 MobiumApp's Layout Demo — a 24dp target reported at all eight profiles, and a
 bar an eighth of the screen wide reported exactly at the two below 384dp. With
 the touch minimum lowered to 20dp it fails at the first profile.
+
+### 147. WebDriverAgent never started on an iPad simulator
+
+**Found by:** booting the iPad mini (A17 Pro) simulator for a formflux
+profile: WebDriverAgent did not answer within 90 seconds, twice, with no
+dialog on screen, and the iPad Air failed the same way while the iPhone 17
+Pro started in 6 seconds.
+
+Mobium launches the prebuilt runner and waits for its server. Side by side,
+both runners logged "Running tests..."; the iPhone's then said "Continuing to
+run tests in the background" and its server came up, and the iPad's said
+nothing more. On iPadOS 26 the runner stays in the foreground as a window,
+and XCTest does not proceed until it leaves: launching another app on the
+iPad brought the server up three seconds later. If the runner has not
+answered in ten seconds, Mobium now opens and closes Settings, which leaves
+the home screen in front; an iPhone answers first and never sees it. On the
+iPad mini the first call then answered in 13 seconds, and Settings mapped and
+was driven. The iPad's home screen is a question of its own: WebDriverAgent
+reports the Dock's folder service as the app in front there, with nothing to
+map, where an iPhone reports SpringBoard.
 
 ## Findings that were not defects
 

@@ -194,6 +194,11 @@ var catalog = []Profile{
 		Why:        "440x956pt. The largest iPhone, and 38pt wider than the baseline",
 	},
 	{
+		Name: "ipad-mini", Platform: IOS, WidthPx: 1488, HeightPx: 2266, Scale: 2,
+		DeviceType: "com.apple.CoreSimulator.SimDeviceType.iPad-mini-A17-Pro",
+		Why:        "744x1133pt. The smallest iPad, and the only iOS profile here in the regular width size class, where an iPhone is compact: the nearest iOS has to a foldable's jump from phone to tablet layout, as a second device rather than a transition. Measured on the iPad mini (A17 Pro) simulator, whose runner needed sending to the background before it would start (CHALLENGES 147)",
+	},
+	{
 		Name: "iphone-16e", Platform: IOS, WidthPx: 1170, HeightPx: 2532, Scale: 3,
 		DeviceType: "com.apple.CoreSimulator.SimDeviceType.iPhone-16e",
 		Why:        "390x844pt. The narrowest current iPhone, and 12pt narrower than the baseline — iPhone widths vary far less than Android's, which is why one iOS profile finds much less than one Android one",

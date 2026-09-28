@@ -81,6 +81,7 @@ layout breaks at a real width.
 | --- | --- | --- | --- | --- |
 | `iphone-17-pro` | 1206×2622 | 3× | 402×874 | the verified baseline |
 | `iphone-17-pro-max` | 1320×2868 | 3× | 440×956 | 38pt wider than the baseline |
+| `ipad-mini` | 1488×2266 | 2× | 744×1133 | the only regular-width size class here, where every iPhone is compact — the nearest iOS has to a foldable's phone-to-tablet jump, as a second device rather than a transition |
 | `iphone-16e` | 1170×2532 | 3× | 390×844 | 12pt narrower than the baseline |
 
 ### Two things the arithmetic corrected
