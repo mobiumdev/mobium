@@ -110,15 +110,15 @@ been wrong twice.
 ## Commands that dispatch no tool
 
 - `daemon`
+- `daemon start`
+- `daemon status`
+- `daemon stop`
+- `daemon up`
 - `grid`
+- `grid status`
+- `grid ui`
 - `mcp`
 - `pipe`
-- `start`
-- `status`
-- `status`
-- `stop`
-- `ui`
-- `up`
 
 
 These run the process rather than the device — the daemon's own lifecycle, and
