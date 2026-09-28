@@ -87,7 +87,11 @@ h=$(slide honoring); i=$(slide ignoring)
 [ -n "$h" ] && [ -n "$i" ] || fail "a tap on a sliding target did not reach the app (honoring '$h', ignoring '$i')"
 [ "$i" -ge 1800 ] || fail "the ignoring target — the control — was tapped at ${i}ms, before its 2s slide ended"
 if [ "$state" = "reduceMotion=true" ]; then
-  [ "$h" -lt 1800 ] || fail "with Reduce Motion on, the honoring target still waited ${h}ms"
+  # Not under 1800ms, as on a simulator: a phone takes about two seconds
+  # between one tap and the next, so a target tapped at once still reads
+  # ~2000ms (measured 1913-2031ms, the control 3246-3279ms). Judged against
+  # the control instead: had it waited out a slide too, it would be as late.
+  [ "$h" -lt $((i - 1000)) ] || fail "with Reduce Motion on, the honoring target was tapped at ${h}ms, not clearly before the ignoring one at ${i}ms"
   row "reduce motion" "on, as the phone has it: honoring ${h}ms, ignoring ${i}ms"
   printf '    %-16s %s\n' "stable" "NOT CHECKED — Reduce Motion is on, and a phone's cannot be switched from outside"
 else
@@ -124,6 +128,13 @@ reduce off
 
 fi
 
+if [ -n "$PHONE" ] && [ "$state" = "reduceMotion=true" ]; then
+# MobiumApp honors Reduce Motion by drawing no confetti at all, so with it on
+# there is no burst to tap beside and no piece to refuse — and a tap beside
+# nothing passes whatever mobium does. Said, not passed.
+printf '    %-16s %s\n' "confetti" "NOT CHECKED — with Reduce Motion on the app draws none"
+printf '    %-16s %s\n' "never still" "NOT CHECKED — with Reduce Motion on the app draws none"
+else
 # --- a still button beside a burst of confetti ------------------------------
 open "Motion Demo"
 $M wait testid=celebrateBtn >/dev/null
@@ -168,6 +179,8 @@ done
 row "never still" "a falling piece refused as still moving ($tries burst$( [ $tries = 1 ] || echo s))"
 sleep 10
 $M uncheck testid=confettiExposed >/dev/null
+
+fi
 
 # --- enabled: Log In while it signs in --------------------------------------
 open "Login Demo"
