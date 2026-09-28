@@ -142,6 +142,8 @@ func main() {
 		newMCPCmd(),
 		newGridCmd(),
 		newBatchCmd(),
+		newStateCmd(),
+		newBackgroundCmd(),
 	)
 
 	err := root.Execute()

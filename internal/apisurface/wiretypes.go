@@ -30,6 +30,7 @@ import (
 // "directory under the repository root" and type name.
 var GoWireTypes = map[string][2]string{
 	"App":            {"internal/agent", "AppEntry"},
+	"AppStatus":      {"internal/agent", "AppStateView"},
 	"Bounds":         {"internal/agent", "BoundsView"},
 	"ClearedData":    {"internal/agent", "ClearDataView"},
 	"ConsoleEntry":   {"internal/webview", "ConsoleEntry"},

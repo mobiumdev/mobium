@@ -57,6 +57,7 @@ const (
 	CapClearData        = "clearData"
 	CapSource           = "source"
 	CapAccessibility    = "accessibility"
+	CapAppState         = "appState"
 )
 
 // KnownCapabilities is every capability Mobium understands, for diagnostics
@@ -68,7 +69,7 @@ var KnownCapabilities = []string{
 	CapGeolocation, CapGeolocationState, CapRoutes,
 	CapClipboard, CapClipboardRead, CapAlerts, CapPinch,
 	CapDoubleTap, CapDrag, CapMultiTouch, CapDeviceLogs, CapCrashes, CapKeyboard, CapRecording,
-	CapClearData, CapSource, CapAccessibility,
+	CapClearData, CapSource, CapAccessibility, CapAppState,
 }
 
 // has reports whether d claims the capability. A driver that does not report
@@ -299,6 +300,13 @@ func AsDataClearer(d Driver) (DataClearer, bool) {
 func AsAppPermissionResetter(d Driver) (AppPermissionResetter, bool) {
 	r, ok := d.(AppPermissionResetter)
 	return r, ok && has(d, CapPermissions)
+}
+
+// AsAppStates returns the driver's support for reading an app's state and
+// backgrounding it, if any.
+func AsAppStates(d Driver) (AppStates, bool) {
+	a, ok := d.(AppStates)
+	return a, ok && has(d, CapAppState)
 }
 
 // AsKeyboardRegioner returns the driver's view of where the keyboard is, if

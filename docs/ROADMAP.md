@@ -65,10 +65,6 @@ this is what is not.
   each call to its device's own lock would remove the wait in one daemon, and
   means reworking how every handler touches shared state.
 
-- **An app's state, and sending it to the background** (written down
-  2026-09-28): not installed, not running, in the background or in front,
-  per app rather than only the one in front; and backgrounding it for a
-  number of seconds, which is how a resume path is tested.
 - **Battery and the device's clock** (written down 2026-09-28): the level
   and whether it is charging, and the time as the device has it, which is
   what a test of a timezone or a clock-dependent screen checks against.

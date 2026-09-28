@@ -213,6 +213,10 @@ export class Device {
   clearData(app: string): Promise<Data>
   /** Runs several tools in order in one call; stops at the first failure. */
   batch(steps: BatchStep[]): Promise<BatchStepResult[]>
+  /** One app's state: not_installed, not_running, background or foreground. */
+  appState(app: string): Promise<Data>
+  /** Sends the app in front away for seconds and brings it back. */
+  background(seconds: number, app?: string): Promise<Data>
   openUrl(url: string): Promise<void>
   apps(options?: { system?: boolean }): Promise<Data[]>
 

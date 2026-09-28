@@ -343,6 +343,29 @@ namespace Mobium
         }
 
         /// <summary>
+        /// One app's state, for any app: <c>state</c> is not_installed,
+        /// not_running, background or foreground. An app under its own
+        /// permission prompt is still in front, and <c>covered_by</c> names
+        /// the prompt's process. On iOS a background app also has
+        /// <c>suspended</c>.
+        /// </summary>
+        public IDictionary<string, object?> AppState(string app) =>
+            Data("app_state", Args("app", app));
+
+        /// <summary>
+        /// Sends the app in front away for <paramref name="seconds"/> and
+        /// brings it back, resumed rather than relaunched, confirmed in front
+        /// again. At most 180 seconds; <paramref name="app"/> defaults to the
+        /// one in front.
+        /// </summary>
+        public void Background(double seconds, string? app = null)
+        {
+            var args = Args("seconds", seconds);
+            if (!string.IsNullOrWhiteSpace(app)) args["app"] = app;
+            Act("app_background", args);
+        }
+
+        /// <summary>
         /// Opens a URL or deep link — the quickest way to a specific screen —
         /// and returns the app that ended up in the foreground.
         /// </summary>

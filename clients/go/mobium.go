@@ -674,6 +674,37 @@ func (d *Device) Batch(ctx context.Context, steps ...Step) ([]StepResult, error)
 	return out.Steps, err
 }
 
+// AppStatus is one app's state, from AppState.
+type AppStatus struct {
+	// State is "not_installed", "not_running", "background" or "foreground".
+	State string `json:"state"`
+	// Suspended is, for a background app on iOS, whether it is suspended;
+	// nil on Android, which has nothing that says.
+	Suspended *bool `json:"suspended,omitempty"`
+	// CoveredBy is, for an app in front, the process whose window is over
+	// it — a permission prompt's.
+	CoveredBy string `json:"covered_by,omitempty"`
+}
+
+// AppState reports one app's state, for any app: not installed, not
+// running, in the background or in front.
+func (d *Device) AppState(ctx context.Context, app string) (AppStatus, error) {
+	var out AppStatus
+	err := d.data(ctx, "app_state", map[string]any{"app": app}, &out)
+	return out, err
+}
+
+// Background sends the app in front away for seconds and brings it back,
+// resumed rather than relaunched, confirmed in front again. An empty app
+// means the one in front. At most 180 seconds.
+func (d *Device) Background(ctx context.Context, seconds float64, app string) error {
+	args := map[string]any{"seconds": seconds}
+	if app != "" {
+		args["app"] = app
+	}
+	return d.act(ctx, "app_background", args)
+}
+
 // OpenURL opens a URL or deep link — the quickest way to a specific screen —
 // and returns the app that ended up in the foreground.
 func (d *Device) OpenURL(ctx context.Context, url string) (string, error) {

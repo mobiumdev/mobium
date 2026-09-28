@@ -95,6 +95,40 @@
       "global": true
     },
     {
+      "tool": "app_background",
+      "arg": "app",
+      "type": "string",
+      "setBy": [
+        "background"
+      ]
+    },
+    {
+      "tool": "app_background",
+      "arg": "device",
+      "type": "string",
+      "setBy": [
+        "--device"
+      ],
+      "global": true
+    },
+    {
+      "tool": "app_background",
+      "arg": "driver",
+      "type": "string",
+      "setBy": [
+        "--driver"
+      ],
+      "global": true
+    },
+    {
+      "tool": "app_background",
+      "arg": "seconds",
+      "type": "number",
+      "setBy": [
+        "background"
+      ]
+    },
+    {
       "tool": "app_batch",
       "arg": "device",
       "type": "string",
@@ -1649,6 +1683,32 @@
       "global": true
     },
     {
+      "tool": "app_state",
+      "arg": "app",
+      "type": "string",
+      "setBy": [
+        "state"
+      ]
+    },
+    {
+      "tool": "app_state",
+      "arg": "device",
+      "type": "string",
+      "setBy": [
+        "--device"
+      ],
+      "global": true
+    },
+    {
+      "tool": "app_state",
+      "arg": "driver",
+      "type": "string",
+      "setBy": [
+        "--driver"
+      ],
+      "global": true
+    },
+    {
       "tool": "app_storage",
       "arg": "action",
       "type": "string",
@@ -2091,6 +2151,19 @@
       ],
       "sends": [
         "system"
+      ]
+    },
+    {
+      "command": "background",
+      "tools": [
+        "app_background"
+      ],
+      "flags": [
+        "--app"
+      ],
+      "sends": [
+        "app",
+        "seconds"
       ]
     },
     {
@@ -2638,6 +2711,15 @@
       "command": "start",
       "flags": [
         "--idle-timeout"
+      ]
+    },
+    {
+      "command": "state",
+      "tools": [
+        "app_state"
+      ],
+      "sends": [
+        "app"
       ]
     },
     {

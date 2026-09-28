@@ -432,6 +432,17 @@ type AppPermissionResetter interface {
 	ResetAppPermissions(ctx context.Context, appID string) (device.PermissionReset, error)
 }
 
+// AppStates is implemented by backends that can say what state any app is
+// in, and send the app in front away for a while.
+type AppStates interface {
+	// AppState reports one app's state: not installed, not running, in the
+	// background or in front.
+	AppState(ctx context.Context, appID string) (device.AppState, error)
+	// Background sends appID, which is in front, to the background for d, and
+	// brings the same app back — resumed where it was, not relaunched.
+	Background(ctx context.Context, appID string, d time.Duration) error
+}
+
 // DataClearer is implemented by backends that can delete an app's data and
 // leave it installed — the state of a fresh install, without reinstalling.
 type DataClearer interface {

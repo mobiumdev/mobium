@@ -794,6 +794,26 @@ export class Device {
     return data.steps || []
   }
 
+  /**
+   * One app's state: `not_installed`, `not_running`, `background` or
+   * `foreground`, for any app. An app under its own permission prompt is
+   * still in front, and `covered_by` names the prompt's process. On iOS a
+   * background app also has `suspended`.
+   */
+  async appState(app) {
+    return (await this.#data('app_state', { app })) || {}
+  }
+
+  /**
+   * Sends the app in front away for `seconds` and brings it back, resumed
+   * rather than relaunched, confirmed in front again. At most 180 seconds.
+   */
+  async background(seconds, app) {
+    const args = { seconds }
+    if (app) args.app = app
+    return (await this.#data('app_background', args)) || {}
+  }
+
   /** Open a URL or deep link — the quickest way to a specific screen. */
   async openUrl(url) {
     await this.#text('app_open_url', { url })
