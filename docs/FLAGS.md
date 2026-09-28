@@ -94,8 +94,10 @@ command mentions them.
 | `app_grant` | `device` | string | _global_ --device |
 | `app_grant` | `driver` | string | _global_ --driver |
 | `app_grant` | `permissions` | array | grant |
+| `app_install` | `content` | string | — |
 | `app_install` | `device` | string | _global_ --device |
 | `app_install` | `driver` | string | _global_ --driver |
+| `app_install` | `name` | string | — |
 | `app_install` | `path` | string | install |
 | `app_keyboard` | `device` | string | _global_ --device |
 | `app_keyboard` | `driver` | string | _global_ --driver |
@@ -116,6 +118,7 @@ command mentions them.
 | `app_location` | `device` | string | _global_ --device |
 | `app_location` | `driver` | string | _global_ --driver |
 | `app_location` | `gpx` | string | location |
+| `app_location` | `gpx_data` | string | — |
 | `app_location` | `latitude` | number | location |
 | `app_location` | `longitude` | number | location |
 | `app_location` | `speed` | number | location |
@@ -178,6 +181,7 @@ command mentions them.
 | `app_record` | `device` | string | _global_ --device |
 | `app_record` | `driver` | string | _global_ --driver |
 | `app_record` | `path` | string | record |
+| `app_record` | `return_data` | boolean | — |
 | `app_reset_permissions` | `app` | string | reset-permissions |
 | `app_reset_permissions` | `device` | string | _global_ --device |
 | `app_reset_permissions` | `driver` | string | _global_ --driver |
@@ -290,6 +294,7 @@ arguments and the two global flags.
 | `fill` | app_fill | — | target, text |
 | `find` | app_find | — | locator |
 | `grant` | app_grant | — | app, permissions |
+| `grid` | — | --holder | — |
 | `install` | app_install | — | path |
 | `keyboard` | app_keyboard | --hide --key --text | hide, key, text |
 | `launch` | app_launch | — | app |
@@ -329,5 +334,6 @@ arguments and the two global flags.
 | `type` | app_type | — | target, text |
 | `uncheck` | app_check | — | checked, target |
 | `uninstall` | app_uninstall | — | app |
+| `up` | — | — | — |
 | `wait` | app_wait_for | --for --text --timeout | condition, target, text, timeout_ms |
 | `zoom` | app_zoom | --from --target --to | direction, from, target, to |

@@ -261,6 +261,64 @@ func ensureWDASource(ctx context.Context, progress func(string)) (string, error)
 	return src, nil
 }
 
+// UntarGz is untarGz for callers outside this package: an app sent as
+// content by a caller whose disk is not the daemon's arrives as a .tar.gz.
+func UntarGz(src, dest string) error { return untarGz(src, dest) }
+
+// TarGz archives a directory as a .tar.gz whose one top-level entry is the
+// directory's own name — how a .app, which is a directory, travels as content
+// to a daemon on another machine. Links are kept as links, as a bundle's
+// frameworks need; untarGz keeps them only when they stay inside.
+func TarGz(dir string) ([]byte, error) {
+	var buf bytes.Buffer
+	gz := gzip.NewWriter(&buf)
+	tw := tar.NewWriter(gz)
+	parent := filepath.Dir(filepath.Clean(dir))
+	err := filepath.Walk(dir, func(p string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+		rel, err := filepath.Rel(parent, p)
+		if err != nil {
+			return err
+		}
+		link := ""
+		if info.Mode()&os.ModeSymlink != 0 {
+			if link, err = os.Readlink(p); err != nil {
+				return err
+			}
+		}
+		h, err := tar.FileInfoHeader(info, link)
+		if err != nil {
+			return err
+		}
+		h.Name = filepath.ToSlash(rel)
+		if err := tw.WriteHeader(h); err != nil {
+			return err
+		}
+		if !info.Mode().IsRegular() {
+			return nil
+		}
+		f, err := os.Open(p)
+		if err != nil {
+			return err
+		}
+		defer f.Close()
+		_, err = io.Copy(tw, f)
+		return err
+	})
+	if err != nil {
+		return nil, err
+	}
+	if err := tw.Close(); err != nil {
+		return nil, err
+	}
+	if err := gz.Close(); err != nil {
+		return nil, err
+	}
+	return buf.Bytes(), nil
+}
+
 // untarGz extracts a .tar.gz, refusing entries that would escape dest, the
 // same guard unzipTo has.
 func untarGz(src, dest string) error {

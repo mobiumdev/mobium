@@ -2,7 +2,10 @@ package agent
 
 import (
 	"context"
+	"encoding/base64"
 	"fmt"
+	"os"
+	"path/filepath"
 	"time"
 
 	"github.com/mobiumdev/mobium/internal/mobiumdriver"
@@ -61,9 +64,21 @@ func (h *Handlers) recordOn(ctx context.Context, s *session, args map[string]int
 			return nil, mobiumerr.New(mobiumerr.InvalidArgument, "nothing is recording — start with action \"start\"")
 		}
 		path := stringArg(args, "path")
-		if path == "" {
+		// return_data sends the video back instead of saving it here: the
+		// CLI and pipe ask for it when the daemon's disk is not the caller's,
+		// and save it where the caller asked.
+		returnData := path == "" && boolArg(args, "return_data")
+		if path == "" && !returnData {
 			return nil, mobiumerr.New(mobiumerr.InvalidArgument, "stop needs a path to save the video to, "+
 				"e.g. \"session.mp4\"")
+		}
+		if returnData {
+			dir, err := os.MkdirTemp("", "mobium-record-")
+			if err != nil {
+				return nil, err
+			}
+			defer func() { _ = os.RemoveAll(dir) }()
+			path = filepath.Join(dir, "recording.mp4")
 		}
 		r := s.recording
 		s.recording = nil
@@ -73,20 +88,35 @@ func (h *Handlers) recordOn(ctx context.Context, s *session, args map[string]int
 			return nil, err
 		}
 		view.Path, view.Duration, view.Frames, view.Bytes = path, info.Duration.Round(time.Millisecond), info.Frames, info.Bytes
-		frames := fmt.Sprintf("%d frames", info.Frames)
-		if info.Frames == 1 {
-			frames = "1 frame"
+		if returnData {
+			video, err := os.ReadFile(path)
+			if err != nil {
+				return nil, fmt.Errorf("read the recording back: %w", err)
+			}
+			view.Path, view.Data = "", base64.StdEncoding.EncodeToString(video)
+			return Result(fmt.Sprintf("recorded %d frames, returned rather than saved", info.Frames), view), nil
 		}
-		msg := fmt.Sprintf("saved %s: %s, %s of video, recorded over %s", path, frames, view.Duration, view.Elapsed)
-		if info.Frames <= 1 {
-			// Said so the caller does not take it for a failed recording.
-			msg += " — one frame means the screen did not change while recording"
-		}
-		return Result(msg, view), nil
+		return Result(RecordSavedMessage(path, view), view), nil
 
 	default:
 		return nil, mobiumerr.New(mobiumerr.InvalidArgument, "action must be \"start\", \"stop\" or omitted, got %q", action)
 	}
+}
+
+// RecordSavedMessage is what a stop says once the video is on disk — the
+// daemon's when it saved it, and the CLI's or pipe's when the video came
+// back and they saved it where the caller asked.
+func RecordSavedMessage(path string, v RecordView) string {
+	frames := fmt.Sprintf("%d frames", v.Frames)
+	if v.Frames == 1 {
+		frames = "1 frame"
+	}
+	msg := fmt.Sprintf("saved %s: %s, %s of video, recorded over %s", path, frames, v.Duration, v.Elapsed)
+	if v.Frames <= 1 {
+		// Said so the caller does not take it for a failed recording.
+		msg += " — one frame means the screen did not change while recording"
+	}
+	return msg
 }
 
 // RecordView is the result of app_record.
@@ -97,5 +127,7 @@ type RecordView struct {
 	Duration  time.Duration `json:"duration,omitempty"`
 	Frames    int           `json:"frames,omitempty"`
 	Bytes     int64         `json:"bytes,omitempty"`
-	Device    string        `json:"device"`
+	// Data is the video, base64, when it was returned rather than saved.
+	Data   string `json:"data,omitempty"`
+	Device string `json:"device"`
 }

@@ -701,7 +701,7 @@ func (h *Handlers) screenshot(ctx context.Context, args map[string]interface{}) 
 	if err != nil {
 		abs = path
 	}
-	return Result(fmt.Sprintf("saved %s (%d bytes)", abs, len(png)),
+	return Result(ScreenshotSavedMessage(abs, len(png)),
 		ScreenshotView{Path: abs, Bytes: len(png)}), nil
 }
 

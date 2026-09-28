@@ -608,6 +608,11 @@
     },
     {
       "tool": "app_install",
+      "arg": "content",
+      "type": "string"
+    },
+    {
+      "tool": "app_install",
       "arg": "device",
       "type": "string",
       "setBy": [
@@ -623,6 +628,11 @@
         "--driver"
       ],
       "global": true
+    },
+    {
+      "tool": "app_install",
+      "arg": "name",
+      "type": "string"
     },
     {
       "tool": "app_install",
@@ -793,6 +803,11 @@
       "setBy": [
         "location"
       ]
+    },
+    {
+      "tool": "app_location",
+      "arg": "gpx_data",
+      "type": "string"
     },
     {
       "tool": "app_location",
@@ -1311,6 +1326,11 @@
       "setBy": [
         "record"
       ]
+    },
+    {
+      "tool": "app_record",
+      "arg": "return_data",
+      "type": "boolean"
     },
     {
       "tool": "app_reset_permissions",
@@ -2248,6 +2268,12 @@
       ]
     },
     {
+      "command": "grid",
+      "flags": [
+        "--holder"
+      ]
+    },
+    {
       "command": "install",
       "tools": [
         "app_install"
@@ -2693,6 +2719,9 @@
       "sends": [
         "app"
       ]
+    },
+    {
+      "command": "up"
     },
     {
       "command": "wait",

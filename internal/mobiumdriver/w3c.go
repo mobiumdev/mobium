@@ -306,11 +306,10 @@ func doubleTapActions(x, y int) []map[string]interface{} {
 		// after its moves, arrives in full, and its opening one, straight
 		// after pointerDown, does not — see dragHoldChain.
 		//
-		// Spending the interval on a timed pointerMove instead was tried and
-		// is worse: WDA read the move as a second contact and the page saw
-		// two touchstarts before either touchend. So iOS does not use this
-		// chain at all — see WDA.DoubleTap, which calls the endpoint
-		// WebDriverAgent provides for exactly this gesture.
+		// Spending the interval on a timed pointerMove instead reaches a
+		// WebView as a second contact, two touchstarts before either
+		// touchend — and reaches a native control as the two clean taps it
+		// should be. So iOS chooses by target: see WDA.DoubleTap.
 		{"type": "pointerDown", "button": 0},
 		{"type": "pause", "duration": 60},
 		{"type": "pointerUp", "button": 0},

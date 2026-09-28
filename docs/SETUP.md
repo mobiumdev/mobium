@@ -506,6 +506,71 @@ it starts; two iPhone simulators on two daemons, ten `map` calls each at
 once, each saw only its own screen. Nothing needs setting for it
 (CHALLENGES 148).
 
+**Android never shared a port.** Its UiAutomator2 server listens on each
+device's own loopback, and mobium reaches it through `adb forward tcp:0`,
+for which adb picks a free port on the Mac per device — as it does for each
+WebView. Measured on 2026-09-28 with two emulators on two daemons: forwards
+on host ports 52360 and 52527, both to their own device's 6790, and ten
+`map` calls on each at once, each seeing only its own screen.
+
+## Driving another machine's devices
+
+**`--remote <node>`, or `MOBIUM_REMOTE=<node>`, drives the devices plugged
+into another machine**, over SSH. Every command takes it, and so does
+`mobium pipe`, which is how all five clients connect — so a client goes
+remote with the environment variable alone, and no change to its code.
+
+What happens: mobium asks the node, over SSH, to have a daemon running and
+say where it listens (`mobium daemon up`); forwards that socket to one in a
+private directory here, owner-only; and sends every call through it. Nothing
+new listens on a network — SSH authenticates and encrypts, and the node's
+daemon socket stays owner-only on the node. Files travel as content
+(`MOBIUM_FILES=content`, set for you): `install`'s app and a GPX route go to
+the node, and a screenshot or a recording comes back and is saved where you
+asked. If the node's daemon stops answering, the call fails; a daemon is
+never started here in its place, which would drive this machine's devices
+under the node's name.
+
+What it needs:
+
+| | |
+| --- | --- |
+| **SSH without a prompt** | key-based login to the node; mobium runs SSH with `BatchMode=yes`, because a prompt would land in the stream a client speaks. `MOBIUM_SSH` replaces the `ssh` command, options included — `ssh -i ~/.ssh/node_key` |
+| **mobium on the node** | reachable by the node's non-interactive shell. `MOBIUM_REMOTE_BIN` is what that shell runs as mobium, and may set its environment — `PATH=/opt/homebrew/bin:$PATH ~/bin/mobium` — when adb or Xcode's tools are not on the default `PATH` there |
+| **macOS or Linux here** | the forward ends in a Unix socket; on Windows `--remote` refuses, and says so |
+
+Commands about this machine stay here: `daemon`, `doctor` and `mcp` ignore
+`--remote`. One device still belongs to one run at a time, on the node as
+anywhere. Verified with this Mac standing in for a node: the CLI and an
+unchanged Python client ran sessions, maps, installs, screenshots and
+recordings on the node's daemon, every file landing on the caller's side.
+
+### A grid
+
+**`MOBIUM_GRID=node1,node2` spreads runs over several machines' devices**, as
+Selenium Grid does, without a hub. At a run's first call — which is where it
+says what it wants: a serial, or `platform` when it starts a session — mobium
+asks every node over SSH for its devices and which of them are held, takes
+the first free one that matches, and connects to its node as `--remote`
+would. The lease that keeps a device to one run lives on the node, so runs
+started on different machines cannot take the same device. With nothing free
+that matches, a run waits, asking again every two seconds, up to
+`MOBIUM_GRID_WAIT` (default `60s`), and then says what was busy and which
+nodes did not answer. A node that does not answer within five seconds is
+left out, and routing goes on without it.
+
+A lease is renewed every 20 seconds while its run lives, released when it
+ends, and free again 60 seconds after a run that died without releasing it.
+A run killed outright takes its SSH forward with it, and the next run clears
+what it left on this machine. Each CLI command is a run of its own, so a
+series of them may land on different devices: a client, whose run lasts as
+long as it does, is the way to keep one.
+
+Verified with this Mac standing in for a node with two emulators, and a
+second node that does not exist: three Python clients asking for Android at
+once got the two emulators, the third waited until one was released and got
+it, and no lease, forward or directory was left.
+
 ## What Mobium installs, and removing it
 
 On the machine, under `~/.mobium`:

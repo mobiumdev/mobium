@@ -13,20 +13,6 @@ this is what is not.
   there found four defects (CHALLENGES 139–142). No device has been driven
   from Windows, and until one has, Windows is unsupported.
   [WINDOWS.md](WINDOWS.md) is the state of it.
-- **On iOS, `double-tap` reaches a React Native `Pressable` as one press**
-  (Android: two, 165-184ms apart). **A person's double tap is two**: on the
-  iPhone 15 Plus, 2026-09-27, a human double tap on MobiumApp's Press target
-  counted two presses 200ms apart, and `double-tap` on the same target one.
-  So the defect is real and below Mobium, which is the control that was
-  missing. Measured on the iPhone 17 Pro simulator every way WebDriverAgent
-  offers: its double tap, the element's, and one W3C chain with a pause
-  between the taps (WebDriverAgent drops a pause while the pointer is up, so
-  they arrive together) each counted one press; two separate taps counted
-  two, but 350-380ms apart, past the platform's window. What is left to try
-  is a chain whose gap WebDriverAgent cannot drop — the pointer kept busy
-  between the taps rather than paused. The other gesture found with this
-  one, a tap above the Android keyboard, was the app moving its button
-  (CHALLENGES, "Findings that were not defects").
 - **Published client packages.** Every client builds, as its registry would
   receive it, into a package that carries the LICENSE, a README and full
   metadata, and each has been installed from that package into a clean project
@@ -100,6 +86,95 @@ this is what is not.
   change read back. Measured on a Pixel 9 Pro Fold emulator, where all four
   postures could be set and read ([FORMFLUX.md](FORMFLUX.md#foldables));
   whether a real foldable's shell may set it is the open question.
+- **A mobium grid, and running mobium remotely** (written down 2026-09-28).
+  Stage 0 is done, and needed no code: clients start `mobium pipe`, and
+  `MOBIUM_BIN_PATH` may name any executable, so a short script that runs
+  `mobium pipe` on another machine over SSH makes an unchanged client
+  remote. Tried against the same Mac standing in for a node, with a key
+  accepted only from localhost: the node started a daemon of its own, and
+  a Python client's session, `map`, text and route by waypoints worked, and
+  a screenshot's bytes came back. What broke is every argument that is a
+  file path, because the node reads or writes it on its own disk:
+  `screenshot` and `record` saved to the node's working directory and
+  reported the node's path, and `install` looked for the app there; the
+  CLI's GPX file is the same case. Relative paths showed it even on one
+  machine; between two, absolute ones would too.
+  1. **Stage 1: files as content — done, 2026-09-28.** With
+     `MOBIUM_FILES=content`, the CLI and `pipe` send `install`'s app (a
+     `.app` directory as a `.tar.gz`, links kept) and a GPX route as their
+     content, and have a screenshot or a recording come back and saved where
+     the caller asked, answering as the daemon would have; the daemon writes
+     what it receives to a temporary directory and removes it. Verified on an
+     Android emulator and an iPhone simulator, and through an unchanged
+     Python client. It works where the conversion runs — the caller's own
+     `mobium` — so it needs a transport that keeps that process local. SSH
+     already is one: forwarding a node daemon's socket to a local path
+     (`ssh -L <local.sock>:<node.sock>`) and pointing `MOBIUM_HOME` at it
+     ran the CLI's install, GPX route, recording and screenshot, and an
+     unchanged Python client, against the node's daemon, every file landing
+     in the caller's folder and none on the node. Tried against this Mac
+     standing in for a node.
+  2. **Stage 2: a remote transport — done, 2026-09-28.** `--remote <node>`,
+     or `MOBIUM_REMOTE`, on every command and on `mobium pipe`: mobium runs
+     `mobium daemon up` on the node over SSH, forwards the socket it names
+     to an owner-only one here, sets `MOBIUM_FILES=content`, and removes both
+     on the way out. A call the node does not answer fails rather than start
+     a daemon here. An unchanged Python client went remote with the
+     environment variable alone ([SETUP.md](SETUP.md#driving-another-machines-devices)).
+  3. **Stage 3: a router — done, 2026-09-28,** without a hub: `MOBIUM_GRID`
+     names the nodes, the caller's own mobium routes each run by serial or
+     platform, and the lease lives on the node — exclusive, renewed every
+     20s, free 60s after a run dies, released at the end. A queue waits for a
+     device up to `MOBIUM_GRID_WAIT`; a node that does not answer is left out.
+     A `kill -9` left an SSH forward running for good until the forward
+     read a pipe its parent holds ([SETUP.md](SETUP.md#a-grid)).
+  4. **Still to do.** Routing by model and OS version, not only platform and
+     serial. Leases are honored by mobium, not enforced by the node's
+     daemon, so a run that ignores the grid can still take a leased device.
+     And one device per run holds on a node's daemon as anywhere — nothing
+     yet shares one session between two runs.
+  5. **A grid UI** (written down 2026-09-28): a page showing each node, its
+     devices, who holds each lease and for how long, and what is queued —
+     the view Selenium Grid's console gives. Built from the same
+     `mobium grid node` answer the router reads, so it can never disagree
+     with what routing does.
+  6. **Docker for remote** (written down 2026-09-28): a node in a container —
+     an Android emulator with mobium and an SSH server beside it — so a grid
+     can be stood up without a spare machine, and torn down with it. Android
+     only: an iOS node has to be a Mac, and a simulator does not run in a
+     container. What to measure first is whether an emulator runs in the
+     container at usable speed, which depends on hardware acceleration
+     reaching it.
+- **MobiumApp on AWS Device Farm, on its free trial** (written down
+  2026-09-28, nothing measured yet) — the first devices Mobium would drive
+  that nobody here owns. What the plan rests on, and must be checked against
+  AWS's current terms before any run: a one-time free allowance of device
+  minutes for a new account, and a *custom test environment*, where a test
+  spec runs shell commands on a host with the device attached (Linux and adb
+  for Android, macOS for iOS). Set a billing alarm at $1 first, so the end of
+  the allowance is a notification and not a bill.
+  1. **Android first.** Upload MobiumApp's release APK as the app, and as the
+     test package a zip of a `mobium` binary built for the host's OS and
+     architecture (find out which, first) with `docs/checks/`. The test spec
+     runs `mobium devices`, then `login.sh`, `web-type.sh`, `obstruction.sh`
+     and `dialogs.sh` against the attached serial, with `MOBIUMAPP_BUNDLE`
+     set to wherever the host puts the app, and copies the output into the
+     run's logs. A real phone takes the checks' phone branches, which is
+     what they are for.
+  2. **Measure before trusting.** Whether the host's adb reaches the device
+     as a plain serial; whether the UiAutomator2 server may be installed;
+     whether a device is wiped between runs, which decides whether
+     `reset-permissions` is safe there. Each is a question with a device's
+     answer, not a guess.
+  3. **iOS second, and harder.** Mobium builds WebDriverAgent from source and
+     signs it with a team from the local keychain; a farm's host has neither,
+     and re-signs uploaded apps with its own identity. The route to find out
+     is whether the host provides a signed WebDriverAgent — farms that run
+     Appium must — and whether Mobium can be pointed at a runner it did not
+     build. Until that is answered, iOS on a farm is a question, not a step.
+  4. **Budget.** A check takes two to five minutes of device time, so a trial
+     of the size last seen covers a few hundred runs. Spend it on breadth — a
+     handful of models neither of the phones here resembles — not on repeats.
 - **Fire TV** (written down 2026-09-28, nothing measured yet). Fire OS is
   Android — 7 is Android 9, 8 is Android 11 — reached by `adb connect
   <tv>:5555` once ADB debugging is on, so discovery, the hierarchy, locators,

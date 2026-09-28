@@ -45,6 +45,7 @@ func newPipeCmd() *cobra.Command {
 			go func() {
 				<-stop
 				p.release()
+				runCleanups()
 				os.Exit(1)
 			}()
 

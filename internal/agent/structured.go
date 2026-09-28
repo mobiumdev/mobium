@@ -1,6 +1,10 @@
 package agent
 
-import "github.com/mobiumdev/mobium/internal/uitree"
+import (
+	"fmt"
+
+	"github.com/mobiumdev/mobium/internal/uitree"
+)
 
 // The shapes below are the data half of every tool result. They are a public
 // contract — the CLI's --json and the language clients read them — so field
@@ -87,6 +91,13 @@ type ActionView struct {
 type ScreenshotView struct {
 	Path  string `json:"path"`
 	Bytes int    `json:"bytes"`
+}
+
+// ScreenshotSavedMessage is what a screenshot says once it is on disk — the
+// daemon's when it saved it, and the CLI's or pipe's when the image came back
+// and they saved it where the caller asked.
+func ScreenshotSavedMessage(path string, n int) string {
+	return fmt.Sprintf("saved %s (%d bytes)", path, n)
 }
 
 // ContextsView is the result of app_contexts.

@@ -35,7 +35,26 @@ func main() {
 		SilenceErrors: true,
 		// Runs only once cobra has accepted the command line, so a failure
 		// with this still false was the command line's, and exits 2.
-		PersistentPreRun: func(*cobra.Command, []string) { commandRan = true },
+		PersistentPreRunE: func(cmd *cobra.Command, _ []string) error {
+			commandRan = true
+			if remoteNode == "" {
+				remoteNode = os.Getenv("MOBIUM_REMOTE")
+			}
+			top := cmd
+			for top.Parent() != nil && top.Parent().Parent() != nil {
+				top = top.Parent()
+			}
+			if localOnly[top.Name()] {
+				return nil
+			}
+			if remoteNode != "" {
+				return openRemote(remoteNode)
+			}
+			// A grid routes at the first call, which is where a run says
+			// what it wants: a serial, or a platform to start a session on.
+			gridActive = len(gridNodes()) > 0
+			return nil
+		},
 		Long: "Mobium automates native apps on Android emulators and phones, iOS simulators\n" +
 			"and iPhones, using the same map/@ref workflow as vibium:\n\n" +
 			"  mobium map && mobium tap @e1 && mobium map",
@@ -49,6 +68,8 @@ func main() {
 			"installed as mobium-driver-<name>")
 	root.PersistentFlags().BoolVar(&jsonOutput, "json", false, "Emit JSON instead of text")
 	root.PersistentFlags().BoolVarP(&verbose, "verbose", "v", false, "Log what mobium is doing to stderr")
+	root.PersistentFlags().StringVar(&remoteNode, "remote", "",
+		"Drive the devices of another machine, reached over SSH ([user@]host; default $MOBIUM_REMOTE)")
 
 	// Slow one-time setup (downloading and installing the UiAutomator2
 	// server) is reported to stderr as it happens, so a first run explains
@@ -119,9 +140,12 @@ func main() {
 		newDaemonCmd(),
 		newPipeCmd(),
 		newMCPCmd(),
+		newGridCmd(),
 	)
 
-	if err := root.Execute(); err != nil {
+	err := root.Execute()
+	runCleanups()
+	if err != nil {
 		if !commandRan && mobiumerr.CodeOf(err) == mobiumerr.Unclassified {
 			err = mobiumerr.Wrap(mobiumerr.InvalidArgument, err, "")
 		}

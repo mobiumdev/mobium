@@ -10,6 +10,7 @@ import (
 
 	"github.com/mobiumdev/mobium/internal/agent"
 	"github.com/mobiumdev/mobium/internal/daemon"
+	"github.com/mobiumdev/mobium/internal/mobiumerr"
 )
 
 // daemonIdleTimeout is how long an auto-started daemon lives without work.
@@ -19,6 +20,11 @@ const daemonIdleTimeout = "30m"
 
 // daemonCall runs a tool through the daemon, starting one if none is running.
 func daemonCall(tool string, args map[string]interface{}) (*agent.ToolsCallResult, error) {
+	if gridActive && !gridRouted {
+		if err := routeGrid(args); err != nil {
+			return nil, err
+		}
+	}
 	// These flags are per-command, so they travel with the call rather than
 	// being stored in a daemon shared with other terminals.
 	if deviceSerial != "" {
@@ -44,21 +50,43 @@ func daemonCall(tool string, args map[string]interface{}) (*agent.ToolsCallResul
 		}
 	}
 
+	// When the daemon's disk is not the caller's, a path means a file on the
+	// wrong machine: send the file's content instead, and save what comes
+	// back where the caller asked.
+	finish := func(r *agent.ToolsCallResult) (*agent.ToolsCallResult, error) { return r, nil }
+	if filesAsContent() {
+		f, err := sendFilesAsContent(tool, args)
+		if err != nil {
+			return nil, err
+		}
+		finish = f
+	}
+
 	result, err := daemon.Call(tool, args)
 	if err == nil {
-		return result, nil
+		return finish(result)
 	}
 	// A tool that ran and failed is an answer, not a reason to start a second
 	// daemon.
 	if !daemon.IsConnectionError(err) {
 		return nil, err
 	}
+	// Through a forward, the daemon is the node's: starting one here would
+	// drive this machine's devices under the node's name.
+	if remoteActive {
+		return nil, mobiumerr.New(mobiumerr.DeviceNotReady, "the node's daemon stopped answering through the SSH forward: %v", err).
+			WithRemedy("run the command again; `mobium daemon up` on the node says whether its daemon is running")
+	}
 
 	daemon.CleanStale()
 	if err := autoStartDaemon(); err != nil {
 		return nil, err
 	}
-	return daemon.Call(tool, args)
+	result, err = daemon.Call(tool, args)
+	if err != nil {
+		return nil, err
+	}
+	return finish(result)
 }
 
 // autoStartDaemon spawns a detached daemon and waits for it to answer.

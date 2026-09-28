@@ -139,31 +139,29 @@ cannot tell them apart and the assertion above is empty"
   echo "    vs two taps    2 more clicks, no new double                        ok"
   $M context NATIVE_APP >/dev/null
 else
-  # **iOS has no witness for this, measured rather than assumed.** A WKWebView
-  # does not synthesize `dblclick` from XCUITest-injected touches -- not from
-  # the W3C chain and not from WebDriverAgent's own doubleTap endpoint, which
-  # is the platform's own primitive -- and a React Native Pressable coalesces
-  # the two taps into a single onPress. So the outcome cannot be observed.
-  #
-  # What can be: the two gestures are *distinguishable*. A double tap arrives
-  # as one press and two taps arrive as two, every time. That is indirect, and
-  # it is asserted rather than skipped, because a silent skip cannot be told
-  # from an untested one.
+  # A React Native Pressable is the witness: it counts each press and the
+  # gap between the last two. A person's double tap on the iPhone 15 Plus was
+  # two presses 200ms apart; XCUITest's own double tap was one, and mobium
+  # now sends a chain whose gap WebDriverAgent keeps (CHALLENGES 149). A WKWebView
+  # still fires no `dblclick` from injected touches, so the page is not it.
+  gap() { $M text testid=tapGap 2>/dev/null | sed -n 's/^gap: \(-*[0-9]*\)ms.*/\1/p'; }
   open_gesture 'Tap and Press'
   B=$(count)
   $M double-tap 'label=Press target' >/dev/null; sleep 1
-  A=$(count)
-  [ "$((A - B))" -eq 1 ] \
-    || fail "a double tap reached the app as $((A - B)) presses, not the 1 that \
-XCUITest's own double tap produces"
-  B2=$(count)
+  A=$(count); G=$(gap)
+  [ "$((A - B))" -eq 2 ] \
+    || fail "a double tap reached the app as $((A - B)) presses, where a person's is 2"
+  [ -n "$G" ] && [ "$G" -lt 300 ] \
+    || fail "the double tap's presses were ${G}ms apart, past a double tap's window"
+  # The control: two separate taps are two presses too, so what tells them
+  # apart is the gap, and theirs must be past the window or the assertion
+  # above could not fail.
+  $M tap 'label=Press target' >/dev/null
   $M tap 'label=Press target' >/dev/null; sleep 1
-  $M tap 'label=Press target' >/dev/null; sleep 1
-  A2=$(count)
-  [ "$((A2 - B2))" -eq 2 ] \
-    || fail "two separate taps reached the app as $((A2 - B2)) presses, so this \
-check cannot tell them apart and the assertion above is empty"
-  echo "    double tap     1 press where two taps give 2 (iOS has no dblclick) ok"
+  G2=$(gap)
+  [ -n "$G2" ] && [ "$G2" -ge 300 ] \
+    || fail "two separate taps came ${G2}ms apart, inside the window, so the gap cannot tell them from a double tap"
+  echo "    double tap     2 presses ${G}ms apart; two taps ${G2}ms apart     ok"
 fi
 
 

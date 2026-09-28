@@ -2,13 +2,16 @@ package agent
 
 import (
 	"context"
+	"encoding/base64"
 	"fmt"
-	"github.com/mobiumdev/mobium/internal/mobiumerr"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
+	"github.com/mobiumdev/mobium/internal/device"
 	"github.com/mobiumdev/mobium/internal/mobiumdriver"
+	"github.com/mobiumdev/mobium/internal/mobiumerr"
 )
 
 // AppView is the result of app_current, app_launch and app_terminate.
@@ -251,6 +254,18 @@ func (h *Handlers) installApp(ctx context.Context, args map[string]interface{}) 
 	}
 
 	path := stringArg(args, "path")
+	// The app as content, from a caller whose disk is not the daemon's: the
+	// CLI and pipe send it in place of the path, a .apk as itself and a .app,
+	// which is a directory, as a .tar.gz. Written to a directory of its own
+	// and removed after the install either way.
+	if content := stringArg(args, "content"); content != "" {
+		p, cleanup, err := materializeApp(content, stringArg(args, "name"))
+		if err != nil {
+			return nil, err
+		}
+		defer cleanup()
+		path = p
+	}
 	if path == "" {
 		return nil, mobiumerr.New(mobiumerr.InvalidArgument, "app_install needs a path to a .apk or .app")
 	}
@@ -336,4 +351,41 @@ func (h *Handlers) currentApp(ctx context.Context, args map[string]interface{}) 
 			AppView{Device: s.dev.Serial, Context: s.webCtx}), nil
 	}
 	return Result(pkg, AppView{App: pkg, Device: s.dev.Serial, Context: s.webCtx}), nil
+}
+
+// materializeApp writes an app sent as base64 content to a temporary
+// directory and returns its path there. name is the file's own name — a .apk,
+// or a .app's directory name with .tar.gz appended when it came archived.
+func materializeApp(content, name string) (string, func(), error) {
+	raw, err := base64.StdEncoding.DecodeString(content)
+	if err != nil {
+		return "", nil, mobiumerr.New(mobiumerr.InvalidArgument, "the app's content is not base64: %w", err)
+	}
+	base := filepath.Base(name)
+	if name == "" || base == "." || base == "/" {
+		return "", nil, mobiumerr.New(mobiumerr.InvalidArgument, "the app's content came without its file name")
+	}
+	dir, err := os.MkdirTemp("", "mobium-install-")
+	if err != nil {
+		return "", nil, err
+	}
+	cleanup := func() { _ = os.RemoveAll(dir) }
+	file := filepath.Join(dir, base)
+	if err := os.WriteFile(file, raw, 0o600); err != nil {
+		cleanup()
+		return "", nil, err
+	}
+	if !strings.HasSuffix(base, ".tar.gz") {
+		return file, cleanup, nil
+	}
+	if err := device.UntarGz(file, dir); err != nil {
+		cleanup()
+		return "", nil, mobiumerr.New(mobiumerr.InvalidArgument, "the app's archive could not be unpacked: %w", err)
+	}
+	app := filepath.Join(dir, strings.TrimSuffix(base, ".tar.gz"))
+	if _, err := os.Stat(app); err != nil {
+		cleanup()
+		return "", nil, mobiumerr.New(mobiumerr.InvalidArgument, "the app's archive holds no %s", filepath.Base(app))
+	}
+	return app, cleanup, nil
 }

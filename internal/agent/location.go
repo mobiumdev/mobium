@@ -34,10 +34,13 @@ func (h *Handlers) locationOn(ctx context.Context, s *session, args map[string]i
 	_, hasLon := args["longitude"]
 	clear := boolArg(args, "clear")
 	gpx, waypoints := stringArg(args, "gpx"), args["waypoints"]
+	// gpx_data is the file's content, which the CLI and pipe send in place of
+	// its path when the daemon's disk is not the caller's.
+	gpxData := stringArg(args, "gpx_data")
 	// A route is a write, and has to be recognized before the read branch
 	// below — otherwise `location --gpx file` reads as "no arguments given"
 	// and answers the question nobody asked.
-	route := gpx != "" || waypoints != nil
+	route := gpx != "" || gpxData != "" || waypoints != nil
 
 	// Reading is the whole request when nothing was asked to change.
 	if !hasLat && !hasLon && !clear && !route {
@@ -67,7 +70,7 @@ func (h *Handlers) locationOn(ctx context.Context, s *session, args map[string]i
 	}
 
 	if route {
-		return h.startRoute(ctx, s, ctrl, gpx, waypoints, args)
+		return h.startRoute(ctx, s, ctrl, gpx, gpxData, waypoints, args)
 	}
 
 	if clear {
@@ -134,13 +137,15 @@ func (h *Handlers) locationOn(ctx context.Context, s *session, args map[string]i
 // natively and returns immediately; Android has no such command, so the daemon
 // steps a test provider until the route ends or something cancels it.
 func (h *Handlers) startRoute(ctx context.Context, s *session, ctrl mobiumdriver.Geolocation,
-	gpx string, wp interface{}, args map[string]interface{}) (*ToolsCallResult, error) {
+	gpx, gpxData string, wp interface{}, args map[string]interface{}) (*ToolsCallResult, error) {
 
 	var pts []device.Point
 	var err error
 	switch {
-	case gpx != "" && wp != nil:
+	case (gpx != "" || gpxData != "") && wp != nil:
 		return nil, mobiumerr.New(mobiumerr.InvalidArgument, "give either gpx or waypoints, not both")
+	case gpxData != "":
+		pts, err = parseGPXData([]byte(gpxData), "the GPX content sent")
 	case gpx != "":
 		pts, err = parseGPX(gpx)
 	default:

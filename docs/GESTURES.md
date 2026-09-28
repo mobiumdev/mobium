@@ -30,7 +30,7 @@ multi-finger taps.
 | --- | --- | --- | --- | --- |
 | **Tap** | `tap` | Tap and Press — the app says which gesture arrived | yes | yes |
 | **Press** (touch and hold, long press) | `long-press` | Tap and Press; a 50ms hold must read as a tap | yes | yes |
-| **Double tap** | `double-tap` | Double Tap — the page's own `dblclick` | yes, `dblclick` fired | one press, not two; WKWebView fires no `dblclick` for injected touches, though WebKit's double-tap zoom does fire |
+| **Double tap** | `double-tap` | Double Tap — the page's own `dblclick` | yes, `dblclick` fired | two presses ~200ms apart on a React Native control, as a person's double tap (CHALLENGES 149); a WKWebView gets WebDriverAgent's own double tap, two clicks and no `dblclick` for injected touches, though WebKit's double-tap zoom does fire |
 | **Drag** (tap and drag, touch and drag) | `drag` | Drag — a native drop zone that records the holds and the travel | yes | yes |
 | **Flick** | `swipe`, fast | Flick and Pan — how far the list coasts after the lift | yes, 120ms coasts ~1560dp | yes, 120ms coasts ~1370pt |
 | **Pan** | `swipe`, slow | Flick and Pan | yes, 2500ms coasts ~5dp | yes, 2500ms coasts 0 |

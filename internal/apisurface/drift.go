@@ -105,7 +105,12 @@ type ArgExemption struct {
 //
 // A gap here is a real asymmetry between the front doors, so each one needs a
 // reason that survives being read out loud.
-var argExemptions = []ArgExemption{}
+var argExemptions = []ArgExemption{
+	{"app_install", "content", "set by the CLI and pipe from --path when the daemon is on another machine; a person gives a path"},
+	{"app_install", "name", "set by the CLI and pipe with content, from the path's file name"},
+	{"app_location", "gpx_data", "set by the CLI and pipe from --gpx when the daemon is on another machine; a person gives a path"},
+	{"app_record", "return_data", "set by the CLI and pipe on stop when the daemon is on another machine, which then save the video at the path given"},
+}
 
 // CheckFlags reports keys the CLI sends that no tool accepts, arguments no
 // command can set, and exemptions that have stopped describing anything.
