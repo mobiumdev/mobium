@@ -71,6 +71,7 @@ def connect(
     driver: str | None = None,
     binary: str | None = None,
     call_timeout: float | None = None,
+    session: str | None = None,
 ) -> "Device":
     """Start a mobium session.
 
@@ -83,13 +84,18 @@ def connect(
         connection -- a late answer would be read as the next call's -- and
         every call after raises, saying so; connect again. Set it well above
         the longest wait_for timeout you use.
+    session: a daemon of this connection's own, by name, as MOBIUM_SESSION
+        sets one. One daemon serves one call at a time across every device,
+        so parallel runs on different devices should each name one: sharing,
+        an emulator's calls waited behind a simulator's, 22.3s against 0.3s.
+        Keep it short; it is part of a socket path.
     """
     args: list[str] = []
     if device:
         args += ["--device", device]
     if driver:
         args += ["--driver", driver]
-    return Device(Connection(find_binary(binary), args, call_timeout))
+    return Device(Connection(find_binary(binary), args, call_timeout, session))
 
 
 @dataclass(frozen=True)
@@ -112,6 +118,7 @@ def start(
     driver: str | None = None,
     binary: str | None = None,
     call_timeout: float | None = None,
+    session: str | None = None,
 ) -> "Device":
     """Connect and open the session on the device, as Appium's new session does.
 
@@ -120,7 +127,7 @@ def start(
     device: serial or UDID, when more than one is running.
     app: a package name (Android) or bundle id (iOS) to launch once the
         session is up; start returns when it is in front.
-    driver, binary, call_timeout: as for connect().
+    driver, binary, call_timeout, session: as for connect().
 
     Nothing requires it -- every call opens a session on first use -- but it
     puts the slow first start (installing UiAutomator2, building
@@ -130,7 +137,7 @@ def start(
         with start(platform="android", app="com.android.settings") as device:
             device.map()
     """
-    d = connect(device=device, driver=driver, binary=binary, call_timeout=call_timeout)
+    d = connect(device=device, driver=driver, binary=binary, call_timeout=call_timeout, session=session)
     args: dict[str, Any] = {"action": "start"}
     if platform:
         args["platform"] = platform
@@ -906,6 +913,47 @@ class Device:
         """
         data = self._data("app_eval", {"expression": expression}) or {}
         return data.get("value", "")
+
+    def cookies(self) -> list[dict]:
+        """The current WebView's cookies: the ones its page's URL is sent,
+        HttpOnly ones included. Needs a web context -- ``context()`` first.
+
+        Each is a dict with Playwright's and Vibium's keys: ``name``,
+        ``value``, ``domain``, ``path``, ``expires`` (seconds since the epoch,
+        absent for a session cookie), ``httpOnly``, ``secure``, ``sameSite``.
+        """
+        data = self._data("app_cookies", {"action": "get"}) or {}
+        return data.get("cookies") or []
+
+    def set_cookies(self, cookies: list[dict]) -> None:
+        """Set each cookie on the current page and read the store back, so
+        one the browser accepted and stored expired raises NotConfirmedError.
+        Each needs ``name`` and ``value``; the rest default to the page's
+        host, ``/`` and a session cookie."""
+        self._data("app_cookies", {"action": "set", "cookies": list(cookies)})
+
+    def clear_cookies(self, name: str | None = None) -> None:
+        """Delete the current page's cookies, or only those called ``name``."""
+        args: dict[str, Any] = {"action": "clear"}
+        if name:
+            args["name"] = name
+        self._data("app_cookies", args)
+
+    def storage(self) -> dict:
+        """The current page's storage state, in the shape Playwright and
+        Vibium save: ``{"cookies": [...], "origins": [{"origin",
+        "localStorage", "sessionStorage"}]}``."""
+        data = self._data("app_storage", {"action": "get"}) or {}
+        return data.get("state") or {"cookies": [], "origins": []}
+
+    def set_storage(self, state: dict) -> None:
+        """Restore a saved state: its cookies, and each origin's storage into
+        the page only if the page is on that origin."""
+        self._data("app_storage", {"action": "restore", "state": state})
+
+    def clear_storage(self) -> None:
+        """Empty the current page's cookies, localStorage and sessionStorage."""
+        self._data("app_storage", {"action": "clear"})
 
     def notifications(self) -> list[dict]:
         """What is in the notification shade.

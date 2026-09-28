@@ -61,7 +61,10 @@ final class Connection implements AutoCloseable {
     Connection(String binary, List<String> args) { this(binary, args, null); }
 
     /** A null or zero timeout waits as long as each call takes. */
-    Connection(String binary, List<String> args, Duration timeout) {
+    Connection(String binary, List<String> args, Duration timeout) { this(binary, args, timeout, null); }
+
+    /** A non-empty session gives the pipe a daemon of its own. */
+    Connection(String binary, List<String> args, Duration timeout, String session) {
         this.timeout = timeout == null || timeout.isZero() ? null : timeout;
         List<String> command = new ArrayList<>();
         command.add(binary);
@@ -69,6 +72,7 @@ final class Connection implements AutoCloseable {
         command.addAll(args);
 
         ProcessBuilder pb = new ProcessBuilder(command);
+        if (session != null && !session.isEmpty()) pb.environment().put("MOBIUM_SESSION", session);
         // Progress notes about downloading a device-side server go to stderr.
         // Passing them through keeps a slow first run explicable rather than
         // looking like a hang.

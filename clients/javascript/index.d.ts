@@ -62,6 +62,31 @@ export interface Session {
   app: string
 }
 
+/** One of a page's cookies, with Playwright's and Vibium's keys. */
+export interface Cookie {
+  name: string
+  value: string
+  /** Defaults to the page's host when set. */
+  domain?: string
+  /** Defaults to "/" when set. */
+  path?: string
+  /** Seconds since the epoch; absent for a session cookie. */
+  expires?: number
+  httpOnly?: boolean
+  secure?: boolean
+  sameSite?: 'Strict' | 'Lax' | 'None'
+}
+
+/** A page's cookies and web storage, in the shape Playwright and Vibium save. */
+export interface StorageState {
+  cookies: Cookie[]
+  origins: {
+    origin: string
+    localStorage: { name: string; value: string }[]
+    sessionStorage: { name: string; value: string }[]
+  }[]
+}
+
 /** A point in device pixels. */
 export interface Point {
   x: number
@@ -85,6 +110,13 @@ export interface ConnectOptions {
    * long as it takes. A call that runs out ends the connection.
    */
   callTimeoutMs?: number
+  /**
+   * A daemon of this connection's own, by name, as MOBIUM_SESSION sets one.
+   * One daemon serves one call at a time across every device, so parallel
+   * runs on different devices should each name one. Keep it short; it is
+   * part of a socket path.
+   */
+  session?: string
 }
 
 export interface StartOptions extends ConnectOptions {
@@ -210,6 +242,18 @@ export class Device {
   contexts(): Promise<string[]>
   context(name?: string): Promise<string>
   eval(expression: string): Promise<string>
+  /** The current WebView's cookies, HttpOnly ones included. Needs a web context. */
+  cookies(): Promise<Cookie[]>
+  /** Set each cookie and read the store back. */
+  setCookies(cookies: Cookie[]): Promise<void>
+  /** Delete the page's cookies, or only those called name. */
+  clearCookies(name?: string): Promise<void>
+  /** The page's storage state. */
+  storage(): Promise<StorageState>
+  /** Restore a saved state; each origin's storage goes only into a page on it. */
+  setStorage(state: StorageState): Promise<void>
+  /** Empty the page's cookies, localStorage and sessionStorage. */
+  clearStorage(): Promise<void>
 
   // diagnostics and lifecycle
   doctor(): Promise<Data>

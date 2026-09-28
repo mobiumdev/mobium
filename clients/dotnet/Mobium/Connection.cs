@@ -43,7 +43,7 @@ namespace Mobium
         // after says so plainly.
         private string? _dead;
 
-        internal Connection(string binary, IList<string> args, TimeSpan timeout)
+        internal Connection(string binary, IList<string> args, TimeSpan timeout, string session = "")
         {
             _timeout = timeout;
             var info = new ProcessStartInfo(binary)
@@ -56,6 +56,9 @@ namespace Mobium
                 // explicable rather than looking like a hang.
                 RedirectStandardError = false,
             };
+            // A daemon of this connection's own. EnvironmentVariables, not
+            // Environment: the latter is missing from netstandard2.0.
+            if (!string.IsNullOrEmpty(session)) info.EnvironmentVariables["MOBIUM_SESSION"] = session;
             // netstandard2.0 has no ProcessStartInfo.ArgumentList, so the
             // command line is built by hand. A device serial or a path with a
             // space in it would otherwise arrive as two arguments -- the same

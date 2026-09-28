@@ -86,6 +86,10 @@ Three things follow.
   page's buttons and links, labeled. A standalone web app has no browser
   chrome, so its inset is probably just the status bar; that is a hypothesis
   that would need a positive control before any code relied on it.
+- **Cookies and web storage work in all of them** — Chrome, an app's own
+  WebView, Safari and a home-screen web app's page — through `app_cookies`
+  and `app_storage`, once the page is on an http or https origin; an app's
+  inline HTML has none, and is refused as that.
 - **Installing one is not something Mobium does.** On Android it needs
   Chrome's menu, on iOS the share sheet. On this emulator Chrome pinned a
   legacy web-app shortcut rather than minting a WebAPK, which needs Play

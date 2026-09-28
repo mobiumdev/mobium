@@ -36,6 +36,12 @@ func fakeMobium() {
 	out := bufio.NewWriter(os.Stdout)
 	defer out.Flush()
 	scenario := os.Getenv(fakeScenarioEnv)
+	if path := os.Getenv(fakeNotifyLogEnv); path != "" {
+		if f, err := os.OpenFile(path, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o600); err == nil {
+			f.WriteString("session=" + os.Getenv("MOBIUM_SESSION") + "\n")
+			f.Close()
+		}
+	}
 
 	for {
 		line, err := in.ReadBytes('\n')
@@ -209,8 +215,26 @@ func TestCloseDetachesBeforeItGoes(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if got := strings.Fields(string(data)); len(got) != 2 || got[0] != "notifications/initialized" || got[1] != "mobium/detach" {
+	if got := strings.Fields(string(data)); len(got) != 3 || got[1] != "notifications/initialized" || got[2] != "mobium/detach" {
 		t.Errorf("notifications %v, want the handshake's and then mobium/detach", got)
+	}
+}
+
+// WithSession gives the connection a daemon of its own, which is how two
+// parallel runs stop waiting on each other.
+func TestWithSessionReachesThePipe(t *testing.T) {
+	log := filepath.Join(t.TempDir(), "notify.log")
+	t.Setenv(fakeNotifyLogEnv, log)
+	t.Setenv(mobiumFakeEnv, "1")
+	t.Setenv("MOBIUM_SESSION", "outer")
+	dev, err := Connect(WithBinary(os.Args[0]), WithSession("run7"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	dev.Close()
+	data, _ := os.ReadFile(log)
+	if !strings.Contains(string(data), "session=run7\n") {
+		t.Errorf("the pipe saw %q, want MOBIUM_SESSION=run7 over the environment's", data)
 	}
 }
 

@@ -53,6 +53,11 @@ command mentions them.
 | `app_context` | `driver` | string | _global_ --driver |
 | `app_contexts` | `device` | string | _global_ --device |
 | `app_contexts` | `driver` | string | _global_ --driver |
+| `app_cookies` | `action` | string | cookies |
+| `app_cookies` | `cookies` | array | cookies |
+| `app_cookies` | `device` | string | _global_ --device |
+| `app_cookies` | `driver` | string | _global_ --driver |
+| `app_cookies` | `name` | string | cookies |
 | `app_crashes` | `app` | string | crashes |
 | `app_crashes` | `device` | string | _global_ --device |
 | `app_crashes` | `driver` | string | _global_ --driver |
@@ -203,6 +208,10 @@ command mentions them.
 | `app_sms` | `text` | string | sms |
 | `app_source` | `device` | string | _global_ --device |
 | `app_source` | `driver` | string | _global_ --driver |
+| `app_storage` | `action` | string | storage |
+| `app_storage` | `device` | string | _global_ --device |
+| `app_storage` | `driver` | string | _global_ --driver |
+| `app_storage` | `state` | object | storage |
 | `app_swipe` | `device` | string | _global_ --device |
 | `app_swipe` | `direction` | string | swipe |
 | `app_swipe` | `driver` | string | _global_ --driver |
@@ -265,6 +274,7 @@ arguments and the two global flags.
 | `clipboard` | app_clipboard | — | text |
 | `context` | app_context | — | context |
 | `contexts` | app_contexts | — | — |
+| `cookies` | app_cookies, app_cookies, app_cookies | --domain --expires --http-only --path --same-site --secure | action, cookies, name |
 | `crashes` | app_crashes | --app --limit | app, id, limit |
 | `current` | app_current | — | — |
 | `daemon` | — | — | — |
@@ -306,6 +316,7 @@ arguments and the two global flags.
 | `start` | — | --idle-timeout | — |
 | `status` | — | — | running |
 | `stop` | — | — | status |
+| `storage` | app_storage, app_storage, app_storage | --output | action, state |
 | `swipe` | app_swipe | --duration | direction, duration_ms, x1, x2, y1, y2 |
 | `tap` | app_tap, app_tap | --fingers | fingers, target, x, y |
 | `terminate` | app_terminate | — | app |

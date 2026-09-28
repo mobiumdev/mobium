@@ -480,7 +480,14 @@ public final class Tests {
         Mobium.builder().binary(FakeProcess.launcher("ok", null, log)).connect().close();
         String sent = java.nio.file.Files.exists(log) ? java.nio.file.Files.readString(log).trim().replace("\n", ",") : "";
         eq("close() sends the handshake's notification and then mobium/detach",
-                "notifications/initialized,mobium/detach", sent);
+                "session=,notifications/initialized,mobium/detach", sent);
+
+        // session() gives the connection a daemon of its own.
+        java.nio.file.Path log2 = java.nio.file.Files.createTempFile("mobium-session", ".log");
+        java.nio.file.Files.delete(log2);
+        Mobium.builder().binary(FakeProcess.launcher("ok", null, log2)).session("run7").connect().close();
+        String first = java.nio.file.Files.exists(log2) ? java.nio.file.Files.readAllLines(log2).get(0) : "";
+        eq("session() reaches the pipe as MOBIUM_SESSION", "session=run7", first);
     }
 
     private static void eq(String what, Object want, Object got) {

@@ -706,6 +706,54 @@ namespace Mobium
             Json.Str(Data("app_eval", Args("expression", expression)), "value");
 
         /// <summary>
+        /// The current WebView's cookies: the ones its page's URL is sent,
+        /// HttpOnly ones included. Needs a web context — <c>Context</c> first.
+        /// Each has Playwright's and Vibium's keys: name, value, domain, path,
+        /// expires (seconds since the epoch, absent for a session cookie),
+        /// httpOnly, secure and sameSite.
+        /// </summary>
+        public IList<IDictionary<string, object?>> Cookies() =>
+            Maps(Field("app_cookies", Args("action", "get"), "cookies"));
+
+        /// <summary>
+        /// Sets each cookie on the current page and reads the store back, so
+        /// one the browser accepted and stored expired throws
+        /// <see cref="NotConfirmedException"/>.
+        /// </summary>
+        public void SetCookies(IEnumerable<IDictionary<string, object?>> cookies)
+        {
+            if (cookies == null) throw new ArgumentNullException(nameof(cookies));
+            var list = new List<object?>();
+            foreach (var c in cookies) list.Add(c);
+            Data("app_cookies", Args("action", "set", "cookies", list));
+        }
+
+        /// <summary>Deletes the current page's cookies, or only those called <paramref name="name"/>.</summary>
+        public void ClearCookies(string? name = null) =>
+            Data("app_cookies", string.IsNullOrEmpty(name) ? Args("action", "clear") : Args("action", "clear", "name", name));
+
+        /// <summary>
+        /// The current page's storage state, in the shape Playwright and
+        /// Vibium save: cookies, and origins with origin, localStorage and
+        /// sessionStorage.
+        /// </summary>
+        public IDictionary<string, object?> Storage()
+        {
+            var data = Data("app_storage", Args("action", "get"));
+            return data.TryGetValue("state", out var state) ? Json.AsObject(state) : new Dictionary<string, object?>();
+        }
+
+        /// <summary>
+        /// Restores a saved state: its cookies, and each origin's storage into
+        /// the page only if the page is on that origin.
+        /// </summary>
+        public void SetStorage(IDictionary<string, object?> state) =>
+            Data("app_storage", Args("action", "restore", "state", state));
+
+        /// <summary>Empties the current page's cookies, localStorage and sessionStorage.</summary>
+        public void ClearStorage() => Data("app_storage", Args("action", "clear"));
+
+        /// <summary>
         /// What is in the notification shade — how a test asserts an app posted
         /// what it should. Each map has package, title and text.
         /// </summary>
@@ -910,6 +958,7 @@ namespace Mobium
         private string _platform = "";
         private string _app = "";
         private TimeSpan _timeout = System.Threading.Timeout.InfiniteTimeSpan;
+        private string _session = "";
 
         /// <summary>Pins the mobium executable, ahead of MOBIUM_BIN_PATH and PATH.</summary>
         public DeviceBuilder Binary(string path) { _binary = path ?? ""; return this; }
@@ -944,6 +993,15 @@ namespace Mobium
             _timeout = timeout;
             return this;
         }
+
+        /// <summary>
+        /// A daemon of this connection's own, by name, as <c>MOBIUM_SESSION</c>
+        /// sets one. One daemon serves one call at a time across every device,
+        /// so parallel runs on different devices should each name one: sharing,
+        /// an emulator's calls waited behind a simulator's, 22.3s against 0.3s.
+        /// Keep it short; it is part of a socket path.
+        /// </summary>
+        public DeviceBuilder Session(string name) { _session = name ?? ""; return this; }
 
         /// <summary>
         /// The platform for <see cref="Start"/>: <c>android</c> or <c>ios</c>.
@@ -982,7 +1040,7 @@ namespace Mobium
             var args = new List<string>();
             if (!string.IsNullOrWhiteSpace(_device)) { args.Add("--device"); args.Add(_device); }
             if (!string.IsNullOrWhiteSpace(_driver)) { args.Add("--driver"); args.Add(_driver); }
-            return new Device(new Connection(Connection.FindBinary(_binary), args, _timeout));
+            return new Device(new Connection(Connection.FindBinary(_binary), args, _timeout, _session));
         }
     }
 

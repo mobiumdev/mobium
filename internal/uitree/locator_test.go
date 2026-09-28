@@ -1,6 +1,11 @@
 package uitree
 
-import "testing"
+import (
+	"os"
+	"path/filepath"
+	"strings"
+	"testing"
+)
 
 func TestParseLocator(t *testing.T) {
 	tests := []struct {
@@ -208,5 +213,42 @@ func TestTestIDResolvesExactFirst(t *testing.T) {
 	loc, _ = ParseLocator("testid=Password")
 	if got := loc.Resolve(tree); len(got) != 1 || got[0].Class != "XCUIElementTypeStaticText" {
 		t.Errorf("testid=Password resolved to %d nodes, want the heading", len(got))
+	}
+}
+
+// The role map prints is a role a locator can find the node by — or, for a
+// row around a real button, the button inside it. On iOS it was not: every
+// Cell, keyboard key and React Native view printed as (button) and matched
+// no role=button — 93 entries across these hierarchies, and one Android
+// GridView printed as a list. CHALLENGES 136.
+func TestTheRoleMapPrintsIsOneALocatorFinds(t *testing.T) {
+	files, err := filepath.Glob("testdata/*.xml")
+	if err != nil || len(files) == 0 {
+		t.Fatalf("no captured hierarchies: %v", err)
+	}
+	for _, f := range files {
+		data, err := os.ReadFile(f)
+		if err != nil {
+			t.Fatal(err)
+		}
+		parse := ParseAndroid
+		if strings.Contains(string(data), "XCUIElementType") {
+			parse = ParseIOS
+		}
+		tree, err := parse(data)
+		if err != nil {
+			continue // a fragment kept for another test
+		}
+		for _, e := range tree.Map() {
+			if e.Role != "" && !HasRole(e.Node, e.Role) && !hasNamedDescendant(e.Node, e.Role) {
+				t.Errorf("%s: %s prints as (%s), and role=%s does not find it", filepath.Base(f), e.Label, e.Role, e.Role)
+			}
+		}
+	}
+	// And the row that exposed it gets a locator a person could write.
+	for _, e := range loadIOS(t, "ios26-share-sheet-expanded.xml").Map() {
+		if e.Label == "Add to Home Screen" && e.Locator.String() != "label=Add to Home Screen,role=button" {
+			t.Errorf("Add to Home Screen's locator is %s", e.Locator)
+		}
 	}
 }

@@ -75,6 +75,7 @@ public final class Mobium implements AutoCloseable {
         private String platform = "";
         private String app = "";
         private Duration callTimeout;
+        private String session;
 
         /**
          * The platform for {@link #start()}: {@code "android"} or {@code "ios"}.
@@ -143,6 +144,18 @@ public final class Mobium implements AutoCloseable {
         }
 
         /**
+         * A daemon of this connection's own, by name, as {@code MOBIUM_SESSION}
+         * sets one. One daemon serves one call at a time across every device,
+         * so parallel runs on different devices should each name one:
+         * sharing, an emulator's calls waited behind a simulator's, 22.3s
+         * against 0.3s. Keep it short; it is part of a socket path.
+         *
+         * @param name the daemon's name
+         * @return this builder
+         */
+        public Builder session(String name) { this.session = name; return this; }
+
+        /**
          * Connects and opens the session on the device, as Appium's new
          * session does: the device-side server is started now and, given an
          * {@link #app}, it is launched and in front when this returns.
@@ -184,7 +197,7 @@ public final class Mobium implements AutoCloseable {
             List<String> args = new ArrayList<>();
             if (!device.isBlank())  { args.add("--device");  args.add(device); }
             if (!driver.isBlank()) { args.add("--driver"); args.add(driver); }
-            return new Mobium(new Connection(Connection.findBinary(binary), args, callTimeout));
+            return new Mobium(new Connection(Connection.findBinary(binary), args, callTimeout, session));
         }
     }
 
@@ -1189,6 +1202,75 @@ public final class Mobium implements AutoCloseable {
      */
     public String eval(String expression) {
         return Json.str(data("app_eval", args("expression", expression)), "value");
+    }
+
+    /**
+     * The current WebView's cookies: the ones its page's URL is sent, HttpOnly
+     * ones included. Needs a web context -- {@link #context(String)} first.
+     * Each map has Playwright's and Vibium's keys: name, value, domain, path,
+     * expires (seconds since the epoch, absent for a session cookie),
+     * httpOnly, secure and sameSite.
+     *
+     * @return the page's cookies
+     */
+    public List<Map<String, Object>> cookies() {
+        List<Map<String, Object>> out = new ArrayList<>();
+        for (Object o : Json.asArray(data("app_cookies", args("action", "get")).get("cookies"))) {
+            out.add(Json.asObject(o));
+        }
+        return out;
+    }
+
+    /**
+     * Sets each cookie on the current page and reads the store back, so one
+     * the browser accepted and stored expired throws
+     * {@link NotConfirmedException}. Each needs name and value; the rest
+     * default to the page's host, "/" and a session cookie.
+     *
+     * @param cookies the cookies, as maps with the keys {@link #cookies()} answers
+     */
+    public void setCookies(List<Map<String, Object>> cookies) {
+        data("app_cookies", args("action", "set", "cookies", new ArrayList<Object>(cookies)));
+    }
+
+    /**
+     * Deletes the current page's cookies, or with a name only those called
+     * that.
+     *
+     * @param name the cookie to delete; none deletes them all
+     */
+    public void clearCookies(String... name) {
+        if (name.length > 0 && name[0] != null && !name[0].isEmpty()) {
+            data("app_cookies", args("action", "clear", "name", name[0]));
+        } else {
+            data("app_cookies", args("action", "clear"));
+        }
+    }
+
+    /**
+     * The current page's storage state, in the shape Playwright and Vibium
+     * save: cookies, and origins, each with origin, localStorage and
+     * sessionStorage.
+     *
+     * @return the storage state
+     */
+    public Map<String, Object> storage() {
+        return Json.asObject(data("app_storage", args("action", "get")).get("state"));
+    }
+
+    /**
+     * Restores a saved state: its cookies, and each origin's storage into the
+     * page only if the page is on that origin.
+     *
+     * @param state a storage state, as {@link #storage()} answers it
+     */
+    public void setStorage(Map<String, Object> state) {
+        data("app_storage", args("action", "restore", "state", state));
+    }
+
+    /** Empties the current page's cookies, localStorage and sessionStorage. */
+    public void clearStorage() {
+        data("app_storage", args("action", "clear"));
     }
 
     /**
