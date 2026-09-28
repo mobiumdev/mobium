@@ -188,7 +188,8 @@ func GetToolSchemas() []Tool {
 		},
 		{
 			Name: "app_type",
-			Description: "Type text into a specific element. The element is located on the " +
+			Description: "Type text into a specific element, after what it already holds; " +
+				"app_fill replaces it instead. The element is located on the " +
 				"device, so the text goes where you aimed it rather than wherever focus " +
 				"happens to be, and quotes, spaces and non-ASCII survive intact. Pass an " +
 				"empty string to clear the field. Requires the uiautomator2 driver.",
@@ -203,10 +204,26 @@ func GetToolSchemas() []Tool {
 						"type":        "string",
 						"description": "The text to enter. An empty string clears the field.",
 					},
-					"clear": map[string]interface{}{
-						"type":        "boolean",
-						"description": "Clear the field before typing.",
-						"default":     false,
+				}),
+				"required":             []string{"target", "text"},
+				"additionalProperties": false,
+			},
+		},
+		{
+			Name: "app_fill",
+			Description: "Clear a specific element and type text into it, replacing what it " +
+				"held — Vibium's fill; app_type adds to it instead. Located, checked and " +
+				"typed as app_type is. Requires the uiautomator2 driver.",
+			InputSchema: map[string]interface{}{
+				"type": "object",
+				"properties": withDevice(map[string]interface{}{
+					"target": map[string]interface{}{
+						"type":        "string",
+						"description": "A ref from app_map (\"@e3\") or a locator (\"testid=search\").",
+					},
+					"text": map[string]interface{}{
+						"type":        "string",
+						"description": "The text the field should hold. An empty string clears it.",
 					},
 				}),
 				"required":             []string{"target", "text"},

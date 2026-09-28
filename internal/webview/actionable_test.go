@@ -58,7 +58,7 @@ func TestAnUnreadableActionabilityAnswerIsAnError(t *testing.T) {
 // holding it in a result.
 func TestAFillNeverSendsTheValueBack(t *testing.T) {
 	f := &cannedPage{answer: `{"status":"ok","matches":true,"password":true}`}
-	got, err := Fill(context.Background(), f, 3, `it's "quoted" & café`)
+	got, err := Fill(context.Background(), f, 3, `it's "quoted" & café`, false)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -68,7 +68,7 @@ func TestAFillNeverSendsTheValueBack(t *testing.T) {
 	// The value reaches the page as one JSON string literal — quotes, & and
 	// non-ASCII intact — decoded here rather than matched, since JSON may
 	// spell & as \u0026.
-	start := strings.Index(f.got, "const value = ") + len("const value = ")
+	start := strings.Index(f.got, "const text = ") + len("const text = ")
 	end := strings.Index(f.got[start:], ";\n") + start
 	var decoded string
 	if err := json.Unmarshal([]byte(f.got[start:end]), &decoded); err != nil || decoded != `it's "quoted" & café` {
@@ -76,5 +76,12 @@ func TestAFillNeverSendsTheValueBack(t *testing.T) {
 	}
 	if strings.Contains(fillScript, "value: el.value") || strings.Contains(fillScript, "now,") {
 		t.Error("the fill script sends a field's value back")
+	}
+	if !strings.Contains(f.got, "const append = false;") {
+		t.Error("a fill did not reach the page as a replacement")
+	}
+	// app_type's fill keeps what the field held: the flag is what says so.
+	if _, err := Fill(context.Background(), f, 3, "more", true); err != nil || !strings.Contains(f.got, "const append = true;") {
+		t.Errorf("an append did not reach the page as one (%v)", err)
 	}
 }

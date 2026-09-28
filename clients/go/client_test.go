@@ -412,7 +412,7 @@ func TestActionsReturnOnlyAnError(t *testing.T) {
 		"tap":        func() error { return dev.Tap(ctx, "@e3") },
 		"tap point":  func() error { return dev.TapPoint(ctx, 10, 20) },
 		"type":       func() error { return dev.Type(ctx, "@e3", "hi") },
-		"replace":    func() error { return dev.Replace(ctx, "@e3", "hi") },
+		"fill":       func() error { return dev.Fill(ctx, "@e3", "hi") },
 		"swipe":      func() error { return dev.Swipe(ctx, "up") },
 		"long press": func() error { return dev.LongPress(ctx, "@e3", time.Second) },
 		"launch":     func() error { return dev.Launch(ctx, "com.example.shop") },

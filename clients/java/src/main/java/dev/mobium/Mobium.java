@@ -507,7 +507,7 @@ public final class Mobium implements AutoCloseable {
     }
 
     /**
-     * Types into an element. Pass {@code ""} to clear it.
+     * Types into an element, after what it holds. Pass {@code ""} to clear it.
      *
      * @param target a ref from {@link #map()} such as {@code "@e5"}, or a locator such as {@code "text=Sign in"}
      * @param text the text to type; {@code ""} clears the field
@@ -517,13 +517,13 @@ public final class Mobium implements AutoCloseable {
     }
 
     /**
-     * Clears an element and types into it.
+     * Clears an element and types into it, replacing what it held.
      *
      * @param target a ref from {@link #map()} such as {@code "@e5"}, or a locator such as {@code "text=Sign in"}
-     * @param text the text to type once the field is cleared
+     * @param text the text the field should hold
      */
-    public void replace(String target, String text) {
-        act("app_type", args("target", target, "text", text, "clear", true));
+    public void fill(String target, String text) {
+        act("app_fill", args("target", target, "text", text));
     }
 
     /**

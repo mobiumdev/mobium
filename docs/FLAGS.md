@@ -83,6 +83,10 @@ command mentions them.
 | `app_eval` | `device` | string | _global_ --device |
 | `app_eval` | `driver` | string | _global_ --driver |
 | `app_eval` | `expression` | string | eval |
+| `app_fill` | `device` | string | _global_ --device |
+| `app_fill` | `driver` | string | _global_ --driver |
+| `app_fill` | `target` | string | fill |
+| `app_fill` | `text` | string | fill |
 | `app_find` | `device` | string | _global_ --device |
 | `app_find` | `driver` | string | _global_ --driver |
 | `app_find` | `locator` | string | find |
@@ -236,7 +240,6 @@ command mentions them.
 | `app_timezone` | `device` | string | _global_ --device |
 | `app_timezone` | `driver` | string | _global_ --driver |
 | `app_timezone` | `timezone` | string | timezone |
-| `app_type` | `clear` | boolean | type |
 | `app_type` | `device` | string | _global_ --device |
 | `app_type` | `driver` | string | _global_ --driver |
 | `app_type` | `target` | string | type |
@@ -284,6 +287,7 @@ arguments and the two global flags.
 | `double-tap` | app_tap, app_tap | — | double, target, x, y |
 | `drag` | app_drag | --duration-ms --hold-ms | duration_ms, from, hold_ms, to, x1, x2, y1, y2 |
 | `eval` | app_eval | — | expression |
+| `fill` | app_fill | — | target, text |
 | `find` | app_find | — | locator |
 | `grant` | app_grant | — | app, permissions |
 | `install` | app_install | — | path |
@@ -322,7 +326,7 @@ arguments and the two global flags.
 | `terminate` | app_terminate | — | app |
 | `text` | app_text | — | target |
 | `timezone` | app_timezone | — | timezone |
-| `type` | app_type | --clear | clear, target, text |
+| `type` | app_type | — | target, text |
 | `uncheck` | app_check | — | checked, target |
 | `uninstall` | app_uninstall | — | app |
 | `wait` | app_wait_for | --for --text --timeout | condition, target, text, timeout_ms |

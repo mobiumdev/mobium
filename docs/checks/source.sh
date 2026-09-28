@@ -33,7 +33,7 @@ fresh() { $M terminate "$APP" >/dev/null 2>&1 || true; $M launch "$APP" >/dev/nu
 
 fresh
 $M tap testid=loginBtn >/dev/null
-$M type testid=password "$SECRET" >/dev/null
+$M fill testid=password "$SECRET" >/dev/null
 $M source --json > "$TMP/native.json"
 python3 - "$TMP/native.json" "$UNITS" "$SECRET" <<'EOF' || exit 1
 import json, sys, xml.dom.minidom

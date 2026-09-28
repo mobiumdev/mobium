@@ -2377,6 +2377,13 @@ nothing noticed. It is now cleared before typing, which makes `app_type`
 replace a field's contents on iOS as UiAutomator2 does on Android, password
 or not; the test fails if the clear is removed.
 
+Since 2026-09-27 that is `app_fill`, Vibium's name for it, and `app_type`
+adds to a field, as Vibium's type does. Neither server can type at the
+cursor, so an append is the field set to what it held plus the text, through
+the same cleared and confirmed `SetText`; a password that holds anything is
+refused, since it cannot be read back to add to. The login demo, which found
+this, now fills its fields.
+
 ### 104. `testid=password` matched seven elements
 
 **Found by:** the login demo on iOS, once the form had visible labels. A

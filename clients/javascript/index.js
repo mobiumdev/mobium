@@ -671,9 +671,14 @@ export class Device {
     return (await this.#data('app_press_drag', args)) || {}
   }
 
-  /** Type into an element. An empty string clears it. */
-  async type(target, text, { clear = false } = {}) {
-    await this.#text('app_type', { target, text, clear })
+  /** Type into an element, after what it holds. An empty string clears it. */
+  async type(target, text) {
+    await this.#text('app_type', { target, text })
+  }
+
+  /** Clear an element and type into it, replacing what it held. */
+  async fill(target, text) {
+    await this.#text('app_fill', { target, text })
   }
 
   /** Swipe by direction ('up' | 'down' | 'left' | 'right') or exact points. */

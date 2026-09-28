@@ -250,13 +250,13 @@ namespace Mobium
         public void PressDrag(string hold, string from, string to) =>
             Act("app_press_drag", Args("hold", hold, "from", from, "to", to));
 
-        /// <summary>Types into an element. Pass <c>""</c> to clear it.</summary>
+        /// <summary>Types into an element, after what it holds. Pass <c>""</c> to clear it.</summary>
         public void Type(string target, string text) =>
             Act("app_type", Args("target", target, "text", text));
 
-        /// <summary>Clears an element and types into it.</summary>
-        public void Replace(string target, string text) =>
-            Act("app_type", Args("target", target, "text", text, "clear", true));
+        /// <summary>Clears an element and types into it, replacing what it held.</summary>
+        public void Fill(string target, string text) =>
+            Act("app_fill", Args("target", target, "text", text));
 
         /// <summary>
         /// Drags across the middle of the screen: <c>"up"</c>, <c>"down"</c>,

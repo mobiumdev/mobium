@@ -418,9 +418,13 @@ class Device:
             args["lead_ms"] = lead_ms
         return self._data("app_press_drag", args) or {}
 
-    def type(self, target: str, text: str, clear: bool = False) -> None:
-        """Type into an element. An empty string clears it."""
-        self._call("app_type", {"target": target, "text": text, "clear": clear})
+    def type(self, target: str, text: str) -> None:
+        """Type into an element, after what it holds. An empty string clears it."""
+        self._call("app_type", {"target": target, "text": text})
+
+    def fill(self, target: str, text: str) -> None:
+        """Clear an element and type into it, replacing what it held."""
+        self._call("app_fill", {"target": target, "text": text})
 
     def swipe(
         self,

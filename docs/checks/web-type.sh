@@ -60,6 +60,13 @@ $M type "$(ref "notes")" "two words" >/dev/null
 [ "$(field area)" = "two words" ] || fail "the textarea holds \"$(field area)\""
 row "email, textarea" "hold what was typed"
 
+# --- type adds, fill replaces, as Vibium's do -------------------------------
+$M type "$(ref "notes")" " more" >/dev/null
+[ "$(field area)" = "two words more" ] || fail "type did not add to the textarea: \"$(field area)\""
+$M fill "$(ref "notes")" "replaced" >/dev/null
+[ "$(field area)" = "replaced" ] || fail "fill did not replace the textarea: \"$(field area)\""
+row "type, fill" "type added to the field, fill replaced it"
+
 # --- clearing ------------------------------------------------------------
 SAID=$($M type "$(ref "notes")" "")
 echo "$SAID" | grep -q "cleared" || fail "an empty type did not say it cleared: $SAID"

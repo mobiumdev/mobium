@@ -182,7 +182,8 @@ export class Device {
   drag(from: string, to: string, options?: { holdMs?: number }): Promise<Data>
   pressTap(hold: string, tap: string, options?: { leadMs?: number }): Promise<Data>
   pressDrag(hold: string, from: string, to: string, options?: { leadMs?: number }): Promise<Data>
-  type(target: string, text: string, options?: { clear?: boolean }): Promise<void>
+  type(target: string, text: string): Promise<void>
+  fill(target: string, text: string): Promise<void>
   swipe(direction?: 'up' | 'down' | 'left' | 'right', options?: { durationMs?: number; from?: Point; to?: Point }): Promise<void>
   longPress(target: string | Point, options?: { durationMs?: number }): Promise<void>
   check(target: string, checked?: boolean): Promise<Data>

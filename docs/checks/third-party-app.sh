@@ -94,7 +94,7 @@ sleep 2
 $M map | grep -q 'Close' && { $M tap 'label=Close' >/dev/null; sleep 1; }
 $M tap 'text=Search Wikipedia' >/dev/null 2>&1 || $M tap 'label=Search Wikipedia' >/dev/null
 sleep 2
-$M type 'text=Search Wikipedia,role=input' 'Ada Lovelace' >/dev/null
+$M fill 'text=Search Wikipedia,role=input' 'Ada Lovelace' >/dev/null
 sleep 4
 $M map | grep -q 'English mathematician' || fail "the search results never arrived"
 echo "    search         typed a query and the app answered              ok"

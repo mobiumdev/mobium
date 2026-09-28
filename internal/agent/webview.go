@@ -559,21 +559,24 @@ func webCheckFailed(target string, a *webview.Actionability, waited time.Duratio
 		WithDetail("reason", a.Reason)
 }
 
-// webType is app_type inside a WebView: Vibium's fill. The page is asked
+// webType is app_type and app_fill inside a WebView: Vibium's fill, and its
+// type as the same setter with what the field held kept in front. The page is asked
 // whether the field can take text — visible and in view, enabled, editable —
 // and then its value is set the way a framework's controlled input hears it,
 // with the input and change events typing would have caused, and read back.
 // Visibility and enablement are waited out within the implicit wait, as for a
 // tap; a field that is not a text field at all is refused at once, as native
 // app_type refuses one. A password is never echoed.
-func (h *Handlers) webType(ctx context.Context, s *session, target, text string) (*ToolsCallResult, error) {
+func (h *Handlers) webType(ctx context.Context, s *session, target, text string, replace bool) (*ToolsCallResult, error) {
+	// Empty text clears for app_type as for app_fill, natively and here.
+	appendText := !replace && text != ""
 	deadline := time.Now().Add(h.implicitWait)
 	for {
 		_, index, _, err := h.findWeb(ctx, s, target)
 		if err != nil {
 			return nil, err
 		}
-		f, err := webview.Fill(ctx, s.web, index, text)
+		f, err := webview.Fill(ctx, s.web, index, text, appendText)
 		if err != nil {
 			return nil, err
 		}

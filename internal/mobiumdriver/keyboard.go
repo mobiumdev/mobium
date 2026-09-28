@@ -239,7 +239,7 @@ func (u *UIA2) TypeIntoFocus(ctx context.Context, text string) (*FocusedField, e
 		if n := len([]rune(before.Value)); n > 0 {
 			return nil, mobiumerr.New(mobiumerr.Unsupported, "the focused password field already holds %d characters, "+
 				"which Android will not read back, and typing here would replace them — type the whole password "+
-				"with app_type and clear, or delete it first (app_keyboard with key \"delete\")", n)
+				"with app_fill, or delete it first (app_keyboard with key \"delete\")", n)
 		}
 		want = text
 	}

@@ -513,6 +513,40 @@
       ]
     },
     {
+      "tool": "app_fill",
+      "arg": "device",
+      "type": "string",
+      "setBy": [
+        "--device"
+      ],
+      "global": true
+    },
+    {
+      "tool": "app_fill",
+      "arg": "driver",
+      "type": "string",
+      "setBy": [
+        "--driver"
+      ],
+      "global": true
+    },
+    {
+      "tool": "app_fill",
+      "arg": "target",
+      "type": "string",
+      "setBy": [
+        "fill"
+      ]
+    },
+    {
+      "tool": "app_fill",
+      "arg": "text",
+      "type": "string",
+      "setBy": [
+        "fill"
+      ]
+    },
+    {
       "tool": "app_find",
       "arg": "device",
       "type": "string",
@@ -1809,14 +1843,6 @@
     },
     {
       "tool": "app_type",
-      "arg": "clear",
-      "type": "boolean",
-      "setBy": [
-        "type"
-      ]
-    },
-    {
-      "tool": "app_type",
       "arg": "device",
       "type": "string",
       "setBy": [
@@ -2190,6 +2216,16 @@
       ],
       "sends": [
         "expression"
+      ]
+    },
+    {
+      "command": "fill",
+      "tools": [
+        "app_fill"
+      ],
+      "sends": [
+        "target",
+        "text"
       ]
     },
     {
@@ -2634,11 +2670,7 @@
       "tools": [
         "app_type"
       ],
-      "flags": [
-        "--clear"
-      ],
       "sends": [
-        "clear",
         "target",
         "text"
       ]

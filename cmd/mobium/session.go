@@ -6,6 +6,10 @@ func newSessionCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "session [start | end | status]",
 		Short: "Start or end the session on a device",
+		// `vibium stop` ends a browser session; `mobium stop` is not a
+		// command, since it could mean one device's session, every device's,
+		// or one app. The three are suggested instead of one being guessed.
+		SuggestFor: []string{"stop"},
 		Long: "The explicit start and end of a device session, as Appium's new session\n" +
 			"and quit are. Never required: every other command opens a session on\n" +
 			"first use.\n\n" +

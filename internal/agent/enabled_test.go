@@ -145,8 +145,67 @@ func TestTheDevicesNotEditableIsTranslated(t *testing.T) {
 	h := NewHandlers()
 	h.implicitWait, h.settleWindow = 0, 0
 	s := &session{dev: fakeDevice(), driver: d, backend: BackendUIA2}
-	_, err = h.typeTextOn(context.Background(), s, map[string]interface{}{"target": "testid=ink", "text": "hello"})
+	_, err = h.typeTextOn(context.Background(), s, map[string]interface{}{"target": "testid=ink", "text": "hello"}, false)
 	if mobiumerr.CodeOf(err) != mobiumerr.InvalidArgument || !strings.Contains(err.Error(), "not a text field") {
 		t.Errorf("the device's refusal was passed through raw: %v", err)
+	}
+}
+
+// recordingTyper records what the field was set to, and whether it was
+// cleared first.
+type recordingTyper struct {
+	fakeDriver
+	set     []string
+	cleared int
+}
+
+func (d *recordingTyper) SetText(ctx context.Context, n *uitree.Node, text string) error {
+	d.set = append(d.set, text)
+	return nil
+}
+func (d *recordingTyper) Clear(ctx context.Context, n *uitree.Node) error { d.cleared++; return nil }
+
+// app_type adds to what a field holds and app_fill replaces it, as Vibium's
+// type and fill do; an empty field's placeholder is not something it holds,
+// and a password that cannot be read back is not added to.
+func TestTypeAddsAndFillReplaces(t *testing.T) {
+	field := func(attrs string) *uitree.Tree {
+		xml := `<?xml version='1.0' encoding='UTF-8'?><hierarchy rotation="0">` +
+			`<node index="0" class="android.widget.FrameLayout" bounds="[0,0][1080,2400]" enabled="true">` +
+			`<node index="0" resource-id="app:id/f" class="android.widget.EditText" clickable="true" ` +
+			`enabled="true" bounds="[100,200][900,280]" ` + attrs + ` /></node></hierarchy>`
+		tree, err := uitree.ParseAndroid([]byte(xml))
+		if err != nil {
+			t.Fatal(err)
+		}
+		return tree
+	}
+	run := func(attrs, text string, replace bool) (*recordingTyper, error) {
+		d := &recordingTyper{fakeDriver: fakeDriver{screens: []*uitree.Tree{field(attrs)}}}
+		h := NewHandlers()
+		h.implicitWait, h.settleWindow = 0, 0
+		s := &session{dev: fakeDevice(), driver: d, backend: BackendUIA2}
+		_, err := h.typeTextOn(context.Background(), s, map[string]interface{}{"target": "testid=f", "text": text}, replace)
+		return d, err
+	}
+
+	d, err := run(`text="mob"`, "ium", false)
+	if err != nil || len(d.set) != 1 || d.set[0] != "mobium" {
+		t.Errorf("type into \"mob\" set %q (%v), want \"mobium\"", d.set, err)
+	}
+	d, err = run(`text="mob"`, "xyz", true)
+	if err != nil || len(d.set) != 1 || d.set[0] != "xyz" || d.cleared != 1 {
+		t.Errorf("fill over \"mob\" set %q, cleared %d (%v), want \"xyz\" after one clear", d.set, d.cleared, err)
+	}
+	d, err = run(`text="Username" hint="Username" showing-hint="true"`, "mob", false)
+	if err != nil || len(d.set) != 1 || d.set[0] != "mob" || d.cleared != 0 {
+		t.Errorf("type into an empty field set %q, cleared %d (%v): the placeholder was taken as its text", d.set, d.cleared, err)
+	}
+	d, err = run(`text="••••" password="true"`, "x", false)
+	if mobiumerr.CodeOf(err) != mobiumerr.Unsupported || len(d.set) != 0 {
+		t.Errorf("adding to a non-empty password field was not refused: set %q, %v", d.set, err)
+	}
+	if e, ok := mobiumerr.As(err); !ok || !strings.Contains(e.Remedy, "app_fill") {
+		t.Errorf("the refusal did not name app_fill: %v", err)
 	}
 }

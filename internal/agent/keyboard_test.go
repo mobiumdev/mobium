@@ -141,7 +141,7 @@ func TestAppTypeDoesNotEchoAPassword(t *testing.T) {
 	h.implicitWait = 0
 	h.settleWindow = 0
 	s := &session{dev: fakeDevice(), driver: d, backend: BackendUIA2}
-	res, err := h.typeTextOn(context.Background(), s, map[string]interface{}{"target": "testid=password", "text": "hunter2"})
+	res, err := h.typeTextOn(context.Background(), s, map[string]interface{}{"target": "testid=password", "text": "hunter2"}, false)
 	if err != nil {
 		t.Fatal(err)
 	}

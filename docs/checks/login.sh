@@ -53,8 +53,9 @@ absent() {
 }
 # attempt <username> <password>: fill the form and submit it.
 attempt() {
-  $M type testid=username "$1" >/dev/null
-  $M type testid=password "$2" >/dev/null
+  # fill, not type: each attempt replaces the last, and type adds to it.
+  $M fill testid=username "$1" >/dev/null
+  $M fill testid=password "$2" >/dev/null
   $M tap testid=loginBtn >/dev/null
 }
 # unprinted <secret>: what was typed into the password field is shown by
