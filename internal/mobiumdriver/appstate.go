@@ -127,8 +127,13 @@ func (w *WDA) Background(ctx context.Context, appID string, d time.Duration) err
 	}
 	// On a phone the switch back is announced, as a launch is (CHALLENGES 71).
 	w.expectApp(ctx, appID)
-	err := w.w3c.do(ctx, http.MethodPost, w.w3c.sessionPath("/wda/deactivateApp"),
-		map[string]interface{}{"duration": d.Seconds()}, nil)
+	// WebDriverAgent sends away and brings back the app it believes active,
+	// and under a notification banner that is SpringBoard: the app went away
+	// and stayed away (CHALLENGES 155). So it is told which app this is.
+	err := w.asApp(ctx, appID, func() error {
+		return w.w3c.do(withLongerCall(ctx, d), http.MethodPost, w.w3c.sessionPath("/wda/deactivateApp"),
+			map[string]interface{}{"duration": d.Seconds()}, nil)
+	})
 	if err != nil {
 		w.clearExpected(ctx)
 	}

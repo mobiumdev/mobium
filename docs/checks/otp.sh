@@ -165,7 +165,7 @@ row "lockout" "two chances counted down, then locked, even for the code"
 # --- expired, while the app was away ----------------------------------------
 open_otp
 send
-$M background 62 >/dev/null
+r=$($M background 62 2>&1) || fail "sending the app away: $r"
 [ "$($M text testid=otpExpires)" = "expired" ] || fail "after 62s away the code says \"$($M text testid=otpExpires)\""
 verify_field "$CODE"
 case "$(out)" in expired*) ;; *) fail "an expired code gave \"$(out)\"" ;; esac

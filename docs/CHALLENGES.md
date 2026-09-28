@@ -7,7 +7,7 @@ the source.
 
 The pattern across them is the reason the document exists: **almost nothing
 here was found by reading code or by a test written from imagination.** Of
-156 defects, 125 were found only by running against a real device. The other
+157 defects, 126 were found only by running against a real device. The other
 thirty-one — 4, 5, 6, 14, 23, 24, 32, 35, 36, 39, 44, 50, 53, 54, 57, 66, 89,
 99, 100, 121, 123, 129, 130, 133, 134, 139, 140, 141, 142, 144 and 150 — came from reading code, the compiler, a test, a linter,
 cross-checking a computed number against a screenshot, using the tooling on
@@ -3545,6 +3545,16 @@ to ten seconds for the banner to go before refusing, rather than the dialog
 budget; measured, a Back tap under a fresh banner waited about 5.5 seconds and
 then navigated, two runs in two.
 
+The first version fixed reads only, and `docs/checks/otp.sh` found the two
+other places WebDriverAgent consults what it believes is active. `type` looks
+its field up through WebDriverAgent, which searched SpringBoard and answered
+"no such element" for a box the app's tree had just listed; a lookup that
+fails is now asked again as the node's own app. And `background` sent the app
+away and brought SpringBoard back, leaving the app in the background and the
+call reporting that it never returned; it now names the app it is
+deactivating. Both measured under a fresh banner on the simulator, two runs
+in two, and failing before.
+
 ### 156. Typing into a field that moves focus on was misread as dropped keystrokes
 
 **Found by:** the same screen, typing a whole six-digit code into the first
@@ -3566,6 +3576,21 @@ with the remedy that works — type into each field in turn. Nothing is typed
 twice. Measured on the simulator, six runs: five arrived whole and were
 reported typed, one lost a digit and named it, and none retried. Android is
 unaffected: it sets a field's text at once, and the app spreads it.
+
+### 157. An iOS background of a minute or more timed out
+
+**Found by:** `docs/checks/otp.sh`, sending MobiumApp away for 62 seconds to
+let its code expire, on the iPhone 17 Pro simulator.
+
+`app_background` takes up to 180 seconds, and on iOS it failed at any length
+past about one minute with "context deadline exceeded". WebDriverAgent's
+`deactivateApp` answers only once the app is back, and every request to it
+has a sixty-second client timeout. Android backgrounds by pressing Home and
+waiting on this side, so the same 62 seconds passed there, and nothing ever
+asked iOS for more than a few. That request is now given the duration on top
+of its timeout; a unit test holds a request past a short timeout and shows it
+fails without the extension first. Measured: the 62-second background
+passed on the simulator.
 
 ## Findings that were not defects
 

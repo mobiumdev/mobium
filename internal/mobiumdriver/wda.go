@@ -451,11 +451,30 @@ func (w *WDA) Clear(ctx context.Context, n *uitree.Node) error {
 // An accessibility identifier is preferred, exactly as a resource-id is on
 // Android. WDA's XPath is over the same document /source returned, so the
 // node's sibling path reconstructs it.
+//
+// A lookup that fails is asked again as the node's own app: under a
+// notification banner WebDriverAgent searches SpringBoard, and a field the
+// app's tree had just shown was "no such element" (CHALLENGES 155).
 func (w *WDA) elementFor(ctx context.Context, n *uitree.Node) (string, error) {
-	if n.TestID != "" {
-		return w.w3c.findElement(ctx, "accessibility id", n.TestID)
+	find := func() (string, error) {
+		if n.TestID != "" {
+			return w.w3c.findElement(ctx, "accessibility id", n.TestID)
+		}
+		return w.w3c.findElement(ctx, "xpath", iosXPathFor(n))
 	}
-	return w.w3c.findElement(ctx, "xpath", iosXPathFor(n))
+	id, err := find()
+	if err == nil || ctx.Err() != nil {
+		return id, err
+	}
+	app := appOf(n)
+	if app == "" || app == "com.apple.springboard" {
+		return id, err
+	}
+	var again string
+	if w.asApp(ctx, app, func() (e error) { again, e = find(); return e }) != nil {
+		return id, err
+	}
+	return again, nil
 }
 
 // iosXPathFor rebuilds an absolute XPath from a node's sibling path. WDA's

@@ -34,6 +34,16 @@ type w3cClient struct {
 	reopen func(context.Context) error
 }
 
+type longerCallKey struct{}
+
+// withLongerCall gives the requests made under ctx this much more than the
+// client's timeout, for a call the server holds open by design. WebDriverAgent
+// answers deactivateApp only when the app is back, so a background of a minute
+// or more timed out at the client's sixty seconds (CHALLENGES 157).
+func withLongerCall(ctx context.Context, d time.Duration) context.Context {
+	return context.WithValue(ctx, longerCallKey{}, d)
+}
+
 func newW3CClient(timeout time.Duration) *w3cClient {
 	return &w3cClient{client: &http.Client{Timeout: timeout}}
 }
@@ -615,7 +625,13 @@ func (c *w3cClient) doOnce(ctx context.Context, method, path string, body, out i
 	}
 	req.Header.Set("Content-Type", "application/json")
 
-	resp, err := c.client.Do(req)
+	client := c.client
+	if longer, ok := ctx.Value(longerCallKey{}).(time.Duration); ok {
+		cc := *c.client
+		cc.Timeout += longer
+		client = &cc
+	}
+	resp, err := client.Do(req)
 	if err != nil {
 		return fmt.Errorf("%s %s: %w", method, path, err)
 	}

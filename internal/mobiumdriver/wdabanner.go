@@ -47,17 +47,11 @@ func bannerOver(tree *uitree.Tree) (string, *uitree.Node) {
 // around it, waits for it, or is refused as covered — as for anything else
 // drawn over a target (CHALLENGES 115). The hint goes back to what it was.
 func (w *WDA) underBanner(ctx context.Context, app string, banner *uitree.Node) (*uitree.Tree, bool) {
-	if w.setActiveAppHint(ctx, app) != nil {
-		return nil, false
-	}
-	xml, err := w.w3c.source(ctx)
-	w.hintMu.Lock()
-	restore := w.expecting
-	w.hintMu.Unlock()
-	if restore == "" {
-		restore = "auto"
-	}
-	_ = w.setActiveAppHint(ctx, restore)
+	var xml string
+	err := w.asApp(ctx, app, func() (err error) {
+		xml, err = w.w3c.source(ctx)
+		return err
+	})
 	if err != nil {
 		return nil, false
 	}
@@ -77,4 +71,31 @@ func (w *WDA) underBanner(ctx context.Context, app string, banner *uitree.Node) 
 	}
 	tree.Root.Children = append(tree.Root.Children, banner)
 	return tree, true
+}
+
+// asApp runs fn with WebDriverAgent told that app is the active one, and puts
+// back what it was told before. A banner makes it believe SpringBoard is
+// active, and then both reads and element lookups search SpringBoard.
+func (w *WDA) asApp(ctx context.Context, app string, fn func() error) error {
+	if err := w.setActiveAppHint(ctx, app); err != nil {
+		return err
+	}
+	w.hintMu.Lock()
+	restore := w.expecting
+	w.hintMu.Unlock()
+	if restore == "" {
+		restore = "auto"
+	}
+	defer func() { _ = w.setActiveAppHint(ctx, restore) }()
+	return fn()
+}
+
+// appOf names the app a node was read from, or "" for a node built by hand.
+func appOf(n *uitree.Node) string {
+	for ; n != nil; n = n.Parent {
+		if n.Package != "" {
+			return n.Package
+		}
+	}
+	return ""
 }
