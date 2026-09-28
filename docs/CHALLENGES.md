@@ -7,7 +7,7 @@ the source.
 
 The pattern across them is the reason the document exists: **almost nothing
 here was found by reading code or by a test written from imagination.** Of
-145 defects, 115 were found only by running against a real device. The other
+146 defects, 116 were found only by running against a real device. The other
 thirty — 4, 5, 6, 14, 23, 24, 32, 35, 36, 39, 44, 50, 53, 54, 57, 66, 89,
 99, 100, 121, 123, 129, 130, 133, 134, 139, 140, 141, 142 and 144 — came from reading code, the compiler, a test, a linter,
 cross-checking a computed number against a screenshot, using the tooling on
@@ -3295,6 +3295,24 @@ target marked visible, as the phone had it; it fails without the change. On
 the phone, under the sheet: visible timed out naming "Save Password?",
 hidden held in 745ms, and once the sheet was answered the text was visible
 in 471ms.
+
+### 146. A row cut off by its list was reported as a tiny touch target
+
+**Found by:** formflux's device test on a Pixel 9 Pro Fold emulator, which
+reported one finding at the new `fold-open` profile and none anywhere else:
+a 2076×52px row in Android's own Settings, below the 48dp minimum.
+
+It was "Sound & vibration", 215px tall like every row beside it, sitting at
+the bottom edge of Settings' list with 52px of it showing. Android reports a
+child's bounds clipped to its scroll container (the rule the scroll code
+already follows), and the touch-target check measured the sliver. Any
+profile can produce it; `fold-open` was where a row happened to be cut with
+less than 48dp showing. A dimension that ends at an edge of the node's
+nearest scrolling ancestor is now not judged, since its real size was not
+reported. The test is that Settings screen, captured: the cut row is no
+longer reported, and the same row moved into the middle of the list still
+is. The device test logs findings without asserting any, so its zeros
+afterward show only that the check ran.
 
 ## Findings that were not defects
 

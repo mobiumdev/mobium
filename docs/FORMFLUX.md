@@ -138,6 +138,11 @@ screens, as the emulator's device profile gives them.
   the two are equivalent; for anything tied to which panel is on, only a
   real fold is.
 
+The first run at `fold-open` reported one tiny touch target, in Android's
+Settings: a row cut off by the bottom of its list, measured by the sliver
+still showing. That was formflux's mistake, not Settings' — CHALLENGES 146 —
+and a dimension clipped by a scroll container is no longer judged.
+
 Not measured: a real foldable, One UI's own fold behavior (a Samsung
 emulator skin is only the frame and the sizes, on stock Android), what
 `HALF_OPENED`'s tabletop layout does to an app that supports it, and whether
