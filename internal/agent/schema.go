@@ -1110,7 +1110,11 @@ func GetToolSchemas() []Tool {
 				"app's first screen; its data is kept — and waits for it to be in front. \"end\" closes it with the daemon's own teardown: " +
 				"accessibility settings put back, a recording or route stopped, WebViews " +
 				"detached, the device-side server stopped, and the device's refs and dialog " +
-				"rules forgotten. Ending a session that is not open succeeds and says so. " +
+				"rules forgotten — and the app start launched, if it did, is stopped; apps it " +
+				"did not launch are left alone. A browser restores its tabs when it next " +
+				"launches, so on Android the tabs app_open_url opened in it are closed " +
+				"first; Safari's cannot be closed from outside. Ending a session that is " +
+				"not open succeeds and says so. " +
 				"\"status\", or no action, lists the sessions open.",
 			InputSchema: map[string]interface{}{
 				"type": "object",

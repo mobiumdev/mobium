@@ -449,6 +449,10 @@ class Connection {
   close() {
     if (!this.dead) {
       this.dead = 'it was closed'
+      // mobium ends the sessions a client started when the client goes
+      // away, and a crash closes stdin just as this does — so say first
+      // that this is a deliberate close, or it would quit.
+      this.child.stdin.write(JSON.stringify({ jsonrpc: '2.0', method: 'mobium/detach' }) + '\n')
       this.child.stdin.end()
       const force = setTimeout(() => this.child.kill(), 10000)
       force.unref()
@@ -1261,8 +1265,10 @@ export class Device {
    * Ends the session on the device, as Appium's quit does, and closes the
    * connection. The teardown is the daemon's own: accessibility settings put
    * back, a recording or route stopped, WebViews detached, the device-side
-   * server stopped. Quitting a session that is not open succeeds, and a
-   * second quit does nothing.
+   * server stopped, and the app start() launched, if any, stopped too.
+   * Quitting a session that is not open succeeds, and a second quit does
+   * nothing. A script that exits without quit() or close() has the sessions
+   * it started ended for it: mobium sees the client go.
    */
   async quit() {
     // A second quit does nothing, rather than failing on a closed connection.

@@ -174,6 +174,17 @@ with start(platform="android", binary=FAKE) as d:
     d.quit()
 check(True, "a with block after an explicit quit did not raise")
 
+# -- close() says it is leaving on purpose -----------------------------------
+# mobium ends the sessions a client started when the client goes away, and a
+# crash closes stdin just as close() does; without the detach, close() quits.
+log = os.path.join(tempfile.mkdtemp(prefix="mobium-notify-"), "log")
+os.environ["MOBIUM_FAKE_NOTIFYLOG"] = log
+connect(binary=FAKE).close()
+os.environ["MOBIUM_FAKE_NOTIFYLOG"] = ""
+sent = pathlib.Path(log).read_text().split() if os.path.exists(log) else []
+check(sent == ["notifications/initialized", "mobium/detach"],
+      f"close() sent {sent}, not the handshake's notification and then mobium/detach")
+
 os.remove(FAKE)
 if failures:
     print("\n".join("FAIL: " + f for f in failures))

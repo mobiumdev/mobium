@@ -47,7 +47,11 @@ func newDaemonStartCmd() *cobra.Command {
 			ctx, cancel := context.WithCancel(context.Background())
 			defer cancel()
 			sigs := make(chan os.Signal, 2)
-			signal.Notify(sigs, os.Interrupt, syscall.SIGTERM)
+			// SIGHUP too: a daemon started in the foreground gets it when
+			// its terminal closes, and Go's default for it is to exit on the
+			// spot, leaving every device session as it was. The auto-started
+			// daemon is in a session of its own and never sees one.
+			signal.Notify(sigs, os.Interrupt, syscall.SIGTERM, syscall.SIGHUP)
 			go func() {
 				<-sigs
 				cancel()

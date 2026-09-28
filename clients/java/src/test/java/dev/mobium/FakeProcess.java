@@ -17,19 +17,27 @@ final class FakeProcess {
     private FakeProcess() {}
 
     static String launcher(String mode, Path pidFile) {
+        return launcher(mode, pidFile, null);
+    }
+
+    /** As above, with each notification's method appended to {@code notifyLog}. */
+    static String launcher(String mode, Path pidFile, Path notifyLog) {
         try {
             String java = Path.of(System.getProperty("java.home"), "bin", "java").toString();
             String cp = System.getProperty("java.class.path");
             String pid = pidFile == null ? "" : pidFile.toString();
+            String log = notifyLog == null ? "" : notifyLog.toString();
             Path dir = Files.createTempDirectory("mobium-fake");
             Path script;
             if (System.getProperty("os.name", "").startsWith("Windows")) {
                 script = dir.resolve("mobium.cmd");
                 Files.writeString(script, "@set MOBIUM_FAKE=" + mode + "\r\n@set MOBIUM_FAKE_PIDFILE=" + pid + "\r\n"
+                        + "@set MOBIUM_FAKE_NOTIFYLOG=" + log + "\r\n"
                         + "@\"" + java + "\" -cp \"" + cp + "\" dev.mobium.FakeMobium %*\r\n");
             } else {
                 script = dir.resolve("mobium");
                 Files.writeString(script, "#!/bin/sh\nMOBIUM_FAKE='" + mode + "' MOBIUM_FAKE_PIDFILE='" + pid + "' "
+                        + "MOBIUM_FAKE_NOTIFYLOG='" + log + "' "
                         + "exec '" + java + "' -cp '" + cp + "' dev.mobium.FakeMobium \"$@\"\n");
                 if (!script.toFile().setExecutable(true)) throw new AssertionError("could not make " + script + " executable");
             }

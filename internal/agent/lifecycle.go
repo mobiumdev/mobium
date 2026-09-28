@@ -295,6 +295,7 @@ func (h *Handlers) openURLOn(ctx context.Context, s *session, args map[string]in
 	s.closeWeb()
 
 	wasApp, wasScreen := h.screenNow(ctx, s)
+	before := h.tabsBefore(ctx, s)
 
 	if err := ctrl.OpenURL(ctx, url); err != nil {
 		return nil, err
@@ -302,6 +303,7 @@ func (h *Handlers) openURLOn(ctx context.Context, s *session, args map[string]in
 	delete(h.refs, s.dev.Serial)
 
 	app := h.awaitForeground(ctx, s, "", wasApp, wasScreen)
+	h.trackOpenedTabs(ctx, s, app, before)
 	if app == wasApp {
 		if err := h.lockedInstead(ctx, s, "opened "+url); err != nil {
 			return nil, err

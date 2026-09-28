@@ -7,9 +7,9 @@ the source.
 
 The pattern across them is the reason the document exists: **almost nothing
 here was found by reading code or by a test written from imagination.** Of
-129 defects, 107 were found only by running against a real device. The other
-twenty-two — 4, 5, 6, 14, 23, 24, 32, 35, 36, 39, 44, 50, 53, 54, 57, 66, 89,
-99, 100, 121, 123 and 129 — came from reading code, the compiler, a test, a linter,
+134 defects, 109 were found only by running against a real device. The other
+twenty-five — 4, 5, 6, 14, 23, 24, 32, 35, 36, 39, 44, 50, 53, 54, 57, 66, 89,
+99, 100, 121, 123, 129, 130, 133 and 134 — came from reading code, the compiler, a test, a linter,
 cross-checking a computed number against a screenshot, using the tooling on
 itself, typing a negative number at a command line, and driving the clients
 against a stand-in daemon, and CI on Windows.
@@ -3022,6 +3022,82 @@ unlisted, which is the case the mark exists to recover from. The watch now
 counts each application's answers, and a listing marks one silent only if
 nothing arrived from it while the listing ran. 60 runs in 60 pass; the old
 code fails the same test.
+
+### 130. A client that went away left its session open
+
+**Found by:** reading what happens to a session when its client exits, then
+measuring it on the iPhone 17 Pro simulator.
+
+Nothing tied a session to the client that started it. A script that
+returned without `quit()`, or crashed, closed its pipe exactly as `close()`
+does, and the pipe returned with the session still open on the device until
+the daemon went idle for 30 minutes. Ctrl-C was worse: it reaches the whole
+process group, so `mobium pipe` died with the client, and a `with` block or
+a `finally` that called `quit()` on the way out failed with "mobium closed
+the connection" and left the session open anyway — measured.
+
+The pipe now remembers the sessions its client started (not ones it found
+open, which `start` reports as reused), and ends them when the client goes,
+unless the client said it was leaving on purpose: `close()` in all five
+clients sends a `mobium/detach` notification first, so "close leaves the
+session open" still holds. The pipe ignores SIGINT, since the client may be
+handling it, and treats SIGTERM and SIGHUP as the client going. On the
+simulator: a script exiting without `quit()` has its session ended, `close()`
+keeps it, `kill -9` of the client ends it, and Ctrl-C around a `with` block
+quits cleanly — and with the SIGINT ignore taken out, the same Ctrl-C fails
+as before.
+
+### 131. After a daemon crash, the simulator showed WebDriverAgent's empty window
+
+**Found by:** `kill -9` of the daemon mid-session on the iPhone 17 Pro
+simulator, then any command.
+
+The runner the dead daemon launched kept running and kept its port. The next
+daemon's `simctl launch` of it did not restart it: it brought the runner's
+empty window to the front and left it there, so `current` answered
+`com.facebook.WebDriverAgentRunner.xctrunner`, `map` found nothing, and a
+screenshot was black — three runs in three. A runner already running when a
+session starts can only be a leftover, so the simulator start now stops it
+first: three runs in three, a new runner each time and SpringBoard in front.
+
+### 132. After a daemon crash on Android, a forward leaked and the next call could read EOF
+
+**Found by:** the same crash on an Android 15 emulator.
+
+Two things were left. The dead daemon's adb forward to UiAutomator2's port
+stayed, beside the next session's, and outlived even that session's clean
+stop. And the old server went on answering its port for a moment while the
+new instrumentation replaced it, so the new session could open on the server
+about to die: 2 calls in 15 straight after the restart failed with EOF. The
+start now force-stops a leftover server, as teardown does, and removes this
+device's forwards to that port — only that port's, since another tool's
+forwards are not Mobium's to remove. 0 calls in 30 failed, and no forward
+was left after the stop; a clean start takes the same 0.71s as before.
+
+### 133. `daemon stop` said "stopped" while the daemon was still stopping
+
+**Found by:** reading the stop path against the daemon's shutdown bounds.
+
+`stop` waited 5 seconds for the daemon to exit and then reported success
+either way, while the daemon allows itself 10 seconds for calls in flight
+and 20 more to close sessions. A slow teardown therefore reintroduced
+[28](#28-mobium-daemon-stop-returned-before-the-daemon-stopped) quietly. The wait now covers the daemon's own bound, ends as soon
+as the daemon removes its PID file — the last thing its shutdown does — and a
+daemon still running after it is reported with a `timeout` code, not as
+stopped. The daemon also handles SIGHUP now, so one started in the
+foreground tears down when its terminal closes instead of dying on the spot.
+
+### 134. On iOS, ending a session left a route playing
+
+**Found by:** reading what a session's end does against what it says.
+
+The end reported "a recording or route stopped", and on a simulator the
+route was simctl's to play and nothing stopped it; the position went on
+moving along it. Clearing is simctl's only way to stop a route, so an end
+during one now clears the simulated location — which, unlike Android, where
+the last fix is kept, leaves no position at all. A route that has already
+finished is left where it ended. Checked by a test; iOS has no way to read
+the simulated position from outside an app, so the simulator itself was not.
 
 ## Findings that were not defects
 

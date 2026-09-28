@@ -65,6 +65,17 @@ func (u *UIA2) Start(ctx context.Context, progress func(string)) error {
 	if err := u.adb.EnsureUIA2Installed(ctx, progress); err != nil {
 		return err
 	}
+	// A server already running here was left by a daemon that died without
+	// tearing down — killed, or crashed. Starting the instrumentation again
+	// does replace it, but not at once: the old one went on answering its
+	// port for a moment, the new session opened on it, and the next call
+	// read EOF as it went — 2 calls in 15 straight after a kill -9, on an
+	// Android 15 emulator. Stopped first, as teardown stops it, the session
+	// opens on the server this call started. Its forward would otherwise
+	// stay until adb restarted. Neither is fatal: nothing running is the
+	// ordinary case.
+	u.adb.StopUIA2(ctx)
+	_, _ = u.adb.RemoveForwardsTo(ctx, uia2DevicePort)
 
 	// The instrumentation must outlive this call, so it gets its own context
 	// rather than the per-command one.

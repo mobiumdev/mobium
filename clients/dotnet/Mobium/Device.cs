@@ -792,9 +792,11 @@ namespace Mobium
         /// Ends the session on the device, as Appium's quit does, and closes
         /// the connection. The teardown is the daemon's own: accessibility
         /// settings put back, a recording or route stopped, WebViews detached,
-        /// the device-side server stopped. Quitting a session that is not open
-        /// succeeds, and a second quit — a <c>using</c> block ending after an
-        /// explicit one — does nothing.
+        /// the device-side server stopped, and the app Start launched, if any,
+        /// stopped too. Quitting a session that is not open succeeds, and a
+        /// second quit — a <c>using</c> block ending after an explicit one —
+        /// does nothing. A program that exits without quitting or disposing
+        /// has the sessions it started ended for it: mobium sees the client go.
         /// </summary>
         public void Quit()
         {

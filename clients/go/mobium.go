@@ -190,8 +190,12 @@ func (d *Device) Session() *Session { return d.started }
 // Quit ends the session on the device, as Appium's quit does, and closes the
 // connection. The session's teardown is the daemon's own: accessibility
 // settings put back, a recording or route stopped, WebViews detached, the
-// device-side server stopped. Quitting a session that is not open succeeds,
-// and a second Quit — a deferred one after an explicit one, say — does nothing.
+// device-side server stopped, and the app Start launched, if any, stopped
+// too. Quitting a session that is not open succeeds, and a second Quit — a
+// deferred one after an explicit one, say — does nothing.
+//
+// A program that exits without Quit or Close has the sessions it started
+// ended for it, the same way: mobium sees the client go.
 func (d *Device) Quit(ctx context.Context) error {
 	if d.quit {
 		return nil

@@ -309,13 +309,13 @@ func TestWaitGone(t *testing.T) {
 	pid := proc.Process.Pid
 	go proc.Wait()
 
-	if waitGone(pid, 20*time.Millisecond) {
+	if waitGone(pid, 20*time.Millisecond, false) {
 		t.Error("reported a running process as gone")
 	}
-	if !waitGone(pid, 5*time.Second) {
+	if !waitGone(pid, 5*time.Second, false) {
 		t.Error("did not notice the process exiting")
 	}
-	if !waitGone(pid, 0) {
+	if !waitGone(pid, 0, false) {
 		t.Error("an already-dead process was reported as running")
 	}
 }

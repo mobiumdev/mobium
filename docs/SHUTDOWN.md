@@ -30,7 +30,13 @@ defect 9, and the `Health` interface exists because of it.
 `daemon stop` now waits for the process to actually exit before returning.
 It used to return as soon as the request was acknowledged, while teardown was
 still going, which made `daemon stop && mobium <anything>` fail five times out
-of five — defect 28.
+of five — defect 28. The wait covers the daemon's own worst case, 35 seconds,
+and a daemon still running after it is reported as an error with the
+`timeout` code rather than as stopped (defect 133). Ending a session also
+stops the app `session start --app` launched. A browser restores its tabs on
+its next launch, Chrome and Safari both, so on Android the tabs `open`
+opened in it are closed first, over CDP, and only those; Safari's tabs
+cannot be closed from outside and come back.
 
 **It no longer waits forever for a stuck call.** A tool call that never
 returns holds the sessions, and shutdown used to wait for it indefinitely —
@@ -70,19 +76,41 @@ machine.
 
 ---
 
+### A client's sessions end with it
+
+A session a client opened with `start()` ends when the client goes, whether
+it called `quit()`, returned without it, crashed or was killed: `mobium pipe`
+ends the sessions its client started, and only those. `close()` is the way
+to leave one open on purpose. So a test run that dies half-way no longer
+leaves a device session behind for the next one to trip over (defect 130).
+A pipe still running after its client is reported by `clean-stop.sh`.
+
+### After a crash
+
+A daemon killed without tearing down — `kill -9`, a crash, a second Ctrl-C —
+leaves the device-side server running. The next session clears what it can
+find: on a simulator it stops the leftover WebDriverAgent before starting
+its own (defect 131), and on Android it force-stops a leftover UiAutomator2
+server and removes its adb forward (defect 132). A real iPhone's runner is
+the exception: an `xcodebuild` a dead daemon started is reused, not stopped,
+so `clean-stop.sh` reports it and it is yours to end.
+
 ## Verify, do not assume
 
 Every item below has been left running by accident at least once here.
 
 | Check | Why |
 | --- | --- |
+| `mobium pipe` and `mobium mcp` | a client's transport outliving the client. Matched the same way as the daemon |
+| `xcodebuild test-without-building` for `webdriveragent-device` | a real iPhone's WebDriverAgent runner; a daemon killed without tearing down leaves it, and the next one reuses it rather than stopping it |
+| `simctl io … recordVideo` | a simulator recording that was never stopped |
 | the daemon | matching the text `mobium daemon` is not enough — it also matches the script doing the checking, an editor with the source open, and **any shell whose command line contains it**. Require the executable to be `mobium` and its first argument to be `daemon` |
 | `pgrep -f "qemu-system.*-avd"` | a bare `qemu` match catches unrelated VMs |
 | `netsimd`, `emulator/crashpad_handler` | the emulator starts these as separate processes and they outlive a hard kill. Match them **by name, not by `$ANDROID_HOME`**: that variable is usually unset in the shell doing the checking, and a check that silently passes when its input is missing is worse than no check |
 | `pgrep -x adb` | **any** port, not just 5037 |
 | `xcrun simctl list devices booted` | |
 | `pgrep -f CoreSimulator/Profiles/Runtimes` | simulator runtime processes outlive a badly shut down simulator |
-| `ls -A ~/.mobium/daemon` | a socket or PID file left behind means the daemon did not exit cleanly |
+| `ls -A ${MOBIUM_HOME:-~/.mobium}/daemon` | a socket or PID file left behind means the daemon did not exit cleanly. Under `MOBIUM_HOME` if it is set: checking the default while the daemon used another reported "cleared" for files nobody looked at |
 
 ### A leak this actually caught
 

@@ -13,8 +13,9 @@
 //   noid    answer app_map as mobium answers a line it cannot parse -- an
 //           error with no id -- and every other call normally
 // MOBIUM_FAKE_PIDFILE, when set, receives this process's id.
+// MOBIUM_FAKE_NOTIFYLOG, when set, has each notification's method appended.
 import { createInterface } from 'node:readline'
-import { writeFileSync } from 'node:fs'
+import { appendFileSync, writeFileSync } from 'node:fs'
 
 const mode = process.env.MOBIUM_FAKE || 'ok'
 if (process.env.MOBIUM_FAKE_PIDFILE) writeFileSync(process.env.MOBIUM_FAKE_PIDFILE, String(process.pid))
@@ -27,7 +28,10 @@ createInterface({ input: process.stdin }).on('line', (line) => {
 })
 
 async function handle(msg) {
-  if (msg.id === undefined) return
+  if (msg.id === undefined) {
+    if (process.env.MOBIUM_FAKE_NOTIFYLOG && msg.method) appendFileSync(process.env.MOBIUM_FAKE_NOTIFYLOG, msg.method + '\n')
+    return
+  }
   const { id, method } = msg
   if (mode === 'mute') return
   if (method === 'initialize') {

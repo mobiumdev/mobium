@@ -18,7 +18,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/mobiumdev/mobium/internal/mobiumerr"
+	"io"
 	"net/http"
 	"regexp"
 	"sort"
@@ -26,6 +26,7 @@ import (
 	"time"
 
 	"github.com/mobiumdev/mobium/internal/device"
+	"github.com/mobiumdev/mobium/internal/mobiumerr"
 )
 
 // Socket is a devtools endpoint published by an app on the device.
@@ -45,6 +46,9 @@ type Context struct {
 	Title  string `json:"title"`
 	URL    string `json:"url"`
 	Socket string `json:"-"`
+	// TargetID is the page's CDP target id, which CloseTarget takes. Stable
+	// for the page's life, where ID is a position in the listing.
+	TargetID string `json:"-"`
 	// WSURL is the CDP WebSocket for this target.
 	WSURL string `json:"-"`
 }
@@ -89,6 +93,7 @@ const listTimeout = 10 * time.Second
 
 // target is one entry of /json/list.
 type target struct {
+	ID                   string `json:"id"`
 	Type                 string `json:"type"`
 	Title                string `json:"title"`
 	URL                  string `json:"url"`
@@ -158,16 +163,46 @@ func contextsOn(ctx context.Context, adb *device.ADB, s Socket) ([]Context, erro
 			id = fmt.Sprintf("%s_%d", id, i)
 		}
 		out = append(out, Context{
-			ID:     id,
-			Title:  t.Title,
-			URL:    t.URL,
-			Socket: s.Name,
+			ID:       id,
+			Title:    t.Title,
+			URL:      t.URL,
+			Socket:   s.Name,
+			TargetID: t.ID,
 			// The URL embeds the port this forward used, which is torn down
 			// on return; Attach re-forwards and rewrites it.
 			WSURL: t.WebSocketDebuggerURL,
 		})
 	}
 	return out, nil
+}
+
+// CloseTarget closes one page — a browser tab — by its target id, through
+// the devtools endpoint that published it. Chrome answers /json/close with
+// "Target is closing"; an id it does not know is an error, so a tab already
+// gone says so rather than passing silently.
+func CloseTarget(ctx context.Context, adb *device.ADB, socket, targetID string) error {
+	port, err := adb.ForwardAbstract(ctx, socket)
+	if err != nil {
+		return err
+	}
+	defer adb.RemoveForward(ctx, port)
+	ctx, cancel := context.WithTimeout(ctx, listTimeout)
+	defer cancel()
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet,
+		fmt.Sprintf("http://127.0.0.1:%d/json/close/%s", port, targetID), nil)
+	if err != nil {
+		return err
+	}
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(io.LimitReader(resp.Body, 200))
+		return mobiumerr.New(mobiumerr.DeviceServer, "closing tab %s: %s %s", targetID, resp.Status, strings.TrimSpace(string(body)))
+	}
+	return nil
 }
 
 func getJSON[T any](ctx context.Context, url string) (*T, error) {

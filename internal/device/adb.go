@@ -372,6 +372,44 @@ func (a *ADB) RemoveForward(ctx context.Context, localPort int) error {
 	return err
 }
 
+// RemoveForwardsTo tears down every forward from this host to devicePort on
+// this device, and says how many there were.
+//
+// Forward allocates a fresh local port each time, so a daemon that died
+// without tearing down — killed, or crashed — left its forward behind, and
+// the next session added another beside it. Measured after a kill -9 on an
+// Android 15 emulator: two forwards to UiAutomator2's port, the dead one
+// outliving even the next daemon's clean stop. Only devicePort's: another
+// tool's forwards on the same device are not ours to remove.
+func (a *ADB) RemoveForwardsTo(ctx context.Context, devicePort int) (int, error) {
+	out, err := a.Run(ctx, "forward", "--list")
+	if err != nil {
+		return 0, err
+	}
+	removed := 0
+	for _, local := range forwardsTo(string(out), a.Serial, fmt.Sprintf("tcp:%d", devicePort)) {
+		if _, err := a.Run(ctx, "forward", "--remove", local); err != nil {
+			return removed, err
+		}
+		removed++
+	}
+	return removed, nil
+}
+
+// forwardsTo reads `adb forward --list` — one "serial local remote" line per
+// forward, for every device — into the local ends of serial's forwards to
+// remote.
+func forwardsTo(list, serial, remote string) []string {
+	var out []string
+	for _, line := range strings.Split(list, "\n") {
+		f := strings.Fields(line)
+		if len(f) == 3 && f[0] == serial && f[2] == remote {
+			out = append(out, f[1])
+		}
+	}
+	return out
+}
+
 // ForwardAbstract maps a free local TCP port to an abstract unix socket on the
 // device, which is how WebView and Chrome devtools endpoints are published.
 func (a *ADB) ForwardAbstract(ctx context.Context, socketName string) (int, error) {

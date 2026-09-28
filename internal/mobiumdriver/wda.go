@@ -90,6 +90,13 @@ func (w *WDA) Start(ctx context.Context, progress func(string)) error {
 	if err := w.sim.EnsureWDAInstalled(ctx, progress); err != nil {
 		return err
 	}
+	// A runner already running here was left by a daemon that died without
+	// tearing down — killed, or crashed. Launching it again does not restart
+	// it: it brings its empty window to the front and leaves it there, so
+	// every read after the crash saw a black screen and reported the runner
+	// as the foreground app. Stopped first, it starts in the background as
+	// it always does. Not running is the ordinary case, and not an error.
+	_ = w.sim.TerminateApp(ctx, device.WDABundleID)
 	if err := w.sim.LaunchApp(ctx, device.WDABundleID); err != nil {
 		return fmt.Errorf("launch WebDriverAgent: %w", err)
 	}

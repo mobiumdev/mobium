@@ -1308,9 +1308,11 @@ public final class Mobium implements AutoCloseable {
      * Ends the session on the device, as Appium's quit does, and closes the
      * connection. The teardown is the daemon's own: accessibility settings put
      * back, a recording or route stopped, WebViews detached, the device-side
-     * server stopped. Quitting a session that is not open succeeds, and a
-     * second quit -- say, try-with-resources closing after an explicit one --
-     * does nothing.
+     * server stopped, and the app {@code start()} launched, if any, stopped
+     * too. Quitting a session that is not open succeeds, and a second quit --
+     * say, try-with-resources closing after an explicit one -- does nothing.
+     * A program that exits without quitting or closing has the sessions it
+     * started ended for it: mobium sees the client go.
      */
     public void quit() {
         if (quit) return;

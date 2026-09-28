@@ -384,3 +384,19 @@ func TestParseFixOnADeviceWithNoPosition(t *testing.T) {
 		t.Errorf("parsed %+v from a device holding no position", got)
 	}
 }
+
+func TestForwardsToPicksOneDevicesForwardsToOnePort(t *testing.T) {
+	// As `adb forward --list` printed it after a kill -9, with a second
+	// device and another tool's forward beside Mobium's.
+	list := "emulator-5554 tcp:52499 tcp:6790\n" +
+		"emulator-5554 tcp:52533 tcp:6790\n" +
+		"emulator-5554 tcp:9222 localabstract:chrome_devtools_remote\n" +
+		"emulator-5556 tcp:52600 tcp:6790\n"
+	got := forwardsTo(list, "emulator-5554", "tcp:6790")
+	if strings.Join(got, ",") != "tcp:52499,tcp:52533" {
+		t.Errorf("forwardsTo = %v, want only emulator-5554's two to tcp:6790", got)
+	}
+	if got := forwardsTo("", "emulator-5554", "tcp:6790"); len(got) != 0 {
+		t.Errorf("no forwards read as %v", got)
+	}
+}

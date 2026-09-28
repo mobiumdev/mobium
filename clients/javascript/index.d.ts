@@ -215,7 +215,10 @@ export class Device {
   doctor(): Promise<Data>
   /** The sessions open on the daemon. */
   sessions(): Promise<{ device: string; platform: string; driver: string }[]>
-  /** End the session on the device, as Appium's quit does, and close the connection. */
+  /**
+   * End the session on the device, as Appium's quit does, and close the
+   * connection. The app start() launched, if any, is stopped too.
+   */
   quit(): Promise<void>
   /** Close the connection; the session stays open. Resolves once mobium has exited. */
   close(): Promise<void>
