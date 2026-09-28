@@ -44,14 +44,17 @@ func (w *WDA) startPhone(ctx context.Context, progress func(string)) error {
 		return err
 	}
 
-	// A runner someone else started — Xcode, an earlier daemon, a person at a
-	// terminal — is used as it is. It is not ours, so Close leaves it running.
+	// A runner someone else started — Xcode, a person at a terminal — is
+	// used as it is. It is not ours, so Close leaves it running. One a daemon
+	// that died left behind is ours after all, and is taken over, so this
+	// session's end stops it.
 	if p.TunnelIP != "" {
 		w.w3c.setBase(phoneBase(p.TunnelIP))
 		quick, cancel := context.WithTimeout(ctx, healthTimeout)
 		ready := w.w3c.ready(quick)
 		cancel()
 		if ready {
+			w.runner = device.AdoptPhoneRunner(ctx, p.UDID)
 			return nil
 		}
 	}

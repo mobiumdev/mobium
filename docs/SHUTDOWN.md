@@ -91,9 +91,10 @@ A daemon killed without tearing down — `kill -9`, a crash, a second Ctrl-C —
 leaves the device-side server running. The next session clears what it can
 find: on a simulator it stops the leftover WebDriverAgent before starting
 its own (defect 131), and on Android it force-stops a leftover UiAutomator2
-server and removes its adb forward (defect 132). A real iPhone's runner is
-the exception: an `xcodebuild` a dead daemon started is reused, not stopped,
-so `clean-stop.sh` reports it and it is yours to end.
+server and removes its adb forward (defect 132), and on a real iPhone it
+takes over the `xcodebuild` runner a dead daemon left, so its own end stops
+it (defect 135). A runner started from Xcode is not taken over, and
+`clean-stop.sh` does not report it: it checks for Mobium's runner only.
 
 ## Verify, do not assume
 
