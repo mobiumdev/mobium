@@ -2,6 +2,7 @@ package mobiumdriver
 
 import (
 	"context"
+	"strings"
 	"time"
 )
 
@@ -21,22 +22,59 @@ func (u *UIA2) DoubleTap(ctx context.Context, x, y int) error {
 }
 
 // DoubleTap taps twice at a point, in device pixels, converted to the points
-// WebDriverAgent expects.
+// WebDriverAgent expects — in one of two ways, because neither reaches both
+// kinds of target. Measured on an iPhone 17 Pro simulator against MobiumApp,
+// 2026-09-28 (CHALLENGES 149):
 //
-// Through WebDriverAgent's own endpoint rather than the W3C chain the Android
-// backend uses, because the chain cannot express this gesture here: WDA drops
-// a pause that occurs while the pointer is up, so the two taps arrive with
-// nothing between them and WebKit discards the second as a bounce (measured —
-// see doubleTapActions). Spending the interval on a timed move instead made
-// it worse, arriving as two overlapping contacts.
+//   - WebDriverAgent's own doubleTap endpoint reached a WebView page as two
+//     clicks, and a React Native Pressable as **one** press — where a
+//     person's double tap on the iPhone 15 Plus was two, 200ms apart.
+//   - A W3C chain whose gap is a timed move to the same point, not a pause
+//     (WDA drops a pause while the pointer is up), reached the Pressable as
+//     two presses 167ms apart, three times in three, the second landing with
+//     no other finger down; and reached the page as one click, at every gap
+//     tried up to 250ms, WebKit reading the move as a second contact.
 //
-// This is the driver layer doing its job rather than a parallel
-// implementation: a backend exists to say how a gesture is expressed on its
-// platform, and iOS ships a primitive for this one. Asking for it is
-// categorically better than assembling something that imitates it, and the
-// timing is then Apple's rather than a constant chosen here.
+// So a point on a WebView gets the endpoint, and any other point the chain.
+// Neither made a WebView fire `dblclick`.
 func (w *WDA) DoubleTap(ctx context.Context, x, y int) error {
-	return w.w3c.wdaDoubleTap(ctx, w.toPoints(x), w.toPoints(y))
+	if w.onWebView(ctx, x, y) {
+		return w.w3c.wdaDoubleTap(ctx, w.toPoints(x), w.toPoints(y))
+	}
+	return w.w3c.pointerSequence(ctx, iosDoubleTapActions(w.toPoints(x), w.toPoints(y)))
+}
+
+// onWebView reports whether a point, in device pixels, falls on a WebView in
+// the current hierarchy. A snapshot that fails answers no: the chain is the
+// right gesture everywhere but on a page.
+func (w *WDA) onWebView(ctx context.Context, x, y int) bool {
+	tree, err := w.Snapshot(ctx)
+	if err != nil {
+		return false
+	}
+	for _, n := range tree.All() {
+		b := n.Bounds
+		if strings.HasSuffix(n.ShortClass(), "WebView") && x >= b.X1 && x < b.X2 && y >= b.Y1 && y < b.Y2 {
+			return true
+		}
+	}
+	return false
+}
+
+// iosDoubleTapActions is doubleTapActions with the gap spent on a move to
+// the same point, which WebDriverAgent honors, instead of a pause, which it
+// drops while the pointer is up.
+func iosDoubleTapActions(x, y int) []map[string]interface{} {
+	return []map[string]interface{}{
+		{"type": "pointerMove", "duration": 0, "x": x, "y": y},
+		{"type": "pointerDown", "button": 0},
+		{"type": "pause", "duration": 60},
+		{"type": "pointerUp", "button": 0},
+		{"type": "pointerMove", "duration": doubleTapGap.Milliseconds(), "x": x, "y": y},
+		{"type": "pointerDown", "button": 0},
+		{"type": "pause", "duration": 60},
+		{"type": "pointerUp", "button": 0},
+	}
 }
 
 // Drag presses, holds, travels and releases. Coordinates are device pixels.

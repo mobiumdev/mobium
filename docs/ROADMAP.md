@@ -13,20 +13,6 @@ this is what is not.
   there found four defects (CHALLENGES 139–142). No device has been driven
   from Windows, and until one has, Windows is unsupported.
   [WINDOWS.md](WINDOWS.md) is the state of it.
-- **On iOS, `double-tap` reaches a React Native `Pressable` as one press**
-  (Android: two, 165-184ms apart). **A person's double tap is two**: on the
-  iPhone 15 Plus, 2026-09-27, a human double tap on MobiumApp's Press target
-  counted two presses 200ms apart, and `double-tap` on the same target one.
-  So the defect is real and below Mobium, which is the control that was
-  missing. Measured on the iPhone 17 Pro simulator every way WebDriverAgent
-  offers: its double tap, the element's, and one W3C chain with a pause
-  between the taps (WebDriverAgent drops a pause while the pointer is up, so
-  they arrive together) each counted one press; two separate taps counted
-  two, but 350-380ms apart, past the platform's window. What is left to try
-  is a chain whose gap WebDriverAgent cannot drop — the pointer kept busy
-  between the taps rather than paused. The other gesture found with this
-  one, a tap above the Android keyboard, was the app moving its button
-  (CHALLENGES, "Findings that were not defects").
 - **Published client packages.** Every client builds, as its registry would
   receive it, into a package that carries the LICENSE, a README and full
   metadata, and each has been installed from that package into a clean project

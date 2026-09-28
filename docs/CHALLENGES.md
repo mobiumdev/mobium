@@ -7,7 +7,7 @@ the source.
 
 The pattern across them is the reason the document exists: **almost nothing
 here was found by reading code or by a test written from imagination.** Of
-148 defects, 118 were found only by running against a real device. The other
+149 defects, 119 were found only by running against a real device. The other
 thirty — 4, 5, 6, 14, 23, 24, 32, 35, 36, 39, 44, 50, 53, 54, 57, 66, 89,
 99, 100, 121, 123, 129, 130, 133, 134, 139, 140, 141, 142 and 144 — came from reading code, the compiler, a test, a linter,
 cross-checking a computed number against a screenshot, using the tooling on
@@ -1719,6 +1719,11 @@ The tool's own answer says the same thing, in the same shape as `zoom` and
 `rotate`: the gesture was delivered, and on this platform that is all anything
 here can confirm.
 
+The Pressable half of this was wrong, and 149 is why: it was reporting
+WebDriverAgent's double tap, not coalescing a real one. A person's double tap
+reaches it as two presses, and so does mobium's now; the Pressable is the
+witness iOS lacked. The WKWebView half stands.
+
 ### 71. The first read after an app switch took 61 seconds, and read the wrong app
 
 **Found by:** the first `launch` on a real iPhone — an iPhone 15 Plus, iOS
@@ -3355,6 +3360,28 @@ environment, and the daemon talks to that port. Two iPhone simulators on two
 daemons then read their own screens, and ten `map` calls on each at once
 never crossed. `autowait.sh`, which called port 8100 itself to set Reduce
 Motion, uses mobium's own setting instead.
+
+### 149. `double-tap` reached a React Native control on iOS as one press
+
+**Found by:** a person, as the control ROADMAP had asked for: Lana
+double-tapped MobiumApp's Press target on the iPhone 15 Plus and it counted
+two presses 200ms apart, where `double-tap` on the same target counted one.
+
+Mobium used WebDriverAgent's own double-tap endpoint, Apple's primitive, and
+a React Native `Pressable` reports that as one press — which 70 had taken
+for the Pressable coalescing any double tap. The W3C chain Android uses could
+not replace it: WebDriverAgent drops a pause while the pointer is up, so the
+taps arrived together. Spending the gap on a timed move to the same point
+instead is honored: on the iPhone 17 Pro simulator it reached the Pressable
+as two presses 167ms apart, three times in three, the second landing with no
+other finger down. On a WebView page the same chain delivered one click at
+every gap tried up to 250ms, WebKit reading the move as a second contact,
+while the endpoint delivered two. So a point on a WebView still gets the
+endpoint, and any other point the chain, with Android's 120ms gap: the
+Pressable then counted two presses 200–202ms apart, three times in three, and
+the page two clicks. `gestures.sh` now asserts that on iOS — two presses
+inside the double-tap window, and two separate taps outside it — where it
+used to assert one press. Neither form makes a WebView fire `dblclick`.
 
 ## Findings that were not defects
 
