@@ -88,6 +88,11 @@ this is what is not.
 - **Uploads and downloads** through the system file pickers.
 - **Frames and iframes** inside a WebView.
 - **Accessibility checks** as a side effect of the actions already being taken.
+- **Fold posture as device state** (written down 2026-09-28), as rotation
+  is: read with `cmd device_state state`, set by its override, and each
+  change read back. Measured on a Pixel 9 Pro Fold emulator, where all four
+  postures could be set and read ([FORMFLUX.md](FORMFLUX.md#foldables));
+  whether a real foldable's shell may set it is the open question.
 - **Fire TV** (written down 2026-09-28, nothing measured yet). Fire OS is
   Android — 7 is Android 9, 8 is Android 11 — reached by `adb connect
   <tv>:5555` once ADB debugging is on, so discovery, the hierarchy, locators,

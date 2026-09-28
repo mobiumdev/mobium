@@ -73,6 +73,8 @@ layout breaks at a real width.
 | `small-phone` | 720×1520 | 320 | 360×760 | **360** | sits exactly on Android's own `sw360dp` qualifier — a boundary worth testing *on*, not near |
 | `flagship` | 1440×3120 | 560 | 411×891 | **411** | 78% more pixels than `pixel-7` and **the same layout width**. Tests high-density rendering and pixel-sized touch targets, *not* a wider screen |
 | `tablet` | 1600×2560 | 320 | 800×1280 | **800** | past `sw600dp` and `sw720dp`, so the only profile here that can select a genuinely different layout |
+| `fold-open` | 2076×2152 | 390 | 851×882 | **851** | a foldable's inner screen, nearly square: past both tablet qualifiers with no long edge, so a layout that assumes tablets are landscape or phones are tall is wrong here both ways |
+| `fold-closed` | 1080×2424 | 390 | 443×994 | **443** | the same device folded — its outer screen, a phone. The pair crosses Android's tablet and phone layout classes on one device, mid-task |
 | `display-size-large` | 1080×2400 | 560 | 308×685 | **308** | **the narrowest layout in the set**, on the phone with the most pixels. Android's display-size accessibility setting |
 
 | iOS profile | Pixels | Scale | Points | Note |
@@ -108,6 +110,39 @@ accessibility setting does. Text wraps, controls collide, and labels truncate
 — and no amount of rotating or resizing finds it, because the pixels never
 change.
 
+## Foldables
+
+The one device whose `sw` changes on its own. Measured on a Pixel 9 Pro Fold
+emulator (Android 15) on 2026-09-28; the two `fold-` profiles are its two
+screens, as the emulator's device profile gives them.
+
+- **The posture reads back and can be set.** `cmd device_state state` names
+  it — `CLOSED`, `HALF_OPENED`, `OPENED` and `REAR_DISPLAY_MODE` on this
+  device — and `cmd device_state state <n>` overrides it, `state reset`
+  clearing the override; each read names the committed, base and override
+  states separately. The emulator console's `fold` and `unfold` move the
+  simulated hinge itself, and exist only on an emulator.
+- **`wm size` follows a fold**, 2076×2152 open and 1080×2424 closed, where
+  it does not follow a rotation: folding switches to another physical panel.
+  Coordinates still come from the hierarchy, and `map`'s bounds followed
+  both ways.
+- **A ref taken open and tapped closed** was re-resolved and landed on the
+  folded layout's button — mobium's rule of re-resolving before acting,
+  holding across a fold.
+- **MobiumApp kept a typed field across both**; React Native handles the
+  size change without restarting the screen. An app that restarts its
+  activity on a size change would not, and that is the state-loss question a
+  fold asks.
+- **`fold-closed` applied by setting to the open device** gave the same
+  1080-wide layout, with the typed field kept, as folding it did. For layout
+  the two are equivalent; for anything tied to which panel is on, only a
+  real fold is.
+
+Not measured: a real foldable, One UI's own fold behavior (a Samsung
+emulator skin is only the frame and the sizes, on stock Android), what
+`HALF_OPENED`'s tabletop layout does to an app that supports it, and whether
+a phone's shell may override `device_state` at all.
+
 ## Running it
 
 The parsing is covered by fixtures captured from the device. The behavior is
@@ -119,7 +154,7 @@ MOBIUM_DEVICE_TESTS=1 MOBIUM_DEVICE=emulator-5554 \
     go test ./internal/formflux/ -run Device -v
 ```
 
-It applies all six Android profiles, checks each against a readback, and
+It applies every Android profile, checks each against a readback, and
 restores the physical screen **in a deferred call, so it runs even when an
 assertion fails**. A half-applied profile is a state left on somebody's phone;
 on an emulator it survives until the next wipe.

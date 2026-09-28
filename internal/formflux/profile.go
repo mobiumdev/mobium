@@ -172,6 +172,14 @@ var catalog = []Profile{
 		Why: "sw800dp, past both the sw600dp and sw720dp qualifiers, so it is the only profile here that can select a genuinely different layout. Phone layouts stretched across it look wrong in ways portrait phones never show",
 	},
 	{
+		Name: "fold-open", Platform: Android, WidthPx: 2076, HeightPx: 2152, DPI: 390,
+		Why: "sw851dp, and nearly square — the Pixel 9 Pro Fold's inner screen, as its emulator profile gives it. Past both tablet qualifiers like tablet, but with no long edge: a layout that assumes a tablet is landscape or a phone is tall is wrong here in both directions",
+	},
+	{
+		Name: "fold-closed", Platform: Android, WidthPx: 1080, HeightPx: 2424, DPI: 390,
+		Why: "sw443dp — the same device folded: its outer screen, a phone. The pair is one device crossing from Android's tablet layout class to its phone one and back, which a folding user does mid-task",
+	},
+	{
 		Name: "display-size-large", Platform: Android, WidthPx: 1080, HeightPx: 2400, DPI: 560,
 		Why: "sw308dp — the **narrowest** profile in this set, narrower than small-phone, on a screen with the most pixels of any phone here. That is Android's display-size accessibility setting, and that inversion is exactly why it breaks layouts nothing else finds",
 	},
