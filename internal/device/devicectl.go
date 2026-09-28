@@ -269,6 +269,29 @@ func (d *Devicectl) Refresh(ctx context.Context) (Phone, error) {
 	return d.Phone, mobiumerr.New(mobiumerr.NoDevice, "%s is no longer listed by devicectl", d.Phone.Name)
 }
 
+// WakeTunnel brings up the CoreDevice tunnel to the phone and returns the
+// phone's address on it.
+//
+// The tunnel exists only while something is asking for the device, and each
+// connection gets a new address: measured on the iPhone 15 Plus, it came up
+// for `devicectl device info details`, dropped after about 20 seconds idle,
+// and came back on a different address. So the address is read just before
+// it is needed, and never kept past the connection that gave it.
+func (d *Devicectl) WakeTunnel(ctx context.Context) (string, error) {
+	if _, err := d.run(ctx, "device", "info", "details", "--device", d.Phone.UDID); err != nil {
+		return "", err
+	}
+	p, err := d.Refresh(ctx)
+	if err != nil {
+		return "", err
+	}
+	if p.TunnelIP == "" {
+		return "", mobiumerr.New(mobiumerr.DeviceNotReady, "the CoreDevice tunnel to %s did not come up", p.Name).
+			WithRemedy("connect the iPhone by cable, unlocked and trusting this Mac, and run the command again")
+	}
+	return p.TunnelIP, nil
+}
+
 // LaunchApp starts or activates an app. Like `simctl launch`, it returns when
 // the launch is dispatched, not when the app is on screen — measured: Calendar
 // was reported launched in 0.2s while Settings was still in the foreground.

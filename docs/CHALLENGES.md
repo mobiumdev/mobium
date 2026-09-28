@@ -7,7 +7,7 @@ the source.
 
 The pattern across them is the reason the document exists: **almost nothing
 here was found by reading code or by a test written from imagination.** Of
-152 defects, 121 were found only by running against a real device. The other
+153 defects, 122 were found only by running against a real device. The other
 thirty-one — 4, 5, 6, 14, 23, 24, 32, 35, 36, 39, 44, 50, 53, 54, 57, 66, 89,
 99, 100, 121, 123, 129, 130, 133, 134, 139, 140, 141, 142, 144 and 150 — came from reading code, the compiler, a test, a linter,
 cross-checking a computed number against a screenshot, using the tooling on
@@ -3451,6 +3451,29 @@ MJPEG screen stream did not follow — WebDriverAgent 16.12.8 creates that
 socket without an interface, whatever `USE_IP` says — and still answers from
 the network. Mobium does not use the stream; closing it needs WebDriverAgent
 to honor `USE_IP` there too, and is open in the threat model.
+
+### 153. A real iPhone's WebDriverAgent answered anyone on its Wi-Fi
+
+**Found by:** the threat model's open item, measured on the iPhone 15 Plus:
+the runner's `/status`, which reports the phone's Wi-Fi address, was asked
+again at that address from the Mac, over the network rather than the cable.
+
+It answered with the live session. The runner listened on every interface of
+the phone, so while a session ran, anything on the same Wi-Fi could read the
+screen and drive the phone — tap, type, open apps — with no credential; its
+MJPEG stream on 9100 answered the same way. It stopped within two seconds of
+the daemon stopping, so the exposure was a session long. The Mac's firewall
+cannot help: this is the phone's interface. The runner is now started with
+`TEST_RUNNER_USE_IP`, which xcodebuild hands it as `USE_IP`, set to the
+phone's address on the CoreDevice tunnel — the only address Mobium uses.
+That address exists only while something asks for the device, and changes
+with every connection (it dropped after about 20 seconds idle and came back
+different), so Mobium brings the tunnel up with `devicectl device info
+details` just before launching, refuses to start rather than start unbound
+when no address comes, and relaunches once if the tunnel reconnects during
+start-up. Afterwards the server answered on the tunnel and refused the Wi-Fi
+address. The stream still answered on Wi-Fi: WebDriverAgent never applies
+`USE_IP` to it, the same as on a simulator (152).
 
 ## Findings that were not defects
 

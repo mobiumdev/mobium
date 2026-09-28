@@ -70,11 +70,20 @@ func (w *WDA) startPhone(ctx context.Context, progress func(string)) error {
 	if progress != nil {
 		progress("starting WebDriverAgent on " + p.Name)
 	}
-	runner, err := device.StartPhoneWDA(xctestrun, p.UDID, device.PhoneWDALog(team, p.UDID))
+	// Bound to the tunnel, not every interface: on Wi-Fi an unbound runner
+	// answered the whole network (CHALLENGES 153). With no tunnel address to
+	// bind to, it does not start at all rather than start open.
+	bindIP, err := w.phone.WakeTunnel(ctx)
+	if err != nil {
+		return err
+	}
+	runner, err := device.StartPhoneWDA(xctestrun, p.UDID, device.PhoneWDALog(team, p.UDID), bindIP)
 	if err != nil {
 		return err
 	}
 	w.runner = runner
+	w.w3c.setBase(phoneBase(bindIP))
+	relaunched := false
 
 	deadline := time.Now().Add(phoneReadyTimeout)
 	for time.Now().Before(deadline) {
@@ -91,14 +100,23 @@ func (w *WDA) startPhone(ctx context.Context, progress func(string)) error {
 			w.teardownLocked(ctx)
 			return mobiumerr.New(mobiumerr.DeviceNotReady, "WebDriverAgent cannot start on %s: %s", p.Name, why)
 		}
-		// The tunnel address is per connection, and can appear only once
-		// something has asked for the device — xcodebuild does.
-		if base, _ := w.w3c.endpoint(); base == "" {
-			if fresh, err := w.phone.Refresh(ctx); err == nil && fresh.TunnelIP != "" {
-				w.w3c.setBase(phoneBase(fresh.TunnelIP))
-			}
-		} else if w.w3c.ready(ctx) {
+		if w.w3c.ready(ctx) {
 			return nil
+		}
+		// The tunnel's address is per connection. If it reconnected while
+		// the runner started, the runner is bound to an address that no
+		// longer exists and will never answer: start it again, once, on the
+		// new one.
+		if fresh, err := w.phone.Refresh(ctx); err == nil && fresh.TunnelIP != "" && fresh.TunnelIP != bindIP && !relaunched {
+			relaunched = true
+			runner.Stop()
+			bindIP = fresh.TunnelIP
+			if runner, err = device.StartPhoneWDA(xctestrun, p.UDID, device.PhoneWDALog(team, p.UDID), bindIP); err != nil {
+				w.runner = nil
+				return err
+			}
+			w.runner = runner
+			w.w3c.setBase(phoneBase(bindIP))
 		}
 		time.Sleep(500 * time.Millisecond)
 	}
