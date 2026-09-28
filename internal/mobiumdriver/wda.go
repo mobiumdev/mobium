@@ -405,6 +405,20 @@ func (w *WDA) SetText(ctx context.Context, n *uitree.Node, text string) error {
 		if got == text {
 			return nil
 		}
+		// The app may have moved focus on as the text arrived — a one-time
+		// code's boxes do — and then the rest is in the fields after this
+		// one. Retrying would clear this field and type the whole text again
+		// into the next ones, so look before retrying (CHALLENGES 156).
+		if attempt == 1 {
+			if tree, err := w.Snapshot(ctx); err == nil {
+				if sp, ok := findSpread(tree, n, text); ok {
+					if sp.Complete() {
+						return nil
+					}
+					return spreadError(text, sp)
+				}
+			}
+		}
 		if attempt < setTextAttempts {
 			if err := w.w3c.clearElement(ctx, elID); err != nil {
 				return err
