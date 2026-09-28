@@ -279,6 +279,9 @@ type Inspector struct {
 	mu     sync.Mutex
 	apps   map[string]string
 	silent map[string]bool
+	// heard counts each application's listings as the watch hears them, so a
+	// listing can tell whether one that missed it answered afterwards.
+	heard map[string]int
 }
 
 // openWith announces on a fresh connection, learns the applications, and
@@ -319,6 +322,10 @@ func (i *Inspector) watch(msgs <-chan rwiMessage, unsubscribe func()) {
 			if id, ok := msg.Argument["WIRApplicationIdentifierKey"].(string); ok {
 				i.mu.Lock()
 				delete(i.silent, id)
+				if i.heard == nil {
+					i.heard = map[string]int{}
+				}
+				i.heard[id]++
 				i.mu.Unlock()
 			}
 		case "_rpc_applicationDisconnected:":
@@ -351,8 +358,20 @@ func (i *Inspector) knownApps() (map[string]string, map[string]bool) {
 // list asks every known application for its pages, then records which of
 // them stayed silent: marked when one misses a listing, cleared the moment it
 // answers one.
+//
+// An answer the watch heard after the listing stopped waiting is an answer:
+// marking the application silent regardless undid the watch's clearing of it
+// whenever the reply landed between the two, and an application that always
+// answered just late stayed silent. Found as a test that failed one run in
+// five on a busy machine.
 func (i *Inspector) list(ctx context.Context) ([]iosPage, error) {
 	apps, quiet := i.knownApps()
+	i.mu.Lock()
+	before := make(map[string]int, len(i.heard))
+	for id, n := range i.heard {
+		before[id] = n
+	}
+	i.mu.Unlock()
 	pages, unanswered, err := i.in.listPages(ctx, apps, quiet)
 	missed := map[string]bool{}
 	for _, id := range unanswered {
@@ -360,7 +379,7 @@ func (i *Inspector) list(ctx context.Context) ([]iosPage, error) {
 	}
 	i.mu.Lock()
 	for id := range apps {
-		if missed[id] {
+		if missed[id] && i.heard[id] == before[id] {
 			i.silent[id] = true
 		} else {
 			delete(i.silent, id)

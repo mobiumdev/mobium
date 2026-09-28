@@ -72,9 +72,51 @@ func ParseIOS(data []byte) (*Tree, error) {
 	if len(root.Children) == 1 {
 		root.Bounds = root.Children[0].Bounds
 	}
+	rebaseRemoteContent(root)
 	foldSwitchRows(root)
 	markIntrinsicTargets(root)
 	return tree, nil
+}
+
+// rebaseRemoteContent moves content drawn by another process back to where
+// it is on screen.
+//
+// iOS 26's share sheet is a remote view: Safari hosts a
+// `ShareSheet.RemoteContainerView` and another process draws what is in it.
+// XCTest reports that content relative to the container, not the screen —
+// the container at 9,477, the node under it at 0,0 with the same size, and
+// every row below offset by the container's origin. A tap on a row's center
+// landed on whatever was that far above it, and reported success: "Add to
+// Home Screen" opened Find on Page. Measured on an iPhone 17 Pro simulator
+// (iOS 26.5) and a real iPhone 15 Plus (iOS 26.6.2). CHALLENGES 128.
+//
+// The boundary is recognizable without knowing what hosts it. In screen
+// coordinates a node the exact size of its parent, and inside it, has the
+// parent's origin; one at 0,0 under a parent that is not is in a coordinate
+// space of its own, and the parent's origin is the offset. Nothing is named,
+// so another remote view with the same habit is corrected too, and the check
+// runs at every depth, so one nested in another is corrected twice.
+func rebaseRemoteContent(n *Node) {
+	for _, c := range n.Children {
+		b, p := c.Bounds, n.Bounds
+		if b.X1 == 0 && b.Y1 == 0 && (p.X1 != 0 || p.Y1 != 0) &&
+			!b.Empty() && b.Width() == p.Width() && b.Height() == p.Height() {
+			shiftSubtree(c, p.X1, p.Y1)
+		}
+		rebaseRemoteContent(c)
+	}
+}
+
+// shiftSubtree moves n and everything under it by dx, dy. A node with no
+// size is left alone: it is how an off-screen element is reported
+// (CHALLENGES 72), and moving it would give it a position it does not have.
+func shiftSubtree(n *Node, dx, dy int) {
+	if !n.Bounds.Empty() {
+		n.Bounds = Rect{X1: n.Bounds.X1 + dx, Y1: n.Bounds.Y1 + dy, X2: n.Bounds.X2 + dx, Y2: n.Bounds.Y2 + dy}
+	}
+	for _, c := range n.Children {
+		shiftSubtree(c, dx, dy)
+	}
 }
 
 // markIntrinsicTargets makes a card or a link a tap target when the platform
