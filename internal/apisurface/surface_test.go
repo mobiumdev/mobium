@@ -62,6 +62,7 @@ func TestEveryToolIsReachableFromTheCLI(t *testing.T) {
 func TestCLICommandsWithoutAToolAreTheProcessOnes(t *testing.T) {
 	expected := map[string]bool{
 		"daemon": true, "start": true, "status": true, "stop": true, "up": true,
+		"grid": true, "node": true, "lease": true, "release": true,
 		"mcp": true, "pipe": true,
 	}
 	for _, cmd := range sweep(t).Extra {

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"net"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -37,7 +38,7 @@ func runCleanups() {
 }
 
 // localOnly are the commands that are about this machine, and stay here.
-var localOnly = map[string]bool{"daemon": true, "doctor": true, "mcp": true, "version": true, "help": true, "completion": true}
+var localOnly = map[string]bool{"daemon": true, "doctor": true, "mcp": true, "version": true, "help": true, "completion": true, "grid": true}
 
 // upStatus is what `mobium daemon up --json` prints on the node.
 type upStatus struct {
@@ -58,30 +59,8 @@ func openRemote(node string) error {
 	if err := remoteSupported(); err != nil {
 		return err
 	}
-	ssh := strings.Fields(os.Getenv("MOBIUM_SSH"))
-	if len(ssh) == 0 {
-		ssh = []string{"ssh"}
-	}
-	bin := os.Getenv("MOBIUM_REMOTE_BIN")
-	if bin == "" {
-		bin = "mobium"
-	}
-	// Never a prompt: a password or host-key question would be read from,
-	// and answered into, the stream a client speaks JSON-RPC on.
-	opts := []string{"-o", "BatchMode=yes", "-o", "ServerAliveInterval=15"}
-
-	remoteCmd := bin + " daemon up --json"
-	if s := paths.SessionName(); s != "" {
-		remoteCmd = "MOBIUM_SESSION=" + s + " " + remoteCmd
-	}
-	// sshArgs is ssh's own arguments with these after them, in a new slice
-	// each time, so one call's arguments never land in another's.
-	sshArgs := func(extra ...string) []string {
-		a := append([]string{}, ssh[1:]...)
-		a = append(a, opts...)
-		return append(a, extra...)
-	}
-	up := exec.Command(ssh[0], sshArgs("-T", node, remoteCmd)...)
+	bin := remoteBin()
+	up := sshCommand(node, "daemon up --json")
 	var out, errb bytes.Buffer
 	up.Stdout, up.Stderr = &out, &errb
 	if err := up.Run(); err != nil {
@@ -99,6 +78,7 @@ func openRemote(node string) error {
 		fmt.Fprintf(os.Stderr, "mobium: %s runs mobium %s, and this is %s\n", node, st.Version, version)
 	}
 
+	sweepRemoteHomes()
 	// A private home here, short enough for a socket path: the OS caps
 	// those at about 104 bytes, and the temporary directory macOS gives
 	// every process is most of that already.
@@ -118,8 +98,16 @@ func openRemote(node string) error {
 		return err
 	}
 
-	fwd := exec.Command(ssh[0], sshArgs("-N", "-o", "ExitOnForwardFailure=yes", "-o", "StreamLocalBindUnlink=yes",
-		"-L", local+":"+st.Socket, node)...)
+	// Not -N: the forward runs `cat` on the node, reading a pipe this
+	// process holds. A kill -9 gives no chance to clean up, and left the
+	// forward running with nothing on this end, for good; the system closes
+	// the pipe with the process instead, cat ends, and SSH with it.
+	fwd := sshExec("-T", "-o", "ExitOnForwardFailure=yes", "-o", "StreamLocalBindUnlink=yes",
+		"-L", local+":"+st.Socket, node, "cat >/dev/null")
+	lifeline, err := fwd.StdinPipe()
+	if err != nil {
+		return err
+	}
 	var fwdErr bytes.Buffer
 	fwd.Stderr = &fwdErr
 	// Its own process group: a Ctrl-C meant for a client must not end the
@@ -131,6 +119,7 @@ func openRemote(node string) error {
 	done := make(chan struct{})
 	go func() { _ = fwd.Wait(); close(done) }()
 	cleanups = append(cleanups, func() {
+		_ = lifeline.Close()
 		_ = fwd.Process.Kill()
 		<-done
 	})
@@ -157,4 +146,63 @@ func openRemote(node string) error {
 	}
 	remoteActive = true
 	return os.Setenv("MOBIUM_FILES", "content")
+}
+
+// sshExec is the ssh command, as MOBIUM_SSH gives it, with mobium's own
+// options and then these arguments. Never a prompt: a password or host-key
+// question would be read from, and answered into, the stream a client speaks
+// JSON-RPC on. And a node that does not answer is given up on in seconds, so
+// a grid with one down still routes to the others.
+func sshExec(args ...string) *exec.Cmd {
+	ssh := strings.Fields(os.Getenv("MOBIUM_SSH"))
+	if len(ssh) == 0 {
+		ssh = []string{"ssh"}
+	}
+	a := append([]string{}, ssh[1:]...)
+	a = append(a, "-o", "BatchMode=yes", "-o", "ServerAliveInterval=15", "-o", "ConnectTimeout=5")
+	return exec.Command(ssh[0], append(a, args...)...)
+}
+
+// sshCommand runs `mobium <sub>` on a node, in the session this process
+// uses, as MOBIUM_REMOTE_BIN says the node's shell runs mobium.
+func sshCommand(node, sub string) *exec.Cmd {
+	remote := remoteBin() + " " + sub
+	if s := paths.SessionName(); s != "" {
+		remote = "MOBIUM_SESSION=" + s + " " + remote
+	}
+	return sshExec("-T", node, remote)
+}
+
+// remoteBin is what a node's shell runs as mobium: MOBIUM_REMOTE_BIN, which
+// may set that shell's environment first, or mobium on its PATH.
+func remoteBin() string {
+	if b := os.Getenv("MOBIUM_REMOTE_BIN"); b != "" {
+		return b
+	}
+	return "mobium"
+}
+
+// sweepRemoteHomes removes the private homes of runs that died without
+// cleaning up — a kill -9 leaves one behind — recognized by a socket that no
+// longer answers. Only this user's, and only those older than half a minute,
+// so a run still starting is never mistaken for a dead one.
+func sweepRemoteHomes() {
+	dirs, _ := filepath.Glob(filepath.Join(remoteTempRoot(), "mbr-*"))
+	for _, d := range dirs {
+		info, err := os.Stat(d)
+		if err != nil || !info.IsDir() || time.Since(info.ModTime()) < 30*time.Second || !ownedByMe(info) {
+			continue
+		}
+		socks, _ := filepath.Glob(filepath.Join(d, "daemon", "*.sock"))
+		alive := false
+		for _, s := range socks {
+			if c, err := net.DialTimeout("unix", s, 300*time.Millisecond); err == nil {
+				c.Close()
+				alive = true
+			}
+		}
+		if !alive {
+			_ = os.RemoveAll(d)
+		}
+	}
 }

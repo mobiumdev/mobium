@@ -44,10 +44,16 @@ func main() {
 			for top.Parent() != nil && top.Parent().Parent() != nil {
 				top = top.Parent()
 			}
-			if remoteNode == "" || localOnly[top.Name()] {
+			if localOnly[top.Name()] {
 				return nil
 			}
-			return openRemote(remoteNode)
+			if remoteNode != "" {
+				return openRemote(remoteNode)
+			}
+			// A grid routes at the first call, which is where a run says
+			// what it wants: a serial, or a platform to start a session on.
+			gridActive = len(gridNodes()) > 0
+			return nil
 		},
 		Long: "Mobium automates native apps on Android emulators and phones, iOS simulators\n" +
 			"and iPhones, using the same map/@ref workflow as vibium:\n\n" +
@@ -134,6 +140,7 @@ func main() {
 		newDaemonCmd(),
 		newPipeCmd(),
 		newMCPCmd(),
+		newGridCmd(),
 	)
 
 	err := root.Execute()

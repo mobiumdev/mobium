@@ -545,6 +545,32 @@ anywhere. Verified with this Mac standing in for a node: the CLI and an
 unchanged Python client ran sessions, maps, installs, screenshots and
 recordings on the node's daemon, every file landing on the caller's side.
 
+### A grid
+
+**`MOBIUM_GRID=node1,node2` spreads runs over several machines' devices**, as
+Selenium Grid does, without a hub. At a run's first call — which is where it
+says what it wants: a serial, or `platform` when it starts a session — mobium
+asks every node over SSH for its devices and which of them are held, takes
+the first free one that matches, and connects to its node as `--remote`
+would. The lease that keeps a device to one run lives on the node, so runs
+started on different machines cannot take the same device. With nothing free
+that matches, a run waits, asking again every two seconds, up to
+`MOBIUM_GRID_WAIT` (default `60s`), and then says what was busy and which
+nodes did not answer. A node that does not answer within five seconds is
+left out, and routing goes on without it.
+
+A lease is renewed every 20 seconds while its run lives, released when it
+ends, and free again 60 seconds after a run that died without releasing it.
+A run killed outright takes its SSH forward with it, and the next run clears
+what it left on this machine. Each CLI command is a run of its own, so a
+series of them may land on different devices: a client, whose run lasts as
+long as it does, is the way to keep one.
+
+Verified with this Mac standing in for a node with two emulators, and a
+second node that does not exist: three Python clients asking for Android at
+once got the two emulators, the third waited until one was released and got
+it, and no lease, forward or directory was left.
+
 ## What Mobium installs, and removing it
 
 On the machine, under `~/.mobium`:

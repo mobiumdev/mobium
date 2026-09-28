@@ -294,6 +294,7 @@ arguments and the two global flags.
 | `fill` | app_fill | — | target, text |
 | `find` | app_find | — | locator |
 | `grant` | app_grant | — | app, permissions |
+| `grid` | — | --holder | — |
 | `install` | app_install | — | path |
 | `keyboard` | app_keyboard | --hide --key --text | hide, key, text |
 | `launch` | app_launch | — | app |

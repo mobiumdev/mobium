@@ -121,13 +121,30 @@ this is what is not.
      on the way out. A call the node does not answer fails rather than start
      a daemon here. An unchanged Python client went remote with the
      environment variable alone ([SETUP.md](SETUP.md#driving-another-machines-devices)).
-  3. **Stage 3: a router,** Selenium Grid's shape: a registry of nodes and
-     their devices, a lease that keeps a device to one run, routing a
-     session by platform and model, a queue when nothing matches is free,
-     and dead nodes noticed. The node side exists — a daemon beside its
-     devices, one per run, ports that do not collide (CHALLENGES 148). iOS
-     nodes are Macs, and phones are on their USB, so a grid is a set of
-     machines, as Appium's is.
+  3. **Stage 3: a router — done, 2026-09-28,** without a hub: `MOBIUM_GRID`
+     names the nodes, the caller's own mobium routes each run by serial or
+     platform, and the lease lives on the node — exclusive, renewed every
+     20s, free 60s after a run dies, released at the end. A queue waits for a
+     device up to `MOBIUM_GRID_WAIT`; a node that does not answer is left out.
+     A `kill -9` left an SSH forward running for good until the forward
+     read a pipe its parent holds ([SETUP.md](SETUP.md#a-grid)).
+  4. **Still to do.** Routing by model and OS version, not only platform and
+     serial. Leases are honored by mobium, not enforced by the node's
+     daemon, so a run that ignores the grid can still take a leased device.
+     And one device per run holds on a node's daemon as anywhere — nothing
+     yet shares one session between two runs.
+  5. **A grid UI** (written down 2026-09-28): a page showing each node, its
+     devices, who holds each lease and for how long, and what is queued —
+     the view Selenium Grid's console gives. Built from the same
+     `mobium grid node` answer the router reads, so it can never disagree
+     with what routing does.
+  6. **Docker for remote** (written down 2026-09-28): a node in a container —
+     an Android emulator with mobium and an SSH server beside it — so a grid
+     can be stood up without a spare machine, and torn down with it. Android
+     only: an iOS node has to be a Mac, and a simulator does not run in a
+     container. What to measure first is whether an emulator runs in the
+     container at usable speed, which depends on hardware acceleration
+     reaching it.
 - **MobiumApp on AWS Device Farm, on its free trial** (written down
   2026-09-28, nothing measured yet) — the first devices Mobium would drive
   that nobody here owns. What the plan rests on, and must be checked against

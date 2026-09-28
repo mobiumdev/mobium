@@ -20,6 +20,11 @@ const daemonIdleTimeout = "30m"
 
 // daemonCall runs a tool through the daemon, starting one if none is running.
 func daemonCall(tool string, args map[string]interface{}) (*agent.ToolsCallResult, error) {
+	if gridActive && !gridRouted {
+		if err := routeGrid(args); err != nil {
+			return nil, err
+		}
+	}
 	// These flags are per-command, so they travel with the call rather than
 	// being stored in a daemon shared with other terminals.
 	if deviceSerial != "" {

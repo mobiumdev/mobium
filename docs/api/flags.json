@@ -2268,6 +2268,12 @@
       ]
     },
     {
+      "command": "grid",
+      "flags": [
+        "--holder"
+      ]
+    },
+    {
       "command": "install",
       "tools": [
         "app_install"

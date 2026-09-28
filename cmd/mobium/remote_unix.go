@@ -3,6 +3,7 @@
 package main
 
 import (
+	"os"
 	"os/exec"
 	"syscall"
 )
@@ -15,3 +16,9 @@ func remoteSupported() error { return nil }
 func remoteTempRoot() string { return "/tmp" }
 
 func setOwnGroup(cmd *exec.Cmd) { cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true} }
+
+// ownedByMe says a leftover directory is this user's to remove.
+func ownedByMe(info os.FileInfo) bool {
+	st, ok := info.Sys().(*syscall.Stat_t)
+	return ok && int(st.Uid) == os.Getuid()
+}

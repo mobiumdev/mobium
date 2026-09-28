@@ -19,10 +19,10 @@ differently.
 | | |
 | --- | --- |
 | Tools | **56** |
-| CLI commands registered | 61 |
+| CLI commands registered | 62 |
 | …visible in `mobium --help` | 60 |
-| …hidden | 1 (pipe) |
-| Command constructors in source | 65 (includes `daemon start`, `stop`, `status`) |
+| …hidden | 2 (grid, pipe) |
+| Command constructors in source | 66 (includes `daemon start`, `stop`, `status`) |
 | Client libraries | 5 |
 
 Those three command counts differ on purpose, and the arithmetic is asserted
@@ -104,6 +104,7 @@ been wrong twice.
 ## Commands that dispatch no tool
 
 - `daemon`
+- `grid`
 - `mcp`
 - `pipe`
 - `start`

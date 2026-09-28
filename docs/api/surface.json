@@ -702,16 +702,18 @@
   ],
   "counts": {
     "tools": 56,
-    "cliRegistered": 61,
+    "cliRegistered": 62,
     "cliVisible": 60,
     "cliHidden": [
+      "grid",
       "pipe"
     ],
-    "cliConstructors": 65,
+    "cliConstructors": 66,
     "clients": 5
   },
   "cliWithoutTool": [
     "daemon",
+    "grid",
     "mcp",
     "pipe",
     "start",

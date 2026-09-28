@@ -20,3 +20,5 @@ func remoteSupported() error {
 func remoteTempRoot() string { return os.TempDir() }
 
 func setOwnGroup(*exec.Cmd) {}
+
+func ownedByMe(os.FileInfo) bool { return false }
