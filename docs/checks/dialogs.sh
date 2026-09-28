@@ -14,7 +14,8 @@
 # keyboard (CHALLENGES 105 and its keyboard half).
 #
 # Needs MobiumApp installed (mobiumdev/mobium-app). A real iPhone cannot reset
-# permissions from outside, so it is not a target for this check yet.
+# permissions from outside, so there it needs MOBIUMAPP_BUNDLE and reinstalls
+# the app instead; its clipboard cannot be seeded, so paste is not checked.
 set -e
 DEV="$1"
 if [ -z "$DEV" ]; then echo "usage: $0 <serial|udid>" >&2; exit 2; fi
@@ -24,11 +25,17 @@ row() { printf '    %-18s %-50s ok\n' "$1" "$2"; }
 APP=dev.mobium.mobiumapp
 
 case "$DEV" in
-  ????????-????????????????) echo "a real iPhone cannot reset permissions from outside; use a simulator" >&2; exit 2 ;;
+  ????????-????????????????)
+    # A phone cannot reset a permission from outside; reinstalling the app
+    # is the one reset it has, so the bundle is required here.
+    [ -n "$MOBIUMAPP_BUNDLE" ] || { echo "on a real iPhone set MOBIUMAPP_BUNDLE=<path to MobiumApp.app>: reinstalling is the only permission reset a phone has" >&2; exit 2; }
+    PLATFORM=ios; PHONE=1; M="$ROOT/bin/mobium --driver wda --device $DEV"
+    RESET=reinstall; CAP=label ;;
   *-*-*-*-*) PLATFORM=ios; M="$ROOT/bin/mobium --driver wda --device $DEV"; RESET="$M reset-permissions $APP"; CAP=label ;;
   *)         PLATFORM=android; M="$ROOT/bin/mobium --device $DEV"; RESET="$M reset-permissions"; CAP=text ;;
 esac
 echo "--- $DEV ($PLATFORM)"
+reinstall() { $M uninstall "$APP" >/dev/null 2>&1 || true; $M install "$MOBIUMAPP_BUNDLE" >/dev/null; }
 
 fresh() {
   $M alert dismiss >/dev/null 2>&1 || true
@@ -151,8 +158,13 @@ CLIP='seeded by mobium'
 # below <button>: bring a button under the fold into view, once the screen
 # has come up — a scroll sent while it is still arriving scrolls Home.
 below() { $M wait testid=dialogOutcome >/dev/null; $M scroll-to "testid=$1" >/dev/null; }
-$M clipboard "$CLIP" >/dev/null
-if [ "$PLATFORM" = ios ]; then
+if [ -n "$PHONE" ]; then
+  # A phone's clipboard cannot be written from outside, so nothing can put
+  # another app's text there for the prompt to be about.
+  printf '    %-18s %s\n' "paste" "NOT CHECKED — a phone's clipboard cannot be seeded from outside"
+elif ! $M clipboard "$CLIP" >/dev/null; then
+  fail "the clipboard could not be seeded"
+elif [ "$PLATFORM" = ios ]; then
   fresh; below pasteBtn; raise pasteBtn; $M alert dismiss >/dev/null; sleep 1; outcome "paste: empty, or not allowed"
   fresh; below pasteBtn; raise pasteBtn; $M alert accept >/dev/null; sleep 1; outcome "paste: ${#CLIP} characters"
   row "paste" "dismiss refused it, accept read ${#CLIP} characters"
