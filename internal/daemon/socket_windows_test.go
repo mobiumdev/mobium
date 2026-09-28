@@ -39,8 +39,17 @@ func checkOwnerOnly(t *testing.T, path string) {
 	if !strings.HasPrefix(sddl, "D:P") {
 		t.Errorf("pipe DACL %q is not protected: it inherits entries", sddl)
 	}
-	if strings.Count(sddl, "(") != 1 || !strings.Contains(sddl, ";;;"+user.User.Sid.String()+")") {
-		t.Errorf("pipe DACL %q should hold one entry, for %s", sddl, user.User.Sid)
+	// SDDL prints a well-known SID as its alias -- the built-in
+	// Administrator, which a CI runner is, reads back as LA -- so the trustee
+	// to look for is the user's SID as SDDL itself would print it.
+	want, err := windows.SecurityDescriptorFromString("D:(A;;GA;;;" + user.User.Sid.String() + ")")
+	if err != nil {
+		t.Fatal(err)
+	}
+	w := want.String()
+	trustee := w[strings.LastIndex(w, ";")+1 : len(w)-1]
+	if strings.Count(sddl, "(") != 1 || !strings.HasSuffix(sddl, ";;;"+trustee+")") {
+		t.Errorf("pipe DACL %q should hold one entry, for %s (%s)", sddl, user.User.Sid, trustee)
 	}
 }
 
