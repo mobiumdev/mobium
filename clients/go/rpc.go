@@ -58,8 +58,18 @@ func FindBinary(explicit string) (string, error) {
 		}
 		return "", fmt.Errorf("%s is not an executable mobium binary", candidate)
 	}
-	if found, err := exec.LookPath("mobium"); err == nil && filepath.IsAbs(found) {
-		return found, nil
+	// PATH's directories one by one, rather than exec.LookPath("mobium"):
+	// on Windows that looks in the current directory first, and on finding
+	// a mobium.exe there refuses it and gives up, so the real one on PATH
+	// was never reached. A relative entry would be the current directory
+	// by another name, and is skipped too.
+	for _, dir := range filepath.SplitList(os.Getenv("PATH")) {
+		if !filepath.IsAbs(dir) {
+			continue
+		}
+		if found, err := exec.LookPath(filepath.Join(dir, "mobium")); err == nil {
+			return found, nil
+		}
 	}
 	return "", errors.New("mobium not found — put it on PATH or set MOBIUM_BIN_PATH to the binary")
 }
