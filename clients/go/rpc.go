@@ -114,8 +114,13 @@ func (c *conn) why() error {
 	return c.dead
 }
 
-func dial(binary string, args []string) (*conn, error) {
+func dial(binary string, args []string, session string) (*conn, error) {
 	cmd := exec.Command(binary, append([]string{"pipe"}, args...)...)
+	if session != "" {
+		// Appended, so it wins over a MOBIUM_SESSION already in the
+		// environment: the option is the more specific of the two.
+		cmd.Env = append(os.Environ(), "MOBIUM_SESSION="+session)
+	}
 	stdin, err := cmd.StdinPipe()
 	if err != nil {
 		return nil, err

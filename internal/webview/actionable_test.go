@@ -17,6 +17,9 @@ func (f *cannedPage) Evaluate(ctx context.Context, expr string) (string, error) 
 	f.got = expr
 	return f.answer, nil
 }
+func (f *cannedPage) Cookies(ctx context.Context) ([]Cookie, error)       { return nil, nil }
+func (f *cannedPage) SetCookie(ctx context.Context, c Cookie) error       { return nil }
+func (f *cannedPage) DeleteCookie(ctx context.Context, c Cookie) error    { return nil }
 func (f *cannedPage) LayoutMetrics(ctx context.Context) (*Metrics, error) { return nil, nil }
 func (f *cannedPage) Map(ctx context.Context) ([]Element, error)          { return nil, nil }
 func (f *cannedPage) Text(ctx context.Context) (string, error)            { return "", nil }

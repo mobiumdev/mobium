@@ -266,6 +266,10 @@ func (h *Handlers) dispatch(ctx context.Context, name string, args map[string]in
 		return h.record(ctx, args)
 	case "app_eval":
 		return h.evalPage(ctx, args)
+	case "app_cookies":
+		return h.cookiesTool(ctx, args)
+	case "app_storage":
+		return h.storageTool(ctx, args)
 	case "app_list_apps":
 		return h.listApps(ctx, args)
 	case "app_uninstall":

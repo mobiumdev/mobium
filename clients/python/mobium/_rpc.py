@@ -57,13 +57,18 @@ class Connection:
     interleaved.
     """
 
-    def __init__(self, binary: str, args: list[str], call_timeout: float | None = None):
+    def __init__(self, binary: str, args: list[str], call_timeout: float | None = None,
+                 session: str | None = None):
         if call_timeout is not None and not call_timeout > 0:
             raise ValueError("call_timeout must be a positive number of seconds, or None")
         self._timeout = call_timeout
         try:
+            env = None
+            if session:
+                env = {**os.environ, "MOBIUM_SESSION": session}
             self._proc = subprocess.Popen(
                 [binary, "pipe", *args],
+                env=env,
                 stdin=subprocess.PIPE,
                 stdout=subprocess.PIPE,
                 # Progress notes about downloading a device-side server go to

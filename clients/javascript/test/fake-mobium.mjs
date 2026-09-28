@@ -19,6 +19,7 @@ import { appendFileSync, writeFileSync } from 'node:fs'
 
 const mode = process.env.MOBIUM_FAKE || 'ok'
 if (process.env.MOBIUM_FAKE_PIDFILE) writeFileSync(process.env.MOBIUM_FAKE_PIDFILE, String(process.pid))
+if (process.env.MOBIUM_FAKE_NOTIFYLOG) appendFileSync(process.env.MOBIUM_FAKE_NOTIFYLOG, 'session=' + (process.env.MOBIUM_SESSION || '') + '\n')
 const send = (o) => process.stdout.write(JSON.stringify(o) + '\n')
 
 // One at a time, in order, as mobium pipe answers.

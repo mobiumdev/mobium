@@ -411,7 +411,22 @@ namespace Mobium.Tests
             }
             var sent = File.Exists(log) ? string.Join(",", File.ReadAllLines(log)) : "";
             Eq("Dispose sends the handshake's notification and then mobium/detach",
-                "notifications/initialized,mobium/detach", sent);
+                "session=,notifications/initialized,mobium/detach", sent);
+            if (File.Exists(log)) File.Delete(log);
+
+            // Session gives the connection a daemon of its own.
+            Environment.SetEnvironmentVariable("MOBIUM_FAKE_NOTIFYLOG", log);
+            Environment.SetEnvironmentVariable("MOBIUM_FAKE", "ok");
+            try
+            {
+                Device.Builder().Binary(FakeBinary()).Session("run7").Connect().Dispose();
+            }
+            finally
+            {
+                Environment.SetEnvironmentVariable("MOBIUM_FAKE_NOTIFYLOG", null);
+            }
+            var first = File.Exists(log) ? File.ReadAllLines(log)[0] : "";
+            Eq("Session reaches the pipe as MOBIUM_SESSION", "session=run7", first);
             if (File.Exists(log)) File.Delete(log);
         }
 

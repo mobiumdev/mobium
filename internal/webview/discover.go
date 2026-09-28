@@ -49,6 +49,9 @@ type Context struct {
 	// TargetID is the page's CDP target id, which CloseTarget takes. Stable
 	// for the page's life, where ID is a position in the listing.
 	TargetID string `json:"-"`
+	// Base is ID without its number: WEBVIEW_ and the owning app. A caller
+	// that keeps names stable across listings numbers from it.
+	Base string `json:"-"`
 	// WSURL is the CDP WebSocket for this target.
 	WSURL string `json:"-"`
 }
@@ -168,6 +171,7 @@ func contextsOn(ctx context.Context, adb *device.ADB, s Socket) ([]Context, erro
 			URL:      t.URL,
 			Socket:   s.Name,
 			TargetID: t.ID,
+			Base:     "WEBVIEW_" + name,
 			// The URL embeds the port this forward used, which is torn down
 			// on return; Attach re-forwards and rewrites it.
 			WSURL: t.WebSocketDebuggerURL,

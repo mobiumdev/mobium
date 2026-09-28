@@ -514,6 +514,75 @@ func GetToolSchemas() []Tool {
 			},
 		},
 		{
+			Name: "app_cookies",
+			Description: "Read, set or clear the current WebView's cookies — the ones its page's URL is sent, " +
+				"HttpOnly ones included, which document.cookie cannot see. Vibium's cookies command, on a " +
+				"WebView: needs a web context, so switch with app_context first. \"get\" (the default) lists " +
+				"them; \"set\" sets each of cookies and reads the store back, so one the browser accepted and " +
+				"stored expired is reported, not claimed; \"clear\" deletes them all, or those called name. " +
+				"An Android app's WebViews share one cookie store, so a cookie set here is set for all of them.",
+			InputSchema: map[string]interface{}{
+				"type": "object",
+				"properties": withDevice(map[string]interface{}{
+					"action": map[string]interface{}{
+						"type":        "string",
+						"enum":        []string{"get", "set", "clear"},
+						"description": "get (default), set or clear.",
+					},
+					"cookies": map[string]interface{}{
+						"type":        "array",
+						"description": "With set: the cookies to set.",
+						"items": map[string]interface{}{
+							"type": "object",
+							"properties": map[string]interface{}{
+								"name":     map[string]interface{}{"type": "string"},
+								"value":    map[string]interface{}{"type": "string"},
+								"domain":   map[string]interface{}{"type": "string", "description": "Defaults to the page's host."},
+								"path":     map[string]interface{}{"type": "string", "description": "Defaults to /."},
+								"expires":  map[string]interface{}{"type": "number", "description": "Seconds since the epoch; omit for a session cookie."},
+								"httpOnly": map[string]interface{}{"type": "boolean"},
+								"secure":   map[string]interface{}{"type": "boolean"},
+								"sameSite": map[string]interface{}{"type": "string", "enum": []string{"Strict", "Lax", "None"}},
+							},
+							"required":             []string{"name", "value"},
+							"additionalProperties": false,
+						},
+					},
+					"name": map[string]interface{}{
+						"type":        "string",
+						"description": "With clear: delete only the cookies with this name.",
+					},
+				}),
+				"additionalProperties": false,
+			},
+		},
+		{
+			Name: "app_storage",
+			Description: "Save, restore or clear the current WebView's storage state: its cookies and its " +
+				"origin's localStorage and sessionStorage, in the shape Playwright and Vibium save — " +
+				"{cookies, origins: [{origin, localStorage, sessionStorage}]} — so a state saved by one " +
+				"restores in another. Vibium's storage command, on a WebView: switch with app_context first. " +
+				"\"get\" (the default) answers the state; \"restore\" sets its cookies and writes each origin's " +
+				"storage only into a page on that origin, saying which it skipped; \"clear\" empties all three. " +
+				"Every write is read back. A page with no origin of its own — an app's inline HTML, about:blank " +
+				"— cannot hold storage, and is refused as that.",
+			InputSchema: map[string]interface{}{
+				"type": "object",
+				"properties": withDevice(map[string]interface{}{
+					"action": map[string]interface{}{
+						"type":        "string",
+						"enum":        []string{"get", "restore", "clear"},
+						"description": "get (default), restore or clear.",
+					},
+					"state": map[string]interface{}{
+						"type":        "object",
+						"description": "With restore: a storage state, as get answers it.",
+					},
+				}),
+				"additionalProperties": false,
+			},
+		},
+		{
 			Name: "app_logs",
 			Description: "Read a log: the current WebView's console, or the device's own log " +
 				"(logcat on Android, the unified log on an iOS simulator, and on a real iPhone " +

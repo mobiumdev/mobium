@@ -171,8 +171,22 @@ const within = (p, ms) => Promise.race([settle(p), new Promise((r) => setTimeout
   process.env.MOBIUM_FAKE_NOTIFYLOG = ''
   let sent = []
   try { sent = readFileSync(log, 'utf8').split('\n').filter(Boolean) } catch {}
-  check(sent.join(',') === 'notifications/initialized,mobium/detach',
+  check(sent.join(',') === 'session=,notifications/initialized,mobium/detach',
     `close() sent ${JSON.stringify(sent)}, not the handshake's notification and then mobium/detach`)
+}
+
+// -- session gives the connection a daemon of its own --------------------------
+{
+  const log = join(dir, 'session.log')
+  process.env.MOBIUM_FAKE = 'ok'
+  process.env.MOBIUM_FAKE_NOTIFYLOG = log
+  process.env.MOBIUM_SESSION = 'outer'
+  await (await m.connect({ binary: FAKE, session: 'run7' })).close()
+  delete process.env.MOBIUM_SESSION
+  process.env.MOBIUM_FAKE_NOTIFYLOG = ''
+  let sent = []
+  try { sent = readFileSync(log, 'utf8').split('\n').filter(Boolean) } catch {}
+  check(sent[0] === 'session=run7', `the pipe saw ${JSON.stringify(sent[0])}, want MOBIUM_SESSION=run7 over the environment's`)
 }
 
 report()

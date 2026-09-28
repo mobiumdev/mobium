@@ -242,8 +242,8 @@ function toElements(data) {
  *   const device = await start({ platform: 'android', app: 'com.android.settings' })
  *   try { await device.map() } finally { await device.quit() }
  */
-export async function start({ platform, device, app, driver, binary, callTimeoutMs } = {}) {
-  const d = await connect({ device, driver, binary, callTimeoutMs })
+export async function start({ platform, device, app, driver, binary, callTimeoutMs, session } = {}) {
+  const d = await connect({ device, driver, binary, callTimeoutMs, session })
   const args = { action: 'start' }
   if (platform) args.platform = platform
   if (app) args.app = app
@@ -261,7 +261,7 @@ export async function start({ platform, device, app, driver, binary, callTimeout
   return d
 }
 
-export async function connect({ device, driver, binary, callTimeoutMs } = {}) {
+export async function connect({ device, driver, binary, callTimeoutMs, session } = {}) {
   if (callTimeoutMs !== undefined && !(callTimeoutMs > 0)) {
     throw new InvalidArgumentError('callTimeoutMs must be a positive number of milliseconds')
   }
@@ -273,6 +273,10 @@ export async function connect({ device, driver, binary, callTimeoutMs } = {}) {
     // Progress notes about downloading a device-side server go to stderr;
     // inheriting keeps a slow first run explicable rather than silent.
     stdio: ['pipe', 'pipe', 'inherit'],
+    // A daemon of this connection's own, as MOBIUM_SESSION names one. One
+    // daemon serves one call at a time across every device, so parallel runs
+    // on different devices should each have one.
+    ...(session ? { env: { ...process.env, MOBIUM_SESSION: session } } : {}),
   })
 
   const conn = new Connection(child, callTimeoutMs)
@@ -1198,6 +1202,53 @@ export class Device {
   async eval(expression) {
     const data = (await this.#data('app_eval', { expression })) || {}
     return data.value || ''
+  }
+
+  /**
+   * The current WebView's cookies: the ones its page's URL is sent, HttpOnly
+   * ones included. Needs a web context — context() first. Each has
+   * Playwright's and Vibium's keys: name, value, domain, path, expires
+   * (seconds since the epoch, absent for a session cookie), httpOnly, secure,
+   * sameSite.
+   */
+  async cookies() {
+    const data = (await this.#data('app_cookies', { action: 'get' })) || {}
+    return data.cookies || []
+  }
+
+  /**
+   * Set each cookie on the current page and read the store back, so one the
+   * browser accepted and stored expired rejects with NotConfirmedError.
+   */
+  async setCookies(cookies) {
+    await this.#data('app_cookies', { action: 'set', cookies })
+  }
+
+  /** Delete the current page's cookies, or only those called name. */
+  async clearCookies(name) {
+    await this.#data('app_cookies', name ? { action: 'clear', name } : { action: 'clear' })
+  }
+
+  /**
+   * The current page's storage state, in the shape Playwright and Vibium
+   * save: { cookies, origins: [{ origin, localStorage, sessionStorage }] }.
+   */
+  async storage() {
+    const data = (await this.#data('app_storage', { action: 'get' })) || {}
+    return data.state || { cookies: [], origins: [] }
+  }
+
+  /**
+   * Restore a saved state: its cookies, and each origin's storage into the
+   * page only if the page is on that origin.
+   */
+  async setStorage(state) {
+    await this.#data('app_storage', { action: 'restore', state })
+  }
+
+  /** Empty the current page's cookies, localStorage and sessionStorage. */
+  async clearStorage() {
+    await this.#data('app_storage', { action: 'clear' })
   }
 
   /**

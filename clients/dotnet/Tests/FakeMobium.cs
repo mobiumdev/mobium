@@ -47,6 +47,9 @@ namespace Mobium.Tests
             var pidFile = Environment.GetEnvironmentVariable("MOBIUM_FAKE_PIDFILE");
             if (!string.IsNullOrEmpty(pidFile)) File.WriteAllText(pidFile, Environment.ProcessId.ToString());
 
+            var notifyLog = Environment.GetEnvironmentVariable("MOBIUM_FAKE_NOTIFYLOG");
+            if (!string.IsNullOrEmpty(notifyLog))
+                File.AppendAllText(notifyLog, "session=" + (Environment.GetEnvironmentVariable("MOBIUM_SESSION") ?? "") + "\n");
             var stdin = new StreamReader(Console.OpenStandardInput(), new UTF8Encoding(false));
             var stdout = new StreamWriter(Console.OpenStandardOutput(), new UTF8Encoding(false)) { AutoFlush = true };
 

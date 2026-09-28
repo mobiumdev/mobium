@@ -248,7 +248,9 @@ layer, the package graph, and one call traced end to end.
 
 The daemon starts on demand, holds the `@ref` table and exits after 30 idle
 minutes. `MOBIUM_SESSION=<name>` gives a run its own daemon, so two terminals
-or two CI jobs on one host stay isolated.
+or two CI jobs on one host stay isolated — and since one daemon serves one
+call at a time, runs on different devices at once should each have one; every
+client takes it as a `session` option ([SETUP.md](docs/SETUP.md#parallel-runs)).
 
 **MCP:**
 

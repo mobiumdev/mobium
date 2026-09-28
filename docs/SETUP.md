@@ -27,6 +27,7 @@ no Xcode on a machine doing Android work is normal, not a problem.
 - [Android real device](#android-real-device)
 - [iOS simulator](#ios-simulator)
 - [iOS real device](#ios-real-device) — native screens, WebViews and Safari
+- [Parallel runs](#parallel-runs) — one daemon for each
 - [What Mobium installs, and removing it](#what-mobium-installs-and-removing-it)
 
 ---
@@ -464,6 +465,38 @@ WebDriverAgent which app is coming. A tap that opens another app gives no
 such warning, so after one, a slow first read is that and not a hang.
 
 ---
+
+## Parallel runs
+
+**Give each run that drives a device at the same time as another its own
+daemon.** One daemon serves one call at a time, across every device it
+holds, so two runs sharing one go at the pace of the slower device.
+Measured on 2026-09-27, 15 `map` calls on each of an Android 15 emulator and
+an iPhone 17 Pro simulator at once:
+
+| | the emulator's 15 calls |
+| --- | --- |
+| alone | 0.3s |
+| sharing a daemon with the simulator's | 22.3s |
+| on a daemon of its own, while the simulator's ran on another | 0.3s |
+
+A daemon is named by `MOBIUM_SESSION`, and every client can set it for the
+connection it opens:
+
+| | |
+| --- | --- |
+| CLI | `MOBIUM_SESSION=android-run mobium map` |
+| Python | `mobium.start(platform="android", session="android-run")` |
+| JavaScript | `start({ platform: 'android', session: 'android-run' })` |
+| Go | `mobium.Start(ctx, mobium.WithPlatform("android"), mobium.WithSession("android-run"))` |
+| Java | `Mobium.builder().platform("android").session("android-run").start()` |
+| .NET | `Device.Builder().Platform("android").Session("android-run").Start()` |
+
+The option wins over a `MOBIUM_SESSION` already in the environment. Keep the
+name short: it is part of a socket path, and the OS caps those at about 104
+bytes. And one device belongs to one run at a time — two daemons driving the
+same device invalidate each other's device-side session (above, under
+"Headed and headless").
 
 ## What Mobium installs, and removing it
 
