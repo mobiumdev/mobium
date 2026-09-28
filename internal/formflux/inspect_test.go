@@ -195,3 +195,38 @@ func TestInspectSurvivesAnEmptyTree(t *testing.T) {
 		t.Errorf("an empty tree produced findings: %v", got)
 	}
 }
+
+// A row cut off by the bottom of its list is not a tiny target: Android
+// clips a child's bounds to its scroll container, so the sliver still
+// showing is all it reports. Captured on a Pixel 9 Pro Fold emulator's open
+// screen, where Settings' "Sound & vibration" row — 215px like its
+// neighbors — read 52px at the list's edge.
+func TestARowCutByItsListIsNotATinyTarget(t *testing.T) {
+	tr := load(t, "settings-fold-open-uia2.xml")
+	var cut *uitree.Node
+	for _, n := range tr.All() {
+		if n.Path == "0/0/0/0/1/0/0/0/0/0/6" {
+			cut = n
+		}
+	}
+	// The fixture has to hold the case, or the assertion below proves nothing.
+	if cut == nil || !cut.Clickable || cut.Bounds.Height() >= minTouchPixels(390, Android) {
+		t.Fatalf("the fixture no longer has the cut row: %+v", cut)
+	}
+	for _, f := range Inspect(tr, screenOf(tr), 390, Android) {
+		if f.Kind == KindTinyTarget && f.Path == cut.Path {
+			t.Errorf("a row cut by its list was reported: %s", f.Detail)
+		}
+	}
+
+	// And a short row that is not at an edge is still one: the same row
+	// moved up into the middle of the list is reported.
+	cut.Bounds.Y1, cut.Bounds.Y2 = 1500, 1552
+	found := false
+	for _, f := range Inspect(tr, screenOf(tr), 390, Android) {
+		found = found || (f.Kind == KindTinyTarget && f.Path == cut.Path)
+	}
+	if !found {
+		t.Error("a 52px row in the middle of the list was not reported: the exemption hides real ones")
+	}
+}

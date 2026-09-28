@@ -7,7 +7,7 @@ the source.
 
 The pattern across them is the reason the document exists: **almost nothing
 here was found by reading code or by a test written from imagination.** Of
-145 defects, 115 were found only by running against a real device. The other
+148 defects, 118 were found only by running against a real device. The other
 thirty — 4, 5, 6, 14, 23, 24, 32, 35, 36, 39, 44, 50, 53, 54, 57, 66, 89,
 99, 100, 121, 123, 129, 130, 133, 134, 139, 140, 141, 142 and 144 — came from reading code, the compiler, a test, a linter,
 cross-checking a computed number against a screenshot, using the tooling on
@@ -3295,6 +3295,66 @@ target marked visible, as the phone had it; it fails without the change. On
 the phone, under the sheet: visible timed out naming "Save Password?",
 hidden held in 745ms, and once the sheet was answered the text was visible
 in 471ms.
+
+### 146. A row cut off by its list was reported as a tiny touch target
+
+**Found by:** formflux's device test on a Pixel 9 Pro Fold emulator, which
+reported one finding at the new `fold-open` profile and none anywhere else:
+a 2076×52px row in Android's own Settings, below the 48dp minimum.
+
+It was "Sound & vibration", 215px tall like every row beside it, sitting at
+the bottom edge of Settings' list with 52px of it showing. Android reports a
+child's bounds clipped to its scroll container (the rule the scroll code
+already follows), and the touch-target check measured the sliver. Any
+profile can produce it; `fold-open` was where a row happened to be cut with
+less than 48dp showing. A dimension that ends at an edge of the node's
+nearest scrolling ancestor is now not judged, since its real size was not
+reported. The test is that Settings screen, captured: the cut row is no
+longer reported, and the same row moved into the middle of the list still
+is. The device test only logged findings, so its zeros afterward showed only
+that the check ran; `TestDeviceCatchesThePlantedTargets` now asserts, on
+MobiumApp's Layout Demo — a 24dp target reported at all eight profiles, and a
+bar an eighth of the screen wide reported exactly at the two below 384dp. With
+the touch minimum lowered to 20dp it fails at the first profile.
+
+### 147. WebDriverAgent never started on an iPad simulator
+
+**Found by:** booting the iPad mini (A17 Pro) simulator for a formflux
+profile: WebDriverAgent did not answer within 90 seconds, twice, with no
+dialog on screen, and the iPad Air failed the same way while the iPhone 17
+Pro started in 6 seconds.
+
+Mobium launches the prebuilt runner and waits for its server. Side by side,
+both runners logged "Running tests..."; the iPhone's then said "Continuing to
+run tests in the background" and its server came up, and the iPad's said
+nothing more. On iPadOS 26 the runner stays in the foreground as a window,
+and XCTest does not proceed until it leaves: launching another app on the
+iPad brought the server up three seconds later. If the runner has not
+answered in ten seconds, Mobium now opens and closes Settings, which leaves
+the home screen in front; an iPhone answers first and never sees it. On the
+iPad mini the first call then answered in 13 seconds, and Settings mapped and
+was driven. The iPad's home screen is a question of its own: WebDriverAgent
+reports the Dock's folder service as the app in front there, with nothing to
+map, where an iPhone reports SpringBoard.
+
+### 148. A second simulator's daemon drove the first simulator
+
+**Found by:** booting a second iPhone simulator beside the first, each on a
+daemon of its own as parallel runs are told to: the second launched Safari
+on its simulator, then read the first simulator's screen and reported
+Settings as its foreground app.
+
+Launching goes through `simctl`, which names the simulator; everything else
+goes to WebDriverAgent's server, which every simulator's runner opens on the
+Mac itself, at 8100. Only one can hold the port, so the second daemon's
+reads, and its taps, reached the first simulator's runner — while it said
+nothing was wrong. Its video stream collided the same way at 9100. Each
+simulator's runner is now launched with free ports of its own, passed as
+`USE_PORT` and `MJPEG_SERVER_PORT` through `simctl`'s `SIMCTL_CHILD_`
+environment, and the daemon talks to that port. Two iPhone simulators on two
+daemons then read their own screens, and ten `map` calls on each at once
+never crossed. `autowait.sh`, which called port 8100 itself to set Reduce
+Motion, uses mobium's own setting instead.
 
 ## Findings that were not defects
 

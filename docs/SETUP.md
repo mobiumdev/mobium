@@ -498,6 +498,14 @@ bytes. And one device belongs to one run at a time — two daemons driving the
 same device invalidate each other's device-side session (above, under
 "Headed and headless").
 
+**Two simulators at once work.** Every simulator's WebDriverAgent listens on
+the Mac itself, and until 2026-09-28 all of them on port 8100, so a second
+simulator's daemon reached the first simulator's runner and drove it while
+reporting it as its own. Each runner is now given free ports of its own when
+it starts; two iPhone simulators on two daemons, ten `map` calls each at
+once, each saw only its own screen. Nothing needs setting for it
+(CHALLENGES 148).
+
 ## What Mobium installs, and removing it
 
 On the machine, under `~/.mobium`:

@@ -110,10 +110,19 @@ func (s *Simctl) RunStdin(ctx context.Context, in io.Reader, args ...string) err
 
 // Run executes `xcrun simctl <args>` and returns stdout.
 func (s *Simctl) Run(ctx context.Context, args ...string) ([]byte, error) {
+	return s.runEnv(ctx, nil, args...)
+}
+
+// runEnv is Run with extra environment for simctl, which is how a launched
+// app gets environment of its own: simctl passes SIMCTL_CHILD_X on as X.
+func (s *Simctl) runEnv(ctx context.Context, env []string, args ...string) ([]byte, error) {
 	ctx, cancel := context.WithTimeout(ctx, defaultTimeout)
 	defer cancel()
 
 	cmd := exec.CommandContext(ctx, s.Path, append([]string{"simctl"}, args...)...)
+	if len(env) > 0 {
+		cmd.Env = append(os.Environ(), env...)
+	}
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
@@ -284,6 +293,16 @@ func (s *Simctl) InstallApp(ctx context.Context, path string) error {
 // LaunchApp starts an installed app by bundle id.
 func (s *Simctl) LaunchApp(ctx context.Context, bundleID string, args ...string) error {
 	_, err := s.Run(ctx, append([]string{"launch", s.UDID, bundleID}, args...)...)
+	return err
+}
+
+// LaunchAppWithEnv starts an app with environment variables of its own.
+func (s *Simctl) LaunchAppWithEnv(ctx context.Context, bundleID string, env map[string]string) error {
+	var pass []string
+	for k, v := range env {
+		pass = append(pass, "SIMCTL_CHILD_"+k+"="+v)
+	}
+	_, err := s.runEnv(ctx, pass, "launch", s.UDID, bundleID)
 	return err
 }
 

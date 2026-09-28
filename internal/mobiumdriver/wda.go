@@ -97,13 +97,24 @@ func (w *WDA) Start(ctx context.Context, progress func(string)) error {
 	// as the foreground app. Stopped first, it starts in the background as
 	// it always does. Not running is the ordinary case, and not an error.
 	_ = w.sim.TerminateApp(ctx, device.WDABundleID)
-	if err := w.sim.LaunchApp(ctx, device.WDABundleID); err != nil {
+	// A simulator shares the host network stack, so WDA's port is reachable
+	// directly — and so is every other simulator's. At the default 8100, a
+	// second simulator's runner lost the port to the first, and a second
+	// daemon drove the first simulator while reporting it as its own. Each
+	// runner gets free ports of its own: USE_PORT for the server, and
+	// MJPEG_SERVER_PORT for its video stream, which collided the same way at
+	// 9100. CHALLENGES 148.
+	ports, err := device.FreePorts(2)
+	if err != nil {
+		return err
+	}
+	if err := w.sim.LaunchAppWithEnv(ctx, device.WDABundleID, map[string]string{
+		"USE_PORT":          fmt.Sprint(ports[0]),
+		"MJPEG_SERVER_PORT": fmt.Sprint(ports[1]),
+	}); err != nil {
 		return fmt.Errorf("launch WebDriverAgent: %w", err)
 	}
-
-	// A simulator shares the host network stack, so WDA's port is reachable
-	// directly — there is no adb-forward equivalent to set up here.
-	w.w3c.setBase(fmt.Sprintf("http://127.0.0.1:%d", device.WDAPort))
+	w.w3c.setBase(fmt.Sprintf("http://127.0.0.1:%d", ports[0]))
 
 	// Waiting for an XCTest host to come up is the slowest step here and
 	// reports nothing while it happens. Saying so lets the CLI explain the
@@ -111,11 +122,40 @@ func (w *WDA) Start(ctx context.Context, progress func(string)) error {
 	if progress != nil {
 		progress("waiting for WebDriverAgent to start")
 	}
+	// On an iPad the runner's test does not start until the runner leaves
+	// the foreground: on iPadOS 26 it stays in front as a window, and XCTest
+	// logged "Running tests..." and nothing after it, where an iPhone's goes
+	// to the background by itself and carries on. Measured on the iPad mini
+	// (A17 Pro) and iPad Air simulators, iOS 26.5: the server came up three
+	// seconds after another app was brought forward, and never before. So
+	// if it is not answering soon, Settings is opened and closed, which
+	// leaves the home screen in front — the runner's cue. An iPhone answers
+	// before this and never sees it. CHALLENGES 147.
+	if !w.readyWithin(ctx, wdaNudgeAfter) {
+		_ = w.sim.LaunchApp(ctx, "com.apple.Preferences")
+		_ = w.sim.TerminateApp(ctx, "com.apple.Preferences")
+	}
 	if err := w.waitReady(ctx); err != nil {
 		w.teardownLocked(ctx)
 		return err
 	}
 	return w.openLocked(ctx)
+}
+
+// wdaNudgeAfter is how long a simulator's runner gets to answer on its own
+// before it is sent to the background. An iPhone's answered in 6s, cold.
+const wdaNudgeAfter = 10 * time.Second
+
+// readyWithin reports whether the runner answers within d.
+func (w *WDA) readyWithin(ctx context.Context, d time.Duration) bool {
+	deadline := time.Now().Add(d)
+	for time.Now().Before(deadline) && ctx.Err() == nil {
+		if w.w3c.ready(ctx) {
+			return true
+		}
+		time.Sleep(250 * time.Millisecond)
+	}
+	return false
 }
 
 // openLocked opens a session on a runner that is answering, and reads the

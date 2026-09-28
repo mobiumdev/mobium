@@ -172,6 +172,14 @@ var catalog = []Profile{
 		Why: "sw800dp, past both the sw600dp and sw720dp qualifiers, so it is the only profile here that can select a genuinely different layout. Phone layouts stretched across it look wrong in ways portrait phones never show",
 	},
 	{
+		Name: "fold-open", Platform: Android, WidthPx: 2076, HeightPx: 2152, DPI: 390,
+		Why: "sw851dp, and nearly square — the Pixel 9 Pro Fold's inner screen, as its emulator profile gives it. Past both tablet qualifiers like tablet, but with no long edge: a layout that assumes a tablet is landscape or a phone is tall is wrong here in both directions",
+	},
+	{
+		Name: "fold-closed", Platform: Android, WidthPx: 1080, HeightPx: 2424, DPI: 390,
+		Why: "sw443dp — the same device folded: its outer screen, a phone. The pair is one device crossing from Android's tablet layout class to its phone one and back, which a folding user does mid-task",
+	},
+	{
 		Name: "display-size-large", Platform: Android, WidthPx: 1080, HeightPx: 2400, DPI: 560,
 		Why: "sw308dp — the **narrowest** profile in this set, narrower than small-phone, on a screen with the most pixels of any phone here. That is Android's display-size accessibility setting, and that inversion is exactly why it breaks layouts nothing else finds",
 	},
@@ -184,6 +192,16 @@ var catalog = []Profile{
 		Name: "iphone-17-pro-max", Platform: IOS, WidthPx: 1320, HeightPx: 2868, Scale: 3,
 		DeviceType: "com.apple.CoreSimulator.SimDeviceType.iPhone-17-Pro-Max",
 		Why:        "440x956pt. The largest iPhone, and 38pt wider than the baseline",
+	},
+	{
+		Name: "ipad-mini", Platform: IOS, WidthPx: 1488, HeightPx: 2266, Scale: 2,
+		DeviceType: "com.apple.CoreSimulator.SimDeviceType.iPad-mini-A17-Pro",
+		Why:        "744x1133pt. The smallest iPad, and the only iOS profile here in the regular width size class, where an iPhone is compact: the nearest iOS has to a foldable's jump from phone to tablet layout, as a second device rather than a transition. Measured on the iPad mini (A17 Pro) simulator, whose runner needed sending to the background before it would start (CHALLENGES 147)",
+	},
+	{
+		Name: "ipad-pro-13", Platform: IOS, WidthPx: 2064, HeightPx: 2752, Scale: 2,
+		DeviceType: "com.apple.CoreSimulator.SimDeviceType.iPad-Pro-13-inch-M5-12GB",
+		Why:        "1032x1376pt. The largest iOS screen, regular width like ipad-mini but 288pt wider: the pair brackets the regular size class the way the iPhones bracket the compact one. Measured on the iPad Pro 13-inch (M5) simulator",
 	},
 	{
 		Name: "iphone-16e", Platform: IOS, WidthPx: 1170, HeightPx: 2532, Scale: 3,

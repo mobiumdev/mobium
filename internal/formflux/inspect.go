@@ -150,10 +150,17 @@ func Inspect(t *uitree.Tree, screen uitree.Rect, dpi int, platform Platform) []F
 			}
 		}
 
-		// Touch target.
+		// Touch target. A dimension cut by the edge of the list it scrolls
+		// in is not judged: Android reports a child's bounds clipped to its
+		// scroll container, so a row half off the bottom of a list reads as
+		// the sliver still showing. On a Pixel 9 Pro Fold's open screen,
+		// Settings' "Sound & vibration" row — 215px like its neighbors — read
+		// 52px at the list's bottom edge and was reported as a tiny target.
+		// CHALLENGES 146.
 		if n.Clickable && n.Enabled && minTouch > 0 {
 			w, h := n.Bounds.Width(), n.Bounds.Height()
-			if w < minTouch || h < minTouch {
+			cutW, cutH := clippedByScroll(n)
+			if (w < minTouch && !cutW) || (h < minTouch && !cutH) {
 				add(Finding{
 					Kind: KindTinyTarget, Label: name, Bounds: n.Bounds,
 					Detail: fmt.Sprintf("%dx%dpx, below the %dpx minimum (%s)",
@@ -190,6 +197,21 @@ func Inspect(t *uitree.Tree, screen uitree.Rect, dpi int, platform Platform) []F
 		return out[i].Label < out[j].Label
 	})
 	return out
+}
+
+// clippedByScroll says which of n's dimensions end at an edge of its nearest
+// scrolling ancestor, where the platform may have cut them: its width when it
+// touches the container's left or right edge, its height when it touches the
+// top or bottom. What is cut there has a real size nobody reported.
+func clippedByScroll(n *uitree.Node) (width, height bool) {
+	for p := n.Parent; p != nil; p = p.Parent {
+		if !p.Scrollable || p.Bounds.Empty() {
+			continue
+		}
+		b, c := n.Bounds, p.Bounds
+		return b.X1 == c.X1 || b.X2 == c.X2, b.Y1 == c.Y1 || b.Y2 == c.Y2
+	}
+	return false, false
 }
 
 // minTouchPixels converts the platform's guideline into device pixels.
