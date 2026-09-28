@@ -481,3 +481,81 @@ func TestIOSSwitchRowIsOneEntryAimedAtItsToggle(t *testing.T) {
 		}
 	}
 }
+
+// iOS 26's share sheet is drawn by another process, and XCTest reports its
+// content relative to the container that hosts it rather than to the screen:
+// a tap on "Add to Home Screen" opened Find on Page, and one on "View More"
+// closed the sheet, each reported as tapped. The expected frames are the
+// captured ones plus the container's origin, and they agree with where a
+// screenshot drew each row, to within reading it off the image. CHALLENGES 128.
+func TestIOSShareSheetContentIsOnScreenWhereItIsDrawn(t *testing.T) {
+	for _, c := range []struct {
+		fixture, label string
+		want           Rect
+	}{
+		// The cell at 283,249 under a container at 9,477.
+		{"ios26-share-sheet-half.xml", "View More", Rect{X1: 292, Y1: 726, X2: 375, Y2: 865}},
+		// The cell at 16,552 under a container at 0,63.
+		{"ios26-share-sheet-expanded.xml", "Add to Home Screen", Rect{X1: 16, Y1: 615, X2: 386, Y2: 666}},
+	} {
+		tree := loadIOS(t, c.fixture)
+		var found []Entry
+		for _, e := range tree.Map() {
+			if e.Label == c.label {
+				found = append(found, e)
+			}
+		}
+		if len(found) != 1 {
+			t.Fatalf("%s: %q maps as %d entries, want 1", c.fixture, c.label, len(found))
+		}
+		if got := found[0].Bounds; got != c.want {
+			t.Errorf("%s: %q aims at %v, want %v where it is drawn", c.fixture, c.label, got, c.want)
+		}
+		// Safari's own content, outside the sheet, is not moved.
+		for _, e := range tree.Map() {
+			if e.Label == "Paste" && e.Bounds.Y1 > 477 {
+				t.Errorf("%s: Safari's page moved with the sheet: %v", c.fixture, e.Bounds)
+			}
+		}
+	}
+}
+
+func TestRebaseRemoteContentOnlyAtACoordinateReset(t *testing.T) {
+	node := func(r Rect, kids ...*Node) *Node {
+		n := &Node{Bounds: r, Children: kids}
+		for _, k := range kids {
+			k.Parent = n
+		}
+		return n
+	}
+	// Screen coordinates: a same-size child shares its parent's origin, and
+	// is left where it is.
+	inPlace := node(Rect{X1: 10, Y1: 20, X2: 110, Y2: 220})
+	root := node(Rect{X2: 402, Y2: 874}, node(Rect{X1: 10, Y1: 20, X2: 110, Y2: 220}, inPlace))
+	rebaseRemoteContent(root)
+	if want := (Rect{X1: 10, Y1: 20, X2: 110, Y2: 220}); inPlace.Bounds != want {
+		t.Errorf("a child already on screen moved to %v", inPlace.Bounds)
+	}
+
+	// A reset: the child at 0,0 with its parent's size. It and everything
+	// under it move by the parent's origin, except a node with no size.
+	row := node(Rect{X1: 5, Y1: 50, X2: 95, Y2: 70})
+	offscreen := node(Rect{})
+	reset := node(Rect{X2: 100, Y2: 200}, row, offscreen)
+	root = node(Rect{X2: 402, Y2: 874}, node(Rect{X1: 10, Y1: 20, X2: 110, Y2: 220}, reset))
+	rebaseRemoteContent(root)
+	if want := (Rect{X1: 15, Y1: 70, X2: 105, Y2: 90}); row.Bounds != want {
+		t.Errorf("a row under the reset is at %v, want %v", row.Bounds, want)
+	}
+	if !offscreen.Bounds.Empty() || offscreen.Bounds.X1 != 0 {
+		t.Errorf("an off-screen node was given a position: %v", offscreen.Bounds)
+	}
+
+	// Under a parent at the origin a 0,0 child is ordinary.
+	top := node(Rect{X2: 402, Y2: 874})
+	root = node(Rect{X2: 402, Y2: 874}, top)
+	rebaseRemoteContent(root)
+	if top.Bounds != (Rect{X2: 402, Y2: 874}) {
+		t.Errorf("a full-screen child moved: %v", top.Bounds)
+	}
+}

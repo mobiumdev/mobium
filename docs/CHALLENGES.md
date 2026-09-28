@@ -7,9 +7,9 @@ the source.
 
 The pattern across them is the reason the document exists: **almost nothing
 here was found by reading code or by a test written from imagination.** Of
-127 defects, 106 were found only by running against a real device. The other
-twenty-one — 4, 5, 6, 14, 23, 24, 32, 35, 36, 39, 44, 50, 53, 54, 57, 66, 89,
-99, 100, 121 and 123 — came from reading code, the compiler, a test, a linter,
+129 defects, 107 were found only by running against a real device. The other
+twenty-two — 4, 5, 6, 14, 23, 24, 32, 35, 36, 39, 44, 50, 53, 54, 57, 66, 89,
+99, 100, 121, 123 and 129 — came from reading code, the compiler, a test, a linter,
 cross-checking a computed number against a screenshot, using the tooling on
 itself, typing a negative number at a command line, and driving the clients
 against a stand-in daemon, and CI on Windows.
@@ -196,6 +196,12 @@ Chrome renders into a compositor view, not an `android.webkit.WebView`, so
 there is no native host rectangle to map coordinates into. Browsers are out of
 scope by construction — that is Vibium's job. The real test subject was
 Settings' third-party licenses viewer, which uses a genuine WebView.
+
+**No longer true, measured 2026-09-27:** Chrome 124 on Android 15 reports its
+page area as an `android.webkit.WebView` node bounded to the content below
+the toolbar, and a tap through its `chrome_devtools_remote` context lands.
+Browsers are still out of scope; they are not out of reach.
+[APP-TYPES.md](APP-TYPES.md#mobile-web) has what was driven.
 
 ### 13. `uiautomator dump` fails while UiAutomator2 is running
 **Step 5. Found by:** trying to dump the hierarchy for debugging and getting a
@@ -2970,6 +2976,52 @@ its way out, because until the other app arrives the two look alike. A new
 screen in the same app now counts only once it has held still for a second,
 which a departing app's does not: `open` reported Safari five times in five,
 Chrome on Android as before, and a same-app deep link still lands.
+
+### 128. iOS 26's share sheet reports its elements where they are not
+
+**Found by:** installing a web app from Safari on the iPhone 17 Pro
+simulator. A tap on the ref for "Add to Home Screen" opened Find on Page,
+twice, and a tap on "View More" closed the sheet; each was reported as
+tapped. A screenshot beside `map` showed why: every element of the sheet is
+reported offset from where it is drawn — by about 1450 pixels while the
+sheet is half open, and by a constant 190 once it is expanded, so the center
+of "Add to Home Screen" is the center of the row above it.
+
+**The same on a real iPhone 15 Plus (iOS 26.6.2)**: offset by about 1140
+pixels half open and 180 expanded — 60 points against the simulator's 63 —
+and the ref for "Add to Home Screen" again opened Find on Page while
+reporting the tap. Half open, the sheet's reported rows fall on its row of
+suggested contacts, so a mis-tap there would start a message to a real
+person; nothing was tapped by ref in that state.
+
+The sheet is drawn by another process, and the hierarchy shows the seam:
+`ShareSheet.RemoteContainerView` at 9,477 with a node under it at 0,0 and
+exactly its size, and every row below that relative to the container. In
+screen coordinates a node the size of its parent and inside it must share
+its origin, so a node at 0,0 under a parent that is not at 0,0 is a reset.
+`ParseIOS` now adds the parent's origin to everything under such a node,
+leaving nodes with no size where they are. Nothing is named, so any remote
+view with the same habit is corrected. Of the nine captured iOS hierarchies
+only the two share-sheet ones contain the pattern. After the change, the
+ref for "Add to Home Screen" opened the Add to Home Screen dialog, and "View
+More" expanded the sheet, tapped at 1000,2386 against 999,2374 read off the
+screenshot.
+
+### 129. A late answer to a listing was heard, then overwritten
+
+**Found by:** `make ci` failing in `internal/webview` on a machine busy with
+a simulator — the test for [116](#116-after-an-accessibility-setting-changed-every-webview-lookup-took-25-seconds)'s
+fix, one run in five, with "PID:2 answered and is still marked silent".
+
+An application that misses a listing is marked silent, and the watch clears
+the mark the moment it hears that application answer. But the listing marked
+everything that had missed it *after* it stopped waiting, so a reply that
+arrived in between was cleared and then marked again. An application that
+always answered just too late would have stayed silent, and its pages
+unlisted, which is the case the mark exists to recover from. The watch now
+counts each application's answers, and a listing marks one silent only if
+nothing arrived from it while the listing ran. 60 runs in 60 pass; the old
+code fails the same test.
 
 ## Findings that were not defects
 

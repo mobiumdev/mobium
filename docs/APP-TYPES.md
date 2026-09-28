@@ -10,15 +10,16 @@ what is taken on trust.
 
 Its opening claim is the one that matters most here: **the type dictates how
 you find and interact with elements inside the app.** That is not a framing
-device. It is the whole of why this document exists, and three of the four
-categories reach a different part of Mobium.
+device. It is the whole of why this document exists, and each
+category reaches a different part of Mobium.
 
 | Type | Driven? | How elements are found |
 | --- | --- | --- |
 | Native | **yes** | the platform accessibility tree, via UiAutomator2 or WebDriverAgent |
 | Hybrid | **yes** | native shell through the tree; web content through CDP or Remote Web Inspector |
 | Cross-platform | **depends, and not on the vendor's claim** | see below — the answer splits the category in half |
-| Mobile web | **no, by decision** | a browser is [Vibium's](https://github.com/VibiumDev/vibium) job |
+| Mobile web | **not supported, and partly reachable** | a browser is [Vibium's](https://github.com/VibiumDev/vibium) job; what Mobium reaches anyway is below |
+| Progressive web app | **read on both, acted on in full only on Android** | the browser's web context; on iOS, taps go through the native tree |
 
 ## Native
 
@@ -29,15 +30,66 @@ accessibility tree with labels, ids and bounds. Everything in
 
 ## Mobile web
 
-**Refused on purpose**, and the taxonomy is why the line is clean rather than
-arbitrary. A mobile web app is a web app that happens to be viewed on a phone;
-nothing about it is mobile except the screen. Driving it means driving a
-browser, and that is Vibium — same architecture, different domain, per the
-motto. Mobium says so instead of half-supporting it.
+**Not a supported app type**, and the taxonomy is why the line is clean
+rather than arbitrary. A mobile web app is a web app that happens to be viewed
+on a phone; nothing about it is mobile except the screen. Testing it means
+testing in a browser, and that is Vibium — same architecture, different
+domain, per the motto.
 
-There is a mechanical reason as well as a scoping one. Chrome on Android
-renders into a compositor view rather than a WebView, so the technique the
-hybrid case depends on does not reach it.
+What that line does *not* mean is that Mobium cannot see a browser, and until
+2026-09-27 this section said it did. Measured that day on a Pixel 7 emulator
+(Android 15, Chrome 124) and an iPhone 17 Pro simulator (iOS 26.5):
+
+- **Chrome on Android is reachable.** It publishes `chrome_devtools_remote`,
+  which `app_contexts` has always read alongside the WebView sockets, and it
+  reports its page area as an `android.webkit.WebView` node whose bounds are
+  the content below the toolbar. `map`, `text`, `eval` and a tap on a link
+  all worked. [CHALLENGES 12](CHALLENGES.md) said Chrome renders into a
+  compositor view with no host rectangle; on this Chrome that is no longer
+  true.
+- **Safari on iOS is readable, and its taps are refused**, because its
+  WebView spans the chrome and the page cannot see its own inset
+  ([CHALLENGES 47](CHALLENGES.md)).
+
+So "not supported" is a statement about scope — no browser management, no
+tabs, no cookies, no network, and nothing checked in that drives a browser —
+not a wall Mobium puts up. What is reachable is reachable because a browser
+is, underneath, the hybrid case below.
+
+## Progressive web apps
+
+A PWA is a web app the user *installs*: it gets a home screen icon, opens
+without the browser's toolbar, and a service worker can run it offline. For
+automation it is one step closer to native than a web page is, since it
+launches from the home screen, and one step short of hybrid, since the
+browser owns the process. Squoosh (`squoosh.app`) was installed and driven
+on both devices above.
+
+| | Android (Chrome) | iOS (Add to Home Screen, "Open as Web App") |
+| --- | --- | --- |
+| What runs it | Chrome's `WebappActivity`, in `com.android.chrome` | `com.apple.webapp`, with its own bundle id `com.apple.WebKit.PushBundle.<id>` |
+| Launched by id | no — use the home screen icon | no — FrontBoard does not know the bundle id; use the icon |
+| The page says | `display-mode: standalone`, a service worker in control | the same, and `navigator.standalone` |
+| Its context | `WEBVIEW_com.android.chrome`, named for Chrome | `WEBVIEW_com.apple.SafariViewService`, named for neither the app nor Safari |
+| `map`, `text`, `eval` | work | work |
+| A tap in the web context | lands | refused: the host is 874 points and the viewport 812, the difference being the status bar |
+| A tap from `NATIVE_APP` | works | works — WebKit puts the page's controls in the accessibility tree |
+
+Three things follow.
+
+- **Name a PWA's context by its URL, not its name.** On Android the
+  installed app and the Chrome tab it was installed from were both
+  `WEBVIEW_com.android.chrome`, told apart only by the `_1` suffix, which is
+  list order. Neither context is named for the app in front.
+- **On iOS, act from `NATIVE_APP`.** The refusal is the right answer for
+  what the web context can compute, and the native tree already has the
+  page's buttons and links, labeled. A standalone web app has no browser
+  chrome, so its inset is probably just the status bar; that is a hypothesis
+  that would need a positive control before any code relied on it.
+- **Installing one is not something Mobium does.** On Android it needs
+  Chrome's menu, on iOS the share sheet. On this emulator Chrome pinned a
+  legacy web-app shortcut rather than minting a WebAPK, which needs Play
+  services; a WebAPK — a real APK, with its own package — is unmeasured.
 
 ## Hybrid
 

@@ -118,10 +118,18 @@ func TestAListingDoesNotWaitForAnApplicationThatNeverAnswers(t *testing.T) {
 	if _, err := i.Contexts(ctx); err != nil {
 		t.Fatal(err)
 	}
-	time.Sleep(100 * time.Millisecond)
-	i.mu.Lock()
-	still := i.silent["PID:2"]
-	i.mu.Unlock()
+	// The watch hears it on its own goroutine, so poll to a deadline rather
+	// than pause. This failed one run in five until list stopped marking
+	// silent an application whose reply the watch had just heard.
+	var still bool
+	for deadline := time.Now().Add(2 * time.Second); ; time.Sleep(10 * time.Millisecond) {
+		i.mu.Lock()
+		still = i.silent["PID:2"]
+		i.mu.Unlock()
+		if !still || time.Now().After(deadline) {
+			break
+		}
+	}
 	if still {
 		t.Fatalf("PID:2 answered and is still marked silent")
 	}
