@@ -2606,13 +2606,13 @@
       ]
     },
     {
-      "command": "status"
-    },
-    {
       "command": "status",
       "sends": [
         "running"
       ]
+    },
+    {
+      "command": "status"
     },
     {
       "command": "stop",

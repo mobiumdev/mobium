@@ -53,6 +53,10 @@ type CommandFlags struct {
 	// Unknown are keys it sends that no tool it dispatches declares. These
 	// are the defects this sweep exists to catch.
 	Unknown []string `json:"unknown,omitempty"`
+	// fn is the constructor, which breaks ties between commands that share a
+	// name under different parents — `daemon status` and `grid status` — so
+	// the generated table does not reorder between runs.
+	fn string
 }
 
 // globalArgs are attached by daemonCall from persistent flags rather than by
@@ -134,7 +138,12 @@ func CollectFlags(root string) ([]ArgEntry, []CommandFlags, error) {
 		}
 		return args[i].Name < args[j].Name
 	})
-	sort.Slice(cmds, func(i, j int) bool { return cmds[i].Command < cmds[j].Command })
+	sort.Slice(cmds, func(i, j int) bool {
+		if cmds[i].Command != cmds[j].Command {
+			return cmds[i].Command < cmds[j].Command
+		}
+		return cmds[i].fn < cmds[j].fn
+	})
 	return args, cmds, nil
 }
 
@@ -185,7 +194,7 @@ func collectCommandFlags(dir string) ([]CommandFlags, error) {
 				if use == "" {
 					continue
 				}
-				c := CommandFlags{Command: use, Tools: tools}
+				c := CommandFlags{Command: use, Tools: tools, fn: fn.Name.Name}
 				c.Flags, c.Sends = inspectFlagsAndKeys(fn, local, map[string]bool{})
 				out = append(out, c)
 			}

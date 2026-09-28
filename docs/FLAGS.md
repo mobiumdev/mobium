@@ -323,8 +323,8 @@ arguments and the two global flags.
 | `sms` | app_sms | --from | from, text |
 | `source` | app_source | — | — |
 | `start` | — | --idle-timeout | — |
-| `status` | — | — | — |
 | `status` | — | — | running |
+| `status` | — | — | — |
 | `stop` | — | — | status |
 | `storage` | app_storage, app_storage, app_storage | --output | action, state |
 | `swipe` | app_swipe | --duration | direction, duration_ms, x1, x2, y1, y2 |

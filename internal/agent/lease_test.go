@@ -2,7 +2,6 @@ package agent
 
 import (
 	"context"
-	"os"
 	"testing"
 
 	"github.com/mobiumdev/mobium/internal/grid"
@@ -13,12 +12,7 @@ import (
 // node — the one a run that bypassed the grid would use included — and
 // allowed to the run's own, whose session name is the lease's holder.
 func TestALeasedDeviceBelongsToItsRun(t *testing.T) {
-	home, err := os.MkdirTemp("/tmp", "mbl-")
-	if err != nil {
-		t.Fatal(err)
-	}
-	t.Cleanup(func() { os.RemoveAll(home) })
-	t.Setenv("MOBIUM_HOME", home)
+	t.Setenv("MOBIUM_HOME", t.TempDir())
 	t.Setenv("MOBIUM_SESSION", "")
 
 	h, _, _ := withFake(t, screen(t, "OK"))
@@ -31,7 +25,7 @@ func TestALeasedDeviceBelongsToItsRun(t *testing.T) {
 	if got, _ := grid.Take("fake", "g1234abcd"); !got.OK {
 		t.Fatal("could not lease the device")
 	}
-	_, err = h.sessionFor(ctx, args)
+	_, err := h.sessionFor(ctx, args)
 	if mobiumerr.CodeOf(err) != mobiumerr.DeviceNotReady {
 		t.Fatalf("another daemon reached a leased device: %v", err)
 	}
