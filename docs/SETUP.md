@@ -506,6 +506,13 @@ it starts; two iPhone simulators on two daemons, ten `map` calls each at
 once, each saw only its own screen. Nothing needs setting for it
 (CHALLENGES 148).
 
+**Android never shared a port.** Its UiAutomator2 server listens on each
+device's own loopback, and mobium reaches it through `adb forward tcp:0`,
+for which adb picks a free port on the Mac per device — as it does for each
+WebView. Measured on 2026-09-28 with two emulators on two daemons: forwards
+on host ports 52360 and 52527, both to their own device's 6790, and ten
+`map` calls on each at once, each seeing only its own screen.
+
 ## What Mobium installs, and removing it
 
 On the machine, under `~/.mobium`:

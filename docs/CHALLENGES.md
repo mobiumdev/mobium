@@ -3359,7 +3359,10 @@ simulator's runner is now launched with free ports of its own, passed as
 environment, and the daemon talks to that port. Two iPhone simulators on two
 daemons then read their own screens, and ten `map` calls on each at once
 never crossed. `autowait.sh`, which called port 8100 itself to set Reduce
-Motion, uses mobium's own setting instead.
+Motion, uses mobium's own setting instead. Android was never affected: its
+server listens on each device's loopback, reached through `adb forward
+tcp:0`, which picks a free Mac port per device; two emulators on two daemons
+got 52360 and 52527 and never crossed either.
 
 ### 149. `double-tap` reached a React Native control on iOS as one press
 
