@@ -519,6 +519,16 @@ func (i *Inspector) Contexts(ctx context.Context) ([]Context, error) {
 	return contextsFromPages(pages), nil
 }
 
+// AppBehind reports whether webinspectord says the application with this
+// identifier — WIRApplicationIdentifierKey, the part of a context's Socket
+// before the slash — is not the one in front, by the rule contexts uses.
+// Asked of a page already attached, whose app may have gone since.
+func (i *Inspector) AppBehind(appID string) bool {
+	i.mu.Lock()
+	defer i.mu.Unlock()
+	return behind(appID, i.states)
+}
+
 // Pages is Contexts without the presentation, for Attach.
 func (i *Inspector) Pages(ctx context.Context) ([]iosPage, error) {
 	return i.list(ctx)

@@ -172,10 +172,29 @@ func (h *Handlers) waitOn(ctx context.Context, s *session, args map[string]inter
 		}
 		tree = t
 		nodes := visible(loc.Resolve(t))
+		// What a dialog covers is not on screen, whatever its own flag says:
+		// iOS keeps the covered screen in the tree, and under iOS's "Save
+		// Password?" sheet a target read visible here while every action and
+		// read refused it; Android's tree holds the dialog's window alone, so
+		// there the same wait timed out. The predicate is pickOne's, so wait
+		// and act agree on both platforms. CHALLENGES 145.
+		notOnScreen := "it is not on screen"
+		if d := t.Dialog(); d != nil {
+			var shown []*uitree.Node
+			for _, n := range nodes {
+				if n.Within(d) {
+					shown = append(shown, n)
+				}
+			}
+			if len(nodes) > 0 && len(shown) == 0 {
+				notOnScreen = fmt.Sprintf("it is under a dialog, %q — answer it first", strings.TrimSpace(strings.SplitN(d.Label, "\n", 2)[0]))
+			}
+			nodes = shown
+		}
 		switch cond {
 		case condVisible:
 			if len(nodes) == 0 {
-				saw = "it is not on screen"
+				saw = notOnScreen
 				return false, nil
 			}
 			matched = nodes[0]
@@ -188,7 +207,7 @@ func (h *Handlers) waitOn(ctx context.Context, s *session, args map[string]inter
 			return true, nil
 		case condEnabled, condDisabled:
 			if len(nodes) == 0 {
-				saw = "it is not on screen"
+				saw = notOnScreen
 				return false, nil
 			}
 			if nodes[0].Enabled == (cond == condEnabled) {
@@ -199,7 +218,7 @@ func (h *Handlers) waitOn(ctx context.Context, s *session, args map[string]inter
 			return false, nil
 		default: // condText
 			if len(nodes) == 0 {
-				saw = "it is not on screen"
+				saw = notOnScreen
 				return false, nil
 			}
 			for _, n := range nodes {

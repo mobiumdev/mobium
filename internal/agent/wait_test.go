@@ -4,12 +4,14 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
 	"strings"
 	"sync/atomic"
 	"testing"
 	"time"
 
 	"github.com/mobiumdev/mobium/internal/device"
+	"github.com/mobiumdev/mobium/internal/mobiumerr"
 	"github.com/mobiumdev/mobium/internal/uitree"
 )
 
@@ -342,5 +344,34 @@ func TestWaitReportsTheMappedAncestorNotTheRawMatch(t *testing.T) {
 	// The ref must name the row that can be tapped, not the inert label.
 	if view.Element.Bounds.Y1 != 778 || view.Element.Bounds.Y2 != 1009 {
 		t.Errorf("ref points at %+v, want the clickable row", view.Element.Bounds)
+	}
+}
+
+// What a dialog covers is not on screen to wait_for, as it is not to an
+// action: on the iPhone 15 Plus a target under "Save Password?" read visible
+// in 816ms while text refused it. The captured sheet, with the covered target
+// marked visible as the phone reported it.
+func TestWaitDoesNotSeeUnderADialog(t *testing.T) {
+	raw, err := os.ReadFile("../uitree/testdata/ios-save-password.xml")
+	if err != nil {
+		t.Fatal(err)
+	}
+	flipped := strings.Replace(string(raw),
+		`name="welcomeText" label="Welcome, mobium!" enabled="true" visible="false"`,
+		`name="welcomeText" label="Welcome, mobium!" enabled="true" visible="true"`, 1)
+	if flipped == string(raw) {
+		t.Fatal("the fixture no longer has the covered welcome text to flip")
+	}
+	tree, err := uitree.ParseIOS([]byte(flipped))
+	if err != nil {
+		t.Fatal(err)
+	}
+	h, s, _ := withFake(t, tree)
+	_, err = wait(h, s, map[string]interface{}{"target": "testid=welcomeText", "timeout_ms": 0})
+	if mobiumerr.CodeOf(err) != mobiumerr.Timeout || !strings.Contains(err.Error(), "under a dialog") {
+		t.Errorf("waiting for a target under the sheet: %v, want a timeout naming the dialog", err)
+	}
+	if _, err := wait(h, s, map[string]interface{}{"target": "testid=welcomeText", "condition": "hidden", "timeout_ms": 0}); err != nil {
+		t.Errorf("a target under the sheet was not hidden, as Android reports it: %v", err)
 	}
 }

@@ -179,6 +179,7 @@ func contextsOn(ctx context.Context, adb *device.ADB, s Socket) ([]Context, erro
 			Socket:   s.Name,
 			TargetID: t.ID,
 			Base:     "WEBVIEW_" + name,
+			App:      pkg,
 			// The URL embeds the port this forward used, which is torn down
 			// on return; Attach re-forwards and rewrites it.
 			WSURL: t.WebSocketDebuggerURL,

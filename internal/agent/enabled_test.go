@@ -209,3 +209,22 @@ func TestTypeAddsAndFillReplaces(t *testing.T) {
 		t.Errorf("the refusal did not name app_fill: %v", err)
 	}
 }
+
+// A page stays attached while its app leaves the screen; every action that
+// aims at it asks again. On Android the page's package against the one in
+// front, and nothing unknown is refused on a guess.
+func TestPageBehindOnAndroid(t *testing.T) {
+	s := &session{webApp: "dev.mobium.mobiumapp"}
+	if s.pageBehind("dev.mobium.mobiumapp") {
+		t.Error("a page of the app in front was called behind")
+	}
+	if !s.pageBehind("com.android.chrome") {
+		t.Error("a page of an app that left the screen was not called behind")
+	}
+	if s.pageBehind("") {
+		t.Error("with nothing known in front, a page was called behind")
+	}
+	if (&session{}).pageBehind("com.android.chrome") {
+		t.Error("a page of no known app was called behind")
+	}
+}

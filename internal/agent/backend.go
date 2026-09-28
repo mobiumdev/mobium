@@ -97,6 +97,10 @@ type session struct {
 	// the native shell; web is its attachment.
 	webCtx string
 	web    webview.Page
+	// webApp is the app the attached page belongs to, and on iOS webAppID
+	// its web inspector identifier. A page stays attached while its app
+	// leaves the screen, so every action that aims at it asks again.
+	webApp, webAppID string
 
 	// insp is the iOS session's Remote Web Inspector connection, held open
 	// for the life of the session. webinspectord answers only the first
@@ -160,6 +164,7 @@ func (s *session) closeWeb() {
 		s.web = nil
 	}
 	s.webCtx = ""
+	s.webApp, s.webAppID = "", ""
 }
 
 // close releases a backend that owns a device-side process.
