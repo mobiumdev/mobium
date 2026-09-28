@@ -188,6 +188,105 @@ func dumpTree(ctx context.Context, adb *device.ADB) (*uitree.Tree, error) {
 	return uitree.ParseAndroid(data)
 }
 
+// TestDeviceCatchesThePlantedTargets is the positive control the Settings
+// run above cannot be: it asserts. MobiumApp's Layout Demo plants two touch
+// targets whose verdict is known at every profile — a 24dp square, too small
+// everywhere, and a bar an eighth of the window wide, too narrow below 384dp
+// — so formflux must report the first at every size and the second exactly
+// where the screen is that narrow. A run that reported nothing used to read
+// the same as one that could see nothing (CHALLENGES 146).
+//
+// The screen is opened again after each profile, because a density change
+// restarts MobiumApp's activity and drops it back to its home list.
+func TestDeviceCatchesThePlantedTargets(t *testing.T) {
+	adb := deviceOrSkip(t)
+	ctx, cancel := context.WithTimeout(context.Background(), 8*time.Minute)
+	defer cancel()
+	const app = "dev.mobium.mobiumapp"
+	if out, _ := adb.Shell(ctx, "pm", "path", app); !strings.Contains(string(out), "package:") {
+		t.Skip("MobiumApp is not installed; its Layout Demo is this test's control (mobiumdev/mobium-app)")
+	}
+
+	before, err := Read(ctx, adb)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if before.Overridden() {
+		t.Fatalf("the device already has an override in force: %s", before)
+	}
+	defer func() {
+		if _, err := Reset(context.Background(), adb); err != nil {
+			t.Errorf("could not reset the screen: %v", err)
+		}
+		_, _ = adb.Shell(context.Background(), "am", "force-stop", app)
+	}()
+
+	for _, p := range For(Android) {
+		screen, err := Apply(ctx, adb, p)
+		if err != nil {
+			t.Fatalf("%s: %v", p.Name, err)
+		}
+		tree, err := openLayoutDemo(ctx, adb, app)
+		if err != nil {
+			t.Fatalf("%s: %v", p.Name, err)
+		}
+		found := Inspect(tree, uitree.Rect{X2: screen.WidthPx, Y2: screen.HeightPx}, screen.DPI, Android)
+		tiny, narrow := false, false
+		for _, f := range found {
+			if f.Kind == KindTinyTarget {
+				tiny = tiny || f.Locator == "testid=tinyTarget"
+				narrow = narrow || f.Locator == "testid=narrowTarget"
+			}
+		}
+		wantNarrow := p.WidthDP() < 384
+		t.Logf("%-19s sw%-4d tiny=%v narrow=%v (want narrow=%v)", p.Name, p.SmallestWidthDP(), tiny, narrow, wantNarrow)
+		if !tiny {
+			t.Errorf("%s: the 24dp target was not reported — the check cannot see a target that is too small", p.Name)
+		}
+		if narrow != wantNarrow {
+			t.Errorf("%s at %ddp wide: narrow target reported=%v, want %v", p.Name, p.WidthDP(), narrow, wantNarrow)
+		}
+	}
+}
+
+// openLayoutDemo launches MobiumApp and opens its Layout Demo, scrolling the
+// home list to find the entry, and returns the screen once the demo is on it.
+func openLayoutDemo(ctx context.Context, adb *device.ADB, app string) (*uitree.Tree, error) {
+	if _, err := adb.Shell(ctx, "am", "force-stop", app); err != nil {
+		return nil, err
+	}
+	if out, err := adb.Shell(ctx, "am", "start", "-W", "-n", app+"/.MainActivity"); err != nil ||
+		strings.Contains(string(out), "Error:") {
+		return nil, fmt.Errorf("could not launch %s: %v %s", app, err, out)
+	}
+	for attempt := 0; attempt < 6; attempt++ {
+		tree, err := dumpTree(ctx, adb)
+		if err != nil {
+			return nil, err
+		}
+		for _, n := range tree.All() {
+			if n.TestID == "layoutWidth" {
+				return tree, nil
+			}
+		}
+		var entry *uitree.Node
+		for _, n := range tree.All() {
+			if n.Label == "Layout Demo" && n.Clickable && !n.Bounds.Empty() {
+				entry = n
+			}
+		}
+		if entry != nil {
+			x, y := entry.Bounds.Center()
+			_, _ = adb.Shell(ctx, "input", "tap", fmt.Sprint(x), fmt.Sprint(y))
+		} else {
+			w, h := tree.Root.Bounds.Width(), tree.Root.Bounds.Height()
+			_, _ = adb.Shell(ctx, "input", "swipe", fmt.Sprint(w/2), fmt.Sprint(h*3/4), fmt.Sprint(w/2), fmt.Sprint(h/4), "300")
+		}
+		time.Sleep(1500 * time.Millisecond)
+	}
+	return nil, fmt.Errorf("MobiumApp's Layout Demo never came up — is this build older than the screen?")
+}
+
 // TestDeviceEnsuresAnIOSSimulator drives the other mechanism: a screen that is
 // a device rather than a setting.
 //

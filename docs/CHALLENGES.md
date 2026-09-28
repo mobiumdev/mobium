@@ -3311,8 +3311,11 @@ less than 48dp showing. A dimension that ends at an edge of the node's
 nearest scrolling ancestor is now not judged, since its real size was not
 reported. The test is that Settings screen, captured: the cut row is no
 longer reported, and the same row moved into the middle of the list still
-is. The device test logs findings without asserting any, so its zeros
-afterward show only that the check ran.
+is. The device test only logged findings, so its zeros afterward showed only
+that the check ran; `TestDeviceCatchesThePlantedTargets` now asserts, on
+MobiumApp's Layout Demo — a 24dp target reported at all eight profiles, and a
+bar an eighth of the screen wide reported exactly at the two below 384dp. With
+the touch minimum lowered to 20dp it fails at the first profile.
 
 ## Findings that were not defects
 

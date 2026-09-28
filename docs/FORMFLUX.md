@@ -143,6 +143,21 @@ Settings: a row cut off by the bottom of its list, measured by the sliver
 still showing. That was formflux's mistake, not Settings' — CHALLENGES 146 —
 and a dimension clipped by a scroll container is no longer judged.
 
+That run also showed the device test could only log: against Settings,
+nothing to find and nothing asserted. `TestDeviceCatchesThePlantedTargets`
+drives MobiumApp's **Layout Demo**, a positive control built for it — a 24dp
+target too small at every size, and a bar an eighth of the screen wide that
+is 51dp on a 411dp phone and under 48dp below 384dp. At all eight profiles
+it asserts the first is reported, and the second exactly on `small-phone`
+and `display-size-large`; with the touch minimum lowered to 20dp it fails.
+
+And it found something about MobiumApp: **a density change restarts its
+screen**, dropping it back to its home list, while a size change — a fold,
+or `fold-closed` applied by setting — keeps it. Density is what Android's
+Display size setting changes, so a person who changes it mid-task loses
+their place. That is React Native's default and the app's behavior, not
+mobium's, and it is the kind of state loss a profile exists to show.
+
 Not measured: a real foldable, One UI's own fold behavior (a Samsung
 emulator skin is only the frame and the sizes, on stock Android), what
 `HALF_OPENED`'s tabletop layout does to an app that supports it, and whether
@@ -158,6 +173,9 @@ network one:
 MOBIUM_DEVICE_TESTS=1 MOBIUM_DEVICE=emulator-5554 \
     go test ./internal/formflux/ -run Device -v
 ```
+
+`TestDeviceCatchesThePlantedTargets` needs MobiumApp installed, and skips
+without it.
 
 It applies every Android profile, checks each against a readback, and
 restores the physical screen **in a deferred call, so it runs even when an
