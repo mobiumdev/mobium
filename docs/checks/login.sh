@@ -30,8 +30,22 @@ echo "--- $DEV ($PLATFORM)"
 # says <testid> <text>: the element is on screen and reads exactly that.
 says() {
   $M wait "testid=$1" --timeout 5s >/dev/null 2>&1 || fail "$1 never appeared, waiting for \"$2\""
-  got=$($M text "testid=$1")
+  if ! got=$($M text "testid=$1" 2>&1); then
+    case "$got" in
+      *"Save Password"*) save_password; got=$($M text "testid=$1") ;;
+      *) fail "$1 could not be read: $got" ;;
+    esac
+  fi
   [ "$got" = "$2" ] || fail "$1 reads \"$got\", want \"$2\""
+}
+# save_password answers iOS's "Save Password?" sheet with Not Now. It comes
+# over the app after a successful login, once per username per device until
+# answered, and a read of what it covers is refused, so a read that meets it
+# answers it the way a person would and says so.
+save_password() {
+  $M tap "label=Not Now" >/dev/null || fail "\"Save Password?\" is up and Not Now could not be pressed"
+  $M alert 2>/dev/null | grep -q 'a dialog is on screen' && fail "\"Save Password?\" is still up after Not Now"
+  row "save password" "iOS offered to save it; Not Now pressed, the sheet gone"
 }
 # absent <testid>: it is not on screen.
 absent() {
@@ -101,21 +115,10 @@ says secretText "You are logged in."
 unprinted hunter2
 row "log in" "sanitized to mobium, welcomed once signed in"
 
-# iOS may now offer to save the password — "Save Password?", a system sheet
-# over the app that swallows the next tap. Nothing in the app prevents it, and
-# it comes once per username per device until answered, so it is checked for
-# rather than assumed away. Answering it is the system-dialog mechanism's job,
-# not this demo's: when it is up, log-out is skipped and the reason printed,
-# instead of a tap that lands on the sheet and a timeout that names the wrong
-# cause.
-sleep 2
-if $M alert 2>/dev/null | grep -q 'a dialog is on screen'; then
-  printf '    %-14s %s\n' "log out" "SKIPPED — a system dialog came over the app:"
-  $M alert 2>/dev/null | sed -n 's/^a dialog is on screen: /                   /p' | head -1
-  $M terminate "$APP" >/dev/null 2>&1 || true
-  echo "PASS, with log-out skipped"
-  exit 0
-fi
+# The sheet can also arrive after both reads, where it would swallow the
+# log-out tap. That is what a declared rule is for: it answers the sheet when
+# it is in the way of an action, and the tap's result says so.
+$M dialogs --when "Save Password" --press "Not Now" >/dev/null
 $M tap testid=logoutBtn >/dev/null
 $M wait testid=loginBtn >/dev/null
 absent loginError
@@ -124,5 +127,6 @@ v=$($M text testid=username)
 [ "$v" = "" ] || [ "$v" = "username" ] || fail "the username still reads \"$v\" after logging out"
 row "log out" "back to an empty form"
 
+$M dialogs --clear >/dev/null
 $M terminate "$APP" >/dev/null 2>&1 || true
 echo PASS

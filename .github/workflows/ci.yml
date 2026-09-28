@@ -121,10 +121,11 @@ jobs:
 
       # docs/WINDOWS.md's acceptance criteria for the transport, first and on
       # their own, so they report even while the rest of the suite does not
-      # pass on Windows. A hang here is a shutdown that never finishes.
+      # pass on Windows. A hang here is a shutdown that never finishes. Five
+      # times over, because a shutdown on Windows has overrun once in three.
       - name: Daemon transport tests
         shell: bash
-        run: go test -timeout 3m ./internal/daemon/ ./internal/paths/ -v
+        run: go test -timeout 5m -count 5 ./internal/daemon/ ./internal/paths/
 
       # Not `make build`: its output has no .exe, and Windows will not run it.
       - name: Build mobium.exe
