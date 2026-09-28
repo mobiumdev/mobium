@@ -656,6 +656,39 @@ public final class Mobium implements AutoCloseable {
     }
 
     /**
+     * One app's state, for any app: {@code state} is not_installed,
+     * not_running, background or foreground. An app under its own permission
+     * prompt is still in front, and {@code covered_by} names the prompt's
+     * process. On iOS a background app also has {@code suspended}.
+     *
+     * @param app the package name (Android) or bundle id (iOS)
+     * @return its state
+     */
+    public Map<String, Object> appState(String app) {
+        return data("app_state", args("app", app));
+    }
+
+    /**
+     * Sends the app in front away and brings it back, resumed rather than
+     * relaunched, confirmed in front again — how a resume path is tested.
+     *
+     * @param seconds how long it stays away, more than 0 and at most 180
+     */
+    public void background(double seconds) {
+        act("app_background", args("seconds", seconds));
+    }
+
+    /**
+     * Sends a named app, which must be in front, away and brings it back.
+     *
+     * @param seconds how long it stays away, more than 0 and at most 180
+     * @param app     the package name (Android) or bundle id (iOS)
+     */
+    public void background(double seconds, String app) {
+        act("app_background", args("seconds", seconds, "app", app));
+    }
+
+    /**
      * Opens a URL or deep link — the quickest way to a specific screen — and
      * returns the app that ended up in the foreground.
      *

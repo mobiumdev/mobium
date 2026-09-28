@@ -533,6 +533,26 @@ class Device:
         data = self._data("app_batch", {"steps": wire}) or {}
         return list(data.get("steps") or [])
 
+    def app_state(self, app: str) -> dict:
+        """One app's state: ``not_installed``, ``not_running``, ``background``
+        or ``foreground``, for any app.
+
+        An app under its own permission prompt is still in front, and
+        ``covered_by`` names the prompt's process. On iOS a background app
+        also has ``suspended``.
+        """
+        return self._data("app_state", {"app": app}) or {}
+
+    def background(self, seconds: float, app: str | None = None) -> dict:
+        """Send the app in front away for ``seconds`` and bring it back,
+        resumed rather than relaunched, confirmed in front again — how a
+        resume path is tested. At most 180 seconds.
+        """
+        args: dict[str, Any] = {"seconds": seconds}
+        if app:
+            args["app"] = app
+        return self._data("app_background", args) or {}
+
     def open_url(self, url: str) -> None:
         """Open a URL or deep link — the quickest way to a specific screen."""
         self._call("app_open_url", {"url": url})

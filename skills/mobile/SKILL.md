@@ -54,6 +54,10 @@ you cannot do it for them from mobium. Say so rather than retrying.
 
 ### Getting to the screen you want
 - `mobium current` — which app is in the foreground
+- `mobium state <package|bundle-id>` — any app: not installed, not running,
+  background or foreground
+- `mobium background 5` — send the app in front away for 5 seconds and bring
+  it back where it was: how a resume path is tested
 - `mobium launch <package|bundle-id>` — open an app
 - `mobium terminate <package|bundle-id>` — stop it, to start a flow clean
 - `mobium open <url>` — a URL or deep link, the quickest route to a screen

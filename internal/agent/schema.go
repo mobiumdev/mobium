@@ -1541,6 +1541,50 @@ func GetToolSchemas() []Tool {
 			},
 		},
 		{
+			Name: "app_state",
+			Description: "What state one app is in: not_installed, not_running, background or " +
+				"foreground — for any app, where app_current names only the one in front. In " +
+				"front means the app owns what is on screen: under its own permission prompt it " +
+				"is still in front, and covered_by names the prompt's process, which is what " +
+				"app_current would report. On iOS a background app also says whether it is " +
+				"suspended; Android has nothing that says, so it does not claim either.",
+			InputSchema: map[string]interface{}{
+				"type": "object",
+				"properties": withDevice(map[string]interface{}{
+					"app": map[string]interface{}{
+						"type":        "string",
+						"description": "Package name on Android or bundle id on iOS.",
+					},
+				}),
+				"required":             []string{"app"},
+				"additionalProperties": false,
+			},
+		},
+		{
+			Name: "app_background",
+			Description: "Send the app in front to the background for a number of seconds, then " +
+				"bring the same app back — resumed where it was, not relaunched — and confirm it " +
+				"is in front again. This is how a resume path is tested: what the app does when " +
+				"it comes back. Android presses Home, confirms the app left, waits, and brings " +
+				"its task to the front; iOS uses XCTest's own. Refuses if the app is not in " +
+				"front. At most 180 seconds; for longer, app_press home and app_launch it later.",
+			InputSchema: map[string]interface{}{
+				"type": "object",
+				"properties": withDevice(map[string]interface{}{
+					"seconds": map[string]interface{}{
+						"type":        "number",
+						"description": "How long it stays in the background, more than 0 and at most 180.",
+					},
+					"app": map[string]interface{}{
+						"type":        "string",
+						"description": "The app to send away, which must be in front. Defaults to the one in front.",
+					},
+				}),
+				"required":             []string{"seconds"},
+				"additionalProperties": false,
+			},
+		},
+		{
 			Name: "app_doctor",
 			Description: "Check that the environment mobium needs is present, and say what is " +
 				"wrong with it. Needs no device — its whole job is to be runnable when nothing " +

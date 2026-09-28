@@ -34,6 +34,10 @@ command mentions them.
 | `app_appearance` | `appearance` | string | appearance |
 | `app_appearance` | `device` | string | _global_ --device |
 | `app_appearance` | `driver` | string | _global_ --driver |
+| `app_background` | `app` | string | background |
+| `app_background` | `device` | string | _global_ --device |
+| `app_background` | `driver` | string | _global_ --driver |
+| `app_background` | `seconds` | number | background |
 | `app_batch` | `device` | string | _global_ --device |
 | `app_batch` | `driver` | string | _global_ --driver |
 | `app_batch` | `steps` | array | batch |
@@ -219,6 +223,9 @@ command mentions them.
 | `app_sms` | `text` | string | sms |
 | `app_source` | `device` | string | _global_ --device |
 | `app_source` | `driver` | string | _global_ --driver |
+| `app_state` | `app` | string | state |
+| `app_state` | `device` | string | _global_ --device |
+| `app_state` | `driver` | string | _global_ --driver |
 | `app_storage` | `action` | string | storage |
 | `app_storage` | `device` | string | _global_ --device |
 | `app_storage` | `driver` | string | _global_ --driver |
@@ -278,6 +285,7 @@ arguments and the two global flags.
 | `alert` | app_alert | --text | action, text |
 | `appearance` | app_appearance | — | appearance |
 | `apps` | app_list_apps | --system | system |
+| `background` | app_background | --app | app, seconds |
 | `batch` | app_batch | — | steps |
 | `call` | app_call | --number | action, number |
 | `check` | app_check | — | checked, target |
@@ -327,6 +335,7 @@ arguments and the two global flags.
 | `sms` | app_sms | --from | from, text |
 | `source` | app_source | — | — |
 | `start` | — | --idle-timeout | — |
+| `state` | app_state | — | app |
 | `status` | — | — | running |
 | `status` | — | — | — |
 | `stop` | — | — | status |

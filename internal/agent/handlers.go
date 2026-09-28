@@ -291,6 +291,10 @@ func (h *Handlers) dispatch(ctx context.Context, name string, args map[string]in
 		return h.doctor(ctx, args)
 	case "app_batch":
 		return h.batch(ctx, args)
+	case "app_state":
+		return h.appState(ctx, args)
+	case "app_background":
+		return h.background(ctx, args)
 	default:
 		return nil, mobiumerr.New(mobiumerr.InvalidArgument, "unknown tool %q (have: %s)", name, strings.Join(ToolNames(), ", "))
 	}

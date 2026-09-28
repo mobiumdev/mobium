@@ -3438,6 +3438,16 @@ reset failed.
 
 Worth recording because each one closed off an approach that looked obvious.
 
+- **An iOS app read as in front all the way through being backgrounded.**
+  While WebDriverAgent's `deactivateApp` held Settings away for four
+  seconds, `apps/state` was asked once a second and answered 4 — running in
+  the foreground — seven times in seven. Nothing was wrong with the
+  backgrounding: WebDriverAgent answers one request at a time, so each
+  reading waited for the deactivation to end. A `simctl` screenshot, which
+  does not go through it, showed the home screen halfway through. To watch a
+  WebDriverAgent action from the outside, use something that is not
+  WebDriverAgent.
+
 - **A tap on Log In above the keyboard reached the app, and the app moved the
   button.** On a headless Android emulator, with the soft keyboard up over
   MobiumApp's Login Demo, `tap testid=loginBtn` was reported as tapped and
