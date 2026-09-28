@@ -36,8 +36,9 @@ esac
 echo "--- $DEV ($PLATFORM)"
 
 # Reduce Motion, on and off, from outside: Android's is the transition
-# animation scale (what React Native reads — not the animator scale), iOS's
-# WebDriverAgent's setting. The original is put back on any exit.
+# animation scale (what React Native reads — not the animator scale), and a
+# simulator's is mobium's own accessibility setting. The original is put back
+# on any exit.
 ORIG_SCALE=""
 reduce() { # reduce on|off
   # A phone's cannot be set from outside: WebDriverAgent answers the setting
@@ -55,16 +56,15 @@ reduce() { # reduce on|off
       adb -s "$DEV" shell settings put global transition_animation_scale "${ORIG_SCALE:-1.0}"
     fi
   else
-    sid=$(curl -s localhost:8100/status | python3 -c 'import json,sys; print(json.load(sys.stdin)["sessionId"])')
-    v=false; [ "$1" = on ] && v=true
-    curl -s -X POST "localhost:8100/session/$sid/appium/settings" -H 'Content-Type: application/json' \
-      -d "{\"settings\":{\"reduceMotion\":$v}}" >/dev/null
+    # Through mobium's own setting, not WebDriverAgent's port: each
+    # simulator's runner has a port of its own now (CHALLENGES 148), and the
+    # setting is put back when the session ends.
+    $M accessibility reduce_motion "$1" >/dev/null
   fi
 }
 cleanup() { reduce off >/dev/null 2>&1 || true; $M terminate "$APP" >/dev/null 2>&1 || true; }
 trap cleanup EXIT
-# iOS switches Reduce Motion through WebDriverAgent, which a session starts;
-# without one the settings endpoint is not there to answer.
+# A session first, so the setting's undo belongs to it.
 $M current >/dev/null
 
 open() { # open <home entry>: from a cold start, so the screen starts fresh

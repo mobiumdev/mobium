@@ -97,13 +97,24 @@ func (w *WDA) Start(ctx context.Context, progress func(string)) error {
 	// as the foreground app. Stopped first, it starts in the background as
 	// it always does. Not running is the ordinary case, and not an error.
 	_ = w.sim.TerminateApp(ctx, device.WDABundleID)
-	if err := w.sim.LaunchApp(ctx, device.WDABundleID); err != nil {
+	// A simulator shares the host network stack, so WDA's port is reachable
+	// directly — and so is every other simulator's. At the default 8100, a
+	// second simulator's runner lost the port to the first, and a second
+	// daemon drove the first simulator while reporting it as its own. Each
+	// runner gets free ports of its own: USE_PORT for the server, and
+	// MJPEG_SERVER_PORT for its video stream, which collided the same way at
+	// 9100. CHALLENGES 148.
+	ports, err := device.FreePorts(2)
+	if err != nil {
+		return err
+	}
+	if err := w.sim.LaunchAppWithEnv(ctx, device.WDABundleID, map[string]string{
+		"USE_PORT":          fmt.Sprint(ports[0]),
+		"MJPEG_SERVER_PORT": fmt.Sprint(ports[1]),
+	}); err != nil {
 		return fmt.Errorf("launch WebDriverAgent: %w", err)
 	}
-
-	// A simulator shares the host network stack, so WDA's port is reachable
-	// directly — there is no adb-forward equivalent to set up here.
-	w.w3c.setBase(fmt.Sprintf("http://127.0.0.1:%d", device.WDAPort))
+	w.w3c.setBase(fmt.Sprintf("http://127.0.0.1:%d", ports[0]))
 
 	// Waiting for an XCTest host to come up is the slowest step here and
 	// reports nothing while it happens. Saying so lets the CLI explain the

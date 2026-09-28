@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/mobiumdev/mobium/internal/mobiumerr"
 	"io"
+	"net"
 	"os"
 	"path/filepath"
 	"strings"
@@ -24,9 +25,10 @@ const (
 	wdaRelease  = "https://github.com/appium/WebDriverAgent/releases/download/v" + WDAVersion
 	WDABundleID = "com.facebook.WebDriverAgentRunner.xctrunner"
 	wdaAppName  = "WebDriverAgentRunner-Runner.app"
-	// WDAPort is where WDA listens. A simulator shares the host network
-	// stack, so this is reachable on localhost with no forwarding — unlike
-	// Android, which needs `adb forward`.
+	// WDAPort is where WDA listens on a phone, reached at the phone's own
+	// tunnel address. A simulator's runner listens on the Mac itself, shared
+	// with every other simulator's, so each is given free ports at launch
+	// instead (FreePorts).
 	WDAPort = 8100
 )
 
@@ -144,4 +146,30 @@ func (s *Simctl) EnsureWDAInstalled(ctx context.Context, progress func(string)) 
 		progress("installing WebDriverAgent on " + s.UDID)
 	}
 	return s.InstallApp(ctx, app)
+}
+
+// FreePorts asks the system for n TCP ports free on this Mac right now.
+//
+// Every simulator's WebDriverAgent listens on the Mac itself, so two
+// simulators given the same port are one server: on 2026-09-28 a second
+// daemon's reads and taps went to the first simulator's runner, and it
+// reported that simulator's screen as its own (CHALLENGES 148). Each
+// simulator's runner is given its own ports at launch instead.
+func FreePorts(n int) ([]int, error) {
+	var ports []int
+	var held []net.Listener
+	defer func() {
+		for _, l := range held {
+			l.Close()
+		}
+	}()
+	for i := 0; i < n; i++ {
+		l, err := net.Listen("tcp", "127.0.0.1:0")
+		if err != nil {
+			return nil, fmt.Errorf("find a free port for WebDriverAgent: %w", err)
+		}
+		held = append(held, l)
+		ports = append(ports, l.Addr().(*net.TCPAddr).Port)
+	}
+	return ports, nil
 }
