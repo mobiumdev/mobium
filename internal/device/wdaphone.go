@@ -159,12 +159,17 @@ func PhoneWDALog(team, udid string) string {
 func EnsurePhoneWDA(ctx context.Context, team, udid string, progress func(string)) (string, error) {
 	dir := phoneWDADir(team, udid)
 	derived := filepath.Join(dir, "build")
-	if run, err := findXCTestRun(derived); err == nil {
+	if run, err := findXCTestRun(derived); err == nil && builtAtCurrentPatch(dir) {
 		return run, nil
 	}
+	// Built before the current patch, or not at all: from scratch.
+	_ = os.RemoveAll(derived)
 
 	src, err := ensureWDASource(ctx, progress)
 	if err != nil {
+		return "", err
+	}
+	if err := patchWDASource(src); err != nil {
 		return "", err
 	}
 	if err := os.MkdirAll(dir, 0o755); err != nil {
@@ -199,6 +204,9 @@ func EnsurePhoneWDA(ctx context.Context, team, udid string, progress func(string
 	runErr := cmd.Run()
 
 	if run, err := findXCTestRun(derived); err == nil && runErr == nil {
+		if err := os.WriteFile(patchMarker(dir), []byte(wdaPatchLevel+"\n"), 0o644); err != nil {
+			return "", err
+		}
 		return run, nil
 	}
 	return "", mobiumerr.New(mobiumerr.ToolchainMissing, "building WebDriverAgent failed: %s. The full log is %s",

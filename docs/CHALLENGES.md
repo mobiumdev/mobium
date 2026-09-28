@@ -3473,7 +3473,15 @@ details` just before launching, refuses to start rather than start unbound
 when no address comes, and relaunches once if the tunnel reconnects during
 start-up. Afterwards the server answered on the tunnel and refused the Wi-Fi
 address. The stream still answered on Wi-Fi: WebDriverAgent never applies
-`USE_IP` to it, the same as on a simulator (152).
+`USE_IP` to it, the same as on a simulator (152). Its socket can bind one
+interface and the server never tells it which, so Mobium, which builds the
+phone's runner from the pinned source, adds that one line to `FBWebServer.m`
+after verifying the source and before building, refuses to build if the line
+it attaches to is gone, and rebuilds a phone's runner built before the patch.
+After the rebuild both ports answered over the tunnel and both refused the
+Wi-Fi address, and `ios-device.sh` passed. The simulator's runner is
+Appium's prebuilt release, unpatched; there the Mac's firewall is the
+mitigation (152).
 
 ## Findings that were not defects
 
