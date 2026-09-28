@@ -88,6 +88,23 @@ this is what is not.
 - **Uploads and downloads** through the system file pickers.
 - **Frames and iframes** inside a WebView.
 - **Accessibility checks** as a side effect of the actions already being taken.
+- **Fire TV** (written down 2026-09-28, nothing measured yet). Fire OS is
+  Android — 7 is Android 9, 8 is Android 11 — reached by `adb connect
+  <tv>:5555` once ADB debugging is on, so discovery, the hierarchy, locators,
+  text entry and app lifecycle should be the Android backend unchanged. What
+  changes is the action model: a TV is driven by focus, not touch, so a tap
+  becomes D-pad presses until the target reports `focused`, then select —
+  each step read back, refused if focus stops moving or cycles — and swipes
+  become D-pad presses too; `press` already has back, home and the media
+  keys. That makes it the existing backend with a focus strategy, not a new
+  driver. Amazon's newer Linux-based OS, Vega, is not Android, and would be
+  the case for a driver process ([decisions/0003](decisions/0003-drivers-are-processes-not-plugins.md)).
+  First, without code: does `mobium devices` list a TV after `adb connect`;
+  does `map` work with `--driver uiautomator`, and does Fire OS let the
+  UiAutomator2 server install; does the hierarchy report `focused` reliably
+  as `input keyevent DPAD_DOWN` moves focus; and does `input tap` do
+  anything in Amazon's launcher and one third-party app. DRM video will
+  likely screenshot black.
 
 ## Not planned
 
