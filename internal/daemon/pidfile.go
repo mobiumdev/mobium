@@ -5,6 +5,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/mobiumdev/mobium/internal/paths"
 )
@@ -45,15 +46,27 @@ func ReadPID() (int, error) {
 }
 
 // RemovePID deletes the PID file.
+//
+// It tries for up to a second, because on Windows a file cannot be deleted
+// while anything has it open, and a client waiting for this daemon to go is
+// reading it every 20ms. One collision left the file naming a daemon that had
+// stopped, and the client waited out its whole 35s grace for it.
 func RemovePID() error {
 	pidPath, err := paths.PIDPath()
 	if err != nil {
 		return err
 	}
-	if err := os.Remove(pidPath); err != nil && !os.IsNotExist(err) {
-		return err
+	deadline := time.Now().Add(time.Second)
+	for {
+		err := os.Remove(pidPath)
+		if err == nil || os.IsNotExist(err) {
+			return nil
+		}
+		if time.Now().After(deadline) {
+			return err
+		}
+		time.Sleep(10 * time.Millisecond)
 	}
-	return nil
 }
 
 // CleanStale removes the PID and socket files of a daemon that is no longer

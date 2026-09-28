@@ -3,6 +3,7 @@
 package daemon
 
 import (
+	"errors"
 	"strings"
 	"testing"
 	"time"
@@ -27,7 +28,17 @@ func socketPresent(t *testing.T, path string) bool {
 // to the current user and nobody else — the Windows reading of 0600.
 func checkOwnerOnly(t *testing.T, path string) {
 	t.Helper()
-	sd, err := windows.GetNamedSecurityInfo(path, windows.SE_FILE_OBJECT, windows.DACL_SECURITY_INFORMATION)
+	// Reading the security opens the pipe as a client, and between one
+	// connection and the daemon's next Accept every instance is busy. A
+	// client dials through that with go-winio's retry; this retries too.
+	var sd *windows.SECURITY_DESCRIPTOR
+	var err error
+	for deadline := time.Now().Add(2 * time.Second); ; time.Sleep(10 * time.Millisecond) {
+		sd, err = windows.GetNamedSecurityInfo(path, windows.SE_FILE_OBJECT, windows.DACL_SECURITY_INFORMATION)
+		if !errors.Is(err, windows.ERROR_PIPE_BUSY) || time.Now().After(deadline) {
+			break
+		}
+	}
 	if err != nil {
 		t.Fatalf("read pipe security: %v", err)
 	}
