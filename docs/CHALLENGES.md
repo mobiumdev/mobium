@@ -7,7 +7,7 @@ the source.
 
 The pattern across them is the reason the document exists: **almost nothing
 here was found by reading code or by a test written from imagination.** Of
-134 defects, 109 were found only by running against a real device. The other
+135 defects, 110 were found only by running against a real device. The other
 twenty-five — 4, 5, 6, 14, 23, 24, 32, 35, 36, 39, 44, 50, 53, 54, 57, 66, 89,
 99, 100, 121, 123, 129, 130, 133 and 134 — came from reading code, the compiler, a test, a linter,
 cross-checking a computed number against a screenshot, using the tooling on
@@ -3098,6 +3098,23 @@ during one now clears the simulated location — which, unlike Android, where
 the last fix is kept, leaves no position at all. A route that has already
 finished is left where it ended. Checked by a test; iOS has no way to read
 the simulated position from outside an app, so the simulator itself was not.
+
+### 135. A real iPhone's runner, orphaned by a crash, was never stopped
+
+**Found by:** the positive control for `clean-stop.sh`'s new runner check,
+on an iPhone 15 Plus (iOS 26.6.2): `kill -9` of the daemon mid-session.
+
+The check fired — the xcodebuild the dead daemon started was still running.
+Then the next daemon found WebDriverAgent answering and used it, as it uses
+one started from Xcode, as someone else's: its session's end left it, and so
+did `daemon stop`. Nothing would ever have stopped it. A phone session now
+takes over a runner that is certainly Mobium's and certainly orphaned — an
+xcodebuild running this cache's WebDriverAgent build for this phone, whose
+parent is pid 1, which is what a process becomes when its parent dies. Xcode's
+runs a different build, and a live daemon's still has that daemon for a
+parent; both are left alone. On the phone: the orphan was taken over and
+stopped by the next session's end, and after another crash by `daemon stop`,
+with a fresh runner starting normally in between.
 
 ## Findings that were not defects
 

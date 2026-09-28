@@ -14,7 +14,9 @@ import (
 	"os/exec"
 	"path/filepath"
 	"sort"
+	"strconv"
 	"strings"
+	"syscall"
 	"time"
 )
 
@@ -325,6 +327,55 @@ type PhoneRunner struct {
 	cmd  *exec.Cmd
 	done chan struct{}
 	Log  string
+
+	// adopted is the pid of a runner this process did not start but has
+	// taken over (AdoptPhoneRunner); cmd and done are nil then.
+	adopted int
+}
+
+// AdoptPhoneRunner finds a runner a daemon that died left behind on this
+// phone, and takes it over, so this session's end stops it.
+//
+// A daemon killed without tearing down left its xcodebuild running, and the
+// next daemon found WebDriverAgent answering and used it as someone else's —
+// so nothing ever stopped it: not the next session's end, not `daemon stop`.
+// Measured on an iPhone 15 Plus (iOS 26.6.2). CHALLENGES 135.
+//
+// Only a runner that is certainly ours, and certainly orphaned: an xcodebuild
+// running this cache's WebDriverAgent build for this phone, whose parent is
+// pid 1 — what a process becomes when the one that started it dies. A runner
+// started from Xcode runs a different build, and one a live daemon owns still
+// has that daemon for a parent; both are left alone. nil if there is none.
+func AdoptPhoneRunner(ctx context.Context, udid string) *PhoneRunner {
+	out, err := exec.CommandContext(ctx, "ps", "-Ao", "pid=,ppid=,command=").Output()
+	if err != nil {
+		return nil
+	}
+	pid := orphanedRunner(string(out), filepath.Join(cacheRoot(), "webdriveragent-device"), udid)
+	if pid == 0 {
+		return nil
+	}
+	return &PhoneRunner{adopted: pid}
+}
+
+// orphanedRunner reads `ps -Ao pid=,ppid=,command=` for the pid of an
+// orphaned xcodebuild running a build under buildRoot for udid, or 0.
+func orphanedRunner(ps, buildRoot, udid string) int {
+	for _, line := range strings.Split(ps, "\n") {
+		f := strings.Fields(line)
+		if len(f) < 3 || f[1] != "1" {
+			continue
+		}
+		cmd := strings.Join(f[2:], " ")
+		if strings.Contains(cmd, "xcodebuild test-without-building") &&
+			strings.Contains(cmd, "-xctestrun "+buildRoot+string(filepath.Separator)) &&
+			strings.Contains(cmd, "-destination id="+udid) {
+			if pid, err := strconv.Atoi(f[0]); err == nil {
+				return pid
+			}
+		}
+	}
+	return 0
 }
 
 // StartPhoneWDA launches the runner. It is deliberately not bound to the
@@ -355,6 +406,9 @@ func StartPhoneWDA(xctestrun, udid, logPath string) (*PhoneRunner, error) {
 // Exited reports whether the runner's xcodebuild has already ended — which,
 // while waiting for it to become ready, means it failed.
 func (r *PhoneRunner) Exited() bool {
+	if r.adopted != 0 {
+		return !processAlive(r.adopted)
+	}
 	select {
 	case <-r.done:
 		return true
@@ -365,7 +419,25 @@ func (r *PhoneRunner) Exited() bool {
 
 // Stop ends the runner and waits for xcodebuild to go.
 func (r *PhoneRunner) Stop() {
-	if r == nil || r.cmd.Process == nil {
+	if r == nil {
+		return
+	}
+	if r.adopted != 0 {
+		// Not our child, so there is no Wait: signal it, and watch it go.
+		p, err := os.FindProcess(r.adopted)
+		if err != nil {
+			return
+		}
+		_ = p.Signal(os.Interrupt)
+		for deadline := time.Now().Add(10 * time.Second); processAlive(r.adopted); time.Sleep(100 * time.Millisecond) {
+			if time.Now().After(deadline) {
+				_ = p.Kill()
+				return
+			}
+		}
+		return
+	}
+	if r.cmd.Process == nil {
 		return
 	}
 	_ = r.cmd.Process.Signal(os.Interrupt)
@@ -375,6 +447,15 @@ func (r *PhoneRunner) Stop() {
 		_ = r.cmd.Process.Kill()
 		<-r.done
 	}
+}
+
+// processAlive reports whether pid is still running, by the null signal.
+func processAlive(pid int) bool {
+	p, err := os.FindProcess(pid)
+	if err != nil {
+		return false
+	}
+	return p.Signal(syscall.Signal(0)) == nil
 }
 
 // Blocked reports a reason the runner is waiting on the person holding the
