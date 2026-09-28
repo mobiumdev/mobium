@@ -43,7 +43,7 @@ var errorSources = []struct {
 	},
 	{
 		Language: "javascript", Glob: "clients/javascript/index.js",
-		decl: regexp.MustCompile(`(?m)^export class (\w+)Error extends MobiumError \{\n  static code = '(\w+)'`),
+		decl: regexp.MustCompile(`(?m)^export class (\w+)Error extends MobiumError \{\r?\n  static code = '(\w+)'`),
 	},
 	{
 		Language: "java", Glob: "clients/java/src/main/java/dev/mobium/*Exception.java",

@@ -119,9 +119,12 @@ jobs:
             go.sum
             clients/go/go.sum
 
-      - name: make test
+      # docs/WINDOWS.md's acceptance criteria for the transport, first and on
+      # their own, so they report even while the rest of the suite does not
+      # pass on Windows. A hang here is a shutdown that never finishes.
+      - name: Daemon transport tests
         shell: bash
-        run: make test
+        run: go test -timeout 3m ./internal/daemon/ ./internal/paths/ -v
 
       # Not `make build`: its output has no .exe, and Windows will not run it.
       - name: Build mobium.exe
@@ -129,6 +132,7 @@ jobs:
         run: go build -o bin/mobium.exe ./cmd/mobium
 
       - name: Smoke test
+        if: ${{ !cancelled() }}
         shell: bash
         run: |
           set -euo pipefail
@@ -162,3 +166,10 @@ jobs:
           $m daemon stop
           $m daemon status | tee status.out
           grep -q 'not running' status.out
+
+      # Everything else. Much of it is not yet written for Windows -- fakes
+      # that are shell scripts, executable bits -- and this is what says so.
+      - name: make test
+        if: ${{ !cancelled() }}
+        shell: bash
+        run: make test
