@@ -3381,7 +3381,10 @@ endpoint, and any other point the chain, with Android's 120ms gap: the
 Pressable then counted two presses 200–202ms apart, three times in three, and
 the page two clicks. `gestures.sh` now asserts that on iOS — two presses
 inside the double-tap window, and two separate taps outside it — where it
-used to assert one press. Neither form makes a WebView fire `dblclick`.
+used to assert one press. Neither form makes a WebView fire `dblclick`. On
+the iPhone 15 Plus afterwards: two presses 197ms apart, against the person's
+200, two separate taps 1298ms apart, and the page two clicks, three times in
+three.
 
 ## Findings that were not defects
 
