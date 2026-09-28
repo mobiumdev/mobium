@@ -42,7 +42,7 @@ func listen(pipeName string) (net.Listener, error) {
 // did the daemon's shutdown: the first run on Windows hung
 // TestDaemonWritesAndRemovesPIDAndSocket for ten minutes with exactly that
 // stack. A second Close reaches the idle goroutine, and every Close returns
-// once it has finished, so repeating it is safe.
+// once it has finished, so repeating it is safe. CHALLENGES 139.
 type pipeListener struct{ net.Listener }
 
 func (l pipeListener) Close() error {

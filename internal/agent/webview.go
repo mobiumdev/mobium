@@ -54,7 +54,18 @@ func (h *Handlers) contexts(ctx context.Context, args map[string]interface{}) (*
 	if s.webCtx != "" {
 		lines[0] = webview.NativeContext
 	}
+	// A page whose app is not in front is not on screen, and a tap into it
+	// would be aimed through the WebView the front app shows. It is named
+	// rather than listed, so it is neither offered nor unexplained.
+	var front []webview.Context
 	for _, c := range found {
+		if c.Behind {
+			view.Behind = append(view.Behind, c.ID)
+			continue
+		}
+		front = append(front, c)
+	}
+	for _, c := range front {
 		line := c.ID
 		if c.ID == s.webCtx {
 			line += "  (current)"
@@ -67,6 +78,13 @@ func (h *Handlers) contexts(ctx context.Context, args map[string]interface{}) (*
 			ID: c.ID, Title: c.Title, URL: c.URL, Current: c.ID == s.webCtx,
 		})
 	}
+	if len(view.Behind) > 0 {
+		lines = append(lines, "", "Also open, in apps not in front: "+strings.Join(view.Behind, ", ")+
+			" — app_launch its app to reach it.")
+	}
+	// The hint is for a device with nothing inspectable. With pages behind,
+	// its remedies — opting the app in, enabling Web Inspector — would be
+	// followed for nothing.
 	if len(found) == 0 {
 		lines = append(lines, "", noWebViewsHint(s))
 	}
@@ -105,6 +123,13 @@ func (h *Handlers) switchContext(ctx context.Context, args map[string]interface{
 	for _, c := range found {
 		if !strings.EqualFold(c.ID, name) {
 			continue
+		}
+		if c.Behind {
+			return nil, mobiumerr.New(mobiumerr.DeviceNotReady,
+				"%s belongs to %s, which is not in front, so its page is not on screen and a tap into it "+
+					"would land on whatever is", c.ID, c.App).
+				WithRemedy(fmt.Sprintf("app_launch %s to bring it forward, then app_context again", c.App)).
+				WithDetail("app", c.App)
 		}
 		sess, err := h.attachWeb(ctx, s, c)
 		if err != nil {

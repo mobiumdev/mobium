@@ -51,6 +51,88 @@ type iosPage struct {
 	Title  string
 	URL    string
 	Bundle string
+	Behind bool // its application is not in front; see behind
+}
+
+// appActive is WIRIsApplicationActiveKey's value for the application in
+// front. Measured on an iPhone 15 Plus, iOS 26.6.2: 2 in front, 1 while
+// leaving or arriving, 0 in the background — and Safari, left for an app,
+// went from 2 to 1 and stayed there, its page still published.
+const appActive = 2
+
+// appState is what webinspectord says about an application beyond its
+// bundle: whether it is in front, and for a proxy — an in-app browser, whose
+// pages another process draws — the application hosting it.
+type appState struct {
+	active int
+	known  bool // the application reported an active flag at all
+	host   string
+}
+
+// statesIn reads the active flag and host out of either message shape, as
+// applicationsIn reads the bundle.
+func statesIn(arg map[string]any) map[string]appState {
+	out := map[string]appState{}
+	add := func(id string, info map[string]any) {
+		var st appState
+		st.active, st.known = plistInt(info["WIRIsApplicationActiveKey"])
+		st.host, _ = info["WIRHostApplicationIdentifierKey"].(string)
+		out[id] = st
+	}
+	if apps, ok := arg["WIRApplicationDictionaryKey"].(map[string]any); ok {
+		for id, v := range apps {
+			if info, ok := v.(map[string]any); ok {
+				add(id, info)
+			}
+		}
+	}
+	if id, ok := arg["WIRApplicationIdentifierKey"].(string); ok {
+		add(id, arg)
+	}
+	return out
+}
+
+func plistInt(v any) (int, bool) {
+	switch n := v.(type) {
+	case int:
+		return n, true
+	case int64:
+		return int(n), true
+	case uint64:
+		return int(n), true
+	case float64:
+		return int(n), true
+	case bool:
+		if n {
+			return 1, true
+		}
+		return 0, true
+	}
+	return 0, false
+}
+
+// behind reports whether webinspectord says an application is not the one in
+// front: it reported an active flag, the flag is not appActive, and it is not
+// hosted by the application that is. Only once something is in front at all —
+// mid-switch every application can read 1, and an application that reports
+// no flag is not hidden on a guess. The host rule is WebKit's relation for an
+// in-app browser; it has not been driven on a device here. CHALLENGES 138.
+func behind(id string, states map[string]appState) bool {
+	front := false
+	for _, st := range states {
+		if st.known && st.active == appActive {
+			front = true
+			break
+		}
+	}
+	st, ok := states[id]
+	if !front || !ok || !st.known || st.active == appActive {
+		return false
+	}
+	if h, ok := states[st.host]; ok && h.known && h.active == appActive {
+		return false
+	}
+	return true
 }
 
 // announceAndLearnApps introduces us and waits for the application list.
@@ -278,6 +360,7 @@ type Inspector struct {
 
 	mu     sync.Mutex
 	apps   map[string]string
+	states map[string]appState
 	silent map[string]bool
 	// heard counts each application's listings as the watch hears them, so a
 	// listing can tell whether one that missed it answered afterwards.
@@ -312,6 +395,12 @@ func (i *Inspector) watch(msgs <-chan rwiMessage, unsubscribe func()) {
 			for id, bundle := range applicationsIn(msg.Argument) {
 				i.apps[id] = bundle
 			}
+			if i.states == nil {
+				i.states = map[string]appState{}
+			}
+			for id, st := range statesIn(msg.Argument) {
+				i.states[id] = st
+			}
 			i.mu.Unlock()
 		case "_rpc_applicationSentListing:":
 			// An application marked silent that answers after all — too late
@@ -332,6 +421,7 @@ func (i *Inspector) watch(msgs <-chan rwiMessage, unsubscribe func()) {
 			if id, ok := msg.Argument["WIRApplicationIdentifierKey"].(string); ok {
 				i.mu.Lock()
 				delete(i.apps, id)
+				delete(i.states, id)
 				delete(i.silent, id)
 				i.mu.Unlock()
 			}
@@ -384,6 +474,10 @@ func (i *Inspector) list(ctx context.Context) ([]iosPage, error) {
 		} else {
 			delete(i.silent, id)
 		}
+	}
+	// Read at the end, so a switch heard during the listing counts.
+	for n := range pages {
+		pages[n].Behind = behind(pages[n].App, i.states)
 	}
 	i.mu.Unlock()
 	return pages, err
@@ -439,10 +533,12 @@ func contextsFromPages(pages []iosPage) []Context {
 			bundle = "webkit"
 		}
 		out = append(out, Context{
-			ID:    fmt.Sprintf("WEBVIEW_%s", bundle),
-			Base:  fmt.Sprintf("WEBVIEW_%s", bundle),
-			Title: p.Title,
-			URL:   p.URL,
+			ID:     fmt.Sprintf("WEBVIEW_%s", bundle),
+			Base:   fmt.Sprintf("WEBVIEW_%s", bundle),
+			Title:  p.Title,
+			URL:    p.URL,
+			App:    p.Bundle,
+			Behind: p.Behind,
 			// Reused to carry the identifiers back to Attach, which is what
 			// they are for: they mean nothing outside this connection.
 			Socket: fmt.Sprintf("%s/%v", p.App, p.Page),

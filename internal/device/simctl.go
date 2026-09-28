@@ -9,6 +9,7 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"runtime"
 	"sort"
 	"strconv"
 	"strings"
@@ -25,6 +26,13 @@ var ErrNoXcode = mobiumerr.New(mobiumerr.ToolchainMissing,
 	"Xcode is required for iOS simulators and was not found — the Command Line Tools "+
 		"alone do not include simctl. Install Xcode (`xcodes install --latest`, or the "+
 		"App Store), then run `sudo xcode-select -s /Applications/Xcode.app`")
+
+// ErrNoMac is ErrNoXcode off macOS, where installing Xcode is not a remedy
+// that can work: `mobium devices` on Windows told the user to run
+// `xcodes install`. mobium doctor already skips iOS there.
+var ErrNoMac = mobiumerr.New(mobiumerr.Unsupported,
+	"iOS simulators and iPhones need a Mac: Xcode, which provides them, runs only on macOS. "+
+		"Android emulators and phones work here")
 
 // ErrNoSimulator is returned when Xcode is present but nothing is booted.
 var ErrNoSimulator = mobiumerr.New(mobiumerr.NoDevice,
@@ -44,6 +52,9 @@ func FindSimctl() (string, error) {
 			return p, nil
 		}
 		return "", mobiumerr.New(mobiumerr.ToolchainMissing, "MOBIUM_XCRUN_PATH=%s is not an executable file", p)
+	}
+	if runtime.GOOS != "darwin" {
+		return "", ErrNoMac
 	}
 	xcrun, err := exec.LookPath("xcrun")
 	if err != nil {

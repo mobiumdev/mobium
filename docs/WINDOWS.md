@@ -1,10 +1,14 @@
 # Windows support
 
-**Status: not supported — the transport is written, not verified.** Android
+**Status: not supported — everything but a device is verified.** Android
 development on Windows is common, so this is a real gap rather than a
-theoretical one. Since 2026-09-25 the named-pipe daemon transport and the
-other four known gaps are written and cross-compile; none of it has run on
-Windows, and until it has, Windows stays unsupported.
+theoretical one. Since 2026-09-27 CI runs on a GitHub-hosted Windows runner:
+both modules' tests pass there, the named-pipe transport's acceptance tests
+below pass five times a run, and the built `mobium.exe` answers `doctor` and
+`mcp` and auto-starts, reports and stops its daemon. Getting there found four
+defects, CHALLENGES 139–142 — a daemon stop that never returned among them.
+No emulator or phone has been driven from Windows, and until one has, Windows
+stays unsupported.
 
 Everything, the daemon transport now included, compiles, vets and
 cross-compiles for `windows/amd64`. This document is written for anyone who

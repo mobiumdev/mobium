@@ -67,6 +67,22 @@ way of a native tap on a web link. Its first run found defects 77–80.
 disabled it failed on its second launch, at 64.8s — the run that makes its
 time limit a check rather than a guess.
 
+**Everything added since has run on the iPhone 15 Plus too, on 2026-09-27**,
+with MobiumApp rebuilt from `mobiumdev/mobium-app` and signed for the phone.
+All passed: `login.sh` (2m45s), `keyboard.sh`, `autowait.sh`,
+`obstruction.sh`, `web-actionability.sh`, `web-type.sh`, `source.sh`,
+`crashes.sh`, `ios-device.sh` (1m53s), `gestures.sh` (4m55s), `zoom.sh`,
+`mobium-app.sh` (4m06s, with `MOBIUM_NETWORK_TESTS=1`: the link now lands on
+`github.com/mobiumdev`) and `third-party-app.sh`; and `record.sh`,
+`accessibility.sh` and `clear-data.sh` assert the phone's refusals. Two
+checks needed changing for a phone, and neither change was to Mobium:
+`login.sh` met iOS's "Save Password?" sheet over the welcome screen, and now
+answers it; and `autowait.sh` refused a phone outright, and now checks the
+half of Reduce Motion the phone is set to — **three of its rows read NOT
+CHECKED** on this phone, where Reduce Motion is on: the plain slide, and both
+confetti rows, since the app draws no confetti then. `dialogs.sh` is
+simulator-only and was not run.
+
 `mobium-app.sh` needs MobiumApp built and installed, so it has no row either.
 **On the iPhone 15 Plus it passed on 2026-09-23**, 30 steps in 3m31s, from a
 fresh install it makes itself when given `MOBIUMAPP_BUNDLE` — **WebViews

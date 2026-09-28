@@ -51,6 +51,7 @@ func ReadPID() (int, error) {
 // while anything has it open, and a client waiting for this daemon to go is
 // reading it every 20ms. One collision left the file naming a daemon that had
 // stopped, and the client waited out its whole 35s grace for it.
+// CHALLENGES 140.
 func RemovePID() error {
 	pidPath, err := paths.PIDPath()
 	if err != nil {

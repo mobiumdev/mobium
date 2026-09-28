@@ -62,7 +62,7 @@ func FindBinary(explicit string) (string, error) {
 	// on Windows that looks in the current directory first, and on finding
 	// a mobium.exe there refuses it and gives up, so the real one on PATH
 	// was never reached. A relative entry would be the current directory
-	// by another name, and is skipped too.
+	// by another name, and is skipped too. CHALLENGES 142.
 	for _, dir := range filepath.SplitList(os.Getenv("PATH")) {
 		if !filepath.IsAbs(dir) {
 			continue
@@ -82,7 +82,7 @@ func executable(path string) bool {
 	if runtime.GOOS == "windows" {
 		// Windows has no executable bit, and os.Stat reports none, so every
 		// mobium.exe was refused. A program there is known by its
-		// extension, from PATHEXT as the shell reads it.
+		// extension, from PATHEXT as the shell reads it. CHALLENGES 141.
 		exts := os.Getenv("PATHEXT")
 		if exts == "" {
 			exts = ".COM;.EXE;.BAT;.CMD"

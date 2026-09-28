@@ -82,11 +82,11 @@ APP=dev.mobium.mobiumapp
 fail() { echo "FAIL: $*" >&2; exit 1; }
 
 # appContexts lists the WebView contexts that belong to one app — WEBVIEW_<id>,
-# or WEBVIEW_<id>_<n> when it has several — and nothing else. `contexts`
-# reports every inspectable page on the device, not only the app in front: on
-# a real iPhone with Wikipedia in the foreground it listed Safari's page. So
-# "the first WEBVIEW_ line" can be another app's, and a count of them can pass
-# with one of ours and one of Safari's.
+# or WEBVIEW_<id>_<n> when it has several — and nothing else. On iOS
+# `contexts` lists only the app in front (CHALLENGES 138), but on Android it
+# lists every debuggable page on the device, so "the first WEBVIEW_ line" can
+# be another app's, and a count of them can pass with one of ours and one of
+# Chrome's.
 appContexts() { $M contexts | awk -v id="WEBVIEW_$1" \
   '$1 == id || (index($1, id "_") == 1 && substr($1, length(id) + 2) ~ /^[0-9]+$/) { print $1 }'; }
 

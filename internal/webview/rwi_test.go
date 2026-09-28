@@ -168,3 +168,46 @@ func TestInspectorFollowsAppsThatComeAndGo(t *testing.T) {
 		t.Errorf("apps are %v, want only the relaunched PID:200", got)
 	}
 }
+
+// The states measured on an iPhone 15 Plus, iOS 26.6.2, after MobiumApp
+// opened a page in Safari and was brought back: MobiumApp 2, Safari 1 — left
+// there, its page still published. Safari's page is behind; MobiumApp's is not.
+func TestBehindFollowsWebKitsActiveFlag(t *testing.T) {
+	states := statesIn(map[string]any{"WIRApplicationDictionaryKey": map[string]any{
+		"PID:8053": map[string]any{"WIRApplicationBundleIdentifierKey": "dev.mobium.mobiumapp", "WIRIsApplicationActiveKey": uint64(2)},
+		"PID:7927": map[string]any{"WIRApplicationBundleIdentifierKey": "com.apple.mobilesafari", "WIRIsApplicationActiveKey": uint64(1)},
+		"PID:3153": map[string]any{"WIRApplicationBundleIdentifierKey": "com.apple.email.maild", "WIRIsApplicationActiveKey": uint64(0)},
+		"PID:9000": map[string]any{"WIRApplicationBundleIdentifierKey": "com.apple.SafariViewService",
+			"WIRIsApplicationActiveKey": uint64(0), "WIRHostApplicationIdentifierKey": "PID:8053"},
+		"PID:9001": map[string]any{"WIRApplicationBundleIdentifierKey": "no.flag.reported"},
+	}})
+	for id, want := range map[string]bool{
+		"PID:8053": false, // in front
+		"PID:7927": true,  // inactive
+		"PID:3153": true,  // background
+		"PID:9000": false, // a proxy hosted by the app in front
+		"PID:9001": false, // no flag: not hidden on a guess
+		"PID:none": false, // unknown
+	} {
+		if got := behind(id, states); got != want {
+			t.Errorf("behind(%s) = %v, want %v", id, got, want)
+		}
+	}
+
+	// Mid-switch nothing is in front, and nothing is hidden: the positive
+	// control that the rule is not simply "active != 2".
+	mid := statesIn(map[string]any{"WIRApplicationDictionaryKey": map[string]any{
+		"PID:8053": map[string]any{"WIRIsApplicationActiveKey": uint64(1)},
+		"PID:7927": map[string]any{"WIRIsApplicationActiveKey": uint64(1)},
+	}})
+	if behind("PID:7927", mid) || behind("PID:8053", mid) {
+		t.Error("with nothing in front, a page was hidden")
+	}
+
+	// And an update moves an application: _rpc_applicationUpdated: carries
+	// one inline.
+	one := statesIn(map[string]any{"WIRApplicationIdentifierKey": "PID:7927", "WIRIsApplicationActiveKey": uint64(2)})
+	if st := one["PID:7927"]; !st.known || st.active != appActive {
+		t.Errorf("an inline update read as %+v", st)
+	}
+}
