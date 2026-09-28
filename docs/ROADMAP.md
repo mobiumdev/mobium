@@ -6,24 +6,41 @@ this is what is not.
 
 ## Next
 
-- **Windows.** Everything cross-compiles for Windows and the named-pipe daemon
-  transport is written; it has not yet been verified on a Windows machine, and
-  until it has, Windows is unsupported. [WINDOWS.md](WINDOWS.md) is the state
-  of it.
+- **Windows.** Everything that needs no device passes on a GitHub-hosted
+  Windows runner, every run: both modules' tests, the named-pipe daemon
+  transport's acceptance tests five times over, and the built `mobium.exe` —
+  `doctor`, `mcp`, and a daemon auto-started, read back and stopped. Getting
+  there found four defects (CHALLENGES 139–142). No device has been driven
+  from Windows, and until one has, Windows is unsupported.
+  [WINDOWS.md](WINDOWS.md) is the state of it.
 - **On iOS, `double-tap` reaches a React Native `Pressable` as one press**
-  (Android: two, 165-184ms apart). Measured on the iPhone 17 Pro simulator,
-  2026-09-27, every way WebDriverAgent offers: its double tap, the element's,
-  and one W3C chain with a pause between the taps (WebDriverAgent drops a
-  pause while the pointer is up, so they arrive together) each counted one
-  press; two separate taps counted two, but 350-380ms apart, past the
-  platform's window. The pair is lost below Mobium. The control that would
-  settle whether React Native counts a human double tap as two is a person
-  double-tapping MobiumApp's Press target on the iPhone. The other gesture
-  found with this one, a tap above the Android keyboard, was the app moving
-  its button (CHALLENGES, "Findings that were not defects").
-- **iOS contexts include other apps' pages.** After Safari has opened a link,
-  `contexts` on iOS lists its page beside the app's own WebViews; the names
-  say which is which, but the list is not scoped to the app in front.
+  (Android: two, 165-184ms apart). **A person's double tap is two**: on the
+  iPhone 15 Plus, 2026-09-27, a human double tap on MobiumApp's Press target
+  counted two presses 200ms apart, and `double-tap` on the same target one.
+  So the defect is real and below Mobium, which is the control that was
+  missing. Measured on the iPhone 17 Pro simulator every way WebDriverAgent
+  offers: its double tap, the element's, and one W3C chain with a pause
+  between the taps (WebDriverAgent drops a pause while the pointer is up, so
+  they arrive together) each counted one press; two separate taps counted
+  two, but 350-380ms apart, past the platform's window. What is left to try
+  is a chain whose gap WebDriverAgent cannot drop — the pointer kept busy
+  between the taps rather than paused. The other gesture found with this
+  one, a tap above the Android keyboard, was the app moving its button
+  (CHALLENGES, "Findings that were not defects").
+- **Android contexts include other apps' pages.** iOS lists only the app in
+  front since CHALLENGES 138, from WebKit's own active flag. Android lists
+  every debuggable page on the device, Chrome's tabs included, and has no
+  such flag in `/json/list`; what tells a page on screen from one behind has
+  to be measured there, custom tabs included, before the same rule applies.
+- **A page attached while its app goes behind.** CHALLENGES 138 refuses
+  switching to a page whose app is not in front; a page already attached when
+  its app leaves the screen is not yet noticed, and a tap into it is aimed
+  through whatever WebView is in front.
+- **`wait` sees what a dialog covers; `text` refuses it.** On the iPhone,
+  with "Save Password?" over MobiumApp, `wait testid=welcomeText` reported it
+  visible in 816ms while `text` refused it as under the dialog. On Android the
+  dialog's window is all there is, so the same `wait` would time out. One
+  answer for both, and a check that asserts it.
 - **Published client packages.** Every client builds, as its registry would
   receive it, into a package that carries the LICENSE, a README and full
   metadata, and each has been installed from that package into a clean project

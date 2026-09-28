@@ -5,6 +5,7 @@ import (
 	"os"
 	"os/exec"
 	"runtime"
+	"runtime/pprof"
 	"strings"
 	"testing"
 	"time"
@@ -202,6 +203,9 @@ func TestDaemonShutdownOverTheWire(t *testing.T) {
 
 	// The response must arrive before the socket closes.
 	if err := Shutdown(); err != nil {
+		// Where the teardown is stuck is the whole diagnosis, and it is gone
+		// once the test returns: on Windows this overran once in three runs.
+		_ = pprof.Lookup("goroutine").WriteTo(os.Stderr, 2)
 		t.Fatalf("Shutdown: %v", err)
 	}
 	select {

@@ -13,7 +13,8 @@ import (
 // Each is written the way the platform stores it and confirmed by reading it
 // back, and each change comes with an undo that restores the exact raw values
 // found — an unset key is deleted again rather than written as a default,
-// since on a freshly booted emulator most of these are unset, not off. What
+// since on a freshly booted emulator most of these are unset, not off; after
+// its off value is written, so the running system hears it (unsetMeans). What
 // each write reaches was measured, not assumed: on a Pixel 7 AVD (API 35)
 // every Android one was confirmed by Android's own Accessibility screens and
 // by MobiumApp's Accessibility Demo, and on an iPhone 17 Pro simulator every
@@ -117,8 +118,33 @@ func (a *ADB) rawGet(ctx context.Context, k androidKey) (string, error) {
 	return strings.TrimSpace(string(out)), nil
 }
 
+// unsetMeans is what the running system takes an unset key to mean — the
+// value Android's own switch writes for off. Deleting a key does not tell the
+// system anything: on a Pixel 8 Pro, Android 17, bold text put on and then
+// deleted read back unset while the configuration still said
+// fontWeightAdjustment=300, and the phone's text stayed bold after the
+// session had "put it back". So an unset key is restored by writing this
+// first, which the system hears, and then deleting it, which leaves the row
+// exactly as found; measured: unset, and fontWeightAdjustment=0.
+// CHALLENGES 143.
+var unsetMeans = map[androidKey]string{
+	boldTextKey:        "0",
+	contrastKey:        "0",
+	inversionKey:       "0",
+	daltonOnKey:        "0",
+	fontScaleKey:       "1.0",
+	animationScales[0]: "1.0",
+	animationScales[1]: "1.0",
+	animationScales[2]: "1.0",
+}
+
 func (a *ADB) rawPut(ctx context.Context, k androidKey, v string) error {
 	if v == "null" {
+		if off, ok := unsetMeans[k]; ok {
+			if _, err := a.Shell(ctx, "settings", "put", k.namespace, k.key, off); err != nil {
+				return err
+			}
+		}
 		_, err := a.Shell(ctx, "settings", "delete", k.namespace, k.key)
 		return err
 	}

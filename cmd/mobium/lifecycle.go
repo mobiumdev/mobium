@@ -17,11 +17,11 @@ func newLaunchCmd() *cobra.Command {
 
 func newTerminateCmd() *cobra.Command {
 	return &cobra.Command{
-		Use:     "terminate <package | bundle-id>",
-		Aliases: []string{"stop"},
-		Short:   "Stop a running app",
-		Example: `  mobium terminate com.google.android.dialer`,
-		Args:    cobra.ExactArgs(1),
+		Use:        "terminate <package | bundle-id>",
+		Short:      "Stop a running app",
+		SuggestFor: []string{"stop"},
+		Example:    `  mobium terminate com.google.android.dialer`,
+		Args:       cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return runTool("app_terminate", map[string]interface{}{"app": args[0]})
 		},

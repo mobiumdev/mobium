@@ -28,7 +28,7 @@ Each script takes a device serial and exits non-zero on failure.
 | [ios-device.sh](ios-device.sh) | A **real iPhone**, through Apple's Settings: app switches in both directions and through Home, **each timed** — the first read after a switch once stalled for 61 seconds ([CHALLENGES 71](../CHALLENGES.md)) and a 40-second limit is what catches it coming back; scrolling onto rows the phone reports with no bounds; typing confirmed by read-back; a screenshot; and every refusal a phone owes, with its reason. Changes no setting |
 | [record.sh](record.sh) | **Screen recording**: something moving recorded, saved where the command ran, and judged by the video's own header — frames and duration — then a still screen, fewer frames and still a valid file, the refusals, and nothing left recording or on the device. A real iPhone's refusal is asserted to name its reason |
 | [autowait.sh](autowait.sh) | **Auto-wait**, judged by what MobiumApp received: a tap on a target sliding in waits for the slide to end (the Motion Demo's own stopwatch), and with Reduce Motion on the honoring target is tapped at once while the ignoring one still waits; a still button beside a confetti burst is tapped, and a piece that never holds still is refused; a second tap on Log In waits out "Signing in…" and lands; typing into a button, a checkbox and a read-only field is refused. Simulators and emulators: it switches Reduce Motion from outside, and puts it back |
-| [dialogs.sh](dialogs.sh) | **Every kind of dialog** on MobiumApp's Dialog Demo, each judged by what the app says it received: alerts with one, two and three buttons, one that arrives late, the iOS action sheet, the share sheet, camera and location permission, App Tracking Transparency on iOS, and a paste — iOS's Allow Paste prompt refused and granted, Android asking nothing. `accept` and `dismiss` are held to what they were measured to press on each platform (CHALLENGES 106), and answering by caption to meaning the same thing on both. Then a declared rule answering a dialog on the way to a tap, a rule for a button the dialog lacks refused, and the refusals under a dialog and under the keyboard, with each remedy followed. Simulators and emulators only: a real iPhone cannot reset permissions from outside |
+| [dialogs.sh](dialogs.sh) | **Every kind of dialog** on MobiumApp's Dialog Demo, each judged by what the app says it received: alerts with one, two and three buttons, one that arrives late, the iOS action sheet, the share sheet, camera and location permission, App Tracking Transparency on iOS, and a paste — iOS's Allow Paste prompt refused and granted, Android asking nothing. `accept` and `dismiss` are held to what they were measured to press on each platform (CHALLENGES 106), and answering by caption to meaning the same thing on both. Then a declared rule answering a dialog on the way to a tap, a rule for a button the dialog lacks refused, and the refusals under a dialog and under the keyboard, with each remedy followed. On a real iPhone it needs `MOBIUMAPP_BUNDLE` and reinstalls the app, the only permission reset a phone has, and paste is not checked |
 | [obstruction.sh](obstruction.sh) | **Receives events**, on MobiumApp's Obstruction Demo, judged by what the app says each tap touched: a control over all of a target is refused and named, one over its center is aimed around, a toast is waited out; a pass-through view, the negative control, lets the tap reach its target, and a plain view that swallows it is reported. On iOS an overlay hidden from accessibility is asserted as the known blind spot. Emulators, simulators and phones ([CHALLENGES 115](../CHALLENGES.md)) |
 | [web-actionability.sh](web-actionability.sh) | **Actionability inside a WebView**, on MobiumApp's Actionability page, judged by what the page says each tap reached: a sliding target is tapped once it stops, disabled and `aria-disabled` ones are refused, one enabled late is waited for, a full cover and a plain div are refused by the page's own hit test, a covered center is aimed around, the `pointer-events: none` layer — the negative control — lets the tap through, and a target below the fold is scrolled into view. Emulators, simulators and phones ([CHALLENGES 118](../CHALLENGES.md)) |
 | [web-type.sh](web-type.sh) | **Typing inside a WebView**, on MobiumApp's Web form page, judged by what the page says each field holds: text with an apostrophe, `&` and non-ASCII arrives exactly and the page hears the change, an empty type clears, read-only, `aria-readonly`, disabled and checkbox fields are refused, and a password is confirmed by the page without ever being printed. Emulators, simulators and phones ([CHALLENGES 119](../CHALLENGES.md)) |
@@ -66,6 +66,47 @@ way of a native tap on a web link. Its first run found defects 77–80.
 2m07s. App switches read back in 6.1–16.2s. With the fix for defect 71
 disabled it failed on its second launch, at 64.8s — the run that makes its
 time limit a check rather than a guess.
+
+**Everything added since has run on the iPhone 15 Plus too, on 2026-09-27**,
+with MobiumApp rebuilt from `mobiumdev/mobium-app` and signed for the phone.
+All passed: `login.sh` (2m45s), `keyboard.sh`, `autowait.sh`,
+`obstruction.sh`, `web-actionability.sh`, `web-type.sh`, `source.sh`,
+`crashes.sh`, `ios-device.sh` (1m53s), `gestures.sh` (4m55s), `zoom.sh`,
+`mobium-app.sh` (4m06s, with `MOBIUM_NETWORK_TESTS=1`: the link now lands on
+`github.com/mobiumdev`) and `third-party-app.sh`; and `record.sh`,
+`accessibility.sh` and `clear-data.sh` assert the phone's refusals. Two
+checks needed changing for a phone, and neither change was to Mobium:
+`login.sh` met iOS's "Save Password?" sheet over the welcome screen, and now
+answers it; and `autowait.sh` refused a phone outright, and now checks the
+half of Reduce Motion the phone is set to — **three of its rows read NOT
+CHECKED** on this phone, where Reduce Motion is on: the plain slide, and both
+confetti rows, since the app draws no confetti then. And `dialogs.sh`, which
+refused a phone, now runs there with `MOBIUMAPP_BUNDLE`, reinstalling the app
+as the only permission reset a phone has: every section passed — the app's
+alerts, the action and share sheets, camera, location and App Tracking
+Transparency prompts, rules and refusals — except paste, **NOT CHECKED**
+because a phone's clipboard cannot be seeded from outside.
+
+**Every check that runs on Android passed on the Pixel 8 Pro, Android 17, on
+2026-09-27**, with MobiumApp rebuilt from `mobiumdev/mobium-app`: the six in
+the table, and `login.sh`, `keyboard.sh`, `autowait.sh`, `obstruction.sh`,
+`web-actionability.sh`, `web-type.sh`, `source.sh`, `crashes.sh`,
+`accessibility.sh`, `clear-data.sh`, `dialogs.sh`, `gestures.sh`, `zoom.sh`,
+`mobium-app.sh` (with `MOBIUM_NETWORK_TESTS=1`) and `clients.sh`, all five
+clients — the Java one timed out once waiting for Settings' first screen and
+passed on the rerun, cause not found. A phone is somebody's, and four checks
+had to learn that: `dialogs.sh` and `mobium-app.sh` reset permissions with
+Android's reset, which is **device-wide**, and on a phone now reinstall the
+app or revoke its one permission instead; `device-state.sh` locked a phone
+that has a PIN, which cannot be unlocked from outside, and now asks first
+(`cmd lock_settings verify`, answered without locking) and says the lock
+round-trip is **NOT CHECKED**; and `autowait.sh` restores an animation scale
+that was never set by deleting it. `third-party-app.sh` reads Wikipedia's
+article natively on a phone, since a user build publishes a WebView only if
+the app opts in and the F-Droid build does not — no devtools socket at all,
+measured — and follows a link through the app's preview sheet. `crashes.sh`
+skips the ANR, which needs a root adb a retail phone does not have, and says
+so.
 
 `mobium-app.sh` needs MobiumApp built and installed, so it has no row either.
 **On the iPhone 15 Plus it passed on 2026-09-23**, 30 steps in 3m31s, from a

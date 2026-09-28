@@ -7,9 +7,9 @@ the source.
 
 The pattern across them is the reason the document exists: **almost nothing
 here was found by reading code or by a test written from imagination.** Of
-137 defects, 112 were found only by running against a real device. The other
-twenty-five — 4, 5, 6, 14, 23, 24, 32, 35, 36, 39, 44, 50, 53, 54, 57, 66, 89,
-99, 100, 121, 123, 129, 130, 133 and 134 — came from reading code, the compiler, a test, a linter,
+143 defects, 114 were found only by running against a real device. The other
+twenty-nine — 4, 5, 6, 14, 23, 24, 32, 35, 36, 39, 44, 50, 53, 54, 57, 66, 89,
+99, 100, 121, 123, 129, 130, 133, 134, 139, 140, 141 and 142 — came from reading code, the compiler, a test, a linter,
 cross-checking a computed number against a screenshot, using the tooling on
 itself, typing a negative number at a command line, and driving the clients
 against a stand-in daemon, and CI on Windows.
@@ -2377,6 +2377,13 @@ nothing noticed. It is now cleared before typing, which makes `app_type`
 replace a field's contents on iOS as UiAutomator2 does on Android, password
 or not; the test fails if the clear is removed.
 
+Since 2026-09-27 that is `app_fill`, Vibium's name for it, and `app_type`
+adds to a field, as Vibium's type does. Neither server can type at the
+cursor, so an append is the field set to what it held plus the text, through
+the same cleared and confirmed `SetText`; a password that holds anything is
+refused, since it cannot be read back to add to. The login demo, which found
+this, now fills its fields.
+
 ### 104. `testid=password` matched seven elements
 
 **Found by:** the login demo on iOS, once the form had visible labels. A
@@ -3154,6 +3161,97 @@ frees its name, so a relaunched app's WebView, which Android publishes on a
 new socket, comes back under the name it had. On the simulator, opening a
 second tab left the first page's name as it was, and switching by it reached
 that page.
+
+### 138. On iOS, `contexts` listed the pages of apps not in front
+
+**Found by:** listing contexts on the iPhone 15 Plus with Wikipedia in front
+and seeing Safari's page; reproduced with MobiumApp, three times in three,
+after opening a page in Safari and coming back.
+
+Every application webinspectord knew was asked for its pages, and every page
+was listed, whichever app was on screen. Switching to one attached a page
+that was not on screen, and a tap into it would have been aimed through the
+WebView the front app shows. webinspectord says which app is in front:
+`WIRIsApplicationActiveKey` is 2 for it, 1 while an app is leaving or
+arriving and 0 in the background, measured as the phone switched. Safari,
+left for MobiumApp, went from 2 to 1 and stayed at 1 with its page still
+published, so "not 0" would not have been enough. The inspector now keeps
+each application's flag, and a page is **behind** when its app reported one
+that is not 2 and is not hosted by the app that is — WebKit's relation for
+an in-app browser, which has not been driven here. When nothing reads 2, as
+mid-switch, and for an app that reports no flag, nothing is hidden on a
+guess. `contexts` lists only pages in front and names the rest on a line of
+their own; `context` refuses one behind as `device_not_ready`, and the remedy,
+`app_launch` its app, was followed on the phone and reached Safari's page.
+
+### 139. On Windows, stopping the daemon never finished
+
+**Found by:** the first run of the daemon tests on a GitHub-hosted Windows
+runner, which hung for ten minutes in `TestDaemonWritesAndRemovesPIDAndSocket`.
+
+go-winio's pipe listener, v0.6.2 and the latest, closes by sending its
+goroutine one signal. While an `Accept` is waiting for a client, that wait
+can take the signal instead; when the aborted connect then reports an error
+other than the two go-winio expects, the goroutine goes back to waiting for a
+signal already spent, and `Close` waits for it forever. The stack showed
+exactly that: the listener idle in its loop, `Close` waiting on its done
+channel, the daemon waiting on `Close`. A `mobium daemon stop` would never
+have returned. A second `Close` reaches the idle goroutine, so the Windows
+listener repeats `Close` every 100ms until one returns.
+
+### 140. On Windows, the PID file could outlive the daemon
+
+**Found by:** `TestDaemonShutdownOverTheWire` on the Windows runner, which
+waited out the client's whole 35s grace about one run in three. A goroutine
+dump taken when it did showed the daemon already gone.
+
+A client waiting for the daemon to stop reads the PID file every 20ms, and on
+Windows a file cannot be deleted while anything has it open. When the two
+collided, `os.Remove` failed, the error was ignored, and the file went on
+naming a daemon that had exited. A separate process's exit is still noticed,
+so the CLI recovered; a daemon run in-process never was. `RemovePID` now
+retries for a second, and a failure is said on stderr.
+
+### 141. The Go client refused every `mobium.exe`
+
+**Found by:** the Go client's tests on the Windows runner, every one of which
+failed with "is not an executable mobium binary".
+
+`FindBinary` checked a file's executable bit, and on Windows `os.Stat`
+reports none, so `MOBIUM_BIN_PATH` could name no binary at all. A program on
+Windows is known by its extension, so the client now reads `PATHEXT`, as the
+shell does. The other four clients ask their platform, which already knew.
+
+### 142. On Windows, the Go client missed mobium on PATH
+
+**Found by:** the same client test once the previous fix let it run: a
+`mobium.exe` in the current directory, and the real one on `PATH`, reported
+as not found.
+
+`exec.LookPath` on Windows looks in the current directory first, and on
+finding a program there returns `ErrDot` rather than going on to `PATH`. The
+client refused the one in the current directory, as it should, and then had
+nothing. It now searches `PATH`'s absolute directories one at a time. The
+test had passed its negative half on Windows by finding nothing, because the
+planted binary had no `.exe`; it now plants one.
+
+### 143. Bold text stayed on after the session had put it back
+
+**Found by:** Lana, looking at her Pixel 8 Pro after `accessibility.sh` had
+passed on it, and asking whether the text was still bold. It was.
+
+An accessibility setting's undo restores the raw values it found, and a key
+that was unset is deleted again. Deleting a key tells the running system
+nothing: bold text put on and then deleted read back unset while the phone's
+configuration still said `fontWeightAdjustment=300`, and every app went on
+drawing bold text. The check compared raw values only, so it passed on
+exactly this. An unset key is now restored by first writing what Android's
+own switch writes for off — which the system hears — and then deleting it,
+which leaves the row as found; measured on the phone: unset, and
+`fontWeightAdjustment=0`. The check also compares the font weight the
+system applies before and after, and with the old undo it fails, on the
+Pixel, naming 300. The iOS simulator's undo also deletes keys it found
+unset; whether a running iOS app hears that has not been measured.
 
 ## Findings that were not defects
 

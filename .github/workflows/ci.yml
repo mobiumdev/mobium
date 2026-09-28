@@ -100,3 +100,78 @@ jobs:
       - name: make dotnet
         shell: bash
         run: make dotnet
+
+  # Everything Windows can be checked on without a device: the Go tests of
+  # both modules -- internal/daemon's start a real daemon over the named pipe,
+  # check it is owner-only while it runs and gone after -- and then the built
+  # binary, which the tests do not cover. docs/WINDOWS.md, "Doing the work".
+  # Passing here is not G7: nothing below drives a device.
+  go-windows:
+    name: Go and the daemon on Windows
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+          cache-dependency-path: |
+            go.sum
+            clients/go/go.sum
+
+      # docs/WINDOWS.md's acceptance criteria for the transport, first and on
+      # their own, so they report even while the rest of the suite does not
+      # pass on Windows. A hang here is a shutdown that never finishes. Five
+      # times over, because a shutdown on Windows has overrun once in three.
+      - name: Daemon transport tests
+        shell: bash
+        run: go test -timeout 5m -count 5 ./internal/daemon/ ./internal/paths/
+
+      # Not `make build`: its output has no .exe, and Windows will not run it.
+      - name: Build mobium.exe
+        if: success() || failure()
+        shell: bash
+        run: go build -o bin/mobium.exe ./cmd/mobium
+
+      - name: Smoke test
+        if: success() || failure()
+        shell: bash
+        run: |
+          set -euo pipefail
+          m=./bin/mobium.exe
+          $m --version
+          $m --help > /dev/null
+
+          # doctor runs in-process and must work with nothing installed; its
+          # verdict on this runner is not the point, finishing is.
+          $m doctor || echo "doctor exited $?"
+
+          # mcp runs the tool layer in-process on stdio and never touches the
+          # daemon, so it is claimed to work here already. Check the claim.
+          printf '%s\n' \
+            '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"ci","version":"0"}}}' \
+            '{"jsonrpc":"2.0","method":"notifications/initialized"}' \
+            '{"jsonrpc":"2.0","id":2,"method":"tools/list"}' \
+            | timeout 60 $m mcp > mcp.out
+          grep -q '"id":2' mcp.out
+          grep -q '"app_map"' mcp.out
+          echo "mcp: tools/list answered"
+
+          # The daemon through the CLI: auto-start goes through setDetached
+          # and a real child process, which no test reaches. Read the state
+          # back each time rather than trusting an exit code.
+          $m daemon status | tee status.out
+          grep -q 'not running' status.out
+          timeout 120 $m devices || echo "devices exited $?"
+          $m daemon status | tee status.out
+          grep -q 'Daemon running' status.out
+          $m daemon stop
+          $m daemon status | tee status.out
+          grep -q 'not running' status.out
+
+      # Everything else. Much of it is not yet written for Windows -- fakes
+      # that are shell scripts, executable bits -- and this is what says so.
+      - name: make test
+        if: success() || failure()
+        shell: bash
+        run: make test

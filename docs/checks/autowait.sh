@@ -15,9 +15,10 @@
 # the Form Demo: typing into a button, a checkbox and a read-only field is
 # refused. Covered targets — a dialog, the keyboard — are dialogs.sh's.
 #
-# Needs MobiumApp installed (mobiumdev/mobium-app). Simulators and emulators
-# only: Reduce Motion is switched from outside, which a phone does not allow
-# on iOS. Every setting changed is put back, on failure too.
+# Needs MobiumApp installed (mobiumdev/mobium-app). Emulators and simulators
+# switch Reduce Motion from outside; a phone does not allow that, so there the
+# half its own setting selects is checked and the other said to be unchecked.
+# Every setting changed is put back, on failure too.
 set -e
 DEV="$1"
 if [ -z "$DEV" ]; then echo "usage: $0 <serial|udid>" >&2; exit 2; fi
@@ -28,7 +29,7 @@ ms() { python3 -c 'import time; print(int(time.time()*1000))'; }
 APP=dev.mobium.mobiumapp
 
 case "$DEV" in
-  ????????-????????????????) echo "a real iPhone's Reduce Motion cannot be set from outside; use a simulator" >&2; exit 2 ;;
+  ????????-????????????????) PLATFORM=ios; PHONE=1; M="$ROOT/bin/mobium --driver wda --device $DEV" ;;
   *-*-*-*-*) PLATFORM=ios; M="$ROOT/bin/mobium --driver wda --device $DEV" ;;
   *)         PLATFORM=android; M="$ROOT/bin/mobium --device $DEV" ;;
 esac
@@ -39,10 +40,20 @@ echo "--- $DEV ($PLATFORM)"
 # WebDriverAgent's setting. The original is put back on any exit.
 ORIG_SCALE=""
 reduce() { # reduce on|off
+  # A phone's cannot be set from outside: WebDriverAgent answers the setting
+  # and changes nothing there. The phone is checked as it stands instead.
+  [ -n "$PHONE" ] && return 0
   if [ "$PLATFORM" = android ]; then
     [ -z "$ORIG_SCALE" ] && ORIG_SCALE=$(adb -s "$DEV" shell settings get global transition_animation_scale | tr -d '\r')
-    [ "$1" = on ] && adb -s "$DEV" shell settings put global transition_animation_scale 0 \
-      || adb -s "$DEV" shell settings put global transition_animation_scale "${ORIG_SCALE:-1.0}"
+    if [ "$1" = on ]; then
+      adb -s "$DEV" shell settings put global transition_animation_scale 0
+    elif [ "$ORIG_SCALE" = null ]; then
+      # Never set on this device: deleted again, not written as "null" —
+      # on somebody's phone that would be a setting the check invented.
+      adb -s "$DEV" shell settings delete global transition_animation_scale >/dev/null
+    else
+      adb -s "$DEV" shell settings put global transition_animation_scale "${ORIG_SCALE:-1.0}"
+    fi
   else
     sid=$(curl -s localhost:8100/status | python3 -c 'import json,sys; print(json.load(sys.stdin)["sessionId"])')
     v=false; [ "$1" = on ] && v=true
@@ -72,6 +83,30 @@ slide() { # slide <panel>: replay, then tap the target at once
   after_replay "$1"
 }
 
+if [ -n "$PHONE" ]; then
+# --- a phone: Reduce Motion as the phone has it -----------------------------
+# Only one half can be checked, the one the phone's own setting selects, and
+# the other is said to be unchecked rather than left out.
+open "Motion Demo"
+$M wait testid=honoringReplay >/dev/null
+state=$($M text testid=reduceMotion)
+h=$(slide honoring); i=$(slide ignoring)
+[ -n "$h" ] && [ -n "$i" ] || fail "a tap on a sliding target did not reach the app (honoring '$h', ignoring '$i')"
+[ "$i" -ge 1800 ] || fail "the ignoring target — the control — was tapped at ${i}ms, before its 2s slide ended"
+if [ "$state" = "reduceMotion=true" ]; then
+  # Not under 1800ms, as on a simulator: a phone takes about two seconds
+  # between one tap and the next, so a target tapped at once still reads
+  # ~2000ms (measured 1913-2031ms, the control 3246-3279ms). Judged against
+  # the control instead: had it waited out a slide too, it would be as late.
+  [ "$h" -lt $((i - 1000)) ] || fail "with Reduce Motion on, the honoring target was tapped at ${h}ms, not clearly before the ignoring one at ${i}ms"
+  row "reduce motion" "on, as the phone has it: honoring ${h}ms, ignoring ${i}ms"
+  printf '    %-16s %s\n' "stable" "NOT CHECKED — Reduce Motion is on, and a phone's cannot be switched from outside"
+else
+  [ "$h" -ge 1800 ] || fail "the honoring target was tapped ${h}ms after Replay, before its 2s slide ended"
+  row "stable" "tapped after the slide: ${h}ms and ${i}ms after Replay"
+  printf '    %-16s %s\n' "reduce motion" "NOT CHECKED — it is off, and a phone's cannot be switched from outside"
+fi
+else
 # --- stable: a target sliding in -------------------------------------------
 reduce off
 open "Motion Demo"
@@ -98,6 +133,15 @@ h=$(slide honoring); i=$(slide ignoring)
 row "reduce motion" "honoring ${h}ms, at once; ignoring still ${i}ms"
 reduce off
 
+fi
+
+if [ -n "$PHONE" ] && [ "$state" = "reduceMotion=true" ]; then
+# MobiumApp honors Reduce Motion by drawing no confetti at all, so with it on
+# there is no burst to tap beside and no piece to refuse — and a tap beside
+# nothing passes whatever mobium does. Said, not passed.
+printf '    %-16s %s\n' "confetti" "NOT CHECKED — with Reduce Motion on the app draws none"
+printf '    %-16s %s\n' "never still" "NOT CHECKED — with Reduce Motion on the app draws none"
+else
 # --- a still button beside a burst of confetti ------------------------------
 open "Motion Demo"
 $M wait testid=celebrateBtn >/dev/null
@@ -142,6 +186,8 @@ done
 row "never still" "a falling piece refused as still moving ($tries burst$( [ $tries = 1 ] || echo s))"
 sleep 10
 $M uncheck testid=confettiExposed >/dev/null
+
+fi
 
 # --- enabled: Log In while it signs in --------------------------------------
 open "Login Demo"

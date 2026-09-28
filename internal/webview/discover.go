@@ -54,6 +54,13 @@ type Context struct {
 	Base string `json:"-"`
 	// WSURL is the CDP WebSocket for this target.
 	WSURL string `json:"-"`
+	// App is the application the page belongs to, where the platform says.
+	App string `json:"-"`
+	// Behind says the platform reports the page's application is not the one
+	// in front, so the page is not on screen and nothing can aim a tap into
+	// it: coordinates come from the WebView the front app shows. iOS only,
+	// from WebKit's own active flag.
+	Behind bool `json:"-"`
 }
 
 // NativeContext is the name of the native, non-web context.

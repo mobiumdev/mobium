@@ -82,11 +82,11 @@ APP=dev.mobium.mobiumapp
 fail() { echo "FAIL: $*" >&2; exit 1; }
 
 # appContexts lists the WebView contexts that belong to one app — WEBVIEW_<id>,
-# or WEBVIEW_<id>_<n> when it has several — and nothing else. `contexts`
-# reports every inspectable page on the device, not only the app in front: on
-# a real iPhone with Wikipedia in the foreground it listed Safari's page. So
-# "the first WEBVIEW_ line" can be another app's, and a count of them can pass
-# with one of ours and one of Safari's.
+# or WEBVIEW_<id>_<n> when it has several — and nothing else. On iOS
+# `contexts` lists only the app in front (CHALLENGES 138), but on Android it
+# lists every debuggable page on the device, so "the first WEBVIEW_ line" can
+# be another app's, and a count of them can pass with one of ours and one of
+# Chrome's.
 appContexts() { $M contexts | awk -v id="WEBVIEW_$1" \
   '$1 == id || (index($1, id "_") == 1 && substr($1, length(id) + 2) ~ /^[0-9]+$/) { print $1 }'; }
 
@@ -381,9 +381,20 @@ if [ -n "$ANDROID_PHONE" ]; then
   # the fix improves — correct, and not settled. What is checked is that it
   # left the route, without saying where it went; then the screen is left at
   # once, so the phone's position is not left on display.
-  case "$D" in 51.5*,-0.1*) fail "the position is still on the route after a clear" ;; esac
-  $M tap "$(ref 'Back')" >/dev/null 2>&1 || true
-  echo "    route clear    the position left the route (the phone's own is not printed)"
+  # Or, with no fix of its own yet — indoors, measured on a Pixel 8 Pro at
+  # night — it keeps the route's last point, as Android keeps the last fix
+  # (CHALLENGES 56). Then what shows the route stopped is that the position
+  # no longer moves and the test provider is gone; still moving is a failure.
+  case "$D" in
+    51.5*,-0.1*)
+      [ "$C" = "$D" ] || fail "the position is still moving along the route after a clear"
+      $M location --json | grep -q '"mocking": false' || fail "the test provider is still installed after a clear"
+      $M tap "$(ref 'Back')" >/dev/null 2>&1 || true
+      echo "    route clear    the route stopped, provider gone; no fix of the phone's own yet" ;;
+    *)
+      $M tap "$(ref 'Back')" >/dev/null 2>&1 || true
+      echo "    route clear    the position left the route (the phone's own is not printed)" ;;
+  esac
 else
   [ "$C" = "$D" ] || fail "the position is still moving after a clear ($C -> $D)"
   echo "    route clear    the position settled at $C"
@@ -488,6 +499,10 @@ fi
 # destroy the very state being measured and pass for the wrong reason.
 if [ "$PLATFORM" = "ios" ]; then
   $M reset-permissions "$APP" >/dev/null 2>&1 || true
+elif [ -n "$ANDROID_PHONE" ]; then
+  # Android's reset is device-wide, and on a person's phone would reset
+  # every app's permissions. Revoking this one is enough for the dialog.
+  $M revoke "$APP" location >/dev/null 2>&1 || true
 else
   $M reset-permissions >/dev/null 2>&1 || true
 fi

@@ -15,8 +15,9 @@ import (
 
 func newDaemonCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "daemon",
-		Short: "Manage the background daemon",
+		Use:        "daemon",
+		Short:      "Manage the background daemon",
+		SuggestFor: []string{"stop"},
 		Long: "Commands normally start the daemon on demand and it exits when idle.\n" +
 			"These subcommands are for inspecting or controlling it directly.",
 	}

@@ -107,7 +107,7 @@ echo "    feed card      the featured article is a target               ok"
 
 # Search, typed into the real field, answered by the app.
 $M tap 'label=Search,role=button' >/dev/null
-$M type 'role=input' 'Ada Lovelace' >/dev/null
+$M fill 'role=input' 'Ada Lovelace' >/dev/null
 # The first search on an install raises an "Add languages" tooltip, and while
 # it is up iOS hides everything else from accessibility — the results report
 # visible="false" and do not map, correctly: VoiceOver cannot reach them

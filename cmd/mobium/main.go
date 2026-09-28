@@ -112,6 +112,7 @@ func main() {
 		newContextsCmd(),
 		newContextCmd(),
 		newTypeCmd(),
+		newFillCmd(),
 		newSwipeCmd(),
 		newLongPressCmd(),
 		newScreenshotCmd(),

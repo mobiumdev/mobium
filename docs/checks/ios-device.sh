@@ -83,7 +83,7 @@ for _ in 1 2 3; do
   $M map | grep -q 'Airplane Mode' && break
   $M tap @e1 >/dev/null
 done
-$M type 'label=Search,role=input' 'wallpaper' >/dev/null || fail "typing into Search failed"
+$M fill 'label=Search,role=input' 'wallpaper' >/dev/null || fail "typing into Search failed"
 $M map | grep -q 'wallpaper (input)' || fail "the search field does not hold what was typed"
 echo "    type           search field holds what was typed                      ok"
 

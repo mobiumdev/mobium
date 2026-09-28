@@ -158,7 +158,11 @@ func (d *Daemon) Shutdown() {
 		if d.socketPath != "" {
 			removeSocket(d.socketPath)
 		}
-		RemovePID()
+		if err := RemovePID(); err != nil {
+			// Said, because a PID file left behind names a daemon that is
+			// gone, and whoever is waiting for it to go waits out the grace.
+			fmt.Fprintf(os.Stderr, "mobium daemon: could not remove the PID file: %v\n", err)
+		}
 	})
 }
 

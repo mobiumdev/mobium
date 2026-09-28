@@ -148,13 +148,21 @@ $M press middle 2>&1 | grep -q 'mobium knows' || fail "a nonsense button was not
 echo "    unknown button refused with the vocabulary                     ok"
 
 # Lock is a state, not a toggle: asking twice must not flip it back.
-$M lock unlock >/dev/null
-$M lock lock >/dev/null
-$M lock lock >/dev/null
-$M lock | grep -q '^locked' || fail "locking twice did not leave the screen locked"
-$M lock unlock >/dev/null
-$M lock | grep -q '^unlocked' || fail "the screen did not unlock"
-echo "    lock           locked, idempotent, unlocked, each read back    ok"
+# Not on a phone with a PIN, pattern or password: it cannot be unlocked from
+# outside, so locking it would leave it locked and every step after this
+# refused. Asked without locking anything — the answer is in the text, and
+# the exit status is 0 either way.
+if adb -s "$DEV" shell cmd lock_settings verify 2>&1 | grep -q 'has a lock credential'; then
+  echo "    lock           NOT CHECKED — the device has a lock credential, and unlocking it from outside is refused"
+else
+  $M lock unlock >/dev/null
+  $M lock lock >/dev/null
+  $M lock lock >/dev/null
+  $M lock | grep -q '^locked' || fail "locking twice did not leave the screen locked"
+  $M lock unlock >/dev/null
+  $M lock | grep -q '^unlocked' || fail "the screen did not unlock"
+  echo "    lock           locked, idempotent, unlocked, each read back    ok"
+fi
 
 # Interruptions. Calls and messages are emulator-only, so the check adapts
 # rather than failing on hardware — the point is that mobium says which it is.

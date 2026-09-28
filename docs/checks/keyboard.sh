@@ -84,6 +84,19 @@ else
   echo "    hide           refused with a remedy, and the remedy worked        ok"
 fi
 $M keyboard --hide | grep -q "already hidden" || fail "hiding a hidden keyboard did something"
+
+# app_type adds to a field and app_fill replaces it, as Vibium's type and fill
+# do — the same answer as the keyboard's own appends above, by another road.
+$M fill testid=username mob >/dev/null
+$M type testid=username ium >/dev/null
+v=$($M text testid=username)
+[ "$v" = mobium ] || fail "type after fill left [$v], want [mobium]: type must add to the field"
+$M fill testid=username xyz >/dev/null
+v=$($M text testid=username)
+[ "$v" = xyz ] || fail "fill left [$v], want [xyz]: fill must replace"
+out=$($M type "$PASSWORD" more 2>&1) && fail "adding to a non-empty password field was accepted: $out"
+echo "$out" | grep -q "app_fill" || fail "the refusal to add to a password did not name app_fill: $out"
+echo "    type, fill     type added, fill replaced, a password refused       ok"
 # From the home screen, where nothing has focus: on Android focus outlives a
 # hidden keyboard, so after the password step it would still be there, and
 # this once passed on the password refusal instead of the one it names.

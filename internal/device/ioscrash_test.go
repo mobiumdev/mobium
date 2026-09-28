@@ -3,6 +3,7 @@ package device
 import (
 	"context"
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -64,7 +65,7 @@ func TestSimulatorCrashReadsInFull(t *testing.T) {
 		t.Fatal(err)
 	}
 	for _, want := range []string{"Process:     Preferences [36981]", "Thread 0 crashed:",
-		"abort + 116", "crash.dylib", "Full report: testdata/Preferences-2026-09-25-105730.ips"} {
+		"abort + 116", "crash.dylib", "Full report: " + filepath.Join("testdata", "Preferences-2026-09-25-105730.ips")} {
 		if !strings.Contains(r.Text, want) {
 			t.Errorf("text lacks %q:\n%s", want, r.Text)
 		}

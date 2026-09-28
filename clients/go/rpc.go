@@ -10,6 +10,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"sync"
 	"time"
@@ -57,15 +58,44 @@ func FindBinary(explicit string) (string, error) {
 		}
 		return "", fmt.Errorf("%s is not an executable mobium binary", candidate)
 	}
-	if found, err := exec.LookPath("mobium"); err == nil && filepath.IsAbs(found) {
-		return found, nil
+	// PATH's directories one by one, rather than exec.LookPath("mobium"):
+	// on Windows that looks in the current directory first, and on finding
+	// a mobium.exe there refuses it and gives up, so the real one on PATH
+	// was never reached. A relative entry would be the current directory
+	// by another name, and is skipped too. CHALLENGES 142.
+	for _, dir := range filepath.SplitList(os.Getenv("PATH")) {
+		if !filepath.IsAbs(dir) {
+			continue
+		}
+		if found, err := exec.LookPath(filepath.Join(dir, "mobium")); err == nil {
+			return found, nil
+		}
 	}
 	return "", errors.New("mobium not found — put it on PATH or set MOBIUM_BIN_PATH to the binary")
 }
 
 func executable(path string) bool {
 	info, err := os.Stat(path)
-	return err == nil && !info.IsDir() && info.Mode()&0o111 != 0
+	if err != nil || info.IsDir() {
+		return false
+	}
+	if runtime.GOOS == "windows" {
+		// Windows has no executable bit, and os.Stat reports none, so every
+		// mobium.exe was refused. A program there is known by its
+		// extension, from PATHEXT as the shell reads it. CHALLENGES 141.
+		exts := os.Getenv("PATHEXT")
+		if exts == "" {
+			exts = ".COM;.EXE;.BAT;.CMD"
+		}
+		ext := filepath.Ext(path)
+		for _, e := range strings.Split(exts, ";") {
+			if e != "" && strings.EqualFold(e, ext) {
+				return true
+			}
+		}
+		return false
+	}
+	return info.Mode()&0o111 != 0
 }
 
 // conn is a live `mobium pipe` subprocess.

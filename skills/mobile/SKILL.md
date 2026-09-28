@@ -168,9 +168,9 @@ passed to `type`.
 - `mobium tap @e5` — tap a ref
 - `mobium tap "text=Sign In"` — tap by locator, no map needed
 - `mobium tap 540 1200` — tap raw device coordinates
-- `mobium type @e2 "hello@example.com"` — type into an element
+- `mobium type @e2 "hello@example.com"` — type into an element, after what it holds
 - `mobium type @e2 ""` — clear a field
-- `mobium type @e2 "new" --clear` — replace the contents
+- `mobium fill @e2 "new"` — replace the contents (Vibium's fill; `type` adds to them)
 - `mobium swipe up` — scroll down the page (the finger moves up)
 - `mobium swipe left` — next pager screen
 - `mobium swipe 540 1800 540 600` — exact drag

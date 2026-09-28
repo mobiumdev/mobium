@@ -93,6 +93,9 @@ type ScreenshotView struct {
 type ContextsView struct {
 	Contexts []ContextView `json:"contexts"`
 	Current  string        `json:"current"`
+	// Behind names pages whose app is not in front: open, not on screen, and
+	// refused by app_context until the app is launched.
+	Behind []string `json:"behind,omitempty"`
 }
 
 // ContextView is one automatable context.

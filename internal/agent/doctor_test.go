@@ -6,6 +6,8 @@ import (
 	"runtime"
 	"strings"
 	"testing"
+
+	"github.com/mobiumdev/mobium/internal/fakecmd"
 )
 
 func runDoctor(t *testing.T) DoctorView {
@@ -112,15 +114,11 @@ func TestDoctorFlagsADeviceThatCannotBeDriven(t *testing.T) {
 	// "device" can be driven, and reporting anything else as fine defeats the
 	// point of asking.
 	dir := t.TempDir()
-	adb := dir + "/adb"
-	script := "#!/bin/sh\n" +
-		"case \"$*\" in\n" +
-		"  *devices*) echo 'List of devices attached'; echo 'ABC123\tunauthorized' ;;\n" +
-		"  *version*) echo 'Android Debug Bridge version 1.0.41' ;;\n" +
-		"esac\n"
-	if err := os.WriteFile(adb, []byte(script), 0o755); err != nil {
-		t.Fatal(err)
-	}
+	adb := fakecmd.Script(t, dir, "adb",
+		"case \"$*\" in\n"+
+			"  *devices*) echo 'List of devices attached'; echo 'ABC123\tunauthorized' ;;\n"+
+			"  *version*) echo 'Android Debug Bridge version 1.0.41' ;;\n"+
+			"esac\n")
 	t.Setenv("MOBIUM_ADB_PATH", adb)
 
 	var found *DoctorCheck

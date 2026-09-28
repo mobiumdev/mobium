@@ -185,7 +185,9 @@ func (h *Handlers) dispatch(ctx context.Context, name string, args map[string]in
 	case "app_find":
 		return h.find(ctx, args)
 	case "app_type":
-		return h.typeText(ctx, args)
+		return h.typeText(ctx, args, false)
+	case "app_fill":
+		return h.typeText(ctx, args, true)
 	case "app_swipe":
 		return h.swipe(ctx, args)
 	case "app_long_press":
@@ -1226,28 +1228,35 @@ func (h *Handlers) settle(ctx context.Context, s *session, loc uitree.Locator,
 	}
 }
 
-// typeText puts text into a specific element.
-func (h *Handlers) typeText(ctx context.Context, args map[string]interface{}) (*ToolsCallResult, error) {
+// typeText puts text into a specific element: after what it holds for
+// app_type, in place of it for app_fill.
+func (h *Handlers) typeText(ctx context.Context, args map[string]interface{}, replace bool) (*ToolsCallResult, error) {
 	s, err := h.sessionFor(ctx, args)
 	if err != nil {
 		return nil, err
 	}
-	return h.typeTextOn(ctx, s, args)
+	return h.typeTextOn(ctx, s, args, replace)
 }
 
-// typeTextOn is app_type once the device is resolved.
-func (h *Handlers) typeTextOn(ctx context.Context, s *session, args map[string]interface{}) (*ToolsCallResult, error) {
+// typeTextOn is app_type, or app_fill with replace, once the device is
+// resolved. The two differ only in whether the field is cleared first, so
+// they are one implementation, and every refusal is the same for both.
+func (h *Handlers) typeTextOn(ctx context.Context, s *session, args map[string]interface{}, replace bool) (*ToolsCallResult, error) {
 	// Inside a WebView the page takes the text itself (webType), so no
 	// native text entry is needed — and the native ref table is the wrong
 	// place to look a web ref up: it answered "unknown ref @e1 — the last map
 	// found no elements" for a field the page's map had just listed.
+	tool := "app_type"
+	if replace {
+		tool = "app_fill"
+	}
 	if s.web != nil {
 		target := stringArg(args, "target")
 		text, hasText := args["text"].(string)
 		if target == "" || !hasText {
-			return nil, mobiumerr.New(mobiumerr.InvalidArgument, "app_type needs a target (a @ref from app_map) and text")
+			return nil, mobiumerr.New(mobiumerr.InvalidArgument, "%s needs a target (a @ref from app_map) and text", tool)
 		}
-		return h.webType(ctx, s, target, text)
+		return h.webType(ctx, s, target, text, replace)
 	}
 	typer, ok := mobiumdriver.AsTextEntry(s.driver)
 	if !ok {
@@ -1257,11 +1266,11 @@ func (h *Handlers) typeTextOn(ctx context.Context, s *session, args map[string]i
 
 	target := stringArg(args, "target")
 	if target == "" {
-		return nil, mobiumerr.New(mobiumerr.InvalidArgument, "app_type needs a target (\"@e3\" or \"testid=search\")")
+		return nil, mobiumerr.New(mobiumerr.InvalidArgument, "%s needs a target (\"@e3\" or \"testid=search\")", tool)
 	}
 	text, hasText := args["text"].(string)
 	if !hasText {
-		return nil, mobiumerr.New(mobiumerr.InvalidArgument, "app_type needs text (pass \"\" to clear the field)")
+		return nil, mobiumerr.New(mobiumerr.InvalidArgument, "%s needs text (pass \"\" to clear the field)", tool)
 	}
 
 	node, _, err := h.resolveNode(ctx, s, target)
@@ -1282,12 +1291,34 @@ func (h *Handlers) typeTextOn(ctx context.Context, s *session, args map[string]i
 		return Result(fmt.Sprintf("cleared %s", target),
 			ActionView{Action: "clear", Target: target}), nil
 	}
-	if boolArg(args, "clear") {
+	// app_type adds to what the field holds, as Vibium's type does; app_fill
+	// replaces it. Neither platform can type at the cursor through its
+	// server — UiAutomator2 replaces a field whatever it is asked, and
+	// WebDriverAgent's read-back retries by clearing — so an append is the
+	// field set to what it held plus the text, which SetText then confirms.
+	// What it held is read from the node, never its placeholder, which both
+	// platforms report where an empty field's text goes.
+	want := text
+	held := node.Text
+	if node.ShowingHint || (node.Hint != "" && held == node.Hint) {
+		held = ""
+	}
+	if !replace {
+		if node.Password && held != "" {
+			// It cannot be read back, so adding to it would replace it.
+			return nil, mobiumerr.New(mobiumerr.Unsupported, "%s is a password field that already holds "+
+				"something, which cannot be read back, so app_type cannot add to it — app_fill replaces the "+
+				"whole password", target).
+				WithRemedy("app_fill to replace the whole password")
+		}
+		want = held + text
+	}
+	if replace || held != "" {
 		if err := typer.Clear(ctx, node); err != nil {
 			return nil, err
 		}
 	}
-	if err := typer.SetText(ctx, node, text); err != nil {
+	if err := typer.SetText(ctx, node, want); err != nil {
 		// What no class table can know, the server can: React Native's
 		// buttons are plain ViewGroups, and UiAutomator2 answered typing into
 		// one with the W3C code "invalid element state". Decided by the code

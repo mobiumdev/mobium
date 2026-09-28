@@ -480,14 +480,14 @@ func (d *Device) PressDrag(ctx context.Context, hold, from, to string) error {
 	return d.act(ctx, "app_press_drag", map[string]any{"hold": hold, "from": from, "to": to})
 }
 
-// Type puts text into an element. Pass "" to clear it.
+// Type puts text into an element, after what it holds. Pass "" to clear it.
 func (d *Device) Type(ctx context.Context, target, text string) error {
 	return d.act(ctx, "app_type", map[string]any{"target": target, "text": text})
 }
 
-// Replace clears an element and types into it.
-func (d *Device) Replace(ctx context.Context, target, text string) error {
-	return d.act(ctx, "app_type", map[string]any{"target": target, "text": text, "clear": true})
+// Fill clears an element and types into it, replacing what it held.
+func (d *Device) Fill(ctx context.Context, target, text string) error {
+	return d.act(ctx, "app_fill", map[string]any{"target": target, "text": text})
 }
 
 // Swipe drags across the middle of the screen in a direction: "up", "down",

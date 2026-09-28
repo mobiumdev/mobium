@@ -360,6 +360,9 @@ func AdoptPhoneRunner(ctx context.Context, udid string) *PhoneRunner {
 
 // orphanedRunner reads `ps -Ao pid=,ppid=,command=` for the pid of an
 // orphaned xcodebuild running a build under buildRoot for udid, or 0.
+//
+// The separator is "/" rather than the host's: ps and xcodebuild run only on
+// macOS, and a host-dependent one made the parser's test fail on Windows.
 func orphanedRunner(ps, buildRoot, udid string) int {
 	for _, line := range strings.Split(ps, "\n") {
 		f := strings.Fields(line)
@@ -368,7 +371,7 @@ func orphanedRunner(ps, buildRoot, udid string) int {
 		}
 		cmd := strings.Join(f[2:], " ")
 		if strings.Contains(cmd, "xcodebuild test-without-building") &&
-			strings.Contains(cmd, "-xctestrun "+buildRoot+string(filepath.Separator)) &&
+			strings.Contains(cmd, "-xctestrun "+buildRoot+"/") &&
 			strings.Contains(cmd, "-destination id="+udid) {
 			if pid, err := strconv.Atoi(f[0]); err == nil {
 				return pid

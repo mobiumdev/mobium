@@ -139,7 +139,8 @@ type Filled struct {
 const fillScript = `(() => {
   ` + candidatesJS + `
   const el = __mobiumCandidates()[%d];
-  const value = %s;
+  const text = %s;
+  const append = %t;
   if (!el) return JSON.stringify({status:'not_found'});
   const fail = (check, reason) => JSON.stringify({status:'failed', check, reason});
   let rect = el.getBoundingClientRect();
@@ -162,7 +163,9 @@ const fillScript = `(() => {
     return fail('editable', 'not a text field');
   }
   el.focus();
-  if (el.isContentEditable && tag !== 'input' && tag !== 'textarea') {
+  const editable = el.isContentEditable && tag !== 'input' && tag !== 'textarea';
+  const value = append ? (editable ? el.textContent : el.value) + text : text;
+  if (editable) {
     el.textContent = value;
   } else {
     const proto = el instanceof HTMLTextAreaElement ? HTMLTextAreaElement.prototype : HTMLInputElement.prototype;
@@ -171,7 +174,7 @@ const fillScript = `(() => {
   }
   el.dispatchEvent(new Event('input', {bubbles: true}));
   el.dispatchEvent(new Event('change', {bubbles: true}));
-  const now = el.isContentEditable && tag !== 'input' && tag !== 'textarea' ? el.textContent : el.value;
+  const now = editable ? el.textContent : el.value;
   return JSON.stringify({status: 'ok', matches: now === value, password: tag === 'input' && el.type === 'password'});
 })()`
 
@@ -182,13 +185,15 @@ const fillableInputTypesJS = `['text','password','email','number','search','tel'
 	`'range','color','date','time','datetime-local','month','week']`
 
 // Fill puts text into the index-th element of the map, after the page says it
-// can take it, and reports whether it now holds exactly that.
-func Fill(ctx context.Context, p Page, index int, value string) (*Filled, error) {
+// can take it, and reports whether it now holds exactly that — the text alone,
+// or with appendText what it held followed by the text, which is app_type's
+// meaning where Fill without it is app_fill's.
+func Fill(ctx context.Context, p Page, index int, value string, appendText bool) (*Filled, error) {
 	quoted, err := json.Marshal(value)
 	if err != nil {
 		return nil, err
 	}
-	raw, err := p.Evaluate(ctx, fmt.Sprintf(fillScript, index, quoted))
+	raw, err := p.Evaluate(ctx, fmt.Sprintf(fillScript, index, quoted, appendText))
 	if err != nil {
 		return nil, err
 	}
