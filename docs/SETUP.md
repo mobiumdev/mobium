@@ -586,6 +586,16 @@ that matches, a run waits, asking again every two seconds, up to
 nodes did not answer. A node that does not answer within five seconds is
 left out, and routing goes on without it.
 
+`MOBIUM_GRID_MODEL` narrows it to a model — part of its name, in any case —
+and `MOBIUM_GRID_OS` to an OS version, matched at the start of a word, so
+`17` means Android 17 and its point releases and `iOS 26` an iOS 26 runtime.
+
+**The node enforces a lease; mobium does not merely respect it.** Each run
+gets a daemon of its own on its node, named by its lease, and every daemon
+on the node refuses a device leased to another: a `mobium --device` run on
+the node that goes around the grid is told the device belongs to a grid run
+until that run ends. The run's daemon stops with it.
+
 A lease is renewed every 20 seconds while its run lives, released when it
 ends, and free again 60 seconds after a run that died without releasing it.
 A run killed outright takes its SSH forward with it, and the next run clears

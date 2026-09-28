@@ -3,7 +3,9 @@ package agent
 import (
 	"context"
 	"fmt"
+	"github.com/mobiumdev/mobium/internal/grid"
 	"github.com/mobiumdev/mobium/internal/mobiumerr"
+	"github.com/mobiumdev/mobium/internal/paths"
 	"strings"
 	"time"
 
@@ -204,6 +206,26 @@ func (s *session) healthy(ctx context.Context) bool {
 
 // sessionFor returns the cached session for a device, creating it if needed.
 func (h *Handlers) sessionFor(ctx context.Context, args map[string]interface{}) (*session, error) {
+	s, err := h.resolveSession(ctx, args)
+	if err != nil || s == nil || s.dev == nil {
+		return s, err
+	}
+	// A device a grid has leased to one run is refused to every other, on
+	// every call: each grid run has a daemon of its own on the node, named
+	// by its lease, and any other daemon here — a run that bypassed the
+	// grid included — would otherwise take the device from under it.
+	if holder, leased := grid.Holder(s.dev.Serial); leased && holder != paths.SessionName() {
+		return nil, mobiumerr.New(mobiumerr.DeviceNotReady, "%s is leased to a grid run (%s) and belongs to it until "+
+			"that run ends", s.dev.Serial, holder).
+			WithRemedy("wait for the run to finish, or reach a free device through MOBIUM_GRID").
+			WithDetail("holder", holder)
+	}
+	return s, nil
+}
+
+// resolveSession finds or opens the session a call is for, before any lease
+// is consulted.
+func (h *Handlers) resolveSession(ctx context.Context, args map[string]interface{}) (*session, error) {
 	serial := stringArg(args, "device")
 	if serial == "" {
 		serial = h.defaultDevice

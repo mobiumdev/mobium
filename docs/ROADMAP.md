@@ -132,10 +132,12 @@ this is what is not.
      device up to `MOBIUM_GRID_WAIT`; a node that does not answer is left out.
      A `kill -9` left an SSH forward running for good until the forward
      read a pipe its parent holds ([SETUP.md](SETUP.md#a-grid)).
-  4. **Still to do.** Routing by model and OS version, not only platform and
-     serial. Leases are honored by mobium, not enforced by the node's
-     daemon, so a run that ignores the grid can still take a leased device.
-     And one device per run holds on a node's daemon as anywhere — nothing
+  4. **Model, OS and enforcement — done, 2026-09-28.** `MOBIUM_GRID_MODEL`
+     and `MOBIUM_GRID_OS` route by model and OS version, the node reporting
+     each device's. Each run gets a daemon of its own on its node, named by
+     its lease, and every daemon there refuses a device leased to another —
+     a run on the node that bypassed the grid was refused, naming the
+     holder. Still to do: one device per run holds as anywhere, and nothing
      yet shares one session between two runs.
   5. **A grid UI** (written down 2026-09-28): a page showing each node, its
      devices, who holds each lease and for how long, and what is queued —
