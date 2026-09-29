@@ -1,6 +1,7 @@
 # 0006 — A test runner: `mobium test`, over JSON test files
 
-**2026-09-28. Proposed; iteration 1 not built.** Mobium gets a test runner in
+**2026-09-28. Iteration 1 built the same day** — see "What iteration 1
+showed", at the end. Mobium gets a test runner in
 the shape of Playwright's — `mobium test`, projects, workers, retries,
 reporters, a report to open — whose tests are **JSON files of the steps
 `app_batch` already runs**, executed by the Go binary itself.
@@ -234,3 +235,38 @@ it has been seen to come back the other way:
 - Test-level parameters and data (the same test on several inputs).
 - Sharding across machines — the grid already lends devices; how a run
   splits across it is iteration 2 at the earliest.
+
+## What iteration 1 showed
+
+Built as planned: `internal/testrun`, `mobium test` and `mobium show-report`,
+the three `app_wait_for` arguments, and `readOnlyHint` on every tool with
+`IsReadCall` per call. The suite is `tests/`, and `docs/checks/test-runner.sh`
+holds the runner to its controls. On the Pixel 7 AVD and the iPhone 17 Pro
+simulator together, the check passed its first run: an unset device refused
+before any test; 14 tests passing on both platforms in 95 seconds for 189
+seconds of work; all six must-fail tests failing with their step, code and a
+screenshot, and Python's XML parser agreeing with the JUnit counts;
+`--last-failed` running those six and no others; and the flaky control failed
+without a retry and reported flaky, on attempt 2, with one.
+
+Three things the first real runs changed:
+
+- **A project's device is settled before any test runs.** With a phone and a
+  simulator both attached, "the iOS device" was ambiguous, and the first run
+  reported that seven times, once per test, as seven failures. It is now one
+  refusal before anything runs — a run that cannot start is not a test that
+  failed.
+- **A project's device can come from the environment**, as
+  `"${MOBIUM_IOS_DEVICE}"`, and an unset variable is refused by name. A
+  simulator's id is one Mac's and a phone's is somebody's; neither belongs in
+  a checked-in config.
+- **A test that presses enter behaves differently by platform.** Enter in
+  MobiumApp's password field submits the form on iOS and not on Android, so
+  a test that pressed it and then tapped Log In signed in twice on iOS and
+  found no Log In to tap. The map kept with the failure showed `Log Out`,
+  which is what decided it; the test now taps Log In and nothing else. That
+  is the report's evidence doing its job on its first day.
+
+Next, for iteration 2: the step shorthand, soft assertions, a trace per test
+(the session-recording item), `--debug`, and runs on the real phones, where a
+password needs the phone's keyboard to have its letters (CHALLENGES 159).

@@ -1,0 +1,12 @@
+{
+  "description": "A control for --retries: from cleared app data, the first attempt stores 1 and expects 2, and fails; the retry, from a relaunch that kept the 1, stores 2 and passes — so it must be reported flaky. Run it only after clearing the app's data.",
+  "app": "dev.mobium.mobiumapp",
+  "tests": [
+    {"name": "passes on its second attempt", "steps": [
+      {"name": "app_tap", "arguments": {"target": "label=Storage Demo"}},
+      {"name": "app_tap", "arguments": {"target": "testid=saveOneMoreBtn"}},
+      {"name": "app_wait_for", "arguments": {"target": "testid=storedCount", "condition": "text",
+        "text": "stored: 2", "exact": true, "timeout_ms": 1500}}
+    ]}
+  ]
+}

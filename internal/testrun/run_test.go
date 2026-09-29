@@ -307,3 +307,42 @@ func TestJUnitParsesAndCounts(t *testing.T) {
 		t.Error("the HTML report does not escape a test's name")
 	}
 }
+
+// A project's device can come from the environment, and an unset variable
+// is refused by name — never read as "any device", a different project.
+func TestAProjectDeviceFromTheEnvironment(t *testing.T) {
+	dir := t.TempDir()
+	cfg := write(t, dir, ConfigName, `{"projects": [{"name": "ios", "device": "${MOBIUM_TEST_DEVICE}", "driver": "wda"}]}`)
+	t.Setenv("MOBIUM_TEST_DEVICE", "")
+	if _, err := LoadConfig(cfg); mobiumerr.CodeOf(err) != mobiumerr.InvalidArgument ||
+		!strings.Contains(err.Error(), "MOBIUM_TEST_DEVICE") {
+		t.Fatalf("an unset device: %v", err)
+	}
+	t.Setenv("MOBIUM_TEST_DEVICE", "SIM-1")
+	c, err := LoadConfig(cfg)
+	if err != nil || c.Projects[0].Device != "SIM-1" {
+		t.Fatalf("device %+v, %v", c, err)
+	}
+}
+
+// A project that cannot start is refused before any test runs, not failed
+// once per test.
+func TestAProjectThatCannotStartRunsNothing(t *testing.T) {
+	dir := t.TempDir()
+	p := write(t, dir, "login.test.json", loginFile)
+	f := &fake{answer: func(tool string, args map[string]interface{}) (*agent.ToolsCallResult, error) {
+		if tool == "app_current" {
+			return nil, mobiumerr.New(mobiumerr.InvalidArgument, "2 iOS devices are available — pick one with --device")
+		}
+		return nil, nil
+	}}
+	_, err := Run(&Config{Dir: dir}, Options{Files: []string{p}, Timeout: time.Minute, OutputDir: t.TempDir()}, f.call)
+	if mobiumerr.CodeOf(err) != mobiumerr.InvalidArgument || !strings.Contains(err.Error(), "cannot start") {
+		t.Fatalf("an ambiguous device: %v", err)
+	}
+	for _, c := range f.calls {
+		if c != "app_current" {
+			t.Fatalf("ran %s after the project could not start", c)
+		}
+	}
+}

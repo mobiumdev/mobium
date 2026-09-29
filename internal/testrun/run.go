@@ -180,6 +180,36 @@ func Run(cfg *Config, opts Options, call Caller) (*Summary, error) {
 		return nil, mobiumerr.New(mobiumerr.InvalidArgument, "no test matches — check -g, --project and --last-failed")
 	}
 
+	// Every project's device is settled before any test runs: a project
+	// that cannot start — two devices where one was meant, none at all —
+	// would otherwise fail every one of its tests for the same reason, and
+	// report seven failures where there is one problem, which is not a test's.
+	seen := map[string]bool{}
+	for _, p := range picks {
+		if seen[p.project.Name] {
+			continue
+		}
+		seen[p.project.Name] = true
+		args := map[string]interface{}{}
+		if p.project.Device != "" {
+			args["device"] = p.project.Device
+		}
+		if p.project.Driver != "" {
+			args["driver"] = p.project.Driver
+		}
+		if _, err := call("app_current", args); err != nil {
+			switch mobiumerr.CodeOf(err) {
+			case mobiumerr.InvalidArgument, mobiumerr.NoDevice, mobiumerr.DeviceNotReady, mobiumerr.ToolchainMissing:
+				e, _ := mobiumerr.As(err)
+				out := mobiumerr.New(mobiumerr.CodeOf(err), "project %q cannot start: %v", p.project.Name, err)
+				if e != nil && e.Remedy != "" {
+					out = out.WithRemedy(e.Remedy)
+				}
+				return nil, out
+			}
+		}
+	}
+
 	// One worker per device at most: a device holds one session, and two
 	// workers on one would drive the same screen.
 	byProject := map[string][]job{}

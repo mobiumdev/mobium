@@ -194,7 +194,26 @@ func parseConfig(raw []byte, path, dir string) (*Config, error) {
 	}
 	c.Dir = dir
 	names := map[string]bool{}
-	for _, p := range c.Projects {
+	for i, p := range c.Projects {
+		// A device can come from the environment: a simulator's id is this
+		// Mac's, and a phone's is somebody's, so neither belongs in a file
+		// that is checked in. An unset variable is refused by name rather
+		// than read as "any device", which is a different project.
+		if strings.Contains(p.Device, "$") {
+			var missing []string
+			c.Projects[i].Device = os.Expand(p.Device, func(v string) string {
+				val, ok := os.LookupEnv(v)
+				if !ok || val == "" {
+					missing = append(missing, v)
+				}
+				return val
+			})
+			if len(missing) > 0 {
+				return nil, mobiumerr.New(mobiumerr.InvalidArgument, "%s: project %q takes its device from $%s, "+
+					"which is not set", path, p.Name, strings.Join(missing, ", $")).
+					WithRemedy("set it to the device's serial or udid (mobium devices lists them), or run another project with --project")
+			}
+		}
 		if p.Name == "" {
 			return nil, mobiumerr.New(mobiumerr.InvalidArgument, "%s has a project with no name", path)
 		}

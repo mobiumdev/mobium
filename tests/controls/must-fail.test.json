@@ -1,0 +1,18 @@
+{
+  "description": "Controls for the runner itself: every test here must fail, and a run of this file passes only when all of them do. docs/checks/test-runner.sh asserts it.",
+  "app": "dev.mobium.mobiumapp",
+  "tests": [
+    {"name": "a screen assertion that cannot hold", "steps": [
+      {"name": "app_tap", "arguments": {"target": "label=Login Demo"}},
+      {"name": "app_wait_for", "arguments": {"target": "testid=welcomeText", "timeout_ms": 1500},
+        "description": "nobody signed in, so there is no welcome"}
+    ]},
+    {"name": "an expect that cannot hold", "steps": [
+      {"expect": {"tool": "app_state", "arguments": {"app": "dev.mobium.mobiumapp"}, "field": "state",
+        "equals": "background", "timeout_ms": 1500}}
+    ]},
+    {"name": "an action on something that is not there", "steps": [
+      {"name": "app_tap", "arguments": {"target": "testid=noSuchButton"}}
+    ]}
+  ]
+}
