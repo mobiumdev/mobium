@@ -1,8 +1,8 @@
 # Quick start: `mobium test`
 
 From an empty directory to a test suite that runs on a device, fails with
-evidence, retries, and leaves a report CI can publish — the same shape as
-Playwright's runner, for native apps. The design and its reasons are
+evidence, retries, and leaves a report CI can publish. The design and its
+reasons are
 [decisions/0006](../decisions/0006-a-test-runner.md).
 
 Every command and every line of output below is what `mobium test` printed on
@@ -35,7 +35,7 @@ login-tests/
 ```
 
 `mobium.config.json` says where the tests are and which devices they run on.
-A **project** is a device, as a Playwright project is a browser:
+A **project** is a device to run on:
 
 ```json
 {
