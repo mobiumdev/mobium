@@ -94,6 +94,32 @@ check(d._conn.call_tool("app_current")["structuredContent"]["tool"] == "app_curr
       "the connection broke after refusing NaN")
 d.close()
 
+# -- files: only the arguments that are set are sent -----------------------
+d = connect(binary=FAKE)
+t = d.upload("/tmp/report.pdf")
+check(t["echo"] == {"path": "/tmp/report.pdf"}, f"upload sent {t['echo']}, want only the path")
+check((t["name"], t["bytes"], t["checked"]) == ("report.pdf", 9, "size"), f"upload did not return the transfer: {t}")
+t = d.upload("/tmp/report.pdf", name="in.pdf", app="com.example")
+check(t["echo"] == {"path": "/tmp/report.pdf", "name": "in.pdf", "app": "com.example"},
+      f"upload sent {t['echo']}, want path, name and app")
+got = d.download("report.pdf")
+check(got == b"fake\x00file", f"download with no path returned {got!r}, want the file's bytes")
+t = d.download("report.pdf", path="/tmp/out.pdf", app="com.example")
+check(isinstance(t, dict) and t["path"] == "/tmp/out.pdf", f"download with a path did not return the transfer: {t!r}")
+check(t["echo"] == {"name": "report.pdf", "path": "/tmp/out.pdf", "app": "com.example"},
+      f"download sent {t['echo']}, want name, path and app")
+files = d.downloads()
+check([f["name"] for f in files] == ["report.pdf"], f"downloads did not return the folder's files: {files}")
+sent = []
+real = d._data
+d._data = lambda tool, args=None: sent.append((tool, args)) or real(tool, args)
+d.downloads()
+d.downloads(app="com.example")
+d._data = real
+check(sent == [("app_download", {}), ("app_download", {"app": "com.example"})],
+      f"downloads sent {sent}, want app_download with no name, and app only when given")
+d.close()
+
 # -- an answer with no id fails the call in flight -----------------------
 c = fake("noid", timeout=5)
 e = raises(InvalidArgumentError, lambda: c.call_tool("app_map"))

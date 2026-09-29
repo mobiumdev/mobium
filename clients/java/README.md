@@ -136,6 +136,7 @@ The whole tool surface, and `call()` for anything not wrapped yet.
 | Scrolling | `scrollTo` |
 | Acting | `tap`, `type`, `replace`, `swipe`, `longPress` |
 | Apps | `launch`, `terminate`, `install`, `uninstall`, `openUrl`, `apps` |
+| Files | `upload`, `download`, `downloads` |
 | Device state | `grant`, `revoke`, `resetPermissions`, `appearance`, `orientation`, `appLocale`, `press`, `screenLocked`, `incomingCall`, `sms`, `timezone`, `notifications`, `shade` |
 | Contexts | `contexts`, `context`, `logs`, `eval` |
 | Diagnostics | `doctor` |

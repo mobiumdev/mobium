@@ -220,6 +220,54 @@ const within = (p, ms) => Promise.race([settle(p), new Promise((r) => setTimeout
   await d.close()
 }
 
+// -- upload, download and downloads send only what is set ------------------
+// download with no path answers with the file base64 in `data`; the caller
+// gets bytes, not the encoding.
+{
+  const d = await fake('ok')
+  const sent = []
+  const call = d.conn.callTool.bind(d.conn)
+  const bytes = Buffer.from([0x25, 0x50, 0x44, 0x46, 0x00, 0xff, 0x0a])
+  d.conn.callTool = async (name, args) => {
+    sent.push([name, args])
+    if (name === 'app_download' && args.name && !args.path) {
+      return { content: [{ type: 'text', text: 'downloaded' }], structuredContent: { device: 'emulator-5554', name: args.name, where: 'Download', bytes: bytes.length, checked: 'size', data: bytes.toString('base64') } }
+    }
+    if (name === 'app_download' && !args.name) {
+      return { content: [{ type: 'text', text: 'listed' }], structuredContent: { device: 'emulator-5554', folder: 'Download', files: [{ name: 'a.pdf', bytes: 7, modified: '2026-09-29T10:00:00Z' }] } }
+    }
+    return call(name, args)
+  }
+  await d.upload('in.pdf')
+  await d.upload('in.pdf', { name: 'report.pdf', app: 'com.example' })
+  const saved = await d.download('a.pdf', { path: 'out.pdf' })
+  await d.download('a.pdf', { path: 'out.pdf', app: 'com.example' })
+  const got = await d.download('a.pdf')
+  await d.download('a.pdf', { app: 'com.example' })
+  const files = await d.downloads()
+  await d.downloads({ app: 'com.example' })
+  const want = [
+    ['app_upload', { path: 'in.pdf' }],
+    ['app_upload', { path: 'in.pdf', name: 'report.pdf', app: 'com.example' }],
+    ['app_download', { name: 'a.pdf', path: 'out.pdf' }],
+    ['app_download', { name: 'a.pdf', path: 'out.pdf', app: 'com.example' }],
+    ['app_download', { name: 'a.pdf' }],
+    ['app_download', { name: 'a.pdf', app: 'com.example' }],
+    ['app_download', {}],
+    ['app_download', { app: 'com.example' }],
+  ]
+  want.forEach((w, i) => {
+    check(JSON.stringify(sent[i]) === JSON.stringify(w), `file call ${i + 1} sent ${JSON.stringify(sent[i])}, want ${JSON.stringify(w)}`)
+  })
+  check(saved.tool === 'app_download', `download with a path resolved to ${JSON.stringify(saved)}, not the transfer`)
+  check(got instanceof Uint8Array && Buffer.compare(got, bytes) === 0, `download with no path resolved to ${JSON.stringify(got)}, not the file's bytes`)
+  check(files.length === 1 && files[0].name === 'a.pdf', `downloads() resolved to ${JSON.stringify(files)}`)
+  const refused = await settle(d.download())
+  check(!refused.ok && refused.e instanceof m.MobiumError, 'download() with no name was not refused')
+  check(sent.length === want.length, `download() with no name still called mobium: ${JSON.stringify(sent[want.length])}`)
+  await d.close()
+}
+
 report()
 
 function report() {

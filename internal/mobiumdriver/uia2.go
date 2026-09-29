@@ -483,6 +483,21 @@ func (u *UIA2) ListApps(ctx context.Context, includeSystem bool) ([]device.Insta
 	return u.adb.ListPackages(ctx, includeSystem)
 }
 
+// UploadFile puts a file in the Download folder; Android has one, for every app.
+func (u *UIA2) UploadFile(ctx context.Context, local, name, _ string) (device.Transfer, error) {
+	return u.adb.UploadFile(ctx, local, name)
+}
+
+// DownloadFile copies a file from the Download folder.
+func (u *UIA2) DownloadFile(ctx context.Context, name, _ string, local string) (device.Transfer, error) {
+	return u.adb.DownloadFile(ctx, name, local)
+}
+
+// ListFiles lists the Download folder.
+func (u *UIA2) ListFiles(ctx context.Context, _ string) ([]device.DeviceFile, error) {
+	return u.adb.ListFiles(ctx)
+}
+
 // ClearData deletes a package's data.
 func (u *UIA2) ClearData(ctx context.Context, appID string) (device.ClearedData, error) {
 	return u.adb.ClearAppData(ctx, appID)

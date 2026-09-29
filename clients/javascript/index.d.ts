@@ -227,6 +227,20 @@ export class Device {
   install(path: string): Promise<string>
   uninstall(app: string): Promise<void>
   clearData(app: string): Promise<Data>
+
+  // files
+  /**
+   * Put a local file where the device keeps downloads: Android's shared
+   * Download folder (app is ignored), or an iOS simulator app's Documents,
+   * the app in front unless named. A real iPhone is not built yet.
+   */
+  upload(path: string, options?: { name?: string; app?: string }): Promise<Data>
+  /** With a path: saves the file there and resolves to the transfer. */
+  download(name: string, options: { path: string; app?: string }): Promise<Data>
+  /** Without a path: resolves to the file's bytes. */
+  download(name: string, options?: { app?: string }): Promise<Uint8Array>
+  /** What the downloads folder holds: name, bytes and modified for each file. */
+  downloads(options?: { app?: string }): Promise<Data[]>
   /** Runs several tools in order in one call; stops at the first failure. */
   batch(steps: BatchStep[]): Promise<BatchStepResult[]>
   /** The network: airplane, online, latency_ms, download_kbps, upload_kbps. Android only. */

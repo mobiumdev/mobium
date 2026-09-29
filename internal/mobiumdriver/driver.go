@@ -463,6 +463,16 @@ type DeviceClock interface {
 	Now(ctx context.Context) (device.ClockReading, error)
 }
 
+// FileTransfer is implemented by backends that can move a file between this
+// machine and the folder the device keeps downloads in: Android's shared
+// Download folder, an iOS app's Documents. appID names the app on iOS, where
+// every app has its own; Android has one folder, and ignores it.
+type FileTransfer interface {
+	UploadFile(ctx context.Context, local, name, appID string) (device.Transfer, error)
+	DownloadFile(ctx context.Context, name, appID, local string) (device.Transfer, error)
+	ListFiles(ctx context.Context, appID string) ([]device.DeviceFile, error)
+}
+
 // DataClearer is implemented by backends that can delete an app's data and
 // leave it installed — the state of a fresh install, without reinstalling.
 type DataClearer interface {

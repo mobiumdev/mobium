@@ -15,6 +15,7 @@ var readOnlyTools = map[string]bool{
 	"app_map": true, "app_find": true, "app_text": true, "app_source": true,
 	"app_screenshot": true, "app_wait_for": true, "app_contexts": true, "app_list_apps": true,
 	"app_battery": true, "app_time": true, "app_logs": true, "app_crashes": true,
+	"app_download": true,
 }
 
 // readUnless read when called without any of their listed arguments and act
@@ -45,6 +46,7 @@ var actingTools = map[string]bool{
 	"app_press_drag": true, "app_check": true, "app_press": true, "app_lock": true,
 	"app_session": true, "app_screen": true, "app_uninstall": true, "app_clear_data": true,
 	"app_batch": true, "app_shake": true, "app_background": true, "app_install": true,
+	"app_upload": true,
 }
 
 // ReadOnlyTool says whether every call to the tool only reads — MCP's

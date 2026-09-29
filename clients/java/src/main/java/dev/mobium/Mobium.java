@@ -614,6 +614,134 @@ public final class Mobium implements AutoCloseable {
         return data("app_clear_data", args("app", app));
     }
 
+    // -- files -------------------------------------------------------------
+
+    /**
+     * Puts a local file where the device keeps downloads, under its own name,
+     * so an app's file picker finds it: Android's shared Download folder, or
+     * on iOS the Documents folder of the app in front, which the Files app
+     * shows under On My iPhone. Android's picker reads MediaStore rather than
+     * the folder, so the file is indexed and read back there; {@code checked}
+     * says how it was confirmed. A real iPhone is not built yet. A relative
+     * path is this process's.
+     *
+     * @param path the file on this machine to upload
+     * @return the {@code name} it was given, {@code where} it went, its {@code bytes}, and how it was {@code checked}
+     */
+    public Map<String, Object> upload(String path) {
+        return data("app_upload", args("path", path));
+    }
+
+    /**
+     * Puts a local file where the device keeps downloads, under the name
+     * given. See {@link #upload(String)}.
+     *
+     * @param path the file on this machine to upload
+     * @param name the name to give it on the device — a name, not a path
+     * @return the {@code name} it was given, {@code where} it went, its {@code bytes}, and how it was {@code checked}
+     */
+    public Map<String, Object> upload(String path, String name) {
+        return data("app_upload", args("path", path, "name", name));
+    }
+
+    /**
+     * Puts a local file into a named app's Documents on iOS. Android has one
+     * Download folder for every app and ignores the app, so a test written
+     * for both platforms can name it on both. Pass null for the file's own
+     * name. See {@link #upload(String)}.
+     *
+     * @param path the file on this machine to upload
+     * @param name the name to give it on the device, or null for the file's own
+     * @param app  the bundle id whose Documents it goes to (iOS)
+     * @return the {@code app}, the {@code name} it was given, {@code where} it went, its {@code bytes}, and how it was {@code checked}
+     */
+    public Map<String, Object> upload(String path, String name, String app) {
+        Map<String, Object> args = args("path", path, "app", app);
+        if (name != null && !name.isBlank()) args.put("name", name);
+        return data("app_upload", args);
+    }
+
+    /**
+     * Brings a file back from where the device keeps downloads — Android's
+     * shared Download folder, or on iOS the Documents of the app in front —
+     * and saves it on this machine. The copy's size is read back against the
+     * device's. A real iPhone is not built yet. A relative path is this
+     * process's.
+     *
+     * @param name the file's name in the folder, as {@link #downloads()} lists it
+     * @param path where to save it on this machine
+     * @return the absolute {@code path} it was saved to, {@code where} it came from, its {@code bytes}, and how it was {@code checked}
+     */
+    public Map<String, Object> download(String name, String path) {
+        return data("app_download", args("name", name, "path", path));
+    }
+
+    /**
+     * Brings a file back from a named app's Documents on iOS and saves it on
+     * this machine. Android ignores the app. See {@link #download(String, String)}.
+     *
+     * @param name the file's name in the folder
+     * @param path where to save it on this machine
+     * @param app  the bundle id whose Documents to read (iOS)
+     * @return the absolute {@code path} it was saved to, {@code where} it came from, its {@code bytes}, and how it was {@code checked}
+     */
+    public Map<String, Object> download(String name, String path, String app) {
+        return data("app_download", args("name", name, "path", path, "app", app));
+    }
+
+    /**
+     * Brings a file back from where the device keeps downloads and returns
+     * its contents, which arrive in the answer as base64. See
+     * {@link #download(String, String)}.
+     *
+     * @param name the file's name in the folder
+     * @return the file's bytes
+     */
+    public byte[] download(String name) {
+        return decoded(data("app_download", args("name", name)));
+    }
+
+    /**
+     * What the device's download folder holds: Android's shared Download
+     * folder, or on iOS the Documents of the app in front. Each map has
+     * {@code name}, {@code bytes} and {@code modified}. A real iPhone is not
+     * built yet.
+     *
+     * @return each file in the folder
+     */
+    public List<Map<String, Object>> downloads() { return files(args()); }
+
+    /**
+     * What a named app's Documents hold on iOS. Android has one Download
+     * folder for every app and ignores the app. See {@link #downloads()}.
+     *
+     * @param app the bundle id whose Documents to list (iOS)
+     * @return each file in the folder
+     */
+    public List<Map<String, Object>> downloads(String app) { return files(args("app", app)); }
+
+    private List<Map<String, Object>> files(Map<String, Object> args) {
+        List<Map<String, Object>> out = new ArrayList<>();
+        for (Object o : Json.asArray(data("app_download", args).get("files"))) {
+            out.add(Json.asObject(o));
+        }
+        return out;
+    }
+
+    private static byte[] decoded(Map<String, Object> transfer) {
+        if (!transfer.containsKey("data")) {
+            // The daemon omits an empty field, so an empty file has no data.
+            Object bytes = transfer.get("bytes");
+            if (bytes instanceof Number && ((Number) bytes).longValue() == 0) return new byte[0];
+            throw new MobiumException("mobium returned no file");
+        }
+        try {
+            return Base64.getDecoder().decode(Json.str(transfer, "data"));
+        } catch (IllegalArgumentException e) {
+            throw new MobiumException("mobium returned a file that is not base64", e);
+        }
+    }
+
     /**
      * One step for {@link #batch(List)}: a tool and the arguments it takes on
      * its own.

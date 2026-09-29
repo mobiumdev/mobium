@@ -79,6 +79,11 @@ command mentions them.
 | `app_dialogs` | `driver` | string | _global_ --driver |
 | `app_dialogs` | `press` | string | dialogs |
 | `app_dialogs` | `when` | string | dialogs |
+| `app_download` | `app` | string | download |
+| `app_download` | `device` | string | _global_ --device |
+| `app_download` | `driver` | string | _global_ --driver |
+| `app_download` | `name` | string | download |
+| `app_download` | `path` | string | download |
 | `app_drag` | `device` | string | _global_ --device |
 | `app_drag` | `driver` | string | _global_ --driver |
 | `app_drag` | `duration_ms` | integer | drag |
@@ -274,6 +279,12 @@ command mentions them.
 | `app_uninstall` | `app` | string | uninstall |
 | `app_uninstall` | `device` | string | _global_ --device |
 | `app_uninstall` | `driver` | string | _global_ --driver |
+| `app_upload` | `app` | string | upload |
+| `app_upload` | `content` | string | — |
+| `app_upload` | `device` | string | _global_ --device |
+| `app_upload` | `driver` | string | _global_ --driver |
+| `app_upload` | `name` | string | upload |
+| `app_upload` | `path` | string | upload |
 | `app_wait_for` | `condition` | string | wait |
 | `app_wait_for` | `count` | integer | wait |
 | `app_wait_for` | `device` | string | _global_ --device |
@@ -318,6 +329,7 @@ arguments and the two global flags.
 | `dialogs` | app_dialogs | --clear --press --when | clear, press, when |
 | `doctor` | app_doctor | — | — |
 | `double-tap` | app_tap, app_tap | — | double, target, x, y |
+| `download` | app_download | --app --output | app, name, path |
 | `drag` | app_drag | --duration-ms --hold-ms | duration_ms, from, hold_ms, to, x1, x2, y1, y2 |
 | `eval` | app_eval | — | expression |
 | `fill` | app_fill | — | target, text |
@@ -373,5 +385,6 @@ arguments and the two global flags.
 | `uncheck` | app_check | — | checked, target |
 | `uninstall` | app_uninstall | — | app |
 | `up` | — | — | — |
+| `upload` | app_upload | --app --name | app, name, path |
 | `wait` | app_wait_for | --count --exact --for --not --text --timeout | condition, count, exact, not, target, text, timeout_ms |
 | `zoom` | app_zoom | --from --target --to | direction, from, target, to |

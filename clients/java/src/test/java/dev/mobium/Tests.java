@@ -59,6 +59,7 @@ public final class Tests {
         closeIsIdempotentAndEndsAWaitingCall();
         anAnswerWithNoIdFailsTheCallInFlight();
         startOpensTheSessionAndQuitEndsIt();
+        filesSendTheirArgumentsAndDecodeTheAnswer();
 
         System.out.printf("%n%d checks, %d failed%n", checks, failures);
         if (failures > 0) System.exit(1);
@@ -475,6 +476,38 @@ public final class Tests {
         }
         yes("closing after an explicit quit does nothing", true);
 
+    }
+
+    static void filesSendTheirArgumentsAndDecodeTheAnswer() {
+        try (Mobium d = FakeProcess.mobium("ok")) {
+            eq("upload sends the path alone", Map.of("path", "/tmp/a.pdf"),
+                    d.upload("/tmp/a.pdf").get("echo"));
+            eq("upload sends the name it is given", Map.of("path", "/tmp/a.pdf", "name", "b.pdf"),
+                    d.upload("/tmp/a.pdf", "b.pdf").get("echo"));
+            eq("upload with an app and no name leaves the name out", Map.of("path", "/tmp/a.pdf", "app", "com.example"),
+                    d.upload("/tmp/a.pdf", null, "com.example").get("echo"));
+            eq("upload with all three sends all three",
+                    Map.of("path", "/tmp/a.pdf", "app", "com.example", "name", "b.pdf"),
+                    d.upload("/tmp/a.pdf", "b.pdf", "com.example").get("echo"));
+            yes("upload refuses a null path",
+                    throwsA(InvalidArgumentException.class, () -> d.upload(null)) != null);
+
+            eq("download to a path sends the name and path", Map.of("name", "a.pdf", "path", "/tmp/a.pdf"),
+                    d.download("a.pdf", "/tmp/a.pdf").get("echo"));
+            eq("download from an app sends it", Map.of("name", "a.pdf", "path", "/tmp/a.pdf", "app", "com.example"),
+                    d.download("a.pdf", "/tmp/a.pdf", "com.example").get("echo"));
+            eq("download with no path decodes the file", "file a.pdf",
+                    new String(d.download("a.pdf"), java.nio.charset.StandardCharsets.UTF_8));
+            eq("an empty file, which comes with no data, is zero bytes", 0, d.download("empty").length);
+            yes("download refuses a null name",
+                    throwsA(InvalidArgumentException.class, () -> d.download((String) null)) != null);
+
+            List<Map<String, Object>> files = d.downloads();
+            eq("downloads lists the folder", 1, files.size());
+            eq("each file by name", "report.pdf", Json.str(files.get(0), "name"));
+            eq("with its size", 5L, ((Number) files.get(0).get("bytes")).longValue());
+            eq("downloads for an app reads the same answer", 1, d.downloads("com.example").size());
+        }
     }
 
     private static void closeDetaches() throws java.io.IOException {

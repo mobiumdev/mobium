@@ -14,7 +14,10 @@ MOBIUM_FAKE picks the behavior:
           with no id -- and every other call normally
 MOBIUM_FAKE_PIDFILE, when set, receives this process's id.
 MOBIUM_FAKE_NOTIFYLOG, when set, has each notification's method appended.
+app_upload and app_download answer as the daemon does, and echo their
+arguments in the answer's "echo" key; app_download's file is b"fake\x00file".
 """
+import base64
 import json
 import os
 import sys
@@ -71,6 +74,26 @@ for line in sys.stdin:
         else:
             view = {"action": "status", "sessions": []}
         send({"jsonrpc": "2.0", "id": i, "result": {"content": [{"type": "text", "text": action or "status"}],
+                                                    "structuredContent": view}})
+        continue
+    if name in ("app_upload", "app_download"):
+        # Answers as the daemon does: a list with no name, the file inline
+        # with no path, a transfer that names the path otherwise.
+        body = b"fake\x00file"
+        view = {"device": "fake-device", "echo": args}
+        if args.get("app"):
+            view["app"] = args["app"]
+        if name == "app_download" and not args.get("name"):
+            view.update(folder="the Download folder",
+                        files=[{"name": "report.pdf", "bytes": len(body), "modified": "2026-09-29T10:00:00Z"}])
+        else:
+            view.update(name=args.get("name") or os.path.basename(args.get("path", "")),
+                        where="/sdcard/Download", bytes=len(body), checked="size")
+            if args.get("path"):
+                view["path"] = args["path"]
+            elif name == "app_download":
+                view["data"] = base64.b64encode(body).decode()
+        send({"jsonrpc": "2.0", "id": i, "result": {"content": [{"type": "text", "text": name}],
                                                     "structuredContent": view}})
         continue
     if mode == "noid" and name == "app_map":
