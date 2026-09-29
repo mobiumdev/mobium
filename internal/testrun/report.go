@@ -23,10 +23,23 @@ func Line(r Result) string {
 	if r.Status == Flaky {
 		s += fmt.Sprintf(" — passed on attempt %d", r.Attempts)
 	}
-	if r.Status == Failed && r.Failure != nil {
-		s += "\n        " + failureLine(r.Failure)
+	if r.Status == Failed {
+		for _, f := range r.all() {
+			s += "\n        " + failureLine(f)
+		}
 	}
 	return s
+}
+
+// all is every failure of the attempt reported.
+func (r Result) all() []*Failure {
+	if len(r.Failures) > 0 {
+		return r.Failures
+	}
+	if r.Failure != nil {
+		return []*Failure{r.Failure}
+	}
+	return nil
 }
 
 func failureLine(f *Failure) string {
@@ -40,6 +53,9 @@ func failureLine(f *Failure) string {
 	s := fmt.Sprintf("%s: [%s] %s", where, f.Code, f.Message)
 	if f.Description != "" {
 		s = f.Description + " — " + s
+	}
+	if f.Soft {
+		s = "soft, carried on: " + s
 	}
 	return s
 }
@@ -121,7 +137,11 @@ func WriteJUnit(dir string, s *Summary) (string, error) {
 			c.Properties = &properties{[]property{{Name: "flaky", Value: fmt.Sprintf("passed on attempt %d", r.Attempts)}}}
 		}
 		if r.Status == Failed && r.Failure != nil {
-			c.Failure = &failure{Message: r.Failure.Message, Type: r.Failure.Code, Text: failureLine(r.Failure)}
+			var lines []string
+			for _, f := range r.all() {
+				lines = append(lines, failureLine(f))
+			}
+			c.Failure = &failure{Message: r.Failure.Message, Type: r.Failure.Code, Text: strings.Join(lines, "\n")}
 			st.Failures++
 		}
 		st.Tests++
@@ -179,17 +199,20 @@ img{max-width:320px;width:100%;border:1px solid var(--line);border-radius:8px}
 		}
 		fmt.Fprintf(&b, `<details%s><summary><strong class="%s">%s</strong><span>%s</span><span class="tag">%s</span><span class="muted">%s</span></summary>`,
 			open, r.Status, r.Status, html.EscapeString(r.Title), html.EscapeString(r.Project), r.Duration.Round(100*time.Millisecond))
-		if r.Failure != nil {
+		for i, f := range r.all() {
 			label := "Failed"
 			if r.Status == Flaky {
 				label = fmt.Sprintf("Failed first, passed on attempt %d", r.Attempts)
 			}
-			fmt.Fprintf(&b, "<p>%s</p><pre>%s</pre>", label, html.EscapeString(failureLine(r.Failure)))
-			if r.Failure.Screenshot != "" {
-				fmt.Fprintf(&b, `<p><img src="%s" alt="The screen when it failed"></p>`, html.EscapeString(r.Failure.Screenshot))
+			if len(r.Failures) > 1 {
+				label += fmt.Sprintf(" — %d of %d", i+1, len(r.Failures))
 			}
-			if r.Failure.Map != "" {
-				fmt.Fprintf(&b, "<p class=\"muted\">The map when it failed</p><pre>%s</pre>", html.EscapeString(r.Failure.Map))
+			fmt.Fprintf(&b, "<p>%s</p><pre>%s</pre>", label, html.EscapeString(failureLine(f)))
+			if f.Screenshot != "" {
+				fmt.Fprintf(&b, `<p><img src="%s" alt="The screen when it failed"></p>`, html.EscapeString(f.Screenshot))
+			}
+			if f.Map != "" {
+				fmt.Fprintf(&b, "<p class=\"muted\">The map when it failed</p><pre>%s</pre>", html.EscapeString(f.Map))
 			}
 		}
 		b.WriteString("</details>")

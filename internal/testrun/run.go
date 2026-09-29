@@ -61,8 +61,12 @@ type Result struct {
 	Attempts int           `json:"attempts"`
 	Duration time.Duration `json:"duration_ns"`
 	// Failure is the last attempt's, for a failed test, and the first
-	// attempt's for a flaky one.
+	// attempt's for a flaky one: its first failure, when soft assertions
+	// failed before it.
 	Failure *Failure `json:"failure,omitempty"`
+	// Failures is every failure of that attempt, in order, when there was
+	// more than one — soft assertions, and whatever ended the test.
+	Failures []*Failure `json:"failures,omitempty"`
 }
 
 // ID names a test on a project, for --last-failed.
@@ -79,6 +83,8 @@ type Failure struct {
 	Message     string `json:"message"`
 	Screenshot  string `json:"screenshot,omitempty"`
 	Map         string `json:"map,omitempty"`
+	// Soft says the test carried on after this one.
+	Soft bool `json:"soft,omitempty"`
 }
 
 // Summary is a whole run.
@@ -315,28 +321,38 @@ func runTest(j job, t Test, opts Options, call Caller) Result {
 	r := Result{File: j.file.Path, Test: t.Name, Title: j.file.Title(t), Project: j.project.Name,
 		Device: j.project.Device}
 	start := time.Now()
-	var first *Failure
+	var first []*Failure
 	for attempt := 1; attempt <= opts.Retries+1; attempt++ {
 		r.Attempts = attempt
-		f := runOnce(j, t, opts, call, attempt)
-		if f == nil {
+		fs := runOnce(j, t, opts, call, attempt)
+		if len(fs) == 0 {
 			r.Status = Passed
 			if first != nil {
-				r.Status, r.Failure = Flaky, first
+				r.Status = Flaky
+				r.setFailures(first)
 			}
 			break
 		}
 		if first == nil {
-			first = f
+			first = fs
 		}
-		r.Status, r.Failure = Failed, f
+		r.Status = Failed
+		r.setFailures(fs)
 	}
 	r.Duration = time.Since(start)
 	return r
 }
 
-// runOnce runs a test from a fresh app, and says how it failed, if it did.
-func runOnce(j job, t Test, opts Options, call Caller, attempt int) *Failure {
+func (r *Result) setFailures(fs []*Failure) {
+	r.Failure, r.Failures = fs[0], nil
+	if len(fs) > 1 {
+		r.Failures = fs
+	}
+}
+
+// runOnce runs a test from a fresh app, and says how it failed, if it did:
+// every soft assertion that failed, and what ended it.
+func runOnce(j job, t Test, opts Options, call Caller, attempt int) []*Failure {
 	deadline := time.Now().Add(opts.Timeout)
 	dev := func(args map[string]interface{}) map[string]interface{} {
 		out := projectArgs(j.project)
@@ -346,6 +362,7 @@ func runOnce(j job, t Test, opts Options, call Caller, attempt int) *Failure {
 		return out
 	}
 
+	n := 0 // the failure's number in this attempt, for its evidence's name
 	fail := func(step int, s *Step, err error) *Failure {
 		f := &Failure{Step: step, Code: string(mobiumerr.CodeOf(err)), Message: err.Error()}
 		if s != nil {
@@ -355,31 +372,40 @@ func runOnce(j job, t Test, opts Options, call Caller, attempt int) *Failure {
 			}
 		}
 		if opts.Evidence {
-			evidence(f, j, t, attempt, opts.OutputDir, call, dev)
+			evidence(f, j, t, attempt, n, opts.OutputDir, call, dev)
 		}
+		n++
 		return f
 	}
 
 	if app := j.file.App; app != "" {
 		_, _ = call("app_terminate", dev(map[string]interface{}{"app": app}))
 		if _, err := call("app_launch", dev(map[string]interface{}{"app": app})); err != nil {
-			return fail(0, nil, err)
+			return []*Failure{fail(0, nil, err)}
 		}
 	}
-	if f := runSteps(j.file.BeforeEach, 0, deadline, call, dev, fail); f != nil {
+	var soft []*Failure
+	if f := runSteps(j.file.BeforeEach, 0, deadline, call, dev, fail, &soft); f != nil {
 		f.Message = "in beforeEach: " + f.Message
-		return f
+		return append(soft, f)
 	}
-	return runSteps(t.Steps, 1, deadline, call, dev, fail)
+	if f := runSteps(t.Steps, 1, deadline, call, dev, fail, &soft); f != nil {
+		return append(soft, f)
+	}
+	return soft
 }
 
 // runSteps runs steps in order: consecutive tool calls as one app_batch,
 // which stops at the first failure and says which, and each expect by
 // polling its call. base is the number of the first step, 0 for beforeEach
 // (reported as step 0).
+//
+// A soft step runs on its own, outside any batch, and its failure is added
+// to soft rather than ending the steps — so a test reports every soft check
+// that failed, and still fails.
 func runSteps(steps []Step, base int, deadline time.Time, call Caller,
 	dev func(map[string]interface{}) map[string]interface{},
-	fail func(int, *Step, error) *Failure) *Failure {
+	fail func(int, *Step, error) *Failure, soft *[]*Failure) *Failure {
 	number := func(i int) int {
 		if base == 0 {
 			return 0
@@ -391,16 +417,27 @@ func runSteps(steps []Step, base int, deadline time.Time, call Caller,
 			return fail(number(i), &steps[i], mobiumerr.New(mobiumerr.Timeout, "the test ran out of its time "+
 				"before step %d", i+1))
 		}
-		if steps[i].Expect != nil {
-			if err := expect(*steps[i].Expect, call, dev, deadline); err != nil {
-				return fail(number(i), &steps[i], err)
+		if steps[i].Expect != nil || steps[i].Soft {
+			var err error
+			if steps[i].Expect != nil {
+				err = expect(*steps[i].Expect, call, dev, deadline)
+			} else {
+				_, err = call(steps[i].Name, dev(steps[i].argumentsOrEmpty()))
+			}
+			if err != nil {
+				f := fail(number(i), &steps[i], err)
+				if !steps[i].Soft {
+					return f
+				}
+				f.Soft = true
+				*soft = append(*soft, f)
 			}
 			i++
 			continue
 		}
 		j := i
 		var batch []interface{}
-		for j < len(steps) && steps[j].Expect == nil {
+		for j < len(steps) && steps[j].Expect == nil && !steps[j].Soft {
 			args := steps[j].Arguments
 			if args == nil {
 				args = map[string]interface{}{}
@@ -497,13 +534,17 @@ func field(v interface{}, path string) (interface{}, bool) {
 
 // evidence keeps what the screen showed when a test failed: a screenshot,
 // and the map, which is redacted as every map is.
-func evidence(f *Failure, j job, t Test, attempt int, out string, call Caller,
+func evidence(f *Failure, j job, t Test, attempt, n int, out string, call Caller,
 	dev func(map[string]interface{}) map[string]interface{}) {
 	dir := filepath.Join(out, "artifacts")
 	if err := os.MkdirAll(dir, 0o755); err != nil {
 		return
 	}
 	stem := slug(fmt.Sprintf("%s-%s-%s-%d", j.project.Name, filepath.Base(j.file.Path), t.Name, attempt))
+	if n > 0 {
+		// A second failure in one attempt — after a soft one — keeps its own.
+		stem += fmt.Sprintf("-%d", n+1)
+	}
 	shot := filepath.Join(dir, stem+".png")
 	if abs, err := filepath.Abs(shot); err == nil {
 		if _, err := call("app_screenshot", dev(map[string]interface{}{"path": abs})); err == nil {
