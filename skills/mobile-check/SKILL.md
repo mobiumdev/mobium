@@ -1,5 +1,5 @@
 ---
-name: mobile
+name: mobile-check
 description: Automate native mobile apps with the Mobium CLI, on Android emulators and phones and iOS simulators and iPhones. Use to launch and drive an app, fill forms, read the screen, answer system dialogs, reach into WebViews, capture screenshots and recordings, or confirm that a mobile change actually works.
 ---
 
