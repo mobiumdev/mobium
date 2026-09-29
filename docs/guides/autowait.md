@@ -28,7 +28,7 @@ installed (`mobiumdev/mobium-app`).
 
 ## The checks
 
-The same five checks Playwright makes on a web page, named the same way:
+Five checks, each with a name that a refusal carries:
 
 | Check | What it asks | If it fails |
 | --- | --- | --- |
@@ -161,16 +161,16 @@ error: timed out after 2.016s waiting for testid=planFree to stop being checked 
 
 Every condition:
 
-| `--for` | Waits until | Playwright |
-| --- | --- | --- |
-| `visible` (the default), `hidden` | it is on screen, or gone | `toBeVisible`, `toBeHidden` |
-| `enabled`, `disabled` | it takes input, or does not | `toBeEnabled`, `toBeDisabled` |
-| `checked`, `unchecked` | a checkbox, radio or switch is in that state; anything else is refused at once | `toBeChecked` |
-| `focused` | a field has keyboard focus | `toBeFocused` |
-| `text --text T` | its text contains T; with `--exact`, is T | `toContainText`, `toHaveText` |
-| `value --text T` | a field holds exactly T; `--text ""` is empty. A password field is refused — its value is never read | `toHaveValue` |
-| `count` (or just `--count N`) | the locator matches N elements on screen | `toHaveCount` |
-| any of them `--not` | the opposite | `.not` |
+| `--for` | Waits until |
+| --- | --- |
+| `visible` (the default), `hidden` | it is on screen, or gone |
+| `enabled`, `disabled` | it takes input, or does not |
+| `checked`, `unchecked` | a checkbox, radio or switch is in that state; anything else is refused at once |
+| `focused` | a field has keyboard focus |
+| `text --text T` | its text contains T; with `--exact`, is T |
+| `value --text T` | a field holds exactly T; `--text ""` is empty. A password field is refused — its value is never read |
+| `count` (or just `--count N`) | the locator matches N elements on screen |
+| any of them `--not` | the opposite |
 
 The default timeout is 10 seconds, `--timeout` changes it, up to two minutes.
 A successful wait remaps the screen, so the element it found already has a

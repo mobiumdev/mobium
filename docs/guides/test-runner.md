@@ -1,8 +1,8 @@
 # Quick start: `mobium test`
 
 From an empty directory to a test suite that runs on a device, fails with
-evidence, retries, and leaves a report CI can publish — the same shape as
-Playwright's runner, for native apps. The design and its reasons are
+evidence, retries, and leaves a report CI can publish. The design and its
+reasons are
 [decisions/0006](../decisions/0006-a-test-runner.md).
 
 Every command and every line of output below is what `mobium test` printed on
@@ -35,7 +35,7 @@ login-tests/
 ```
 
 `mobium.config.json` says where the tests are and which devices they run on.
-A **project** is a device, as a Playwright project is a browser:
+A **project** is a device to run on:
 
 ```json
 {
@@ -243,17 +243,21 @@ Linux runner, [SETUP.md](../SETUP.md#on-linux) has the emulator's steps.
 
 ## The commands
 
-| Playwright | Mobium |
+| Command | What it does |
 | --- | --- |
-| `npx playwright test` | `mobium test` |
-| `test <file>` | `mobium test tests/login.test.json` |
-| `test -g "login"` | `mobium test -g login` — a regular expression on "file › name" |
-| `test --last-failed` | `mobium test --last-failed` |
-| `test --project=chromium` | `mobium test --project android` |
-| `test --workers=4` | `mobium test --workers 4` — at most one per device |
-| `test --retries=2` | `mobium test --retries 2` |
-| `test --timeout=30000` | `mobium test --timeout 30s` — per test; `timeout` in the config is milliseconds |
-| `test --reporter=html` | `mobium test --reporter list,json,junit,html` |
-| `show-report` | `mobium show-report` |
-| `test --list` | `mobium test --list` |
-| `--headed`, `--debug`, `--ui`, `show-trace`, `codegen` | not yet — [decisions/0006](../decisions/0006-a-test-runner.md#the-commands-against-playwrights) says what each will be |
+| `mobium test` | runs every `*.test.json` under the config's `testDir`, on every project |
+| `mobium test tests/login.test.json` | runs one file, or every file under a directory |
+| `mobium test -g login` | runs the tests whose title — "file › name" — matches a regular expression |
+| `mobium test --last-failed` | runs only the tests that failed last time |
+| `mobium test --project android` | runs on the named projects only |
+| `mobium test --workers 4` | how many devices run at once — at most one per device |
+| `mobium test --retries 2` | runs a failed test again, up to twice; a pass after a failure is flaky |
+| `mobium test --timeout 30s` | the time for each test; `timeout` in the config is milliseconds |
+| `mobium test --reporter list,json,junit,html` | which reports to write, comma-separated |
+| `mobium test --list` | lists the tests a run would cover, and runs nothing |
+| `mobium test --no-screenshots` | keeps no screenshot of a failure |
+| `mobium show-report` | opens the last HTML report |
+
+Not yet: a visible device, stepping through a test, an interactive mode, a
+trace for each test, and recording a test from what you do —
+[decisions/0006](../decisions/0006-a-test-runner.md) says what each will be.
