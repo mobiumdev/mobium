@@ -849,6 +849,18 @@ func writeLastRun(dir string, s *Summary) {
 	_ = os.WriteFile(filepath.Join(dir, lastRunName), b, 0o644)
 }
 
+// FailedLast reports whether a test failed in the last run whose reports
+// went to dir, on any of the named projects: what --last-failed would run.
+func FailedLast(dir string, projects []string, file, test string) bool {
+	only := readLastFailed(dir)
+	for _, p := range projects {
+		if only[Result{Project: p, File: file, Test: test}.ID()] {
+			return true
+		}
+	}
+	return false
+}
+
 func readLastFailed(dir string) map[string]bool {
 	out := map[string]bool{}
 	raw, err := os.ReadFile(filepath.Join(dir, lastRunName))

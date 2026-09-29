@@ -653,3 +653,29 @@ func TestAPhoneIsReportedByItsModel(t *testing.T) {
 		t.Errorf("devices reported as %v", got)
 	}
 }
+
+// FailedLast is --last-failed's choice, for --list: a test that failed on a
+// project the run covers, found however its file was named.
+func TestFailedLastIsWhatLastFailedWouldRun(t *testing.T) {
+	dir, out := t.TempDir(), t.TempDir()
+	p := write(t, dir, "a.test.json", `{"tests": []}`)
+	writeLastRun(out, &Summary{Results: []Result{
+		{Project: "pixel", File: p, Test: "broke", Status: Failed},
+		{Project: "pixel", File: p, Test: "held", Status: Passed},
+	}})
+	t.Chdir(dir)
+	for _, c := range []struct {
+		projects []string
+		file     string
+		test     string
+		want     bool
+	}{
+		{[]string{"pixel"}, "a.test.json", "broke", true},
+		{[]string{"pixel"}, p, "held", false},
+		{[]string{"iphone"}, p, "broke", false},
+	} {
+		if got := FailedLast(out, c.projects, c.file, c.test); got != c.want {
+			t.Errorf("FailedLast(%v, %s, %s) = %v", c.projects, c.file, c.test, got)
+		}
+	}
+}

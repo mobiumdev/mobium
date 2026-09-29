@@ -3870,7 +3870,7 @@ name, and the listing has only the UDID, so the first version, which matched
 the config's value, missed the phone it was run on. Neither id is in any
 report of the run above.
 
-### 172. An absolute testDir, and a --last-failed that missed
+### 172. An absolute testDir, and a --last-failed that missed and a --list that ignored it
 
 **Found by:** pointing a config outside the repository at the suite in it,
 to run that suite on a phone.
@@ -3881,7 +3881,10 @@ taken as written when absolute. Then `--last-failed` ran nothing after a run
 that had failed two tests: the tests were remembered by their file path as
 it was given, relative, and found again by discovery, absolute. A test is now
 remembered by its file's absolute path, which is the same however it was
-named and from whichever folder the run starts.
+named and from whichever folder the run starts. On the Pixel, `--list` with
+`--last-failed` named all seven tests of the suite when four others had
+failed: it applied `-g` and not `--last-failed`, so what it said would run
+was not what would run. It applies both now.
 
 ## Findings that were not defects
 

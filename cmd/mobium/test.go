@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"runtime"
+	"slices"
 	"strings"
 	"time"
 
@@ -120,7 +121,7 @@ func newTestCmd() *cobra.Command {
 			}
 
 			if list {
-				return listTests(files, opts)
+				return listTests(cfg, files, opts)
 			}
 			if want["list"] {
 				opts.Progress = func(r testrun.Result) { fmt.Println(testrun.Line(r)) }
@@ -235,7 +236,15 @@ func debugger(in io.Reader, out io.Writer) func(testrun.DebugPoint) testrun.Debu
 }
 
 // listTests prints what a run would cover, without a device.
-func listTests(files []string, opts testrun.Options) error {
+func listTests(cfg *testrun.Config, files []string, opts testrun.Options) error {
+	// The projects the run would cover, for --last-failed, which remembers a
+	// failure per project.
+	var projects []string
+	for _, p := range cfg.Projects {
+		if len(opts.Projects) == 0 || slices.Contains(opts.Projects, p.Name) {
+			projects = append(projects, p.Name)
+		}
+	}
 	n := 0
 	for _, p := range files {
 		f, err := testrun.LoadFile(p)
@@ -244,6 +253,11 @@ func listTests(files []string, opts testrun.Options) error {
 		}
 		for _, t := range f.Tests {
 			if opts.Grep != nil && !opts.Grep.MatchString(f.Title(t)) {
+				continue
+			}
+			// --list once ignored --last-failed, and so named tests the run
+			// would not have run.
+			if opts.LastFailed && !testrun.FailedLast(opts.OutputDir, projects, p, t.Name) {
 				continue
 			}
 			fmt.Println("  " + f.Title(t))
