@@ -1,0 +1,304 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>mobium inspect</title>
+<style>
+:root{--bg:#f6f7fb;--panel:#fff;--fg:#141826;--muted:#5d6475;--line:#e3e6ef;--accent:#3552fd;--hit:#ff8a00;--bad:#c62828;--ok:#1a7f37;--code:#f1f3f9}
+@media (prefers-color-scheme:dark){:root{--bg:#10131c;--panel:#171b27;--fg:#e6e8f0;--muted:#a8aec0;--line:#2a3042;--accent:#7d8cff;--hit:#ffb14d;--bad:#ff7b7b;--ok:#4ac26b;--code:#1f2433}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:14px/1.45 -apple-system,system-ui,sans-serif}
+header{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:10px 16px;border-bottom:1px solid var(--line);background:var(--panel);position:sticky;top:0;z-index:5}
+header h1{font-size:16px;margin:0 12px 0 0}
+header .where{color:var(--muted);margin-right:auto;font-family:ui-monospace,Menlo,monospace;font-size:12px}
+button{font:inherit;border:1px solid var(--line);background:var(--panel);color:var(--fg);border-radius:7px;padding:5px 10px;cursor:pointer}
+button:hover{border-color:var(--accent)}
+button.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+button:disabled{opacity:.5;cursor:default}
+input{font:inherit;border:1px solid var(--line);background:var(--panel);color:var(--fg);border-radius:7px;padding:5px 8px;min-width:0}
+main{display:grid;grid-template-columns:minmax(260px,420px) minmax(300px,1fr);gap:16px;padding:16px;align-items:start}
+@media (max-width:760px){main{grid-template-columns:1fr}}
+#screenWrap{position:relative;background:var(--panel);border:1px solid var(--line);border-radius:14px;overflow:hidden;cursor:crosshair}
+#screen{display:block;width:100%;height:auto}
+.box{position:absolute;border:1.5px solid rgba(53,82,253,.55);border-radius:3px;pointer-events:none}
+.box.hover{border-color:var(--accent);background:rgba(53,82,253,.10)}
+.box.sel{border:2.5px solid var(--accent);background:rgba(53,82,253,.16)}
+.box.hit{border:2.5px solid var(--hit);background:rgba(255,138,0,.16)}
+#pin{position:absolute;width:14px;height:14px;margin:-7px 0 0 -7px;border-radius:50%;border:2px solid var(--hit);display:none;pointer-events:none}
+section{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:12px 14px;margin-bottom:14px}
+section h2{font-size:13px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);margin:0 0 8px}
+.row{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin:6px 0}
+.kv{display:grid;grid-template-columns:90px 1fr;gap:3px 10px;font-size:13px}
+.kv div:nth-child(odd){color:var(--muted)}
+code,.mono{font-family:ui-monospace,Menlo,monospace;font-size:12.5px}
+.locator{background:var(--code);padding:6px 8px;border-radius:7px;display:flex;gap:8px;align-items:center;justify-content:space-between;word-break:break-all}
+#list{max-height:260px;overflow:auto;font-size:13px}
+#list div{padding:3px 6px;border-radius:6px;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#list div:hover,#list div.sel{background:var(--code)}
+#list .ref{color:var(--muted);font-family:ui-monospace,Menlo,monospace;font-size:12px;margin-right:6px}
+#log{font-family:ui-monospace,Menlo,monospace;font-size:12px;white-space:pre-wrap;max-height:160px;overflow:auto;margin:0}
+.bad{color:var(--bad)}.ok{color:var(--ok)}.muted{color:var(--muted)}
+#steps{font-family:ui-monospace,Menlo,monospace;font-size:12px;white-space:pre-wrap;max-height:200px;overflow:auto;margin:6px 0 0;background:var(--code);padding:6px 8px;border-radius:7px}
+</style>
+</head>
+<body>
+<header>
+  <h1>mobium inspect</h1>
+  <span class="where" id="where">reading the device…</span>
+  <button id="refresh" title="Read the screen again (r)">Refresh</button>
+  <button data-press="back">Back</button>
+  <button data-press="home">Home</button>
+  <button data-swipe="up" title="Swipe up: look further down">Swipe up</button>
+  <button data-swipe="down" title="Swipe down: look back up">Swipe down</button>
+</header>
+<main>
+  <div>
+    <div id="screenWrap"><img id="screen" alt="The device's screen"><div id="pin"></div></div>
+    <p class="muted" style="font-size:12px;margin:8px 2px">Click an element to see its locator and act on it; click anywhere else to tap that point. Each outline is an element <code>mobium map</code> found.</p>
+  </div>
+  <div>
+    <section>
+      <h2>Selected</h2>
+      <div id="none" class="muted">Nothing selected.</div>
+      <div id="detail" hidden>
+        <div class="locator"><code id="target"></code><button id="copy" title="Copy the locator">Copy</button></div>
+        <div class="kv" style="margin-top:8px">
+          <div>Label</div><div id="dLabel"></div>
+          <div>Role</div><div id="dRole"></div>
+          <div>Ref</div><div id="dRef" class="mono"></div>
+          <div>Bounds</div><div id="dBounds" class="mono"></div>
+          <div>Checked</div><div id="dChecked"></div>
+        </div>
+        <div class="row">
+          <button class="primary" data-act="tap">Tap</button>
+          <button data-act="double">Double tap</button>
+          <button data-act="long">Long press</button>
+          <button data-act="check" id="bCheck">Check</button>
+          <button data-act="uncheck" id="bUncheck">Uncheck</button>
+          <button data-act="wait">Wait for it</button>
+          <button data-act="scroll">Scroll to it</button>
+        </div>
+        <div class="row">
+          <input id="text" placeholder="Text to enter" style="flex:1">
+          <button data-act="type">Type</button>
+          <button data-act="fill">Fill</button>
+        </div>
+      </div>
+      <div id="point" hidden>
+        <div class="row"><span>Point <code id="pxy"></code>, on no element map found.</span>
+        <button class="primary" id="tapPoint">Tap here</button></div>
+      </div>
+    </section>
+    <section>
+      <h2>Try a locator</h2>
+      <div class="row">
+        <input id="loc" placeholder="text=Sign in · label=Email · testid=submit · role=button" style="flex:1">
+        <button id="find">Find</button>
+      </div>
+      <div id="found" class="muted"></div>
+    </section>
+    <section>
+      <h2>Elements</h2>
+      <div id="list"></div>
+    </section>
+    <section>
+      <h2>Recorded</h2>
+      <p class="muted" style="font-size:12px;margin:0 0 6px">A test starts from a freshly launched app, so a recording should too.</p>
+      <div class="row"><button class="primary" id="fresh">Start from a fresh app</button><span id="stepCount">0 steps</span>
+        <a id="download" href="test" download="recorded.test.json"><button>Download test</button></a>
+        <button id="clear">Clear</button></div>
+      <pre id="steps" hidden></pre>
+    </section>
+    <section>
+      <h2>Log</h2>
+      <pre id="log"></pre>
+    </section>
+  </div>
+</main>
+<script>
+(() => {
+  const $ = (id) => document.getElementById(id);
+  let state = null, sel = null, hits = [], point = null;
+
+  function log(msg, cls) {
+    const line = document.createElement('div');
+    if (cls) line.className = cls;
+    line.textContent = msg;
+    $('log').prepend(line);
+  }
+
+  async function post(path, body) {
+    const r = await fetch(path, {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(body)});
+    if (!r.ok) throw new Error(await r.text());
+    return r.json();
+  }
+
+  function pct(v, of) { return (v / of * 100) + '%'; }
+
+  function boxFor(b, cls) {
+    const d = document.createElement('div');
+    d.className = 'box' + (cls ? ' ' + cls : '');
+    d.style.left = pct(b.x1, state.width); d.style.top = pct(b.y1, state.height);
+    d.style.width = pct(b.x2 - b.x1, state.width); d.style.height = pct(b.y2 - b.y1, state.height);
+    return d;
+  }
+
+  function draw() {
+    const wrap = $('screenWrap');
+    wrap.querySelectorAll('.box').forEach((b) => b.remove());
+    if (!state || !state.width) return;
+    for (const e of state.elements) {
+      const d = boxFor(e.bounds, sel && sel.ref === e.ref ? 'sel' : '');
+      d.dataset.ref = e.ref;
+      wrap.append(d);
+    }
+    for (const h of hits) wrap.append(boxFor(h.bounds, 'hit'));
+    const pin = $('pin');
+    if (point) { pin.style.display = 'block'; pin.style.left = pct(point.x, state.width); pin.style.top = pct(point.y, state.height); }
+    else pin.style.display = 'none';
+  }
+
+  function show() {
+    $('none').hidden = !!(sel || point);
+    $('detail').hidden = !sel;
+    $('point').hidden = !point;
+    if (point) $('pxy').textContent = point.x + ', ' + point.y;
+    if (sel) {
+      $('target').textContent = sel.target;
+      $('dLabel').textContent = sel.label || '—';
+      $('dRole').textContent = sel.role || '—';
+      $('dRef').textContent = sel.ref;
+      const b = sel.bounds;
+      $('dBounds').textContent = `[${b.x1},${b.y1}][${b.x2},${b.y2}]`;
+      $('dChecked').textContent = sel.checked === undefined ? 'no checked state' : sel.checked ? 'checked' : 'unchecked';
+      $('bCheck').hidden = $('bUncheck').hidden = sel.checked === undefined;
+    }
+    document.querySelectorAll('#list div').forEach((d) => d.classList.toggle('sel', !!sel && d.dataset.ref === sel.ref));
+    draw();
+  }
+
+  function list() {
+    const l = $('list');
+    l.textContent = '';
+    for (const e of state.elements) {
+      const d = document.createElement('div');
+      d.dataset.ref = e.ref;
+      const r = document.createElement('span'); r.className = 'ref'; r.textContent = e.ref;
+      d.append(r, document.createTextNode(e.label + (e.role ? ` (${e.role})` : '')));
+      d.onclick = () => { sel = e; point = null; show(); };
+      l.append(d);
+    }
+    if (!state.elements.length) l.innerHTML = '<span class="muted">map found nothing to act on here.</span>';
+  }
+
+  async function refresh() {
+    $('where').textContent = 'reading the device…';
+    try {
+      const r = await fetch('state');
+      state = await r.json();
+    } catch (e) { log(String(e), 'bad'); return; }
+    if (state.error) log(state.error, 'bad');
+    if (state.screenshot) $('screen').src = 'data:image/png;base64,' + state.screenshot;
+    $('where').textContent = (state.app || '') + (state.context ? ' · ' + state.context : '') + ` · ${state.elements ? state.elements.length : 0} elements`;
+    state.elements = state.elements || [];
+    // Keep the selection across a refresh when the same locator is still there.
+    if (sel) sel = state.elements.find((e) => e.target === sel.target) || null;
+    hits = [];
+    steps(state.steps);
+    list(); show();
+  }
+
+  async function act(tool, args) {
+    log(`${tool} ${JSON.stringify(args)}`, 'muted');
+    try {
+      const r = await post('act', {tool, arguments: args});
+      if (r.error) log(`${r.code}: ${r.error}`, 'bad'); else log(r.text || 'done', 'ok');
+      steps(r.steps);
+    } catch (e) { log(String(e), 'bad'); }
+    point = null;
+    setTimeout(refresh, 300);
+  }
+
+  async function steps(n) {
+    $('stepCount').textContent = n + (n === 1 ? ' step' : ' steps');
+    $('download').style.pointerEvents = n ? '' : 'none';
+    if (!n) { $('steps').hidden = true; return; }
+    try {
+      const f = await (await fetch('test')).json();
+      $('steps').textContent = f.tests[0].steps.map((s) => JSON.stringify(s)).join('\n');
+      $('steps').hidden = false;
+    } catch (e) { /* the count is enough */ }
+  }
+
+  // The smallest element under the click is the one meant.
+  $('screenWrap').onclick = (ev) => {
+    if (!state || !state.width) return;
+    const r = $('screen').getBoundingClientRect();
+    const x = Math.round((ev.clientX - r.left) / r.width * state.width);
+    const y = Math.round((ev.clientY - r.top) / r.height * state.height);
+    const under = state.elements.filter((e) => e.bounds.x1 <= x && x <= e.bounds.x2 && e.bounds.y1 <= y && y <= e.bounds.y2);
+    under.sort((a, b) => (a.bounds.x2 - a.bounds.x1) * (a.bounds.y2 - a.bounds.y1) - (b.bounds.x2 - b.bounds.x1) * (b.bounds.y2 - b.bounds.y1));
+    if (under.length) { sel = under[0]; point = null; } else { sel = null; point = {x, y}; }
+    show();
+  };
+  $('screenWrap').onmousemove = (ev) => {
+    if (!state || !state.width) return;
+    const r = $('screen').getBoundingClientRect();
+    const x = (ev.clientX - r.left) / r.width * state.width, y = (ev.clientY - r.top) / r.height * state.height;
+    const under = state.elements.filter((e) => e.bounds.x1 <= x && x <= e.bounds.x2 && e.bounds.y1 <= y && y <= e.bounds.y2);
+    under.sort((a, b) => (a.bounds.x2 - a.bounds.x1) * (a.bounds.y2 - a.bounds.y1) - (b.bounds.x2 - b.bounds.x1) * (b.bounds.y2 - b.bounds.y1));
+    const ref = under.length ? under[0].ref : null;
+    document.querySelectorAll('.box').forEach((b) => b.classList.toggle('hover', b.dataset.ref === ref));
+  };
+
+  document.querySelectorAll('[data-act]').forEach((b) => b.onclick = () => {
+    if (!sel) return;
+    const t = sel.target, text = $('text').value;
+    switch (b.dataset.act) {
+      case 'tap': return act('app_tap', {target: t});
+      case 'double': return act('app_tap', {target: t, double: true});
+      case 'long': return act('app_long_press', {target: t});
+      case 'check': return act('app_check', {target: t});
+      case 'uncheck': return act('app_check', {target: t, checked: false});
+      case 'wait': return act('app_wait_for', {target: t});
+      case 'scroll': return act('app_scroll_to', {target: t});
+      case 'type': return act('app_type', {target: t, text});
+      case 'fill': return act('app_fill', {target: t, text});
+    }
+  });
+  $('tapPoint').onclick = () => point && act('app_tap', {x: point.x, y: point.y});
+  document.querySelectorAll('[data-press]').forEach((b) => b.onclick = () => act('app_press', {button: b.dataset.press}));
+  document.querySelectorAll('[data-swipe]').forEach((b) => b.onclick = () => act('app_swipe', {direction: b.dataset.swipe}));
+  $('refresh').onclick = refresh;
+  $('copy').onclick = () => navigator.clipboard && navigator.clipboard.writeText(sel ? sel.target : '');
+  $('find').onclick = async () => {
+    const loc = $('loc').value.trim();
+    if (!loc) return;
+    try {
+      const f = await post('find', {locator: loc});
+      hits = f.matches || [];
+      $('found').className = f.error ? 'bad' : hits.length === 1 ? 'ok' : 'muted';
+      $('found').textContent = f.error ? f.error :
+        hits.length === 1 ? '1 match — a test can use it as it is.' :
+        hits.length === 0 ? 'No match on this screen.' :
+        `${hits.length} matches, outlined — an action would refuse it as ambiguous; narrow it with ,role=… or pick one from the screen.`;
+    } catch (e) { $('found').textContent = String(e); }
+    draw();
+  };
+  $('loc').onkeydown = (e) => { if (e.key === 'Enter') $('find').click(); };
+  $('clear').onclick = async () => { await post('clear', {}); steps(0); };
+  $('fresh').onclick = async () => {
+    try {
+      const r = await post('fresh', {});
+      if (r.error) log(r.error, 'bad'); else log(r.text, 'ok');
+    } catch (e) { log(String(e), 'bad'); }
+    steps(0); sel = null; point = null;
+    setTimeout(refresh, 500);
+  };
+  document.onkeydown = (e) => { if (e.key === 'r' && !['INPUT'].includes(document.activeElement.tagName)) refresh(); };
+  refresh();
+})();
+</script>
+</body>
+</html>

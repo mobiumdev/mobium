@@ -786,12 +786,12 @@
   ],
   "counts": {
     "tools": 63,
-    "cliRegistered": 71,
-    "cliVisible": 70,
+    "cliRegistered": 72,
+    "cliVisible": 71,
     "cliHidden": [
       "pipe"
     ],
-    "cliConstructors": 77,
+    "cliConstructors": 78,
     "clients": 5
   },
   "cliWithoutTool": [
@@ -803,6 +803,7 @@
     "grid",
     "grid status",
     "grid ui",
+    "inspect",
     "mcp",
     "pipe",
     "show-report",
