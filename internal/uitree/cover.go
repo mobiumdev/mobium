@@ -1,5 +1,7 @@
 package uitree
 
+import "regexp"
+
 // What the app has drawn over a target. A dialog and the keyboard are found
 // elsewhere, each by its own evidence; this is the app's own view laid over
 // another — a scrim, a toast, a floating button — which both platforms leave
@@ -62,6 +64,18 @@ func IsControl(n *Node) bool {
 	return n.Clickable || n.LongClickable
 }
 
+// isScrollIndicator reports whether n is a UIKit scroll view's indicator. It
+// is listed after the content and lies over the bottom row, 30 points deep —
+// "Horizontal scroll bar, 1 page" over MobiumApp's last button — and takes no
+// touch, so it is never a cover. Known by its shape rather than its label,
+// which is in the device's language: an Other that is not accessible, whose
+// value is how far it has scrolled, "0%" to "100%". CHALLENGES 167.
+func isScrollIndicator(n *Node) bool {
+	return n.Class == "XCUIElementTypeOther" && !n.Clickable && percent.MatchString(n.Text)
+}
+
+var percent = regexp.MustCompile(`^\d{1,3}%$`)
+
 func isIOSClass(class string) bool {
 	return len(class) > len("XCUIElementType") && class[:len("XCUIElementType")] == "XCUIElementType"
 }
@@ -81,7 +95,7 @@ func (t *Tree) DrawnOver(target *Node, x, y int) []*Node {
 			seen = true
 			return true
 		}
-		if !seen || n.Within(target) || target.Within(n) || !n.Displayed || n.Bounds.Empty() {
+		if !seen || n.Within(target) || target.Within(n) || !n.Displayed || n.Bounds.Empty() || isScrollIndicator(n) {
 			return true
 		}
 		for _, o := range over {
