@@ -222,6 +222,14 @@ export class Device {
   clearData(app: string): Promise<Data>
   /** Runs several tools in order in one call; stops at the first failure. */
   batch(steps: BatchStep[]): Promise<BatchStepResult[]>
+  /** The network: airplane, online, latency_ms, download_kbps, upload_kbps. Android only. */
+  network(): Promise<Data>
+  /** Airplane mode on (or off), waiting for the network to follow. Android. */
+  setOffline(offline?: boolean): Promise<Data>
+  /** Latency and download/upload limits in kbit/s, replacing any set before; zero is none. Emulator only. */
+  shapeNetwork(options?: { latencyMs?: number; downloadKbps?: number; uploadKbps?: number }): Promise<Data>
+  /** Removes the shaping and turns airplane mode off. */
+  resetNetwork(): Promise<Data>
   /** The battery: level, state, and on Android what it is plugged into. */
   battery(): Promise<Data>
   /** What time the device thinks it is, in its own zone. */

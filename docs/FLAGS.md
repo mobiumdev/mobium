@@ -149,6 +149,13 @@ command mentions them.
 | `app_long_press` | `y` | integer | long-press |
 | `app_map` | `device` | string | _global_ --device |
 | `app_map` | `driver` | string | _global_ --driver |
+| `app_network` | `device` | string | _global_ --device |
+| `app_network` | `download_kbps` | integer | network |
+| `app_network` | `driver` | string | _global_ --driver |
+| `app_network` | `latency_ms` | integer | network |
+| `app_network` | `offline` | boolean | network |
+| `app_network` | `reset` | boolean | network |
+| `app_network` | `upload_kbps` | integer | network |
 | `app_notifications` | `device` | string | _global_ --device |
 | `app_notifications` | `driver` | string | _global_ --driver |
 | `app_notifications` | `shade` | string | notifications |
@@ -324,6 +331,7 @@ arguments and the two global flags.
 | `long-press` | app_long_press | --duration | duration_ms, target, x, y |
 | `map` | app_map | — | — |
 | `mcp` | — | — | — |
+| `network` | app_network | --download --latency --offline --online --reset --upload | download_kbps, latency_ms, offline, reset, upload_kbps |
 | `notifications` | app_notifications | --post --shade --tag --title | shade, tag, text, title |
 | `open` | app_open_url | — | url |
 | `orientation` | app_orientation | — | orientation |

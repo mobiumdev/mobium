@@ -151,6 +151,17 @@ back, and anything the app never declared is reported as skipped.
 - `mobium time` — the device's clock in its own zone; a simulator's is the
   Mac's, and the answer says so
 
+### Network
+
+- `mobium network` — what is in place: online or offline, and any shaping
+- `mobium network --offline` / `--online` — airplane mode, waited for until
+  the network is really gone or back; an emulator or a real Android phone
+- `mobium network --latency 300 --download 1600 --upload 750` — shape the
+  traffic, replacing any shaping before; an emulator only (it needs root)
+- `mobium network --reset` — no shaping, airplane mode off. The end of the
+  session does this for you, back to how it found the device
+- iOS refuses all of it: nothing outside it controls its network
+
 ### Light and dark
 
 Dark mode is a different rendering of every screen and is where contrast and

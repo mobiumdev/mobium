@@ -61,6 +61,7 @@ const (
 	CapBattery          = "battery"
 	CapDeviceClock      = "deviceClock"
 	CapShake            = "shake"
+	CapNetwork          = "network"
 )
 
 // KnownCapabilities is every capability Mobium understands, for diagnostics
@@ -72,8 +73,8 @@ var KnownCapabilities = []string{
 	CapGeolocation, CapGeolocationState, CapRoutes,
 	CapClipboard, CapClipboardRead, CapAlerts, CapPinch,
 	CapDoubleTap, CapDrag, CapMultiTouch, CapDeviceLogs, CapCrashes, CapKeyboard, CapRecording,
-	CapClearData, CapSource, CapAccessibility, CapAppState, CapBattery, CapDeviceClock,
-	CapClearData, CapSource, CapAccessibility, CapAppState, CapShake,
+	CapClearData, CapSource, CapAccessibility, CapAppState, CapBattery, CapDeviceClock, CapShake,
+	CapNetwork,
 }
 
 // has reports whether d claims the capability. A driver that does not report
@@ -323,6 +324,12 @@ func AsBatteryReader(d Driver) (BatteryReader, bool) {
 func AsDeviceClock(d Driver) (DeviceClock, bool) {
 	c, ok := d.(DeviceClock)
 	return c, ok && has(d, CapDeviceClock)
+}
+
+// AsNetworker returns the driver's network conditions, if any.
+func AsNetworker(d Driver) (Networker, bool) {
+	n, ok := d.(Networker)
+	return n, ok && has(d, CapNetwork)
 }
 
 // AsShaker returns the driver's shake, if any.

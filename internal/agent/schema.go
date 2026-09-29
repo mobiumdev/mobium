@@ -1585,6 +1585,44 @@ func GetToolSchemas() []Tool {
 			},
 		},
 		{
+			Name: "app_network",
+			Description: "Read or set the device's network conditions: offline, latency and " +
+				"bandwidth. With no arguments, reports what is in place, read from the device. " +
+				"offline switches airplane mode and waits for the device to lose, or regain, its " +
+				"network — on an emulator and on a real Android phone. latency_ms, download_kbps " +
+				"and upload_kbps shape the device's traffic on an emulator (they need root, which " +
+				"a phone does not give); together they replace any shaping set before, and an " +
+				"omitted one is no limit. reset removes the shaping and turns airplane mode off. " +
+				"Whatever is set is read back, and the end of the session puts the network back " +
+				"as it found it. iOS refuses: nothing outside it controls its network.",
+			InputSchema: map[string]interface{}{
+				"type": "object",
+				"properties": withDevice(map[string]interface{}{
+					"offline": map[string]interface{}{
+						"type":        "boolean",
+						"description": "true for airplane mode, false to come back online.",
+					},
+					"latency_ms": map[string]interface{}{
+						"type":        "integer",
+						"description": "Milliseconds added to every round trip, 0 to 10000. Emulator only.",
+					},
+					"download_kbps": map[string]interface{}{
+						"type":        "integer",
+						"description": "Download limit in kilobits a second; 0 or omitted is none. Emulator only.",
+					},
+					"upload_kbps": map[string]interface{}{
+						"type":        "integer",
+						"description": "Upload limit in kilobits a second; 0 or omitted is none. Emulator only.",
+					},
+					"reset": map[string]interface{}{
+						"type":        "boolean",
+						"description": "Remove the shaping and turn airplane mode off. Takes nothing else.",
+					},
+				}),
+				"additionalProperties": false,
+			},
+		},
+		{
 			Name: "app_state",
 			Description: "What state one app is in: not_installed, not_running, background or " +
 				"foreground — for any app, where app_current names only the one in front. In " +
