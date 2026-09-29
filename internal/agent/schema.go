@@ -446,7 +446,7 @@ func GetToolSchemas() []Tool {
 		},
 		{
 			Name: "app_scroll_to",
-			Description: "Scroll until an element is on screen, then return it with a ref. " +
+			Description: "Scroll until an element is on screen — all of it, when it fits — then return it with a ref. " +
 				"Use it for anything below the fold — app_map only sees what is currently " +
 				"visible. app_tap, app_type and app_long_press already scroll to a target " +
 				"that is not on screen, so call this directly only when you want to see the " +

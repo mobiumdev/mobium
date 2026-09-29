@@ -10,7 +10,8 @@ func newScrollToCmd() *cobra.Command {
 		Long: "Bring something below the fold into view. `mobium map` only sees what is\n" +
 			"currently visible, and tap, type and long-press already scroll to a target\n" +
 			"that is not on screen — so reach for this to look without acting, or to\n" +
-			"scroll back up.",
+			"scroll back up. It brings in the whole element when it fits, not just\n" +
+			"the edge of it.",
 		Example: `  mobium scroll-to "text=Sign out"
   mobium scroll-to role=switch --direction up
   mobium scroll-to 'label=Card 8' --direction right   # a horizontal pager`,

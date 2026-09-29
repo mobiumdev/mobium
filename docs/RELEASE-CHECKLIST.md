@@ -4,7 +4,7 @@
 [CI workflow](../.github/workflows/ci.yml) runs on every push — formatting,
 vet, both modules' tests, the four non-Go clients' own tests, and six
 cross-compile targets. This file is the rest, and the rest is where most
-serious defects in this project have come from: 133 of 168 were found only by
+serious defects in this project have come from: 134 of 169 were found only by
 running against a real device.
 
 Work through it before tagging a release, on three substrates: an Android

@@ -639,3 +639,94 @@ func TestScrollToWaitsOutAScreenStillChanging(t *testing.T) {
 		t.Error("the element was found but not returned")
 	}
 }
+
+// pagerDriver is a horizontal pager the way Android reports one: eight cards
+// 683px wide with 31px between them, and every card's bounds clipped to the
+// pager, so one partly scrolled in reports only the part that shows. A swipe
+// moves the content by the distance the finger travels.
+type pagerDriver struct {
+	offset, swipes int
+	t              *testing.T
+}
+
+const pagerX1, pagerX2, cardW, cardGap = 42, 1038, 683, 31
+
+func (d *pagerDriver) Snapshot(ctx context.Context) (*uitree.Tree, error) {
+	var b strings.Builder
+	b.WriteString(`<?xml version='1.0' encoding='UTF-8'?><hierarchy rotation="0">` +
+		`<node index="0" package="com.example.pager" class="android.widget.FrameLayout" bounds="[0,0][1080,2400]">` +
+		`<node index="0" package="com.example.pager" class="android.widget.HorizontalScrollView" scrollable="true" ` +
+		`bounds="[42,455][1038,917]"><node index="0" package="com.example.pager" class="android.view.ViewGroup" ` +
+		`bounds="[42,455][1038,917]">`)
+	for i := 1; i <= 8; i++ {
+		x1 := pagerX1 + (i-1)*(cardW+cardGap) - d.offset
+		x2 := x1 + cardW
+		if x2 <= pagerX1 || x1 >= pagerX2 {
+			continue
+		}
+		if x1 < pagerX1 {
+			x1 = pagerX1
+		}
+		if x2 > pagerX2 {
+			x2 = pagerX2
+		}
+		fmt.Fprintf(&b, `<node index="%d" content-desc="Card %d" package="com.example.pager" class="android.view.ViewGroup" `+
+			`clickable="true" enabled="true" bounds="[%d,476][%d,896]" />`, i-1, i, x1, x2)
+	}
+	b.WriteString(`</node></node></node></hierarchy>`)
+	return uitree.ParseAndroid([]byte(b.String()))
+}
+func (d *pagerDriver) Screenshot(ctx context.Context) ([]byte, error) { return nil, nil }
+func (d *pagerDriver) Tap(ctx context.Context, x, y int) error        { return nil }
+func (d *pagerDriver) Name() string                                   { return "pager-fake" }
+func (d *pagerDriver) LongPress(ctx context.Context, x, y int, _ time.Duration) error {
+	return nil
+}
+func (d *pagerDriver) Swipe(ctx context.Context, x1, y1, x2, y2 int, _ time.Duration) error {
+	d.swipes++
+	d.offset += x1 - x2
+	max := 8*(cardW+cardGap) - cardGap - (pagerX2 - pagerX1)
+	if d.offset > max {
+		d.offset = max
+	}
+	if d.offset < 0 {
+		d.offset = 0
+	}
+	return nil
+}
+
+// scroll-to brings the whole target into view, not the sliver of it that
+// clipped bounds report as wholly inside: Card 8 used to be left 101px wide
+// at the pager's edge on MobiumApp's Pager Demo. CHALLENGES 169.
+func TestScrollToBringsAClippedTargetWhollyIntoView(t *testing.T) {
+	d := &pagerDriver{t: t}
+	h := NewHandlers()
+	h.implicitWait = 0
+	h.settleWindow = 0
+	s := &session{dev: fakeDevice(), driver: d, backend: BackendDump}
+	h.sessions["fake"] = s
+	if _, err := scrollTo(h, s, map[string]interface{}{"target": "label=Card 8", "direction": "right"}); err != nil {
+		t.Fatal(err)
+	}
+	tree, _ := d.Snapshot(context.Background())
+	n, err := pickOne(uitree.Locator{Kind: uitree.KindLabel, Value: "Card 8", Exact: true}, tree)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if w := n.Bounds.Width(); w != cardW {
+		t.Errorf("Card 8 ends %dpx wide at %v, want all %dpx of it in view", w, n.Bounds, cardW)
+	}
+}
+
+// A whole row flush against the list's edge is not a clipped one: it is the
+// same height as its neighbors, and scroll-to leaves the list where it is.
+func TestAWholeRowFlushAgainstTheEdgeIsNotNudged(t *testing.T) {
+	h, s, d := withList(t, rows(12))
+	// Row 04 is the last of five, flush with the bottom of the list.
+	if _, err := scrollTo(h, s, map[string]interface{}{"target": "text=Row 04"}); err != nil {
+		t.Fatal(err)
+	}
+	if d.swipes != 0 {
+		t.Errorf("swiped %d times for a row already wholly in view", d.swipes)
+	}
+}
