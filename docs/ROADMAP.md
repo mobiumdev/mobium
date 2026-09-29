@@ -6,6 +6,12 @@ this is what is not.
 
 ## Next
 
+- **A test runner — `mobium test`.** Playwright's shape over JSON test files
+  whose steps are `app_batch` steps and whose assertions are `app_wait_for`:
+  projects as devices, workers, retries with flaky reported, `-g`,
+  `--last-failed`, list/JSON/JUnit/HTML reports and `show-report`. The plan
+  and iteration 1's scope are
+  [decisions/0006](decisions/0006-a-test-runner.md).
 - **Windows.** Everything that needs no device passes on a GitHub-hosted
   Windows runner, every run: both modules' tests, the named-pipe daemon
   transport's acceptance tests five times over, and the built `mobium.exe` —

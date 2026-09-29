@@ -1,0 +1,168 @@
+# 0006 — A test runner: `mobium test`, over JSON test files
+
+**2026-09-28. Proposed; iteration 1 not built.** Mobium gets a test runner in
+the shape of Playwright's — `mobium test`, projects, workers, retries,
+reporters, a report to open — whose tests are **JSON files of the steps
+`app_batch` already runs**, executed by the Go binary itself.
+
+## Why now
+
+Every tool a test needs exists: actions that wait and refuse, `app_wait_for`
+for every state an assertion checks (visible, hidden, text, value, enabled,
+checked, focused), `app_batch` to run checked sequences, sessions that put the
+device back, and four kinds of device verified. What does not exist is the
+thing a CI job runs and publishes. The competitor notes say it plainly:
+"Mobium produces no artifact a CI job can publish. This is the difference
+between a tool and a testing framework, and most buyers want the framework"
+(`landscape/mobilewright.md`, gap 2). Until now the tests of Mobium itself
+have been the shell scripts in `docs/checks/`, which is the same gap from the
+inside.
+
+## What was decided
+
+**Declarative test files, run by Mobium.** Not tests in the client languages
+run by pytest, Jest or JUnit: that is five runners, five report formats and
+five sets of fixtures to keep in step, and none of them works without a
+language toolchain. A declarative file keeps the property this project rests
+on — one static binary, nothing else installed — and it is what an agent
+writes most reliably. Tests in the client languages stay possible later; they
+are programs that call Mobium, as they are today.
+
+**JSON, not YAML.** It was YAML until asked why, and the answer held up:
+
+- The standard library reads it; YAML would be a new module.
+- Everything else in Mobium is JSON — `app_batch` steps, MCP arguments, the
+  tool schemas, `--json`, `docs/api/*.json` — so a test step is **exactly** a
+  batch step, checked by the same code.
+- YAML reads an unquoted `off` as a boolean under some parsers, and Mobium
+  has real values like `bold_text off`. A test that quietly means something
+  else is the failure this project exists to refuse.
+- It is not a one-way door: every JSON file is valid YAML, so YAML can be
+  added later as a second reader of the same schema without changing a test.
+  The loss is comments; `description` on a test and on a step covers most of
+  it.
+
+**Steps are `app_batch` steps; assertions are `app_wait_for`.** Mutatis
+mutandis: no second vocabulary. A step is `{"name": "app_tap", "arguments":
+{...}}`; an expectation is an `app_wait_for` step, which already retries until
+its timeout and fails saying what the screen showed — Playwright's
+auto-retrying `expect`. A dedicated `expect` shorthand is a later nicety, not
+a new mechanism.
+
+**The runner is a client of the tools, not a tool.** It lives in
+`internal/testrun` and calls the daemon as the clients do: one `app_batch`
+per test, so a test fails with its step's own error code and number. The
+rule that the CLI implements no behavior is about tools — what a tool does,
+MCP must get too. A runner reads files and writes reports around tools; it
+is the clients' kind of code. If agents need to run a test file over MCP, an
+`app_test` tool can wrap the same package later.
+
+## The files
+
+A test file, `*.test.json`:
+
+```json
+{
+  "description": "The login demo's negative paths",
+  "app": "dev.mobium.mobiumapp",
+  "beforeEach": [
+    {"name": "app_tap", "arguments": {"target": "label=Login Demo"}}
+  ],
+  "tests": [
+    {
+      "name": "wrong password",
+      "steps": [
+        {"name": "app_fill", "arguments": {"target": "testid=username", "text": "mobium"}},
+        {"name": "app_fill", "arguments": {"target": "testid=password", "text": "wrongpass1"}},
+        {"name": "app_tap", "arguments": {"target": "testid=loginBtn"}},
+        {"name": "app_wait_for", "arguments": {"target": "testid=loginError",
+          "condition": "text", "text": "Incorrect username or password."}}
+      ]
+    }
+  ]
+}
+```
+
+Each test starts from a fresh app: `app` is terminated and launched before
+`beforeEach`, and the session's end puts back anything a test changed —
+network, accessibility, as sessions already do. Tests in a file run in order
+on one device; files are what workers share out.
+
+A config, `mobium.config.json`, found by walking up from the working
+directory:
+
+```json
+{
+  "testDir": "tests",
+  "timeout": 60000,
+  "retries": 0,
+  "projects": [
+    {"name": "android", "device": "emulator-5554"},
+    {"name": "ios", "device": "457C7DC2-C706-45D9-8D68-1D26953E28B1", "driver": "wda"}
+  ]
+}
+```
+
+A project is a device — Playwright's browsers, mapped onto what Mobium drives.
+A device serial in a checked-in file is fine for an emulator and a simulator;
+a real phone's identifier is personal and belongs in a local override or the
+command line, never the repository (the UDID scrub of 2026-09-23 is why).
+
+## The commands, against Playwright's
+
+| Playwright | `mobium` | Iteration |
+| --- | --- | --- |
+| `test` | `mobium test` — every `*.test.json` under `testDir` | 1 |
+| `test <file>` | `mobium test tests/login.test.json` | 1 |
+| `test -g "login"` | `mobium test -g login` — tests whose name matches | 1 |
+| `test --last-failed` | `mobium test --last-failed`, from `.mobium-test/last-run.json` | 1 |
+| `test --project=chromium` | `mobium test --project=android` | 1 |
+| `test --workers=4` | `--workers`: one per device, projects in parallel; a device holds one session, so never two workers on one | 1 |
+| `test --retries=2` | `--retries=2`, and a pass after a retry is reported **flaky**, not passed | 1 |
+| `test --timeout=30000` | `--timeout=30000`, per test | 1 |
+| `test --reporter=html` | `--reporter=list` (default), `json`, `junit`, `html` | 1 |
+| `show-report` | `mobium show-report` — opens the last HTML report | 1 |
+| `--version`, `test --help` | exist already | — |
+| `test --headed` | a simulator is headless until `open -a Simulator`; an emulator decides at launch | later |
+| `test --debug` | stop before each step, show the map, continue | later |
+| `test --ui` | an interactive mode | later |
+| `show-trace <file>` | a filmstrip per test: each step's screenshot and map — the session-recording roadmap item | later |
+| `codegen <url>` | record the tool calls a person or agent makes as a test file — the daemon already sees every call | later |
+| `install`, `install --with-deps` | `mobium doctor` checks; the device-side agents install themselves, pinned and checksummed | mostly exists |
+
+What a failure leaves: the step that failed, its error code and message, and
+a screenshot and a `map` taken at the moment of failure, in the report. `map`
+is already redacted; a **screenshot of a real phone can show a person's
+data**, so on a phone the report says it holds one, and a flag turns them
+off.
+
+Exit status: 0 when every test passed (flaky counts as passed, and is
+listed), 1 when any failed, and the existing codes when the run could not
+start — no device is `no_device`, a bad file `invalid_argument` — so CI can
+tell "the app is broken" from "the test run is".
+
+## How iteration 1 will be shown to work
+
+By the rule the rest of this project follows — a result is not a result until
+it has been seen to come back the other way:
+
+- A `tests/` directory of MobiumApp flows, ported from `docs/checks/`
+  (login, OTP, wait states), run on the emulator and the simulator, and then
+  the phones.
+- **A test that must fail**, kept in the suite behind a flag, to show a
+  failure is reported with its step, code, screenshot and map, and exits 1.
+- **A test that fails once and then passes**, to show `--retries` reports it
+  flaky rather than passed.
+- The JUnit file read by a consumer that is not ours (a JUnit schema check
+  in CI), because a report nobody can parse is not an artifact.
+- `--workers 2` across two devices, timed against one, and each report line
+  naming the device it ran on.
+- `--last-failed` after a run with one failure runs exactly that one.
+
+## What it does not decide
+
+- A shorthand for steps (`{"tap": "label=Login Demo"}`). Worth doing once the
+  long form has been written by hand enough to know which steps are common.
+- Test-level parameters and data (the same test on several inputs).
+- Sharding across machines — the grid already lends devices; how a run
+  splits across it is iteration 2 at the earliest.
