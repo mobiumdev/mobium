@@ -260,12 +260,12 @@ client takes it as a `session` option ([SETUP.md](docs/SETUP.md#parallel-runs)).
 claude mcp add mobium -- mobium mcp
 ```
 
-**Agent skill:** [skills/mobile/SKILL.md](skills/mobile/SKILL.md) teaches the
+**Agent skill:** [skills/mobile-check/SKILL.md](skills/mobile-check/SKILL.md) teaches the
 loop, the locators, WebView contexts, and that a command reporting success is
 not evidence the app did anything.
 
 ```sh
-npx skills add mobiumdev/mobium --skill mobile
+npx skills add mobiumdev/mobium --skill mobile-check
 ```
 
 **Language clients** — Python, JavaScript, Go, Java and .NET, each covering the
