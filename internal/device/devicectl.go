@@ -46,6 +46,17 @@ type Phone struct {
 // devicectl remembers but cannot reach is listed with no transport.
 func (p Phone) Connected() bool { return p.Paired && p.Transport != "" }
 
+// Label is how a message names the phone: its model, "iPhone 15 Plus".
+// Never its name, which is its owner's — "Lana's iPhone" — and a message
+// ends up in logs, CI output and test reports (CHALLENGES 161, 175). Only
+// the devices listing, read by the person at the machine, shows the name.
+func (p Phone) Label() string {
+	if p.Model != "" {
+		return p.Model
+	}
+	return "the iPhone"
+}
+
 // Devicectl is a located xcrun, pinned to one phone.
 type Devicectl struct {
 	Path string
@@ -235,16 +246,16 @@ func NewDevicectl(p Phone) (*Devicectl, error) {
 func (p Phone) Usable() error {
 	if !p.Paired {
 		return mobiumerr.New(mobiumerr.DeviceNotReady, "%s is not paired with this Mac — unlock it, tap Trust This "+
-			"Computer, and enter the passcode", p.Name)
+			"Computer, and enter the passcode", p.Label())
 	}
 	if !p.Connected() {
 		return mobiumerr.New(mobiumerr.DeviceNotReady, "%s is paired but not reachable — connect it with a cable "+
-			"and unlock it", p.Name)
+			"and unlock it", p.Label())
 	}
 	if !p.DeveloperMode {
 		return mobiumerr.New(mobiumerr.DeviceNotReady, "Developer Mode is off on %s — open Xcode's Devices and "+
 			"Simulators window once with the phone connected, then turn it on in "+
-			"Settings > Privacy & Security > Developer Mode (the phone restarts)", p.Name)
+			"Settings > Privacy & Security > Developer Mode (the phone restarts)", p.Label())
 	}
 	return nil
 }
@@ -266,7 +277,7 @@ func (d *Devicectl) Refresh(ctx context.Context) (Phone, error) {
 			return p, nil
 		}
 	}
-	return d.Phone, mobiumerr.New(mobiumerr.NoDevice, "%s is no longer listed by devicectl", d.Phone.Name)
+	return d.Phone, mobiumerr.New(mobiumerr.NoDevice, "%s is no longer listed by devicectl", d.Phone.Label())
 }
 
 // WakeTunnel brings up the CoreDevice tunnel to the phone and returns the
@@ -286,7 +297,7 @@ func (d *Devicectl) WakeTunnel(ctx context.Context) (string, error) {
 		return "", err
 	}
 	if p.TunnelIP == "" {
-		return "", mobiumerr.New(mobiumerr.DeviceNotReady, "the CoreDevice tunnel to %s did not come up", p.Name).
+		return "", mobiumerr.New(mobiumerr.DeviceNotReady, "the CoreDevice tunnel to %s did not come up", p.Label()).
 			WithRemedy("connect the iPhone by cable, unlocked and trusting this Mac, and run the command again")
 	}
 	return p.TunnelIP, nil
@@ -327,7 +338,7 @@ func (d *Devicectl) UninstallApp(ctx context.Context, bundleID string) error {
 	}
 	if !installed {
 		return mobiumerr.New(mobiumerr.InvalidArgument, "%s is not installed on %s — `mobium apps --system` lists what is",
-			bundleID, d.Phone.Name)
+			bundleID, d.Phone.Label())
 	}
 	_, err = d.run(ctx, "device", "uninstall", "app", "--device", d.Phone.UDID, bundleID)
 	return err
