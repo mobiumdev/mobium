@@ -58,6 +58,11 @@ $ mobium text testid=ignoringResult
 Ignoring: tapped 2697ms after replay
 ```
 
+| Just after Replay: the target still sliding in | After the tap: it waited, and says when it arrived |
+| --- | --- |
+| ![The Motion Demo mid-slide, the Ignoring target to the right of where it stops](images/autowait-1-sliding.jpg) | ![The Motion Demo after the tap: "Ignoring: tapped 2627ms after replay"](images/autowait-2-tapped.jpg) |
+
+(These pictures are of a later run of the same two taps, which said 2627ms.)
 The app's own stopwatch says the tap landed 2.7 seconds after Replay — after
 the slide ended. The second `tap` waited for the target to hold still, and
 touched it where it stopped, not where it was passing through. Something that
@@ -86,6 +91,10 @@ $ mobium tap testid=loginBtn
 tapped testid=loginBtn at (540, 1689)
 ```
 
+| After the first tap: Log In disabled, "Signing in…" | When it comes back: the app's answer, and Log In enabled |
+| --- | --- |
+| ![The Login Demo with the button grayed out and reading "Signing in…"](images/autowait-3-signing-in.jpg) | ![The Login Demo showing "Incorrect username or password." above an enabled Log In](images/autowait-4-refused.jpg) |
+
 The second tap waited for "Signing in…" to end and the button to come back,
 then pressed it. A tap on a disabled control does nothing, so reporting it as
 done would be a lie; a control that stays disabled past the wait is refused as
@@ -93,8 +102,13 @@ done would be a lie; a control that stays disabled past the wait is refused as
 
 ## 3. Refusing what is covered
 
-The Obstruction Demo draws controls over its targets. One is covered entirely
-by another button:
+The Obstruction Demo draws controls over its targets — a full cover, a half
+cover over the center, an edge cover that leaves the center clear, views that
+take no touches, an overlay hidden from accessibility, a scrim:
+
+![The Obstruction Demo: a column of buttons, each with something drawn over it](images/autowait-5-covers.jpg)
+
+One is covered entirely by another button:
 
 ```
 $ mobium tap testid=fullTarget
@@ -148,7 +162,11 @@ error: timed out after 2.017s waiting for testid=termsCheck to become checked �
 
 $ mobium check testid=termsCheck
 testid=termsCheck is now checked
+```
 
+![The Form Demo after check: Accept terms ticked, and the app's own line reading terms=true](images/autowait-6-checked.jpg)
+
+```
 $ mobium wait testid=termsCheck --for checked
 testid=termsCheck is checked after 12ms — @e3 Accept terms (checkbox, checked)
 

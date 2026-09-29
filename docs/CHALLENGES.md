@@ -7,7 +7,7 @@ the source.
 
 The pattern across them is the reason the document exists: **almost nothing
 here was found by reading code or by a test written from imagination.** Of
-162 defects, 129 were found only by running against a real device. The other
+163 defects, 130 were found only by running against a real device. The other
 thirty-three — 4, 5, 6, 14, 23, 24, 32, 35, 36, 39, 44, 50, 53, 54, 57, 66, 89,
 99, 100, 121, 123, 129, 130, 133, 134, 139, 140, 141, 142, 144, 150, 158 and 162 — came from reading code, the compiler, a test, a linter,
 cross-checking a computed number against a screenshot, using the tooling on
@@ -3701,6 +3701,25 @@ variable, which that run never needed; every earlier run had happened to set
 it. The variable is now noted when the config is read and refused only when
 its project is run, and a test runs the Android project with the iOS one's
 variable unset.
+
+### 163. What a test changed outlived the test run
+
+**Found by:** writing the network guide, reading the emulator's network after
+a `mobium test` run on it.
+
+After two tests that went offline and added latency, the run passed, and the
+emulator still had 300ms added to every round trip. A session's end puts back
+what it changed — network conditions, accessibility settings — and a test run
+never ended its session: every project shared the CLI's own daemon and its
+open session, which outlived the run. The same sharing made projects on two
+devices queue behind one daemon that serves one call at a time. Each project
+now gets a `mobium pipe` and, off a grid, a daemon of its own, named for the
+run: its first call starts the project's session, closing it ends that
+session, and the daemon is stopped after. Measured: after the same run the
+emulator had no shaping and airplane mode off, and the suite on two emulators
+took 40 seconds for 75 seconds of work, against 95 for 189 before. The pipe
+had also been closed with `mobium/detach`, which tells a pipe to leave its
+sessions open; it is closed without it now.
 
 ## Findings that were not defects
 

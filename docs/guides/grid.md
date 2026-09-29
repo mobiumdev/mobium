@@ -190,8 +190,14 @@ junit report: …/mobium-report/junit.xml
 ```
 
 (The report's path is shortened.) Each result names the device its project
-leased, and the two projects ran at once. While they did, the grid showed
-both leased, and after, both free:
+leased, and the two projects ran at once. `mobium grid ui`, open during a run
+like it, shows the two leases as they happen:
+
+![mobium grid ui: 14 devices, 2 held, 0 waiting, and emulator-5554 and emulator-5556 each held by a grid run](images/grid-ui.jpg)
+
+(Cropped to the two emulators; the page goes on to the node's simulators and a
+phone.) `grid status` while they ran says the same; after the run, both
+read `free` again:
 
 ```
 NODE       DEVICE                                PLATFORM  OS          MODEL                  STATE      HELD BY

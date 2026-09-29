@@ -280,3 +280,11 @@ makes no call, which would lease a device nothing used. Every result names
 the device its project got. `docs/checks/test-grid.sh` passed with two
 emulators on one node: two projects on two devices at once, both leases gone
 after, and a third project refused with exit 3 and nothing left held.
+
+**A daemon and a session per project, 2026-09-28.** Off a grid too, each
+project now gets its own `mobium pipe` and a daemon named for the run. A
+test that went offline had left the emulator shaped after the run, because
+the run never ended the CLI's shared session (CHALLENGES 163); now closing a
+project's connection ends its session, which puts back what the tests
+changed, and the daemon is stopped. Projects no longer queue behind one
+daemon: the suite on two emulators took 40 seconds for 75 seconds of work.

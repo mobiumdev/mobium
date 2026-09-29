@@ -30,9 +30,13 @@ type Pipe struct {
 	nextID int
 }
 
-// DialPipe starts `<binary> pipe` and completes the handshake.
-func DialPipe(binary string) (*Pipe, error) {
+// DialPipe starts `<binary> pipe`, with env added to this process's, and
+// completes the handshake.
+func DialPipe(binary string, env ...string) (*Pipe, error) {
 	cmd := exec.Command(binary, "pipe")
+	if len(env) > 0 {
+		cmd.Env = append(os.Environ(), env...)
+	}
 	stdin, err := cmd.StdinPipe()
 	if err != nil {
 		return nil, err
@@ -140,9 +144,13 @@ func (p *Pipe) Call(tool string, args map[string]interface{}) (*agent.ToolsCallR
 // its lease on the way out.
 const pipeCloseGrace = 30 * time.Second
 
-// Close detaches and waits for the pipe to finish releasing what it held.
+// Close ends the connection and waits for the pipe to finish releasing what
+// it held. Not with mobium/detach, which tells a pipe to leave its sessions
+// open: closed without it, the pipe ends the session its first call started,
+// and the session's end puts back what a test changed — the network,
+// accessibility settings. With detach, a run left 300ms of added latency on
+// the emulator after it finished, measured.
 func (p *Pipe) Close() {
-	_ = p.write(map[string]interface{}{"jsonrpc": "2.0", "method": "mobium/detach"})
 	_ = p.stdin.Close()
 	done := make(chan struct{})
 	go func() { _ = p.cmd.Wait(); close(done) }()

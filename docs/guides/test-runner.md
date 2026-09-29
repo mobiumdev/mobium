@@ -139,8 +139,15 @@ mobium-report/
     android-login.test.json-a-wrong-password-is-refused-1.png
 ```
 
-On a real phone that screenshot is a picture of somebody's screen, and the
-report says so; `--no-screenshots` keeps none.
+The report, with that failure open — the step and its message, the screen
+as it was when the wait gave up, with the app's real message on it, and the
+map:
+
+![The HTML report: one test failed, its message, a screenshot of the Login Demo showing "Incorrect username or password.", and the map](images/test-runner-report.jpg)
+
+(This picture is of a run of both tests, the other one passing.) On a real
+phone that screenshot is a picture of somebody's screen, and the report says
+so; `--no-screenshots` keeps none.
 
 ## 4. Run only what failed
 
@@ -195,9 +202,12 @@ mobium test --project android                           # one
 Projects run at once, one worker to a device — a device holds one session,
 so two workers never share one — and `--workers 1` runs them one after
 another. On a grid, a project can name a `platform` instead of a device,
-and each project leases its own for the run: [the grid guide](grid.md#4-tests-on-a-grid). This repository's own suite, [tests/](../../tests/README.md), ran its
-14 tests on an Android emulator and an iOS simulator together in 95 seconds,
-for 189 seconds of work.
+and each project leases its own for the run: [the grid guide](grid.md#4-tests-on-a-grid). Each project also gets a daemon of its own for the run, so projects on
+different devices never queue behind one another: this repository's suite,
+[tests/](../../tests/README.md), ran its 14 tests on two Android emulators in
+40 seconds, for 75 seconds of work. When the run ends, each project's
+session ends, and the end of a session puts back whatever the tests changed —
+the network, accessibility settings.
 
 ## 7. In CI
 
