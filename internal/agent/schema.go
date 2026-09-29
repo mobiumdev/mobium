@@ -35,7 +35,7 @@ func GetToolSchemas() []Tool {
 	roles := uitree.Roles()
 	sort.Strings(roles)
 
-	return []Tool{
+	tools := []Tool{
 		{
 			Name: "app_devices",
 			Description: "List running Android emulators and devices and iOS simulators, " +
@@ -1710,6 +1710,10 @@ func GetToolSchemas() []Tool {
 			},
 		},
 	}
+	for i := range tools {
+		tools[i].Annotations = map[string]interface{}{"readOnlyHint": readOnlyTools[tools[i].Name]}
+	}
+	return tools
 }
 
 // ToolNames lists every dispatchable tool, for error messages.
