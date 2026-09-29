@@ -7,13 +7,14 @@ the source.
 
 The pattern across them is the reason the document exists: **almost nothing
 here was found by reading code or by a test written from imagination.** Of
-163 defects, 130 were found only by running against a real device. The other
-thirty-three — 4, 5, 6, 14, 23, 24, 32, 35, 36, 39, 44, 50, 53, 54, 57, 66, 89,
-99, 100, 121, 123, 129, 130, 133, 134, 139, 140, 141, 142, 144, 150, 158 and 162 — came from reading code, the compiler, a test, a linter,
+164 defects, 130 were found only by running against a real device. The other
+thirty-four — 4, 5, 6, 14, 23, 24, 32, 35, 36, 39, 44, 50, 53, 54, 57, 66, 89,
+99, 100, 121, 123, 129, 130, 133, 134, 139, 140, 141, 142, 144, 150, 158, 162
+and 164 — came from reading code, the compiler, a test, a linter,
 cross-checking a computed number against a screenshot, using the tooling on
 itself, typing a negative number at a command line, and driving the clients
-against a stand-in daemon, CI on Windows, and following the quick start from
-a fresh clone.
+against a stand-in daemon, CI on Windows, following the quick start from
+a fresh clone, and type-checking the documentation site's examples.
 
 Read it before writing a test that asserts platform behavior.
 
@@ -3720,6 +3721,22 @@ emulator had no shaping and airplane mode off, and the suite on two emulators
 took 40 seconds for 75 seconds of work, against 95 for 189 before. The pipe
 had also been closed with `mobium/detach`, which tells a pipe to leave its
 sessions open; it is closed without it now.
+
+### 164. JavaScript's `tap` dropped a point's coordinates and its fingers
+
+**Found by:** type-checking the documentation site's examples against
+`index.d.ts`, and reading `index.js` beside it — not a device's doing.
+
+`index.d.ts` declares `tap(target, options)` and `tap(point, options)`, and
+`index.js` took `tap(target, point, options)`. So `tap({x, y}, {fingers: 2})`
+read the options as the point: `x` and `y` went out undefined, the fingers
+were dropped, and mobium refused the call as `invalid_argument` with no
+target — on the one form of a two-finger tap the types advertise. A string
+target with `{fingers}` had worked only through a special case for exactly
+that. `tap` and `doubleTap` now take what the declaration says. The client's
+own test sends all six forms through a stand-in daemon and checks the
+arguments that arrive; on an emulator, the same call on the unfixed client
+was refused and on the fixed one opened the row it tapped.
 
 ## Findings that were not defects
 

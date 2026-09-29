@@ -189,6 +189,37 @@ const within = (p, ms) => Promise.race([settle(p), new Promise((r) => setTimeout
   check(sent[0] === 'session=run7', `the pipe saw ${JSON.stringify(sent[0])}, want MOBIUM_SESSION=run7 over the environment's`)
 }
 
+// -- tap sends what index.d.ts says it takes ------------------------------
+// tap({x, y}, {fingers}) once read the options as the point: x and y went
+// out undefined and the fingers were dropped.
+{
+  const d = await fake('ok')
+  const sent = []
+  const call = d.conn.callTool.bind(d.conn)
+  d.conn.callTool = (name, args) => { sent.push([name, args]); return call(name, args) }
+  await d.tap('@e2')
+  await d.tap('@e2', { fingers: 2 })
+  await d.tap({ x: 540, y: 1200 })
+  await d.tap({ x: 540, y: 1200 }, { fingers: 3 })
+  await d.doubleTap('@e2')
+  await d.doubleTap({ x: 10, y: 20 })
+  const want = [
+    { target: '@e2' },
+    { target: '@e2', fingers: 2 },
+    { x: 540, y: 1200 },
+    { x: 540, y: 1200, fingers: 3 },
+    { target: '@e2', double: true },
+    { x: 10, y: 20, double: true },
+  ]
+  want.forEach((w, i) => {
+    const got = sent[i] && sent[i][0] === 'app_tap' ? sent[i][1] : null
+    check(JSON.stringify(got) === JSON.stringify(w), `tap form ${i + 1} sent ${JSON.stringify(got)}, want ${JSON.stringify(w)}`)
+  })
+  const refused = await settle(d.tap())
+  check(!refused.ok && refused.e instanceof m.MobiumError, 'tap() with nothing to tap was not refused')
+  await d.close()
+}
+
 report()
 
 function report() {
