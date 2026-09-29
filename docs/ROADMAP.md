@@ -6,12 +6,15 @@ this is what is not.
 
 ## Next
 
-- **A test runner — `mobium test`, iteration 2.** Iteration 1 is built and
-  checked (`docs/checks/test-runner.sh`): JSON test files of `app_batch`
-  steps, `app_wait_for` and `expect` assertions, projects as devices,
-  workers, retries with flaky reported, `-g`, `--last-failed`, list, JSON,
-  JUnit and HTML reports, `show-report`. Next: a step shorthand, soft
-  assertions, a trace per test, `--debug`, and the phones.
+- **A test runner — `mobium test`, on the phones.** Iterations 1 and 2 are
+  built and checked (`docs/checks/test-runner.sh`): JSON test files of
+  `app_batch` steps, `app_wait_for` and `expect` assertions, projects as
+  devices, workers, retries with flaky reported, `-g`, `--last-failed`,
+  list, JSON, JUnit and HTML reports, `show-report` — and since 2026-09-29
+  the step shorthand, soft assertions, a trace per test and `--debug`.
+  Next: the suite on the real phones, where a password needs the phone's
+  keyboard to have its letters (CHALLENGES 159). Later: an interactive
+  mode, recording a test from what a person does, and parameters.
   [decisions/0006](decisions/0006-a-test-runner.md).
 - **Windows.** Everything that needs no device passes on a GitHub-hosted
   Windows runner, every run: both modules' tests, the named-pipe daemon

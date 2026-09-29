@@ -1,0 +1,17 @@
+{
+  "description": "The soft-assertion control: two soft checks that cannot hold, around steps that must still run. The test must fail, report both, and have reached its last step — the switch it turns on is checked. docs/checks/test-runner.sh asserts it.",
+  "app": "dev.mobium.mobiumapp",
+  "tests": [
+    {"name": "two soft failures, and the test carries on", "steps": [
+      {"tap": "label=Form Demo"},
+      {"wait_for": {"target": "testid=termsCheck", "condition": "checked", "timeout_ms": 1500}, "soft": true,
+        "description": "terms start unchecked, so this cannot hold"},
+      {"check": "testid=darkSwitch"},
+      {"expect": {"tool": "app_state", "arguments": {"app": "dev.mobium.mobiumapp"}, "field": "state",
+        "equals": "background", "timeout_ms": 1500}, "soft": true,
+        "description": "the app is in front, so this cannot hold"},
+      {"wait_for": {"target": "testid=darkSwitch", "condition": "checked"},
+        "description": "the step after both: reached only if the test carried on"}
+    ]}
+  ]
+}

@@ -193,9 +193,10 @@ command line, never the repository (the UDID scrub of 2026-09-23 is why).
 | `show-report` | `mobium show-report` — opens the last HTML report | 1 |
 | `--version`, `test --help` | exist already | — |
 | `test --headed` | a simulator is headless until `open -a Simulator`; an emulator decides at launch | later |
-| `test --debug` | stop before each step, show the map, continue | later |
+| `test --debug` | `--debug`: stop before each step, show it and the map; Enter steps, `c` continues, `q` quits | 2 |
 | `test --ui` | an interactive mode | later |
-| `show-trace <file>` | a filmstrip per test: each step's screenshot and map — the session-recording roadmap item | later |
+| `test --trace on` | `--trace on` or `retain-on-failure`: each step's screenshot and map, a filmstrip in the HTML report | 2 |
+| `show-trace <file>` | the trace is in the HTML report, so `show-report` opens it | 2 |
 | `codegen <url>` | record the tool calls a person or agent makes as a test file — the daemon already sees every call | later |
 | `install`, `install --with-deps` | `mobium doctor` checks; the device-side agents install themselves, pinned and checksummed | mostly exists |
 
@@ -288,3 +289,42 @@ the run never ended the CLI's shared session (CHALLENGES 163); now closing a
 project's connection ends its session, which puts back what the tests
 changed, and the daemon is stopped. Projects no longer queue behind one
 daemon: the suite on two emulators took 40 seconds for 75 seconds of work.
+
+## What iteration 2 showed
+
+Built on 2026-09-29, and held to its controls in `docs/checks/test-runner.sh`
+on the Pixel 7 AVD and the iPhone 17 Pro simulator:
+
+- **The step shorthand.** `{"tap": "label=Login Demo"}` is a tool's name
+  without `app_`, and a string goes to the argument the tool's schema makes
+  its main one — `target` where there is one, else its one required string,
+  else its only argument — or an object of its arguments. It is only a
+  spelling: read into the long form, and checked as the long form is, so a
+  misspelled key is still refused, and a tool with no one main argument says
+  to name them (`{"swipe": "up"}` is refused; `{"swipe": {"direction":
+  "up"}}` is not). Written by hand enough to know which steps are common, as
+  "What it does not decide" asked: `tests/mobiumapp/form.test.json` is in it,
+  and `login.test.json` keeps the long form, so the suite runs both.
+- **Soft assertions**, as "Assertions" planned: `"soft": true` on a
+  `wait_for` or an expect runs that step alone, outside the batch around it,
+  and records its failure — with its own screenshot and map — and the test
+  goes on. The test still fails, and every failure is in the result, the
+  list line, JUnit and the report. Only an assertion can be soft: an action
+  that failed leaves nothing after it worth checking. The control,
+  `tests/controls/soft.test.json`, fails with both of its soft failures and
+  reaches its last step, which is how it shows the test carried on.
+- **A trace per test**, Playwright's names: `--trace on` or
+  `retain-on-failure`, or `trace` in the config. Steps run one at a time
+  rather than as a batch, and after each the runner keeps a screenshot and
+  the map; the HTML report shows them as a filmstrip. A traced run is slower
+  by a screenshot and a map a step, which is why it is off by default.
+  `--no-screenshots` keeps the maps and no picture, for a phone.
+- **`--debug`** stops before every step, prints it in the long form and the
+  map, and waits: Enter runs the step, `m` maps again, `c` runs the rest of
+  the test, `q` quits — the test is reported `stopped`, and nothing after it
+  runs. The test's timeout is off while a person reads. One project only,
+  since two would stop at once. With nobody answering — input closed — it
+  runs on rather than hang.
+
+Left for later: the phones, an interactive mode, recording a test from what a
+person does (`codegen`), and test parameters.

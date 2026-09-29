@@ -8,6 +8,7 @@ import (
 	"regexp"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/mobiumdev/mobium/internal/agent"
@@ -33,11 +34,61 @@ type Options struct {
 	OutputDir string
 	// Progress hears each result as it comes, for the list reporter.
 	Progress func(Result)
+	// Trace keeps a screenshot and the map after every step: "on", or
+	// "retain-on-failure", which keeps them only for a test that failed.
+	// Steps then run one at a time rather than as a batch. Without Evidence
+	// a trace keeps the maps and no screenshot.
+	Trace string
+	// Debug, when set, is asked before every step what to do. Steps then run
+	// one at a time, and the test's timeout is off: a person is reading.
+	Debug func(DebugPoint) DebugAction
 	// Connect, when set, gives each project a connection of its own, which
 	// its first call routes and which closing releases — how a run goes
 	// through a grid, where a route is one process's. Unset, every project
 	// shares the Caller Run was given.
 	Connect func(Project) (Caller, func(), error)
+}
+
+// Trace settings.
+const (
+	TraceOff             = "off"
+	TraceOn              = "on"
+	TraceRetainOnFailure = "retain-on-failure"
+)
+
+// DebugPoint is where a debugged test has stopped: before a step.
+type DebugPoint struct {
+	Project string
+	Title   string
+	// Step is 1-based, and 0 for beforeEach's.
+	Step int
+	// Call is the step as JSON, in its long form.
+	Call string
+	// Map reads the screen as it is now.
+	Map func() string
+}
+
+// DebugAction is what to do at a DebugPoint.
+type DebugAction int
+
+const (
+	// DebugStep runs the step and stops before the next.
+	DebugStep DebugAction = iota
+	// DebugContinue runs the rest of this test without stopping.
+	DebugContinue
+	// DebugQuit ends the run: this test is reported stopped, and no other runs.
+	DebugQuit
+)
+
+// TraceStep is one step of a trace: what ran, how it went, and the screen after.
+type TraceStep struct {
+	Step        int           `json:"step"`
+	Name        string        `json:"name"`
+	Description string        `json:"description,omitempty"`
+	Error       string        `json:"error,omitempty"`
+	Duration    time.Duration `json:"duration_ns"`
+	Screenshot  string        `json:"screenshot,omitempty"`
+	Map         string        `json:"map,omitempty"`
 }
 
 // Status is how a test ended.
@@ -67,6 +118,9 @@ type Result struct {
 	// Failures is every failure of that attempt, in order, when there was
 	// more than one — soft assertions, and whatever ended the test.
 	Failures []*Failure `json:"failures,omitempty"`
+	// Trace is every step of that attempt with the screen after it, when the
+	// run was traced.
+	Trace []TraceStep `json:"trace,omitempty"`
 }
 
 // ID names a test on a project, for --last-failed.
@@ -163,6 +217,11 @@ func Run(cfg *Config, opts Options, call Caller) (*Summary, error) {
 				p.Name, strings.Join(p.unset, ", $")).
 				WithRemedy("set it to the device's serial or udid (mobium devices lists them), or run another project with --project")
 		}
+	}
+
+	if opts.Debug != nil && len(projects) > 1 {
+		return nil, mobiumerr.New(mobiumerr.InvalidArgument, "--debug stops before each step for a person to read, "+
+			"so it runs one project at a time; name it with --project")
 	}
 
 	var only map[string]bool
@@ -288,6 +347,7 @@ func Run(cfg *Config, opts Options, call Caller) (*Summary, error) {
 	}
 	close(queue)
 	var wg sync.WaitGroup
+	var stopped atomic.Bool
 	for w := 0; w < workers; w++ {
 		wg.Add(1)
 		go func() {
@@ -295,7 +355,13 @@ func Run(cfg *Config, opts Options, call Caller) (*Summary, error) {
 			for name := range queue {
 				for _, j := range byProject[name] {
 					for _, t := range j.file.Tests {
+						if stopped.Load() {
+							break
+						}
 						r := runTest(j, t, opts, callers[name])
+						if r.Failure != nil && r.Failure.Code == codeStopped {
+							stopped.Store(true)
+						}
 						if r.Device == "" {
 							r.Device = leased[name]
 						}
@@ -322,9 +388,11 @@ func runTest(j job, t Test, opts Options, call Caller) Result {
 		Device: j.project.Device}
 	start := time.Now()
 	var first []*Failure
+	var firstTrace, lastTrace []TraceStep
 	for attempt := 1; attempt <= opts.Retries+1; attempt++ {
 		r.Attempts = attempt
-		fs := runOnce(j, t, opts, call, attempt)
+		fs, tr := runOnce(j, t, opts, call, attempt)
+		lastTrace = tr
 		if len(fs) == 0 {
 			r.Status = Passed
 			if first != nil {
@@ -334,13 +402,59 @@ func runTest(j job, t Test, opts Options, call Caller) Result {
 			break
 		}
 		if first == nil {
-			first = fs
+			first, firstTrace = fs, tr
 		}
 		r.Status = Failed
 		r.setFailures(fs)
+		if fs[len(fs)-1].Code == codeStopped {
+			break
+		}
 	}
+	// The trace kept is the attempt reported: a flaky test's failure, a
+	// failed test's last attempt, a passing test's pass.
+	r.Trace = lastTrace
+	if r.Status == Flaky {
+		r.Trace = firstTrace
+	}
+	if opts.Trace == TraceRetainOnFailure && r.Status == Passed {
+		r.Trace = nil
+	}
+	pruneTraces(opts.OutputDir, j, t, r.Trace)
 	r.Duration = time.Since(start)
 	return r
+}
+
+// codeStopped is a test the person debugging it stopped. Not one of
+// mobiumerr's codes: nothing failed.
+const codeStopped = "stopped"
+
+// traceStem names an attempt's trace directory; traceDir is where it is,
+// under the output directory.
+func traceStem(j job, t Test) string {
+	return slug(fmt.Sprintf("%s-%s-%s", j.project.Name, filepath.Base(j.file.Path), t.Name))
+}
+
+func traceDir(j job, t Test, attempt int) string {
+	return filepath.Join("artifacts", "trace", fmt.Sprintf("%s-%d", traceStem(j, t), attempt))
+}
+
+// pruneTraces removes every attempt's trace screenshots but the one kept.
+func pruneTraces(out string, j job, t Test, kept []TraceStep) {
+	keep := ""
+	for _, s := range kept {
+		if s.Screenshot != "" {
+			keep = filepath.Base(filepath.Dir(s.Screenshot))
+			break
+		}
+	}
+	prefix := traceStem(j, t) + "-"
+	entries, _ := os.ReadDir(filepath.Join(out, "artifacts", "trace"))
+	for _, e := range entries {
+		rest := strings.TrimPrefix(e.Name(), prefix)
+		if e.Name() != keep && rest != e.Name() && rest != "" && strings.Trim(rest, "0123456789") == "" {
+			_ = os.RemoveAll(filepath.Join(out, "artifacts", "trace", e.Name()))
+		}
+	}
 }
 
 func (r *Result) setFailures(fs []*Failure) {
@@ -351,9 +465,12 @@ func (r *Result) setFailures(fs []*Failure) {
 }
 
 // runOnce runs a test from a fresh app, and says how it failed, if it did:
-// every soft assertion that failed, and what ended it.
-func runOnce(j job, t Test, opts Options, call Caller, attempt int) []*Failure {
+// every soft assertion that failed, and what ended it — and its trace.
+func runOnce(j job, t Test, opts Options, call Caller, attempt int) ([]*Failure, []TraceStep) {
 	deadline := time.Now().Add(opts.Timeout)
+	if opts.Debug != nil {
+		deadline = time.Now().Add(24 * time.Hour)
+	}
 	dev := func(args map[string]interface{}) map[string]interface{} {
 		out := projectArgs(j.project)
 		for k, v := range args {
@@ -365,6 +482,13 @@ func runOnce(j job, t Test, opts Options, call Caller, attempt int) []*Failure {
 	n := 0 // the failure's number in this attempt, for its evidence's name
 	fail := func(step int, s *Step, err error) *Failure {
 		f := &Failure{Step: step, Code: string(mobiumerr.CodeOf(err)), Message: err.Error()}
+		if err == errStopped {
+			f.Code = codeStopped
+			if s != nil {
+				f.StepName = s.label()
+			}
+			return f
+		}
 		if s != nil {
 			f.StepName, f.Description = s.Name, s.Description
 			if s.Expect != nil {
@@ -378,21 +502,103 @@ func runOnce(j job, t Test, opts Options, call Caller, attempt int) []*Failure {
 		return f
 	}
 
+	h := &hooks{}
+	var trace []TraceStep
+	if opts.Trace == TraceOn || opts.Trace == TraceRetainOnFailure {
+		h.single = true
+		dir := traceDir(j, t, attempt)
+		h.after = func(step int, s *Step, err error, took time.Duration) {
+			ts := TraceStep{Step: step, Name: s.label(), Description: s.Description, Duration: took}
+			if err != nil {
+				ts.Error = err.Error()
+			}
+			ts.Map = settledMap(call, dev)
+			if opts.Evidence {
+				name := fmt.Sprintf("%02d.png", len(trace)+1)
+				if abs, e := filepath.Abs(filepath.Join(opts.OutputDir, dir, name)); e == nil && os.MkdirAll(filepath.Dir(abs), 0o755) == nil {
+					if _, e := call("app_screenshot", dev(map[string]interface{}{"path": abs})); e == nil {
+						ts.Screenshot = filepath.Join(dir, name)
+					}
+				}
+			}
+			trace = append(trace, ts)
+		}
+	}
+	if opts.Debug != nil {
+		h.single = true
+		running := false
+		h.before = func(step int, s *Step) error {
+			if running {
+				return nil
+			}
+			b, _ := json.Marshal(s.longForm())
+			p := DebugPoint{Project: j.project.Name, Title: j.file.Title(t), Step: step, Call: string(b),
+				Map: func() string { return settledMap(call, dev) }}
+			switch opts.Debug(p) {
+			case DebugContinue:
+				running = true
+			case DebugQuit:
+				return errStopped
+			}
+			return nil
+		}
+	}
+
 	if app := j.file.App; app != "" {
 		_, _ = call("app_terminate", dev(map[string]interface{}{"app": app}))
 		if _, err := call("app_launch", dev(map[string]interface{}{"app": app})); err != nil {
-			return []*Failure{fail(0, nil, err)}
+			return []*Failure{fail(0, nil, err)}, trace
 		}
 	}
 	var soft []*Failure
-	if f := runSteps(j.file.BeforeEach, 0, deadline, call, dev, fail, &soft); f != nil {
+	if f := runSteps(j.file.BeforeEach, 0, deadline, call, dev, fail, &soft, h); f != nil {
 		f.Message = "in beforeEach: " + f.Message
-		return append(soft, f)
+		return append(soft, f), trace
 	}
-	if f := runSteps(t.Steps, 1, deadline, call, dev, fail, &soft); f != nil {
-		return append(soft, f)
+	if f := runSteps(t.Steps, 1, deadline, call, dev, fail, &soft, h); f != nil {
+		return append(soft, f), trace
 	}
-	return soft
+	return soft, trace
+}
+
+// settledMap reads the screen once it has stopped changing: a tap returns
+// when it is delivered, not when the next screen is up, so a map read straight
+// after one showed MobiumApp's home under a step that ran on the Form Demo.
+// Two reads 300ms apart that agree are the answer, or the last read after
+// two seconds — a screen with a clock on it never agrees, and that is fine:
+// it is shown to a person, or kept in a trace, and never compared.
+func settledMap(call Caller, dev func(map[string]interface{}) map[string]interface{}) string {
+	read := func() string {
+		if res, e := call("app_map", dev(map[string]interface{}{})); e == nil && len(res.Content) > 0 {
+			return res.Content[0].Text
+		}
+		return ""
+	}
+	end := time.Now().Add(settleFor)
+	last := read()
+	for time.Now().Before(end) {
+		time.Sleep(settlePause)
+		now := read()
+		if now == last {
+			return now
+		}
+		last = now
+	}
+	return last
+}
+
+// How long settledMap waits for the screen to stop changing, and between reads.
+var settleFor, settlePause = 2 * time.Second, 300 * time.Millisecond
+
+// errStopped is a debugged test the person stopped.
+var errStopped = mobiumerr.New(mobiumerr.Unclassified, "stopped in the debugger")
+
+// hooks change how steps run: one at a time, with something before or after
+// each — a trace's screenshot, a debugger's pause.
+type hooks struct {
+	single bool
+	before func(step int, s *Step) error
+	after  func(step int, s *Step, err error, took time.Duration)
 }
 
 // runSteps runs steps in order: consecutive tool calls as one app_batch,
@@ -405,7 +611,7 @@ func runOnce(j job, t Test, opts Options, call Caller, attempt int) []*Failure {
 // that failed, and still fails.
 func runSteps(steps []Step, base int, deadline time.Time, call Caller,
 	dev func(map[string]interface{}) map[string]interface{},
-	fail func(int, *Step, error) *Failure, soft *[]*Failure) *Failure {
+	fail func(int, *Step, error) *Failure, soft *[]*Failure, h *hooks) *Failure {
 	number := func(i int) int {
 		if base == 0 {
 			return 0
@@ -417,12 +623,21 @@ func runSteps(steps []Step, base int, deadline time.Time, call Caller,
 			return fail(number(i), &steps[i], mobiumerr.New(mobiumerr.Timeout, "the test ran out of its time "+
 				"before step %d", i+1))
 		}
-		if steps[i].Expect != nil || steps[i].Soft {
+		if steps[i].Expect != nil || steps[i].Soft || h.single {
+			if h.before != nil {
+				if err := h.before(number(i), &steps[i]); err != nil {
+					return fail(number(i), &steps[i], err)
+				}
+			}
+			start := time.Now()
 			var err error
 			if steps[i].Expect != nil {
 				err = expect(*steps[i].Expect, call, dev, deadline)
 			} else {
 				_, err = call(steps[i].Name, dev(steps[i].argumentsOrEmpty()))
+			}
+			if h.after != nil {
+				h.after(number(i), &steps[i], err, time.Since(start))
 			}
 			if err != nil {
 				f := fail(number(i), &steps[i], err)

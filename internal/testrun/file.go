@@ -117,6 +117,22 @@ func (s *Step) UnmarshalJSON(b []byte) error {
 	return nil
 }
 
+// label names a step in a trace or a debugger: its tool, or the expect's.
+func (s Step) label() string {
+	if s.Expect != nil {
+		return "expect " + s.Expect.Tool
+	}
+	return s.Name
+}
+
+// longForm is the step as its long form spells it.
+func (s Step) longForm() interface{} {
+	if s.Expect != nil {
+		return map[string]interface{}{"expect": s.Expect}
+	}
+	return map[string]interface{}{"name": s.Name, "arguments": s.argumentsOrEmpty()}
+}
+
 func (s Step) argumentsOrEmpty() map[string]interface{} {
 	if s.Arguments == nil {
 		return map[string]interface{}{}
@@ -284,12 +300,14 @@ func (s Step) check(where string) error {
 type Config struct {
 	// Dir is where the config was found; TestDir and OutputDir are relative
 	// to it.
-	Dir       string    `json:"-"`
-	TestDir   string    `json:"testDir,omitempty"`
-	OutputDir string    `json:"outputDir,omitempty"`
-	TimeoutMs int       `json:"timeout,omitempty"`
-	Retries   int       `json:"retries,omitempty"`
-	Projects  []Project `json:"projects,omitempty"`
+	Dir       string `json:"-"`
+	TestDir   string `json:"testDir,omitempty"`
+	OutputDir string `json:"outputDir,omitempty"`
+	TimeoutMs int    `json:"timeout,omitempty"`
+	Retries   int    `json:"retries,omitempty"`
+	// Trace is --trace's default: on, off or retain-on-failure.
+	Trace    string    `json:"trace,omitempty"`
+	Projects []Project `json:"projects,omitempty"`
 }
 
 // Project is a device to run on. An empty Device is the only one attached;

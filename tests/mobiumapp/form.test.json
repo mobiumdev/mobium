@@ -1,28 +1,28 @@
 {
-  "description": "MobiumApp's Form Demo: a checkbox, a radio group and a real switch, each waited on by state.",
+  "description": "MobiumApp's Form Demo: a checkbox, a radio group and a real switch, each waited on by state. Written in the step shorthand; login.test.json keeps the long form, so the suite runs both.",
   "app": "dev.mobium.mobiumapp",
   "beforeEach": [
-    {"name": "app_tap", "arguments": {"target": "label=Form Demo"}}
+    {"tap": "label=Form Demo"}
   ],
   "tests": [
     {"name": "a checkbox reaches the state asked for", "steps": [
-      {"name": "app_wait_for", "arguments": {"target": "testid=termsCheck", "condition": "unchecked"}},
-      {"name": "app_check", "arguments": {"target": "testid=termsCheck"}},
-      {"name": "app_wait_for", "arguments": {"target": "testid=termsCheck", "condition": "checked"}},
-      {"name": "app_wait_for", "arguments": {"target": "testid=notifyCheck", "condition": "checked", "not": true}}
+      {"wait_for": {"target": "testid=termsCheck", "condition": "unchecked"}},
+      {"check": "testid=termsCheck"},
+      {"wait_for": {"target": "testid=termsCheck", "condition": "checked"}},
+      {"wait_for": {"target": "testid=notifyCheck", "condition": "checked", "not": true}}
     ]},
     {"name": "choosing a radio clears the one before", "steps": [
-      {"name": "app_wait_for", "arguments": {"target": "testid=planFree", "condition": "checked"}},
-      {"name": "app_tap", "arguments": {"target": "testid=planPro"}},
-      {"name": "app_wait_for", "arguments": {"target": "testid=planPro", "condition": "checked"}},
-      {"name": "app_wait_for", "arguments": {"target": "testid=planFree", "condition": "unchecked"}},
-      {"name": "app_wait_for", "arguments": {"target": "role=radio", "condition": "count", "count": 3}}
+      {"wait_for": {"target": "testid=planFree", "condition": "checked"}},
+      {"tap": "testid=planPro"},
+      {"wait_for": {"target": "testid=planPro", "condition": "checked"}},
+      {"wait_for": {"target": "testid=planFree", "condition": "unchecked"}},
+      {"wait_for": {"target": "role=radio", "condition": "count", "count": 3}}
     ]},
     {"name": "the dark mode switch goes on and back off", "steps": [
-      {"name": "app_check", "arguments": {"target": "testid=darkSwitch"}},
-      {"name": "app_wait_for", "arguments": {"target": "testid=darkSwitch", "condition": "checked"}},
-      {"name": "app_check", "arguments": {"target": "testid=darkSwitch", "checked": false}},
-      {"name": "app_wait_for", "arguments": {"target": "testid=darkSwitch", "condition": "unchecked"}}
+      {"check": "testid=darkSwitch"},
+      {"wait_for": {"target": "testid=darkSwitch", "condition": "checked"}},
+      {"check": {"target": "testid=darkSwitch", "checked": false}},
+      {"wait_for": {"target": "testid=darkSwitch", "condition": "unchecked"}}
     ]}
   ]
 }

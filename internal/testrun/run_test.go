@@ -2,6 +2,7 @@ package testrun
 
 import (
 	"encoding/xml"
+	"fmt"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -57,6 +58,9 @@ func (f *fake) call(tool string, args map[string]interface{}) (*agent.ToolsCallR
 		if r, err := f.answer(tool, args); r != nil || err != nil {
 			return r, err
 		}
+	}
+	if tool == "app_wait_for" && args["target"] == "testid=nothing" {
+		return nil, mobiumerr.New(mobiumerr.Timeout, "timed out waiting for testid=nothing")
 	}
 	if tool == "app_batch" {
 		steps := args["steps"].([]interface{})
@@ -514,5 +518,72 @@ func TestSoftAssertionsCarryOn(t *testing.T) {
 	line := Line(r)
 	if strings.Count(line, "soft, carried on") != 2 {
 		t.Errorf("the list line does not show both:\n%s", line)
+	}
+}
+
+// A trace is every step with the screen after it, one call at a time, and
+// retain-on-failure keeps only a failed test's.
+func TestATraceIsEveryStepAndRetainOnFailureKeepsFailures(t *testing.T) {
+	dir := t.TempDir()
+	p := write(t, dir, "login.test.json", loginFile)
+	for _, mode := range []string{TraceOn, TraceRetainOnFailure} {
+		f := &fake{}
+		out := t.TempDir()
+		s := run(t, &Config{Dir: dir}, Options{Files: []string{p}, Trace: mode, Evidence: true, OutputDir: out}, f)
+		got := strings.Join(f.calls, " ")
+		if strings.Contains(got, "app_batch") {
+			t.Errorf("%s: a traced run batched its steps: %s", mode, got)
+		}
+		if p, fl, _ := s.Counts(); p != 1 || fl != 1 {
+			t.Fatalf("%s: passed %d, failed %d — want one of each, or the trace cases prove nothing", mode, p, fl)
+		}
+		for _, r := range s.Results {
+			switch {
+			case r.Status == Failed && len(r.Trace) != 2:
+				t.Errorf("%s: the failed test's trace has %d steps, want 2", mode, len(r.Trace))
+			case r.Status == Failed && r.Trace[1].Error == "":
+				t.Errorf("%s: the failing step's trace does not say it failed", mode)
+			case r.Status == Passed && mode == TraceOn && len(r.Trace) != 2:
+				t.Errorf("on: the passing test's trace has %d steps, want 2", len(r.Trace))
+			case r.Status == Passed && mode == TraceRetainOnFailure && r.Trace != nil:
+				t.Errorf("retain-on-failure kept a passing test's trace")
+			}
+		}
+	}
+}
+
+// The debugger stops before each step, in order; continue runs the rest of
+// the test without stopping; quit ends the run with nothing after it.
+func TestTheDebuggerStopsBeforeEachStep(t *testing.T) {
+	dir := t.TempDir()
+	p := write(t, dir, "login.test.json", loginFile)
+	var seen []string
+	answers := []DebugAction{DebugStep, DebugStep, DebugContinue}
+	debug := func(pt DebugPoint) DebugAction {
+		seen = append(seen, fmt.Sprintf("%s:%d", pt.Title, pt.Step))
+		a := answers[0]
+		if len(answers) > 1 {
+			answers = answers[1:]
+		}
+		return a
+	}
+	run(t, &Config{Dir: dir}, Options{Files: []string{p}, Debug: debug}, &fake{})
+	want := "login.test.json › passes:1 login.test.json › passes:2 login.test.json › fails at its second step:1"
+	if got := strings.Join(seen, " "); got != want {
+		t.Errorf("stopped at\n  %s\nwant\n  %s", got, want)
+	}
+
+	quits := 0
+	s := run(t, &Config{Dir: dir}, Options{Files: []string{p},
+		Debug: func(DebugPoint) DebugAction { quits++; return DebugQuit }}, &fake{})
+	if quits != 1 || len(s.Results) != 1 || s.Results[0].Failure.Code != codeStopped {
+		t.Errorf("quit asked %d times, %d results — want once, and the one test stopped", quits, len(s.Results))
+	}
+
+	cfg := &Config{Dir: dir, Projects: []Project{{Name: "a", Device: "emulator-5554"}, {Name: "b", Device: "emulator-5556"}}}
+	_, err := Run(cfg, Options{Files: []string{p}, Timeout: time.Minute, OutputDir: t.TempDir(),
+		Debug: func(DebugPoint) DebugAction { return DebugStep }}, (&fake{}).call)
+	if mobiumerr.CodeOf(err) != mobiumerr.InvalidArgument {
+		t.Errorf("--debug over two projects was not refused: %v", err)
 	}
 }

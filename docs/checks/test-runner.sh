@@ -16,6 +16,11 @@
 # - The flaky control, from cleared app data, is reported flaky with a retry
 #   and failed without one.
 # - A project whose device is unset is refused before any test runs.
+# - Iteration 2: the soft control fails with both of its soft failures and
+#   still reaches its last step; a retain-on-failure trace keeps a failed
+#   test's steps, each with a screenshot, and nothing of a passing one; and
+#   --debug, answered through a pipe, stops before each step and quits.
+#   The suite's form.test.json is written in the step shorthand.
 #
 # Needs MobiumApp installed. Emulators and simulators: the flaky control
 # clears the app's data, which a phone cannot.
@@ -120,5 +125,60 @@ if not rs or any(r["status"] != "flaky" or r["attempts"] != 2 for r in rs):
 ' "$OUT/flaky/results.json" || exit 1
 echo "$r" | grep -q 'flaky' || fail "the list report does not say flaky: $r"
 row "flaky" "failed with no retry; flaky, on attempt 2, with one"
+
+# --- soft: every soft failure reported, and the test carried on ------------
+set +e; r=$("$M" test controls/soft.test.json $P --reporter json --output "$OUT/soft" 2>&1); st=$?; set -e
+[ $st -eq 1 ] || fail "the soft control exited $st, not 1: $r"
+python3 - "$OUT/soft" <<'EOF' || exit 1
+import json, os, sys
+out = sys.argv[1]
+for r in json.load(open(os.path.join(out, "results.json")))["results"]:
+    fs = r.get("failures") or []
+    if r["status"] != "failed" or [f["step"] for f in fs] != [2, 4] or not all(f.get("soft") for f in fs):
+        sys.exit("FAIL: %s: %s, soft failures at %s — want failed, at steps 2 and 4" %
+                 (r["project"], r["status"], [f["step"] for f in fs]))
+    if len({f.get("screenshot") for f in fs}) != 2:
+        sys.exit("FAIL: %s: the two soft failures do not each keep a screenshot" % r["project"])
+print("    %-14s %-58s ok" % ("soft", "both soft failures reported, and the last step ran"))
+EOF
+
+# --- trace: a failed test's steps kept, a passing test's not ----------------
+set +e
+"$M" test mobiumapp/form.test.json controls/must-fail.test.json -g 'checkbox|screen assertion' $P \
+  --trace retain-on-failure --reporter json,html --output "$OUT/trace" >/dev/null 2>&1
+set -e
+python3 - "$OUT/trace" <<'EOF' || exit 1
+import json, os, sys
+out = sys.argv[1]
+for r in json.load(open(os.path.join(out, "results.json")))["results"]:
+    tr = r.get("trace") or []
+    if r["status"] == "passed" and tr:
+        sys.exit("FAIL: retain-on-failure kept a trace of %s, which passed" % r["title"])
+    if r["status"] == "failed":
+        if len(tr) != 2 or not tr[-1].get("error") or tr[0].get("error"):
+            sys.exit("FAIL: %s's trace is %s" % (r["title"], [(t["step"], bool(t.get("error"))) for t in tr]))
+        for t in tr:
+            if not t.get("map") or not os.path.getsize(os.path.join(out, t["screenshot"])):
+                sys.exit("FAIL: step %d of %s's trace has no screen" % (t["step"], r["title"]))
+if 'class="film"' not in open(os.path.join(out, "index.html")).read():
+    sys.exit("FAIL: the HTML report shows no filmstrip")
+print("    %-14s %-58s ok" % ("trace", "a failed test's every step kept; a passing test's, none"))
+EOF
+
+# --- debug: stops before each step, and quits ------------------------------
+first=$(echo "$PROJECTS" | cut -d, -f1)
+set +e
+dbg=$(printf '\n\nq\n' | "$M" test mobiumapp/form.test.json -g checkbox --project "$first" --debug \
+  --output "$OUT/debug" 2>&1); st=$?
+set -e
+[ $st -eq 1 ] || fail "a debugged run that was quit exited $st, not 1"
+[ "$(echo "$dbg" | grep -c "^\[$first\] .* — ")" -eq 3 ] || fail "the debugger did not stop exactly three times: $dbg"
+echo "$dbg" | grep -q '^@e1 ' || fail "the debugger did not show the screen's map"
+# The map before step 1 is the Form Demo that beforeEach opened: a map read
+# the moment a tap returns showed the screen being left.
+echo "$dbg" | awk '/ — step 1$/{f=1} / — step 2$/{f=0} f' | grep -q 'Accept terms' ||
+  fail "the map before step 1 is not the screen beforeEach opened: $dbg"
+echo "$dbg" | grep -q '\[stopped\] stopped in the debugger' || fail "a quit test was not reported stopped: $dbg"
+row "debug" "stopped at beforeEach, steps 1 and 2; quit, reported stopped"
 
 echo PASS

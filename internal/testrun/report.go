@@ -187,6 +187,9 @@ details{border-top:1px solid var(--line);padding:10px 0}summary{cursor:pointer;d
 .tag{font-size:12px;border:1px solid var(--line);border-radius:10px;padding:0 8px}
 pre{background:var(--code);padding:10px;overflow:auto;font-size:12px;border-radius:6px;white-space:pre-wrap}
 img{max-width:320px;width:100%;border:1px solid var(--line);border-radius:8px}
+.film{display:flex;gap:10px;overflow-x:auto;padding:4px 0 10px}
+.frame{flex:0 0 150px;font-size:12px}.frame img{width:150px}.frame.bad{color:var(--bad)}
+.frame details{border:0;padding:0}.frame pre{max-width:320px}
 </style></head><body><main>`)
 	fmt.Fprintf(&b, "<h1>Mobium test report</h1><p class=\"muted\">%s · %s</p>",
 		html.EscapeString(s.Started.Format("2006-01-02 15:04:05")), s.Duration.Round(100*time.Millisecond))
@@ -197,8 +200,12 @@ img{max-width:320px;width:100%;border:1px solid var(--line);border-radius:8px}
 		if r.Status != Passed {
 			open = " open"
 		}
-		fmt.Fprintf(&b, `<details%s><summary><strong class="%s">%s</strong><span>%s</span><span class="tag">%s</span><span class="muted">%s</span></summary>`,
-			open, r.Status, r.Status, html.EscapeString(r.Title), html.EscapeString(r.Project), r.Duration.Round(100*time.Millisecond))
+		traced := ""
+		if len(r.Trace) > 0 {
+			traced = fmt.Sprintf(`<span class="tag">trace · %d steps</span>`, len(r.Trace))
+		}
+		fmt.Fprintf(&b, `<details%s><summary><strong class="%s">%s</strong><span>%s</span><span class="tag">%s</span>%s<span class="muted">%s</span></summary>`,
+			open, r.Status, r.Status, html.EscapeString(r.Title), html.EscapeString(r.Project), traced, r.Duration.Round(100*time.Millisecond))
 		for i, f := range r.all() {
 			label := "Failed"
 			if r.Status == Flaky {
@@ -214,6 +221,36 @@ img{max-width:320px;width:100%;border:1px solid var(--line);border-radius:8px}
 			if f.Map != "" {
 				fmt.Fprintf(&b, "<p class=\"muted\">The map when it failed</p><pre>%s</pre>", html.EscapeString(f.Map))
 			}
+		}
+		if len(r.Trace) > 0 {
+			b.WriteString(`<p class="muted">Trace — the screen after each step</p><div class="film">`)
+			for _, ts := range r.Trace {
+				cls := "frame"
+				if ts.Error != "" {
+					cls += " bad"
+				}
+				where := fmt.Sprintf("step %d", ts.Step)
+				if ts.Step == 0 {
+					where = "beforeEach"
+				}
+				fmt.Fprintf(&b, `<div class="%s">`, cls)
+				if ts.Screenshot != "" {
+					fmt.Fprintf(&b, `<img src="%s" alt="After %s">`, html.EscapeString(ts.Screenshot), html.EscapeString(where))
+				}
+				fmt.Fprintf(&b, "<div><strong>%s</strong> %s</div><div class=\"muted\">%s</div>",
+					html.EscapeString(where), html.EscapeString(ts.Name), ts.Duration.Round(10*time.Millisecond))
+				if ts.Description != "" {
+					fmt.Fprintf(&b, "<div>%s</div>", html.EscapeString(ts.Description))
+				}
+				if ts.Error != "" {
+					fmt.Fprintf(&b, "<div>%s</div>", html.EscapeString(ts.Error))
+				}
+				if ts.Map != "" {
+					fmt.Fprintf(&b, "<details><summary>map</summary><pre>%s</pre></details>", html.EscapeString(ts.Map))
+				}
+				b.WriteString("</div>")
+			}
+			b.WriteString("</div>")
 		}
 		b.WriteString("</details>")
 	}
