@@ -232,7 +232,7 @@ export class Device {
   /**
    * Put a local file where the device keeps downloads: Android's shared
    * Download folder (app is ignored), or an iOS simulator app's Documents,
-   * the app in front unless named. A real iPhone is not built yet.
+   * the app in front unless named — on a real iPhone too.
    */
   upload(path: string, options?: { name?: string; app?: string }): Promise<Data>
   /** With a path: saves the file there and resolves to the transfer. */

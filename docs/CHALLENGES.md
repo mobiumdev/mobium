@@ -7,7 +7,7 @@ the source.
 
 The pattern across them is the reason the document exists: **almost nothing
 here was found by reading code or by a test written from imagination.** Of
-172 defects, 136 were found only by running against a real device. The other
+174 defects, 138 were found only by running against a real device. The other
 thirty-six — 4, 5, 6, 14, 23, 24, 32, 35, 36, 39, 44, 50, 53, 54, 57, 66, 89,
 99, 100, 121, 123, 129, 130, 133, 134, 139, 140, 141, 142, 144, 150, 158, 162,
 164, 165 and 172 — came from reading code, the compiler, a test, a linter,
@@ -3885,6 +3885,42 @@ named and from whichever folder the run starts. On the Pixel, `--list` with
 `--last-failed` named all seven tests of the suite when four others had
 failed: it applied `-g` and not `--last-failed`, so what it said would run
 was not what would run. It applies both now.
+
+### 173. devicectl kept the old file and reported the copy done
+
+**Found by:** probing CoreDevice's file service on the iPhone 15 Plus before
+building `app_upload` on it.
+
+`devicectl device copy to` says in its help that it skips "files that have
+not been modified", and it decides that by size and modification time
+alone. A changed file of the same size, stamped with the time of the copy
+already on the phone, was "copied" with exit 0 and success in its JSON,
+and the phone went on holding the old bytes. A size read-back, the check the
+simulator path uses, cannot see it, because the size is the same. So on a
+phone an upload goes from a fresh copy stamped now, and is confirmed by
+copying it back and comparing SHA-256; a mismatch is tried once more a
+second later, then reported as `not_confirmed`. The service also has no
+delete — a directory copied with `--remove-existing-content` empties the
+whole destination — so nothing removes one file, an upload replaces one by
+name, and `docs/checks/files.sh` cleans a phone by reinstalling MobiumApp.
+When an app is missing, devicectl says only that "the system failed to get
+a list of files", so the app is looked up first and named in the refusal.
+
+### 174. A check printed the phone's recent files
+
+**Found by:** `docs/checks/files.sh` on the iPhone 15 Plus, the first time.
+
+On a simulator the file picker opened on the folder list; on the phone it
+opened on Recents, which are its owner's files. The check did not find its
+upload there and failed, and its failure message quoted `mobium map` so a
+person could see what was on screen. That printed the owner's recent file
+names to the terminal. It is the failure CHALLENGES 111 describes, in a
+check rather than in a tool. On a real phone the check now withholds
+everything it would quote from the device — the map, the folder listing,
+what the app says was picked — and asserts only whether. It also finds its
+way from Recents through Browse and On My iPhone to the app's folder. A
+failure that names the wrong cause was fixed on the way: a device that was
+not connected was reported as MobiumApp not being installed.
 
 ## Findings that were not defects
 

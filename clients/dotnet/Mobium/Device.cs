@@ -318,8 +318,8 @@ namespace Mobium
         /// Android that is the shared Download folder, one for every app; the
         /// file is indexed in MediaStore, which is what the picker reads, and
         /// read back there. On an iOS simulator it is the Documents folder of
-        /// the app in front, which the Files app shows under On My iPhone. A
-        /// real iPhone is not built yet.
+        /// the app in front, which the Files app shows under On My iPhone; on a
+        /// real iPhone the same, through CoreDevice, confirmed by its bytes.
         /// </summary>
         /// <returns>
         /// The transfer: <c>device</c>, <c>app</c> (iOS), <c>name</c>,
@@ -355,8 +355,8 @@ namespace Mobium
         /// it at <paramref name="path"/> on this machine, to check what an app
         /// saved: Android's shared Download folder, or on an iOS simulator the
         /// Documents of the app in front. The copy's size is read back against
-        /// the device's. A real iPhone is not built yet. <see cref="Downloads()"/>
-        /// lists what there is to fetch.
+        /// the device's, on a simulator or a real iPhone alike.
+        /// <see cref="Downloads()"/> lists what there is to fetch.
         /// </summary>
         /// <returns>
         /// The transfer: <c>device</c>, <c>app</c> (iOS), <c>name</c>,
@@ -402,8 +402,8 @@ namespace Mobium
         /// <summary>
         /// What the downloads folder holds, each file with <c>name</c>,
         /// <c>bytes</c> and <c>modified</c>: Android's shared Download folder,
-        /// or on an iOS simulator the Documents of the app in front. A real
-        /// iPhone is not built yet.
+        /// or on iOS, a simulator or a real iPhone, the Documents of the app in
+        /// front.
         /// </summary>
         public IList<IDictionary<string, object?>> Downloads() =>
             Maps(Field("app_download", Args(), "files"));

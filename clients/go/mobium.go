@@ -721,7 +721,8 @@ type TransferOptions struct {
 // folder, and the file is indexed in MediaStore — which is what the picker
 // reads — and read back there. On an iOS simulator it is an app's own
 // Documents folder, which the Files app shows under On My iPhone: the app
-// named in opts, or the one in front. A real iPhone is not built yet.
+// named in opts, or the one in front. On a real iPhone it is the same folder,
+// through CoreDevice, and the upload is confirmed by reading its bytes back.
 //
 // A relative path is this process's: `mobium pipe` resolves it before the
 // daemon sees it.
@@ -746,8 +747,8 @@ func (d *Device) Upload(ctx context.Context, path string, opts *TransferOptions)
 // Download saves the file called name, from where the device keeps downloads,
 // to path on this machine, and checks the copy's size against the device's.
 // On Android the folder is the shared Download folder; on an iOS simulator it
-// is an app's Documents — app, or the one in front when app is empty. A real
-// iPhone is not built yet. A relative path is this process's.
+// is an app's Documents — app, or the one in front when app is empty — and on
+// a real iPhone the same. A relative path is this process's.
 func (d *Device) Download(ctx context.Context, name, path, app string) (*Transfer, error) {
 	if name == "" || path == "" {
 		return nil, &Error{Tool: "app_download", Code: CodeInvalidArgument,
@@ -795,8 +796,8 @@ func (d *Device) DownloadBytes(ctx context.Context, name, app string) ([]byte, e
 
 // Downloads lists what the folder the device keeps downloads in holds:
 // Android's shared Download folder, or on an iOS simulator an app's
-// Documents — app, or the one in front when app is empty. A real iPhone is
-// not built yet. An empty folder is an empty list, not an error.
+// Documents — app, or the one in front when app is empty — and on a real
+// iPhone the same. An empty folder is an empty list, not an error.
 func (d *Device) Downloads(ctx context.Context, app string) ([]DeviceFile, error) {
 	args := map[string]any{}
 	if app != "" {

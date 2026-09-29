@@ -622,7 +622,8 @@ public final class Mobium implements AutoCloseable {
      * on iOS the Documents folder of the app in front, which the Files app
      * shows under On My iPhone. Android's picker reads MediaStore rather than
      * the folder, so the file is indexed and read back there; {@code checked}
-     * says how it was confirmed. A real iPhone is not built yet. A relative
+     * says how it was confirmed. On a real iPhone it is the same folder,
+     * and the upload is confirmed by reading its bytes back. A relative
      * path is this process's.
      *
      * @param path the file on this machine to upload
@@ -665,7 +666,7 @@ public final class Mobium implements AutoCloseable {
      * Brings a file back from where the device keeps downloads — Android's
      * shared Download folder, or on iOS the Documents of the app in front —
      * and saves it on this machine. The copy's size is read back against the
-     * device's. A real iPhone is not built yet. A relative path is this
+     * device's, a real iPhone's included. A relative path is this
      * process's.
      *
      * @param name the file's name in the folder, as {@link #downloads()} lists it
@@ -704,8 +705,8 @@ public final class Mobium implements AutoCloseable {
     /**
      * What the device's download folder holds: Android's shared Download
      * folder, or on iOS the Documents of the app in front. Each map has
-     * {@code name}, {@code bytes} and {@code modified}. A real iPhone is not
-     * built yet.
+     * {@code name}, {@code bytes} and {@code modified}. A real iPhone
+     * answers the same.
      *
      * @return each file in the folder
      */

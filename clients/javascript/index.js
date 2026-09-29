@@ -789,7 +789,8 @@ export class Device {
    * MediaStore, which is what the picker reads, and read back there. On an
    * iOS simulator it is an app's own Documents folder — the app in front
    * unless `app` names one — which the Files app shows under On My iPhone.
-   * A real iPhone is not built yet. `name` is the name to give it on the
+   * On a real iPhone it is the same folder, confirmed by reading its bytes
+   * back. `name` is the name to give it on the
    * device, a name rather than a path, and defaults to the file's own.
    *
    * Resolves to the transfer: `device`, `app` (iOS), `name`, `where`,
@@ -826,8 +827,8 @@ export class Device {
   /**
    * What the downloads folder holds, each file with `name`, `bytes` and
    * `modified`: Android's shared Download folder, or an iOS simulator app's
-   * Documents, the app in front unless `app` names one. A real iPhone is not
-   * built yet.
+   * Documents, the app in front unless `app` names one — on a real iPhone
+   * too.
    */
   async downloads({ app } = {}) {
     const data = (await this.#data('app_download', app ? { app } : {})) || {}
