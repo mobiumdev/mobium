@@ -332,33 +332,86 @@ func TestWDARefusesWhenTheTextNeverLands(t *testing.T) {
 	}
 }
 
-// A password field reads back as bullets, so it cannot be confirmed this way
-// and must not be tried — the check found this on a login screen, "hunter2"
-// against "•••••••".
-func TestWDADoesNotVerifyAPasswordField(t *testing.T) {
-	f := newFakeServer(t)
-	d := wdaFor(f)
+// passwordField is a WebDriverAgent whose password field shows `held` bullets
+// once typed into — or, while empty, its placeholder in clear, as the
+// simulator and a real iPhone both do. It counts the types and notes a clear.
+func passwordField(t *testing.T, held func(posts int) int) (*WDA, *int, *bool) {
+	t.Helper()
+	posts, cleared := 0, false
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		switch {
+		case strings.HasSuffix(r.URL.Path, "/attribute/value"):
+			v := strings.Repeat("\u2022", held(posts))
+			if v == "" {
+				v = "password"
+			}
+			out, _ := json.Marshal(map[string]string{"value": v})
+			w.Write(out)
+		case strings.HasSuffix(r.URL.Path, "/attribute/placeholderValue"):
+			w.Write([]byte(`{"value":"password"}`))
+		case strings.HasSuffix(r.URL.Path, "/clear"):
+			cleared = true
+			w.Write([]byte(`{"value":null}`))
+		case strings.HasSuffix(r.URL.Path, "/value") && r.Method == http.MethodPost:
+			posts++
+			w.Write([]byte(`{"value":null}`))
+		case strings.HasSuffix(r.URL.Path, "/element"):
+			w.Write([]byte(`{"value":{"ELEMENT":"EL1","element-6066-11e4-a52e-4f735466cecf":"EL1"}}`))
+		default:
+			w.Write([]byte(`{"value":null}`))
+		}
+	}))
+	t.Cleanup(srv.Close)
+	c := newW3CClient(5 * time.Second)
+	c.setBase(srv.URL)
+	c.sessionID = "S1"
+	return &WDA{w3c: c, scale: 1}, &posts, &cleared
+}
+
+// A password field reads back as bullets, so "hunter2" can never equal what
+// it shows — but one bullet is one character, so its length is confirmed.
+// It is cleared first: WebDriverAgent appends, and ten characters then seven
+// more held seventeen (CHALLENGES 103).
+func TestWDAConfirmsAPasswordByItsLength(t *testing.T) {
+	d, posts, cleared := passwordField(t, func(posts int) int { return 7 * posts })
 	node := &uitree.Node{TestID: "field", Password: true}
 	if err := d.SetText(context.Background(), node, "hunter2"); err != nil {
-		t.Fatalf("typing into a password field failed: %v", err)
+		t.Fatalf("seven bullets for a seven-character password was refused: %v", err)
 	}
-	cleared, typedAfter := false, false
-	for _, c := range f.calls() {
-		if strings.HasSuffix(c.path, "/attribute/value") {
-			t.Error("a password field was read back, which can only ever disagree")
-		}
-		if strings.HasSuffix(c.path, "/clear") {
-			cleared = true
-		}
-		if strings.HasSuffix(c.path, "/value") && cleared {
-			typedAfter = true
-		}
+	if *posts != 1 || !*cleared {
+		t.Errorf("typed %d times, cleared %v — want once, after a clear", *posts, *cleared)
 	}
-	// WebDriverAgent appends, and a password field has no read-back to put
-	// that right, so it is cleared first: ten characters then seven more
-	// held seventeen (CHALLENGES 103).
-	if !cleared || !typedAfter {
-		t.Errorf("the field was not cleared before typing (cleared %v, typed after %v)", cleared, typedAfter)
+}
+
+// On a real iPhone with a Russian keyboard, ten characters left one, and the
+// call reported ten (CHALLENGES 159). A short password is retried and then
+// refused, saying lengths and never the password.
+func TestWDARefusesAPasswordThatCameUpShort(t *testing.T) {
+	d, posts, _ := passwordField(t, func(int) int { return 1 })
+	node := &uitree.Node{TestID: "field", Password: true}
+	err := d.SetText(context.Background(), node, "wrongpass1")
+	if mobiumerr.CodeOf(err) != mobiumerr.NotConfirmed {
+		t.Fatalf("a password that arrived as one character was accepted: %v", err)
+	}
+	if !strings.Contains(err.Error(), "typed 10 characters") || !strings.Contains(err.Error(), "holds 1") {
+		t.Errorf("the refusal does not give the lengths: %v", err)
+	}
+	if strings.Contains(err.Error(), "wrongpass1") {
+		t.Errorf("the refusal printed the password: %v", err)
+	}
+	if *posts != setTextAttempts {
+		t.Errorf("typed %d times, want %d", *posts, setTextAttempts)
+	}
+}
+
+// An empty password field shows its placeholder, in clear, as its value —
+// "password", eight characters — and that is none, not eight.
+func TestWDAReadsAnEmptyPasswordFieldAsEmpty(t *testing.T) {
+	d, _, _ := passwordField(t, func(int) int { return 0 })
+	n, err := d.secureLength(context.Background(), "EL1")
+	if err != nil || n != 0 {
+		t.Fatalf("an empty field showing its placeholder read as %d characters (%v)", n, err)
 	}
 }
 
