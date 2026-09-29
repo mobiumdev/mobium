@@ -273,6 +273,14 @@ command mentions them.
 | `app_timezone` | `device` | string | _global_ --device |
 | `app_timezone` | `driver` | string | _global_ --driver |
 | `app_timezone` | `timezone` | string | timezone |
+| `app_trace` | `action` | string | trace |
+| `app_trace` | `device` | string | _global_ --device |
+| `app_trace` | `driver` | string | _global_ --driver |
+| `app_trace` | `maps` | boolean | trace |
+| `app_trace` | `name` | string | trace |
+| `app_trace` | `path` | string | trace |
+| `app_trace` | `return_data` | boolean | — |
+| `app_trace` | `screenshots` | boolean | trace |
 | `app_type` | `device` | string | _global_ --device |
 | `app_type` | `driver` | string | _global_ --driver |
 | `app_type` | `target` | string | type |
@@ -381,6 +389,7 @@ arguments and the two global flags.
 | `text` | app_text | — | target |
 | `time` | app_time | — | — |
 | `timezone` | app_timezone | — | timezone |
+| `trace` | app_trace | --name --no-maps --no-screenshots --output | action, maps, name, path, screenshots |
 | `type` | app_type | — | target, text |
 | `ui` | — | --port | — |
 | `uncheck` | app_check | — | checked, target |

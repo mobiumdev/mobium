@@ -68,6 +68,7 @@ namespace Mobium.Tests
             UploadSendsOnlyWhatWasGiven();
             DownloadSavesDecodesOrLists();
             MapDiffSendsDiffAndReadsWhatChanged();
+            TraceSendsOnlyWhatWasGiven();
 
             Console.WriteLine();
             Console.WriteLine($"{_checks} checks, {_failures} failed");
@@ -691,6 +692,48 @@ namespace Mobium.Tests
             var plain = d.Call("app_map", null);
             Eq("app_map with no arguments has no diff", false, plain.ContainsKey("diff"));
             Eq("and Map() still reads the elements", 1, d.Map().Count);
+        }
+
+        // -- app_trace -------------------------------------------------------
+
+        private static void TraceSendsOnlyWhatWasGiven()
+        {
+            using var d = Fake("ok");
+            var started = d.TraceStart();
+            var sent = Json.AsObject(started["echo"]);
+            Eq("TraceStart() sends the action alone", "action", Keys(sent));
+            Eq("and it is start", "start", Json.Str(sent, "action"));
+            Yes("and answers that it is tracing", Json.Bool(started, "tracing"));
+
+            sent = Json.AsObject(d.TraceStart("checkout")["echo"]);
+            Eq("TraceStart(name) sends the name too", "action,name", Keys(sent));
+            Eq("the name", "checkout", Json.Str(sent, "name"));
+
+            sent = Json.AsObject(d.TraceStart("checkout", false, true)["echo"]);
+            Eq("TraceStart(name, screenshots, maps) sends all four", "action,maps,name,screenshots", Keys(sent));
+            Yes("a false screenshots is sent as false", sent["screenshots"] is bool s && !s);
+            Yes("a true maps is sent as true", sent["maps"] is bool m && m);
+
+            sent = Json.AsObject(d.TraceStart(null, true, false)["echo"]);
+            Eq("a null name leaves the trace untitled", "action,maps,screenshots", Keys(sent));
+            Yes("a false maps is sent as false", sent["maps"] is bool m2 && !m2);
+
+            var stopped = d.TraceStop("/tmp/out/trace.zip");
+            sent = Json.AsObject(stopped["echo"]);
+            Eq("TraceStop(path) sends the action and path", "action,path", Keys(sent));
+            Eq("the action is stop", "stop", Json.Str(sent, "action"));
+            Eq("the path, as given", "/tmp/out/trace.zip", Json.Str(sent, "path"));
+            Eq("and answers with where it was saved", "/tmp/out/trace.zip", Json.Str(stopped, "path"));
+            Eq("and how many calls it holds", 3, Json.Integer(stopped, "calls"));
+
+            var status = d.Trace();
+            Eq("Trace() sends nothing: the status", "", Keys(Json.AsObject(status["echo"])));
+            Yes("and answers whether one is running", !Json.Bool(status, "tracing"));
+
+            Yes("a null name is refused before it is sent",
+                Throws<InvalidArgumentException>(() => d.TraceStart(null!)) != null);
+            Yes("a null path is refused before it is sent",
+                Throws<InvalidArgumentException>(() => d.TraceStop(null!)) != null);
         }
 
         // -- the harness ----------------------------------------------------

@@ -1070,6 +1070,41 @@ class Device:
             args["path"] = path
         return self._data("app_record", args or None) or {}
 
+    def trace_start(
+        self, name: str | None = None, screenshots: bool | None = None, maps: bool | None = None
+    ) -> dict:
+        """Start recording the session as a trace. Until trace_stop, every
+        call on the device is a step, with the screen after it and the map's
+        elements drawn over it.
+
+        ``name`` is the trace's title. ``screenshots`` and ``maps`` default
+        to true. Text typed into a field is not recorded, only its length. On
+        a real phone the screenshots are its owner's screen;
+        ``screenshots=False`` keeps none. One trace per device; ending the
+        session discards it.
+        """
+        args: dict = {"action": "start"}
+        if name:
+            args["name"] = name
+        if screenshots is not None:
+            args["screenshots"] = screenshots
+        if maps is not None:
+            args["maps"] = maps
+        return self._data("app_trace", args) or {}
+
+    def trace_stop(self, path: str) -> dict:
+        """Stop the trace and save it to ``path``: a zip in the Playwright
+        trace format, which trace.playwright.dev and player.vibium.dev open.
+        ``mobium pipe`` makes a relative path absolute. Returns ``calls``,
+        ``path`` and ``bytes``.
+        """
+        return self._data("app_trace", {"action": "stop", "path": path}) or {}
+
+    def trace(self) -> dict:
+        """Whether a trace is running: ``tracing``, and ``calls`` and
+        ``elapsed`` when one is."""
+        return self._data("app_trace") or {}
+
     def keyboard(self, text: str | None = None, key: str | None = None, hide: bool = False) -> dict:
         """The soft keyboard: read it, type at the focused field, press a key, or hide it.
 

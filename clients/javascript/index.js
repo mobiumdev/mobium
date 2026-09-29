@@ -1354,6 +1354,36 @@ export class Device {
   }
 
   /**
+   * Start recording the session as a trace: until traceStop(), every call on
+   * this device is a step, with the screen after it and the map's elements
+   * drawn over it. `name` titles the trace; `screenshots` and `maps` are true
+   * unless set. Text typed into a field is not recorded, only its length. On
+   * a real phone the screenshots are its owner's screen; screenshots: false
+   * keeps none. One trace per device; ending the session discards it.
+   */
+  async traceStart({ name, screenshots, maps } = {}) {
+    const args = { action: 'start' }
+    if (name) args.name = name
+    if (screenshots !== undefined) args.screenshots = screenshots
+    if (maps !== undefined) args.maps = maps
+    return (await this.#data('app_trace', args)) || {}
+  }
+
+  /**
+   * Stop the trace and save it to `path`: a zip in the Playwright trace
+   * format, which trace.playwright.dev and player.vibium.dev open. A relative
+   * path is this process's.
+   */
+  async traceStop(path) {
+    return (await this.#data('app_trace', { action: 'stop', path })) || {}
+  }
+
+  /** Whether a trace is running: `tracing`, and `calls` and `elapsed` when one is. */
+  async trace() {
+    return (await this.#data('app_trace', {})) || {}
+  }
+
+  /**
    * The soft keyboard: read it, type at the focused field, press a key, or
    * hide it. With no options, resolves to { shown, focused } — a password's
    * value is never shown. `text` is added to the end of the focused field and

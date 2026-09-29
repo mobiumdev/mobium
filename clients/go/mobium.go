@@ -1603,6 +1603,82 @@ func (d *Device) Record(ctx context.Context, action, path string) (Recording, er
 	return out, err
 }
 
+// Trace is what app_trace reports: whether a trace is running on the device,
+// how many calls it holds and for how long, and on stop where the zip went
+// and its size. Elapsed is a duration as Go prints one, "1m2.5s".
+type Trace struct {
+	Device  string `json:"device"`
+	Tracing bool   `json:"tracing"`
+	Calls   int    `json:"calls"`
+	Elapsed string `json:"elapsed,omitempty"`
+	Path    string `json:"path,omitempty"`
+	Bytes   int    `json:"bytes,omitempty"`
+}
+
+// TraceOptions tunes TraceStart. A nil *TraceOptions keeps a screenshot after
+// every call with the map drawn over it, under no title.
+type TraceOptions struct {
+	// Name is the trace's title, as the viewers show it.
+	Name string
+	// NoScreenshots keeps no screen after each call. On a real phone the
+	// screenshots are its owner's screen, which is the reason to set it.
+	NoScreenshots bool
+	// NoMaps leaves the map's elements off each screenshot.
+	NoMaps bool
+}
+
+// TraceStart records every call on this device from now until TraceStop as a
+// step: before and after, the point an action touched, a failure's error, and
+// after each the screen with the map's elements drawn over it. Text typed
+// into a field is not recorded, only its length. One trace per device, and
+// ending the session discards it.
+func (d *Device) TraceStart(ctx context.Context, opts *TraceOptions) (*Trace, error) {
+	if opts == nil {
+		opts = &TraceOptions{}
+	}
+	args := map[string]any{"action": "start"}
+	if opts.Name != "" {
+		args["name"] = opts.Name
+	}
+	if opts.NoScreenshots {
+		args["screenshots"] = false
+	}
+	if opts.NoMaps {
+		args["maps"] = false
+	}
+	var out Trace
+	if err := d.data(ctx, "app_trace", args, &out); err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+// TraceStop ends the trace and saves it to path as a zip in the Playwright
+// trace format, which trace.playwright.dev and player.vibium.dev open. A
+// relative path is this process's: `mobium pipe` resolves it before the
+// daemon sees it.
+func (d *Device) TraceStop(ctx context.Context, path string) (*Trace, error) {
+	if path == "" {
+		return nil, &Error{Tool: "app_trace", Code: CodeInvalidArgument,
+			Reason: "TraceStop needs a path to save the trace to, a .zip"}
+	}
+	var out Trace
+	if err := d.data(ctx, "app_trace", map[string]any{"action": "stop", "path": path}, &out); err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+// TraceStatus asks whether a trace is running on this device, and if so how
+// many calls it holds so far.
+func (d *Device) TraceStatus(ctx context.Context) (*Trace, error) {
+	var out Trace
+	if err := d.data(ctx, "app_trace", map[string]any{}, &out); err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
 // KeyboardField is the field with keyboard focus. A password's Value is
 // masked, never the password.
 type KeyboardField struct {

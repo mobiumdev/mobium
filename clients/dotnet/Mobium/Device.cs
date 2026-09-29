@@ -912,6 +912,60 @@ namespace Mobium
         }
 
         /// <summary>
+        /// Starts a trace of this session: from now until
+        /// <see cref="TraceStop"/>, every call on the device is a step —
+        /// before and after, the point an action touched, a failure's error —
+        /// and after each the screen, with the map's elements drawn over it.
+        /// Text typed into a field is not recorded, only its length. On a real
+        /// phone the screenshots are its owner's screen. One trace per device;
+        /// a second start throws, and ending the session discards it.
+        /// </summary>
+        /// <returns>The trace's state: <c>device</c> and <c>tracing</c>.</returns>
+        public IDictionary<string, object?> TraceStart() =>
+            Data("app_trace", Args("action", "start"));
+
+        /// <summary>
+        /// As <see cref="TraceStart()"/>, with <paramref name="name"/> as the
+        /// trace's title, as the viewers show it.
+        /// </summary>
+        public IDictionary<string, object?> TraceStart(string name) =>
+            Data("app_trace", Args("action", "start", "name", name));
+
+        /// <summary>
+        /// As <see cref="TraceStart()"/>, choosing what is kept after each
+        /// call: <paramref name="screenshots"/> false keeps no screen at all,
+        /// and <paramref name="maps"/> false keeps the screen without the
+        /// map's elements drawn over it. A <c>null</c> <paramref name="name"/>
+        /// leaves the trace untitled. Both flags are sent, so a false is heard.
+        /// </summary>
+        public IDictionary<string, object?> TraceStart(string? name, bool screenshots, bool maps)
+        {
+            var args = Args("action", "start", "screenshots", screenshots, "maps", maps);
+            if (!string.IsNullOrWhiteSpace(name)) args["name"] = name;
+            return Data("app_trace", args);
+        }
+
+        /// <summary>
+        /// Stops the trace and saves it at <paramref name="path"/>, a .zip on
+        /// this machine, in the Playwright trace format that
+        /// trace.playwright.dev and player.vibium.dev open. A relative path is
+        /// this process's. Throws when no trace is running.
+        /// </summary>
+        /// <returns>
+        /// The saved trace: <c>device</c>, <c>calls</c> — how many steps it
+        /// holds — <c>path</c> and <c>bytes</c>.
+        /// </returns>
+        public IDictionary<string, object?> TraceStop(string path) =>
+            Data("app_trace", Args("action", "stop", "path", path));
+
+        /// <summary>
+        /// Whether a trace is running on this device: <c>device</c>,
+        /// <c>tracing</c>, and while one is, <c>calls</c> so far and
+        /// <c>elapsed</c>.
+        /// </summary>
+        public IDictionary<string, object?> Trace() => Data("app_trace", Args());
+
+        /// <summary>
         /// The soft keyboard: read it, type at the focused field, press a key,
         /// or hide it. With no arguments, returns <c>shown</c> and the
         /// <c>focused</c> field — a password's value is never shown. Text is

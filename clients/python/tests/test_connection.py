@@ -140,6 +140,21 @@ check(sent == [("app_download", {}), ("app_download", {"app": "com.example"})],
       f"downloads sent {sent}, want app_download with no name, and app only when given")
 d.close()
 
+# -- trace: only the arguments that are set are sent ------------------------
+d = connect(binary=FAKE)
+t = d.trace_start(name="login flow", screenshots=False)
+check(t["tool"] == "app_trace" and t["echo"] == {"action": "start", "name": "login flow", "screenshots": False},
+      f"trace start sent {t}, want action, name and screenshots=False, and no maps")
+t = d.trace_stop("/tmp/trace.zip")
+check(t["echo"] == {"action": "stop", "path": "/tmp/trace.zip"}, f"trace stop sent {t['echo']}, want action and path")
+sent = []
+real = d._data
+d._data = lambda tool, args=None: sent.append((tool, args)) or real(tool, args)
+d.trace()
+d._data = real
+check(sent == [("app_trace", None)], f"trace status sent {sent}, want app_trace with no arguments")
+d.close()
+
 # -- an answer with no id fails the call in flight -----------------------
 c = fake("noid", timeout=5)
 e = raises(InvalidArgumentError, lambda: c.call_tool("app_map"))

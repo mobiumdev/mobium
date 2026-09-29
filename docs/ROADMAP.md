@@ -62,9 +62,14 @@ this is what is not.
     says true there, and false for a pass-through the tap reaches — so what
     is left needs a signal from below accessibility, which nothing outside
     the app has yet.
-- **Session recording and `diff map`.** Screen recording is done; a filmstrip of
-  what each call did, and a way to see what changed between two screens, are
-  not.
+- ~~**Session recording and `diff map`.**~~ Done 2026-09-29. `mobium trace
+  start|stop` records a session as Vibium does: a zip in the Playwright
+  trace format, with every call a step, the screen after it and the map
+  drawn over it. trace.playwright.dev opens it (`docs/checks/trace.sh`,
+  measured with `MOBIUM_TRACE_VIEWER=1`). `mobium map --diff` answers what
+  changed since the last map (`docs/checks/map-diff.sh`). Next, if wanted:
+  `mobium test --trace` writing the same zip, and a batch's steps as a group
+  in it.
 - **Screen recording on a real iPhone**, which needs a video stream Mobium does
   not build yet.
 

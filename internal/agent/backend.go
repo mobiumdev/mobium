@@ -149,6 +149,10 @@ type session struct {
 
 	// recording is a screen recording in progress, or nil. One per device.
 	recording device.Recording
+
+	// trace is a session trace in progress (app_trace), or nil. Ending the
+	// session discards it, as it does a recording.
+	trace *sessionTrace
 }
 
 // stopRoute ends any route this session is stepping. Safe to call when none is.

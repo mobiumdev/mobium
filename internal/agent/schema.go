@@ -718,6 +718,49 @@ func GetToolSchemas() []Tool {
 			},
 		},
 		{
+			Name: "app_trace",
+			Description: "Record a session as a trace: start, then every call on this device is a step — " +
+				"before and after, the point an action touched, a failure's error — and after each the " +
+				"screen, with the map's elements drawn over it; stop with a path saves a zip in the " +
+				"Playwright trace format that trace.playwright.dev and player.vibium.dev open. Omit the " +
+				"action to ask whether one is running. Text typed into a field is not recorded, only its " +
+				"length. On a real phone the screenshots are its owner's screen; screenshots false keeps " +
+				"none. One trace per device; ending the session discards it.",
+			InputSchema: map[string]interface{}{
+				"type": "object",
+				"properties": withDevice(map[string]interface{}{
+					"action": map[string]interface{}{
+						"type":        "string",
+						"description": "start or stop. Omit to ask whether a trace is running.",
+						"enum":        []string{"start", "stop"},
+					},
+					"name": map[string]interface{}{
+						"type":        "string",
+						"description": "On start: the trace's title, as the viewers show it.",
+					},
+					"screenshots": map[string]interface{}{
+						"type":        "boolean",
+						"description": "On start: keep the screen after each call. Default true.",
+					},
+					"maps": map[string]interface{}{
+						"type":        "boolean",
+						"description": "On start: draw the map's elements over each screenshot. Default true.",
+					},
+					"path": map[string]interface{}{
+						"type":        "string",
+						"description": "On stop: where to save the trace, a .zip on this machine.",
+					},
+					"return_data": map[string]interface{}{
+						"type": "boolean",
+						"description": "On stop without a path: return the zip, base64, instead of saving " +
+							"it — for a daemon on another machine; the CLI and pipe ask for it and save it " +
+							"where the caller said.",
+					},
+				}),
+				"additionalProperties": false,
+			},
+		},
+		{
 			Name: "app_keyboard",
 			Description: "The soft keyboard: whether it is up and which field has focus, typing at that " +
 				"field's cursor, pressing a named key, or hiding it. For the field nothing names — one " +
@@ -1803,6 +1846,7 @@ var PathArguments = map[string][]string{
 	"app_screenshot": {"path"},
 	"app_location":   {"gpx"},
 	"app_record":     {"path"},
+	"app_trace":      {"path"},
 	"app_upload":     {"path"},
 	"app_download":   {"path"},
 }

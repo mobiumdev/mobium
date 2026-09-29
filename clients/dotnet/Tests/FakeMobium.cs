@@ -132,6 +132,7 @@ namespace Mobium.Tests
                 };
                 if (name == "app_download") Download(structured, args);
                 if (name == "app_map") MapDiff(structured, args, ref maps);
+                if (name == "app_trace") Trace(structured, args);
                 Reply(stdout, id, new JsonObject
                 {
                     ["content"] = new JsonArray(new JsonObject { ["type"] = "text", ["text"] = "ok " + name }),
@@ -208,6 +209,22 @@ namespace Mobium.Tests
             var e = new JsonObject { ["ref"] = @ref, ["label"] = label };
             if (role.Length > 0) e["role"] = role;
             return e;
+        }
+
+        // app_trace answers as the daemon does: start is tracing, stop names
+        // where the zip went and how many calls it holds, and no action is
+        // the status -- here, never tracing.
+        private static void Trace(JsonObject view, JsonNode? args)
+        {
+            var action = (string?)args?["action"] ?? "";
+            view["device"] = "fake-device";
+            view["tracing"] = action == "start";
+            if (action == "stop")
+            {
+                view["calls"] = 3;
+                view["path"] = (string?)args?["path"] ?? "";
+                view["bytes"] = 1024;
+            }
         }
 
         private static void Reply(StreamWriter w, long id, JsonNode result)

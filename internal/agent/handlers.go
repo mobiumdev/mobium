@@ -181,6 +181,21 @@ func (h *Handlers) Call(name string, args map[string]interface{}) (*ToolsCallRes
 	defer cancel()
 
 	h.handled = nil
+	// While a device has a trace running, each call on it is recorded, and
+	// the screen after it (app_trace).
+	if name != "app_trace" {
+		if s := h.tracedSession(args); s != nil {
+			t := s.trace
+			id := traceBefore(t, name, args)
+			res, err := h.dispatch(ctx, name, args)
+			res, err = h.reportHandled(res, err)
+			// A call that ended the session ended the trace with it.
+			if s.trace == t {
+				h.traceAfter(s, t, id, res, err)
+			}
+			return res, err
+		}
+	}
 	res, err := h.dispatch(ctx, name, args)
 	return h.reportHandled(res, err)
 }
@@ -286,6 +301,8 @@ func (h *Handlers) dispatch(ctx context.Context, name string, args map[string]in
 		return h.keyboard(ctx, args)
 	case "app_record":
 		return h.record(ctx, args)
+	case "app_trace":
+		return h.traceTool(ctx, args)
 	case "app_eval":
 		return h.evalPage(ctx, args)
 	case "app_cookies":

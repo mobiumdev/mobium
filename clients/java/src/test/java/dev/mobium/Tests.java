@@ -508,6 +508,22 @@ public final class Tests {
             eq("each file by name", "report.pdf", Json.str(files.get(0), "name"));
             eq("with its size", 5L, ((Number) files.get(0).get("bytes")).longValue());
             eq("downloads for an app reads the same answer", 1, d.downloads("com.example").size());
+
+            eq("trace asks for the status with no arguments", Map.of(), d.trace().get("echo"));
+            eq("traceStart sends the action alone", Map.of("action", "start"), d.traceStart().get("echo"));
+            eq("traceStart sends the name", Map.of("action", "start", "name", "login"),
+                    d.traceStart("login").get("echo"));
+            eq("traceStart with a null name leaves it out", Map.of("action", "start"),
+                    d.traceStart(null).get("echo"));
+            eq("traceStart sends only what turns a default off",
+                    Map.of("action", "start", "name", "login", "screenshots", false),
+                    d.traceStart("login", false, true).get("echo"));
+            eq("traceStart with no maps sends maps false", Map.of("action", "start", "maps", false),
+                    d.traceStart(null, true, false).get("echo"));
+            eq("traceStop sends the path", Map.of("action", "stop", "path", "/tmp/t.zip"),
+                    d.traceStop("/tmp/t.zip").get("echo"));
+            yes("traceStop refuses a null path",
+                    throwsA(InvalidArgumentException.class, () -> d.traceStop(null)) != null);
         }
     }
 

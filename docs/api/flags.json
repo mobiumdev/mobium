@@ -2110,6 +2110,69 @@
       ]
     },
     {
+      "tool": "app_trace",
+      "arg": "action",
+      "type": "string",
+      "setBy": [
+        "trace"
+      ]
+    },
+    {
+      "tool": "app_trace",
+      "arg": "device",
+      "type": "string",
+      "setBy": [
+        "--device"
+      ],
+      "global": true
+    },
+    {
+      "tool": "app_trace",
+      "arg": "driver",
+      "type": "string",
+      "setBy": [
+        "--driver"
+      ],
+      "global": true
+    },
+    {
+      "tool": "app_trace",
+      "arg": "maps",
+      "type": "boolean",
+      "setBy": [
+        "trace"
+      ]
+    },
+    {
+      "tool": "app_trace",
+      "arg": "name",
+      "type": "string",
+      "setBy": [
+        "trace"
+      ]
+    },
+    {
+      "tool": "app_trace",
+      "arg": "path",
+      "type": "string",
+      "setBy": [
+        "trace"
+      ]
+    },
+    {
+      "tool": "app_trace",
+      "arg": "return_data",
+      "type": "boolean"
+    },
+    {
+      "tool": "app_trace",
+      "arg": "screenshots",
+      "type": "boolean",
+      "setBy": [
+        "trace"
+      ]
+    },
+    {
       "tool": "app_type",
       "arg": "device",
       "type": "string",
@@ -3142,6 +3205,25 @@
       ],
       "sends": [
         "timezone"
+      ]
+    },
+    {
+      "command": "trace",
+      "tools": [
+        "app_trace"
+      ],
+      "flags": [
+        "--name",
+        "--no-maps",
+        "--no-screenshots",
+        "--output"
+      ],
+      "sends": [
+        "action",
+        "maps",
+        "name",
+        "path",
+        "screenshots"
       ]
     },
     {

@@ -60,6 +60,7 @@ var GoWireTypes = map[string][2]string{
 	"StorageItem":    {"internal/webview", "StorageItem"},
 	"StorageState":   {"internal/agent", "StorageState"},
 	"StepResult":     {"internal/agent", "BatchStep"},
+	"Trace":          {"internal/agent", "TraceView"},
 	"Transfer":       {"internal/agent", "TransferView"},
 }
 
