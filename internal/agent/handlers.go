@@ -385,9 +385,13 @@ func (h *Handlers) devices(ctx context.Context) (*ToolsCallResult, error) {
 			}
 		}
 		lines = append(lines, line+")")
+		// The model, never the name: a phone's name is its owner's —
+		// "<somebody>'s iPhone" — and this view reaches every grid user's
+		// `grid status` and every client. The CLI line above keeps the name
+		// for the person at this machine.
 		view.Devices = append(view.Devices, DeviceView{
 			ID: p.UDID, Platform: "ios", State: state,
-			Model: p.Name, Runtime: "iOS " + p.OSVersion,
+			Model: p.Model, Runtime: "iOS " + p.OSVersion,
 		})
 	}
 	view.Notes = notes

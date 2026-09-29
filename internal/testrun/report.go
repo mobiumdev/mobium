@@ -14,7 +14,7 @@ import (
 
 // Line is the list reporter's line for one result.
 func Line(r Result) string {
-	mark := map[Status]string{Passed: "ok  ", Failed: "FAIL", Flaky: "flky"}[r.Status]
+	mark := map[Status]string{Passed: "ok   ", Failed: "FAIL ", Flaky: "flaky"}[r.Status]
 	s := fmt.Sprintf("  %s [%s] %s (%s)", mark, r.Project, r.Title, r.Duration.Round(100*time.Millisecond))
 	if r.Status == Flaky {
 		s += fmt.Sprintf(" — passed on attempt %d", r.Attempts)
@@ -76,12 +76,15 @@ func WriteJUnit(dir string, s *Summary) (string, error) {
 		Name  string `xml:"name,attr"`
 		Value string `xml:"value,attr"`
 	}
+	type properties struct {
+		Property []property `xml:"property"`
+	}
 	type testcase struct {
-		Name       string     `xml:"name,attr"`
-		Classname  string     `xml:"classname,attr"`
-		Time       string     `xml:"time,attr"`
-		Properties []property `xml:"properties>property,omitempty"`
-		Failure    *failure   `xml:"failure,omitempty"`
+		Name       string      `xml:"name,attr"`
+		Classname  string      `xml:"classname,attr"`
+		Time       string      `xml:"time,attr"`
+		Properties *properties `xml:"properties,omitempty"`
+		Failure    *failure    `xml:"failure,omitempty"`
 	}
 	type suite struct {
 		Name     string     `xml:"name,attr"`
@@ -111,7 +114,7 @@ func WriteJUnit(dir string, s *Summary) (string, error) {
 		}
 		c := testcase{Name: r.Test, Classname: r.Project + "." + filepath.Base(r.File), Time: secs(r.Duration)}
 		if r.Status == Flaky {
-			c.Properties = []property{{Name: "flaky", Value: fmt.Sprintf("passed on attempt %d", r.Attempts)}}
+			c.Properties = &properties{[]property{{Name: "flaky", Value: fmt.Sprintf("passed on attempt %d", r.Attempts)}}}
 		}
 		if r.Status == Failed && r.Failure != nil {
 			c.Failure = &failure{Message: r.Failure.Message, Type: r.Failure.Code, Text: failureLine(r.Failure)}

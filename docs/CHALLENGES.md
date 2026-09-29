@@ -7,7 +7,7 @@ the source.
 
 The pattern across them is the reason the document exists: **almost nothing
 here was found by reading code or by a test written from imagination.** Of
-160 defects, 128 were found only by running against a real device. The other
+161 defects, 129 were found only by running against a real device. The other
 thirty-two — 4, 5, 6, 14, 23, 24, 32, 35, 36, 39, 44, 50, 53, 54, 57, 66, 89,
 99, 100, 121, 123, 129, 130, 133, 134, 139, 140, 141, 142, 144, 150 and 158 — came from reading code, the compiler, a test, a linter,
 cross-checking a computed number against a screenshot, using the tooling on
@@ -3674,6 +3674,20 @@ this was committed: turning on Bold Text redraws Settings, so the switch
 found before the tap was a stale element when read back, and it is now
 looked up again on every read; and a read of all six took 45 seconds, one
 trip each, and now takes 16, one visit reading every switch on its page.
+### 161. The grid showed a phone's owner's name as its model
+
+**Found by:** writing the grid guide, with the iPhone 15 Plus attached to the
+Mac standing in for a node.
+
+`mobium grid status` listed the phone with "Lana Begunova's iPhone" in its
+MODEL column. The structured answer of `app_devices` — which the grid's
+status and page, `MOBIUM_GRID_MODEL`'s matching and every client read — put a
+physical iPhone's name where its model belongs, while the CLI's own line
+showed both. A phone's name is its owner's, and on a grid every user's
+status shows it; `MOBIUM_GRID_MODEL=iPhone 15` matched nothing, too. The
+structured answer now carries the model, "iPhone 15 Plus", and only the CLI
+line, read by the person at the machine, keeps the name. Measured after the
+fix: the same `grid status` shows the model.
 
 ## Findings that were not defects
 

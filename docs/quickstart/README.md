@@ -26,6 +26,7 @@ what it printed.
 - [2. Start a device](#2-start-a-device)
 - [3. Check the setup](#3-check-the-setup)
 - [4. Start, work, quit](#4-start-work-quit)
+- [Next](#next)
 - [When something goes wrong](#when-something-goes-wrong)
 
 ## Where it runs
@@ -140,6 +141,11 @@ Every client does the same three things, as an Appium script does:
 Start is never required: any call opens a session on first use. It exists so
 the slow first start happens where you asked for it, and so a script says
 plainly where its session begins and ends.
+
+## Next
+
+[The guides](../guides/README.md): what actions wait for and refuse, writing
+and running tests with `mobium test`, and driving another machine's devices.
 
 ## When something goes wrong
 

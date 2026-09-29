@@ -165,7 +165,7 @@ func listTests(files []string, opts testrun.Options) error {
 			n++
 		}
 	}
-	fmt.Printf("%d tests in %d files\n", n, len(files))
+	fmt.Printf("%s in %s\n", plural(n, "test"), plural(len(files), "file"))
 	return nil
 }
 
@@ -202,4 +202,11 @@ func newShowReportCmd() *cobra.Command {
 			return nil
 		},
 	}
+}
+
+func plural(n int, word string) string {
+	if n == 1 {
+		return "1 " + word
+	}
+	return fmt.Sprintf("%d %ss", n, word)
 }

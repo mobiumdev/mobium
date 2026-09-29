@@ -322,6 +322,7 @@ is the protocol.
 | | |
 | --- | --- |
 | [docs/quickstart/](docs/quickstart/README.md) | using Mobium: install it and drive a device, from each client |
+| [docs/guides/](docs/guides/README.md) | the next steps: auto-wait, `mobium test`, and driving other machines' devices through a grid |
 | [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) | working on Mobium: toolchains, `make ci`, device checks, pull requests |
 | [docs/PHILOSOPHY.md](docs/PHILOSOPHY.md) | *mutatis mutandis*: where the motto comes from, and the one design rule |
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | the layers, the package graph, and one call end to end |
