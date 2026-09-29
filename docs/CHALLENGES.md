@@ -3995,7 +3995,8 @@ the ref from `map` is the row and worked. A tap on the words lands on the
 row, so the row is what is meant: `app_check` and `wait --for checked` now
 take the nearest clickable ancestor's state when the target has none of its
 own, and a row with no state, like Display language, is still refused.
-`docs/checks/compose-app.sh` holds all three against the app.
+`docs/checks/compose-app.sh` holds all three against the app, and passes on
+an Android 15 emulator and on the Pixel 8 Pro on Android 17.
 
 ## Findings that were not defects
 

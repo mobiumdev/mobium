@@ -22,7 +22,8 @@
 #
 # Seal's data is cleared at the start, so its guide shows. An app this check
 # installed is uninstalled at the end; one that was there is left, with the
-# setting it changes put back.
+# setting it changes put back. On a real phone nothing read off it is ever
+# printed.
 set -e
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 DEV="${1:?usage: compose-app.sh <serial> [path-to-apk]}"
@@ -30,6 +31,11 @@ APK="$2"
 APP=com.junkfood.seal
 M="$ROOT/bin/mobium --device $DEV"
 fail() { echo "FAIL: $*" >&2; exit 1; }
+# On a phone a failure quotes nothing read off it: what is on screen when
+# something goes wrong may not be Seal's (CHALLENGES 174). Assert whether.
+PHONE=
+case "$DEV" in emulator-*) ;; *) PHONE=1 ;; esac
+seen() { if [ -n "$PHONE" ]; then echo "(not shown on a real phone)"; else printf '%s\n' "$*" | head -20; fi; }
 row() { printf '    %-14s %-58s ok\n' "$1" "$2"; }
 
 INSTALLED=
@@ -55,14 +61,14 @@ $M launch $APP >/dev/null
 $M wait "text=User guide" --timeout 15s >/dev/null || fail "Seal's first-launch guide did not show"
 
 # --- the guide: an app's own dialog -----------------------------------------
-$M alert | grep -q 'a dialog is on screen: "User guide' || fail "alert did not see Seal's dialog: $($M alert)"
+$M alert | grep -q 'a dialog is on screen: "User guide' || fail "alert did not see Seal's dialog: $(seen "$($M alert 2>&1)")"
 set +e
 $M alert accept >/dev/null 2>&1; st=$?
 out=$($M tap "label=Settings" 2>&1); st2=$?
 set -e
 [ $st -eq 5 ] || fail "alert accept on an app's own dialog exited $st, want 5 (unsupported)"
 [ $st2 -eq 3 ] && echo "$out" | grep -q '"User guide"' ||
-  fail "a tap under the dialog was not refused naming it (exit $st2): $out"
+  fail "a tap under the dialog was not refused naming it (exit $st2): $(seen "$out")"
 row "dialog" "read, not accepted, and a tap under it refused naming it"
 
 $M dialogs --when "User guide" --press "Close" >/dev/null
@@ -78,8 +84,8 @@ $M wait "label=Settings" >/dev/null
 map=$($M map)
 for b in "Settings" "Running tasks" "Downloads"; do
   n=$(echo "$map" | grep -c "^@e[0-9]* $b\( (button)\)*\$")
-  [ "$n" = 1 ] || fail "$b mapped $n times: $map"
-  echo "$map" | grep -q "^@e[0-9]* $b (button)\$" || fail "$b is not a button: $map"
+  [ "$n" = 1 ] || fail "$b mapped $n times: $(seen "$map")"
+  echo "$map" | grep -q "^@e[0-9]* $b (button)\$" || fail "$b is not a button: $(seen "$map")"
 done
 row "map" "each icon button once, as a button"
 
