@@ -101,6 +101,58 @@ func sendFilesAsContent(tool string, args map[string]interface{}) (func(*agent.T
 			return agent.Result(agent.RecordSavedMessage(path, v), v), nil
 		}, nil
 
+	case "app_upload":
+		if path == "" {
+			return same, nil
+		}
+		raw, err := os.ReadFile(path)
+		if err != nil {
+			return nil, mobiumerr.New(mobiumerr.InvalidArgument, "no file at %s to upload", path)
+		}
+		delete(args, "path")
+		if _, ok := args["name"]; !ok {
+			args["name"] = filepath.Base(path)
+		}
+		args["content"] = base64.StdEncoding.EncodeToString(raw)
+		return func(r *agent.ToolsCallResult) (*agent.ToolsCallResult, error) {
+			if r.IsError {
+				return r, nil
+			}
+			var v agent.TransferView
+			if err := remarshal(r.StructuredContent, &v); err != nil {
+				return r, nil
+			}
+			v.Path = path
+			return agent.Result(fmt.Sprintf("uploaded %s to %s (%d bytes) — confirmed by %s", path, v.Where, v.Bytes, v.Checked), v), nil
+		}, nil
+
+	case "app_download":
+		if path == "" {
+			return same, nil
+		}
+		delete(args, "path")
+		return func(r *agent.ToolsCallResult) (*agent.ToolsCallResult, error) {
+			if r.IsError {
+				return r, nil
+			}
+			var v agent.TransferView
+			if err := remarshal(r.StructuredContent, &v); err != nil || v.Data == "" {
+				return nil, mobiumerr.New(mobiumerr.DeviceServer, "the daemon returned no file to save at %s", path)
+			}
+			raw, err := base64.StdEncoding.DecodeString(v.Data)
+			if err != nil {
+				return nil, fmt.Errorf("decode the file: %w", err)
+			}
+			if int64(len(raw)) != v.Bytes {
+				return nil, mobiumerr.New(mobiumerr.NotConfirmed, "the daemon sent %d of %s's %d bytes", len(raw), v.Name, v.Bytes)
+			}
+			if err := writeLocal(path, raw); err != nil {
+				return nil, err
+			}
+			v.Data, v.Path = "", path
+			return agent.Result(agent.DownloadSavedMessage(path, v), v), nil
+		}, nil
+
 	case "app_screenshot":
 		if path == "" {
 			return same, nil

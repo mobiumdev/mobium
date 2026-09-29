@@ -521,6 +521,66 @@ class Device:
         """
         return self._data("app_clear_data", {"app": app}) or {}
 
+    def upload(self, path: str, name: str | None = None, app: str | None = None) -> dict:
+        """Put a local file where the device keeps downloads, so an app's
+        file picker finds it.
+
+        On Android that is the shared Download folder, one for every app, and
+        the file is indexed in MediaStore and read back there, because the
+        picker reads MediaStore rather than the folder. On an iOS simulator it
+        is an app's own Documents, which the Files app shows under On My
+        iPhone: the app named, or the one in front. A real iPhone is not
+        built yet.
+
+        name is what to call it on the device — a name, not a path — and
+        defaults to the file's own. Returns the transfer: ``name``,
+        ``where``, ``bytes`` and ``checked``, which says how it was confirmed.
+        """
+        args: dict[str, Any] = {"path": path}
+        if name is not None:
+            args["name"] = name
+        if app is not None:
+            args["app"] = app
+        return self._data("app_upload", args) or {}
+
+    def download(self, name: str, path: str | None = None, app: str | None = None) -> bytes | dict:
+        """Bring back a file from where the device keeps downloads, to check
+        what an app saved.
+
+        The folder is Android's shared Download folder, or on an iOS simulator
+        an app's own Documents — the app named, or the one in front. A real
+        iPhone is not built yet. The copy's size is read back against the
+        device's.
+
+        With path, saves it there and returns the transfer (``name``,
+        ``where``, ``bytes``, ``checked``, ``path``); without one, returns the
+        file's bytes.
+        """
+        args: dict[str, Any] = {"name": name}
+        if path is not None:
+            args["path"] = path
+        if app is not None:
+            args["app"] = app
+        data = self._data("app_download", args) or {}
+        if path is not None:
+            return data
+        # An empty file has no data on the wire (it is omitted when empty),
+        # so only a missing one for a file with bytes is a failure.
+        if "data" not in data and data.get("bytes"):
+            raise MobiumError("mobium returned no file")
+        return base64.b64decode(data.get("data", ""))
+
+    def downloads(self, app: str | None = None) -> list[dict]:
+        """What the downloads folder holds, each file with name, bytes and
+        modified.
+
+        Android's shared Download folder, whatever app put it there; on an
+        iOS simulator an app's own Documents — the app named, or the one in
+        front. A real iPhone is not built yet.
+        """
+        data = self._data("app_download", {} if app is None else {"app": app}) or {}
+        return data.get("files", [])
+
     def batch(self, steps: list[Any]) -> list[dict]:
         """Run several tools in order, on this device, in one call.
 

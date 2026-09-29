@@ -62,6 +62,7 @@ const (
 	CapDeviceClock      = "deviceClock"
 	CapShake            = "shake"
 	CapNetwork          = "network"
+	CapFiles            = "files"
 )
 
 // KnownCapabilities is every capability Mobium understands, for diagnostics
@@ -74,7 +75,7 @@ var KnownCapabilities = []string{
 	CapClipboard, CapClipboardRead, CapAlerts, CapPinch,
 	CapDoubleTap, CapDrag, CapMultiTouch, CapDeviceLogs, CapCrashes, CapKeyboard, CapRecording,
 	CapClearData, CapSource, CapAccessibility, CapAppState, CapBattery, CapDeviceClock, CapShake,
-	CapNetwork,
+	CapNetwork, CapFiles,
 }
 
 // has reports whether d claims the capability. A driver that does not report
@@ -291,6 +292,13 @@ func AsKeyboard(d Driver) (Keyboard, bool) {
 func AsScreenRecorder(d Driver) (ScreenRecorder, bool) {
 	r, ok := d.(ScreenRecorder)
 	return r, ok && has(d, CapRecording)
+}
+
+// AsFileTransfer returns the driver's support for moving files to and from
+// the device, if any.
+func AsFileTransfer(d Driver) (FileTransfer, bool) {
+	f, ok := d.(FileTransfer)
+	return f, ok && has(d, CapFiles)
 }
 
 // AsDataClearer returns the driver's support for clearing an app's data, if

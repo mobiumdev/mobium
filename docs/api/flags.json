@@ -483,6 +483,48 @@
       ]
     },
     {
+      "tool": "app_download",
+      "arg": "app",
+      "type": "string",
+      "setBy": [
+        "download"
+      ]
+    },
+    {
+      "tool": "app_download",
+      "arg": "device",
+      "type": "string",
+      "setBy": [
+        "--device"
+      ],
+      "global": true
+    },
+    {
+      "tool": "app_download",
+      "arg": "driver",
+      "type": "string",
+      "setBy": [
+        "--driver"
+      ],
+      "global": true
+    },
+    {
+      "tool": "app_download",
+      "arg": "name",
+      "type": "string",
+      "setBy": [
+        "download"
+      ]
+    },
+    {
+      "tool": "app_download",
+      "arg": "path",
+      "type": "string",
+      "setBy": [
+        "download"
+      ]
+    },
+    {
       "tool": "app_drag",
       "arg": "device",
       "type": "string",
@@ -2120,6 +2162,53 @@
       "global": true
     },
     {
+      "tool": "app_upload",
+      "arg": "app",
+      "type": "string",
+      "setBy": [
+        "upload"
+      ]
+    },
+    {
+      "tool": "app_upload",
+      "arg": "content",
+      "type": "string"
+    },
+    {
+      "tool": "app_upload",
+      "arg": "device",
+      "type": "string",
+      "setBy": [
+        "--device"
+      ],
+      "global": true
+    },
+    {
+      "tool": "app_upload",
+      "arg": "driver",
+      "type": "string",
+      "setBy": [
+        "--driver"
+      ],
+      "global": true
+    },
+    {
+      "tool": "app_upload",
+      "arg": "name",
+      "type": "string",
+      "setBy": [
+        "upload"
+      ]
+    },
+    {
+      "tool": "app_upload",
+      "arg": "path",
+      "type": "string",
+      "setBy": [
+        "upload"
+      ]
+    },
+    {
       "tool": "app_wait_for",
       "arg": "condition",
       "type": "string",
@@ -2457,6 +2546,21 @@
         "target",
         "x",
         "y"
+      ]
+    },
+    {
+      "command": "download",
+      "tools": [
+        "app_download"
+      ],
+      "flags": [
+        "--app",
+        "--output"
+      ],
+      "sends": [
+        "app",
+        "name",
+        "path"
       ]
     },
     {
@@ -3063,6 +3167,21 @@
     },
     {
       "command": "up"
+    },
+    {
+      "command": "upload",
+      "tools": [
+        "app_upload"
+      ],
+      "flags": [
+        "--app",
+        "--name"
+      ],
+      "sends": [
+        "app",
+        "name",
+        "path"
+      ]
     },
     {
       "command": "wait",

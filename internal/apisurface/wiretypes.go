@@ -39,6 +39,7 @@ var GoWireTypes = map[string][2]string{
 	"ConsoleEntry":   {"internal/webview", "ConsoleEntry"},
 	"Cookie":         {"internal/webview", "Cookie"},
 	"CrashReport":    {"internal/device", "CrashReport"},
+	"DeviceFile":     {"internal/device", "DeviceFile"},
 	"DeviceInfo":     {"internal/agent", "DeviceView"},
 	"DeviceLogEntry": {"internal/device", "LogEntry"},
 	"DialogRule":     {"internal/agent", "dialogRule"},
@@ -57,6 +58,7 @@ var GoWireTypes = map[string][2]string{
 	"StorageItem":    {"internal/webview", "StorageItem"},
 	"StorageState":   {"internal/agent", "StorageState"},
 	"StepResult":     {"internal/agent", "BatchStep"},
+	"Transfer":       {"internal/agent", "TransferView"},
 }
 
 // GoWireTypeExemptions are Go client types with JSON tags that decode no

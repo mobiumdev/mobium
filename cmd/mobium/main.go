@@ -151,6 +151,8 @@ func main() {
 		newTestCmd(),
 		newShowReportCmd(),
 		newInspectCmd(),
+		newUploadCmd(),
+		newDownloadCmd(),
 	)
 
 	err := root.Execute()

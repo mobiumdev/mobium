@@ -78,8 +78,11 @@ this is what is not.
 - **Battery and the device's clock** (written down 2026-09-28): the level
   and whether it is charging, and the time as the device has it, which is
   what a test of a timezone or a clock-dependent screen checks against.
-- **Pulling a file off the device** (written down 2026-09-28), the other
-  half of seeding one below: an export, a log an app wrote, a download.
+- ~~**Pulling a file off the device**~~ (written down 2026-09-28) — done
+  2026-09-29 as `upload` and `download`: the shared Download folder on
+  Android, an app's Documents on an iOS simulator, each confirmed at the far
+  end (`docs/checks/files.sh`). A real iPhone is next, through the
+  CoreDevice file service; it is refused as not built yet.
 - **Booting and shutting down emulators and simulators** (written down
   2026-09-28). `devices` lists them; starting one is still the platform's
   own command.

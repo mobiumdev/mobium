@@ -193,6 +193,35 @@ func fakeTool(name string, args map[string]any, scenario string) map[string]any 
 				{"type": "image", "data": "iVBORw0KGgo=", "mimeType": "image/png"}}}
 		}
 		return text("saved", map[string]any{"path": args["path"], "bytes": 11})
+	case "app_upload", "app_download":
+		if path := os.Getenv(fakeArgsLogEnv); path != "" {
+			// What arrived, so a test can see which arguments were left out.
+			if f, err := os.OpenFile(path, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o600); err == nil {
+				line, _ := json.Marshal(map[string]any{"tool": name, "arguments": args})
+				f.Write(append(line, '\n'))
+				f.Close()
+			}
+		}
+		if name == "app_download" && args["name"] == nil {
+			return text("the Download folder holds 1 file", map[string]any{
+				"device": "emulator-5554", "folder": "the Download folder",
+				"files": []any{map[string]any{"name": "report.txt", "bytes": 5,
+					"modified": "2026-09-29T10:00:00Z"}}})
+		}
+		view := map[string]any{"device": "emulator-5554", "name": "report.txt",
+			"where": "Download/report.txt", "bytes": 5, "checked": "MediaStore"}
+		if app, ok := args["app"]; ok {
+			view["app"] = app
+		}
+		if path, ok := args["path"]; ok {
+			view["path"] = path
+		} else if name == "app_download" {
+			view["data"] = "aGVsbG8=" // "hello"
+			if scenario == "short" {
+				view["bytes"] = 6
+			}
+		}
+		return text(name+" ok", view)
 	case "app_contexts":
 		return text("NATIVE_APP", map[string]any{"contexts": []any{
 			map[string]any{"id": "NATIVE_APP", "current": true},
@@ -571,5 +600,134 @@ func TestConnectFailsWhenMobiumIsMissing(t *testing.T) {
 		t.Error("connected with no mobium anywhere")
 	} else if !strings.Contains(err.Error(), "MOBIUM_BIN_PATH") {
 		t.Errorf("error %q does not say how to fix it", err)
+	}
+}
+
+// fakeArgsLogEnv names a file the fake appends each file tool's arguments to.
+const fakeArgsLogEnv = "MOBIUM_FAKE_ARGS_LOG"
+
+// sentArgs connects to the fake with its argument log on, and returns a
+// function that reads back every call's arguments so far.
+func sentArgs(t *testing.T, scenario string) (*Device, func() []map[string]any) {
+	t.Helper()
+	log := filepath.Join(t.TempDir(), "args.log")
+	t.Setenv(fakeArgsLogEnv, log)
+	dev := connectFake(t, scenario)
+	return dev, func() []map[string]any {
+		data, _ := os.ReadFile(log)
+		var calls []map[string]any
+		for _, line := range strings.Split(strings.TrimSpace(string(data)), "\n") {
+			var c struct {
+				Arguments map[string]any `json:"arguments"`
+			}
+			if line != "" && json.Unmarshal([]byte(line), &c) == nil {
+				calls = append(calls, c.Arguments)
+			}
+		}
+		return calls
+	}
+}
+
+func TestUploadSendsOnlyWhatIsSet(t *testing.T) {
+	dev, sent := sentArgs(t, "")
+	ctx := context.Background()
+	up, err := dev.Upload(ctx, "report.txt", nil)
+	if err != nil {
+		t.Fatalf("upload: %v", err)
+	}
+	if up.Where != "Download/report.txt" || up.Bytes != 5 || up.Checked != "MediaStore" ||
+		up.Path != "report.txt" || up.App != "" || up.Device != "emulator-5554" {
+		t.Errorf("upload = %+v", up)
+	}
+	up, err = dev.Upload(ctx, "local.txt", &TransferOptions{Name: "report.txt", App: "dev.mobium.app"})
+	if err != nil {
+		t.Fatalf("upload with options: %v", err)
+	}
+	if up.App != "dev.mobium.app" {
+		t.Errorf("app = %q, want the one named", up.App)
+	}
+	calls := sent()
+	if len(calls) != 2 {
+		t.Fatalf("calls = %v", calls)
+	}
+	if len(calls[0]) != 1 || calls[0]["path"] != "report.txt" {
+		t.Errorf("with no options sent %v, want the path alone", calls[0])
+	}
+	if len(calls[1]) != 3 || calls[1]["name"] != "report.txt" || calls[1]["app"] != "dev.mobium.app" {
+		t.Errorf("with options sent %v", calls[1])
+	}
+}
+
+func TestDownloadSavesAndReportsWhere(t *testing.T) {
+	dev, sent := sentArgs(t, "")
+	ctx := context.Background()
+	got, err := dev.Download(ctx, "report.txt", "/tmp/out.txt", "")
+	if err != nil {
+		t.Fatalf("download: %v", err)
+	}
+	if got.Path != "/tmp/out.txt" || got.Name != "report.txt" || got.Bytes != 5 || got.App != "" {
+		t.Errorf("download = %+v", got)
+	}
+	if got, err := dev.Download(ctx, "report.txt", "/tmp/out.txt", "dev.mobium.app"); err != nil || got.App != "dev.mobium.app" {
+		t.Errorf("download for an app = %+v, %v", got, err)
+	}
+	calls := sent()
+	if len(calls) != 2 || len(calls[0]) != 2 || calls[0]["path"] != "/tmp/out.txt" || calls[1]["app"] != "dev.mobium.app" {
+		t.Errorf("sent %v", calls)
+	}
+	// With no name the tool lists the folder instead, and with no path it
+	// answers in base64, so Download requires both and sends nothing without.
+	for _, c := range [][2]string{{"", "/tmp/out.txt"}, {"report.txt", ""}} {
+		if _, err := dev.Download(ctx, c[0], c[1], ""); !errors.Is(err, ErrInvalidArgument) {
+			t.Errorf("download(%q, %q) = %v, want invalid_argument", c[0], c[1], err)
+		}
+	}
+	if n := len(sent()); n != 2 {
+		t.Errorf("%d calls reached the tool, want the refused ones kept back", n)
+	}
+}
+
+func TestDownloadBytesDecodesTheFile(t *testing.T) {
+	dev, sent := sentArgs(t, "")
+	raw, err := dev.DownloadBytes(context.Background(), "report.txt", "")
+	if err != nil {
+		t.Fatalf("download bytes: %v", err)
+	}
+	if string(raw) != "hello" {
+		t.Errorf("got %q, want the base64 decoded", raw)
+	}
+	if calls := sent(); len(calls) != 1 || len(calls[0]) != 1 || calls[0]["name"] != "report.txt" {
+		t.Errorf("sent %v, want the name alone", calls)
+	}
+	if _, err := dev.DownloadBytes(context.Background(), "", ""); !errors.Is(err, ErrInvalidArgument) {
+		t.Errorf("no name = %v, want invalid_argument", err)
+	}
+}
+
+// A file whose size does not match what the device reported is not the file.
+func TestDownloadBytesRefusesAShortFile(t *testing.T) {
+	dev := connectFake(t, "short")
+	if _, err := dev.DownloadBytes(context.Background(), "report.txt", ""); !errors.Is(err, ErrNotConfirmed) {
+		t.Errorf("err = %v, want not_confirmed", err)
+	}
+}
+
+func TestDownloadsListsTheFolder(t *testing.T) {
+	dev, sent := sentArgs(t, "")
+	ctx := context.Background()
+	files, err := dev.Downloads(ctx, "")
+	if err != nil {
+		t.Fatalf("downloads: %v", err)
+	}
+	want := time.Date(2026, 9, 29, 10, 0, 0, 0, time.UTC)
+	if len(files) != 1 || files[0].Name != "report.txt" || files[0].Bytes != 5 || !files[0].Modified.Equal(want) {
+		t.Errorf("files = %+v", files)
+	}
+	if _, err := dev.Downloads(ctx, "dev.mobium.app"); err != nil {
+		t.Fatal(err)
+	}
+	calls := sent()
+	if len(calls) != 2 || len(calls[0]) != 0 || len(calls[1]) != 1 || calls[1]["app"] != "dev.mobium.app" {
+		t.Errorf("sent %v, want nothing, then the app alone", calls)
 	}
 }

@@ -1514,6 +1514,64 @@ func GetToolSchemas() []Tool {
 			},
 		},
 		{
+			Name: "app_upload",
+			Description: "Put a file from this machine where the device keeps downloads, so an app's file picker " +
+				"finds it: Android's shared Download folder, or on iOS an app's own Documents folder, which the " +
+				"Files app shows under On My iPhone. Android's picker reads MediaStore rather than the folder, so " +
+				"the file is indexed and read back there; the answer says how it was confirmed. A real iPhone " +
+				"is not built yet. Upload a file for a test that picks one; download what an app saved.",
+			InputSchema: map[string]interface{}{
+				"type": "object",
+				"properties": withDevice(map[string]interface{}{
+					"path": map[string]interface{}{
+						"type":        "string",
+						"description": "The file on this machine to upload.",
+					},
+					"name": map[string]interface{}{
+						"type":        "string",
+						"description": "The name to give it on the device — a name, not a path. Defaults to the file's own.",
+					},
+					"app": map[string]interface{}{
+						"type": "string",
+						"description": "iOS: the bundle id whose Documents it goes to. Defaults to the app in front. " +
+							"Android has one Download folder for every app, and ignores it.",
+					},
+					"content": map[string]interface{}{
+						"type": "string",
+						"description": "The file itself, base64, instead of a path — for a daemon on another machine; " +
+							"give name with it. The CLI and pipe send it from a path.",
+					},
+				}),
+				"additionalProperties": false,
+			},
+		},
+		{
+			Name: "app_download",
+			Description: "Bring back a file from where the device keeps downloads — Android's shared Download " +
+				"folder, or on iOS an app's own Documents — to check what an app saved. With no name, lists what " +
+				"the folder holds. With a path, saves it there; without one, the file comes back in the answer, " +
+				"base64. The copy's size is read back against the device's. A real iPhone is not built yet.",
+			InputSchema: map[string]interface{}{
+				"type": "object",
+				"properties": withDevice(map[string]interface{}{
+					"name": map[string]interface{}{
+						"type":        "string",
+						"description": "The file's name in the folder. Omit to list the folder.",
+					},
+					"path": map[string]interface{}{
+						"type":        "string",
+						"description": "Where to save it on this machine. Omit to have it in the answer, base64.",
+					},
+					"app": map[string]interface{}{
+						"type": "string",
+						"description": "iOS: the bundle id whose Documents to read. Defaults to the app in front. " +
+							"Android has one Download folder for every app, and ignores it.",
+					},
+				}),
+				"additionalProperties": false,
+			},
+		},
+		{
 			Name: "app_batch",
 			Description: "Run several tools in order, on one device, in one call — a known " +
 				"sequence such as tap, type, tap, without a round trip for each. Every step is " +
@@ -1736,4 +1794,6 @@ var PathArguments = map[string][]string{
 	"app_screenshot": {"path"},
 	"app_location":   {"gpx"},
 	"app_record":     {"path"},
+	"app_upload":     {"path"},
+	"app_download":   {"path"},
 }

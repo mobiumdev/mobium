@@ -214,6 +214,10 @@ func (h *Handlers) dispatch(ctx context.Context, name string, args map[string]in
 		return h.terminateApp(ctx, args)
 	case "app_install":
 		return h.installApp(ctx, args)
+	case "app_upload":
+		return h.upload(ctx, args)
+	case "app_download":
+		return h.download(ctx, args)
 	case "app_open_url":
 		return h.openURL(ctx, args)
 	case "app_current":

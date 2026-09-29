@@ -65,6 +65,8 @@ namespace Mobium.Tests
             DisposeIsIdempotentAndEndsAWaitingCall();
             AnAnswerWithNoIdFailsTheCallInFlight();
             StartOpensTheSessionAndQuitEndsIt();
+            UploadSendsOnlyWhatWasGiven();
+            DownloadSavesDecodesOrLists();
 
             Console.WriteLine();
             Console.WriteLine($"{_checks} checks, {_failures} failed");
@@ -596,6 +598,61 @@ namespace Mobium.Tests
             using (var b = Device.Builder().Binary(FakeBinary()).Platform("android").Start())
                 b.Quit();
             Yes("disposing after an explicit quit does nothing", true);
+        }
+
+        // -- files: app_upload and app_download ------------------------------
+
+        private static string Keys(IDictionary<string, object?> m) =>
+            string.Join(",", m.Keys.OrderBy(k => k, StringComparer.Ordinal));
+
+        private static void UploadSendsOnlyWhatWasGiven()
+        {
+            using var d = Fake("ok");
+            var sent = Json.AsObject(d.Upload("/tmp/a b.pdf")["echo"]);
+            Eq("Upload(path) sends path alone", "path", Keys(sent));
+            Eq("the path, spaces and all", "/tmp/a b.pdf", Json.Str(sent, "path"));
+
+            sent = Json.AsObject(d.Upload("/tmp/a.pdf", "invoice.pdf")["echo"]);
+            Eq("Upload(path, name) sends both", "name,path", Keys(sent));
+            Eq("the name", "invoice.pdf", Json.Str(sent, "name"));
+
+            sent = Json.AsObject(d.Upload("/tmp/a.pdf", "invoice.pdf", "com.example.app")["echo"]);
+            Eq("Upload(path, name, app) sends all three", "app,name,path", Keys(sent));
+            Eq("the app", "com.example.app", Json.Str(sent, "app"));
+
+            sent = Json.AsObject(d.Upload("/tmp/a.pdf", null, "com.example.app")["echo"]);
+            Eq("a null name with an app keeps the file's own", "app,path", Keys(sent));
+
+            Yes("a null path is refused before it is sent",
+                Throws<InvalidArgumentException>(() => d.Upload(null!)) != null);
+            Yes("a null app is refused",
+                Throws<InvalidArgumentException>(() => d.Upload("/tmp/a.pdf", "a.pdf", null!)) != null);
+        }
+
+        private static void DownloadSavesDecodesOrLists()
+        {
+            using var d = Fake("ok");
+
+            var saved = d.Download("report.pdf", "/tmp/out/report.pdf");
+            var sent = Json.AsObject(saved["echo"]);
+            Eq("Download(name, path) sends name and path", "name,path", Keys(sent));
+            Eq("and answers with where it was saved", "/tmp/out/report.pdf", Json.Str(saved, "path"));
+            sent = Json.AsObject(d.Download("report.pdf", "/tmp/r.pdf", "com.example.app")["echo"]);
+            Eq("Download(name, path, app) sends all three", "app,name,path", Keys(sent));
+
+            Eq("Download(name) decodes the file's bytes", "report.pdf",
+                Encoding.UTF8.GetString(d.Download("report.pdf")));
+            Eq("an empty file, whose data is omitted, is zero bytes", 0, d.Download("empty.txt").Length);
+            var garbled = Throws<MobiumException>(() => d.Download("garbled.bin"));
+            Yes("contents that are not base64 are a MobiumException naming the file",
+                garbled != null && garbled.Message.Contains("garbled.bin"));
+            Yes("a null name is refused", Throws<InvalidArgumentException>(() => d.Download(null!)) != null);
+
+            var files = d.Downloads();
+            Eq("Downloads() lists the folder", 2, files.Count);
+            Eq("each file by name", "report.pdf", files.Count > 0 ? Json.Str(files[0], "name") : null);
+            Eq("with its size", 3, files.Count > 0 ? Json.Integer(files[0], "bytes") : -1);
+            Eq("Downloads(app) lists too", 2, d.Downloads("com.example.app").Count);
         }
 
         // -- the harness ----------------------------------------------------

@@ -678,6 +678,139 @@ func (d *Device) ClearData(ctx context.Context, app string) (ClearedData, error)
 	return out, err
 }
 
+// -- files -----------------------------------------------------------------
+
+// Transfer is one file moved between this machine and the device, as read
+// back at both ends.
+type Transfer struct {
+	Device string `json:"device"`
+	// App is the app whose Documents it was, on iOS; empty on Android, which
+	// has one Download folder for every app.
+	App  string `json:"app,omitempty"`
+	Name string `json:"name"`
+	// Where is the file on the device, as a person would find it:
+	// "Download/report.txt", or "MobiumApp's Documents/report.txt".
+	Where string `json:"where"`
+	Bytes int64  `json:"bytes"`
+	// Checked says how the transfer was confirmed at both ends.
+	Checked string `json:"checked"`
+	// Path is the file on this machine: what was sent, or where it was saved.
+	Path string `json:"path,omitempty"`
+}
+
+// DeviceFile is one file in the folder the device keeps downloads in.
+type DeviceFile struct {
+	Name     string    `json:"name"`
+	Bytes    int64     `json:"bytes"`
+	Modified time.Time `json:"modified"`
+}
+
+// TransferOptions tunes Upload. A nil *TransferOptions uploads under the
+// file's own name to the app in front.
+type TransferOptions struct {
+	// Name is what to call the file on the device — a name, not a path.
+	// Empty keeps the local file's name.
+	Name string
+	// App is, on iOS, the bundle id whose Documents the file goes to; empty
+	// means the app in front. Android ignores it.
+	App string
+}
+
+// Upload puts a file from this machine where the device keeps downloads, so
+// an app's file picker finds it. On Android that is the shared Download
+// folder, and the file is indexed in MediaStore — which is what the picker
+// reads — and read back there. On an iOS simulator it is an app's own
+// Documents folder, which the Files app shows under On My iPhone: the app
+// named in opts, or the one in front. A real iPhone is not built yet.
+//
+// A relative path is this process's: `mobium pipe` resolves it before the
+// daemon sees it.
+func (d *Device) Upload(ctx context.Context, path string, opts *TransferOptions) (*Transfer, error) {
+	if opts == nil {
+		opts = &TransferOptions{}
+	}
+	args := map[string]any{"path": path}
+	if opts.Name != "" {
+		args["name"] = opts.Name
+	}
+	if opts.App != "" {
+		args["app"] = opts.App
+	}
+	var out Transfer
+	if err := d.data(ctx, "app_upload", args, &out); err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+// Download saves the file called name, from where the device keeps downloads,
+// to path on this machine, and checks the copy's size against the device's.
+// On Android the folder is the shared Download folder; on an iOS simulator it
+// is an app's Documents — app, or the one in front when app is empty. A real
+// iPhone is not built yet. A relative path is this process's.
+func (d *Device) Download(ctx context.Context, name, path, app string) (*Transfer, error) {
+	if name == "" || path == "" {
+		return nil, &Error{Tool: "app_download", Code: CodeInvalidArgument,
+			Reason: "Download needs the file's name and where to save it; Downloads lists the folder"}
+	}
+	args := map[string]any{"name": name, "path": path}
+	if app != "" {
+		args["app"] = app
+	}
+	var out Transfer
+	if err := d.data(ctx, "app_download", args, &out); err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+// DownloadBytes is Download without touching this machine's disk: the file
+// comes back in the answer and is returned as it was on the device.
+func (d *Device) DownloadBytes(ctx context.Context, name, app string) ([]byte, error) {
+	if name == "" {
+		return nil, &Error{Tool: "app_download", Code: CodeInvalidArgument,
+			Reason: "DownloadBytes needs the file's name; Downloads lists the folder"}
+	}
+	args := map[string]any{"name": name}
+	if app != "" {
+		args["app"] = app
+	}
+	var out struct {
+		Bytes int64  `json:"bytes"`
+		Data  string `json:"data"`
+	}
+	if err := d.data(ctx, "app_download", args, &out); err != nil {
+		return nil, err
+	}
+	raw, err := base64.StdEncoding.DecodeString(out.Data)
+	if err != nil {
+		return nil, fmt.Errorf("mobium returned an unreadable file: %w", err)
+	}
+	if int64(len(raw)) != out.Bytes {
+		return nil, &Error{Tool: "app_download", Code: CodeNotConfirmed,
+			Reason: fmt.Sprintf("the device reported %d bytes and %d arrived", out.Bytes, len(raw))}
+	}
+	return raw, nil
+}
+
+// Downloads lists what the folder the device keeps downloads in holds:
+// Android's shared Download folder, or on an iOS simulator an app's
+// Documents — app, or the one in front when app is empty. A real iPhone is
+// not built yet. An empty folder is an empty list, not an error.
+func (d *Device) Downloads(ctx context.Context, app string) ([]DeviceFile, error) {
+	args := map[string]any{}
+	if app != "" {
+		args["app"] = app
+	}
+	var out struct {
+		Files []DeviceFile `json:"files"`
+	}
+	if err := d.data(ctx, "app_download", args, &out); err != nil {
+		return nil, err
+	}
+	return out.Files, nil
+}
+
 // Step is one call in a Batch: a tool and the arguments it takes on its own.
 type Step struct {
 	Name      string         `json:"name"`

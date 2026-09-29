@@ -32,6 +32,8 @@ import java.util.Map;
  * <li>{@code refuse} answers the handshake with a protocol error, then waits
  * for stdin to close as a real daemon would.
  * </ul>
+ * In every mode that answers, {@code app_download} answers with a listing or
+ * a file's content as the daemon does, besides the echo.
  * {@code MOBIUM_FAKE_NOTIFYLOG}, when set, has each notification's method
  * appended.
  * {@code MOBIUM_FAKE_PIDFILE}, when set, receives this process's id, so a test
@@ -121,6 +123,20 @@ final class FakeMobium {
             Map<String, Object> structured = new LinkedHashMap<>();
             structured.put("tool", name);
             structured.put("echo", arguments);
+            if (name.equals("app_download")) {
+                // Answers as the daemon does: no name lists the folder, a
+                // name with no path carries the file, base64, and an empty
+                // file carries no data at all.
+                Map<String, Object> a = Json.asObject(arguments);
+                String file = Json.str(a, "name");
+                if (file.isEmpty()) {
+                    structured.put("files", List.of(Map.of("name", "report.pdf", "bytes", 5, "modified", "2026-09-29T10:00:00Z")));
+                } else if (Json.str(a, "path").isEmpty()) {
+                    byte[] raw = ("file " + file).getBytes(StandardCharsets.UTF_8);
+                    structured.put("bytes", file.equals("empty") ? 0 : raw.length);
+                    if (!file.equals("empty")) structured.put("data", java.util.Base64.getEncoder().encodeToString(raw));
+                }
+            }
             reply(out, id, Map.of(
                     "content", List.of(Map.of("type", "text", "text", "ok " + name)),
                     "structuredContent", structured));

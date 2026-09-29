@@ -642,6 +642,30 @@ func (w *WDA) ListApps(ctx context.Context, includeSystem bool) ([]device.Instal
 	return w.sim.ListApps(ctx, includeSystem)
 }
 
+// UploadFile puts a file in an app's Documents on the simulator.
+func (w *WDA) UploadFile(ctx context.Context, local, name, appID string) (device.Transfer, error) {
+	if err := w.simOnly(CapFiles); err != nil {
+		return device.Transfer{}, err
+	}
+	return w.sim.UploadFile(ctx, local, name, appID)
+}
+
+// DownloadFile copies a file from an app's Documents on the simulator.
+func (w *WDA) DownloadFile(ctx context.Context, name, appID, local string) (device.Transfer, error) {
+	if err := w.simOnly(CapFiles); err != nil {
+		return device.Transfer{}, err
+	}
+	return w.sim.DownloadFile(ctx, name, appID, local)
+}
+
+// ListFiles lists an app's Documents on the simulator.
+func (w *WDA) ListFiles(ctx context.Context, appID string) ([]device.DeviceFile, error) {
+	if err := w.simOnly(CapFiles); err != nil {
+		return nil, err
+	}
+	return w.sim.ListFiles(ctx, appID)
+}
+
 // ClearData deletes an app's data on the simulator.
 func (w *WDA) ClearData(ctx context.Context, appID string) (device.ClearedData, error) {
 	if err := w.simOnly(CapClearData); err != nil {

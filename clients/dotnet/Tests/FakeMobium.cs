@@ -120,18 +120,44 @@ namespace Mobium.Tests
                 stdout.WriteLine("{\"jsonrpc\":\"2.0\",\"method\":\"notifications/message\",\"params\":{}}");
                 stdout.WriteLine("progress: this line is not JSON");
                 Reply(stdout, id + 1000, new JsonObject { ["wrong"] = true });
+                var structured = new JsonObject
+                {
+                    ["tool"] = name,
+                    ["echo"] = args?.DeepClone(),
+                    ["argv"] = new JsonArray(Environment.GetCommandLineArgs()[1..].Select(a => (JsonNode?)JsonValue.Create(a)).ToArray()),
+                };
+                if (name == "app_download") Download(structured, args);
                 Reply(stdout, id, new JsonObject
                 {
                     ["content"] = new JsonArray(new JsonObject { ["type"] = "text", ["text"] = "ok " + name }),
-                    ["structuredContent"] = new JsonObject
-                    {
-                        ["tool"] = name,
-                        ["echo"] = args,
-                        ["argv"] = new JsonArray(Environment.GetCommandLineArgs()[1..].Select(a => (JsonNode?)JsonValue.Create(a)).ToArray()),
-                    },
+                    ["structuredContent"] = structured,
                 });
             }
             return 0;
+        }
+
+        // app_download answers in the daemon's three shapes: no name lists the
+        // folder; a name with no path carries the file, base64, whose content
+        // here is the name itself -- and, as the daemon's omitempty does, no
+        // data field at all for an empty file; a name with a path is saved.
+        private static void Download(JsonObject view, JsonNode? args)
+        {
+            var file = (string?)args?["name"] ?? "";
+            if (file.Length == 0)
+            {
+                view["folder"] = "the Download folder";
+                view["files"] = new JsonArray(
+                    new JsonObject { ["name"] = "report.pdf", ["bytes"] = 3, ["modified"] = "2026-09-29T10:00:00Z" },
+                    new JsonObject { ["name"] = "notes.txt", ["bytes"] = 0, ["modified"] = "2026-09-29T10:01:00Z" });
+                return;
+            }
+            var content = file == "empty.txt" ? "" : file;
+            view["name"] = file;
+            view["bytes"] = Encoding.UTF8.GetByteCount(content);
+            var path = (string?)args?["path"];
+            if (path != null) view["path"] = path;
+            else if (file == "garbled.bin") view["data"] = "not base64!";
+            else if (content.Length > 0) view["data"] = Convert.ToBase64String(Encoding.UTF8.GetBytes(content));
         }
 
         private static void Reply(StreamWriter w, long id, JsonNode result)

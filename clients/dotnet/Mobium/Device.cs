@@ -310,6 +310,112 @@ namespace Mobium
         public IDictionary<string, object?> ClearData(string app) =>
             Data("app_clear_data", Args("app", app));
 
+        // -- files -----------------------------------------------------------
+
+        /// <summary>
+        /// Puts a file from this machine where the device keeps downloads, so
+        /// an app's file picker finds it, under the file's own name. On
+        /// Android that is the shared Download folder, one for every app; the
+        /// file is indexed in MediaStore, which is what the picker reads, and
+        /// read back there. On an iOS simulator it is the Documents folder of
+        /// the app in front, which the Files app shows under On My iPhone. A
+        /// real iPhone is not built yet.
+        /// </summary>
+        /// <returns>
+        /// The transfer: <c>device</c>, <c>app</c> (iOS), <c>name</c>,
+        /// <c>where</c>, <c>bytes</c>, <c>checked</c> — how it was confirmed
+        /// at both ends — and <c>path</c>.
+        /// </returns>
+        public IDictionary<string, object?> Upload(string path) =>
+            Data("app_upload", Args("path", path));
+
+        /// <summary>
+        /// As <see cref="Upload(string)"/>, giving the file
+        /// <paramref name="name"/> on the device — a name, not a path.
+        /// </summary>
+        public IDictionary<string, object?> Upload(string path, string name) =>
+            Data("app_upload", Args("path", path, "name", name));
+
+        /// <summary>
+        /// As <see cref="Upload(string)"/>, into the Documents of
+        /// <paramref name="app"/>, a bundle id, rather than the app in front.
+        /// Android has one Download folder for every app and ignores it, so a
+        /// test written for both platforms can name it on both. A
+        /// <c>null</c> <paramref name="name"/> keeps the file's own.
+        /// </summary>
+        public IDictionary<string, object?> Upload(string path, string? name, string app)
+        {
+            var args = Args("path", path, "app", app);
+            if (!string.IsNullOrWhiteSpace(name)) args["name"] = name;
+            return Data("app_upload", args);
+        }
+
+        /// <summary>
+        /// Brings back a file from where the device keeps downloads and saves
+        /// it at <paramref name="path"/> on this machine, to check what an app
+        /// saved: Android's shared Download folder, or on an iOS simulator the
+        /// Documents of the app in front. The copy's size is read back against
+        /// the device's. A real iPhone is not built yet. <see cref="Downloads()"/>
+        /// lists what there is to fetch.
+        /// </summary>
+        /// <returns>
+        /// The transfer: <c>device</c>, <c>app</c> (iOS), <c>name</c>,
+        /// <c>where</c>, <c>bytes</c>, <c>checked</c> and <c>path</c>, the
+        /// absolute path it was saved at.
+        /// </returns>
+        public IDictionary<string, object?> Download(string name, string path) =>
+            Data("app_download", Args("name", name, "path", path));
+
+        /// <summary>
+        /// As <see cref="Download(string, string)"/>, from the Documents of
+        /// <paramref name="app"/>, a bundle id, rather than the app in front.
+        /// Android ignores it.
+        /// </summary>
+        public IDictionary<string, object?> Download(string name, string path, string app) =>
+            Data("app_download", Args("name", name, "path", path, "app", app));
+
+        /// <summary>
+        /// Brings back a file from where the device keeps downloads, as
+        /// <see cref="Download(string, string)"/> does, and returns its bytes
+        /// rather than saving it — for a caller whose disk is not the daemon's.
+        /// </summary>
+        public byte[] Download(string name)
+        {
+            var d = Data("app_download", Args("name", name));
+            // An empty file comes back with no data at all: the field is
+            // omitted when empty, so its absence is only an answer at zero bytes.
+            if (!d.TryGetValue("data", out var data) || data == null)
+            {
+                if (d.ContainsKey("bytes") && Json.Integer(d, "bytes") == 0) return new byte[0];
+                throw new MobiumException("mobium returned no contents for " + name);
+            }
+            try
+            {
+                return Convert.FromBase64String(Json.Str(d, "data"));
+            }
+            catch (FormatException e)
+            {
+                throw new MobiumException("mobium returned contents for " + name + " that are not base64", e);
+            }
+        }
+
+        /// <summary>
+        /// What the downloads folder holds, each file with <c>name</c>,
+        /// <c>bytes</c> and <c>modified</c>: Android's shared Download folder,
+        /// or on an iOS simulator the Documents of the app in front. A real
+        /// iPhone is not built yet.
+        /// </summary>
+        public IList<IDictionary<string, object?>> Downloads() =>
+            Maps(Field("app_download", Args(), "files"));
+
+        /// <summary>
+        /// As <see cref="Downloads()"/>, for the Documents of
+        /// <paramref name="app"/>, a bundle id, rather than the app in front.
+        /// Android ignores it.
+        /// </summary>
+        public IList<IDictionary<string, object?>> Downloads(string app) =>
+            Maps(Field("app_download", Args("app", app), "files"));
+
         /// <summary>
         /// One step for <see cref="Batch"/>: a tool and the arguments it
         /// takes on its own.

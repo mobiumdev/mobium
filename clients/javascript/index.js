@@ -783,6 +783,58 @@ export class Device {
   }
 
   /**
+   * Put a file from this machine where the device keeps downloads, so an
+   * app's file picker finds it. On Android that is the shared Download
+   * folder, one for every app, so `app` is ignored; the file is indexed in
+   * MediaStore, which is what the picker reads, and read back there. On an
+   * iOS simulator it is an app's own Documents folder — the app in front
+   * unless `app` names one — which the Files app shows under On My iPhone.
+   * A real iPhone is not built yet. `name` is the name to give it on the
+   * device, a name rather than a path, and defaults to the file's own.
+   *
+   * Resolves to the transfer: `device`, `app` (iOS), `name`, `where`,
+   * `bytes`, `checked` (how it was confirmed at both ends) and `path`.
+   */
+  async upload(path, { name, app } = {}) {
+    const args = { path }
+    if (name) args.name = name
+    if (app) args.app = app
+    return (await this.#data('app_upload', args)) || {}
+  }
+
+  /**
+   * Bring back a file from where the device keeps downloads — Android's
+   * shared Download folder, or an iOS simulator app's Documents, the app in
+   * front unless `app` names one — to check what an app saved. A real iPhone
+   * is not built yet. The copy's size is read back against the device's.
+   *
+   * With `path`, saves it there and resolves to the transfer (`device`,
+   * `app`, `name`, `where`, `bytes`, `checked`, `path`). Without one, resolves
+   * to the file's bytes. downloads() lists what there is to fetch.
+   */
+  async download(name, { path, app } = {}) {
+    if (!name) throw new MobiumError('download needs the name of a file — downloads() lists them')
+    const args = { name }
+    if (path) args.path = path
+    if (app) args.app = app
+    const data = (await this.#data('app_download', args)) || {}
+    if (path) return data
+    if (typeof data.data !== 'string') throw new MobiumError(`mobium returned no contents for ${name}`)
+    return Buffer.from(data.data, 'base64')
+  }
+
+  /**
+   * What the downloads folder holds, each file with `name`, `bytes` and
+   * `modified`: Android's shared Download folder, or an iOS simulator app's
+   * Documents, the app in front unless `app` names one. A real iPhone is not
+   * built yet.
+   */
+  async downloads({ app } = {}) {
+    const data = (await this.#data('app_download', app ? { app } : {})) || {}
+    return data.files || []
+  }
+
+  /**
    * Runs several tools in order, on this device, in one call. Each step is
    * `{ name, arguments }` — a tool and the arguments it takes on its own:
    *

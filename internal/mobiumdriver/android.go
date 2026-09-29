@@ -262,6 +262,21 @@ func (a *Android) ListApps(ctx context.Context, includeSystem bool) ([]device.In
 	return a.adb.ListPackages(ctx, includeSystem)
 }
 
+// UploadFile puts a file in the Download folder; Android has one, for every app.
+func (a *Android) UploadFile(ctx context.Context, local, name, _ string) (device.Transfer, error) {
+	return a.adb.UploadFile(ctx, local, name)
+}
+
+// DownloadFile copies a file from the Download folder.
+func (a *Android) DownloadFile(ctx context.Context, name, _ string, local string) (device.Transfer, error) {
+	return a.adb.DownloadFile(ctx, name, local)
+}
+
+// ListFiles lists the Download folder.
+func (a *Android) ListFiles(ctx context.Context, _ string) ([]device.DeviceFile, error) {
+	return a.adb.ListFiles(ctx)
+}
+
 // ClearData deletes a package's data.
 func (a *Android) ClearData(ctx context.Context, appID string) (device.ClearedData, error) {
 	return a.adb.ClearAppData(ctx, appID)
