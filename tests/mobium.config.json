@@ -1,0 +1,8 @@
+{
+  "testDir": "mobiumapp",
+  "timeout": 90000,
+  "projects": [
+    {"name": "android", "device": "emulator-5554"},
+    {"name": "ios", "device": "${MOBIUM_IOS_DEVICE}", "driver": "wda"}
+  ]
+}

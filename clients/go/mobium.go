@@ -356,6 +356,8 @@ const (
 	Unchecked = "unchecked"
 	// Focused waits for a field to have keyboard focus.
 	Focused = "focused"
+	// Count waits until the locator matches WaitOptions.Count elements.
+	Count = "count"
 )
 
 // WaitOptions tunes WaitFor. A nil *WaitOptions means visible, ten seconds.
@@ -368,6 +370,13 @@ type WaitOptions struct {
 	Text string
 	// Timeout defaults to ten seconds and may not exceed two minutes.
 	Timeout time.Duration
+	// Not waits for the opposite of Condition: HasText with Not waits for
+	// the text to change.
+	Not bool
+	// Exact makes HasText match the whole text rather than a part.
+	Exact bool
+	// Count is how many matches Count waits for.
+	Count int
 }
 
 // WaitFor blocks until the screen agrees, instead of sleeping.
@@ -387,6 +396,15 @@ func (d *Device) WaitFor(ctx context.Context, target string, opts *WaitOptions) 
 	}
 	if opts.Text != "" || opts.Condition == HasValue {
 		args["text"] = opts.Text
+	}
+	if opts.Not {
+		args["not"] = true
+	}
+	if opts.Exact {
+		args["exact"] = true
+	}
+	if opts.Condition == Count {
+		args["count"] = opts.Count
 	}
 	if opts.Timeout > 0 {
 		args["timeout_ms"] = int(opts.Timeout / time.Millisecond)

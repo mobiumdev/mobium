@@ -557,16 +557,20 @@ export class Device {
    * condition is 'visible' (default), 'hidden', 'text' — which needs the
    * text to wait for — 'value', a field's whole content ('' for empty; a
    * password field is refused), 'enabled', 'disabled', 'checked',
-   * 'unchecked' or 'focused'. Throws MobiumError if it never happens, saying
-   * what was on screen instead.
+   * 'unchecked', 'focused' or 'count' (with count). not waits for the
+   * opposite; exact makes 'text' match the whole text. Throws MobiumError if
+   * it never happens, saying what was on screen instead.
    *
    * On success the screen is remapped, so the element returned already has a
    * ref that can be tapped without calling map() first. Nothing is returned
    * when waiting for something to go away.
    */
-  async waitFor(target, { condition = 'visible', text, timeoutMs = 10000 } = {}) {
+  async waitFor(target, { condition = 'visible', text, timeoutMs = 10000, not, exact, count } = {}) {
     const args = { target, condition, timeout_ms: timeoutMs }
     if (text !== undefined) args.text = text
+    if (not) args.not = true
+    if (exact) args.exact = true
+    if (count !== undefined) args.count = count
     const data = await this.#data('app_wait_for', args)
     return data && data.element ? toElement(data.element) : null
   }

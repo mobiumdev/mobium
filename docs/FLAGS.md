@@ -275,8 +275,11 @@ command mentions them.
 | `app_uninstall` | `device` | string | _global_ --device |
 | `app_uninstall` | `driver` | string | _global_ --driver |
 | `app_wait_for` | `condition` | string | wait |
+| `app_wait_for` | `count` | integer | wait |
 | `app_wait_for` | `device` | string | _global_ --device |
 | `app_wait_for` | `driver` | string | _global_ --driver |
+| `app_wait_for` | `exact` | boolean | wait |
+| `app_wait_for` | `not` | boolean | wait |
 | `app_wait_for` | `target` | string | wait |
 | `app_wait_for` | `text` | string | wait |
 | `app_wait_for` | `timeout_ms` | integer | wait |
@@ -348,6 +351,7 @@ arguments and the two global flags.
 | `scroll-to` | app_scroll_to | --direction | direction, target |
 | `session` | app_session | --app --platform | action, app, platform |
 | `shake` | app_shake | — | — |
+| `show-report` | — | — | darwin, windows |
 | `sms` | app_sms | --from | from, text |
 | `source` | app_source | — | — |
 | `start` | — | --idle-timeout | — |
@@ -359,6 +363,7 @@ arguments and the two global flags.
 | `swipe` | app_swipe | --duration | direction, duration_ms, x1, x2, y1, y2 |
 | `tap` | app_tap, app_tap | --fingers | fingers, target, x, y |
 | `terminate` | app_terminate | — | app |
+| `test` | — | --config --grep --last-failed --list --no-screenshots --output --project --reporter --retries --timeout --workers | list |
 | `text` | app_text | — | target |
 | `time` | app_time | — | — |
 | `timezone` | app_timezone | — | timezone |
@@ -367,5 +372,5 @@ arguments and the two global flags.
 | `uncheck` | app_check | — | checked, target |
 | `uninstall` | app_uninstall | — | app |
 | `up` | — | — | — |
-| `wait` | app_wait_for | --for --text --timeout | condition, target, text, timeout_ms |
+| `wait` | app_wait_for | --count --exact --for --not --text --timeout | condition, count, exact, not, target, text, timeout_ms |
 | `zoom` | app_zoom | --from --target --to | direction, from, target, to |

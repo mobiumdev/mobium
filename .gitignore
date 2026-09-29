@@ -17,3 +17,6 @@ clients/dotnet/**/obj/
 # with #31.
 __pycache__/
 *.pyc
+
+# mobium test reports
+mobium-report/

@@ -19,10 +19,10 @@ differently.
 | | |
 | --- | --- |
 | Tools | **63** |
-| CLI commands registered | 69 |
-| …visible in `mobium --help` | 68 |
+| CLI commands registered | 71 |
+| …visible in `mobium --help` | 70 |
 | …hidden | 1 (pipe) |
-| Command constructors in source | 75 (includes `daemon start`, `stop`, `status`) |
+| Command constructors in source | 77 (includes `daemon start`, `stop`, `status`) |
 | Client libraries | 5 |
 
 Those three command counts differ on purpose, and the arithmetic is asserted
@@ -120,6 +120,8 @@ been wrong twice.
 - `grid ui`
 - `mcp`
 - `pipe`
+- `show-report`
+- `test`
 
 
 These run the process rather than the device — the daemon's own lifecycle, and

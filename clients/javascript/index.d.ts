@@ -152,10 +152,17 @@ export interface WaitOptions {
     | 'checked'
     | 'unchecked'
     | 'focused'
+    | 'count'
   /** The text the element must contain, with `condition: 'text'`; the whole value, with `'value'`, where `''` waits for an empty field. */
   text?: string
   /** Ten seconds by default, two minutes at most. */
   timeoutMs?: number
+  /** Wait for the opposite of the condition. */
+  not?: boolean
+  /** With `condition: 'text'`, match the whole text rather than a part. */
+  exact?: boolean
+  /** With `condition: 'count'`, how many matches to wait for. */
+  count?: number
 }
 
 // -- connecting ------------------------------------------------------------

@@ -277,14 +277,18 @@ class Device:
         condition: str = "visible",
         text: str | None = None,
         timeout_ms: int = 10000,
+        negate: bool = False,
+        exact: bool = False,
+        count: int | None = None,
     ) -> Element | None:
         """Block until the screen agrees, instead of sleeping.
 
         condition is "visible" (default), "hidden", "text" — which needs the
         text to wait for — "value", a field's whole content ("" for empty;
         a password field is refused), "enabled", "disabled", "checked",
-        "unchecked" or "focused". Raises MobiumError if it never happens,
-        saying what was on screen instead.
+        "unchecked", "focused" or "count" (with count). negate waits for the
+        opposite; exact makes "text" match the whole text. Raises MobiumError
+        if it never happens, saying what was on screen instead.
 
         On success the screen is remapped, so the element returned already has
         a ref that can be tapped without calling map() first. Nothing is
@@ -297,6 +301,12 @@ class Device:
         }
         if text is not None:
             args["text"] = text
+        if negate:
+            args["not"] = True
+        if exact:
+            args["exact"] = True
+        if count is not None:
+            args["count"] = count
         data = self._data("app_wait_for", args) or {}
         found = data.get("element")
         return _element(found) if found else None

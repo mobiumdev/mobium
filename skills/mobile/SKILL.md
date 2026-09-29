@@ -151,6 +151,17 @@ back, and anything the app never declared is reported as skipped.
 - `mobium time` — the device's clock in its own zone; a simulator's is the
   Mac's, and the answer says so
 
+### Tests
+
+`mobium test` runs `*.test.json` files: each test is a list of the same
+steps `app_batch` takes — `{"name": "app_tap", "arguments": {...}}` — and its
+assertions are `app_wait_for` steps (`not`, `exact` and `count` included) or
+`{"expect": {"tool": ..., "field": ..., "equals": ...}}` on a tool that only
+reads. Projects in `mobium.config.json` are devices. `-g`, `--project`,
+`--retries`, `--last-failed`, `--reporter list,junit,html`, then
+`mobium show-report`. A failure keeps the step, its error code, a screenshot
+and the map. `tests/` in the repository is a worked example.
+
 ### Network
 
 - `mobium network` — what is in place: online or offline, and any shaping

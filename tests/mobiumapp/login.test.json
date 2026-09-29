@@ -1,0 +1,40 @@
+{
+  "description": "MobiumApp's Login Demo: the negative paths, the demo account, and the fields' state as the form is filled.",
+  "app": "dev.mobium.mobiumapp",
+  "beforeEach": [
+    {"name": "app_dialogs", "arguments": {"when": "Save Password", "press": "Not Now"},
+     "description": "iOS offers to save the password after a sign-in; the rule answers it, on Android it never comes"},
+    {"name": "app_tap", "arguments": {"target": "label=Login Demo"}}
+  ],
+  "tests": [
+    {"name": "a wrong password is refused, and says so", "steps": [
+      {"name": "app_fill", "arguments": {"target": "testid=username", "text": "mobium"}},
+      {"name": "app_fill", "arguments": {"target": "testid=password", "text": "wrongpass1"}},
+      {"name": "app_tap", "arguments": {"target": "testid=loginBtn"}},
+      {"name": "app_wait_for", "arguments": {"target": "testid=loginError", "condition": "text",
+        "text": "Incorrect username or password.", "exact": true}},
+      {"name": "app_wait_for", "arguments": {"target": "testid=welcomeText", "condition": "hidden"}}
+    ]},
+    {"name": "the demo account signs in, and out", "steps": [
+      {"name": "app_fill", "arguments": {"target": "testid=username", "text": "mobium"}},
+      {"name": "app_fill", "arguments": {"target": "testid=password", "text": "hunter2"}},
+      {"name": "app_tap", "arguments": {"target": "testid=loginBtn"}},
+      {"name": "app_wait_for", "arguments": {"target": "testid=welcomeText", "timeout_ms": 15000}},
+      {"name": "app_tap", "arguments": {"target": "testid=logoutBtn"}},
+      {"name": "app_wait_for", "arguments": {"target": "testid=username", "condition": "value", "text": ""}}
+    ]},
+    {"name": "focus follows the tap, and a field holds what was typed", "steps": [
+      {"name": "app_tap", "arguments": {"target": "testid=username"}},
+      {"name": "app_wait_for", "arguments": {"target": "testid=username", "condition": "focused"}},
+      {"name": "app_wait_for", "arguments": {"target": "testid=password", "condition": "focused", "not": true}},
+      {"name": "app_type", "arguments": {"target": "testid=username", "text": "mob"}},
+      {"name": "app_wait_for", "arguments": {"target": "testid=username", "condition": "value", "text": "mob"}},
+      {"name": "app_wait_for", "arguments": {"target": "testid=username", "condition": "text", "text": "mobium", "not": true}}
+    ]},
+    {"name": "the app is in front throughout", "steps": [
+      {"expect": {"tool": "app_state", "arguments": {"app": "dev.mobium.mobiumapp"}, "field": "state",
+        "equals": "foreground"}},
+      {"expect": {"tool": "app_current", "field": "app", "equals": "dev.mobium.mobiumapp"}}
+    ]}
+  ]
+}

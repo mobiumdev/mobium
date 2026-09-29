@@ -88,6 +88,9 @@ type Tool struct {
 	Name        string                 `json:"name"`
 	Description string                 `json:"description,omitempty"`
 	InputSchema map[string]interface{} `json:"inputSchema"`
+	// Annotations are MCP's hints about the tool; readOnlyHint is set on
+	// every tool, from readonly.go.
+	Annotations map[string]interface{} `json:"annotations,omitempty"`
 }
 
 type ToolsCallParams struct {

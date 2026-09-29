@@ -2129,6 +2129,14 @@
     },
     {
       "tool": "app_wait_for",
+      "arg": "count",
+      "type": "integer",
+      "setBy": [
+        "wait"
+      ]
+    },
+    {
+      "tool": "app_wait_for",
       "arg": "device",
       "type": "string",
       "setBy": [
@@ -2144,6 +2152,22 @@
         "--driver"
       ],
       "global": true
+    },
+    {
+      "tool": "app_wait_for",
+      "arg": "exact",
+      "type": "boolean",
+      "setBy": [
+        "wait"
+      ]
+    },
+    {
+      "tool": "app_wait_for",
+      "arg": "not",
+      "type": "boolean",
+      "setBy": [
+        "wait"
+      ]
     },
     {
       "tool": "app_wait_for",
@@ -2834,6 +2858,13 @@
       ]
     },
     {
+      "command": "show-report",
+      "sends": [
+        "darwin",
+        "windows"
+      ]
+    },
+    {
       "command": "sms",
       "tools": [
         "app_sms"
@@ -2940,6 +2971,25 @@
       ]
     },
     {
+      "command": "test",
+      "flags": [
+        "--config",
+        "--grep",
+        "--last-failed",
+        "--list",
+        "--no-screenshots",
+        "--output",
+        "--project",
+        "--reporter",
+        "--retries",
+        "--timeout",
+        "--workers"
+      ],
+      "sends": [
+        "list"
+      ]
+    },
+    {
       "command": "text",
       "tools": [
         "app_text"
@@ -3007,12 +3057,18 @@
         "app_wait_for"
       ],
       "flags": [
+        "--count",
+        "--exact",
         "--for",
+        "--not",
         "--text",
         "--timeout"
       ],
       "sends": [
         "condition",
+        "count",
+        "exact",
+        "not",
         "target",
         "text",
         "timeout_ms"

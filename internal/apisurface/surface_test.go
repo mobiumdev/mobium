@@ -64,6 +64,9 @@ func TestCLICommandsWithoutAToolAreTheProcessOnes(t *testing.T) {
 		"daemon": true, "daemon start": true, "daemon status": true, "daemon stop": true, "daemon up": true,
 		"grid": true, "grid status": true, "grid ui": true,
 		"mcp": true, "pipe": true,
+		// The test runner calls tools, but from test files through
+		// internal/testrun, not by name here; show-report opens a file.
+		"test": true, "show-report": true,
 	}
 	for _, cmd := range sweep(t).Extra {
 		if !expected[cmd] {
