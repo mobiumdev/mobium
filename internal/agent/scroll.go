@@ -90,6 +90,14 @@ func (h *Handlers) scrollToOn(ctx context.Context, s *session, args map[string]i
 	if err != nil {
 		return nil, err
 	}
+	if gest, ok := mobiumdriver.AsGesturer(s.driver); ok {
+		var more int
+		node, tree, more, err = revealWhole(ctx, s.driver, gest, loc, node, tree, dir)
+		if err != nil {
+			return nil, err
+		}
+		scrolls += more
+	}
 
 	view := ScrollView{Target: target, Direction: dir, Scrolls: scrolls}
 	msg := fmt.Sprintf("%s is on screen", loc)
@@ -258,6 +266,117 @@ func (h *Handlers) scrollIntoView(ctx context.Context, s *session, loc uitree.Lo
 		"the list is longer than mobium will swipe; try a deep link with app_open_url",
 		whyNot(loc, lastErr), dir, maxScrolls)
 }
+
+// revealWhole brings the rest of a target into view once scrolling has found
+// it. Found is not the same as shown: Android clips a child's bounds to its
+// container, so a card of which 101 pixels had scrolled in reported bounds
+// wholly inside the pager, and scroll-to stopped with Card 8 a sliver at the
+// edge of MobiumApp's Pager Demo (CHALLENGES 169). Clipped bounds give
+// themselves away twice over: they end flush against the container's edge on
+// the axis being scrolled, and they are shorter along it than a sibling of
+// the same kind — Card 8 at 101 pixels beside Card 7 at 683. Flush alone is
+// not enough: a whole row can sit flush, the same height as its neighbors.
+// So when both signs are there, the list moves a third of the container
+// toward the target and is read again, for as long as the target grows —
+// until it stands clear of the edge, stops growing, or the list stops. iOS
+// reports the whole frame, which the measured nudge in scrollIntoView already
+// brings in; this changes nothing there.
+//
+// app_scroll_to only. An action that scrolls to its target needs it
+// reachable, which it already is.
+func revealWhole(ctx context.Context, d mobiumdriver.Driver, gest mobiumdriver.Gesturer, loc uitree.Locator,
+	n *uitree.Node, tree *uitree.Tree, dir string) (*uitree.Node, *uitree.Tree, int, error) {
+	horiz := horizontal(dir)
+	extent := func(n *uitree.Node) (lo, hi int) {
+		if horiz {
+			return n.Bounds.X1, n.Bounds.X2
+		}
+		return n.Bounds.Y1, n.Bounds.Y2
+	}
+	swipes := 0
+	for swipes < maxReveal {
+		c := scrollContainerOf(n)
+		if c == nil || n.Bounds.Empty() {
+			return n, tree, swipes, nil
+		}
+		lo, hi := extent(n)
+		clo, chi := extent(c)
+		span := chi - clo
+		// Clear of both edges is whole. Flush is whole too unless something
+		// says otherwise — checked before the first swipe only: after one, the
+		// swipe itself is the evidence, and a target that stopped growing is
+		// as whole as it gets.
+		if hi-lo >= span || (lo > clo && hi < chi) || (swipes == 0 && !clippedAt(n, clo, chi, extent)) {
+			return n, tree, swipes, nil
+		}
+		// Toward whichever edge it touches: the content moves the other way.
+		step := span / 3
+		if lo <= clo && hi < chi {
+			step = -step
+		}
+		mid := (clo + chi) / 2
+		from, to := mid+step/2, mid-step/2
+		var err error
+		if horiz {
+			y := (c.Bounds.Y1 + c.Bounds.Y2) / 2
+			err = gest.Swipe(ctx, from, y, to, y, scrollDuration)
+		} else {
+			x := (c.Bounds.X1 + c.Bounds.X2) / 2
+			err = gest.Swipe(ctx, x, from, x, to, scrollDuration)
+		}
+		if err != nil {
+			return nil, nil, swipes, err
+		}
+		swipes++
+		select {
+		case <-ctx.Done():
+			return nil, nil, swipes, ctx.Err()
+		case <-time.After(settleAfterScroll):
+		}
+		next, err := d.Snapshot(ctx)
+		if err != nil {
+			return nil, nil, swipes, err
+		}
+		m, err := pickOne(loc, next)
+		if err != nil {
+			// It was there a swipe ago; what is on screen now is the answer
+			// the caller gets, not a failure after a success.
+			return n, tree, swipes, nil
+		}
+		nlo, nhi := extent(m)
+		if nhi-nlo <= hi-lo {
+			// No bigger than before: whole, and now clear of the edge — or
+			// the list did not move. Either way this is as far as it goes.
+			return m, next, swipes, nil
+		}
+		n, tree = m, next
+	}
+	return n, tree, swipes, nil
+}
+
+// clippedAt reports whether a node's bounds look cut off at its container's
+// edge [clo, chi] on the scroll axis: flush against it, while a sibling of the
+// same class is bigger along it. A whole row flush against the edge is the
+// same size as its neighbors, and is left alone.
+func clippedAt(n *uitree.Node, clo, chi int, extent func(*uitree.Node) (int, int)) bool {
+	lo, hi := extent(n)
+	if (lo > clo && hi < chi) || n.Parent == nil {
+		return false
+	}
+	for _, sib := range n.Parent.Children {
+		if sib == n || sib.Class != n.Class || sib.Bounds.Empty() {
+			continue
+		}
+		if slo, shi := extent(sib); shi-slo > hi-lo {
+			return true
+		}
+	}
+	return false
+}
+
+// maxReveal bounds revealWhole: a third of the container a swipe brings in
+// anything that fits in three, with room for a list that coasts.
+const maxReveal = 5
 
 // resolvedAndVisible reports the single node a locator names, but only when it
 // is wholly inside the scroll container.

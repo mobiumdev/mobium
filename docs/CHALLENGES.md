@@ -7,7 +7,7 @@ the source.
 
 The pattern across them is the reason the document exists: **almost nothing
 here was found by reading code or by a test written from imagination.** Of
-168 defects, 133 were found only by running against a real device. The other
+169 defects, 134 were found only by running against a real device. The other
 thirty-five — 4, 5, 6, 14, 23, 24, 32, 35, 36, 39, 44, 50, 53, 54, 57, 66, 89,
 99, 100, 121, 123, 129, 130, 133, 134, 139, 140, 141, 142, 144, 150, 158, 162,
 164 and 165 — came from reading code, the compiler, a test, a linter,
@@ -3810,6 +3810,29 @@ where the page says it is. The read now names the page's own URL, from
 WebView MobiumApp showed had no origin at all, so neither tool had been
 pointed at a page that could hold what it reads; the iOS simulator, through
 WebKit's own cookie call, read the cookie from the start.
+
+### 169. scroll-to stopped with its target a sliver at the edge
+
+**Found by:** the documentation site's picture of `mobium scroll-to "label=Card
+8" --direction right` on MobiumApp's Pager Demo, on an Android 15 emulator —
+the answer said Card 8 was on screen, and the picture showed Card 7 with 101
+pixels of Card 8 at the edge.
+
+`app_scroll_to` stops when its target is wholly inside its scroll container,
+and on Android that test can never fail once any of the target is in: a
+child's bounds are clipped to its container, so a card 683 pixels wide of
+which 101 showed reported `[937,476][1038,896]`, inside the pager. It was
+reachable — a tap there presses it, which is all `mobium-app.sh` asked — but
+not shown, and Playwright's scroll-into-view brings the whole element in. Two
+signs mark clipped bounds together: flush against the container's edge on
+the scroll axis, and shorter along it than a sibling of the same kind. A whole
+row can sit flush, the same height as its neighbors, so flush alone is not
+enough. When both are there, `app_scroll_to` now moves the list a third of
+the container at a time for as long as the target grows; on the emulator Card
+8 then ends all 683 pixels in view. iOS reports the whole frame, which the
+measured nudge (CHALLENGES 114) already brought in; this changes nothing
+there. Actions that scroll to their target are unchanged: they need it
+reachable, which it was.
 
 ## Findings that were not defects
 
