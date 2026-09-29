@@ -179,29 +179,38 @@ func TestWorkersRunProjectsAtOnce(t *testing.T) {
 	p := write(t, dir, "one.test.json", `{"tests": [{"name": "slow", "steps": [
 		{"name": "app_tap", "arguments": {"target": "@e1"}}]}]}`)
 	cfg := &Config{Dir: dir, Projects: []Project{{Name: "a", Device: "A"}, {Name: "b", Device: "B"}}}
+	// Counted, not timed: a wall clock on a busy Windows runner once made two
+	// concurrent 300ms projects take 831ms, longer than running them in turn.
 	var mu sync.Mutex
 	devices := map[string]bool{}
+	inFlight, most := 0, 0
 	f := &fake{answer: func(tool string, args map[string]interface{}) (*agent.ToolsCallResult, error) {
 		if tool == "app_batch" {
 			mu.Lock()
 			devices[args["device"].(string)] = true
+			inFlight++
+			if inFlight > most {
+				most = inFlight
+			}
 			mu.Unlock()
 			time.Sleep(300 * time.Millisecond)
+			mu.Lock()
+			inFlight--
+			mu.Unlock()
 		}
 		return nil, nil
 	}}
-	start := time.Now()
 	s := run(t, cfg, Options{Files: []string{p}}, f)
-	if took := time.Since(start); took > 550*time.Millisecond {
-		t.Errorf("two projects of 300ms each took %s — not at once", took)
+	if most != 2 {
+		t.Errorf("two projects ran %d at a time, not at once", most)
 	}
 	if len(s.Results) != 2 || !devices["A"] || !devices["B"] {
 		t.Errorf("results %d, devices %v", len(s.Results), devices)
 	}
-	start = time.Now()
+	most = 0
 	run(t, cfg, Options{Files: []string{p}, Workers: 1}, f)
-	if took := time.Since(start); took < 550*time.Millisecond {
-		t.Errorf("one worker ran two projects in %s — at once", took)
+	if most != 1 {
+		t.Errorf("one worker ran %d projects at a time", most)
 	}
 }
 
