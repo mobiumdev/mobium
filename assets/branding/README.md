@@ -5,6 +5,7 @@
 | [mobium-mark.svg](mobium-mark.svg) | **The master.** The glyph alone, as vectors |
 | [mobium-icon.svg](mobium-icon.svg) | App icon: the mark on the dark ground, inside a rounded square |
 | [mobium-icon-light.svg](mobium-icon-light.svg) | The same icon on white |
+| [mobium-icon-512.png](mobium-icon-512.png) | The app icon as a 512² PNG, transparent outside the rounded square — rendered from mobium-icon.svg by headless Chrome, for the MCP bundle |
 | [favicon.svg](favicon.svg) | The mark at tab size |
 | [mobium-logo.png](mobium-logo.png) | The original: glyph over the wordmark, on white, 1254² |
 | [mobium-logo-variants.png](mobium-logo-variants.png) | The original's three settings — light, dark, app icon |

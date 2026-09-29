@@ -1,7 +1,7 @@
 BIN := bin/mobium
 VERSION := $(shell cat VERSION 2>/dev/null || echo dev)
 
-.PHONY: all build dist test fmt fmt-check vet lint clients java crosscompile api api-check flags flags-check quickstart license-check docs-check ci clean
+.PHONY: all build dist mcpb test fmt fmt-check vet lint clients java crosscompile api api-check flags flags-check quickstart license-check docs-check ci clean
 
 all: build test
 
@@ -95,6 +95,11 @@ dist:
 	done
 	@cd $(DIST) && shasum -a 256 mobium_* > SHA256SUMS
 	@echo "wrote $(DIST)/SHA256SUMS"
+
+# mcpb packs the MCP bundle and the MCP Registry entry from what make dist
+# built: dist/mobium-$(VERSION).mcpb and dist/server.json. See packaging/mcp.
+mcpb:
+	@python3 packaging/mcp/build.py $(VERSION) $(DIST)
 
 crosscompile:
 	@for t in $(CROSS); do \

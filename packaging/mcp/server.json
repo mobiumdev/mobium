@@ -1,0 +1,22 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "dev.mobium/mobium",
+  "title": "Mobium",
+  "description": "Drive native Android and iOS apps: emulators, phones, simulators, iPhones, WebViews.",
+  "version": "@VERSION@",
+  "websiteUrl": "https://github.com/mobiumdev/mobium",
+  "repository": {
+    "url": "https://github.com/mobiumdev/mobium",
+    "source": "github"
+  },
+  "packages": [
+    {
+      "registryType": "mcpb",
+      "identifier": "https://github.com/mobiumdev/mobium/releases/download/v@VERSION@/mobium-@VERSION@.mcpb",
+      "fileSha256": "@SHA256@",
+      "transport": {
+        "type": "stdio"
+      }
+    }
+  ]
+}
