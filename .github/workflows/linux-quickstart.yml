@@ -1,0 +1,184 @@
+# The public quick start (docs/quickstart/) followed on a fresh x86_64 Ubuntu
+# machine, against an Android emulator booted on that machine.
+#
+# PARKED (2026-09-28): run by hand, never on a push. It ran once, on a
+# GitHub-hosted ubuntu-24.04 x86_64 runner with KVM, and every quick-start
+# page passed there (docs/quickstart/README.md, "Where it runs"; the one
+# defect it found, the .NET icon that was never committed, is CHALLENGES 150
+# and fixed). Which Linux distributions and architectures Mobium supports,
+# and how that is checked, will be addressed at a later time. Until then it
+# is here to be run from the Actions tab — "Linux quick start", "Run
+# workflow" — which GitHub offers only for a workflow on the default branch.
+
+name: Linux quick start
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  quickstart:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    env:
+      ANDROID_HOME: /home/runner/sdk
+      ANDROID_SDK_ROOT: /home/runner/sdk
+      OUT: /home/runner/out
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Host
+        run: |
+          mkdir -p "$OUT"
+          { uname -a; lsb_release -ds; nproc; free -g; ls -l /dev/kvm; go version; python3 --version; node --version; java -version 2>&1 | head -1; dotnet --version; } | tee "$OUT/host.txt"
+
+      # The AVD's userdata partition needs 12GB; the runner has about 8.7GB
+      # free. Its preinstalled SDK and toolchains this run does not use go.
+      - name: Disk
+        run: |
+          sudo rm -rf /usr/local/lib/android /opt/ghc /usr/local/.ghcup /usr/share/swift /usr/local/share/boost /opt/hostedtoolcache/CodeQL
+          df -h /home/runner | tee -a "$OUT/host.txt"
+
+      - name: KVM for the emulator
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      # 1. Install mobium — exactly the quick start's command.
+      - name: Install mobium
+        run: |
+          go install github.com/mobiumdev/mobium/cmd/mobium@latest
+          echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"
+          "$(go env GOPATH)/bin/mobium" --version | tee "$OUT/version.txt"
+
+      # 2. Start a device — Google's command-line tools, as a Linux user without
+      #    Homebrew gets them. Not the runner's preinstalled SDK.
+      - name: Android SDK
+        run: |
+          mkdir -p "$ANDROID_HOME/cmdline-tools"
+          cd "$ANDROID_HOME/cmdline-tools"
+          curl -sSLo tools.zip https://dl.google.com/android/repository/commandlinetools-linux-16111833_latest.zip
+          unzip -q tools.zip && mv cmdline-tools latest && rm tools.zip
+          echo "$ANDROID_HOME/cmdline-tools/latest/bin" >> "$GITHUB_PATH"
+          echo "$ANDROID_HOME/emulator" >> "$GITHUB_PATH"
+          echo "$ANDROID_HOME/platform-tools" >> "$GITHUB_PATH"
+
+      - name: SDK packages and AVD
+        run: |
+          yes | sdkmanager --licenses > /dev/null
+          sdkmanager --install "emulator" "platform-tools" "system-images;android-35;google_apis;x86_64" > /dev/null
+          avdmanager create avd -n mobium-test -d pixel_7 -k "system-images;android-35;google_apis;x86_64" 2>&1 | tail -3
+          grep -E 'hw.lcd|hw.cpu' ~/.android/avd/mobium-test.avd/config.ini
+
+      - name: Boot the emulator
+        run: |
+          nohup emulator -avd mobium-test -no-window -no-snapshot -no-boot-anim -no-audio -no-metrics -gpu swiftshader_indirect > "$OUT/emulator.log" 2>&1 &
+          timeout 300 adb wait-for-device || { cat "$OUT/emulator.log"; exit 1; }
+          for i in $(seq 1 180); do
+            [ "$(adb shell getprop sys.boot_completed 2>/dev/null | tr -d '\r')" = 1 ] && break
+            sleep 2
+          done
+          [ "$(adb shell getprop sys.boot_completed | tr -d '\r')" = 1 ] || { tail -50 "$OUT/emulator.log"; exit 1; }
+          adb shell getprop ro.build.version.release
+          adb shell getprop ro.product.cpu.abi
+          # Let the launcher and Settings' first-boot work settle.
+          sleep 30
+
+      # 3. Check the setup.
+      - name: doctor and devices
+        run: |
+          mobium doctor 2>&1 | tee "$OUT/doctor.txt" || true
+          mobium devices 2>&1 | tee "$OUT/devices.txt"
+
+      # 4. Every client page, its install and run lines as written.
+      - name: CLI
+        continue-on-error: true
+        run: |
+          mkdir -p ~/qs/cli && cd ~/qs/cli
+          curl -sSLO https://raw.githubusercontent.com/mobiumdev/mobium/main/docs/quickstart/examples/cli/quickstart.sh
+          # Diagnosis only: the same script, with an exit trap that captures
+          # the screen before the session ends and Settings is stopped.
+          sed 's|^trap .*|trap '"'"'mobium screenshot -o fail.png "$@"; mobium map "$@" > fail-map.txt 2>\&1; mobium current "$@" >> fail-map.txt 2>\&1; mobium session end "$@"'"'"' EXIT|' quickstart.sh > diag.sh
+          grep -n '^trap' diag.sh
+          set -o pipefail
+          ts() { while IFS= read -r l; do printf '%s %s\n' "$(date +%T.%N | cut -c1-12)" "$l"; done; }
+          MOBIUM_PLATFORM=android sh diag.sh 2>&1 | ts | tee "$OUT/cli-android.txt"
+
+      - name: Clone (JavaScript, Java and .NET pages)
+        run: git clone https://github.com/mobiumdev/mobium.git ~/mobium
+
+      - name: Python
+        continue-on-error: true
+        run: |
+          mkdir -p ~/qs/python && cd ~/qs/python
+          cp ~/mobium/docs/quickstart/examples/python/quickstart.py .
+          python3 -m venv .venv
+          .venv/bin/pip install -q "mobium @ git+https://github.com/mobiumdev/mobium.git#subdirectory=clients/python"
+          set -o pipefail
+          MOBIUM_PLATFORM=android .venv/bin/python quickstart.py 2>&1 | tee "$OUT/python-android.txt"
+
+      - name: JavaScript
+        continue-on-error: true
+        run: |
+          mkdir -p ~/qs/javascript && cd ~/qs/javascript
+          cp ~/mobium/docs/quickstart/examples/javascript/quickstart.mjs .
+          npm init -y > /dev/null
+          npm install ~/mobium/clients/javascript
+          set -o pipefail
+          MOBIUM_PLATFORM=android node quickstart.mjs 2>&1 | tee "$OUT/javascript-android.txt"
+
+      - name: Go
+        continue-on-error: true
+        run: |
+          mkdir -p ~/qs/go && cd ~/qs/go
+          cp ~/mobium/docs/quickstart/examples/go/main.go .
+          go mod init quickstart
+          go get github.com/mobiumdev/mobium/clients/go
+          set -o pipefail
+          MOBIUM_PLATFORM=android go run . 2>&1 | tee "$OUT/go-android.txt"
+
+      - name: Java
+        continue-on-error: true
+        run: |
+          mkdir -p ~/qs/java && cd ~/qs/java
+          cp ~/mobium/docs/quickstart/examples/java/Quickstart.java .
+          (cd ~/mobium/clients/java && ./mvnw -q install -DskipTests)
+          set -o pipefail
+          MOBIUM_PLATFORM=android java -cp ~/.m2/repository/dev/mobium/mobium/0.1.0-SNAPSHOT/mobium-0.1.0-SNAPSHOT.jar Quickstart.java 2>&1 | tee "$OUT/java-android.txt"
+
+      - name: .NET
+        continue-on-error: true
+        run: |
+          mkdir -p ~/qs && cd ~/qs
+          dotnet pack ~/mobium/clients/dotnet/Mobium -o ~/mobium-packages
+          dotnet new console -o quickstart && cd quickstart
+          dotnet add package Mobium --version 0.1.0 --source ~/mobium-packages
+          cp ~/mobium/docs/quickstart/examples/dotnet/Program.cs .
+          set -o pipefail
+          MOBIUM_PLATFORM=android dotnet run 2>&1 | tee "$OUT/dotnet-android.txt"
+
+      - name: CLI, again, last
+        continue-on-error: true
+        run: |
+          cd ~/qs/cli
+          set -o pipefail
+          MOBIUM_PLATFORM=android sh quickstart.sh 2>&1 | tee "$OUT/cli-android-2.txt"
+
+      - name: Stop
+        if: always()
+        run: |
+          mobium daemon stop || true
+          adb emu kill || true
+          for d in ~/qs/*/; do n=$(basename "$d"); [ -f "$d/quickstart-android.png" ] && cp "$d/quickstart-android.png" "$OUT/$n.png"; done
+          [ -f ~/qs/quickstart/quickstart-android.png ] && cp ~/qs/quickstart/quickstart-android.png "$OUT/dotnet.png"
+          cp ~/qs/cli/fail.png ~/qs/cli/fail-map.txt "$OUT/" 2>/dev/null || true
+          ls -l "$OUT"
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: linux-quickstart
+          path: /home/runner/out
