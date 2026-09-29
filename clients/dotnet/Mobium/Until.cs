@@ -38,6 +38,24 @@ namespace Mobium
         /// <summary>Wait until it contains this text.</summary>
         public static Until Text(string expected) => new Until("text", expected, null);
 
+        /// <summary>Wait until a field holds exactly this value; <c>""</c> waits for it to be empty. A password field is refused.</summary>
+        public static Until Value(string expected) => new Until("value", expected, null);
+
+        /// <summary>Wait for a control to be enabled — a Submit the app enables once a form is valid.</summary>
+        public static Until Enabled() => new Until("enabled", null, null);
+
+        /// <summary>Wait for a control to be disabled.</summary>
+        public static Until Disabled() => new Until("disabled", null, null);
+
+        /// <summary>Wait for a checkbox, radio or switch to be checked.</summary>
+        public static Until Checked() => new Until("checked", null, null);
+
+        /// <summary>Wait for a checkbox, radio or switch to be unchecked.</summary>
+        public static Until Unchecked() => new Until("unchecked", null, null);
+
+        /// <summary>Wait for a field to have keyboard focus.</summary>
+        public static Until Focused() => new Until("focused", null, null);
+
         /// <summary>How long before giving up. Ten seconds by default, two minutes at most.</summary>
         public Until Timeout(TimeSpan d) => new Until(_condition, _text, d);
 

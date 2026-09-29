@@ -75,12 +75,12 @@ func (h *Handlers) coveredBy(s *session, target string, cover *uitree.Node, wait
 		loc = uitree.Locator{Kind: uitree.KindText, Value: target}
 	}
 	name := uitree.Describe(cover)
-	return mobiumerr.New(mobiumerr.ElementNotReachable, "%s is covered by %q (%s), and was for %s — a touch "+
-		"there would press that instead; wait for it to go, dismiss it, or tap its own ref from app_map "+
-		"if it is what you meant", loc, name, uitree.RoleOf(cover), waited.Round(100*time.Millisecond)).
+	return failedCheck(mobiumerr.ElementNotReachable, loc, checkReceivesEvents,
+		fmt.Sprintf("it is covered by %q (%s), and was for %s", name, uitree.RoleOf(cover), waited.Round(100*time.Millisecond)),
+		"a touch there would press that instead; wait for it to go, dismiss it, or tap its own ref from app_map "+
+			"if it is what you meant").
 		WithRemedy("dismiss what is over it, wait for it to go, or tap the cover's own ref from app_map").
 		WithDetail("locator", loc.String()).
-		WithDetail("check", "receives_events").
 		WithDetail("cover", name)
 }
 

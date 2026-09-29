@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -155,6 +156,11 @@ func fakeTool(name string, args map[string]any, scenario string) map[string]any 
 			"elements": []any{button}, "context": "NATIVE_APP", "device": "emulator-5554",
 		})
 	case "app_wait_for":
+		if want, has := args["text"]; args["condition"] == "value" && (!has || want != "") {
+			// The empty value is the case a client can drop.
+			return map[string]any{"isError": true, "content": []map[string]any{{"type": "text",
+				"text": fmt.Sprintf("value arrived as %v, present %v", want, has)}}}
+		}
 		if args["condition"] == "hidden" {
 			// Nothing is left to point at once it is gone.
 			return text("hidden", map[string]any{"target": args["target"],
@@ -310,6 +316,15 @@ func TestWaitForReturnsTheElementAndHiddenReturnsNone(t *testing.T) {
 	}
 	if gone != nil {
 		t.Errorf("a hidden element came back as %+v", gone)
+	}
+}
+
+// An empty value is a real question — has the field been cleared — so it has
+// to reach the tool, where an empty Text is otherwise left out.
+func TestWaitForAnEmptyValueSendsIt(t *testing.T) {
+	dev := connectFake(t, "")
+	if _, err := dev.WaitFor(context.Background(), "testid=search", &WaitOptions{Condition: HasValue}); err != nil {
+		t.Fatalf("wait for an empty value: %v", err)
 	}
 }
 

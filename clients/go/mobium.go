@@ -345,13 +345,26 @@ const (
 	Hidden = "hidden"
 	// HasText waits until it contains the text given in WaitOptions.Text.
 	HasText = "text"
+	// HasValue waits until a field holds exactly WaitOptions.Text; "" waits
+	// for it to be empty. A password field is refused.
+	HasValue = "value"
+	// Enabled and Disabled wait for a control to be one or the other.
+	Enabled  = "enabled"
+	Disabled = "disabled"
+	// Checked and Unchecked wait for a checkbox, radio or switch.
+	Checked   = "checked"
+	Unchecked = "unchecked"
+	// Focused waits for a field to have keyboard focus.
+	Focused = "focused"
 )
 
 // WaitOptions tunes WaitFor. A nil *WaitOptions means visible, ten seconds.
 type WaitOptions struct {
-	// Condition is Visible (the default), Hidden or HasText.
+	// Condition is Visible (the default), Hidden, HasText, HasValue,
+	// Enabled, Disabled, Checked, Unchecked or Focused.
 	Condition string
-	// Text is what to wait for, required by and only used by HasText.
+	// Text is what to wait for, with HasText and HasValue; with HasValue an
+	// empty Text waits for an empty field.
 	Text string
 	// Timeout defaults to ten seconds and may not exceed two minutes.
 	Timeout time.Duration
@@ -372,7 +385,7 @@ func (d *Device) WaitFor(ctx context.Context, target string, opts *WaitOptions) 
 	if opts.Condition != "" {
 		args["condition"] = opts.Condition
 	}
-	if opts.Text != "" {
+	if opts.Text != "" || opts.Condition == HasValue {
 		args["text"] = opts.Text
 	}
 	if opts.Timeout > 0 {

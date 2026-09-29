@@ -216,6 +216,9 @@ func (u *UIA2) FocusedField(ctx context.Context) (*FocusedField, error) {
 	return f, nil
 }
 
+// HasFocus reads the node's own `focused`, which UiAutomator2 reports.
+func (u *UIA2) HasFocus(_ context.Context, n *uitree.Node) (bool, error) { return n.Focused, nil }
+
 // TypeIntoFocus adds text to the end of the focused field and confirms it.
 //
 // UiAutomator2 cannot type at the cursor: its keys endpoint, and the
@@ -283,6 +286,9 @@ func (a *Android) FocusedField(ctx context.Context) (*FocusedField, error) {
 	return nil, mobiumerr.New(mobiumerr.Unsupported, "the uiautomator backend cannot tell which field has focus — "+
 		"use the uiautomator2 backend")
 }
+
+// HasFocus reads the node's own `focused`, which `uiautomator dump` reports.
+func (a *Android) HasFocus(_ context.Context, n *uitree.Node) (bool, error) { return n.Focused, nil }
 
 // TypeIntoFocus is refused for the reason app_type is on this backend.
 func (a *Android) TypeIntoFocus(ctx context.Context, text string) (*FocusedField, error) {
@@ -373,6 +379,27 @@ func (w *WDA) FocusedField(ctx context.Context) (*FocusedField, error) {
 		f.Value = ""
 	}
 	return f, nil
+}
+
+// HasFocus asks whether n is the active element. The tree cannot say — every
+// field reports focused="false", the one with the cursor included — but
+// WebDriverAgent gives an element the same id on every lookup, and the active
+// element is the field with the cursor: username's id, then password's after
+// a tap on it, and "no such element" with nothing focused, measured on the
+// simulator.
+func (w *WDA) HasFocus(ctx context.Context, n *uitree.Node) (bool, error) {
+	active, err := w.w3c.activeElement(ctx)
+	if err == ErrNoFocus {
+		return false, nil
+	}
+	if err != nil {
+		return false, err
+	}
+	id, err := w.elementFor(ctx, n)
+	if err != nil {
+		return false, err
+	}
+	return id == active, nil
 }
 
 // TypeIntoFocus types at the cursor of the focused field and confirms it.

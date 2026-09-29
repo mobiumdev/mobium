@@ -103,6 +103,11 @@ thing itself rather than for a duration:
 - `mobium wait @e4 --for text --text "Sent"` — until its text says so
 - `mobium wait testid=submit --for enabled` — until a control can be used
   (`--for disabled` for the other way)
+- `mobium wait testid=terms --for checked` — a checkbox, radio or switch
+  (`--for unchecked` for the other way)
+- `mobium wait testid=search --for value --text ""` — until a field holds
+  exactly that (here: nothing); `--for text` matches part of what it says
+- `mobium wait testid=email --for focused` — until the field has the cursor
 - `mobium wait "text=Done" --timeout 30s` — default is 10s
 
 A wait that succeeds remaps the screen, so the element it found already has a
@@ -395,15 +400,22 @@ parsing the sentence: `--json` prints it (`"code": "no_such_element"`, with a
   Drop `--driver uiautomator`; the default backend can type.
 - `the <name> backend cannot …`
   That backend never advertised the capability. Switch backends; do not retry.
-- `a dialog is over the app — "…"`
+- `a dialog is over the app — "…" — and nothing on it matches …`
   Answer the dialog first (`mobium alert`, or tap its button), or declare a
   rule with `mobium dialogs`.
-- `the keyboard is over …`
-  Hide it: `mobium keyboard --hide`, or on an iPhone `mobium keyboard --key enter`.
-- `… is disabled, and stayed disabled`
-  Do what enables it, or `mobium wait <target> --for enabled`.
-- `… is a button, not a text field`
-  Use `tap` for it; `type` is for fields.
+- `… failed check <check>: <reason> — <what to do>`
+  The target is there and an action refused to touch it. The check is in
+  the error's details too; decide by it, not by the wording:
+  - `visible` — off screen: `mobium scroll-to` it.
+  - `enabled` — disabled: do what enables it, or
+    `mobium wait <target> --for enabled`.
+  - `stable` — still moving: wait, or tap by coordinates if it animates on
+    purpose.
+  - `receivesEvents` — something is over it: a dialog (answer it), the
+    keyboard (`mobium keyboard --hide`, or on an iPhone
+    `mobium keyboard --key enter`), or the app's own control (dismiss it, wait
+    for it to go, or tap it if it is what you meant).
+  - `editable` — not a text field: use `tap` for it; `type` is for fields.
 - `no Android device or emulator is running`
   Ask the user to start one. Mobium cannot.
 - `"…" is a locator, and locators do not work inside a WebView`

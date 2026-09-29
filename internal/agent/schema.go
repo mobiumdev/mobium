@@ -389,8 +389,8 @@ func GetToolSchemas() []Tool {
 		},
 		{
 			Name: "app_wait_for",
-			Description: "Wait until an element appears, disappears, or shows particular text, " +
-				"then return. Use this instead of sleeping after an action that takes time — a " +
+			Description: "Wait until an element appears, disappears, shows particular text, or " +
+				"reaches a state — enabled, checked, focused, holding a value — then return. Use this instead of sleeping after an action that takes time — a " +
 				"login, a network fetch, a screen transition. On success the screen is remapped, " +
 				"so the element it waited for already has a ref and can be tapped straight away. " +
 				"If the condition never holds the call fails, saying what the screen showed " +
@@ -406,14 +406,19 @@ func GetToolSchemas() []Tool {
 						"type": "string",
 						"description": "\"visible\" (default) waits for it to be on screen, " +
 							"\"hidden\" waits for it to go away — a spinner, say — " +
-							"\"text\" waits until it contains the text given below, and " +
+							"\"text\" waits until it contains the text given below, " +
+							"\"value\" until a field holds exactly that text (\"\" for empty; " +
+							"a password field is refused, since its value is never read), " +
 							"\"enabled\" or \"disabled\" waits for a control to be one or " +
-							"the other — a Submit the app enables once a form is valid.",
-						"enum": []string{condVisible, condHidden, condText, condEnabled, condDisabled},
+							"the other — a Submit the app enables once a form is valid — " +
+							"\"checked\" or \"unchecked\" for a checkbox, radio or switch, and " +
+							"\"focused\" for a field to have keyboard focus.",
+						"enum": waitConditions,
 					},
 					"text": map[string]interface{}{
-						"type":        "string",
-						"description": "The text to wait for. Required by, and only used by, condition \"text\".",
+						"type": "string",
+						"description": "The text to wait for: required by condition \"text\", " +
+							"and by \"value\", where \"\" waits for an empty field. Unused otherwise.",
 					},
 					"timeout_ms": map[string]interface{}{
 						"type": "integer",

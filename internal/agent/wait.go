@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/mobiumdev/mobium/internal/mobiumdriver"
 	"github.com/mobiumdev/mobium/internal/uitree"
 )
 
@@ -104,7 +105,18 @@ const (
 	condText     = "text"
 	condEnabled  = "enabled"
 	condDisabled = "disabled"
+	// Checked and unchecked are a checkbox, radio or switch's state, read as
+	// app_check reads it; focused is keyboard focus; value is a field's whole
+	// content, exactly, where text is a part of what an element says.
+	condChecked   = "checked"
+	condUnchecked = "unchecked"
+	condFocused   = "focused"
+	condValue     = "value"
 )
+
+// waitConditions is every condition, in the order an error lists them.
+var waitConditions = []string{condVisible, condHidden, condText, condValue, condEnabled, condDisabled,
+	condChecked, condUnchecked, condFocused}
 
 // waitFor is app_wait_for: block until the screen says what the caller is
 // waiting for, or fail naming what it was.
@@ -133,15 +145,32 @@ func (h *Handlers) waitOn(ctx context.Context, s *session, args map[string]inter
 		cond = condVisible
 	}
 	want := stringArg(args, "text")
+	_, hasText := args["text"]
+	var focus mobiumdriver.FocusReader
 	switch cond {
-	case condVisible, condHidden, condEnabled, condDisabled:
+	case condVisible, condHidden, condEnabled, condDisabled, condChecked, condUnchecked:
 	case condText:
 		if want == "" {
 			return nil, mobiumerr.New(mobiumerr.InvalidArgument, "condition \"text\" needs the text to wait for")
 		}
+	case condValue:
+		// An empty value is a question worth asking — has the field been
+		// cleared — so only a missing one is refused.
+		if !hasText {
+			return nil, mobiumerr.New(mobiumerr.InvalidArgument, "condition \"value\" needs the value to wait for, "+
+				"in text; \"\" waits for an empty field")
+		}
+	case condFocused:
+		f, ok := mobiumdriver.AsFocusReader(s.driver)
+		if !ok {
+			return nil, mobiumerr.New(mobiumerr.Unsupported, "the %s driver cannot say which element has keyboard "+
+				"focus, so a wait for it could never end", s.driver.Name()).
+				WithRemedy("wait for something the app shows once the field has focus")
+		}
+		focus = f
 	default:
-		return nil, mobiumerr.New(mobiumerr.InvalidArgument, "unknown condition %q (want %q, %q, %q, %q or %q)",
-			cond, condVisible, condHidden, condText, condEnabled, condDisabled)
+		return nil, mobiumerr.New(mobiumerr.InvalidArgument, "unknown condition %q (want one of %s)",
+			cond, strings.Join(waitConditions, ", "))
 	}
 
 	timeout := time.Duration(intArgOr(args, "timeout_ms", int(defaultWaitTimeout/time.Millisecond))) * time.Millisecond
@@ -216,6 +245,56 @@ func (h *Handlers) waitOn(ctx context.Context, s *session, args map[string]inter
 			}
 			saw = "it is " + map[bool]string{true: condEnabled, false: condDisabled}[nodes[0].Enabled]
 			return false, nil
+		case condChecked, condUnchecked:
+			if len(nodes) == 0 {
+				saw = notOnScreen
+				return false, nil
+			}
+			// Refused at once, as app_check refuses it: nothing without a
+			// checked state will ever be checked, and waiting says nothing.
+			if !nodes[0].Checkable {
+				return false, mobiumerr.New(mobiumerr.InvalidArgument, "%s is not a checkbox, radio or switch, so "+
+					"it has no checked state to wait for", loc)
+			}
+			if nodes[0].Checked == (cond == condChecked) {
+				matched = nodes[0]
+				return true, nil
+			}
+			saw = "it is " + stateWord(nodes[0].Checked)
+			return false, nil
+		case condFocused:
+			if len(nodes) == 0 {
+				saw = notOnScreen
+				return false, nil
+			}
+			has, err := focus.HasFocus(ctx, nodes[0])
+			if err != nil {
+				return false, err
+			}
+			if has {
+				matched = nodes[0]
+				return true, nil
+			}
+			saw = "it does not have keyboard focus"
+			return false, nil
+		case condValue:
+			if len(nodes) == 0 {
+				saw = notOnScreen
+				return false, nil
+			}
+			// Never compared, so that nothing can be learned from it and no
+			// failure has a value to print (CHALLENGES 43).
+			if nodes[0].Password {
+				return false, mobiumerr.New(mobiumerr.InvalidArgument, "%s is a password field, and its value is "+
+					"never read — wait for what the app shows once it is accepted", loc)
+			}
+			v := fieldValue(nodes[0])
+			if v == want {
+				matched = nodes[0]
+				return true, nil
+			}
+			saw = fmt.Sprintf("its value is %q", v)
+			return false, nil
 		default: // condText
 			if len(nodes) == 0 {
 				saw = notOnScreen
@@ -235,8 +314,8 @@ func (h *Handlers) waitOn(ctx context.Context, s *session, args map[string]inter
 	waited := time.Since(started)
 	if err != nil {
 		if errors.Is(err, errPollTimeout) {
-			return nil, mobiumerr.New(mobiumerr.Timeout, "timed out after %s waiting for %s to be %s — %s",
-				waited.Round(time.Millisecond), loc, cond, saw)
+			return nil, mobiumerr.New(mobiumerr.Timeout, "timed out after %s waiting for %s to %s — %s",
+				waited.Round(time.Millisecond), loc, condPhrase(cond, want), saw)
 		}
 		return nil, err
 	}
@@ -246,7 +325,7 @@ func (h *Handlers) waitOn(ctx context.Context, s *session, args map[string]inter
 		Condition: cond,
 		WaitedMs:  int(waited.Milliseconds()),
 	}
-	msg := fmt.Sprintf("%s is %s after %s", loc, cond, waited.Round(time.Millisecond))
+	msg := fmt.Sprintf("%s %s after %s", loc, condState(cond, want), waited.Round(time.Millisecond))
 
 	// A wait that found something leaves a fresh ref table behind, so the
 	// element it waited for can be tapped without a separate app_map. This is
@@ -273,6 +352,40 @@ func visible(nodes []*uitree.Node) []*uitree.Node {
 		}
 	}
 	return out
+}
+
+// condPhrase says what a condition waits for, after "waiting for X to":
+// "hold \"\"", "become checked". condState says it held: "is checked".
+func condPhrase(cond, want string) string {
+	switch cond {
+	case condText:
+		return fmt.Sprintf("contain %q", want)
+	case condValue:
+		return fmt.Sprintf("hold %q", want)
+	case condFocused:
+		return "have keyboard focus"
+	}
+	return "become " + cond
+}
+
+func condState(cond, want string) string {
+	switch cond {
+	case condText:
+		return fmt.Sprintf("contains %q", want)
+	case condValue:
+		return fmt.Sprintf("holds %q", want)
+	}
+	return "is " + cond
+}
+
+// fieldValue is what a field holds: its text, and nothing when the text is
+// its placeholder, which both platforms put where an empty field's text goes
+// (CHALLENGES 102).
+func fieldValue(n *uitree.Node) string {
+	if n.ShowingHint || (n.Hint != "" && n.Text == n.Hint) {
+		return ""
+	}
+	return n.Text
 }
 
 // nodeText is what a caller means by "the text of this element": its own text

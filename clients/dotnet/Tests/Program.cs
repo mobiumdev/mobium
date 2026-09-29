@@ -220,6 +220,12 @@ namespace Mobium.Tests
             Eq("text condition", "text", timed["condition"]);
             Eq("expected text", "Sent", timed["text"]);
             Eq("timeout in milliseconds", 30000L, timed["timeout_ms"]);
+
+            var empty = Until.Value("").Args("@e2");
+            Eq("value condition", "value", empty["condition"]);
+            Eq("an empty value is sent", "", empty["text"]);
+            Eq("checked condition", "checked", Until.Checked().Args("@e2")["condition"]);
+            Eq("focused condition", "focused", Until.Focused().Args("@e2")["condition"]);
         }
 
         private static void FindBinaryRejectsSomethingThatIsNotOne()

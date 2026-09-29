@@ -161,6 +161,12 @@ public final class Tests {
         eq("text condition", "text", b.get("condition"));
         eq("expected text", "Sent", b.get("text"));
         eq("timeout in milliseconds", 30000L, b.get("timeout_ms"));
+
+        Map<String, Object> c = WaitFor.value("").args("@e2");
+        eq("value condition", "value", c.get("condition"));
+        eq("an empty value is sent", "", c.get("text"));
+        eq("checked condition", "checked", WaitFor.checked().args("@e2").get("condition"));
+        eq("focused condition", "focused", WaitFor.focused().args("@e2").get("condition"));
     }
 
     static void findBinaryRejectsSomethingThatIsNotOne() {

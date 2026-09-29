@@ -74,7 +74,7 @@ func TestATapUnderAControlIsRefused(t *testing.T) {
 		t.Errorf("the refusal does not name the cover: %v", err)
 	}
 	var me *mobiumerr.Error
-	if !errorsAs(err, &me) || me.Details["check"] != "receives_events" {
+	if !errorsAs(err, &me) || me.Details["check"] != "receivesEvents" {
 		t.Errorf("details do not say which check failed: %v", err)
 	}
 }

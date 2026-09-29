@@ -7,9 +7,9 @@ the source.
 
 The pattern across them is the reason the document exists: **almost nothing
 here was found by reading code or by a test written from imagination.** Of
-157 defects, 126 were found only by running against a real device. The other
-thirty-one — 4, 5, 6, 14, 23, 24, 32, 35, 36, 39, 44, 50, 53, 54, 57, 66, 89,
-99, 100, 121, 123, 129, 130, 133, 134, 139, 140, 141, 142, 144 and 150 — came from reading code, the compiler, a test, a linter,
+158 defects, 126 were found only by running against a real device. The other
+thirty-two — 4, 5, 6, 14, 23, 24, 32, 35, 36, 39, 44, 50, 53, 54, 57, 66, 89,
+99, 100, 121, 123, 129, 130, 133, 134, 139, 140, 141, 142, 144, 150 and 158 — came from reading code, the compiler, a test, a linter,
 cross-checking a computed number against a screenshot, using the tooling on
 itself, typing a negative number at a command line, and driving the clients
 against a stand-in daemon, CI on Windows, and following the quick start from
@@ -3596,9 +3596,40 @@ of its timeout; a unit test holds a request past a short timeout and shows it
 fails without the extension first. Measured: the 62-second background
 passed on the simulator and on the iPhone 15 Plus.
 
+### 158. One check, two spellings, and a different sentence for every refusal
+
+**Found by:** reading the code, while giving native refusals the WebView's
+shape — not on a device.
+
+A client that wanted to know why an action was refused had nothing stable to
+read. A WebView's refusal said "X failed check receivesEvents: …" and put the
+check in `details.check`; the same refusal on a native screen, a control
+drawn over the target, said "X is covered by …" and put `receives_events` in
+`details.check`. Of the other native refusals, two set a check and five set
+none, and each had its own sentence. Now every refusal from a check an action
+makes goes through one constructor: "X failed check C: reason — what to do",
+with `check` and `reason` in details, C one of `visible`, `enabled`,
+`stable`, `receivesEvents` and `editable`, and the error codes unchanged. A
+miss is not a failed check and keeps its own words: nothing matched while a
+dialog or the keyboard was up. A test holds the shape, and
+`docs/checks/wait-states.sh` reads `details.check` from a real refusal on
+both platforms.
+
 ## Findings that were not defects
 
 Worth recording because each one closed off an approach that looked obvious.
+
+- **WebDriverAgent's `hittable` cannot see an overlay hidden from
+  accessibility either.** The page source never emits it (see the step 4
+  entry), but one element can be asked for it, and XCTest computes it with a
+  hit test. On the Obstruction Demo, simulator: true for the target with a
+  clear center, false under a pressable cover, a scrim and a plain view —
+  and **true** under the overlay hidden from accessibility, where a tap
+  lands on the overlay, and **false** for the pass-through target, where a
+  tap reaches it. Its hit test is an accessibility hit test, so it misses
+  what accessibility cannot see and refuses what a finger reaches. It
+  closes nothing in CHALLENGES 115's blind spot and would break the case
+  that works, so nothing consults it.
 
 - **An iOS app read as in front all the way through being backgrounded.**
   While WebDriverAgent's `deactivateApp` held Settings away for four
