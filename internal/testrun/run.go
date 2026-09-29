@@ -33,6 +33,11 @@ type Options struct {
 	OutputDir string
 	// Progress hears each result as it comes, for the list reporter.
 	Progress func(Result)
+	// Connect, when set, gives each project a connection of its own, which
+	// its first call routes and which closing releases — how a run goes
+	// through a grid, where a route is one process's. Unset, every project
+	// shares the Caller Run was given.
+	Connect func(Project) (Caller, func(), error)
 }
 
 // Status is how a test ended.
@@ -111,6 +116,7 @@ type job struct {
 // Run runs the tests. An error is a run that could not start — a file that
 // does not check, a project that does not exist — never a test that failed.
 func Run(cfg *Config, opts Options, call Caller) (*Summary, error) {
+	var closers []func()
 	var files []*File
 	for _, p := range opts.Files {
 		f, err := LoadFile(p)
@@ -143,6 +149,14 @@ func Run(cfg *Config, opts Options, call Caller) (*Summary, error) {
 			}
 		}
 		projects = picked
+	}
+
+	for _, p := range projects {
+		if len(p.unset) > 0 {
+			return nil, mobiumerr.New(mobiumerr.InvalidArgument, "project %q takes its device from $%s, which is not set",
+				p.Name, strings.Join(p.unset, ", $")).
+				WithRemedy("set it to the device's serial or udid (mobium devices lists them), or run another project with --project")
+		}
 	}
 
 	var only map[string]bool
@@ -184,22 +198,57 @@ func Run(cfg *Config, opts Options, call Caller) (*Summary, error) {
 	// that cannot start — two devices where one was meant, none at all —
 	// would otherwise fail every one of its tests for the same reason, and
 	// report seven failures where there is one problem, which is not a test's.
+	// On a grid this is also where each project's device is leased: its
+	// connection's first call says what it wants.
+	callers := map[string]Caller{}
+	leased := map[string]string{}
+	defer func() {
+		for _, c := range closers {
+			c()
+		}
+	}()
 	seen := map[string]bool{}
 	for _, p := range picks {
 		if seen[p.project.Name] {
 			continue
 		}
 		seen[p.project.Name] = true
-		args := map[string]interface{}{}
-		if p.project.Device != "" {
-			args["device"] = p.project.Device
+		pc := call
+		args := projectArgs(p.project)
+		first := "app_current"
+		if opts.Connect != nil {
+			c, closer, err := opts.Connect(p.project)
+			if err != nil {
+				return nil, mobiumerr.New(mobiumerr.CodeOf(err), "project %q cannot start: %v", p.project.Name, err)
+			}
+			closers = append(closers, closer)
+			pc = c
+			// A session start carries the platform, which is what a grid
+			// routes by when the project names no device.
+			first = "app_session"
+			args["action"] = "start"
+			if p.project.Platform != "" {
+				args["platform"] = p.project.Platform
+			}
 		}
-		if p.project.Driver != "" {
-			args["driver"] = p.project.Driver
+		callers[p.project.Name] = pc
+		res, err := pc(first, args)
+		if err == nil && p.project.Device == "" {
+			// A grid leased a device the config did not name; the session's
+			// answer says which, so every result can.
+			if d, ok := field(res.StructuredContent, "device"); ok {
+				if s, ok := d.(string); ok {
+					leased[p.project.Name] = s
+				}
+			}
 		}
-		if _, err := call("app_current", args); err != nil {
-			switch mobiumerr.CodeOf(err) {
-			case mobiumerr.InvalidArgument, mobiumerr.NoDevice, mobiumerr.DeviceNotReady, mobiumerr.ToolchainMissing:
+		if err != nil {
+			code := mobiumerr.CodeOf(err)
+			// With a connection of its own, the first call is the route and
+			// the session: any failure leaves the project with no device.
+			switch {
+			case opts.Connect != nil, code == mobiumerr.InvalidArgument, code == mobiumerr.NoDevice,
+				code == mobiumerr.DeviceNotReady, code == mobiumerr.ToolchainMissing:
 				e, _ := mobiumerr.As(err)
 				out := mobiumerr.New(mobiumerr.CodeOf(err), "project %q cannot start: %v", p.project.Name, err)
 				if e != nil && e.Remedy != "" {
@@ -240,7 +289,10 @@ func Run(cfg *Config, opts Options, call Caller) (*Summary, error) {
 			for name := range queue {
 				for _, j := range byProject[name] {
 					for _, t := range j.file.Tests {
-						r := runTest(j, t, opts, call)
+						r := runTest(j, t, opts, callers[name])
+						if r.Device == "" {
+							r.Device = leased[name]
+						}
 						mu.Lock()
 						sum.Results = append(sum.Results, r)
 						if opts.Progress != nil {
@@ -287,15 +339,9 @@ func runTest(j job, t Test, opts Options, call Caller) Result {
 func runOnce(j job, t Test, opts Options, call Caller, attempt int) *Failure {
 	deadline := time.Now().Add(opts.Timeout)
 	dev := func(args map[string]interface{}) map[string]interface{} {
-		out := map[string]interface{}{}
+		out := projectArgs(j.project)
 		for k, v := range args {
 			out[k] = v
-		}
-		if j.project.Device != "" {
-			out["device"] = j.project.Device
-		}
-		if j.project.Driver != "" {
-			out["driver"] = j.project.Driver
 		}
 		return out
 	}
@@ -500,6 +546,24 @@ func readLastFailed(dir string) map[string]bool {
 		for _, id := range v.Failed {
 			out[id] = true
 		}
+	}
+	return out
+}
+
+// projectArgs are the arguments that put a call on a project's device: its
+// serial, and its driver — named, or the one its platform implies.
+func projectArgs(p Project) map[string]interface{} {
+	out := map[string]interface{}{}
+	if p.Device != "" {
+		out["device"] = p.Device
+	}
+	switch {
+	case p.Driver != "":
+		out["driver"] = p.Driver
+	case p.Platform == "ios":
+		out["driver"] = "wda"
+	case p.Platform == "android":
+		out["driver"] = "uiautomator2"
 	}
 	return out
 }

@@ -20,6 +20,7 @@ what the guide needs, and says where. The full reference is
 - [1. One node: `--remote`](#1-one-node---remote)
 - [2. A grid](#2-a-grid)
 - [3. Runs that share it](#3-runs-that-share-it)
+- [4. Tests on a grid](#4-tests-on-a-grid)
 - [Phones on a grid](#phones-on-a-grid)
 - [What stays local](#what-stays-local)
 
@@ -159,6 +160,64 @@ the grid, is told the device belongs to a grid run until that run ends. A
 lease is renewed every 20 seconds while its run lives, and free again 60
 seconds after a run that died without releasing it.
 
+## 4. Tests on a grid
+
+`mobium test` goes through a grid the same way. A project that names no
+device asks for one by `platform`, and with `MOBIUM_GRID` set each project
+gets a connection of its own, which leases a device before any test runs and
+releases it when the run ends:
+
+```json
+{
+  "testDir": "tests",
+  "projects": [
+    {"name": "android-a", "platform": "android"},
+    {"name": "android-b", "platform": "android"}
+  ]
+}
+```
+
+```
+$ MOBIUM_GRID=localhost mobium test --reporter list,junit
+  ok    [android-a · emulator-5554] form.test.json › a checkbox reaches the state asked for (4.8s)
+  ok    [android-b · emulator-5556] form.test.json › a checkbox reaches the state asked for (4.8s)
+  ok    [android-b · emulator-5556] form.test.json › choosing a radio clears the one before (3.6s)
+  ok    [android-a · emulator-5554] form.test.json › choosing a radio clears the one before (4.3s)
+  ok    [android-b · emulator-5556] form.test.json › the dark mode switch goes on and back off (5.7s)
+  ok    [android-a · emulator-5554] form.test.json › the dark mode switch goes on and back off (5.7s)
+6 passed (14.8s)
+junit report: …/mobium-report/junit.xml
+```
+
+(The report's path is shortened.) Each result names the device its project
+leased, and the two projects ran at once. `mobium grid ui`, open during a run
+like it, shows the two leases as they happen:
+
+![mobium grid ui: 14 devices, 2 held, 0 waiting, and emulator-5554 and emulator-5556 each held by a grid run](images/grid-ui.jpg)
+
+(Cropped to the two emulators; the page goes on to the node's simulators and a
+phone.) `grid status` while they ran says the same; after the run, both
+read `free` again:
+
+```
+NODE       DEVICE                                PLATFORM  OS          MODEL                  STATE      HELD BY
+localhost  emulator-5554                         android   Android 15  sdk_gphone64_arm64     device     g7364d471 for 9s
+localhost  emulator-5556                         android   Android 17  sdk_gphone64_arm64     device     g1ed33ac6 for 7s
+```
+
+A project the grid cannot serve within `MOBIUM_GRID_WAIT` stops the run
+before any test, and the leases the other projects took are released:
+
+```
+$ MOBIUM_GRID_WAIT=5s mobium test --config three.config.json
+error: project "android-c" cannot start: no node in MOBIUM_GRID had an android device free within 5s; busy: emulator-5554 on localhost (held by g86850af6), emulator-5556 on localhost (held by gf2dcb5c8)
+```
+
+Exit status 3, `no_device`. `MOBIUM_GRID_MODEL` and `MOBIUM_GRID_OS` narrow
+what every project will take; a project that names a `device` asks the grid
+for that one. [`docs/checks/test-grid.sh`](../checks/test-grid.sh) holds
+all of this to account.
+
 ## Phones on a grid
 
 A phone plugged into a node is usually somebody's, and a grid run would
@@ -172,7 +231,6 @@ owner's ([CHALLENGES](../CHALLENGES.md) 161).
 ## What stays local
 
 `daemon`, `doctor` and `mcp` are about this machine and ignore `--remote`.
-One device still belongs to one run at a time, on a node as anywhere.
-`mobium test` does not route through a grid yet — its projects name their
-devices — which is on the runner's list for iteration 2
-([decisions/0006](../decisions/0006-a-test-runner.md)).
+One device still belongs to one run at a time, on a node as anywhere: a
+test run holds each project's device for the whole run, so a grid with two
+free devices serves two projects at once, not more.

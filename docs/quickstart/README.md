@@ -145,7 +145,8 @@ plainly where its session begins and ends.
 ## Next
 
 [The guides](../guides/README.md): what actions wait for and refuse, writing
-and running tests with `mobium test`, and driving another machine's devices.
+and running tests with `mobium test`, network conditions, and driving another
+machine's devices.
 
 ## When something goes wrong
 
