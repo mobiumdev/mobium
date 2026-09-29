@@ -33,8 +33,10 @@ func newTestCmd() *cobra.Command {
 		Long: "Runs JSON test files: each test's steps are app_batch steps, its assertions\n" +
 			"app_wait_for steps and expects, run from a freshly launched app on each\n" +
 			"project's device. With no files, runs every *.test.json under the config's\n" +
-			"testDir. Exits 0 when every test passed — a flaky one passes and is listed —\n" +
-			"and 1 when any failed. See docs/decisions/0006-a-test-runner.md.",
+			"testDir. With MOBIUM_GRID set, each project leases a device of its own from\n" +
+			"the grid — by its platform, or its device — for the whole run. Exits 0 when\n" +
+			"every test passed — a flaky one passes and is listed — and 1 when any failed.\n" +
+			"See docs/decisions/0006-a-test-runner.md.",
 		Example: `  mobium test                              # everything, every project
   mobium test tests/login.test.json
   mobium test -g "wrong password"
@@ -103,9 +105,26 @@ func newTestCmd() *cobra.Command {
 			if want["list"] {
 				opts.Progress = func(r testrun.Result) { fmt.Println(testrun.Line(r)) }
 			}
-			// One call before the workers start, so a daemon that is not up is
-			// started once, not raced for by every worker.
-			if _, err := daemonCall("app_devices", map[string]interface{}{}); err != nil {
+			if gridActive {
+				// A grid route is one process's, so each project gets a
+				// `mobium pipe` of its own, which leases its device on its
+				// first call and releases it when the run closes it. This
+				// process must not route itself: any call from it here would
+				// lease a device nothing uses.
+				self, err := os.Executable()
+				if err != nil {
+					return err
+				}
+				opts.Connect = func(testrun.Project) (testrun.Caller, func(), error) {
+					p, err := testrun.DialPipe(self)
+					if err != nil {
+						return nil, nil, err
+					}
+					return p.Call, p.Close, nil
+				}
+			} else if _, err := daemonCall("app_devices", map[string]interface{}{}); err != nil {
+				// One call before the workers start, so a daemon that is not
+				// up is started once, not raced for by every worker.
 				return err
 			}
 			sum, err := testrun.Run(cfg, opts, daemonCall)

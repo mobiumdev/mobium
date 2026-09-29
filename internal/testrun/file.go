@@ -151,12 +151,18 @@ type Config struct {
 	Projects  []Project `json:"projects,omitempty"`
 }
 
-// Project is a device to run on — Playwright's browsers, mapped onto what
-// Mobium drives. An empty Device is the only one attached.
+// Project is a device to run on. An empty Device is the only one attached;
+// on a grid, Platform asks for any free device of that platform, which the
+// grid's MOBIUM_GRID_MODEL and MOBIUM_GRID_OS narrow.
 type Project struct {
-	Name   string `json:"name"`
-	Device string `json:"device,omitempty"`
-	Driver string `json:"driver,omitempty"`
+	Name     string `json:"name"`
+	Device   string `json:"device,omitempty"`
+	Driver   string `json:"driver,omitempty"`
+	Platform string `json:"platform,omitempty"`
+	// unset names the environment variables its device came from that are
+	// not set. Refused when the project is run, not when the config is read,
+	// so `--project android` works without the iOS project's variable.
+	unset []string
 }
 
 // ConfigName is the file FindConfig looks for.
@@ -208,17 +214,17 @@ func parseConfig(raw []byte, path, dir string) (*Config, error) {
 				}
 				return val
 			})
-			if len(missing) > 0 {
-				return nil, mobiumerr.New(mobiumerr.InvalidArgument, "%s: project %q takes its device from $%s, "+
-					"which is not set", path, p.Name, strings.Join(missing, ", $")).
-					WithRemedy("set it to the device's serial or udid (mobium devices lists them), or run another project with --project")
-			}
+			c.Projects[i].unset = missing
 		}
 		if p.Name == "" {
 			return nil, mobiumerr.New(mobiumerr.InvalidArgument, "%s has a project with no name", path)
 		}
 		if names[p.Name] {
 			return nil, mobiumerr.New(mobiumerr.InvalidArgument, "%s has two projects named %q", path, p.Name)
+		}
+		if p.Platform != "" && p.Platform != "android" && p.Platform != "ios" {
+			return nil, mobiumerr.New(mobiumerr.InvalidArgument, "%s: project %q has platform %q — android or ios",
+				path, p.Name, p.Platform)
 		}
 		names[p.Name] = true
 	}

@@ -194,7 +194,8 @@ mobium test --project android                           # one
 
 Projects run at once, one worker to a device — a device holds one session,
 so two workers never share one — and `--workers 1` runs them one after
-another. This repository's own suite, [tests/](../../tests/README.md), ran its
+another. On a grid, a project can name a `platform` instead of a device,
+and each project leases its own for the run: [the grid guide](grid.md#4-tests-on-a-grid). This repository's own suite, [tests/](../../tests/README.md), ran its
 14 tests on an Android emulator and an iOS simulator together in 95 seconds,
 for 189 seconds of work.
 

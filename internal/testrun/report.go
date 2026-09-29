@@ -15,7 +15,11 @@ import (
 // Line is the list reporter's line for one result.
 func Line(r Result) string {
 	mark := map[Status]string{Passed: "ok   ", Failed: "FAIL ", Flaky: "flaky"}[r.Status]
-	s := fmt.Sprintf("  %s [%s] %s (%s)", mark, r.Project, r.Title, r.Duration.Round(100*time.Millisecond))
+	where := r.Project
+	if r.Device != "" && r.Device != r.Project {
+		where += " · " + r.Device
+	}
+	s := fmt.Sprintf("  %s [%s] %s (%s)", mark, where, r.Title, r.Duration.Round(100*time.Millisecond))
 	if r.Status == Flaky {
 		s += fmt.Sprintf(" — passed on attempt %d", r.Attempts)
 	}

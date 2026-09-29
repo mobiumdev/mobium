@@ -314,9 +314,25 @@ func TestAProjectDeviceFromTheEnvironment(t *testing.T) {
 	dir := t.TempDir()
 	cfg := write(t, dir, ConfigName, `{"projects": [{"name": "ios", "device": "${MOBIUM_TEST_DEVICE}", "driver": "wda"}]}`)
 	t.Setenv("MOBIUM_TEST_DEVICE", "")
-	if _, err := LoadConfig(cfg); mobiumerr.CodeOf(err) != mobiumerr.InvalidArgument ||
-		!strings.Contains(err.Error(), "MOBIUM_TEST_DEVICE") {
-		t.Fatalf("an unset device: %v", err)
+	unset, err := LoadConfig(cfg)
+	if err != nil {
+		t.Fatalf("reading a config whose variable is unset: %v", err)
+	}
+	p := write(t, dir, "one.test.json", `{"tests": [{"name": "t", "steps": [{"name": "app_map"}]}]}`)
+	f := &fake{}
+	_, err = Run(unset, Options{Files: []string{p}, Timeout: time.Minute, OutputDir: t.TempDir()}, f.call)
+	if mobiumerr.CodeOf(err) != mobiumerr.InvalidArgument || !strings.Contains(err.Error(), "MOBIUM_TEST_DEVICE") {
+		t.Fatalf("running a project whose device is unset: %v", err)
+	}
+	if len(f.calls) != 0 {
+		t.Errorf("called %v before refusing", f.calls)
+	}
+	// Another project runs without it.
+	two := write(t, dir, "two.json", `{"projects": [{"name": "ios", "device": "${MOBIUM_TEST_DEVICE}"}, {"name": "android"}]}`)
+	cfg2, _ := LoadConfig(two)
+	if _, err := Run(cfg2, Options{Files: []string{p}, Projects: []string{"android"}, Timeout: time.Minute,
+		OutputDir: t.TempDir()}, (&fake{}).call); err != nil {
+		t.Fatalf("--project android with the iOS variable unset: %v", err)
 	}
 	t.Setenv("MOBIUM_TEST_DEVICE", "SIM-1")
 	c, err := LoadConfig(cfg)
@@ -344,5 +360,82 @@ func TestAProjectThatCannotStartRunsNothing(t *testing.T) {
 		if c != "app_current" {
 			t.Fatalf("ran %s after the project could not start", c)
 		}
+	}
+}
+
+// On a grid each project gets a connection of its own: its first call is a
+// session start carrying the platform — what the grid routes by — every call
+// for its tests goes through it, and it is closed when the run ends.
+func TestEachProjectConnectsOnItsOwn(t *testing.T) {
+	dir := t.TempDir()
+	p := write(t, dir, "one.test.json", `{"tests": [{"name": "t", "steps": [
+		{"name": "app_tap", "arguments": {"target": "@e1"}}]}]}`)
+	cfg := &Config{Dir: dir, Projects: []Project{{Name: "a", Platform: "android"}, {Name: "b", Platform: "ios"}}}
+	var mu sync.Mutex
+	calls := map[string][]string{}
+	firstArgs := map[string]map[string]interface{}{}
+	closed := map[string]bool{}
+	opts := Options{Files: []string{p}, Timeout: time.Minute, OutputDir: t.TempDir(),
+		Connect: func(pr Project) (Caller, func(), error) {
+			return func(tool string, args map[string]interface{}) (*agent.ToolsCallResult, error) {
+					mu.Lock()
+					defer mu.Unlock()
+					if len(calls[pr.Name]) == 0 {
+						firstArgs[pr.Name] = args
+					}
+					calls[pr.Name] = append(calls[pr.Name], tool)
+					return &agent.ToolsCallResult{}, nil
+				}, func() {
+					mu.Lock()
+					closed[pr.Name] = true
+					mu.Unlock()
+				}, nil
+		}}
+	shared := &fake{}
+	s, err := Run(cfg, opts, shared.call)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(shared.calls) != 0 {
+		t.Errorf("the shared caller was used: %v", shared.calls)
+	}
+	for _, name := range []string{"a", "b"} {
+		if len(calls[name]) < 2 || calls[name][0] != "app_session" {
+			t.Errorf("%s's calls: %v", name, calls[name])
+		}
+		if !closed[name] {
+			t.Errorf("%s's connection was not closed", name)
+		}
+	}
+	if firstArgs["a"]["action"] != "start" || firstArgs["a"]["platform"] != "android" || firstArgs["b"]["driver"] != "wda" {
+		t.Errorf("first calls: %v", firstArgs)
+	}
+	if len(s.Results) != 2 {
+		t.Errorf("results %d", len(s.Results))
+	}
+}
+
+// A project the grid cannot give a device refuses the run, for any reason,
+// and the connections already open are closed.
+func TestAProjectTheGridCannotServeRefusesTheRun(t *testing.T) {
+	dir := t.TempDir()
+	p := write(t, dir, "one.test.json", `{"tests": [{"name": "t", "steps": [{"name": "app_map"}]}]}`)
+	cfg := &Config{Dir: dir, Projects: []Project{{Name: "a", Platform: "android"}, {Name: "b", Platform: "android"}}}
+	var closedA bool
+	opts := Options{Files: []string{p}, Timeout: time.Minute, OutputDir: t.TempDir(),
+		Connect: func(pr Project) (Caller, func(), error) {
+			return func(tool string, args map[string]interface{}) (*agent.ToolsCallResult, error) {
+				if pr.Name == "b" {
+					return nil, mobiumerr.New(mobiumerr.Timeout, "no free android device on the grid after 60s")
+				}
+				return &agent.ToolsCallResult{}, nil
+			}, func() { closedA = closedA || pr.Name == "a" }, nil
+		}}
+	_, err := Run(cfg, opts, (&fake{}).call)
+	if err == nil || !strings.Contains(err.Error(), `project "b" cannot start`) {
+		t.Fatalf("a project with no device: %v", err)
+	}
+	if !closedA {
+		t.Error("project a's connection was left open")
 	}
 }

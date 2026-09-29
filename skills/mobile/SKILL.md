@@ -157,7 +157,9 @@ back, and anything the app never declared is reported as skipped.
 steps `app_batch` takes — `{"name": "app_tap", "arguments": {...}}` — and its
 assertions are `app_wait_for` steps (`not`, `exact` and `count` included) or
 `{"expect": {"tool": ..., "field": ..., "equals": ...}}` on a tool that only
-reads. Projects in `mobium.config.json` are devices. `-g`, `--project`,
+reads. Projects in `mobium.config.json` are devices — or, with
+`MOBIUM_GRID` set, a `platform` each, and every project leases its own
+device from the grid for the run. `-g`, `--project`,
 `--retries`, `--last-failed`, `--reporter list,junit,html`, then
 `mobium show-report`. A failure keeps the step, its error code, a screenshot
 and the map. `tests/` in the repository is a worked example.

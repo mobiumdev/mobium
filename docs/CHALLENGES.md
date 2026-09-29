@@ -7,9 +7,9 @@ the source.
 
 The pattern across them is the reason the document exists: **almost nothing
 here was found by reading code or by a test written from imagination.** Of
-161 defects, 129 were found only by running against a real device. The other
-thirty-two — 4, 5, 6, 14, 23, 24, 32, 35, 36, 39, 44, 50, 53, 54, 57, 66, 89,
-99, 100, 121, 123, 129, 130, 133, 134, 139, 140, 141, 142, 144, 150 and 158 — came from reading code, the compiler, a test, a linter,
+162 defects, 129 were found only by running against a real device. The other
+thirty-three — 4, 5, 6, 14, 23, 24, 32, 35, 36, 39, 44, 50, 53, 54, 57, 66, 89,
+99, 100, 121, 123, 129, 130, 133, 134, 139, 140, 141, 142, 144, 150, 158 and 162 — came from reading code, the compiler, a test, a linter,
 cross-checking a computed number against a screenshot, using the tooling on
 itself, typing a negative number at a command line, and driving the clients
 against a stand-in daemon, CI on Windows, and following the quick start from
@@ -3688,6 +3688,19 @@ status shows it; `MOBIUM_GRID_MODEL=iPhone 15` matched nothing, too. The
 structured answer now carries the model, "iPhone 15 Plus", and only the CLI
 line, read by the person at the machine, keeps the name. Measured after the
 fix: the same `grid status` shows the model.
+
+### 162. An unset device refused every project, not just its own
+
+**Found by:** running `docs/checks/test-runner.sh` in the Android-only mode
+its own header documents — not a device's doing.
+
+A project can take its device from the environment, `"${MOBIUM_IOS_DEVICE}"`,
+and an unset variable is refused by name. It was refused when the config
+was read, so `mobium test --project android` failed over the iOS project's
+variable, which that run never needed; every earlier run had happened to set
+it. The variable is now noted when the config is read and refused only when
+its project is run, and a test runs the Android project with the iOS one's
+variable unset.
 
 ## Findings that were not defects
 
