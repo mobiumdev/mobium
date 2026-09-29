@@ -7,7 +7,7 @@ the source.
 
 The pattern across them is the reason the document exists: **almost nothing
 here was found by reading code or by a test written from imagination.** Of
-165 defects, 130 were found only by running against a real device. The other
+167 defects, 132 were found only by running against a real device. The other
 thirty-five — 4, 5, 6, 14, 23, 24, 32, 35, 36, 39, 44, 50, 53, 54, 57, 66, 89,
 99, 100, 121, 123, 129, 130, 133, 134, 139, 140, 141, 142, 144, 150, 158, 162,
 164 and 165 — came from reading code, the compiler, a test, a linter,
@@ -3754,6 +3754,44 @@ schema, so a missing one is silent until someone needs it. Each client now
 takes all four; on the iOS simulator each typed into MobiumApp's prompt and
 the app read back what it was sent, and on an emulator Java and .NET rang
 from, texted from and posted untitled as asked, read back from the shade.
+
+### 166. `text=` found a React Native button on Android and nothing on iOS
+
+**Found by:** driving MobiumApp on the iOS 26.5 simulator through each
+client, while checking #165 — `text=Dialog Demo` tapped the button on
+Android and found nothing on iOS.
+
+On iOS a node's text is its `value`, kept apart from its label on purpose —
+a switch's value is `0` (CHALLENGES 65, 77). A React Native button has no
+value, only the label VoiceOver reads, and no child exposes the text, so
+`text=` could never find it; on Android the same label is a child
+TextView's text. The README had promised label or value. Matching every
+label would have made Settings' `text=General` ambiguous — the row is a
+button labeled "General" around a text node reading "General" — so an iOS
+node with no text of its own matches by its label only when nothing inside it
+matches by its own. And React Native nests a Text in a Text, which iOS
+reports twice at the same bounds, so `text=Back` found two on the Dialog
+Demo on the unfixed build too; a match inside another at exactly its bounds
+is now the same match. Captured hierarchies of MobiumApp's home and Dialog
+Demo and of Settings hold all three cases. On the simulator the button is
+tapped by its text and General still resolves to its one row; nine device
+checks pass there and six on an Android emulator, all five clients among
+them. `mobium-app.sh` had failed on the unfixed build too: it reached the
+Dialog Demo by the ref `map` gave it, and on an iPhone 17 Pro the button is
+below the fold, where `map` gives none — it taps by text now, which scrolls.
+
+### 167. A scroll indicator was reported as drawn over the last row
+
+**Found by:** adding MobiumApp's iOS home screen to the captured
+hierarchies for #166 — the corpus test that holds ordinary screens free of
+covers failed on it.
+
+UIKit lists a scroll view's indicators after its content: "Horizontal scroll
+bar, 1 page", 30 points deep over the bottom row. They take no touch, but
+nothing in the tree says so, so a tap on "Storage Demo" would have reported a
+view over its point. They are known by their shape rather than their label,
+which is in the device's language — an Other that is not accessible, whose
+value is a percentage — and are never covers now.
 
 ## Findings that were not defects
 

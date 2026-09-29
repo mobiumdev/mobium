@@ -252,3 +252,35 @@ func TestTheRoleMapPrintsIsOneALocatorFinds(t *testing.T) {
 		}
 	}
 }
+
+// text= finds the same control on both platforms. On iOS a node's text is its
+// value, and a React Native button has only a label, so text=Dialog Demo
+// found nothing on MobiumApp's home screen while Android, where the label is
+// a child TextView's text, found the button. An iOS node with no text of its
+// own matches by its label — unless something inside it matches by its own
+// text, which is what keeps Settings' General row, a labeled button around
+// a text node reading "General", to one match. CHALLENGES 166.
+func TestTextFindsALabelOnlyControlOnIOS(t *testing.T) {
+	home := loadIOS(t, "ios26-mobiumapp-home.xml")
+	got := Locator{Kind: KindText, Value: "Dialog Demo"}.Resolve(home)
+	if len(got) != 1 || got[0].TestID != "dialogsBtn" {
+		t.Errorf("text=Dialog Demo on MobiumApp's home: %d matches, want the dialogsBtn button", len(got))
+	}
+	settings := loadIOS(t, "ios26-settings-root.xml")
+	got = Locator{Kind: KindText, Value: "General", Exact: true}.Resolve(settings)
+	if len(got) != 1 || got[0].Class != "XCUIElementTypeStaticText" {
+		t.Errorf("text=General in Settings: %d matches, want the one text node inside the row", len(got))
+	}
+	// React Native nests a Text in a Text, and iOS reports both at the same
+	// bounds: text=Back found two on the Dialog Demo, one thing drawn once.
+	dialogs := loadIOS(t, "ios26-mobiumapp-dialogs.xml")
+	if n := len(Locator{Kind: KindText, Value: "Back", Exact: true}.Resolve(dialogs)); n != 1 {
+		t.Errorf("text=Back on the Dialog Demo: %d matches, want 1", n)
+	}
+	// Android is untouched: its label is content-desc, which text= has never
+	// matched there, and an Android node is never a label-only fallback.
+	login := loadFixture(t, "login.xml")
+	if n := len(Locator{Kind: KindText, Value: "Continue with Google", Exact: true}.Resolve(login)); n != 0 {
+		t.Errorf("text= matched an Android content-desc: %d nodes", n)
+	}
+}

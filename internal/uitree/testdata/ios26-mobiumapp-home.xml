@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<XCUIElementTypeApplication type="XCUIElementTypeApplication" name="MobiumApp" label="MobiumApp" enabled="true" visible="true" accessible="false" x="0" y="0" width="402" height="874" index="0" traits="" processId="23764" bundleId="dev.mobium.mobiumapp">
+  <XCUIElementTypeWindow type="XCUIElementTypeWindow" enabled="true" visible="true" accessible="false" x="0" y="0" width="402" height="874" index="0" traits="">
+    <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="0" y="0" width="402" height="874" index="0" traits="">
+      <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="0" y="0" width="402" height="874" index="0" traits="">
+        <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="0" y="0" width="402" height="874" index="0" traits="">
+          <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="0" y="0" width="402" height="874" index="0" traits="">
+            <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="0" y="0" width="402" height="874" index="0" traits="">
+              <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="0" y="0" width="402" height="874" index="0" traits="">
+                <XCUIElementTypeOther type="XCUIElementTypeOther" name="homeList" enabled="true" visible="true" accessible="false" x="0" y="62" width="402" height="778" index="0" traits="">
+                  <XCUIElementTypeScrollView type="XCUIElementTypeScrollView" enabled="true" visible="true" accessible="false" x="0" y="62" width="402" height="778" index="0" traits="">
+                    <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="0" y="62" width="402" height="1047" index="0" traits="">
+                      <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="0" y="62" width="402" height="1047" index="0" traits="">
+                        <XCUIElementTypeOther type="XCUIElementTypeOther" name="Mobium" label="Mobium" enabled="true" visible="true" accessible="true" x="153" y="78" width="96" height="96" index="0" traits="">
+                          <XCUIElementTypeImage type="XCUIElementTypeImage" name="mobiumLogo" label="Mobium" enabled="true" visible="true" accessible="false" x="153" y="78" width="96" height="96" index="0" traits="Image"/>
+                        </XCUIElementTypeOther>
+                        <XCUIElementTypeStaticText type="XCUIElementTypeStaticText" value="MobiumApp" name="title" label="MobiumApp" enabled="true" visible="true" accessible="false" x="139" y="182" width="123" height="27" index="1" traits="StaticText">
+                          <XCUIElementTypeStaticText type="XCUIElementTypeStaticText" value="MobiumApp" name="MobiumApp" label="MobiumApp" enabled="true" visible="true" accessible="true" x="139" y="182" width="123" height="27" index="0" traits="StaticText"/>
+                        </XCUIElementTypeStaticText>
+                        <XCUIElementTypeButton type="XCUIElementTypeButton" name="webviewhubBtn" label="WebViews" enabled="true" visible="true" accessible="true" x="16" y="232" width="370" height="48" index="2" traits="Button"/>
+                        <XCUIElementTypeButton type="XCUIElementTypeButton" name="loginBtn" label="Login Demo" enabled="true" visible="true" accessible="true" x="16" y="289" width="370" height="48" index="3" traits="Button"/>
+                        <XCUIElementTypeButton type="XCUIElementTypeButton" name="otpBtn" label="OTP Demo" enabled="true" visible="true" accessible="true" x="16" y="347" width="370" height="48" index="4" traits="Button"/>
+                        <XCUIElementTypeButton type="XCUIElementTypeButton" name="locationBtn" label="Location Demo" enabled="true" visible="true" accessible="true" x="16" y="404" width="370" height="48" index="5" traits="Button"/>
+                        <XCUIElementTypeButton type="XCUIElementTypeButton" name="pagerBtn" label="Pager Demo" enabled="true" visible="true" accessible="true" x="16" y="461" width="370" height="48" index="6" traits="Button"/>
+                        <XCUIElementTypeButton type="XCUIElementTypeButton" name="popupBtn" label="Interruption Demo" enabled="true" visible="true" accessible="true" x="16" y="519" width="370" height="48" index="7" traits="Button"/>
+                        <XCUIElementTypeButton type="XCUIElementTypeButton" name="formBtn" label="Form Demo" enabled="true" visible="true" accessible="true" x="16" y="576" width="370" height="48" index="8" traits="Button"/>
+                        <XCUIElementTypeButton type="XCUIElementTypeButton" name="gesturehubBtn" label="Gestures" enabled="true" visible="true" accessible="true" x="16" y="633" width="370" height="48" index="9" traits="Button"/>
+                        <XCUIElementTypeButton type="XCUIElementTypeButton" name="motionBtn" label="Motion Demo" enabled="true" visible="true" accessible="true" x="16" y="691" width="370" height="48" index="10" traits="Button"/>
+                        <XCUIElementTypeButton type="XCUIElementTypeButton" name="crashBtn" label="Crash Demo" enabled="true" visible="true" accessible="true" x="16" y="748" width="370" height="48" index="11" traits="Button"/>
+                        <XCUIElementTypeButton type="XCUIElementTypeButton" name="storageBtn" label="Storage Demo" enabled="true" visible="true" accessible="true" x="16" y="805" width="370" height="48" index="12" traits="Button"/>
+                        <XCUIElementTypeButton type="XCUIElementTypeButton" name="dialogsBtn" label="Dialog Demo" enabled="true" visible="false" accessible="true" x="16" y="863" width="370" height="48" index="13" traits="Button"/>
+                        <XCUIElementTypeButton type="XCUIElementTypeButton" name="obstructionBtn" label="Obstruction Demo" enabled="true" visible="false" accessible="true" x="16" y="920" width="370" height="48" index="14" traits="Button"/>
+                        <XCUIElementTypeButton type="XCUIElementTypeButton" name="a11yBtn" label="Accessibility Demo" enabled="true" visible="false" accessible="true" x="16" y="977" width="370" height="48" index="15" traits="Button"/>
+                        <XCUIElementTypeButton type="XCUIElementTypeButton" name="layoutBtn" label="Layout Demo" enabled="true" visible="false" accessible="true" x="16" y="1035" width="370" height="48" index="16" traits="Button"/>
+                      </XCUIElementTypeOther>
+                    </XCUIElementTypeOther>
+                    <XCUIElementTypeOther type="XCUIElementTypeOther" value="0%" name="Vertical scroll bar, 2 pages" label="Vertical scroll bar, 2 pages" enabled="true" visible="true" accessible="false" x="369" y="62" width="30" height="750" index="1" traits="Adjustable">
+                      <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="396" y="127" width="3" height="482" index="0" traits=""/>
+                    </XCUIElementTypeOther>
+                    <XCUIElementTypeOther type="XCUIElementTypeOther" value="0%" name="Horizontal scroll bar, 1 page" label="Horizontal scroll bar, 1 page" enabled="true" visible="true" accessible="false" x="28" y="807" width="346" height="30" index="2" traits="Adjustable">
+                      <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="65" y="834" width="272" height="3" index="0" traits=""/>
+                    </XCUIElementTypeOther>
+                    <XCUIElementTypeOther type="XCUIElementTypeOther" value="0%" name="Vertical scroll bar, 2 pages" label="Vertical scroll bar, 2 pages" enabled="true" visible="true" accessible="false" x="369" y="62" width="30" height="750" index="3" traits="Adjustable">
+                      <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="396" y="127" width="3" height="482" index="0" traits=""/>
+                    </XCUIElementTypeOther>
+                    <XCUIElementTypeOther type="XCUIElementTypeOther" value="0%" name="Horizontal scroll bar, 1 page" label="Horizontal scroll bar, 1 page" enabled="true" visible="true" accessible="false" x="28" y="807" width="346" height="30" index="4" traits="Adjustable">
+                      <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="65" y="834" width="272" height="3" index="0" traits=""/>
+                    </XCUIElementTypeOther>
+                  </XCUIElementTypeScrollView>
+                </XCUIElementTypeOther>
+              </XCUIElementTypeOther>
+            </XCUIElementTypeOther>
+          </XCUIElementTypeOther>
+        </XCUIElementTypeOther>
+      </XCUIElementTypeOther>
+    </XCUIElementTypeOther>
+  </XCUIElementTypeWindow>
+</XCUIElementTypeApplication>

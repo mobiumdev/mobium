@@ -280,21 +280,88 @@ func (l Locator) Matches(n *Node) bool {
 // hint mentioning the password as well as the field, seven in all on
 // MobiumApp's login screen. Exact first keeps every partial-ID locator that
 // worked, working.
+//
+// text= also finds an iOS control by its label when it has no text of its
+// own, as labelOnly says.
 func (l Locator) Resolve(t *Tree) []*Node {
 	var out, exact []*Node
+	byLabel := map[*Node]bool{}
 	t.Walk(func(n *Node) bool {
 		if l.Matches(n) {
 			out = append(out, n)
 			if l.Kind == KindTestID && !l.Exact && (n.TestID == l.Value || n.ShortTestID() == l.Value) {
 				exact = append(exact, n)
 			}
+		} else if l.labelOnly(n) {
+			out = append(out, n)
+			byLabel[n] = true
 		}
 		return true
 	})
 	if len(exact) == 1 {
 		return exact
 	}
-	return out
+	if l.Kind != KindText {
+		return out
+	}
+	// A control whose label is the text of something inside it is not a
+	// second match: the text node is the one, as it was before. Nor is a node
+	// inside another at the same bounds: React Native nests a Text in a Text
+	// and iOS reports both, so text=Back found two on MobiumApp's Dialog Demo
+	// — one thing drawn once, which Android reports once.
+	kept := make([]*Node, 0, len(out))
+	for _, n := range out {
+		if byLabel[n] && containsAny(n, out) || sameAsAncestor(n, out) {
+			continue
+		}
+		kept = append(kept, n)
+	}
+	return kept
+}
+
+// sameAsAncestor reports whether one of nodes is an ancestor of n at exactly
+// n's bounds.
+func sameAsAncestor(n *Node, nodes []*Node) bool {
+	for p := n.Parent; p != nil; p = p.Parent {
+		if p.Bounds != n.Bounds {
+			continue
+		}
+		for _, m := range nodes {
+			if m == p {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+// labelOnly reports whether n matches text= by its label: an iOS node with
+// no text of its own. On iOS a node's text is its value, and a React Native
+// button has none — only the label VoiceOver reads — so text=Dialog Demo
+// found nothing on MobiumApp while Android, where that label is a child
+// TextView's text, found the button. Android's label is content-desc, which
+// text= has never matched, so an Android node is never one of these.
+// CHALLENGES 166.
+func (l Locator) labelOnly(n *Node) bool {
+	if l.Kind != KindText || n.Text != "" || !strings.HasPrefix(n.Class, "XCUIElementType") {
+		return false
+	}
+	if l.Role != "" && !HasRole(n, l.Role) {
+		return false
+	}
+	return match(n.Label, l.Value, l.Exact)
+}
+
+// containsAny reports whether any of nodes is a descendant of n.
+func containsAny(n *Node, nodes []*Node) bool {
+	for _, m := range nodes {
+		for p := m.Parent; p != nil; p = p.Parent {
+			if p == n {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 // Derive picks the most durable locator that uniquely identifies n within t.

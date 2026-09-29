@@ -579,7 +579,10 @@ echo "    lost           state loss is detectable, not assumed            ok"
 # They live on the Dialog Demo, with every other kind; dialogs.sh walks them
 # all, and this keeps the two-button case and the prompt in the main flow.
 $M tap "$(ref 'Back')" >/dev/null 2>&1 || true; sleep 1
-$M tap "$(ref 'Dialog Demo')" >/dev/null; sleep 2
+# By text, not by ref: the Dialog Demo is below the fold on an iPhone 17 Pro,
+# where map gives it no ref, and a tap scrolls to its target. On iOS text=
+# found no React Native button until CHALLENGES 166.
+$M tap 'text=Dialog Demo' >/dev/null; sleep 2
 
 $M tap 'testid=twoButtonBtn' >/dev/null; sleep 2
 $M alert | grep -qi 'a dialog is on screen' || fail "the app's own alert was not seen"
