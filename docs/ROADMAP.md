@@ -12,8 +12,10 @@ this is what is not.
   devices, workers, retries with flaky reported, `-g`, `--last-failed`,
   list, JSON, JUnit and HTML reports, `show-report` — and since 2026-09-29
   the step shorthand, soft assertions, a trace per test and `--debug`.
-  Next: the suite on the real phones, where a password needs the phone's
-  keyboard to have its letters (CHALLENGES 159). Later: an interactive
+  On 2026-09-29 the suite passed seven of seven on the iPhone 15 Plus, and
+  the must-fail and soft controls failed as they must. Getting there found
+  CHALLENGES 170–172. A password still needs a keyboard with its letters
+  up (159). Next: the same on the Pixel 8 Pro. Later: an interactive
   mode, and parameters. Recording a test from what a person does is
   `mobium inspect`, since 2026-09-29 ([decisions/0007](decisions/0007-an-inspector.md)).
   [decisions/0006](decisions/0006-a-test-runner.md).

@@ -149,7 +149,8 @@ map:
 
 (This picture is of a run of both tests, the other one passing.) On a real
 phone that screenshot is a picture of somebody's screen, and the report says
-so; `--no-screenshots` keeps none.
+so; `--no-screenshots` keeps none. A report names a real phone by its model,
+`[iphone · iPhone 15 Plus]`, and never by its id.
 
 ## 4. Run only what failed
 

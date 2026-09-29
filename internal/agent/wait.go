@@ -214,6 +214,7 @@ func (h *Handlers) waitOn(ctx context.Context, s *session, args map[string]inter
 	var matched *uitree.Node
 	var tree *uitree.Tree
 	started := time.Now()
+	answered := 0
 
 	err = pollUntil(ctx, timeout, func(ctx context.Context) (bool, error) {
 		t, err := s.driver.Snapshot(ctx)
@@ -240,6 +241,23 @@ func (h *Handlers) waitOn(ctx context.Context, s *session, args map[string]inter
 				notOnScreen = fmt.Sprintf("it is under a dialog, %q — answer it first", strings.TrimSpace(strings.SplitN(d.Label, "\n", 2)[0]))
 			}
 			nodes = shown
+		}
+		// A declared rule answers a dialog in a wait's way as it does in an
+		// action's, as Playwright's locator handlers run for an assertion
+		// too: login.test.json's rule for "Save Password?" answered it in
+		// front of a tap and not in front of the wait for the next screen,
+		// which timed out on a real iPhone. Not for a wait until the target
+		// is gone, which a dialog over it already satisfies. On Android the
+		// tree holds the dialog's window alone, so an absent target asks too.
+		if !negate && len(nodes) == 0 && answered < maxDialogsPerCall && len(h.dialogRules[s.dev.Serial]) > 0 {
+			handled, herr := h.answerByRule(ctx, s)
+			if herr != nil {
+				return false, herr
+			}
+			if handled {
+				answered++
+				return false, nil
+			}
 		}
 		holds, match, desc, err := judge(ctx, cond, nodes, notOnScreen, loc, want, exact, count, focus)
 		if err != nil {

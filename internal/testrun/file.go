@@ -320,7 +320,7 @@ func (s Step) check(where string) error {
 // Config is mobium.config.json.
 type Config struct {
 	// Dir is where the config was found; TestDir and OutputDir are relative
-	// to it.
+	// to it unless absolute — see Resolve.
 	Dir       string `json:"-"`
 	TestDir   string `json:"testDir,omitempty"`
 	OutputDir string `json:"outputDir,omitempty"`
@@ -414,6 +414,16 @@ func parseConfig(raw []byte, path, dir string) (*Config, error) {
 	return &c, nil
 }
 
+// Resolve is a path from the config, as the config means it: relative to
+// the config's own folder, or as it stands when absolute. Joined blindly, an
+// absolute testDir was looked for inside the config's folder.
+func (c *Config) Resolve(p string) string {
+	if filepath.IsAbs(p) {
+		return p
+	}
+	return filepath.Join(c.Dir, p)
+}
+
 // Discover lists the test files a run covers: those named, directories
 // walked for *.test.json, or the config's test directory when nothing is
 // named. Sorted, so a run is the same order every time.
@@ -421,7 +431,7 @@ func Discover(cfg *Config, paths []string) ([]string, error) {
 	if len(paths) == 0 {
 		root := cfg.Dir
 		if cfg.TestDir != "" {
-			root = filepath.Join(cfg.Dir, cfg.TestDir)
+			root = cfg.Resolve(cfg.TestDir)
 		}
 		paths = []string{root}
 	}
