@@ -6,8 +6,9 @@ reasons are
 [decisions/0006](../decisions/0006-a-test-runner.md).
 
 Every command and every line of output below is what `mobium test` printed on
-2026-09-28, against [MobiumApp](../decisions/0004-an-app-under-test-of-our-own.md)
-on an Android 15 emulator. Where a path to a report is shortened, it says so.
+2026-09-28 — section 8 on 2026-09-29 — against
+[MobiumApp](../decisions/0004-an-app-under-test-of-our-own.md) on an Android 15
+emulator. Where a path to a report is shortened, it says so.
 
 Before this guide: [the quick start](../quickstart/README.md) — mobium
 installed and a device running — and MobiumApp installed
@@ -22,6 +23,7 @@ installed and a device running — and MobiumApp installed
 - [5. Retries, and flaky](#5-retries-and-flaky)
 - [6. More than one device](#6-more-than-one-device)
 - [7. In CI](#7-in-ci)
+- [8. Shorter steps, soft checks, a trace and a debugger](#8-shorter-steps-soft-checks-a-trace-and-a-debugger)
 - [Writing tests](#writing-tests)
 - [The commands](#the-commands)
 
@@ -227,6 +229,120 @@ from "the run is". The JUnit file has been read by Python's XML parser in
 A CI job also needs a device running before the tests start; for Android on a
 Linux runner, [SETUP.md](../SETUP.md#on-linux) has the emulator's steps.
 
+## 8. Shorter steps, soft checks, a trace and a debugger
+
+### The step shorthand
+
+A step can be one key — a tool's name without `app_` — whose value is the
+tool's main argument, or an object of its arguments. The Form Demo's tests in
+this repository are written that way:
+
+```json
+{
+  "app": "dev.mobium.mobiumapp",
+  "beforeEach": [
+    {"tap": "label=Form Demo"}
+  ],
+  "tests": [
+    {"name": "a checkbox reaches the state asked for", "steps": [
+      {"wait_for": {"target": "testid=termsCheck", "condition": "unchecked"}},
+      {"check": "testid=termsCheck"},
+      {"wait_for": {"target": "testid=termsCheck", "condition": "checked"}},
+      {"wait_for": {"target": "testid=notifyCheck", "condition": "checked", "not": true}}
+    ]}
+  ]
+}
+```
+
+```
+$ mobium test mobiumapp/form.test.json --project android
+  ok    [android · emulator-5554] form.test.json › a checkbox reaches the state asked for (4.4s)
+  ok    [android · emulator-5554] form.test.json › choosing a radio clears the one before (3.4s)
+  ok    [android · emulator-5554] form.test.json › the dark mode switch goes on and back off (4.8s)
+3 passed (12.7s)
+```
+
+A string goes to `target` when the tool has one, else to its one required
+string (`{"launch": "dev.mobium.mobiumapp"}`, `{"find": "role=button"}`),
+else to its only argument. A tool with no one main argument says so and asks
+for them named: `{"swipe": "up"}` is refused, `{"swipe": {"direction":
+"up"}}` is not. The shorthand is read into the long form and checked as the
+long form is, so the two mix freely, and a step keeps its `description`
+beside either.
+
+### Soft assertions
+
+`"soft": true` on a `wait_for` or an `expect` records its failure and goes
+on, so one run reports every check that failed — the test still fails.
+[tests/controls/soft.test.json](../../tests/controls/soft.test.json) holds two
+that cannot hold, around steps that must still run:
+
+```
+$ mobium test controls/soft.test.json --project android
+  FAIL  [android · emulator-5554] soft.test.json › two soft failures, and the test carries on (7.3s)
+        soft, carried on: terms start unchecked, so this cannot hold — step 2 (app_wait_for): [timeout] timed out after 1.523s waiting for testid=termsCheck to become checked — it is unchecked
+        soft, carried on: the app is in front, so this cannot hold — step 4 (expect app_state): [timeout] expected app_state's state to be "background", and after 1.5s state is "foreground"
+0 passed, 1 failed (7.3s)
+error: 1 of 1 tests failed
+```
+
+Each soft failure keeps its own screenshot and map. Only an assertion can be
+soft: an action that failed leaves nothing after it worth checking, and a
+soft `tap` is refused before anything runs.
+
+### A trace
+
+`--trace on` keeps a screenshot and the map after every step, and the HTML
+report shows them as a filmstrip; `--trace retain-on-failure` keeps them only
+for a test that failed. `trace` in the config sets the default.
+
+```
+$ mobium test mobiumapp/form.test.json -g checkbox --project android --trace on --reporter list,html
+  ok    [android · emulator-5554] form.test.json › a checkbox reaches the state asked for (6.7s)
+1 passed (6.7s)
+html report: …/tests/mobium-report/index.html
+```
+
+![The HTML report, the test opened: a filmstrip of five screens, beforeEach's tap and four steps, Accept terms ticked from step 2 on](images/test-runner-trace.jpg)
+
+(The report's path is shortened, and the test opened.) A traced run takes its
+steps one at a time, where an untraced one batches them, and waits for the
+screen to stop changing before each frame — so it is slower, and off by
+default. With `--no-screenshots` a trace keeps the maps and no picture, which
+is the setting for somebody's phone.
+
+### Stepping through a test
+
+`--debug` stops before every step, prints it and the screen, and waits:
+Enter runs the step, `m` maps again, `c` runs the rest of the test, `q`
+quits. One project at a time, and the test's timeout is off while you read.
+
+```
+$ mobium test mobiumapp/form.test.json -g checkbox --project android --debug
+
+[android] form.test.json › a checkbox reaches the state asked for — beforeEach
+  {"arguments":{"target":"label=Form Demo"},"name":"app_tap"}
+
+@e1 homeList (list)
+@e2 WebViews (button)
+@e3 Login Demo (button)
+…
+@e13 Dialog Demo (button)
+
+Enter runs it · m maps again · c runs the rest of the test · q quits >
+[android] form.test.json › a checkbox reaches the state asked for — step 1
+  {"arguments":{"condition":"unchecked","target":"testid=termsCheck"},"name":"app_wait_for"}
+
+@e1 Back (button)
+@e2 Email me (checkbox, unchecked)
+@e3 Accept terms (checkbox, unchecked)
+…
+```
+
+(Maps trimmed.) The step is printed in the long form, whichever form the file
+used. Quitting reports the test `stopped` and runs nothing after it; closed
+input — a pipe that ends — runs the rest rather than wait.
+
 ## Writing tests
 
 - **Find targets with `map` first.** `mobium map` on the screen you are
@@ -266,9 +382,11 @@ Linux runner, [SETUP.md](../SETUP.md#on-linux) has the emulator's steps.
 | `mobium test --timeout 30s` | the time for each test; `timeout` in the config is milliseconds |
 | `mobium test --reporter list,json,junit,html` | which reports to write, comma-separated |
 | `mobium test --list` | lists the tests a run would cover, and runs nothing |
-| `mobium test --no-screenshots` | keeps no screenshot of a failure |
+| `mobium test --no-screenshots` | keeps no screenshot of a failure, and a trace keeps only the maps |
+| `mobium test --trace on` | a screenshot and the map after every step; `retain-on-failure` keeps a failed test's only |
+| `mobium test --debug` | stops before each step: Enter steps, `m` maps again, `c` continues, `q` quits |
 | `mobium show-report` | opens the last HTML report |
 
-Not yet: a visible device, stepping through a test, an interactive mode, a
-trace for each test, and recording a test from what you do —
-[decisions/0006](../decisions/0006-a-test-runner.md) says what each will be.
+Not yet: a visible device, an interactive mode, and recording a test from
+what you do — [decisions/0006](../decisions/0006-a-test-runner.md) says what
+each will be.

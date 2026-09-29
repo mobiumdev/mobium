@@ -1,8 +1,10 @@
 package main
 
 import (
+	"bufio"
 	"crypto/rand"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -23,6 +25,8 @@ const defaultOutputDir = "mobium-report"
 func newTestCmd() *cobra.Command {
 	var (
 		grep, configPath, outDir string
+		trace                    string
+		debug                    bool
 		projects, reporters      []string
 		workers, retries         int
 		timeout                  time.Duration
@@ -43,7 +47,9 @@ func newTestCmd() *cobra.Command {
   mobium test -g "wrong password"
   mobium test --project android --retries 2
   mobium test --reporter list,junit,html && mobium show-report
-  mobium test --last-failed`,
+  mobium test --last-failed
+  mobium test --trace retain-on-failure --reporter list,html
+  mobium test --debug -g "wrong password" --project android`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			wd, err := os.Getwd()
 			if err != nil {
@@ -80,6 +86,19 @@ func newTestCmd() *cobra.Command {
 				if opts.Grep, err = regexp.Compile(grep); err != nil {
 					return mobiumerr.New(mobiumerr.InvalidArgument, "-g %q is not a regular expression: %v", grep, err)
 				}
+			}
+			opts.Trace = cfg.Trace
+			if cmd.Flags().Changed("trace") {
+				opts.Trace = trace
+			}
+			switch opts.Trace {
+			case "", testrun.TraceOff, testrun.TraceOn, testrun.TraceRetainOnFailure:
+			default:
+				return mobiumerr.New(mobiumerr.InvalidArgument, "--trace %q: on, off or retain-on-failure", opts.Trace)
+			}
+			if debug {
+				opts.Debug = debugger(os.Stdin, os.Stderr)
+				opts.Workers = 1
 			}
 			opts.OutputDir = outDir
 			if opts.OutputDir == "" {
@@ -177,7 +196,42 @@ func newTestCmd() *cobra.Command {
 	f.BoolVar(&noShot, "no-screenshots", false, "Keep no screenshot of a failure — on a real phone it is somebody's screen")
 	f.StringVar(&configPath, "config", "", "The config to use (default: mobium.config.json here or above)")
 	f.StringVar(&outDir, "output", "", "Where reports go (default: mobium-report beside the config)")
+	f.StringVar(&trace, "trace", "off", "Keep a screenshot and the map after every step: on, off, or retain-on-failure")
+	f.BoolVar(&debug, "debug", false, "Stop before each step, show it and the screen, and wait: Enter steps, c continues, q quits")
 	return cmd
+}
+
+// debugger is --debug's side of a DebugPoint: it prints the step and the
+// screen, and reads what to do from the terminal.
+func debugger(in io.Reader, out io.Writer) func(testrun.DebugPoint) testrun.DebugAction {
+	r := bufio.NewReader(in)
+	return func(p testrun.DebugPoint) testrun.DebugAction {
+		where := fmt.Sprintf("step %d", p.Step)
+		if p.Step == 0 {
+			where = "beforeEach"
+		}
+		fmt.Fprintf(out, "\n[%s] %s — %s\n  %s\n\n%s\n", p.Project, p.Title, where, p.Call, p.Map())
+		for {
+			fmt.Fprint(out, "\nEnter runs it · m maps again · c runs the rest of the test · q quits > ")
+			line, err := r.ReadString('\n')
+			if err != nil && line == "" {
+				// Nobody is answering: run the rest rather than hang.
+				fmt.Fprintln(out)
+				return testrun.DebugContinue
+			}
+			switch strings.TrimSpace(line) {
+			case "":
+				return testrun.DebugStep
+			case "c":
+				return testrun.DebugContinue
+			case "q":
+				fmt.Fprintln(out)
+				return testrun.DebugQuit
+			case "m":
+				fmt.Fprintf(out, "\n%s\n", p.Map())
+			}
+		}
+	}
 }
 
 // listTests prints what a run would cover, without a device.
