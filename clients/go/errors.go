@@ -42,10 +42,13 @@ var (
 	ErrNoSuchAlert         = &Error{Code: CodeNoSuchAlert}
 	ErrUnsupported         = &Error{Code: CodeUnsupported}
 	ErrNotConfirmed        = &Error{Code: CodeNotConfirmed}
-	ErrTimedOut            = &Error{Code: CodeTimeout}
-	ErrInvalidArgument     = &Error{Code: CodeInvalidArgument}
-	ErrDeviceServer        = &Error{Code: CodeDeviceServer}
-	ErrInternal            = &Error{Code: CodeInternal}
+	// TimedOut, not Timeout, as in every client: Python's TimeoutError and
+	// Java's TimeoutException are builtins a Timeout name would shadow
+	// (docs/decisions/0005).
+	ErrTimedOut        = &Error{Code: CodeTimeout}
+	ErrInvalidArgument = &Error{Code: CodeInvalidArgument}
+	ErrDeviceServer    = &Error{Code: CodeDeviceServer}
+	ErrInternal        = &Error{Code: CodeInternal}
 )
 
 // Is makes the sentinels above match by code.
