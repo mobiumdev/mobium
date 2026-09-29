@@ -124,7 +124,15 @@ type Result struct {
 }
 
 // ID names a test on a project, for --last-failed.
-func (r Result) ID() string { return r.Project + "\x00" + r.File + "\x00" + r.Test }
+func (r Result) ID() string {
+	// The file by its absolute path: the same test reached as a named file
+	// and through the config's testDir, or from another folder, is one test.
+	file := r.File
+	if abs, err := filepath.Abs(file); err == nil {
+		file = abs
+	}
+	return r.Project + "\x00" + file + "\x00" + r.Test
+}
 
 // Failure is what went wrong, where, and what the screen showed.
 type Failure struct {
@@ -267,6 +275,10 @@ func Run(cfg *Config, opts Options, call Caller) (*Summary, error) {
 	// connection's first call says what it wants.
 	callers := map[string]Caller{}
 	leased := map[string]string{}
+	// shown is how a project's device appears in a report when that is not
+	// its id: a real phone, by its model. A phone's id is somebody's, and a
+	// report is made to be passed around.
+	shown := map[string]string{}
 	defer func() {
 		for _, c := range closers {
 			c()
@@ -305,6 +317,22 @@ func Run(cfg *Config, opts Options, call Caller) (*Summary, error) {
 				if s, ok := d.(string); ok {
 					leased[p.project.Name] = s
 				}
+			}
+		}
+		if err == nil {
+			// The device as Mobium resolved it, which the first call's answer
+			// names: a phone is reached by its UDID, CoreDevice identifier or
+			// name, and the listing has the UDID alone.
+			id := p.project.Device
+			if d, ok := field(res.StructuredContent, "device"); ok {
+				if s, ok := d.(string); ok && s != "" {
+					id = s
+				}
+			} else if id == "" {
+				id = leased[p.project.Name]
+			}
+			if model, ok := phoneModel(pc, id); ok {
+				shown[p.project.Name] = model
 			}
 		}
 		if err != nil {
@@ -364,6 +392,9 @@ func Run(cfg *Config, opts Options, call Caller) (*Summary, error) {
 						}
 						if r.Device == "" {
 							r.Device = leased[name]
+						}
+						if model, ok := shown[name]; ok {
+							r.Device = model
 						}
 						mu.Lock()
 						sum.Results = append(sum.Results, r)
@@ -726,6 +757,35 @@ func expect(e Expect, call Caller, dev func(map[string]interface{}) map[string]i
 }
 
 // field follows a dotted path into a structured answer.
+// phoneModel is the model of the device id, when it is a real phone: the
+// name a report shows for it instead of its id. Anything else — an emulator,
+// a simulator, a device the listing does not have — is reported by its id.
+func phoneModel(call Caller, id string) (string, bool) {
+	if id == "" {
+		return "", false
+	}
+	res, err := call("app_devices", map[string]interface{}{})
+	if err != nil || res == nil {
+		return "", false
+	}
+	list, ok := field(res.StructuredContent, "devices")
+	if !ok {
+		return "", false
+	}
+	devices, _ := list.([]interface{})
+	for _, d := range devices {
+		m, _ := d.(map[string]interface{})
+		if m["id"] != id || m["emulator"] != false {
+			continue
+		}
+		if model, _ := m["model"].(string); model != "" {
+			return model, true
+		}
+		return "a phone", true
+	}
+	return "", false
+}
+
 func field(v interface{}, path string) (interface{}, bool) {
 	b, err := json.Marshal(v)
 	if err != nil {

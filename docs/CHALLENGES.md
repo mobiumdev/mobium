@@ -7,10 +7,10 @@ the source.
 
 The pattern across them is the reason the document exists: **almost nothing
 here was found by reading code or by a test written from imagination.** Of
-169 defects, 134 were found only by running against a real device. The other
-thirty-five — 4, 5, 6, 14, 23, 24, 32, 35, 36, 39, 44, 50, 53, 54, 57, 66, 89,
+172 defects, 136 were found only by running against a real device. The other
+thirty-six — 4, 5, 6, 14, 23, 24, 32, 35, 36, 39, 44, 50, 53, 54, 57, 66, 89,
 99, 100, 121, 123, 129, 130, 133, 134, 139, 140, 141, 142, 144, 150, 158, 162,
-164 and 165 — came from reading code, the compiler, a test, a linter,
+164, 165 and 172 — came from reading code, the compiler, a test, a linter,
 cross-checking a computed number against a screenshot, using the tooling on
 itself, typing a negative number at a command line, and driving the clients
 against a stand-in daemon, CI on Windows, following the quick start from
@@ -3833,6 +3833,55 @@ the container at a time for as long as the target grows; on the emulator Card
 measured nudge (CHALLENGES 114) already brought in; this changes nothing
 there. Actions that scroll to their target are unchanged: they need it
 reachable, which it was.
+
+### 170. A dialog rule answered in front of an action, not in front of a wait
+
+**Found by:** `tests/mobiumapp` run by `mobium test` on the iPhone 15 Plus.
+"the demo account signs in, and out" failed at its wait for the welcome
+screen, with the failure itself saying that screen was under "Save
+Password?" — the dialog `login.test.json` declares a rule for.
+
+A rule (`app_dialogs`) answered a dialog only when an action resolved its
+target and found the dialog over it. Sign-in is a tap, and iOS raises the
+sheet a moment after the tap has returned, so the next call to meet it was
+the wait, which reported it and timed out. On a simulator the sheet does not
+come, which is why the suite passed there. Playwright's locator handlers run
+before an auto-retrying assertion as well as an action, and a wait is
+Mobium's assertion. So `app_wait_for` now answers a rule for a dialog over
+its target, or, on Android, where the tree holds only the dialog's window,
+when its target is not there at all. It is bounded as an action is, and
+reported in `dialogs_handled` as an action is. A wait for the target to go
+answers nothing, because the dialog over it already means it is gone. With
+this, the suite passes seven of seven on the phone.
+
+### 171. A real phone's id in every test report
+
+**Found by:** the same run: each line of the list report named the project
+`[iphone · <UDID>]`, and the JSON, JUnit and HTML reports carried the id too.
+
+A report is made to be passed around, attached to a pull request or a
+ticket, and a phone's id is its owner's (see 111). The documentation site
+already dropped phones from what it published. A report now shows a real
+phone by its model ("iPhone 15 Plus"), and an emulator or a simulator by its
+id, since that tells apart several on one machine. The model comes from
+`app_devices`, matched by the id Mobium resolved rather than the one the
+config gave. A phone answers to its UDID, its CoreDevice identifier or its
+name, and the listing has only the UDID, so the first version, which matched
+the config's value, missed the phone it was run on. Neither id is in any
+report of the run above.
+
+### 172. An absolute testDir, and a --last-failed that missed
+
+**Found by:** pointing a config outside the repository at the suite in it,
+to run that suite on a phone.
+
+A config's `testDir` and `outputDir` were joined to the config's own folder,
+so an absolute one was looked for inside it. Paths from a config are now
+taken as written when absolute. Then `--last-failed` ran nothing after a run
+that had failed two tests: the tests were remembered by their file path as
+it was given, relative, and found again by discovery, absolute. A test is now
+remembered by its file's absolute path, which is the same however it was
+named and from whichever folder the run starts.
 
 ## Findings that were not defects
 

@@ -1,12 +1,14 @@
 package agent
 
 import (
+	"context"
 	"encoding/json"
 	"os"
 	"strings"
 	"testing"
 
 	"github.com/mobiumdev/mobium/internal/device"
+	"github.com/mobiumdev/mobium/internal/mobiumdriver"
 	"github.com/mobiumdev/mobium/internal/uitree"
 )
 
@@ -89,5 +91,74 @@ func TestHandledDialogsAreReported(t *testing.T) {
 	raw, _ := json.Marshal(res.StructuredContent)
 	if !strings.Contains(string(raw), `"dialogs_handled"`) {
 		t.Errorf("structured: %s", raw)
+	}
+}
+
+// ruleDriver is iOS's "Save Password?" sheet over the screen a wait is
+// waiting for, gone once Not Now is tapped.
+type ruleDriver struct {
+	alertDriver
+	covered, after *uitree.Tree
+}
+
+func (d *ruleDriver) Snapshot(ctx context.Context) (*uitree.Tree, error) {
+	if len(d.tapped) > 0 {
+		return d.after, nil
+	}
+	return d.covered, nil
+}
+
+func (d *ruleDriver) AlertText(ctx context.Context) (string, error) {
+	if len(d.tapped) > 0 {
+		return "", mobiumdriver.ErrNoAlert
+	}
+	return d.text, nil
+}
+
+// A wait answers a declared rule for the dialog over its target, as an
+// action does; it timed out in front of the sheet on a real iPhone. A wait
+// for the target to go is left alone, since the sheet already covers it.
+func TestAWaitAnswersADialogRule(t *testing.T) {
+	raw, err := os.ReadFile("../uitree/testdata/ios-save-password.xml")
+	if err != nil {
+		t.Fatal(err)
+	}
+	covered, err := uitree.ParseIOS(raw)
+	if err != nil {
+		t.Fatal(err)
+	}
+	fresh := func() (*Handlers, *session, *ruleDriver) {
+		d := &ruleDriver{alertDriver: alertDriver{text: "Save Password?\nSecurely store your password"},
+			covered: covered, after: screen(t, "Log Out")}
+		h := NewHandlers()
+		h.implicitWait, h.settleWindow = 0, 0
+		s := &session{dev: fakeDevice(), driver: d, backend: BackendWDA}
+		return h, s, d
+	}
+
+	h, s, d := fresh()
+	if _, err := h.dialogsOn(s, map[string]interface{}{"when": "Save Password", "press": "Not Now"}); err != nil {
+		t.Fatal(err)
+	}
+	res, err := h.reportHandled(wait(h, s, map[string]interface{}{"target": "text=Log Out", "timeout_ms": float64(2000)}))
+	if err != nil {
+		t.Fatalf("the wait did not answer the rule: %v", err)
+	}
+	if len(d.tapped) != 1 || !strings.Contains(res.Content[0].Text, `pressed "Not Now"`) {
+		t.Errorf("tapped %v, and said %q", d.tapped, res.Content[0].Text)
+	}
+
+	// No rule: the wait says the dialog is in the way, and taps nothing.
+	h, s, d = fresh()
+	_, err = wait(h, s, map[string]interface{}{"target": "text=Log Out", "timeout_ms": float64(300)})
+	if err == nil || !strings.Contains(err.Error(), "under a dialog") || len(d.tapped) != 0 {
+		t.Errorf("with no rule: %v, tapped %v", err, d.tapped)
+	}
+
+	// Waiting for the target to go: the sheet covering it is the answer.
+	h, s, d = fresh()
+	h.dialogsOn(s, map[string]interface{}{"when": "Save Password", "press": "Not Now"})
+	if _, err := wait(h, s, map[string]interface{}{"target": "text=Log Out", "not": true, "timeout_ms": float64(300)}); err != nil || len(d.tapped) != 0 {
+		t.Errorf("a wait for it to go: %v, tapped %v", err, d.tapped)
 	}
 }

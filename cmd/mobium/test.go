@@ -104,7 +104,7 @@ func newTestCmd() *cobra.Command {
 			if opts.OutputDir == "" {
 				opts.OutputDir = filepath.Join(cfg.Dir, defaultOutputDir)
 				if cfg.OutputDir != "" {
-					opts.OutputDir = filepath.Join(cfg.Dir, cfg.OutputDir)
+					opts.OutputDir = cfg.Resolve(cfg.OutputDir)
 				}
 			}
 			want := map[string]bool{}
@@ -267,7 +267,7 @@ func newShowReportCmd() *cobra.Command {
 				if cfg, err := testrun.FindConfig(wd); err == nil {
 					dir = filepath.Join(cfg.Dir, defaultOutputDir)
 					if cfg.OutputDir != "" {
-						dir = filepath.Join(cfg.Dir, cfg.OutputDir)
+						dir = cfg.Resolve(cfg.OutputDir)
 					}
 				}
 			}

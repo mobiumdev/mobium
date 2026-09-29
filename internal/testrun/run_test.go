@@ -171,6 +171,13 @@ func TestGrepAndLastFailedPickTests(t *testing.T) {
 	if len(s.Results) != 1 || s.Results[0].Test != "fails at its second step" {
 		t.Fatalf("--last-failed ran %+v", s.Results)
 	}
+	// The same file reached another way — relative, from its own folder —
+	// is the same test; it was keyed by the path as given, and missed.
+	t.Chdir(dir)
+	s = run(t, &Config{Dir: dir}, Options{Files: []string{"login.test.json"}, LastFailed: true, OutputDir: out}, &fake{})
+	if len(s.Results) != 1 || s.Results[0].Test != "fails at its second step" {
+		t.Fatalf("--last-failed by a relative path ran %+v", s.Results)
+	}
 }
 
 // Projects run on their own devices, at once; a worker never shares one.
@@ -594,5 +601,55 @@ func TestTheDebuggerStopsBeforeEachStep(t *testing.T) {
 		Debug: func(DebugPoint) DebugAction { return DebugStep }}, (&fake{}).call)
 	if mobiumerr.CodeOf(err) != mobiumerr.InvalidArgument {
 		t.Errorf("--debug over two projects was not refused: %v", err)
+	}
+}
+
+// A config's testDir is its own folder's when relative, and as written when
+// absolute; the absolute one was once looked for inside the config's folder.
+func TestAnAbsoluteTestDirIsTakenAsWritten(t *testing.T) {
+	tests := t.TempDir()
+	p := write(t, tests, "one.test.json", `{"tests": [{"name": "t", "steps": []}]}`)
+	for _, c := range []struct{ dir, testDir string }{
+		{t.TempDir(), tests},
+		{filepath.Dir(tests), filepath.Base(tests)},
+	} {
+		files, err := Discover(&Config{Dir: c.dir, TestDir: c.testDir}, nil)
+		if err != nil || len(files) != 1 || files[0] != p {
+			t.Errorf("testDir %q from %s: %v, %v", c.testDir, c.dir, files, err)
+		}
+	}
+}
+
+// A real phone is reported by its model, never its id — a phone's id is
+// somebody's, and a report is made to be passed around. An emulator keeps
+// its id, which says which of several it was.
+func TestAPhoneIsReportedByItsModel(t *testing.T) {
+	dir := t.TempDir()
+	p := write(t, dir, "one.test.json", `{"tests": [{"name": "t", "steps": [
+		{"name": "app_tap", "arguments": {"target": "@e1"}}]}]}`)
+	cfg := &Config{Dir: dir, Projects: []Project{{Name: "phone", Device: "PHONE-NAME"}, {Name: "emu", Device: "emulator-5554"}}}
+	f := &fake{answer: func(tool string, args map[string]interface{}) (*agent.ToolsCallResult, error) {
+		if tool == "app_current" && args["device"] == "PHONE-NAME" {
+			// Named one way in the config, resolved to the id the listing has.
+			return agent.Result("", map[string]interface{}{"device": "PHONE-ID", "app": "x"}), nil
+		}
+		if tool == "app_devices" {
+			return agent.Result("", agent.DevicesView{Devices: []agent.DeviceView{
+				{ID: "PHONE-ID", Platform: "ios", Model: "iPhone 15 Plus"},
+				{ID: "emulator-5554", Platform: "android", Model: "sdk_gphone64_arm64", Emulator: true},
+			}}), nil
+		}
+		return nil, nil
+	}}
+	s := run(t, cfg, Options{Files: []string{p}}, f)
+	got := map[string]string{}
+	for _, r := range s.Results {
+		got[r.Project] = r.Device
+		if strings.Contains(Line(r), "PHONE-") {
+			t.Errorf("the list line shows the phone's id: %s", Line(r))
+		}
+	}
+	if got["phone"] != "iPhone 15 Plus" || got["emu"] != "emulator-5554" {
+		t.Errorf("devices reported as %v", got)
 	}
 }
