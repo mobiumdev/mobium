@@ -43,6 +43,143 @@ type Step struct {
 	Arguments   map[string]interface{} `json:"arguments,omitempty"`
 	Expect      *Expect                `json:"expect,omitempty"`
 	Description string                 `json:"description,omitempty"`
+	// Soft marks an assertion whose failure is recorded and the test goes
+	// on, so one run reports every check that failed. Only an assertion can
+	// be soft: an action that failed leaves nothing after it to check.
+	Soft bool `json:"soft,omitempty"`
+}
+
+// UnmarshalJSON reads a step in its long form, or in the shorthand: one key
+// that is a tool's name without "app_", whose value is the tool's arguments
+// or, as a string, its main one —
+//
+//	{"tap": "label=Login Demo"}
+//	{"fill": {"target": "testid=username", "text": "mobium"}}
+//
+// The shorthand is only a spelling: it becomes the long form here, and is
+// checked as the long form is. Any key the step does not have is refused,
+// as DisallowUnknownFields would have — "step" for "steps" still says so.
+func (s *Step) UnmarshalJSON(b []byte) error {
+	var raw map[string]json.RawMessage
+	if err := json.Unmarshal(b, &raw); err != nil {
+		return err
+	}
+	type long Step
+	var l long
+	short := map[string]json.RawMessage{}
+	own := map[string]bool{"name": true, "arguments": true, "expect": true, "description": true, "soft": true}
+	for k, v := range raw {
+		if !own[k] {
+			short[k] = v
+			delete(raw, k)
+		}
+	}
+	rest, _ := json.Marshal(raw)
+	dec := json.NewDecoder(bytes.NewReader(rest))
+	dec.DisallowUnknownFields()
+	if err := dec.Decode(&l); err != nil {
+		return err
+	}
+	*s = Step(l)
+	if len(short) == 0 {
+		return nil
+	}
+	if len(short) > 1 || s.Name != "" || s.Expect != nil || s.Arguments != nil {
+		keys := make([]string, 0, len(short))
+		for k := range short {
+			keys = append(keys, fmt.Sprintf("%q", k))
+		}
+		sort.Strings(keys)
+		return mobiumerr.New(mobiumerr.InvalidArgument, "a step is one tool call: %s beside name, arguments or another shorthand", strings.Join(keys, ", "))
+	}
+	for k, v := range short {
+		tool := "app_" + k
+		schema, ok := toolSchema(tool)
+		if !ok {
+			return mobiumerr.New(mobiumerr.InvalidArgument, "unknown field %q: not a step's own field, and %s is not a tool", k, tool)
+		}
+		s.Name = tool
+		var str string
+		if json.Unmarshal(v, &str) == nil {
+			arg, err := mainArgument(tool, schema)
+			if err != nil {
+				return err
+			}
+			s.Arguments = map[string]interface{}{arg: str}
+			return nil
+		}
+		var args map[string]interface{}
+		if err := json.Unmarshal(v, &args); err != nil {
+			return mobiumerr.New(mobiumerr.InvalidArgument, "%q takes a string or an object of %s's arguments", k, tool)
+		}
+		s.Arguments = args
+	}
+	return nil
+}
+
+func (s Step) argumentsOrEmpty() map[string]interface{} {
+	if s.Arguments == nil {
+		return map[string]interface{}{}
+	}
+	return s.Arguments
+}
+
+// toolSchema is a tool's input schema.
+func toolSchema(name string) (map[string]interface{}, bool) {
+	for _, t := range agent.GetToolSchemas() {
+		if t.Name == name {
+			return t.InputSchema, true
+		}
+	}
+	return nil, false
+}
+
+// mainArgument is what a string in the shorthand fills: target when the tool
+// has one, else its one required string, else its only argument — read from
+// the schema, so a tool added later needs nothing here. A tool with no single
+// answer is refused, saying what to write instead.
+func mainArgument(tool string, schema map[string]interface{}) (string, error) {
+	props, _ := schema["properties"].(map[string]interface{})
+	var own []string
+	for k := range props {
+		if k != "device" && k != "driver" {
+			own = append(own, k)
+		}
+	}
+	sort.Strings(own)
+	if _, ok := props["target"]; ok {
+		return "target", nil
+	}
+	var strs []string
+	if req, ok := schema["required"].([]interface{}); ok {
+		for _, r := range req {
+			if name, _ := r.(string); name != "" {
+				if p, _ := props[name].(map[string]interface{}); p != nil && p["type"] == "string" {
+					strs = append(strs, name)
+				}
+			}
+		}
+	}
+	if req, ok := schema["required"].([]string); ok {
+		for _, name := range req {
+			if p, _ := props[name].(map[string]interface{}); p != nil && p["type"] == "string" {
+				strs = append(strs, name)
+			}
+		}
+	}
+	short := strings.TrimPrefix(tool, "app_")
+	switch {
+	case len(strs) == 1:
+		return strs[0], nil
+	case len(own) == 1:
+		if p, _ := props[own[0]].(map[string]interface{}); p != nil && p["type"] == "string" {
+			return own[0], nil
+		}
+	case len(own) == 0:
+		return "", mobiumerr.New(mobiumerr.InvalidArgument, "%q takes no arguments; write {%q: {}}", short, short)
+	}
+	return "", mobiumerr.New(mobiumerr.InvalidArgument, "%q has no one main argument (it takes %s); write {%q: {...}} with them named",
+		short, strings.Join(own, ", "), short)
 }
 
 // Expect retries a read-only tool until one field of its answer matches.
@@ -111,6 +248,10 @@ func LoadFile(path string) (*File, error) {
 // refuse, or an expect on a call that acts — retried until it matched, a
 // call that taps would tap until the timeout.
 func (s Step) check(where string) error {
+	if s.Soft && s.Expect == nil && s.Name != "app_wait_for" {
+		return mobiumerr.New(mobiumerr.InvalidArgument, "%s is soft, and only an assertion can be — "+
+			"a wait_for or an expect; an action that failed leaves nothing after it to check", where)
+	}
 	switch {
 	case s.Expect != nil && s.Name != "":
 		return mobiumerr.New(mobiumerr.InvalidArgument, "%s is both a tool call and an expect — one per step", where)

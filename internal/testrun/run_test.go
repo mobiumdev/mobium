@@ -247,6 +247,12 @@ func TestFilesAreCheckedBeforeAnythingRuns(t *testing.T) {
 		"setting expect":   `{"tests": [{"name": "x", "steps": [{"expect": {"tool": "app_network", "arguments": {"offline": true}, "field": "online", "equals": false}}]}]}`,
 		"duplicate test":   `{"tests": [{"name": "x", "steps": [{"name": "app_map"}]}, {"name": "x", "steps": [{"name": "app_map"}]}]}`,
 		"a test with none": `{"tests": [{"name": "x", "steps": []}]}`,
+		"shorthand typo":   `{"tests": [{"name": "x", "steps": [{"tapp": "@e1"}]}]}`,
+		"two shorthands":   `{"tests": [{"name": "x", "steps": [{"tap": "@e1", "fill": "@e2"}]}]}`,
+		"shorthand + name": `{"tests": [{"name": "x", "steps": [{"tap": "@e1", "name": "app_tap"}]}]}`,
+		"no main argument": `{"tests": [{"name": "x", "steps": [{"swipe": "up"}]}]}`,
+		"shorthand misses": `{"tests": [{"name": "x", "steps": [{"fill": "testid=username"}]}]}`,
+		"soft action":      `{"tests": [{"name": "x", "steps": [{"tap": "@e1", "soft": true}]}]}`,
 	} {
 		t.Run(name, func(t *testing.T) {
 			p := write(t, dir, strings.ReplaceAll(name, " ", "-")+".test.json", body)
@@ -437,5 +443,76 @@ func TestAProjectTheGridCannotServeRefusesTheRun(t *testing.T) {
 	}
 	if !closedA {
 		t.Error("project a's connection was left open")
+	}
+}
+
+// The shorthand is the long form spelled shorter: the same call reaches the
+// device, and a string goes to the argument the tool's schema makes its main
+// one.
+func TestTheShorthandIsTheLongForm(t *testing.T) {
+	dir := t.TempDir()
+	p := write(t, dir, "short.test.json", `{"tests": [{"name": "x", "steps": [
+		{"launch": "dev.mobium.mobiumapp"},
+		{"tap": "label=Login Demo", "description": "open it"},
+		{"fill": {"target": "testid=username", "text": "mobium"}},
+		{"find": "role=button"},
+		{"wait_for": {"target": "testid=loginBtn", "condition": "enabled"}},
+		{"shake": {}}
+	]}]}`)
+	f, err := LoadFile(p)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := []struct{ name, arg, value string }{
+		{"app_launch", "app", "dev.mobium.mobiumapp"},
+		{"app_tap", "target", "label=Login Demo"},
+		{"app_fill", "text", "mobium"},
+		{"app_find", "locator", "role=button"},
+		{"app_wait_for", "condition", "enabled"},
+		{"app_shake", "", ""},
+	}
+	steps := f.Tests[0].Steps
+	for i, w := range want {
+		s := steps[i]
+		if s.Name != w.name || (w.arg != "" && s.Arguments[w.arg] != w.value) {
+			t.Errorf("step %d is %s %v, want %s with %s=%s", i+1, s.Name, s.Arguments, w.name, w.arg, w.value)
+		}
+	}
+	if steps[1].Description != "open it" {
+		t.Errorf("the description beside a shorthand was lost")
+	}
+}
+
+// A soft assertion that fails is recorded and the test carries on; the test
+// fails, and says every one.
+func TestSoftAssertionsCarryOn(t *testing.T) {
+	dir := t.TempDir()
+	p := write(t, dir, "soft.test.json", `{"tests": [{"name": "x", "steps": [
+		{"wait_for": "testid=nothing", "soft": true, "description": "first soft"},
+		{"tap": "@e1"},
+		{"wait_for": "testid=nothing", "soft": true, "description": "second soft"},
+		{"wait_for": "testid=there", "soft": true},
+		{"tap": "@e2"}
+	]}]}`)
+	f := &fake{answer: func(tool string, args map[string]interface{}) (*agent.ToolsCallResult, error) {
+		if tool == "app_wait_for" && args["target"] == "testid=nothing" {
+			return nil, mobiumerr.New(mobiumerr.Timeout, "timed out waiting for testid=nothing")
+		}
+		return nil, nil
+	}}
+	s := run(t, &Config{Dir: dir}, Options{Files: []string{p}}, f)
+	r := s.Results[0]
+	if r.Status != Failed || len(r.Failures) != 2 || r.Failure != r.Failures[0] {
+		t.Fatalf("status %s, failures %d — want failed, with both soft ones", r.Status, len(r.Failures))
+	}
+	if r.Failures[0].Step != 1 || r.Failures[1].Step != 3 || !r.Failures[0].Soft {
+		t.Errorf("failures at steps %d and %d, want 1 and 3, soft", r.Failures[0].Step, r.Failures[1].Step)
+	}
+	if got := strings.Join(f.calls, " "); strings.Count(got, "app_batch") != 2 {
+		t.Errorf("the steps after a soft failure did not all run: %s", got)
+	}
+	line := Line(r)
+	if strings.Count(line, "soft, carried on") != 2 {
+		t.Errorf("the list line does not show both:\n%s", line)
 	}
 }
