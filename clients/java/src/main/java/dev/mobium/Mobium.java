@@ -1046,6 +1046,18 @@ public final class Mobium implements AutoCloseable {
     }
 
     /**
+     * Types into a dialog's field, then accepts or dismisses it, in one call.
+     * A plain alert has no field, and the platform refuses the text. What
+     * accept and dismiss press is as for {@link #answerAlert(boolean)}.
+     *
+     * @param accept true to accept, false to dismiss
+     * @param text what to type into the prompt's field first
+     */
+    public void answerAlert(boolean accept, String text) {
+        data("app_alert", args("action", accept ? "accept" : "dismiss", "text", text));
+    }
+
+    /**
      * What the device clipboard holds.
      *
      * <p>iOS only. On Android 10 and later only an app with focus may read the
@@ -1228,11 +1240,29 @@ public final class Mobium implements AutoCloseable {
     public void incomingCall(String action) { data("app_call", args("action", action)); }
 
     /**
+     * Simulates an incoming call from a given number. Emulator only.
+     *
+     * @param action {@code "ring"}, {@code "accept"} or {@code "hang"}
+     * @param number the caller's number
+     */
+    public void incomingCall(String action, String number) {
+        data("app_call", args("action", action, "number", number));
+    }
+
+    /**
      * Delivers a simulated text message. Emulator only.
      *
      * @param text the message body
      */
     public void sms(String text) { data("app_sms", args("text", text)); }
+
+    /**
+     * Delivers a simulated text message from a given number. Emulator only.
+     *
+     * @param text the message body
+     * @param from the sender's number
+     */
+    public void sms(String text, String from) { data("app_sms", args("text", text, "from", from)); }
 
     /**
      * Console output from the current WebView since the last call, including
@@ -1447,6 +1477,15 @@ public final class Mobium implements AutoCloseable {
      */
     public void postNotification(String title, String text) {
         data("app_notifications", args("title", title, "text", text));
+    }
+
+    /**
+     * Puts a notification in the shade under the default title, "Mobium".
+     *
+     * @param text the notification's body
+     */
+    public void postNotification(String text) {
+        data("app_notifications", args("text", text));
     }
 
     /**

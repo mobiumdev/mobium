@@ -1137,6 +1137,18 @@ func (d *Device) AnswerAlert(ctx context.Context, accept bool) error {
 	return d.data(ctx, "app_alert", map[string]any{"action": action}, &out)
 }
 
+// AnswerPrompt types text into a dialog's field, then accepts or dismisses it,
+// in one call. A plain alert has no field, and the platform refuses the text.
+// What accept and dismiss press is as for AnswerAlert.
+func (d *Device) AnswerPrompt(ctx context.Context, text string, accept bool) error {
+	action := "dismiss"
+	if accept {
+		action = "accept"
+	}
+	var out struct{}
+	return d.data(ctx, "app_alert", map[string]any{"action": action, "text": text}, &out)
+}
+
 // Clipboard reads the device clipboard.
 //
 // iOS only. On Android 10 and later only an app with focus may read the
@@ -1275,12 +1287,16 @@ func (d *Device) SetScreenLocked(ctx context.Context, locked bool) error {
 	return d.data(ctx, "app_lock", map[string]any{"state": state}, &out)
 }
 
-// IncomingCall drives a simulated incoming call: "ring", "accept" or "hang".
+// IncomingCall drives a simulated incoming call: "ring", "accept" or "hang",
+// and "" is "ring". number is the caller's; "" leaves the emulator's default.
 // Emulator only — a real phone cannot be made to ring from outside.
 //
 // Not called Call: that is already the raw tool-call escape hatch below.
 func (d *Device) IncomingCall(ctx context.Context, action, number string) error {
-	args := map[string]any{"action": action}
+	args := map[string]any{}
+	if action != "" {
+		args["action"] = action
+	}
 	if number != "" {
 		args["number"] = number
 	}

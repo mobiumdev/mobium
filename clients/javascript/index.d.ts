@@ -264,7 +264,8 @@ export class Device {
   appLocale(app: string): Promise<string[]>
   setAppLocale(app: string, ...tags: string[]): Promise<string[]>
   alert(): Promise<string>
-  answerAlert(accept?: boolean): Promise<Data>
+  /** `text` is typed into a prompt's field before it is answered. */
+  answerAlert(accept?: boolean, options?: { text?: string }): Promise<Data>
   clipboard(): Promise<string>
   setClipboard(text: string): Promise<Data>
   location(): Promise<Data>

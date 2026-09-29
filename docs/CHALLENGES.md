@@ -7,10 +7,10 @@ the source.
 
 The pattern across them is the reason the document exists: **almost nothing
 here was found by reading code or by a test written from imagination.** Of
-164 defects, 130 were found only by running against a real device. The other
-thirty-four — 4, 5, 6, 14, 23, 24, 32, 35, 36, 39, 44, 50, 53, 54, 57, 66, 89,
-99, 100, 121, 123, 129, 130, 133, 134, 139, 140, 141, 142, 144, 150, 158, 162
-and 164 — came from reading code, the compiler, a test, a linter,
+165 defects, 130 were found only by running against a real device. The other
+thirty-five — 4, 5, 6, 14, 23, 24, 32, 35, 36, 39, 44, 50, 53, 54, 57, 66, 89,
+99, 100, 121, 123, 129, 130, 133, 134, 139, 140, 141, 142, 144, 150, 158, 162,
+164 and 165 — came from reading code, the compiler, a test, a linter,
 cross-checking a computed number against a screenshot, using the tooling on
 itself, typing a negative number at a command line, and driving the clients
 against a stand-in daemon, CI on Windows, following the quick start from
@@ -3737,6 +3737,23 @@ that. `tap` and `doubleTap` now take what the declaration says. The client's
 own test sends all six forms through a stand-in daemon and checks the
 arguments that arrive; on an emulator, the same call on the unfixed client
 was refused and on the fixed one opened the row it tapped.
+
+### 165. Four arguments no client could send, or not every client
+
+**Found by:** writing the documentation site's examples — every scenario in
+every client — where each gap had to be worked around by calling the tool by
+name.
+
+`app_alert` types `text` into a prompt before answering it, and no client's
+`answerAlert` took any. Java and .NET could not give `app_call` a `number` or
+`app_sms` a `from`, and required a notification's `title`, which the tool
+defaults. Go's `IncomingCall` sent an empty action for `""`, outside the
+tool's enum. `internal/apisurface` holds every tool to every client, and the
+CLI's flags to the schema, but nothing holds a client's arguments to the
+schema, so a missing one is silent until someone needs it. Each client now
+takes all four; on the iOS simulator each typed into MobiumApp's prompt and
+the app read back what it was sent, and on an emulator Java and .NET rang
+from, texted from and posted untitled as asked, read back from the shade.
 
 ## Findings that were not defects
 

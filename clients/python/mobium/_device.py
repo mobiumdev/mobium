@@ -789,7 +789,7 @@ class Device:
         data = self._data("app_alert", {}) or {}
         return str(data.get("text") or "")
 
-    def answer_alert(self, accept: bool = True) -> dict:
+    def answer_alert(self, accept: bool = True, text: str | None = None) -> dict:
         """Accept or dismiss a system dialog.
 
         These answer a dialog; they do not choose an outcome. On a permission
@@ -797,8 +797,14 @@ class Device:
         way round — accept leaves it denied and dismiss leaves it granted,
         because W3C accept presses the affirmative button and Apple puts
         "Don't Allow" last. Tap the button by ref for a particular answer.
+
+        text is typed into a prompt's field first, so one call fills and
+        answers it. A plain alert has no field, and the platform refuses it.
         """
-        return self._data("app_alert", {"action": "accept" if accept else "dismiss"}) or {}
+        args = {"action": "accept" if accept else "dismiss"}
+        if text is not None:
+            args["text"] = text
+        return self._data("app_alert", args) or {}
 
     def clipboard(self) -> str:
         """What the device clipboard holds.
