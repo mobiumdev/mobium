@@ -722,6 +722,18 @@
     },
     {
       "n": 61,
+      "tool": "app_trace",
+      "cli": "trace",
+      "clients": {
+        "dotnet": "TraceStart",
+        "go": "TraceStart",
+        "java": "traceStart",
+        "javascript": "traceStart",
+        "python": "trace_start"
+      }
+    },
+    {
+      "n": 62,
       "tool": "app_type",
       "cli": "type",
       "clients": {
@@ -733,7 +745,7 @@
       }
     },
     {
-      "n": 62,
+      "n": 63,
       "tool": "app_uninstall",
       "cli": "uninstall",
       "clients": {
@@ -745,7 +757,7 @@
       }
     },
     {
-      "n": 63,
+      "n": 64,
       "tool": "app_upload",
       "cli": "upload",
       "clients": {
@@ -757,7 +769,7 @@
       }
     },
     {
-      "n": 64,
+      "n": 65,
       "tool": "app_wait_for",
       "cli": "wait",
       "clients": {
@@ -769,7 +781,7 @@
       }
     },
     {
-      "n": 65,
+      "n": 66,
       "tool": "app_zoom",
       "cli": "zoom",
       "clients": {
@@ -785,37 +797,37 @@
     {
       "language": "go",
       "file": "clients/go/mobium.go",
-      "covers": 65
+      "covers": 66
     },
     {
       "language": "python",
       "file": "clients/python/mobium/_device.py",
-      "covers": 65
+      "covers": 66
     },
     {
       "language": "javascript",
       "file": "clients/javascript/index.js",
-      "covers": 65
+      "covers": 66
     },
     {
       "language": "java",
       "file": "clients/java/src/main/java/dev/mobium/Mobium.java",
-      "covers": 65
+      "covers": 66
     },
     {
       "language": "dotnet",
       "file": "clients/dotnet/Mobium/Device.cs",
-      "covers": 65
+      "covers": 66
     }
   ],
   "counts": {
-    "tools": 65,
-    "cliRegistered": 74,
-    "cliVisible": 73,
+    "tools": 66,
+    "cliRegistered": 75,
+    "cliVisible": 74,
     "cliHidden": [
       "pipe"
     ],
-    "cliConstructors": 80,
+    "cliConstructors": 81,
     "clients": 5
   },
   "cliWithoutTool": [

@@ -18,11 +18,11 @@ differently.
 
 | | |
 | --- | --- |
-| Tools | **65** |
-| CLI commands registered | 74 |
-| …visible in `mobium --help` | 73 |
+| Tools | **66** |
+| CLI commands registered | 75 |
+| …visible in `mobium --help` | 74 |
 | …hidden | 1 (pipe) |
-| Command constructors in source | 80 (includes `daemon start`, `stop`, `status`) |
+| Command constructors in source | 81 (includes `daemon start`, `stop`, `status`) |
 | Client libraries | 5 |
 
 Those three command counts differ on purpose, and the arithmetic is asserted
@@ -94,21 +94,22 @@ been wrong twice.
 | 58 | `app_text` | `text` | `Text` | `text` | `text` | `text` |
 | 59 | `app_time` | `time` | `DeviceTime` | `device_time` | `deviceTime` | `deviceTime` |
 | 60 | `app_timezone` | `timezone` | `Timezone` | `timezone` | `timezone` | `timezone` |
-| 61 | `app_type` | `type` | `Type` | `type` | `type` | `type` |
-| 62 | `app_uninstall` | `uninstall` | `Uninstall` | `uninstall` | `uninstall` | `uninstall` |
-| 63 | `app_upload` | `upload` | `Upload` | `upload` | `upload` | `upload` |
-| 64 | `app_wait_for` | `wait` | `WaitFor` | `wait_for` | `waitFor` | `waitFor` |
-| 65 | `app_zoom` | `zoom` | `Zoom` | `zoom` | `zoom` | `zoom` |
+| 61 | `app_trace` | `trace` | `TraceStart` | `trace_start` | `traceStart` | `traceStart` |
+| 62 | `app_type` | `type` | `Type` | `type` | `type` | `type` |
+| 63 | `app_uninstall` | `uninstall` | `Uninstall` | `uninstall` | `uninstall` | `uninstall` |
+| 64 | `app_upload` | `upload` | `Upload` | `upload` | `upload` | `upload` |
+| 65 | `app_wait_for` | `wait` | `WaitFor` | `wait_for` | `waitFor` | `waitFor` |
+| 66 | `app_zoom` | `zoom` | `Zoom` | `zoom` | `zoom` | `zoom` |
 
 ## Client coverage
 
 | Client | Source | Tools reached |
 | --- | --- | --- |
-| go | [clients/go/mobium.go](../clients/go/mobium.go) | 65 / 65 |
-| python | [clients/python/mobium/_device.py](../clients/python/mobium/_device.py) | 65 / 65 |
-| javascript | [clients/javascript/index.js](../clients/javascript/index.js) | 65 / 65 |
-| java | [clients/java/src/main/java/dev/mobium/Mobium.java](../clients/java/src/main/java/dev/mobium/Mobium.java) | 65 / 65 |
-| dotnet | [clients/dotnet/Mobium/Device.cs](../clients/dotnet/Mobium/Device.cs) | 65 / 65 |
+| go | [clients/go/mobium.go](../clients/go/mobium.go) | 66 / 66 |
+| python | [clients/python/mobium/_device.py](../clients/python/mobium/_device.py) | 66 / 66 |
+| javascript | [clients/javascript/index.js](../clients/javascript/index.js) | 66 / 66 |
+| java | [clients/java/src/main/java/dev/mobium/Mobium.java](../clients/java/src/main/java/dev/mobium/Mobium.java) | 66 / 66 |
+| dotnet | [clients/dotnet/Mobium/Device.cs](../clients/dotnet/Mobium/Device.cs) | 66 / 66 |
 
 ## Commands that dispatch no tool
 

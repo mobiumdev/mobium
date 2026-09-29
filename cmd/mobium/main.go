@@ -10,6 +10,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/mobiumdev/mobium/internal/agent"
 	"github.com/mobiumdev/mobium/internal/daemon"
 	"github.com/spf13/cobra"
 )
@@ -26,6 +27,7 @@ var (
 
 func main() {
 	progName := filepath.Base(os.Args[0])
+	agent.Version = version
 
 	root := &cobra.Command{
 		Use:           progName,
@@ -127,6 +129,7 @@ func main() {
 		newCrashesCmd(),
 		newKeyboardCmd(),
 		newRecordCmd(),
+		newTraceCmd(),
 		newEvalCmd(),
 		newCookiesCmd(),
 		newStorageCmd(),

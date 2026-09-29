@@ -302,6 +302,33 @@ const within = (p, ms) => Promise.race([settle(p), new Promise((r) => setTimeout
   await d.close()
 }
 
+// -- trace sends only what is set ----------------------------------------------
+// screenshots and maps default to true on the device, so false has to go out
+// and an unset one must not.
+{
+  const d = await fake('ok')
+  const sent = []
+  const call = d.conn.callTool.bind(d.conn)
+  d.conn.callTool = (name, args) => { sent.push([name, args]); return call(name, args) }
+  await d.traceStart()
+  await d.traceStart({ name: 'login', screenshots: false, maps: false })
+  await d.traceStart({ screenshots: true })
+  await d.trace()
+  await d.traceStop('trace.zip')
+  const want = [
+    ['app_trace', { action: 'start' }],
+    ['app_trace', { action: 'start', name: 'login', screenshots: false, maps: false }],
+    ['app_trace', { action: 'start', screenshots: true }],
+    ['app_trace', {}],
+    ['app_trace', { action: 'stop', path: 'trace.zip' }],
+  ]
+  want.forEach((w, i) => {
+    check(JSON.stringify(sent[i]) === JSON.stringify(w), `trace call ${i + 1} sent ${JSON.stringify(sent[i])}, want ${JSON.stringify(w)}`)
+  })
+  check(sent.length === want.length, `trace made ${sent.length} calls, want ${want.length}`)
+  await d.close()
+}
+
 report()
 
 function report() {

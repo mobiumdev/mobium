@@ -1474,6 +1474,71 @@ public final class Mobium implements AutoCloseable {
     }
 
     /**
+     * Starts recording this session as a trace: from now on every call on the
+     * device is a step, with the screen after it and the map's elements drawn
+     * over it, until {@link #traceStop(String)} saves it. Text typed into a
+     * field is not recorded, only its length. On a real phone the screenshots
+     * are its owner's screen; see {@link #traceStart(String, boolean, boolean)}
+     * to keep none. One trace per device, and ending the session discards it.
+     *
+     * @return the {@code device} and whether it is {@code tracing}
+     */
+    public Map<String, Object> traceStart() {
+        return data("app_trace", args("action", "start"));
+    }
+
+    /**
+     * Starts a trace with a title. See {@link #traceStart()}.
+     *
+     * @param name the trace's title, as the viewers show it, or null for none
+     * @return the {@code device} and whether it is {@code tracing}
+     */
+    public Map<String, Object> traceStart(String name) {
+        return traceStart(name, true, true);
+    }
+
+    /**
+     * Starts a trace, choosing what is kept after each call. See
+     * {@link #traceStart()}. With screenshots false no screen is kept, which
+     * is the choice for somebody else's phone.
+     *
+     * @param name the trace's title, as the viewers show it, or null for none
+     * @param screenshots whether to keep the screen after each call
+     * @param maps whether to draw the map's elements over each screenshot
+     * @return the {@code device} and whether it is {@code tracing}
+     */
+    public Map<String, Object> traceStart(String name, boolean screenshots, boolean maps) {
+        Map<String, Object> args = new LinkedHashMap<>();
+        args.put("action", "start");
+        if (name != null && !name.isBlank()) args.put("name", name);
+        if (!screenshots) args.put("screenshots", false);
+        if (!maps) args.put("maps", false);
+        return data("app_trace", args);
+    }
+
+    /**
+     * Stops the trace and saves it as a zip in the Playwright trace format,
+     * which trace.playwright.dev and player.vibium.dev open. A relative path
+     * is this process's.
+     *
+     * @param path where to save the trace on this machine, a {@code .zip}
+     * @return the {@code calls} it recorded, the absolute {@code path} and its {@code bytes}
+     */
+    public Map<String, Object> traceStop(String path) {
+        return data("app_trace", args("action", "stop", "path", path));
+    }
+
+    /**
+     * Whether a trace is running on the device, and if so for how long and
+     * over how many calls.
+     *
+     * @return whether it is {@code tracing}, its {@code calls} so far, and the time {@code elapsed}
+     */
+    public Map<String, Object> trace() {
+        return data("app_trace", new LinkedHashMap<>());
+    }
+
+    /**
      * The soft keyboard: read it, type at the focused field, press a key, or
      * hide it. With nulls and false, returns {@code shown} and the
      * {@code focused} field — a password's value is never shown. Text is added

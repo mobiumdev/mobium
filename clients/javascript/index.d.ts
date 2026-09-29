@@ -116,6 +116,21 @@ export interface Point {
   y: number
 }
 
+/** What traceStart(), traceStop() and trace() resolve to. */
+export interface Trace {
+  device: string
+  /** Whether a trace is running after this call. */
+  tracing: boolean
+  /** Calls recorded as steps so far. */
+  calls: number
+  elapsed?: string
+  /** On stop: where the zip was saved, and its size. */
+  path?: string
+  bytes?: number
+  /** On stop without a path: the zip, base64. */
+  data?: string
+}
+
 /** A tool's structured answer, for the calls that return one as is. */
 export type Data = Record<string, unknown>
 
@@ -327,6 +342,10 @@ export class Device {
   crashes(options?: { app?: string; limit?: number }): Promise<Data[]>
   crash(id: string): Promise<Data>
   record(options?: { action?: 'start' | 'stop'; path?: string }): Promise<Data>
+  /** Start, stop or ask about a trace; stop with a path saves a Playwright trace zip. */
+  traceStart(options?: { name?: string; screenshots?: boolean; maps?: boolean }): Promise<Trace>
+  traceStop(path: string): Promise<Trace>
+  trace(): Promise<Trace>
   keyboard(options?: { text?: string; key?: 'enter' | 'delete' | 'space'; hide?: boolean }): Promise<Data>
 
   // contexts

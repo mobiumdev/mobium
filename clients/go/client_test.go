@@ -245,6 +245,24 @@ func fakeTool(name string, args map[string]any, scenario string) map[string]any 
 			}
 		}
 		return text(name+" ok", view)
+	case "app_trace":
+		if path := os.Getenv(fakeArgsLogEnv); path != "" {
+			if f, err := os.OpenFile(path, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o600); err == nil {
+				line, _ := json.Marshal(map[string]any{"tool": name, "arguments": args})
+				f.Write(append(line, '\n'))
+				f.Close()
+			}
+		}
+		switch args["action"] {
+		case "start":
+			return text("tracing", map[string]any{"device": "emulator-5554", "tracing": true, "calls": 0})
+		case "stop":
+			return text("trace saved", map[string]any{"device": "emulator-5554", "tracing": false,
+				"calls": 3, "path": args["path"], "bytes": 2048})
+		default:
+			return text("tracing for 1.5s, 2 calls so far", map[string]any{"device": "emulator-5554",
+				"tracing": true, "calls": 2, "elapsed": "1.5s"})
+		}
 	case "app_contexts":
 		return text("NATIVE_APP", map[string]any{"contexts": []any{
 			map[string]any{"id": "NATIVE_APP", "current": true},
@@ -800,5 +818,47 @@ func TestDownloadsListsTheFolder(t *testing.T) {
 	calls := sent()
 	if len(calls) != 2 || len(calls[0]) != 0 || len(calls[1]) != 1 || calls[1]["app"] != "dev.mobium.app" {
 		t.Errorf("sent %v, want nothing, then the app alone", calls)
+	}
+}
+
+func TestTraceSendsOnlyWhatIsSet(t *testing.T) {
+	dev, sent := sentArgs(t, "")
+	ctx := context.Background()
+	if tr, err := dev.TraceStart(ctx, nil); err != nil || !tr.Tracing || tr.Device != "emulator-5554" {
+		t.Fatalf("start = %+v, %v", tr, err)
+	}
+	if _, err := dev.TraceStart(ctx, &TraceOptions{Name: "login", NoScreenshots: true, NoMaps: true}); err != nil {
+		t.Fatalf("start with options: %v", err)
+	}
+	st, err := dev.TraceStatus(ctx)
+	if err != nil || !st.Tracing || st.Calls != 2 || st.Elapsed != "1.5s" {
+		t.Errorf("status = %+v, %v", st, err)
+	}
+	got, err := dev.TraceStop(ctx, "/tmp/trace.zip")
+	if err != nil || got.Tracing || got.Calls != 3 || got.Path != "/tmp/trace.zip" || got.Bytes != 2048 {
+		t.Errorf("stop = %+v, %v", got, err)
+	}
+	calls := sent()
+	if len(calls) != 4 {
+		t.Fatalf("calls = %v", calls)
+	}
+	if len(calls[0]) != 1 || calls[0]["action"] != "start" {
+		t.Errorf("start with no options sent %v, want the action alone", calls[0])
+	}
+	if len(calls[1]) != 4 || calls[1]["name"] != "login" || calls[1]["screenshots"] != false || calls[1]["maps"] != false {
+		t.Errorf("start with options sent %v", calls[1])
+	}
+	if len(calls[2]) != 0 {
+		t.Errorf("status sent %v, want nothing", calls[2])
+	}
+	if len(calls[3]) != 2 || calls[3]["action"] != "stop" || calls[3]["path"] != "/tmp/trace.zip" {
+		t.Errorf("stop sent %v", calls[3])
+	}
+	// With no path the tool would answer in base64; TraceStop refuses first.
+	if _, err := dev.TraceStop(ctx, ""); !errors.Is(err, ErrInvalidArgument) {
+		t.Errorf("stop with no path = %v, want invalid_argument", err)
+	}
+	if n := len(sent()); n != 4 {
+		t.Errorf("%d calls reached the tool, want the refused one kept back", n)
 	}
 }
