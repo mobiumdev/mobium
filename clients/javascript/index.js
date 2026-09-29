@@ -214,21 +214,6 @@ function toElements(data) {
 }
 
 /**
- * Connect to mobium. It does not touch the device: the session there opens on
- * the first call that needs it, or with `start()`.
- *
- * The transport is `mobium pipe`, which forwards to the shared daemon rather
- * than starting a session of its own: a device-side server holds one session
- * at a time, so a client with its own would invalidate the CLI's.
- *
- * `callTimeoutMs` is the longest any one call may take before the connection
- * is given up, the handshake included. Unset, the default, waits as long as it
- * takes: the first session on an iPhone builds WebDriverAgent, which takes
- * minutes. A call that runs out ends the connection -- a late answer would be
- * read as the next call's -- and every call after rejects, saying so; connect
- * again. Set it well above the longest `waitFor` timeout you use.
- */
-/**
  * Connect and open the session on the device, as Appium's new session does:
  * the device-side server is started now and, given an app, it is launched and
  * in front when this resolves. End it with `quit()`.
@@ -261,6 +246,21 @@ export async function start({ platform, device, app, driver, binary, callTimeout
   return d
 }
 
+/**
+ * Connect to mobium. It does not touch the device: the session there opens on
+ * the first call that needs it, or with `start()`.
+ *
+ * The transport is `mobium pipe`, which forwards to the shared daemon rather
+ * than starting a session of its own: a device-side server holds one session
+ * at a time, so a client with its own would invalidate the CLI's.
+ *
+ * `callTimeoutMs` is the longest any one call may take before the connection
+ * is given up, the handshake included. Unset, the default, waits as long as it
+ * takes: the first session on an iPhone builds WebDriverAgent, which takes
+ * minutes. A call that runs out ends the connection -- a late answer would be
+ * read as the next call's -- and every call after rejects, saying so; connect
+ * again. Set it well above the longest `waitFor` timeout you use.
+ */
 export async function connect({ device, driver, binary, callTimeoutMs, session } = {}) {
   if (callTimeoutMs !== undefined && !(callTimeoutMs > 0)) {
     throw new InvalidArgumentError('callTimeoutMs must be a positive number of milliseconds')
@@ -513,14 +513,6 @@ export class Device {
   }
 
   /**
-   * The raw hierarchy — what Appium calls the page source — for when map
-   * leaves out the thing you need to see; map is what to act on. `source` is
-   * the platform's XML, or in a WebView the page's markup; `format` is "xml"
-   * or "html"; `units` is "px" on Android and "pt" on iOS, where map, taps and
-   * screenshots are in pixels, `scale` times as many. `redacted` counts the
-   * password fields hidden.
-   */
-  /**
    * Declare how to answer a dialog, so an action that meets it carries on:
    * when a dialog whose text contains `when` is in the way, press the button
    * captioned `press`. It names a button, not accept or dismiss, because
@@ -542,6 +534,14 @@ export class Device {
     await this.#text('app_dialogs', { clear: true })
   }
 
+  /**
+   * The raw hierarchy — what Appium calls the page source — for when map
+   * leaves out the thing you need to see; map is what to act on. `source` is
+   * the platform's XML, or in a WebView the page's markup; `format` is "xml"
+   * or "html"; `units` is "px" on Android and "pt" on iOS, where map, taps and
+   * screenshots are in pixels, `scale` times as many. `redacted` counts the
+   * password fields hidden.
+   */
   async source() {
     return (await this.#data('app_source')) || {}
   }
@@ -1039,7 +1039,6 @@ export class Device {
   }
 
   /**
-   * Pinches apart or together, about an element or the screen.  /**
    * Pinches apart or together, about an element or the screen.
    *
    * Reports that the gesture was delivered and nothing more: neither platform
