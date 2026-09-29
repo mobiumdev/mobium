@@ -170,9 +170,11 @@ namespace Mobium
         public Element? ScrollTo(string target) => ScrollTo(target, "down");
 
         /// <summary>
-        /// Scrolls <c>"down"</c> or <c>"up"</c> until an element is on screen.
-        /// Vertical lists only: use <see cref="Swipe(string)"/> for a
-        /// horizontal pager.
+        /// Scrolls <c>"down"</c>, <c>"up"</c>, <c>"left"</c> or <c>"right"</c>
+        /// until an element is on screen. Nothing on screen says which way a
+        /// container scrolls, so a horizontal pager needs <c>"left"</c> or
+        /// <c>"right"</c>. Swiping the wrong way is not a no-op, so if a swipe
+        /// navigates instead of scrolling, it stops after one.
         /// </summary>
         public Element? ScrollTo(string target, string direction) =>
             One("app_scroll_to", Args("target", target, "direction", direction));

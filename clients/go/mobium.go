@@ -418,14 +418,21 @@ const (
 	Down = "down"
 	// Up looks back towards the top.
 	Up = "up"
+	// Right looks further right along a horizontal list or pager, as Down
+	// looks further down — the finger travels right to left — and Left looks
+	// back.
+	Left  = "left"
+	Right = "right"
 )
 
 // ScrollTo scrolls until an element is on screen and returns it with a ref.
 //
 // Map only sees what is currently visible. Tap, Type and LongPress already
 // scroll to a target that is not, so reach for this to look without acting, or
-// to scroll back up. Vertical lists only: use Swipe for a horizontal pager.
-// direction may be "" for Down.
+// to scroll back up. direction is Down, Up, Left or Right, and "" is Down:
+// nothing on screen says which way a container scrolls, so a horizontal pager
+// needs Left or Right. Swiping the wrong way is not a no-op, so if a swipe
+// navigates instead of scrolling, it stops after one.
 func (d *Device) ScrollTo(ctx context.Context, target, direction string) (*Element, error) {
 	args := map[string]any{"target": target}
 	if direction != "" {
