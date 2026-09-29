@@ -279,6 +279,13 @@ func (w *WDA) Snapshot(ctx context.Context) (*uitree.Tree, error) {
 	if w.phone != nil {
 		w.settleExpected(ctx, tree.Package())
 	}
+	// A notification banner makes SpringBoard what WebDriverAgent reads, for
+	// seconds, over an app that is still on screen (CHALLENGES 155).
+	if app, banner := bannerOver(tree); app != "" {
+		if under, ok := w.underBanner(ctx, app, banner); ok {
+			tree = under
+		}
+	}
 	// WDA reports points; everything above this layer works in device pixels,
 	// which is also what screenshots are in.
 	tree.Scale(w.scale)
@@ -405,6 +412,20 @@ func (w *WDA) SetText(ctx context.Context, n *uitree.Node, text string) error {
 		if got == text {
 			return nil
 		}
+		// The app may have moved focus on as the text arrived — a one-time
+		// code's boxes do — and then the rest is in the fields after this
+		// one. Retrying would clear this field and type the whole text again
+		// into the next ones, so look before retrying (CHALLENGES 156).
+		if attempt == 1 {
+			if tree, err := w.Snapshot(ctx); err == nil {
+				if sp, ok := findSpread(tree, n, text); ok {
+					if sp.Complete() {
+						return nil
+					}
+					return spreadError(text, sp)
+				}
+			}
+		}
 		if attempt < setTextAttempts {
 			if err := w.w3c.clearElement(ctx, elID); err != nil {
 				return err
@@ -430,11 +451,30 @@ func (w *WDA) Clear(ctx context.Context, n *uitree.Node) error {
 // An accessibility identifier is preferred, exactly as a resource-id is on
 // Android. WDA's XPath is over the same document /source returned, so the
 // node's sibling path reconstructs it.
+//
+// A lookup that fails is asked again as the node's own app: under a
+// notification banner WebDriverAgent searches SpringBoard, and a field the
+// app's tree had just shown was "no such element" (CHALLENGES 155).
 func (w *WDA) elementFor(ctx context.Context, n *uitree.Node) (string, error) {
-	if n.TestID != "" {
-		return w.w3c.findElement(ctx, "accessibility id", n.TestID)
+	find := func() (string, error) {
+		if n.TestID != "" {
+			return w.w3c.findElement(ctx, "accessibility id", n.TestID)
+		}
+		return w.w3c.findElement(ctx, "xpath", iosXPathFor(n))
 	}
-	return w.w3c.findElement(ctx, "xpath", iosXPathFor(n))
+	id, err := find()
+	if err == nil || ctx.Err() != nil {
+		return id, err
+	}
+	app := appOf(n)
+	if app == "" || app == "com.apple.springboard" {
+		return id, err
+	}
+	var again string
+	if w.asApp(ctx, app, func() (e error) { again, e = find(); return e }) != nil {
+		return id, err
+	}
+	return again, nil
 }
 
 // iosXPathFor rebuilds an absolute XPath from a node's sibling path. WDA's
