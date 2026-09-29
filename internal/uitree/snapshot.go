@@ -333,14 +333,30 @@ type chosen struct {
 // the group carries in its own text or content-desc, rather than one borrowed
 // from a descendant. (A group's outer node may accept a long-press the inner
 // one does not; that distinction returns when a longpress command needs it.)
+//
+// "Exactly" allows nearlyTheSame pixels for a node nested in another:
+// Jetpack Compose wraps an icon button in a long-clickable tooltip box one
+// pixel off the button's own bounds — [32,95][158,221] around
+// [33,96][159,222] on Seal — and every icon button then mapped twice, once
+// bare and once as a button (CHALLENGES 176). Only ancestor and descendant
+// merge, so two neighbors that happen to line up stay two.
 func collapseByBounds(nodes []*Node) []chosen {
 	groups := map[Rect][]*Node{}
 	var order []Rect
 	for _, n := range nodes {
-		if _, seen := groups[n.Bounds]; !seen {
-			order = append(order, n.Bounds)
+		key := n.Bounds
+		if _, seen := groups[key]; !seen {
+			for _, r := range order {
+				if nearlyTheSameRect(r, key) && nested(groups[r], n) {
+					key = r
+					break
+				}
+			}
 		}
-		groups[n.Bounds] = append(groups[n.Bounds], n)
+		if _, seen := groups[key]; !seen {
+			order = append(order, key)
+		}
+		groups[key] = append(groups[key], n)
 	}
 
 	out := make([]chosen, 0, len(order))
@@ -349,6 +365,34 @@ func collapseByBounds(nodes []*Node) []chosen {
 		out = append(out, chosen{node: tapTarget(group), label: bestLabel(group)})
 	}
 	return out
+}
+
+// nearlyTheSame is how far apart, in pixels, two nested nodes' edges may be
+// and still be one target.
+const nearlyTheSame = 2
+
+func nearlyTheSameRect(a, b Rect) bool {
+	d := func(x, y int) bool { return x-y <= nearlyTheSame && y-x <= nearlyTheSame }
+	return d(a.X1, b.X1) && d(a.Y1, b.Y1) && d(a.X2, b.X2) && d(a.Y2, b.Y2)
+}
+
+// nested reports whether n is an ancestor or a descendant of a node in group.
+func nested(group []*Node, n *Node) bool {
+	for _, g := range group {
+		if isAncestor(g, n) || isAncestor(n, g) {
+			return true
+		}
+	}
+	return false
+}
+
+func isAncestor(a, n *Node) bool {
+	for p := n.Parent; p != nil; p = p.Parent {
+		if p == a {
+			return true
+		}
+	}
+	return false
 }
 
 // tapTarget picks the node a tap should resolve to: the innermost clickable
@@ -443,6 +487,9 @@ func (t *Tree) Text() string {
 // success. Android, and SpringBoard's prompts on iOS, give the dialog's window
 // alone, with nothing underneath to resolve, so this finds nothing there.
 func (t *Tree) Dialog() *Node {
+	if w := t.floatingWindow(); w != nil {
+		return w
+	}
 	var found *Node
 	t.Walk(func(n *Node) bool {
 		if found != nil {
@@ -455,6 +502,35 @@ func (t *Tree) Dialog() *Node {
 		return true
 	})
 	return found
+}
+
+// floatingWindow is, on Android, the window the hierarchy holds when that
+// window does not fill the screen: a dialog. UiAutomator2 gives the dialog's
+// window alone, and its W3C alert endpoint recognizes only the framework's
+// AlertDialog by its resource ids, so a Jetpack Compose dialog — Seal's
+// "User guide", [120,474][960,1937] on a 1080x2400 screen — was not a dialog
+// to anything in Mobium (CHALLENGES 177). An app's own window fills the
+// screen, edge to edge or not; a dialog, a bottom sheet or a popup does not.
+
+func encloses(outer, inner Rect) bool {
+	return outer.X1 <= inner.X1 && outer.Y1 <= inner.Y1 && outer.X2 >= inner.X2 && outer.Y2 >= inner.Y2
+}
+func (t *Tree) floatingWindow() *Node {
+	if t.Screen.Empty() || t.Root == nil {
+		return nil
+	}
+	for _, w := range t.Root.Children {
+		if w.Bounds.Empty() {
+			continue
+		}
+		// Covers, not equals: a device can report the display without its
+		// navigation bar, 1080x2201, under an app window of 1080x2400.
+		if !encloses(w.Bounds, t.Screen) {
+			return w
+		}
+		return nil
+	}
+	return nil
 }
 
 // Within reports whether n is anc or lies inside it.

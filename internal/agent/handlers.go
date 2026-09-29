@@ -841,6 +841,20 @@ func dialogOver(dialog string, loc uitree.Locator, covered bool) error {
 		WithDetail("dialog", dialog)
 }
 
+// appDialogOver is dialogOver for a dialog the platform's alert endpoint does
+// not know, an app's own. app_alert's accept and dismiss press the buttons
+// the platform picks, and this dialog has none it picks, so the remedy names
+// only what works: its buttons, by ref or by a rule.
+func appDialogOver(dialog string, loc uitree.Locator) error {
+	dialog = strings.TrimSpace(strings.SplitN(dialog, "\n", 2)[0])
+	msg := "a dialog is over the app — %q — and nothing on it matches %s; if the target is behind it, " +
+		"answer the dialog first, and if it is one of the dialog's buttons, take its ref from app_map"
+	return mobiumerr.New(mobiumerr.DeviceNotReady, msg, dialog, loc).
+		WithRemedy("tap one of the dialog's buttons from app_map, or declare an answer with app_dialogs").
+		WithDetail("locator", loc.String()).
+		WithDetail("dialog", dialog)
+}
+
 // hideKeyboard is the remedy for a target the keyboard covers, in both
 // spellings. An iPhone's keyboard has no key that hides it, so enter is named
 // too; that is what `app_keyboard` itself says when asked to hide one.
@@ -1192,6 +1206,12 @@ func (h *Handlers) resolveNodeOnce(ctx context.Context, s *session, target strin
 			if text, aerr := a.AlertText(ctx); aerr == nil {
 				return nil, nil, dialogOver(text, loc, false)
 			}
+		}
+		// An app's own dialog, which the platform's alert endpoint does not
+		// know: a Jetpack Compose dialog is a window of its own that the
+		// hierarchy holds alone (CHALLENGES 177).
+		if text := appDialogText(tree); text != "" {
+			return nil, nil, appDialogOver(text, loc)
 		}
 
 	default:

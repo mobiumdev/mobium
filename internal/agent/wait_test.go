@@ -29,6 +29,10 @@ func (f *fakeDriver) Snapshot(ctx context.Context) (*uitree.Tree, error) {
 		return nil, f.err
 	}
 	n := int(f.calls.Add(1)) - 1
+	if len(f.screens) == 0 {
+		// Nothing scripted: an empty screen, for a test about something else.
+		return &uitree.Tree{Root: &uitree.Node{Class: "hierarchy", Displayed: true, Enabled: true}}, nil
+	}
 	if n >= len(f.screens) {
 		n = len(f.screens) - 1 // the last screen persists
 	}

@@ -28,6 +28,14 @@ producing real `android.view` and `UIView` instances that appear in the
 accessibility tree with labels, ids and bounds. Everything in
 [checks/](checks/) drives one.
 
+Jetpack Compose is native too, but its tree has another shape. Compose
+draws its own views and hands Android a semantics tree, so most nodes are
+plain `android.view.View`. A button is a clickable node with its words on a
+child, a switch row carries its state on the row, and a dialog is a window
+the platform's alert endpoint does not recognize. The first Compose app
+driven here, Seal, broke three things on its first screens (CHALLENGES
+176–178); `checks/compose-app.sh` holds them.
+
 ## Mobile web
 
 **Not a supported app type**, and the taxonomy is why the line is clean

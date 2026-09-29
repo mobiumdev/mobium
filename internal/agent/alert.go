@@ -53,6 +53,24 @@ func (h *Handlers) alertOn(ctx context.Context, s *session, args map[string]inte
 
 	text, err := ctrl.AlertText(ctx)
 	if errors.Is(err, mobiumdriver.ErrNoAlert) {
+		// An app's own dialog, which the platform's endpoint does not know —
+		// a Jetpack Compose dialog (CHALLENGES 177). It can be read; it
+		// cannot be accepted or dismissed, because those press the buttons
+		// the platform picks and this one has none it picks.
+		if tree, serr := s.driver.Snapshot(ctx); serr == nil {
+			if own := appDialogText(tree); own != "" {
+				title := strings.TrimSpace(strings.SplitN(own, "\n", 2)[0])
+				if action == "" || action == "read" {
+					return Result(fmt.Sprintf("a dialog is on screen: %q\n(the app's own: answer it by tapping one "+
+						"of its buttons from app_map, or with a rule, app_dialogs)", own),
+						AlertView{Text: own, Present: true, Serial: s.dev.Serial}), nil
+				}
+				return nil, mobiumerr.New(mobiumerr.Unsupported, "%q is the app's own dialog, not one the platform "+
+					"answers, so there is no button for %s to press", title, action).
+					WithRemedy("tap one of its buttons from app_map, or declare an answer with app_dialogs").
+					WithDetail("dialog", title)
+			}
+		}
 		// Not a failure. Nothing asking the user anything is a perfectly good
 		// state, and reporting it as an error would make "the screen is calm"
 		// look like "the device is broken".
