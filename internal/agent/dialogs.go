@@ -158,6 +158,8 @@ func (h *Handlers) answerByRule(ctx context.Context, s *session) (bool, error) {
 }
 
 // dialogText is what the dialog on screen says, or "" with none.
+// An app's own dialog, which the platform's alert endpoint does not know, is
+// read from the hierarchy, so a rule answers a Jetpack Compose dialog too.
 func (h *Handlers) dialogText(ctx context.Context, s *session) (string, error) {
 	a, ok := mobiumdriver.AsAlerts(s.driver)
 	if !ok {
@@ -165,9 +167,55 @@ func (h *Handlers) dialogText(ctx context.Context, s *session) (string, error) {
 	}
 	text, err := a.AlertText(ctx)
 	if errors.Is(err, mobiumdriver.ErrNoAlert) || mobiumerr.CodeOf(err) == mobiumerr.NoSuchAlert {
-		return "", nil
+		tree, serr := s.driver.Snapshot(ctx)
+		if serr != nil {
+			return "", nil
+		}
+		return appDialogText(tree), nil
 	}
 	return text, err
+}
+
+// appDialogText is what an app's own dialog says, from the hierarchy — its
+// texts in order, title first — or "" when no window floats over the app.
+// Only Android's floating window: an iOS alert is the platform's, and its
+// endpoint already reads it.
+func appDialogText(t *uitree.Tree) string {
+	if t == nil || t.Screen.Empty() {
+		return ""
+	}
+	d := t.Dialog()
+	if d == nil {
+		return ""
+	}
+	var parts []string
+	var walk func(n *uitree.Node)
+	walk = func(n *uitree.Node) {
+		// A button's words are its caption, not what the dialog says: a
+		// platform alert's text is its title and message alone.
+		if n.Clickable {
+			return
+		}
+		text := strings.TrimSpace(n.Text)
+		if masked, ok := uitree.Redact(n); ok {
+			text = masked
+		}
+		if text == "" {
+			text = strings.TrimSpace(n.Label)
+		}
+		if text != "" {
+			parts = append(parts, text)
+		}
+		for _, c := range n.Children {
+			walk(c)
+		}
+	}
+	walk(d)
+	if len(parts) == 0 {
+		// Only buttons: still a dialog in the way, with nothing to quote.
+		return "an untitled dialog"
+	}
+	return strings.Join(parts, "\n")
 }
 
 // buttonByCaption finds the dialog's button captioned caption, and failing
@@ -180,27 +228,24 @@ func buttonByCaption(tree *uitree.Tree, caption string) (*uitree.Node, []string)
 		scope = tree.Root
 	}
 	want := strings.TrimSpace(caption)
-	var found *uitree.Node
 	var captions []string
-	tree.Walk(func(n *uitree.Node) bool {
-		if found != nil || !n.Within(scope) || !uitree.Actionable(n) || n.Bounds.Empty() {
-			return found == nil
+	// A caption is a button's own text or label, or, where it has neither,
+	// the label map gives it from inside: a Jetpack Compose button is a
+	// clickable node whose words are on a child (CHALLENGES 177).
+	for _, e := range tree.Map() {
+		n := e.Node
+		if !n.Within(scope) {
+			continue
 		}
-		c := strings.TrimSpace(n.Text)
-		if c == "" {
-			c = strings.TrimSpace(n.Label)
+		if strings.EqualFold(strings.TrimSpace(n.Text), want) || strings.EqualFold(strings.TrimSpace(n.Label), want) ||
+			strings.EqualFold(strings.TrimSpace(e.Label), want) {
+			return n, nil
 		}
-		if c == "" {
-			return true
+		if e.Label != "" {
+			captions = append(captions, e.Label)
 		}
-		if strings.EqualFold(strings.TrimSpace(n.Text), want) || strings.EqualFold(strings.TrimSpace(n.Label), want) {
-			found = n
-			return false
-		}
-		captions = append(captions, c)
-		return true
-	})
-	return found, captions
+	}
+	return nil, captions
 }
 
 func quoteAll(ss []string) string {

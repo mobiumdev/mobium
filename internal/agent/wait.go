@@ -394,6 +394,8 @@ func judge(ctx context.Context, cond string, nodes []*uitree.Node, notOnScreen s
 		word := map[bool]string{true: condEnabled, false: condDisabled}[n.Enabled]
 		return n.Enabled == (cond == condEnabled), n, "it is " + word, nil
 	case condChecked, condUnchecked:
+		// The row, when the target is its words, as app_check reads it.
+		n = stateOf(n)
 		// Refused at once, as app_check refuses it: nothing without a
 		// checked state will ever be checked, and waiting says nothing.
 		if !n.Checkable {

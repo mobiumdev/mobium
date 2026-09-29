@@ -107,6 +107,10 @@ type Node struct {
 type Tree struct {
 	Root     *Node
 	Rotation int
+	// Screen is the display, from UiAutomator2's width and height on the
+	// hierarchy; empty where the source gives none (iOS, the dump backend).
+	// It is what tells a window that floats — a dialog — from the app's.
+	Screen Rect
 }
 
 var boundsRe = regexp.MustCompile(`\[(-?\d+),(-?\d+)\]\[(-?\d+),(-?\d+)\]`)
@@ -177,6 +181,9 @@ func ParseAndroid(data []byte) (*Tree, error) {
 			if !seenRoot && t.Name.Local == "hierarchy" {
 				seenRoot = true
 				tree.Rotation, _ = strconv.Atoi(attr(t, "rotation"))
+				w, _ := strconv.Atoi(attr(t, "width"))
+				h, _ := strconv.Atoi(attr(t, "height"))
+				tree.Screen = Rect{0, 0, w, h}
 				continue
 			}
 			parent := stack[len(stack)-1]

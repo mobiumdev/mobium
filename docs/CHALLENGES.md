@@ -7,7 +7,7 @@ the source.
 
 The pattern across them is the reason the document exists: **almost nothing
 here was found by reading code or by a test written from imagination.** Of
-175 defects, 139 were found only by running against a real device. The other
+178 defects, 142 were found only by running against a real device. The other
 thirty-six — 4, 5, 6, 14, 23, 24, 32, 35, 36, 39, 44, 50, 53, 54, 57, 66, 89,
 99, 100, 121, 123, 129, 130, 133, 134, 139, 140, 141, 142, 144, 150, 158, 162,
 164, 165 and 172 — came from reading code, the compiler, a test, a linter,
@@ -3941,6 +3941,61 @@ line keeps the name, and a name given as `--device` still matches, since
 that is input, not output. On the phone, the start line now reads "starting
 WebDriverAgent on iPhone 15 Plus", and the owner's name is in none of the
 output.
+
+### 176. Every Compose icon button mapped twice
+
+**Found by:** `mobium map` on Seal, a Jetpack Compose app from F-Droid, on
+the first screen — the first Compose app this project had driven. Its three
+icon buttons came out as six entries: "Settings", and "Settings (button)".
+
+Compose wraps an icon button in a tooltip box, long-clickable so a long
+press shows the tooltip, and lays it out a pixel off the button's own
+bounds: `[32,95][158,221]` around `[33,96][159,222]`. `map` merges
+actionable nodes that stack on one rectangle, and "one rectangle" meant
+equal to the pixel. Nested nodes whose edges are within two pixels of each
+other are now one target, tapped at the innermost clickable node and labeled
+as before. Only an ancestor and its descendant merge; two neighbors that
+happen to line up stay two. The same nesting on identical bounds is how the
+launcher's "At a glance" widget was already merged; Compose missed it by one
+pixel.
+
+### 177. A Compose dialog was not a dialog to Mobium
+
+**Found by:** Seal's first-launch "User guide", on the same screen. `mobium
+alert` said no dialog was on screen with it up, and a tap on the Settings
+button behind it failed with "no element matches … run app_map again" — a
+remedy that can never work. A declared rule for it did nothing.
+
+On Android the hierarchy holds the dialog's window alone, and Mobium asked
+UiAutomator2's W3C alert endpoint whether something was asking. That
+endpoint recognizes the framework's `AlertDialog` by its resource ids, and a
+Compose dialog has none. The hierarchy says it anyway: its window does not
+cover the screen — `[120,474][960,1937]` on a 1080x2400 display — where an
+app's own window does, and "covers" rather than "equals", because one
+Settings capture reports the display without its navigation bar, 2201
+pixels tall, under a 2400-pixel window. So `Tree.Dialog()` returns a window
+that floats, and from it: a miss under it is refused as `device_not_ready`
+naming the dialog, with a remedy that works for it (its buttons, or a rule,
+never `app_alert` accept); `alert` reads it, title and message without the
+buttons' captions, and refuses to accept or dismiss it as `unsupported`,
+because there is no button the platform picks; and a rule answers it. A rule
+also found no button to press at first: a Compose button is a clickable node
+whose words are on a child, so a rule's caption is now matched against the
+label `map` gives a button as well as its own text.
+
+### 178. `check` refused a Compose switch by its words
+
+**Found by:** Seal's Look & feel settings. `map` printed "Dynamic color …
+(button, checked)", and `mobium uncheck "text=Dynamic color"` answered that
+it was not a checkbox, radio or switch.
+
+A Compose switch row is one clickable, checkable node, and its label is a
+child `TextView`. `text=` resolves to the words, which have no state, while
+the ref from `map` is the row and worked. A tap on the words lands on the
+row, so the row is what is meant: `app_check` and `wait --for checked` now
+take the nearest clickable ancestor's state when the target has none of its
+own, and a row with no state, like Display language, is still refused.
+`docs/checks/compose-app.sh` holds all three against the app.
 
 ## Findings that were not defects
 

@@ -162,3 +162,34 @@ func TestAWaitAnswersADialogRule(t *testing.T) {
 		t.Errorf("a wait for it to go: %v, tapped %v", err, d.tapped)
 	}
 }
+
+// Seal's "User guide" is a Jetpack Compose dialog, which the platform's alert
+// endpoint does not know. It is read from the hierarchy — its title and
+// message, not its buttons' captions — and a rule's caption finds its Close
+// button, whose words are on a child (CHALLENGES 177).
+func TestAnAppsOwnDialogIsReadAndAnswered(t *testing.T) {
+	raw, err := os.ReadFile("../uitree/testdata/seal-dialog-uia2.xml")
+	if err != nil {
+		t.Fatal(err)
+	}
+	tree, err := uitree.ParseAndroid(raw)
+	if err != nil {
+		t.Fatal(err)
+	}
+	text := appDialogText(tree)
+	if !strings.HasPrefix(text, "User guide\n") || strings.Contains(text, "Open settings") {
+		t.Errorf("the dialog reads %q", text)
+	}
+	b, captions := buttonByCaption(tree, "close")
+	if b == nil || !b.Clickable {
+		t.Fatalf("Close not found; captions %v", captions)
+	}
+	if b, _ := buttonByCaption(tree, "Settings"); b != nil {
+		t.Error("found a button that is not the dialog's")
+	}
+	home, _ := os.ReadFile("../uitree/testdata/seal-home-uia2.xml")
+	ht, _ := uitree.ParseAndroid(home)
+	if got := appDialogText(ht); got != "" {
+		t.Errorf("the app's own screen read as a dialog: %q", got)
+	}
+}

@@ -46,10 +46,11 @@ func (h *Handlers) checkOn(ctx context.Context, s *session, args map[string]inte
 		want = b
 	}
 
-	node, _, err := h.resolveNode(ctx, s, target)
+	resolved, _, err := h.resolveNode(ctx, s, target)
 	if err != nil {
 		return nil, err
 	}
+	node := stateOf(resolved)
 
 	// Refuse anything with no state to set. Tapping a button and reporting it
 	// as checked would be the shape this project exists to not have — and the
@@ -87,10 +88,11 @@ func (h *Handlers) checkOn(ctx context.Context, s *session, args map[string]inte
 	// Verify by outcome. A tap that lands on a disabled or intercepted
 	// control returns perfectly well and changes nothing, and reporting that
 	// as success is exactly the failure this tool is meant to remove.
-	after, _, err := h.resolveNode(ctx, s, target)
+	afterNode, _, err := h.resolveNode(ctx, s, target)
 	if err != nil {
 		return nil, mobiumerr.New(mobiumerr.NotConfirmed, "tapped %s and could not read it back to confirm: %w", target, err)
 	}
+	after := stateOf(afterNode)
 	if after.Checked != want {
 		return nil, mobiumerr.New(mobiumerr.NotConfirmed, "tapped %s to make it %s and it is still %s — the control "+
 			"did not respond, so nothing here can make it", target, stateWord(want),
@@ -99,6 +101,28 @@ func (h *Handlers) checkOn(ctx context.Context, s *session, args map[string]inte
 
 	view.Checked, view.Changed = after.Checked, true
 	return Result(fmt.Sprintf("%s is now %s", target, stateWord(want)), view), nil
+}
+
+// stateOf is the node whose checked state a target means: the target, or,
+// when it has none, the row it is the words of. A Jetpack Compose switch row
+// is one clickable, checkable node with its label on a child, so
+// `check "text=Dynamic color"` found the words and refused them while map
+// showed the row checked (CHALLENGES 178). Only the nearest clickable
+// ancestor, which is where a tap on the words lands; if that has no state
+// either, the target is returned and refused as before.
+func stateOf(n *uitree.Node) *uitree.Node {
+	if n == nil || n.Checkable {
+		return n
+	}
+	for p := n.Parent; p != nil; p = p.Parent {
+		if p.Clickable {
+			if p.Checkable {
+				return p
+			}
+			return n
+		}
+	}
+	return n
 }
 
 func stateWord(checked bool) string {

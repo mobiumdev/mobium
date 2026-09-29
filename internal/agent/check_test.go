@@ -2,6 +2,7 @@ package agent
 
 import (
 	"context"
+	"os"
 	"strings"
 	"testing"
 
@@ -164,5 +165,43 @@ func TestCheckDefaultsToChecked(t *testing.T) {
 	}
 	if !d.checked {
 		t.Error("app_check with no state did not check it")
+	}
+}
+
+// A Jetpack Compose switch row is one clickable, checkable node with its
+// words on a child. Seal's "Dynamic color" by its text resolves to the words;
+// the state is the row's, and a row with no state is still refused
+// (CHALLENGES 178).
+func TestAComposeRowsStateIsFoundFromItsWords(t *testing.T) {
+	raw, err := os.ReadFile("../uitree/testdata/seal-look-uia2.xml")
+	if err != nil {
+		t.Fatal(err)
+	}
+	tree, err := uitree.ParseAndroid(raw)
+	if err != nil {
+		t.Fatal(err)
+	}
+	words := func(text string) *uitree.Node {
+		var found *uitree.Node
+		tree.Walk(func(n *uitree.Node) bool {
+			if found == nil && n.Text == text {
+				found = n
+			}
+			return found == nil
+		})
+		if found == nil {
+			t.Fatalf("no %q in the capture", text)
+		}
+		return found
+	}
+	n := words("Dynamic color")
+	if n.Checkable {
+		t.Fatal("the capture's words carry the state themselves; the test would prove nothing")
+	}
+	if row := stateOf(n); !row.Checkable || !row.Clickable {
+		t.Errorf("Dynamic color's state was not found on its row: %+v", row)
+	}
+	if got := stateOf(words("Display language")); got.Checkable {
+		t.Error("a row with no state was given one")
 	}
 }
