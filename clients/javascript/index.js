@@ -1085,9 +1085,14 @@ export class Device {
    * round — accept leaves it denied and dismiss leaves it granted, because W3C
    * accept presses the affirmative button and Apple puts 'Don't Allow' last.
    * Tap the button by ref for a particular answer.
+   *
+   * `{ text }` is typed into a prompt's field first, so one call fills and
+   * answers it. A plain alert has no field, and the platform refuses it.
    */
-  async answerAlert(accept = true) {
-    return (await this.#data('app_alert', { action: accept ? 'accept' : 'dismiss' })) || {}
+  async answerAlert(accept = true, { text } = {}) {
+    const args = { action: accept ? 'accept' : 'dismiss' }
+    if (text !== undefined) args.text = text
+    return (await this.#data('app_alert', args)) || {}
   }
 
   /**

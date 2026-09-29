@@ -605,6 +605,15 @@ namespace Mobium
             Act("app_alert", Args("action", accept ? "accept" : "dismiss"));
 
         /// <summary>
+        /// Types into a dialog's field, then accepts or dismisses it, in one
+        /// call. A plain alert has no field, and the platform refuses the
+        /// text. What accept and dismiss press is as for
+        /// <see cref="AnswerAlert(bool)"/>.
+        /// </summary>
+        public void AnswerAlert(bool accept, string text) =>
+            Act("app_alert", Args("action", accept ? "accept" : "dismiss", "text", text));
+
+        /// <summary>
         /// What the device clipboard holds. iOS only: on Android 10 and later
         /// only an app with focus may read the clipboard and the UiAutomator2
         /// server has no activity, so it would answer "empty" for a clipboard
@@ -721,8 +730,15 @@ namespace Mobium
         /// </summary>
         public void IncomingCall(string action) => Act("app_call", Args("action", action));
 
+        /// <summary>Simulates an incoming call from a given number. Emulator only.</summary>
+        public void IncomingCall(string action, string number) =>
+            Act("app_call", Args("action", action, "number", number));
+
         /// <summary>Delivers a simulated text message. Emulator only.</summary>
         public void Sms(string text) => Act("app_sms", Args("text", text));
+
+        /// <summary>Delivers a simulated text message from a given number. Emulator only.</summary>
+        public void Sms(string text, string from) => Act("app_sms", Args("text", text, "from", from));
 
         /// <summary>
         /// Console output from the current WebView since the last call,
@@ -872,6 +888,10 @@ namespace Mobium
         public void PostNotification(string title, string text) =>
             Act("app_notifications", Args("title", title, "text", text));
 
+        /// <summary>Puts a notification in the shade under the default title, "Mobium".</summary>
+        public void PostNotification(string text) =>
+            Act("app_notifications", Args("text", text));
+
         /// <summary>
         /// Opens or closes the notification panel. A notification cannot be
         /// tapped until the shade is open: until then it is not on screen and
@@ -887,8 +907,8 @@ namespace Mobium
         /// Changes the device timezone and returns the new one. Takes an IANA
         /// name such as <c>"Asia/Tokyo"</c>; confirmed by reading it back,
         /// since an unknown zone is accepted by the device and ignored. Works
-        /// on real hardware, unlike <see cref="IncomingCall"/> and
-        /// <see cref="Sms"/>.
+        /// on real hardware, unlike <see cref="IncomingCall(string)"/> and
+        /// <see cref="Sms(string)"/>.
         /// </summary>
         public string Timezone(string tz) =>
             Json.Str(Data("app_timezone", Args("timezone", tz)), "timezone");
