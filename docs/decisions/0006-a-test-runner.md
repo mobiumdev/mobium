@@ -42,7 +42,8 @@ are programs that call Mobium, as they are today.
   The loss is comments; `description` on a test and on a step covers most of
   it.
 
-**Steps are `app_batch` steps; assertions are `app_wait_for`.** Mutatis
+**Steps are `app_batch` steps; assertions are `app_wait_for`** (more in
+"Assertions" below). Mutatis
 mutandis: no second vocabulary. A step is `{"name": "app_tap", "arguments":
 {...}}`; an expectation is an `app_wait_for` step, which already retries until
 its timeout and fails saying what the screen showed — Playwright's
@@ -56,6 +57,73 @@ rule that the CLI implements no behavior is about tools — what a tool does,
 MCP must get too. A runner reads files and writes reports around tools; it
 is the clients' kind of code. If agents need to run a test file over MCP, an
 `app_test` tool can wrap the same package later.
+
+## Assertions
+
+Three layers, each the existing mechanism with what it lacks added, never a
+parallel one.
+
+**On screen: `app_wait_for`.** Playwright's `expect(locator)` is a check that
+retries until its timeout, and a failure that says what it found. That is
+what `app_wait_for` already is — "timed out after 10s waiting for
+testid=username to hold \"mo\" — its value is \"mob\"". Against
+Playwright's matchers:
+
+| Playwright | `app_wait_for` | Gap |
+| --- | --- | --- |
+| `toBeVisible`, `toBeHidden` | `visible`, `hidden` | — |
+| `toBeEnabled`, `toBeDisabled` | `enabled`, `disabled` | — |
+| `toBeChecked`, `not.toBeChecked` | `checked`, `unchecked` | — |
+| `toBeFocused` | `focused` | its negation |
+| `toHaveValue` | `value`, exact; a password field is refused | its negation |
+| `toContainText` | `text`, a substring | its negation |
+| `toHaveText`, exact or a pattern | — | missing |
+| `toHaveCount` | — | missing |
+| `.not` in general | only where a pair exists | missing |
+
+Iteration 1 adds three arguments to `app_wait_for` — `exact` for `text`, a
+`count` condition, and `not`, which inverts any condition — so the CLI, MCP
+and all five clients get them with the runner.
+
+**Off screen: `expect` on a read-only tool.** A test checks more than the
+screen: that the app is in front (`app_state`), a dialog is up
+(`app_alert`), the device is offline (`app_network`), a notification
+arrived. Every tool already answers with structured data, so one step shape
+covers them all:
+
+```json
+{"expect": {"tool": "app_state", "arguments": {"app": "dev.mobium.mobiumapp"},
+            "field": "state", "equals": "foreground", "timeout_ms": 5000}}
+```
+
+The runner calls the tool, compares the one field, and retries until the
+timeout by the same polling rule as `app_wait_for`; a failure prints the
+value last seen. **Only a read-only tool is accepted**, or a retrying
+assertion could tap five times. Nothing marks a tool read-only yet, so
+iteration 1 adds MCP's own `readOnlyHint` annotation to every tool's schema —
+useful to MCP clients in its own right — and `internal/apisurface` fails the
+build on a tool that does not declare it either way.
+
+**For every assertion:**
+
+- **A password is never compared.** `value` already refuses a password
+  field; an `expect` on a field carrying device text goes through the same
+  redaction as `map` (CHALLENGES 43).
+- **A failure leaves evidence**: the screenshot and `map` of the moment it
+  failed, in the report. On a real phone the report says it holds a
+  screenshot.
+- **Each assertion has its own timeout**, ten seconds by default as
+  `app_wait_for`'s, inside the test's.
+- **An assertion is shown it can fail.** The suite has, for each kind, a
+  test that must fail, and counts as passing only when it does.
+
+**Later: soft assertions**, which record a failure and carry on. A test is one
+`app_batch`, which stops at the first failure; soft steps mean splitting a
+test into batches at each one, which iteration 2 can do.
+
+**Not planned: screenshot comparison.** Pixels differ between devices, OS
+versions, dark mode and a clock in the status bar; `toHaveScreenshot` would
+be a source of flaky failures, not of evidence.
 
 ## The files
 
