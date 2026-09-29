@@ -774,6 +774,32 @@ func matchedNothing(err error) bool {
 	return false
 }
 
+// The checks an action makes before it touches anything, named as a
+// WebView's checks are and as Playwright and Vibium name them.
+const (
+	checkVisible        = "visible"
+	checkEnabled        = "enabled"
+	checkStable         = "stable"
+	checkReceivesEvents = "receivesEvents"
+	checkEditable       = "editable"
+)
+
+// failedCheck is the refusal for a target that failed one of those checks,
+// in one shape on native screens and in WebViews: "X failed check C: reason",
+// then what to do about it. The check and the reason are in details as well,
+// so a client decides by them rather than by the wording. A WebView's
+// refusals had this shape from CHALLENGES 118; native ones each had their
+// own until 2026-09-28, and the cover's check was spelled receives_events.
+func failedCheck(code mobiumerr.Code, target any, check, reason, advice string) *mobiumerr.Error {
+	msg := fmt.Sprintf("%s failed check %s: %s", target, check, reason)
+	if advice != "" {
+		msg += " — " + advice
+	}
+	return mobiumerr.New(code, "%s", msg).
+		WithDetail("check", check).
+		WithDetail("reason", reason)
+}
+
 // dialogOver is the refusal for a target while a dialog is up. The remedy
 // works whatever the dialog says, which matters in a tool that pins apps to
 // other languages: answer it, by app_alert or by one of its buttons.
@@ -785,15 +811,17 @@ func matchedNothing(err error) bool {
 // dialog" until this said both.
 func dialogOver(dialog string, loc uitree.Locator, covered bool) error {
 	dialog = strings.TrimSpace(strings.SplitN(dialog, "\n", 2)[0])
-	msg, remedy := "a dialog is over the app — %q — and %s is underneath it; answer the dialog first",
-		"app_alert with accept or dismiss, or tap one of the dialog's buttons from app_map"
-	if !covered {
-		msg = "a dialog is over the app — %q — and nothing on it matches %s; if the target is behind it, " +
-			"answer the dialog first, and if it is one of the dialog's buttons, take its ref from app_map"
-		remedy = "app_map for the dialog's buttons, or app_alert with accept or dismiss"
+	if covered {
+		return failedCheck(mobiumerr.DeviceNotReady, loc, checkReceivesEvents,
+			fmt.Sprintf("a dialog is over the app — %q — and it is underneath", dialog), "answer the dialog first").
+			WithRemedy("app_alert with accept or dismiss, or tap one of the dialog's buttons from app_map").
+			WithDetail("locator", loc.String()).
+			WithDetail("dialog", dialog)
 	}
+	msg := "a dialog is over the app — %q — and nothing on it matches %s; if the target is behind it, " +
+		"answer the dialog first, and if it is one of the dialog's buttons, take its ref from app_map"
 	return mobiumerr.New(mobiumerr.DeviceNotReady, msg, dialog, loc).
-		WithRemedy(remedy).
+		WithRemedy("app_map for the dialog's buttons, or app_alert with accept or dismiss").
 		WithDetail("locator", loc.String()).
 		WithDetail("dialog", dialog)
 }
@@ -810,14 +838,16 @@ const hideKeyboard = "`mobium keyboard --hide` (app_keyboard with hide); on an i
 // UiAutomator2 leaves out what the keyboard covers — and the keyboard is only
 // the likely reason, so it is said as one.
 func keyboardOver(loc uitree.Locator, covered bool) error {
-	msg := "the keyboard is over %s; hide it first: " + hideKeyboard
-	code := mobiumerr.DeviceNotReady
-	if !covered {
-		msg = "no element matches %s, and the keyboard is up — it may be covering it; hide it and try again: " +
-			hideKeyboard
-		code = mobiumerr.NoSuchElement
+	remedy := "hide the keyboard: app_keyboard with hide, or with key \"enter\" on an iPhone"
+	if covered {
+		return failedCheck(mobiumerr.DeviceNotReady, loc, checkReceivesEvents, "the keyboard is over it",
+			"hide it first: "+hideKeyboard).
+			WithRemedy(remedy).
+			WithDetail("locator", loc.String())
 	}
-	return mobiumerr.New(code, msg, loc).
+	msg := "no element matches %s, and the keyboard is up — it may be covering it; hide it and try again: " +
+		hideKeyboard
+	return mobiumerr.New(mobiumerr.NoSuchElement, msg, loc).
 		WithRemedy("hide the keyboard: app_keyboard with hide, or with key \"enter\" on an iPhone").
 		WithDetail("locator", loc.String())
 }
@@ -852,11 +882,10 @@ func notEditable(n *uitree.Node) string {
 // miss, so nothing scrolls for it, and its remedy works: wait for the app to
 // enable it, or do what enables it.
 func notEnabled(loc uitree.Locator, waited time.Duration) error {
-	return mobiumerr.New(mobiumerr.Timeout, "%s is disabled, and stayed disabled for %s — a disabled control "+
-		"ignores input; do what enables it, or wait for it with app_wait_for and condition \"enabled\"", loc, waited).
+	return failedCheck(mobiumerr.Timeout, loc, checkEnabled, fmt.Sprintf("it is disabled, and stayed disabled for %s", waited),
+		"a disabled control ignores input; do what enables it, or wait for it with app_wait_for and condition \"enabled\"").
 		WithRemedy("app_wait_for with condition \"enabled\", or do what enables it first").
-		WithDetail("locator", loc.String()).
-		WithDetail("check", "enabled")
+		WithDetail("locator", loc.String())
 }
 
 // pickOne resolves a locator to exactly one node, refusing an ambiguous match
@@ -895,8 +924,8 @@ func pickOne(loc uitree.Locator, tree *uitree.Tree) (*uitree.Node, error) {
 			}
 		}
 		if matches[0].Bounds.Empty() {
-			return nil, mobiumerr.New(mobiumerr.ElementNotReachable, "%s is in the hierarchy but not on "+
-				"screen — app_scroll_to with a direction brings it into view", loc).
+			return nil, failedCheck(mobiumerr.ElementNotReachable, loc, checkVisible,
+				"it is in the hierarchy but not on screen", "app_scroll_to with a direction brings it into view").
 				WithRemedy("app_scroll_to with a direction").
 				WithDetail("locator", loc.String())
 		}
@@ -1077,9 +1106,9 @@ func (h *Handlers) waitOutClipboardPreview(ctx context.Context, s *session, n *u
 			if lerr != nil {
 				loc = uitree.Locator{Kind: uitree.KindText, Value: target}
 			}
-			return mobiumerr.New(mobiumerr.DeviceNotReady,
-				"Android's clipboard preview is over %s and was still there after %s; it closes by itself "+
-					"a few seconds after the clipboard is written, and back does not close it", loc, clipboardPreviewTimeout).
+			return failedCheck(mobiumerr.DeviceNotReady, loc, checkReceivesEvents,
+				fmt.Sprintf("Android's clipboard preview is over it, and was still there after %s", clipboardPreviewTimeout),
+				"it closes by itself a few seconds after the clipboard is written, and back does not close it").
 				WithRemedy("wait a few seconds and try again").
 				WithDetail("locator", loc.String())
 		}
@@ -1237,9 +1266,10 @@ func (h *Handlers) settle(ctx context.Context, s *session, loc uitree.Locator,
 			return n, t, nil
 		}
 		if time.Now().After(deadline) {
-			return nil, nil, mobiumerr.New(mobiumerr.Timeout, "%s is still moving after %s — it was at %s and is now at %s; "+
-				"something on this screen animates continuously, so act on it with app_tap x/y "+
-				"if that is expected", loc, h.settleTimeout, was, n.Bounds)
+			return nil, nil, failedCheck(mobiumerr.Timeout, loc, checkStable,
+				fmt.Sprintf("it is still moving after %s — it was at %s and is now at %s", h.settleTimeout, was, n.Bounds),
+				"something on this screen animates continuously, so act on it with app_tap x/y if that is expected").
+				WithDetail("locator", loc.String())
 		}
 		was = n.Bounds
 	}
@@ -1295,10 +1325,9 @@ func (h *Handlers) typeTextOn(ctx context.Context, s *session, args map[string]i
 		return nil, err
 	}
 	if role := notEditable(node); role != "" {
-		return nil, mobiumerr.New(mobiumerr.InvalidArgument, "%s is a %s, not a text field — app_type types into "+
-			"a field; to press it, use app_tap", target, role).
-			WithRemedy("app_tap for a "+role+"; app_type for a text field").
-			WithDetail("check", "editable")
+		return nil, failedCheck(mobiumerr.InvalidArgument, target, checkEditable,
+			fmt.Sprintf("it is a %s, not a text field", role), "app_type types into a field; to press it, use app_tap").
+			WithRemedy("app_tap for a " + role + "; app_type for a text field")
 	}
 
 	if text == "" {
@@ -1341,10 +1370,9 @@ func (h *Handlers) typeTextOn(ctx context.Context, s *session, args map[string]i
 		// one with the W3C code "invalid element state". Decided by the code
 		// the server sent, which is kept in details, never by its wording.
 		if e, ok := mobiumerr.As(err); ok && e.Details["w3c"] == "invalid element state" {
-			return nil, mobiumerr.New(mobiumerr.InvalidArgument, "%s cannot be typed into — the device says it "+
-				"is not a text field; app_type types into a field, and app_tap presses anything else", target).
+			return nil, failedCheck(mobiumerr.InvalidArgument, target, checkEditable,
+				"the device says it is not a text field", "app_type types into a field, and app_tap presses anything else").
 				WithRemedy("app_tap to press it; app_type for a text field").
-				WithDetail("check", "editable").
 				WithDetail("w3c", "invalid element state")
 		}
 		return nil, err

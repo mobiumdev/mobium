@@ -388,6 +388,15 @@ type KeyboardRegioner interface {
 	KeyboardRegions(ctx context.Context) ([]uitree.Rect, error)
 }
 
+// FocusReader is implemented by backends that can say whether a node has
+// keyboard focus. Android's tree says so itself; WebDriverAgent's does not —
+// its `focused` is false on a field with the cursor in it — so it is asked
+// which element is active. A driver that cannot tell does not implement it,
+// and a wait for focus is refused there rather than never satisfied.
+type FocusReader interface {
+	HasFocus(ctx context.Context, n *uitree.Node) (bool, error)
+}
+
 // ClipboardPreviewer is implemented by backends that can say where a
 // system preview of the clipboard takes touches — Android 13 and later, which
 // put one up after every write, as another window.

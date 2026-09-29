@@ -142,8 +142,17 @@ export interface StartOptions extends ConnectOptions {
 }
 
 export interface WaitOptions {
-  condition?: 'visible' | 'hidden' | 'text'
-  /** The text the element must contain, with `condition: 'text'`. */
+  condition?:
+    | 'visible'
+    | 'hidden'
+    | 'text'
+    | 'value'
+    | 'enabled'
+    | 'disabled'
+    | 'checked'
+    | 'unchecked'
+    | 'focused'
+  /** The text the element must contain, with `condition: 'text'`; the whole value, with `'value'`, where `''` waits for an empty field. */
   text?: string
   /** Ten seconds by default, two minutes at most. */
   timeoutMs?: number

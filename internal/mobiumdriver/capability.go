@@ -338,6 +338,13 @@ func AsKeyboardRegioner(d Driver) (KeyboardRegioner, bool) {
 	return k, ok && has(d, CapKeyboard)
 }
 
+// AsFocusReader returns the driver's view of which node has keyboard focus,
+// if any; it goes with the keyboard capability.
+func AsFocusReader(d Driver) (FocusReader, bool) {
+	f, ok := d.(FocusReader)
+	return f, ok && has(d, CapKeyboard)
+}
+
 // AsClipboardPreviewer returns the driver's view of the clipboard's
 // preview, if any; it goes with the clipboard capability.
 func AsClipboardPreviewer(d Driver) (ClipboardPreviewer, bool) {

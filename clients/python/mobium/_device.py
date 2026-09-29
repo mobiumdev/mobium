@@ -280,9 +280,11 @@ class Device:
     ) -> Element | None:
         """Block until the screen agrees, instead of sleeping.
 
-        condition is "visible" (default), "hidden", or "text" — which needs
-        the text to wait for. Raises MobiumError if it never happens, saying
-        what was on screen instead.
+        condition is "visible" (default), "hidden", "text" — which needs the
+        text to wait for — "value", a field's whole content ("" for empty;
+        a password field is refused), "enabled", "disabled", "checked",
+        "unchecked" or "focused". Raises MobiumError if it never happens,
+        saying what was on screen instead.
 
         On success the screen is remapped, so the element returned already has
         a ref that can be tapped without calling map() first. Nothing is

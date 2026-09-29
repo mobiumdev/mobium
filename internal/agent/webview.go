@@ -593,10 +593,8 @@ func webCheckFailed(target string, a *webview.Actionability, waited time.Duratio
 	case "stable":
 		code, remedy = mobiumerr.Timeout, "wait for it to stop moving"
 	}
-	return mobiumerr.New(code, "%s failed check %s: %s, and still did after %s", target, a.Check, a.Reason, waited).
-		WithRemedy(remedy).
-		WithDetail("check", a.Check).
-		WithDetail("reason", a.Reason)
+	return failedCheck(code, target, a.Check, a.Reason, fmt.Sprintf("still so after %s", waited)).
+		WithRemedy(remedy)
 }
 
 // webType is app_type and app_fill inside a WebView: Vibium's fill, and its
@@ -624,11 +622,9 @@ func (h *Handlers) webType(ctx context.Context, s *session, target, text string,
 		case f.Status == "not_found":
 			return nil, mobiumerr.New(mobiumerr.NoSuchElement, "%s is no longer on the page — the content changed, run app_map again", target)
 		case f.Status == "failed" && f.Check == "editable":
-			return nil, mobiumerr.New(mobiumerr.InvalidArgument, "%s failed check editable: %s — app_type types into a "+
-				"text field; to press anything else, use app_tap", target, f.Reason).
-				WithRemedy("app_tap to press it; app_type for a text field").
-				WithDetail("check", "editable").
-				WithDetail("reason", f.Reason)
+			return nil, failedCheck(mobiumerr.InvalidArgument, target, checkEditable, f.Reason,
+				"app_type types into a text field; to press anything else, use app_tap").
+				WithRemedy("app_tap to press it; app_type for a text field")
 		case f.Status == "ok" && !f.Matches:
 			return nil, mobiumerr.New(mobiumerr.NotConfirmed, "set %s and read it back different — the page "+
 				"rewrote or refused the value", target)

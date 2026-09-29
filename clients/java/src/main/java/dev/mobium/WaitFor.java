@@ -46,6 +46,50 @@ public final class WaitFor {
     public static WaitFor text(String expected) { return new WaitFor("text", expected, null); }
 
     /**
+     * Wait until a field holds exactly this value; {@code ""} waits for it to
+     * be empty. A password field is refused, since its value is never read.
+     *
+     * @param expected the whole value the field must hold
+     * @return the condition
+     */
+    public static WaitFor value(String expected) { return new WaitFor("value", expected, null); }
+
+    /**
+     * Wait for a control to be enabled — a Submit the app enables once a form is valid.
+     *
+     * @return the condition
+     */
+    public static WaitFor enabled() { return new WaitFor("enabled", null, null); }
+
+    /**
+     * Wait for a control to be disabled.
+     *
+     * @return the condition
+     */
+    public static WaitFor disabled() { return new WaitFor("disabled", null, null); }
+
+    /**
+     * Wait for a checkbox, radio or switch to be checked.
+     *
+     * @return the condition
+     */
+    public static WaitFor checked() { return new WaitFor("checked", null, null); }
+
+    /**
+     * Wait for a checkbox, radio or switch to be unchecked.
+     *
+     * @return the condition
+     */
+    public static WaitFor unchecked() { return new WaitFor("unchecked", null, null); }
+
+    /**
+     * Wait for a field to have keyboard focus.
+     *
+     * @return the condition
+     */
+    public static WaitFor focused() { return new WaitFor("focused", null, null); }
+
+    /**
      * How long before giving up. Ten seconds by default, two minutes at most.
      *
      * @param d how long, at most two minutes

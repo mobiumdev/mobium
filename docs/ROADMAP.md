@@ -36,13 +36,17 @@ this is what is not.
 - **Auto-wait, the rest of the actionability checks.** Actions already wait for
   a target to exist, be in view, stop moving and be enabled; refuse one under
   a dialog or the keyboard; and aim around, wait out or refuse a control the
-  app drew over it ([CHALLENGES 115](CHALLENGES.md)). Still to come:
+  app drew over it ([CHALLENGES 115](CHALLENGES.md)). Every refusal from those
+  checks has one shape, native and web — "X failed check C: reason", C in
+  the error's details (CHALLENGES 158) — and `wait` also waits for checked,
+  unchecked, focused and a value (`docs/checks/wait-states.sh`). Still to
+  come:
   - An overlay hidden from accessibility on iOS, which WebDriverAgent's tree
-    does not contain, so a tap under one still lands on it.
-  - One error shape for a failed check — "failed check X: reason" — on
-    native screens too. A WebView's refusals use it since CHALLENGES 118,
-    where Vibium's checks now run in the page.
-  - More states to `wait` for: checked, focused, a value.
+    does not contain, so a tap under one still lands on it. WebDriverAgent's
+    per-element `hittable` was measured and does not see it either — it
+    says true there, and false for a pass-through the tap reaches — so what
+    is left needs a signal from below accessibility, which nothing outside
+    the app has yet.
 - **Accessibility settings on a real iPhone.** `app_accessibility` works on a
   simulator and on Android; on a phone nothing outside changes them, and the
   Settings screens are the route.
