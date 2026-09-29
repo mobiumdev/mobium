@@ -7,7 +7,7 @@ the source.
 
 The pattern across them is the reason the document exists: **almost nothing
 here was found by reading code or by a test written from imagination.** Of
-159 defects, 127 were found only by running against a real device. The other
+160 defects, 128 were found only by running against a real device. The other
 thirty-two — 4, 5, 6, 14, 23, 24, 32, 35, 36, 39, 44, 50, 53, 54, 57, 66, 89,
 99, 100, 121, 123, 129, 130, 133, 134, 139, 140, 141, 142, 144, 150 and 158 — came from reading code, the compiler, a test, a linter,
 cross-checking a computed number against a screenshot, using the tooling on
@@ -3643,6 +3643,37 @@ A short password is retried at the slower speeds and then reported as
 some of the letters, it says how many and names a few keys it does have
 ("й, ц, у"), with the remedy measured to work. Nothing of the password is
 ever printed.
+
+### 160. Putting a phone's settings back one at a time ran out of time, and left four changed
+
+**Found by:** `docs/checks/accessibility.sh` on the iPhone 15 Plus, the first
+run after `app_accessibility` learned to go through the phone's Settings app.
+
+On a real iPhone nothing outside changes an accessibility setting, so each
+read or change is a trip through Settings — open it at its root, walk to the
+page by the rows' identifiers, flip the switch and read it back, return to the
+app — about eight to ten seconds. Each change kept an undo, and a session's
+end ran them one after another. The check flipped all six switches and
+stopped the daemon: the daemon's close had 20 seconds, spent them on two
+undos, and exited, leaving Increase Contrast, Reduce Transparency, Button
+Shapes and Differentiate Without Color on — on the phone of the person whose
+phone it is. Putting them back by hand made it briefly worse: each manual
+"off" was itself a change the new session promised to undo, and its end
+turned two back on. The switches were finally unchecked in Settings with
+`uncheck`, which keeps no undo, and read back.
+
+Now a change records what it found, and the first undo to run puts back every
+setting recorded, one Settings visit per page, while the rest find nothing
+left to do: six settings on two pages are two trips, not six. The undos share
+one 60-second budget, and the daemon's close has 75 seconds and `daemon
+stop` waits 90 — running out leaves a person's phone changed, which is worse
+than a slow stop. The same check then passed: every switch flipped, the app
+heard the four it reports, and after the stop every switch and what the app
+is told were back as they were. Two things found on the way, both before
+this was committed: turning on Bold Text redraws Settings, so the switch
+found before the tap was a stale element when read back, and it is now
+looked up again on every read; and a read of all six took 45 seconds, one
+trip each, and now takes 16, one visit reading every switch on its page.
 
 ## Findings that were not defects
 

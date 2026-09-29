@@ -29,19 +29,32 @@ func (u *UIA2) SetAccessibilitySetting(ctx context.Context, name, value string) 
 	return u.adb.SetAccessibilitySetting(ctx, name, value)
 }
 
-// AccessibilitySetting reads one accessibility setting on a simulator. A
-// phone is declined through HasCapability; this is the backstop.
+// AccessibilitySetting reads one accessibility setting: from simctl on a
+// simulator, and on a phone from the Settings app's own switch.
 func (w *WDA) AccessibilitySetting(ctx context.Context, name string) (string, error) {
-	if err := w.simOnly(CapAccessibility); err != nil {
-		return "", err
+	if w.phone != nil {
+		return w.phoneAX(ctx, name, "")
 	}
 	return w.sim.AccessibilitySetting(ctx, name)
 }
 
-// SetAccessibilitySetting changes one accessibility setting on a simulator.
+// SetAccessibilitySetting changes one accessibility setting, confirmed by
+// reading it back, and returns how to put it back: on a phone, the same
+// switch in Settings flipped back.
 func (w *WDA) SetAccessibilitySetting(ctx context.Context, name, value string) (device.AXUndo, error) {
-	if err := w.simOnly(CapAccessibility); err != nil {
+	if w.phone == nil {
+		return w.sim.SetAccessibilitySetting(ctx, name, value)
+	}
+	was, err := w.phoneAX(ctx, name, "")
+	if err != nil {
 		return nil, err
 	}
-	return w.sim.SetAccessibilitySetting(ctx, name, value)
+	w.axPend.note(name, was)
+	// Every setting's undo puts back all of them: the first to run does the
+	// work, in one visit per Settings page, and the rest find it done.
+	undo := w.restoreAX
+	if _, err := w.phoneAX(ctx, name, value); err != nil {
+		return undo, err
+	}
+	return undo, nil
 }

@@ -7,8 +7,9 @@
 # platform tells it (a11yState). The device's half is a snapshot of the raw
 # settings taken before anything is touched and compared after the daemon
 # stops: adb `settings` on Android, the com.apple.Accessibility defaults and
-# simctl's two ui settings on a simulator. A real iPhone is refused — nothing
-# outside can change these there — and the refusal is what is asserted.
+# simctl's two ui settings on a simulator. On a real iPhone, where nothing
+# outside can change them, Mobium goes through the Settings app, so there the
+# device's half is Settings' own switches, read before and after.
 #
 #   docs/checks/accessibility.sh <serial|udid>
 #
@@ -30,9 +31,47 @@ esac
 echo "--- $DEV ($PLATFORM)"
 
 if [ "$PLATFORM" = phone ]; then
-  if out=$($M accessibility bold_text on 2>&1); then fail "a real iPhone accepted a change: $out"; fi
-  echo "$out" | grep -q 'Settings > Accessibility' || fail "the refusal does not name the Settings route: $out"
-  row "real iPhone" "refused, naming the Settings route"
+  # Somebody's phone: every change is put back when the daemon stops, and
+  # the trap stops it on failure too.
+  trap '$ROOT/bin/mobium daemon stop >/dev/null 2>&1 || true' EXIT
+  SWITCHES="reduce_motion bold_text increase_contrast reduce_transparency button_shapes differentiate_without_color"
+  before=$($M accessibility) || fail "reading the settings: $before"
+  $M terminate $APP >/dev/null 2>&1 || true; $M launch $APP >/dev/null
+  $M scroll-to "label=Accessibility Demo" >/dev/null 2>&1 || true
+  $M tap "label=Accessibility Demo" >/dev/null
+  app_before=$($M text testid=a11yState | sed 's/ changes=[0-9]*//')
+  # field names the a11yState field the app reports a setting in; the demo
+  # has none for button shapes or differentiate without color.
+  field() { case "$1" in reduce_motion) echo motion ;; bold_text) echo bold ;; increase_contrast) echo contrast ;;
+    reduce_transparency) echo transparency ;; esac; }
+  for n in $SWITCHES; do
+    was=$(echo "$before" | awk -v n="$n" '$1 == n {print $2}')
+    want=on; [ "$was" = on ] && want=off
+    out=$($M accessibility "$n" "$want") || fail "$n $want: $out"
+    f=$(field "$n")
+    if [ -n "$f" ]; then
+      heard=false; [ "$want" = on ] && heard=true
+      $M text testid=a11yState | grep -q "$f=$heard" || fail "$n is $want in Settings and the app heard: $($M text testid=a11yState)"
+      row "$n" "$was -> $want, and the app heard it"
+    else
+      [ "$($M accessibility "$n" | awk '{print $2}')" = "$want" ] || fail "$n did not read back $want"
+      row "$n" "$was -> $want, read back from Settings"
+    fi
+  done
+  for n in invert_colors grayscale text_size; do
+    if out=$($M accessibility "$n" x 2>&1); then fail "$n was changed on a phone: $out"; fi
+    echo "$out" | grep -q 'Settings > Accessibility' || fail "$n's refusal does not name the Settings route: $out"
+  done
+  row "not built" "invert_colors, grayscale, text_size refused, naming Settings"
+  $ROOT/bin/mobium daemon stop >/dev/null
+  after=$($M accessibility) || fail "reading the settings after: $after"
+  [ "$after" = "$before" ] || fail "the settings did not all go back: $after"
+  $M terminate $APP >/dev/null 2>&1 || true; $M launch $APP >/dev/null
+  $M scroll-to "label=Accessibility Demo" >/dev/null 2>&1 || true
+  $M tap "label=Accessibility Demo" >/dev/null 2>&1 || true
+  app_after=$($M text testid=a11yState | sed 's/ changes=[0-9]*//')
+  [ "$app_after" = "$app_before" ] || fail "the app was told something else after: $app_after (was $app_before)"
+  row "put back" "every switch in Settings, and what the app is told"
   echo PASS; exit 0
 fi
 

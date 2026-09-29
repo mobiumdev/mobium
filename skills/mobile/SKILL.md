@@ -183,10 +183,11 @@ only for the session — the device is put back exactly as it was when it ends:
   `text_scale 1.3` (Android) — text size is a category on one and a scale on
   the other, and each says so if given the other's
 
-An iOS simulator and Android only. On a real iPhone nothing outside can change
-these, and the refusal names the Settings screens, which you can drive with
-`check`. On Android a text-size change restarts the running app's screen, so
-map again afterwards.
+On a real iPhone, where nothing outside can change them, Mobium goes through
+the Settings app and comes back to the app that was in front — about ten
+seconds a change. The six switches work there; invert_colors, grayscale and
+text size are refused, naming the Settings screen. On Android a text-size
+change restarts the running app's screen, so map again afterwards.
 
 ### Acting
 

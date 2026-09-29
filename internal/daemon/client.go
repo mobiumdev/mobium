@@ -176,7 +176,7 @@ func Shutdown() error {
 // closeTimeout for the sessions — plus a margin, because a stop that returns
 // while the daemon is still tearing down reintroduces the bug above. At 5s
 // it did exactly that whenever a session took longer than usual to close.
-const shutdownGrace = 35 * time.Second
+const shutdownGrace = 90 * time.Second
 
 // waitGone polls until the daemon has finished, or the deadline passes, and
 // reports which. Finished means the process has exited, or — when pid was

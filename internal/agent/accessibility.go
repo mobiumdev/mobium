@@ -119,16 +119,22 @@ func changedMark(s *session, name string) string {
 	return ""
 }
 
-// restoreAccessibility runs every undo the session kept. Bounded, so a
-// device that has gone cannot hold a shutdown up.
+// restoreAccessibility runs every undo the session kept, within one budget
+// for all of them: on a phone the first undo puts back every setting in one
+// pass through Settings, which can take most of it. Bounded, so a device that
+// has gone cannot hold a shutdown up.
 func (s *session) restoreAccessibility() {
+	ctx, cancel := context.WithTimeout(context.Background(), axRestoreTimeout)
+	defer cancel()
 	for name, undo := range s.axUndo {
-		ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 		_ = undo(ctx) // a device that has gone is a device nothing more can be done to
-		cancel()
 		delete(s.axUndo, name)
 	}
 }
+
+// axRestoreTimeout bounds putting a session's accessibility settings back,
+// inside the daemon's own close budget.
+const axRestoreTimeout = 60 * time.Second
 
 // AccessibilityView is the result of app_accessibility.
 type AccessibilityView struct {

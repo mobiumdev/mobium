@@ -30,7 +30,9 @@ defect 9, and the `Health` interface exists because of it.
 `daemon stop` now waits for the process to actually exit before returning.
 It used to return as soon as the request was acknowledged, while teardown was
 still going, which made `daemon stop && mobium <anything>` fail five times out
-of five — defect 28. The wait covers the daemon's own worst case, 35 seconds,
+of five — defect 28. The wait covers the daemon's own worst case, 90 seconds since putting a real
+iPhone's accessibility settings back through its Settings app needed more than
+the 35 there were (defect 160),
 and a daemon still running after it is reported as an error with the
 `timeout` code rather than as stopped (defect 133). Ending a session also
 stops the app `session start --app` launched. A browser restores its tabs on

@@ -1371,10 +1371,10 @@ func GetToolSchemas() []Tool {
 				"text_size, a named category, on iOS, and text_scale, a number, on Android. Call with no " +
 				"argument to read them all, with a setting to read one, and with a setting and a value " +
 				"to change it; each change is confirmed by reading it back and put back exactly as it " +
-				"was when the session ends. Settings a platform lacks are refused with the reason. An " +
-				"iOS simulator and Android are supported; on a real iPhone nothing outside can change " +
-				"these, and the refusal names the Settings route instead. Changing one invalidates the " +
-				"refs from the previous screen.",
+				"was when the session ends. Settings a platform lacks are refused with the reason. On a " +
+				"real iPhone, where nothing outside can change them, the six switches are read and " +
+				"set through the Settings app, about ten seconds each, and the app that was in front " +
+				"is brought back. Changing one invalidates the refs from the previous screen.",
 			InputSchema: map[string]interface{}{
 				"type": "object",
 				"properties": withDevice(map[string]interface{}{
