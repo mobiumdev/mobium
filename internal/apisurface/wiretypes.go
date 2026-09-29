@@ -49,6 +49,8 @@ var GoWireTypes = map[string][2]string{
 	"KeyboardState":  {"internal/agent", "KeyboardView"},
 	"Location":       {"internal/agent", "LocationView"},
 	"Locator":        {"internal/agent", "LocatorView"},
+	"MapChange":      {"internal/agent", "ChangeView"},
+	"MapDiff":        {"internal/agent", "MapDiffView"},
 	"Notification":   {"internal/device", "Notification"},
 	"OriginStorage":  {"internal/webview", "OriginStorage"},
 	"PageSource":     {"internal/agent", "SourceView"},

@@ -16,6 +16,7 @@ MOBIUM_FAKE_PIDFILE, when set, receives this process's id.
 MOBIUM_FAKE_NOTIFYLOG, when set, has each notification's method appended.
 app_upload and app_download answer as the daemon does, and echo their
 arguments in the answer's "echo" key; app_download's file is b"fake\x00file".
+app_map with diff answers "first" the first time and a small diff after.
 """
 import base64
 import json
@@ -28,6 +29,7 @@ if os.environ.get("MOBIUM_FAKE_PIDFILE"):
     with open(os.environ["MOBIUM_FAKE_PIDFILE"], "w") as f:
         f.write(str(os.getpid()))
 out = sys.stdout
+mapped = False  # whether app_map has answered a diff yet
 if os.environ.get("MOBIUM_FAKE_NOTIFYLOG"):
     with open(os.environ["MOBIUM_FAKE_NOTIFYLOG"], "a") as f:
         f.write("session=" + os.environ.get("MOBIUM_SESSION", "") + "\n")
@@ -93,6 +95,23 @@ for line in sys.stdin:
                 view["path"] = args["path"]
             elif name == "app_download":
                 view["data"] = base64.b64encode(body).decode()
+        send({"jsonrpc": "2.0", "id": i, "result": {"content": [{"type": "text", "text": name}],
+                                                    "structuredContent": view}})
+        continue
+    if name == "app_map" and args.get("diff"):
+        # Answers as the daemon does: the first diff of a device has nothing
+        # to compare with, every later one has one of each kind of change.
+        view = {"elements": [], "context": "NATIVE_APP", "device": "fake-device", "echo": args}
+        if not mapped:
+            view["diff"] = {"first": True, "added": [], "removed": [], "changed": []}
+        else:
+            ok = {"ref": "@e1", "label": "OK", "role": "button",
+                  "locator": {"kind": "text", "value": "OK"}, "bounds": {"x1": 0, "y1": 0, "x2": 10, "y2": 10}}
+            wifi = {"ref": "@e2", "label": "Wi-Fi", "role": "switch", "checked": False}
+            view["diff"] = {"since": "2026-09-29T10:00:00Z",
+                            "added": [ok], "removed": [{"ref": "@e9", "label": "Cancel"}],
+                            "changed": [{"before": wifi, "after": dict(wifi, checked=True), "what": ["checked"]}]}
+        mapped = True
         send({"jsonrpc": "2.0", "id": i, "result": {"content": [{"type": "text", "text": name}],
                                                     "structuredContent": view}})
         continue

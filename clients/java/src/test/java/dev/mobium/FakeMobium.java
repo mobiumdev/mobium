@@ -33,7 +33,9 @@ import java.util.Map;
  * for stdin to close as a real daemon would.
  * </ul>
  * In every mode that answers, {@code app_download} answers with a listing or
- * a file's content as the daemon does, besides the echo.
+ * a file's content as the daemon does, besides the echo, and {@code app_map}
+ * with {@code diff} answers with a diff: {@code first} the first time, then
+ * one added and one changed element.
  * {@code MOBIUM_FAKE_NOTIFYLOG}, when set, has each notification's method
  * appended.
  * {@code MOBIUM_FAKE_PIDFILE}, when set, receives this process's id, so a test
@@ -42,6 +44,9 @@ import java.util.Map;
 final class FakeMobium {
 
     private FakeMobium() {}
+
+    /** How many diffing maps have been answered, so the first can say so. */
+    private static int maps;
 
     public static void main(String[] args) throws Exception {
         String mode = System.getenv().getOrDefault("MOBIUM_FAKE", "ok");
@@ -136,6 +141,27 @@ final class FakeMobium {
                     structured.put("bytes", file.equals("empty") ? 0 : raw.length);
                     if (!file.equals("empty")) structured.put("data", java.util.Base64.getEncoder().encodeToString(raw));
                 }
+            }
+            if (name.equals("app_map") && Boolean.TRUE.equals(Json.asObject(arguments).get("diff"))) {
+                // Answers as the daemon does: the first diff of a device has
+                // nothing to compare with, and a later one names what changed.
+                Map<String, Object> diff = new LinkedHashMap<>();
+                Map<String, Object> before = Map.of("ref", "@e1", "label", "Wi-Fi", "checked", false);
+                Map<String, Object> after = Map.of("ref", "@e2", "label", "Wi-Fi", "checked", true);
+                if (maps++ == 0) {
+                    diff.put("first", true);
+                    diff.put("added", List.of());
+                    diff.put("changed", List.of());
+                } else {
+                    diff.put("since", "2026-09-29T10:00:00Z");
+                    diff.put("added", List.of(Map.of("ref", "@e3", "label", "Connected")));
+                    diff.put("changed", List.of(Map.of("before", before, "after", after, "what", List.of("checked"))));
+                }
+                diff.put("removed", List.of());
+                structured.put("elements", List.of(after));
+                structured.put("context", "NATIVE_APP");
+                structured.put("device", "fake-device");
+                structured.put("diff", diff);
             }
             reply(out, id, Map.of(
                     "content", List.of(Map.of("type", "text", "text", "ok " + name)),

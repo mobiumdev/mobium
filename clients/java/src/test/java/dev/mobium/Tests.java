@@ -60,6 +60,7 @@ public final class Tests {
         anAnswerWithNoIdFailsTheCallInFlight();
         startOpensTheSessionAndQuitEndsIt();
         filesSendTheirArgumentsAndDecodeTheAnswer();
+        mapDiffSendsDiffAndReturnsTheDiff();
 
         System.out.printf("%n%d checks, %d failed%n", checks, failures);
         if (failures > 0) System.exit(1);
@@ -507,6 +508,35 @@ public final class Tests {
             eq("each file by name", "report.pdf", Json.str(files.get(0), "name"));
             eq("with its size", 5L, ((Number) files.get(0).get("bytes")).longValue());
             eq("downloads for an app reads the same answer", 1, d.downloads("com.example").size());
+        }
+    }
+
+    static void mapDiffSendsDiffAndReturnsTheDiff() {
+        // The fake answers with a diff only when app_map is sent diff=true,
+        // so a diff coming back at all is the argument arriving.
+        try (Mobium d = FakeProcess.mobium("ok")) {
+            eq("a plain map sends no diff", 0, d.map().size());
+
+            Map<String, Object> first = d.mapDiff();
+            eq("the first diff says so", true, first.get("first"));
+            yes("and has no since", !first.containsKey("since"));
+            eq("with nothing added", List.of(), first.get("added"));
+            eq("nothing removed", List.of(), first.get("removed"));
+            eq("and nothing changed", List.of(), first.get("changed"));
+
+            Map<String, Object> next = d.mapDiff();
+            yes("a later diff is not first", !next.containsKey("first"));
+            eq("and says when the earlier map was taken", "2026-09-29T10:00:00Z", next.get("since"));
+            List<Object> added = Json.asArray(next.get("added"));
+            eq("one element was added", 1, added.size());
+            eq("with the new map's ref", "@e3", Json.str(Json.asObject(added.get(0)), "ref"));
+            List<Object> changed = Json.asArray(next.get("changed"));
+            eq("one element changed", 1, changed.size());
+            Map<String, Object> c = Json.asObject(changed.get(0));
+            eq("its checked state, named", List.of("checked"), c.get("what"));
+            eq("before carries the old ref", "@e1", Json.str(Json.asObject(c.get("before")), "ref"));
+            eq("after carries the new map's ref", "@e2", Json.str(Json.asObject(c.get("after")), "ref"));
+            eq("after carries the new state", true, Json.asObject(c.get("after")).get("checked"));
         }
     }
 

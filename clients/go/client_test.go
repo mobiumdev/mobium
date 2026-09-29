@@ -152,6 +152,29 @@ func fakeTool(name string, args map[string]any, scenario string) map[string]any 
 		}
 
 	case "app_map", "app_find":
+		if args["diff"] == true {
+			if path := os.Getenv(fakeArgsLogEnv); path != "" {
+				if f, err := os.OpenFile(path, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o600); err == nil {
+					line, _ := json.Marshal(map[string]any{"tool": name, "arguments": args})
+					f.Write(append(line, '\n'))
+					f.Close()
+				}
+			}
+			view := map[string]any{"elements": []any{button}, "context": "NATIVE_APP", "device": "emulator-5554"}
+			if scenario == "firstmap" {
+				view["diff"] = map[string]any{"first": true, "added": []any{}, "removed": []any{}, "changed": []any{}}
+				return text("no earlier map of this device to compare with", view)
+			}
+			renamed := map[string]any{"ref": "@e3", "label": "Log in", "role": "button",
+				"bounds": button["bounds"]}
+			view["diff"] = map[string]any{
+				"since":   "2026-09-29T10:00:00Z",
+				"added":   []any{map[string]any{"ref": "@e4", "label": "Remember me", "role": "checkbox", "checked": false, "bounds": map[string]any{"x1": 100, "y1": 300, "x2": 300, "y2": 340}}},
+				"removed": []any{map[string]any{"ref": "@e5", "label": "Loading", "bounds": map[string]any{"x1": 0, "y1": 0, "x2": 10, "y2": 10}}},
+				"changed": []any{map[string]any{"before": renamed, "after": button, "what": []any{"label"}}},
+			}
+			return text("+ @e4 Remember me (checkbox)", view)
+		}
 		return text("@e3 Sign in (button)", map[string]any{
 			"elements": []any{button}, "context": "NATIVE_APP", "device": "emulator-5554",
 		})
@@ -323,6 +346,54 @@ func TestMapDecodesElements(t *testing.T) {
 	}
 	if e.Locator == nil || e.Locator.String() != "text=Sign in" {
 		t.Errorf("locator = %v", e.Locator)
+	}
+}
+
+func TestMapDiffSendsDiffAndDecodesWhatChanged(t *testing.T) {
+	dev, sent := sentArgs(t, "")
+	d, err := dev.MapDiff(context.Background())
+	if err != nil {
+		t.Fatalf("map diff: %v", err)
+	}
+	if calls := sent(); len(calls) != 1 || len(calls[0]) != 1 || calls[0]["diff"] != true {
+		t.Errorf("sent %v, want diff=true alone", calls)
+	}
+	if d.First {
+		t.Error("first on a map that had one to compare with")
+	}
+	if want := time.Date(2026, 9, 29, 10, 0, 0, 0, time.UTC); !d.Since.Equal(want) {
+		t.Errorf("since = %v, want %v", d.Since, want)
+	}
+	if len(d.Added) != 1 || d.Added[0].Ref != "@e4" || d.Added[0].Checked == nil || *d.Added[0].Checked {
+		t.Errorf("added = %+v", d.Added)
+	}
+	if len(d.Removed) != 1 || d.Removed[0].Label != "Loading" {
+		t.Errorf("removed = %+v", d.Removed)
+	}
+	if len(d.Changed) != 1 {
+		t.Fatalf("changed = %+v", d.Changed)
+	}
+	c := d.Changed[0]
+	if c.Before.Label != "Log in" || c.After.Label != "Sign in" || len(c.What) != 1 || c.What[0] != "label" {
+		t.Errorf("change = %+v", c)
+	}
+	if c.After.Locator == nil || c.After.Locator.String() != "text=Sign in" {
+		t.Errorf("after's locator = %v", c.After.Locator)
+	}
+}
+
+func TestMapDiffSaysWhenThereWasNothingToCompare(t *testing.T) {
+	dev := connectFake(t, "firstmap")
+	d, err := dev.MapDiff(context.Background())
+	if err != nil {
+		t.Fatalf("map diff: %v", err)
+	}
+	if !d.First || !d.Since.IsZero() {
+		t.Errorf("first = %v, since = %v; want first and no since", d.First, d.Since)
+	}
+	if d.Added == nil || d.Removed == nil || d.Changed == nil ||
+		len(d.Added)+len(d.Removed)+len(d.Changed) != 0 {
+		t.Errorf("a first map listed changes, or sent null lists: %+v", d)
 	}
 }
 

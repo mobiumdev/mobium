@@ -286,6 +286,50 @@ func (d *Device) Map(ctx context.Context) ([]Element, error) {
 	return d.elements(ctx, "app_map", nil)
 }
 
+// MapDiff is what changed on the screen since the last map of this device:
+// what appeared, what went away, and what changed its label, its checked
+// state or its place. Taken right after an action, it is what that action
+// just did, without the rest of the screen that stayed put.
+//
+// Refs on Added and on a change's After are the new map's, and can be acted
+// on. Removed and a change's Before are the earlier map's elements as they
+// were, refs included, and those refs no longer resolve: every map renumbers.
+type MapDiff struct {
+	// First says there was no earlier map of this device to compare with.
+	// Compared with nothing, everything appeared: the whole screen is in
+	// Added, and the next MapDiff compares with this map.
+	First bool `json:"first,omitempty"`
+	// Since is when the map compared with was taken; zero when First.
+	Since   time.Time   `json:"since,omitempty"`
+	Added   []Element   `json:"added"`
+	Removed []Element   `json:"removed"`
+	Changed []MapChange `json:"changed"`
+}
+
+// MapChange is one element in both maps that differs between them.
+type MapChange struct {
+	Before Element `json:"before"`
+	After  Element `json:"after"`
+	// What names each difference: "label", "checked" or "moved".
+	What []string `json:"what"`
+}
+
+// MapDiff maps the current screen and reports what changed since the last
+// map of this device, which it then replaces: the next MapDiff compares with
+// this one.
+func (d *Device) MapDiff(ctx context.Context) (*MapDiff, error) {
+	var out struct {
+		Diff *MapDiff `json:"diff"`
+	}
+	if err := d.data(ctx, "app_map", map[string]any{"diff": true}, &out); err != nil {
+		return nil, err
+	}
+	if out.Diff == nil {
+		return nil, fmt.Errorf("app_map sent no diff: the daemon predates map diffs, so rebuild or update mobium")
+	}
+	return out.Diff, nil
+}
+
 // Find returns the elements matching a locator, without acting on them.
 func (d *Device) Find(ctx context.Context, locator string) ([]Element, error) {
 	return d.elements(ctx, "app_find", map[string]any{"locator": locator})

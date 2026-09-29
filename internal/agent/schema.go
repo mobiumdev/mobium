@@ -51,10 +51,19 @@ func GetToolSchemas() []Tool {
 			Description: "Map the actionable elements on the current screen and return them as " +
 				"refs (@e1, @e2, ...) with a label and role. Call this before interacting, and " +
 				"again after anything that changes the screen — refs are only valid for the " +
-				"screen they were taken from.",
+				"screen they were taken from. With diff, answer only what changed since the last " +
+				"map of this device: what appeared, what went away, and what changed label, " +
+				"checked state or place — what an action just did.",
 			InputSchema: map[string]interface{}{
-				"type":                 "object",
-				"properties":           withDevice(map[string]interface{}{}),
+				"type": "object",
+				"properties": withDevice(map[string]interface{}{
+					"diff": map[string]interface{}{
+						"type": "boolean",
+						"description": "Answer what changed since the last map of this device instead of " +
+							"the whole map. The first map of a session has nothing to compare with, so all of " +
+							"it is added, and first is set. Refs are the new map's; a removed element's are gone.",
+					},
+				}),
 				"additionalProperties": false,
 			},
 		},

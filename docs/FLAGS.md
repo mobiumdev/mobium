@@ -153,6 +153,7 @@ command mentions them.
 | `app_long_press` | `x` | integer | long-press |
 | `app_long_press` | `y` | integer | long-press |
 | `app_map` | `device` | string | _global_ --device |
+| `app_map` | `diff` | boolean | map |
 | `app_map` | `driver` | string | _global_ --driver |
 | `app_network` | `device` | string | _global_ --device |
 | `app_network` | `download_kbps` | integer | network |
@@ -345,7 +346,7 @@ arguments and the two global flags.
 | `lock` | app_lock | — | state |
 | `logs` | app_logs | --app --level --lines --source | app, level, lines, source |
 | `long-press` | app_long_press | --duration | duration_ms, target, x, y |
-| `map` | app_map | — | — |
+| `map` | app_map | --diff | diff |
 | `mcp` | — | — | — |
 | `network` | app_network | --download --latency --offline --online --reset --upload | download_kbps, latency_ms, offline, reset, upload_kbps |
 | `notifications` | app_notifications | --post --shade --tag --title | shade, tag, text, title |

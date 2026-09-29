@@ -131,7 +131,7 @@ The whole tool surface, and `call()` for anything not wrapped yet.
 
 | | |
 | --- | --- |
-| Reading | `map`, `find`, `text`, `current`, `screenshot`, `devices` |
+| Reading | `map`, `mapDiff`, `find`, `text`, `current`, `screenshot`, `devices` |
 | Waiting | `waitFor`, with `WaitFor.visible()`, `.hidden()`, `.text(…)` |
 | Scrolling | `scrollTo` |
 | Acting | `tap`, `type`, `replace`, `swipe`, `longPress` |

@@ -54,6 +54,11 @@ type Handlers struct {
 	// refs are per device serial: two emulators must not share a ref table.
 	refs map[string]*refTable
 
+	// lastMaps is each device's latest native map, what map --diff compares
+	// with. Unlike refs it survives an action: showing what the action did
+	// is its whole purpose.
+	lastMaps map[string]*lastMap
+
 	// sessions caches one driver per device so a UiAutomator2 server is
 	// started once rather than per command.
 	sessions map[string]*session
@@ -95,6 +100,7 @@ type Handlers struct {
 func NewHandlers() *Handlers {
 	return &Handlers{
 		refs:          map[string]*refTable{},
+		lastMaps:      map[string]*lastMap{},
 		sessions:      map[string]*session{},
 		dialogRules:   map[string][]dialogRule{},
 		netBaseline:   map[string]networkBaseline{},
@@ -419,7 +425,12 @@ func (h *Handlers) mapScreen(ctx context.Context, args map[string]interface{}) (
 	if err != nil {
 		return nil, err
 	}
+	diff := boolArg(args, "diff")
 	if s.web != nil {
+		if diff {
+			return nil, mobiumerr.New(mobiumerr.Unsupported, "map --diff compares native maps; a WebView's map "+
+				"is not kept to compare with").WithRemedy("app_context NATIVE_APP, then app_map with diff")
+		}
 		return h.mapWeb(ctx, s)
 	}
 	dev, driver := s.dev, s.driver
@@ -437,7 +448,26 @@ func (h *Handlers) mapScreen(ctx context.Context, args map[string]interface{}) (
 		view.Elements = append(view.Elements, elementView(e))
 	}
 	h.refs[dev.Serial] = table
+	prev := h.lastMaps[dev.Serial]
+	h.lastMaps[dev.Serial] = &lastMap{elements: view.Elements, taken: table.taken}
 
+	if diff {
+		if prev == nil {
+			// Compared with nothing, everything appeared: a client reading
+			// only the diff still learns the screen.
+			view.Diff = &MapDiffView{First: true, Added: view.Elements, Removed: []ElementView{},
+				Changed: []ChangeView{}}
+			whole := strings.Join(table.lines, "\n")
+			if whole == "" {
+				whole = "No actionable elements found"
+			}
+			return Result("no earlier map of this device to compare with, so here is all of it:\n"+whole, view), nil
+		}
+		d := diffMaps(prev.elements, view.Elements)
+		d.Since = prev.taken
+		view.Diff = &d
+		return Result(diffText(d, len(view.Elements)), view), nil
+	}
 	if len(table.lines) == 0 {
 		return Result("No actionable elements found", view), nil
 	}

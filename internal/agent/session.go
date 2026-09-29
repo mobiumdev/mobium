@@ -201,6 +201,7 @@ func (h *Handlers) sessionEnd(args map[string]interface{}) (*ToolsCallResult, er
 	s.close()
 	delete(h.sessions, keys[0])
 	delete(h.refs, s.dev.Serial)
+	delete(h.lastMaps, s.dev.Serial)
 	delete(h.dialogRules, s.dev.Serial)
 	view.Sessions = h.openSessions()
 	text := fmt.Sprintf("session ended on %s; anything it changed for the session is put back", view.Device)

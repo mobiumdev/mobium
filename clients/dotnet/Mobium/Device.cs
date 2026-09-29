@@ -74,6 +74,27 @@ namespace Mobium
         /// </summary>
         public IList<Element> Map() => Elements("app_map", null);
 
+        /// <summary>
+        /// Maps the current screen and says what changed since the last map
+        /// of this device, which it then replaces: <c>added</c> is what
+        /// appeared, <c>removed</c> what went away, and <c>changed</c> what
+        /// changed its label, its checked state or its place, each as
+        /// <c>before</c>, <c>after</c> and <c>what</c> — "label", "checked"
+        /// or "moved". Taken right after an action, it is what that action
+        /// just did, without the rest of the screen that stayed put.
+        /// <c>since</c> is when the map compared with was taken. <c>first</c>
+        /// is true when there was no earlier map to compare with, and then
+        /// the whole screen is in <c>added</c>. Refs in <c>added</c> and in a change's
+        /// <c>after</c> are the new map's; the earlier map's are gone.
+        /// </summary>
+        public IDictionary<string, object?> MapDiff()
+        {
+            var d = Data("app_map", Args("diff", true));
+            if (!d.TryGetValue("diff", out var diff) || !(diff is IDictionary<string, object?> m))
+                throw new MobiumException("app_map sent no diff: the daemon predates map diffs, so rebuild or update mobium");
+            return m;
+        }
+
         /// <summary>The elements matching a locator, without acting on them.</summary>
         public IList<Element> Find(string locator) =>
             Elements("app_find", Args("locator", locator));

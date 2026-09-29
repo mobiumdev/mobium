@@ -235,6 +235,33 @@ class Device:
         """
         return _elements(self._data("app_map"))
 
+    def map_diff(self) -> dict[str, Any]:
+        """What the screen did since the last map of this device: the elements
+        that appeared, went away, or changed their label, checked state or
+        place. Map, act, then map_diff() says what the action just did.
+
+        Returns a dict with ``added`` and ``removed`` as lists of the same
+        Elements map() returns, ``changed`` as a list of dicts with ``before``
+        and ``after`` Elements and ``what`` changed (``label``, ``checked``,
+        ``moved``), ``since`` as the time of the map compared with, and
+        ``first`` true when there was no earlier map to compare with — then the
+        whole screen is in ``added``. Refs are the new map's, so an added or
+        changed element can be acted on at once; a removed element's ref is
+        stale.
+        """
+        diff = (self._data("app_map", {"diff": True}) or {}).get("diff") or {}
+        return {
+            "first": bool(diff.get("first")),
+            "since": diff.get("since", ""),
+            "added": [_element(e) for e in diff.get("added") or []],
+            "removed": [_element(e) for e in diff.get("removed") or []],
+            "changed": [
+                {"before": _element(c.get("before") or {}), "after": _element(c.get("after") or {}),
+                 "what": list(c.get("what") or [])}
+                for c in diff.get("changed") or []
+            ],
+        }
+
     def text(self, target: str | None = None) -> str:
         """All readable text, or the text of one element."""
         return self._call("app_text", {"target": target} if target else None)

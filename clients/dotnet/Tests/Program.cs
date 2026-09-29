@@ -67,6 +67,7 @@ namespace Mobium.Tests
             StartOpensTheSessionAndQuitEndsIt();
             UploadSendsOnlyWhatWasGiven();
             DownloadSavesDecodesOrLists();
+            MapDiffSendsDiffAndReadsWhatChanged();
 
             Console.WriteLine();
             Console.WriteLine($"{_checks} checks, {_failures} failed");
@@ -653,6 +654,43 @@ namespace Mobium.Tests
             Eq("each file by name", "report.pdf", files.Count > 0 ? Json.Str(files[0], "name") : null);
             Eq("with its size", 3, files.Count > 0 ? Json.Integer(files[0], "bytes") : -1);
             Eq("Downloads(app) lists too", 2, d.Downloads("com.example.app").Count);
+        }
+
+        // -- app_map with diff -------------------------------------------------
+
+        private static void MapDiffSendsDiffAndReadsWhatChanged()
+        {
+            using var d = Fake("ok");
+
+            // The fake answers a diff only for exactly {"diff": true}.
+            var first = d.MapDiff();
+            Eq("the first map says first", true, Json.Bool(first, "first"));
+            Eq("and has no since", false, first.ContainsKey("since"));
+            Eq("nothing added on the first", 0, Json.AsArray(first["added"]).Count);
+            Eq("nothing removed on the first", 0, Json.AsArray(first["removed"]).Count);
+            Eq("nothing changed on the first", 0, Json.AsArray(first["changed"]).Count);
+            Eq("the diff alone, not the map view around it", false, first.ContainsKey("elements"));
+
+            var next = d.MapDiff();
+            Eq("a later map is not first", false, Json.Bool(next, "first"));
+            Eq("since is kept", "2026-09-29T10:00:00Z", Json.Str(next, "since"));
+            var added = Json.AsArray(next["added"]);
+            Eq("one added", 1, added.Count);
+            Eq("added carries the new map's ref", "@e1", added.Count > 0 ? Json.Str(Json.AsObject(added[0]), "ref") : null);
+            var removed = Json.AsArray(next["removed"]);
+            Eq("one removed", "Loading", removed.Count > 0 ? Json.Str(Json.AsObject(removed[0]), "label") : null);
+            var changed = Json.AsArray(next["changed"]);
+            Eq("one changed", 1, changed.Count);
+            var change = changed.Count > 0 ? Json.AsObject(changed[0]) : Json.AsObject(null);
+            Eq("before", "@e3", Json.Str(Json.AsObject(change.TryGetValue("before", out var b) ? b : null), "ref"));
+            Eq("after has the new map's ref", "@e2", Json.Str(Json.AsObject(change.TryGetValue("after", out var a) ? a : null), "ref"));
+            Eq("what changed", "checked,moved",
+                string.Join(",", Json.AsArray(change.TryGetValue("what", out var w) ? w : null)));
+
+            // Map() still sends no arguments, and so gets no diff back.
+            var plain = d.Call("app_map", null);
+            Eq("app_map with no arguments has no diff", false, plain.ContainsKey("diff"));
+            Eq("and Map() still reads the elements", 1, d.Map().Count);
         }
 
         // -- the harness ----------------------------------------------------

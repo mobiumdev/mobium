@@ -268,6 +268,40 @@ const within = (p, ms) => Promise.race([settle(p), new Promise((r) => setTimeout
   await d.close()
 }
 
+// -- mapDiff asks for the diff and answers with it, elements as map() --------
+// `first` is the difference between "no earlier map" and "nothing changed":
+// both have empty lists.
+{
+  const d = await fake('ok')
+  const sent = []
+  const el = (ref, label, x1 = 0) => ({ ref, label, role: 'button', locator: { kind: 'id', value: label }, bounds: { x1, y1: 0, x2: x1 + 100, y2: 50 } })
+  const answers = [
+    { first: true },
+    { since: '2026-09-29T10:00:00Z', added: [el('@e3', 'New')], removed: [el('@e1', 'Gone')], changed: [{ before: el('@e2', 'Old'), after: el('@e2', 'Renamed', 20), what: ['label', 'moved'] }] },
+  ]
+  d.conn.callTool = async (name, args) => {
+    sent.push([name, args])
+    const diff = answers.shift()
+    return { content: [{ type: 'text', text: 'mapped' }], structuredContent: { elements: [], context: 'NATIVE_APP', device: 'emulator-5554', diff } }
+  }
+  const first = await d.mapDiff()
+  const next = await d.mapDiff()
+  check(sent.length === 2, `two mapDiff calls made ${sent.length} tool calls`)
+  sent.forEach((s, i) => {
+    check(JSON.stringify(s) === JSON.stringify(['app_map', { diff: true }]), `mapDiff call ${i + 1} sent ${JSON.stringify(s)}, want app_map with {diff:true}`)
+  })
+  check(first.first === true && first.since === '' && first.added.length === 0 && first.removed.length === 0 && first.changed.length === 0,
+    `the first mapDiff resolved to ${JSON.stringify(first)}`)
+  check(next.first === false && next.since === '2026-09-29T10:00:00Z', `a later mapDiff said first=${next.first}, since=${JSON.stringify(next.since)}`)
+  check(next.added.length === 1 && next.added[0].ref === '@e3' && next.added[0].locator === 'id=New' && next.added[0].bounds.center.x === 50 && next.added[0].checked === null,
+    `added was not shaped as map() shapes it: ${JSON.stringify(next.added)}`)
+  check(next.removed.length === 1 && next.removed[0].label === 'Gone', `removed resolved to ${JSON.stringify(next.removed)}`)
+  const c = next.changed[0]
+  check(next.changed.length === 1 && c.before.label === 'Old' && c.after.label === 'Renamed' && c.after.bounds.center.x === 70 && JSON.stringify(c.what) === '["label","moved"]',
+    `changed resolved to ${JSON.stringify(next.changed)}`)
+  await d.close()
+}
+
 report()
 
 function report() {

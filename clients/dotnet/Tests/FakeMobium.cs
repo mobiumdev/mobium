@@ -29,6 +29,9 @@ namespace Mobium.Tests
     /// <item><c>mute</c> never answers anything, the handshake included.</item>
     /// <item><c>argv</c> answers every call with the arguments this process
     /// was started with, so quoting can be checked by what arrived.</item>
+    /// <item>In <c>ok</c>, <c>app_map</c> also answers with a map view, and
+    /// with <c>{"diff": true}</c> a diff: <c>first</c> on the process's first
+    /// map, what changed on every later one.</item>
     /// <item><c>noid</c> answers <c>app_map</c> as mobium answers a line it
     /// cannot parse -- an error with no id -- and every other call normally.</item>
     /// <item><c>refuse</c> answers the handshake with a protocol error, and
@@ -53,6 +56,7 @@ namespace Mobium.Tests
             var stdin = new StreamReader(Console.OpenStandardInput(), new UTF8Encoding(false));
             var stdout = new StreamWriter(Console.OpenStandardOutput(), new UTF8Encoding(false)) { AutoFlush = true };
 
+            var maps = 0;
             string? line;
             while ((line = stdin.ReadLine()) != null)
             {
@@ -127,6 +131,7 @@ namespace Mobium.Tests
                     ["argv"] = new JsonArray(Environment.GetCommandLineArgs()[1..].Select(a => (JsonNode?)JsonValue.Create(a)).ToArray()),
                 };
                 if (name == "app_download") Download(structured, args);
+                if (name == "app_map") MapDiff(structured, args, ref maps);
                 Reply(stdout, id, new JsonObject
                 {
                     ["content"] = new JsonArray(new JsonObject { ["type"] = "text", ["text"] = "ok " + name }),
@@ -158,6 +163,51 @@ namespace Mobium.Tests
             if (path != null) view["path"] = path;
             else if (file == "garbled.bin") view["data"] = "not base64!";
             else if (content.Length > 0) view["data"] = Convert.ToBase64String(Encoding.UTF8.GetBytes(content));
+        }
+
+        // app_map with diff answers as the daemon does: the first map of the
+        // device has nothing to compare with, so it says first and lists
+        // nothing; each later one names what appeared, went away and changed.
+        // It answers a diff only for exactly {"diff": true}, so a diff coming
+        // back is evidence of what was sent.
+        private static void MapDiff(JsonObject view, JsonNode? args, ref int maps)
+        {
+            view["elements"] = new JsonArray(Element("@e1", "Sign in", "button"));
+            view["context"] = "NATIVE_APP";
+            view["device"] = "fake-device";
+            var sent = args as JsonObject;
+            var wanted = sent != null && sent.Count == 1 && sent["diff"] is JsonValue v
+                && v.TryGetValue<bool>(out var b) && b;
+            maps++;
+            if (!wanted) return;
+            if (maps == 1)
+            {
+                view["diff"] = new JsonObject
+                {
+                    ["first"] = true,
+                    ["added"] = new JsonArray(), ["removed"] = new JsonArray(), ["changed"] = new JsonArray(),
+                };
+                return;
+            }
+            view["diff"] = new JsonObject
+            {
+                ["since"] = "2026-09-29T10:00:00Z",
+                ["added"] = new JsonArray(Element("@e1", "Sign in", "button")),
+                ["removed"] = new JsonArray(Element("@e2", "Loading", "")),
+                ["changed"] = new JsonArray(new JsonObject
+                {
+                    ["before"] = Element("@e3", "Remember me", "checkbox"),
+                    ["after"] = Element("@e2", "Remember me", "checkbox"),
+                    ["what"] = new JsonArray("checked", "moved"),
+                }),
+            };
+        }
+
+        private static JsonObject Element(string @ref, string label, string role)
+        {
+            var e = new JsonObject { ["ref"] = @ref, ["label"] = label };
+            if (role.Length > 0) e["role"] = role;
+            return e;
         }
 
         private static void Reply(StreamWriter w, long id, JsonNode result)

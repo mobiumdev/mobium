@@ -35,6 +35,29 @@ export interface Element {
   checked: boolean | null
 }
 
+/** One element that is on both maps and differs between them, from `mapDiff()`. */
+export interface MapChange {
+  /** As it was on the earlier map; its ref is stale. */
+  before: Element
+  /** As it is now; its ref is the new map's. */
+  after: Element
+  /** What differs: `"label"`, `"checked"` or `"moved"`. */
+  what: string[]
+}
+
+/** What changed since the last map of this device, from `mapDiff()`. */
+export interface MapDiff {
+  /** True when there was no earlier map to compare with; every list is then empty. */
+  first: boolean
+  /** When the earlier map was taken, as RFC 3339; empty when `first`. */
+  since: string
+  /** On the new map only; refs are the new map's. */
+  added: Element[]
+  /** On the earlier map only; refs are stale. */
+  removed: Element[]
+  changed: MapChange[]
+}
+
 /** One attached device or simulator. */
 export interface DeviceInfo {
   /** The serial (Android) or UDID (iOS) to pass as `device`. */
@@ -191,6 +214,7 @@ export class Device {
   // reading
   devices(): Promise<DeviceInfo[]>
   map(): Promise<Element[]>
+  mapDiff(): Promise<MapDiff>
   find(locator: string): Promise<Element[]>
   text(target?: string): Promise<string>
   source(): Promise<Data>
