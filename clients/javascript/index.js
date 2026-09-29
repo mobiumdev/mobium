@@ -596,14 +596,13 @@ export class Device {
    * instead of the app — three-finger gestures are undo, redo, copy and paste
    * there.
    */
-  async tap(target, point, { fingers } = {}) {
+  async tap(target, { fingers } = {}) {
     const extra = fingers === undefined ? {} : { fingers }
     if (typeof target === 'string') {
-      if (point && point.fingers !== undefined) extra.fingers = point.fingers
       return void (await this.#text('app_tap', { target, ...extra }))
     }
-    if (point || (target && typeof target === 'object')) {
-      const { x, y } = point || target
+    if (target && typeof target === 'object') {
+      const { x, y } = target
       return void (await this.#text('app_tap', { x, y, ...extra }))
     }
     throw new MobiumError('tap needs a target, or {x, y}')
@@ -617,12 +616,12 @@ export class Device {
    * uiautomator dump driver refuses it: the window is 40-300ms and nothing
    * there controls the interval between two adb calls.
    */
-  async doubleTap(target, point) {
+  async doubleTap(target) {
     if (typeof target === 'string') {
       return void (await this.#text('app_tap', { target, double: true }))
     }
-    if (point || (target && typeof target === 'object')) {
-      const { x, y } = point || target
+    if (target && typeof target === 'object') {
+      const { x, y } = target
       return void (await this.#text('app_tap', { x, y, double: true }))
     }
     throw new MobiumError('doubleTap needs a target, or {x, y}')
