@@ -7,7 +7,7 @@ the source.
 
 The pattern across them is the reason the document exists: **almost nothing
 here was found by reading code or by a test written from imagination.** Of
-158 defects, 126 were found only by running against a real device. The other
+159 defects, 127 were found only by running against a real device. The other
 thirty-two — 4, 5, 6, 14, 23, 24, 32, 35, 36, 39, 44, 50, 53, 54, 57, 66, 89,
 99, 100, 121, 123, 129, 130, 133, 134, 139, 140, 141, 142, 144, 150 and 158 — came from reading code, the compiler, a test, a linter,
 cross-checking a computed number against a screenshot, using the tooling on
@@ -2377,9 +2377,9 @@ then "hunter2", while `type` reported typing seven.
 
 WebDriverAgent types through the keyboard, so setting a value appends. An
 ordinary field was right anyway, because `SetText` reads it back, sees the
-mismatch, clears and retries. A password field is exempt from the read-back
+mismatch, clears and retries. A password field was exempt from the read-back
 — it reads as bullets and could only ever disagree (defect 61's rule) — so
-nothing noticed. It is now cleared before typing, which makes `app_type`
+nothing noticed; since defect 159 its length is read back. It is now cleared before typing, which makes `app_type`
 replace a field's contents on iOS as UiAutomator2 does on Android, password
 or not; the test fails if the clear is removed.
 
@@ -3614,6 +3614,35 @@ miss is not a failed check and keeps its own words: nothing matched while a
 dialog or the keyboard was up. A test holds the shape, and
 `docs/checks/wait-states.sh` reads `details.check` from a real refusal on
 both platforms.
+
+### 159. A password typed on a real iPhone lost every letter, and was reported typed
+
+**Found by:** `docs/checks/autowait.sh` on the iPhone 15 Plus, iOS 26.6.2,
+failing to see Log In disabled — because the app had refused to sign in with
+a password of one character.
+
+Typing the ten-character "wrongpass1" into MobiumApp's password field left
+one character, three runs in three, and `type` reported ten; the simulator
+kept all ten. The phone's keyboard was Russian. On a real iPhone a password
+field is typed key by key on the keyboard that is up, and a letter it has no
+key for is dropped: the one character that arrived was the digit, "abc"
+arrived as nothing, "abc12" as two, and "1234567890" whole. An ordinary field
+on the same phone took Latin text whole, and nothing on the simulator has a
+second keyboard, which is how it hid. Slowing to six keys a second changed
+nothing; switching to the English keyboard with its globe key, all ten
+arrived.
+
+The loss was silent because a password field was exempt from the read-back
+(defect 61's rule): it reads back as bullets and could never equal the text.
+But one bullet is one character, and an empty field reads back as its
+placeholder in clear — "password", eight characters, on the simulator and
+the phone alike, equal to `placeholderValue` — so the length is readable,
+and is now confirmed, on `type`, `fill` and typing into the focused field.
+A short password is retried at the slower speeds and then reported as
+`not_confirmed`, lengths only; when the keyboard on screen lacks keys for
+some of the letters, it says how many and names a few keys it does have
+("й, ц, у"), with the remedy measured to work. Nothing of the password is
+ever printed.
 
 ## Findings that were not defects
 

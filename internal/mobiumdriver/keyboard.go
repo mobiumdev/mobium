@@ -402,13 +402,48 @@ func (w *WDA) HasFocus(ctx context.Context, n *uitree.Node) (bool, error) {
 	return id == active, nil
 }
 
+// confirmPassword confirms keys typed into a focused password field by its
+// length, which is all that can be read of it.
+func (w *WDA) confirmPassword(ctx context.Context, had int, text string) (*FocusedField, error) {
+	want := had + len([]rune(text))
+	for attempt := 1; ; attempt++ {
+		after, err := w.FocusedField(ctx)
+		if err != nil || after == nil {
+			return nil, mobiumerr.New(mobiumerr.NotConfirmed, "typed into the focused password field and could not "+
+				"read its length back")
+		}
+		held := len([]rune(after.Value))
+		if held == want {
+			return after, nil
+		}
+		if had > 0 || attempt >= setTextAttempts {
+			if err := w.keyboardLacks(ctx, text, len([]rune(text)), had, held); err != nil {
+				return after, err
+			}
+			return after, mobiumerr.New(mobiumerr.NotConfirmed, "typed %d characters into the password field, which "+
+				"held %d, and it holds %d — the keystrokes did not all arrive", len([]rune(text)), had, held)
+		}
+		id, err := w.w3c.activeElement(ctx)
+		if err != nil {
+			return nil, err
+		}
+		if err := w.w3c.clearElement(ctx, id); err != nil {
+			return nil, err
+		}
+		if err := w.w3c.setElementValueAt(ctx, id, text, typingFrequencies[attempt]); err != nil {
+			return nil, err
+		}
+	}
+}
+
 // TypeIntoFocus types at the cursor of the focused field and confirms it.
 //
 // iOS drops keystrokes: "mob ü\"q'" typed into the focused field on the
 // simulator came back "m ü\"q'", reported as a success (CHALLENGES 61). So
 // a mismatch is retried as app_type retries — the field set to what it
-// should hold and read back — and a password, which reads back as bullets,
-// is typed once and not compared.
+// should hold and read back. A password reads back as bullets, so only its
+// length is compared, and it is retried only when it was empty before, the
+// one case where what it should hold is known (CHALLENGES 159).
 func (w *WDA) TypeIntoFocus(ctx context.Context, text string) (*FocusedField, error) {
 	before, err := w.FocusedField(ctx)
 	if err != nil {
@@ -421,7 +456,7 @@ func (w *WDA) TypeIntoFocus(ctx context.Context, text string) (*FocusedField, er
 		return nil, err
 	}
 	if before.Password {
-		return w.FocusedField(ctx)
+		return w.confirmPassword(ctx, len([]rune(before.Value)), text)
 	}
 	want := before.Value + text
 	for attempt := 1; ; attempt++ {

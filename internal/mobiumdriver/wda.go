@@ -378,23 +378,42 @@ func (w *WDA) SetText(ctx context.Context, n *uitree.Node, text string) error {
 		return err
 	}
 
-	// A password field cannot be confirmed this way and must not be tried: it
-	// reads back as bullets, so the comparison below would fail on a perfectly
-	// good type, forever. Found by this check on the login screen — "hunter2"
-	// against "•••••••" — which is the same masking `uitree.Redact` exists for.
+	// A password field cannot be compared: it reads back as bullets, so
+	// "hunter2" against "•••••••" would fail on a perfectly good type,
+	// forever. But one bullet is one character, so its length is confirmed
+	// instead — on a real iPhone, ten characters typed into MobiumApp's
+	// password field left one, or none, while the call reported all ten
+	// (CHALLENGES 159). Only lengths are ever reported.
 	//
 	// It is cleared first, because WebDriverAgent types through the keyboard
 	// and so appends: a field holding ten characters held seventeen after
-	// seven more, while the call reported typing seven. An ordinary field is
-	// put right by the read-back below, which clears and retries; a password
-	// field has no read-back, so it is cleared before rather than after —
-	// which makes app_type replace a field's contents on iOS as it does on
-	// Android, password or not (CHALLENGES 103).
+	// seven more, while the call reported typing seven. That makes app_type
+	// replace a field's contents on iOS as it does on Android, password or
+	// not (CHALLENGES 103).
 	if n.Password {
-		if err := w.w3c.clearElement(ctx, elID); err != nil {
+		want := len([]rune(text))
+		held := 0
+		for attempt := 1; attempt <= setTextAttempts; attempt++ {
+			if err := w.w3c.clearElement(ctx, elID); err != nil {
+				return err
+			}
+			if err := w.w3c.setElementValueAt(ctx, elID, text, typingFrequencies[attempt-1]); err != nil {
+				return err
+			}
+			if held, err = w.secureLength(ctx, elID); err != nil {
+				return mobiumerr.New(mobiumerr.NotConfirmed, "typed into the password field and could not read "+
+					"its length back to confirm it: %w", err)
+			}
+			if held == want {
+				return nil
+			}
+		}
+		if err := w.keyboardLacks(ctx, text, want, 0, held); err != nil {
 			return err
 		}
-		return w.w3c.setElementValue(ctx, elID, text)
+		return mobiumerr.New(mobiumerr.NotConfirmed, "typed %d characters into the password field and it holds %d — "+
+			"the keystrokes did not all arrive, and retrying %d times, down to %d keys a second, did not recover "+
+			"them", want, held, setTextAttempts-1, typingFrequencies[setTextAttempts-1])
 	}
 
 	var got string
@@ -435,6 +454,41 @@ func (w *WDA) SetText(ctx context.Context, n *uitree.Node, text string) error {
 	return mobiumerr.New(mobiumerr.NotConfirmed, "typed %q and the field holds %q — iOS dropped a keystroke, and "+
 		"retrying %d times, down to %d keys a second, did not recover it", text, got, setTextAttempts-1,
 		typingFrequencies[setTextAttempts-1])
+}
+
+// keyboardLacks is the refusal for a password that came up short because the
+// keyboard on screen has no keys for some of it, or nil when that is not why.
+func (w *WDA) keyboardLacks(ctx context.Context, text string, typed, had, held int) error {
+	tree, err := w.Snapshot(ctx)
+	if err != nil {
+		return nil
+	}
+	missing, sample := keyless(tree, text)
+	if missing == 0 {
+		return nil
+	}
+	return mobiumerr.New(mobiumerr.NotConfirmed, "typed %d characters into the password field, which held %d, "+
+		"and it holds %d — %d of them have no key on the keyboard on screen (its keys include %s), and on a "+
+		"real iPhone a password field is typed key by key on that keyboard, so they were dropped", typed, had,
+		held, missing, sample).
+		WithRemedy("switch the phone to a keyboard that has those characters — the globe key on the keyboard — "+
+			"and type it again").
+		WithDetail("keyless", missing)
+}
+
+// secureLength is how many characters a password field holds, read from the
+// bullets it shows. An empty one reports its placeholder, in clear, as its
+// value — "password", eight characters, on the simulator and the phone — so a
+// value equal to the placeholder is none.
+func (w *WDA) secureLength(ctx context.Context, elID string) (int, error) {
+	v, err := w.w3c.elementValue(ctx, elID)
+	if err != nil {
+		return 0, err
+	}
+	if ph, _ := w.w3c.elementAttribute(ctx, elID, "placeholderValue"); ph != "" && ph == v {
+		return 0, nil
+	}
+	return len([]rune(v)), nil
 }
 
 // Clear empties a text field.
