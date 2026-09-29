@@ -5,6 +5,8 @@ real device, with every command and line of output what mobium printed.
 
 | Guide | For |
 | --- | --- |
+| [The command line](cli.md) | how the commands fit together: sessions, the map-act-map loop, locators and refs, `--json`, exit statuses, `batch`, and the daemon |
+| [MCP](mcp.md) | Mobium as an agent's tools: connecting a client, an agent driving a device, what a client sees, answers, failures and sessions |
 | [Auto-wait](autowait.md) | what an action waits for before it touches anything, what it refuses and why, and waiting on purpose with `mobium wait` |
 | [Test runner](test-runner.md) | `mobium test`: a config, a test file, a failure with its evidence, retries and flaky, several devices, CI |
 | [Network conditions](network.md) | taking an Android device offline or slowing it down, reading back what it really has, and doing it inside a test |

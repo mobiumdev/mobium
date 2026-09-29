@@ -260,6 +260,10 @@ client takes it as a `session` option ([SETUP.md](docs/SETUP.md#parallel-runs)).
 claude mcp add mobium -- mobium mcp
 ```
 
+[The MCP guide](docs/guides/mcp.md) has other clients' configuration, an
+agent at work, and what the protocol carries; [the command-line
+guide](docs/guides/cli.md) is the same for `mobium` itself.
+
 **Agent skill:** [skills/mobile-check/SKILL.md](skills/mobile-check/SKILL.md) teaches the
 loop, the locators, WebView contexts, and that a command reporting success is
 not evidence the app did anything.
@@ -322,7 +326,7 @@ is the protocol.
 | | |
 | --- | --- |
 | [docs/quickstart/](docs/quickstart/README.md) | using Mobium: install it and drive a device, from each client |
-| [docs/guides/](docs/guides/README.md) | the next steps: auto-wait, `mobium test`, network conditions, and driving other machines' devices through a grid |
+| [docs/guides/](docs/guides/README.md) | the command line and MCP, auto-wait, `mobium test`, network conditions, and driving other machines' devices through a grid |
 | [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) | working on Mobium: toolchains, `make ci`, device checks, pull requests |
 | [docs/PHILOSOPHY.md](docs/PHILOSOPHY.md) | *mutatis mutandis*: where the motto comes from, and the one design rule |
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | the layers, the package graph, and one call end to end |
