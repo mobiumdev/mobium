@@ -1098,6 +1098,14 @@
     },
     {
       "tool": "app_map",
+      "arg": "diff",
+      "type": "boolean",
+      "setBy": [
+        "map"
+      ]
+    },
+    {
+      "tool": "app_map",
       "arg": "driver",
       "type": "string",
       "setBy": [
@@ -2750,6 +2758,12 @@
       "command": "map",
       "tools": [
         "app_map"
+      ],
+      "flags": [
+        "--diff"
+      ],
+      "sends": [
+        "diff"
       ]
     },
     {

@@ -86,6 +86,26 @@ check(answers == list(range(8)), f"8 threads did not each get their own answer: 
 check(time.monotonic() - t0 >= 8 * 0.3 - 0.05, "8 slow calls did not run one at a time")
 c.close()
 
+# -- map_diff asks for a diff and parses it as map() parses elements --------
+d = connect(binary=FAKE)
+sent = []
+real = d._data
+d._data = lambda tool, args=None: sent.append((tool, args)) or real(tool, args)
+got = d.map_diff()
+check(sent == [("app_map", {"diff": True})], f"map_diff sent {sent}, want app_map with diff true")
+check(got["first"] is True and not (got["added"] or got["removed"] or got["changed"]),
+      f"the first map_diff did not say there was nothing to compare with: {got}")
+d._data = real
+got = d.map_diff()
+check(got["first"] is False and got["since"] == "2026-09-29T10:00:00Z", f"a later map_diff was reported as first: {got}")
+check([(e.ref, e.label, e.locator, e.bounds.center) for e in got["added"]] == [("@e1", "OK", "text=OK", (5, 5))],
+      f"added was not parsed as map() parses elements: {got['added']}")
+check([e.ref for e in got["removed"]] == ["@e9"], f"removed was not parsed: {got['removed']}")
+ch = got["changed"]
+check(len(ch) == 1 and ch[0]["before"].checked is False and ch[0]["after"].checked is True
+      and ch[0]["what"] == ["checked"], f"changed was not parsed into before, after and what: {ch}")
+d.close()
+
 # -- NaN is refused, not sent bare ----------------------------------------
 d = connect(binary=FAKE)
 e = raises(InvalidArgumentError, lambda: d.set_location(float("nan"), 0))

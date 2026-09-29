@@ -134,7 +134,7 @@ the wrong string.
 
 | | |
 | --- | --- |
-| Reading | `map`, `text`, `find`, `screenshot`, the raw `source` with passwords hidden, WebView contexts |
+| Reading | `map`, and `map --diff` for what an action changed; `text`, `find`, `screenshot`, the raw `source` with passwords hidden, WebView contexts |
 | Acting | tap, double tap, type, swipe, long press, drag and drop, two-finger zoom and rotate; `check`/`uncheck` reach a state and confirm it |
 | Waiting | `wait` for appear, disappear, text, enabled or disabled |
 | Apps | launch, terminate, install, uninstall, list, clear data, open a URL or deep link, foreground app, any app's state, backgrounding and resuming |

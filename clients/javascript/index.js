@@ -507,6 +507,31 @@ export class Device {
     return toElements(await this.#data('app_map'))
   }
 
+  /**
+   * What changed since the last map of this device: the elements added,
+   * removed and changed, each shaped as map() returns them. It maps the
+   * screen as map() does, so it also replaces the refs. Refs in `added` and
+   * in each change's `after` are the new map's; those in `removed` and in
+   * `before` are stale. `first` is true when there was no earlier map to
+   * compare with, and then the whole screen is in `added`. A change's `what` names the fields that differ:
+   * "label", "checked" or "moved".
+   */
+  async mapDiff() {
+    const diff = ((await this.#data('app_map', { diff: true })) || {}).diff || {}
+    const list = (xs) => (xs || []).map(toElement)
+    return {
+      first: diff.first === true,
+      since: diff.since || '',
+      added: list(diff.added),
+      removed: list(diff.removed),
+      changed: (diff.changed || []).map((c) => ({
+        before: toElement(c.before),
+        after: toElement(c.after),
+        what: c.what || [],
+      })),
+    }
+  }
+
   /** All readable text, or the text of one element. */
   text(target) {
     return this.#text('app_text', target ? { target } : {})

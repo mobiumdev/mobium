@@ -228,6 +228,28 @@ public final class Mobium implements AutoCloseable {
     public List<Element> map() { return elements("app_map", null); }
 
     /**
+     * Maps the screen and says how it differs from the last map of this
+     * device: what appeared, what went away, and what changed its label, its
+     * checked state or its place. Called after an action, it is what that
+     * action just did.
+     *
+     * <p>{@code added} and {@code removed} are lists of elements;
+     * {@code changed} holds {@code before}, {@code after} and {@code what},
+     * which names each of {@code "label"}, {@code "checked"} and
+     * {@code "moved"} that differs. {@code since} is when the earlier map was
+     * taken. {@code first} is true when there was no earlier map to compare
+     * with, and then the whole screen is in {@code added}. Refs in {@code added} and in each
+     * {@code after} are the new map's, so they can be acted on at once; those
+     * in {@code removed} and {@code before} belong to a screen that is gone.
+     *
+     * @return the diff, with {@code added}, {@code removed} and {@code changed},
+     *         and {@code first} or {@code since}
+     */
+    public Map<String, Object> mapDiff() {
+        return Json.asObject(data("app_map", args("diff", true)).get("diff"));
+    }
+
+    /**
      * The elements matching a locator, without acting on them.
      *
      * @param locator a locator, such as {@code "text=Sign in"} or {@code "testid=email"}

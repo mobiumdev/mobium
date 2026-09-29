@@ -50,6 +50,8 @@ type MapView struct {
 	Elements []ElementView `json:"elements"`
 	Context  string        `json:"context"`
 	Device   string        `json:"device"`
+	// Diff is what changed since the last map, when diff was asked for.
+	Diff *MapDiffView `json:"diff,omitempty"`
 }
 
 // DeviceView is one attached device or simulator.
