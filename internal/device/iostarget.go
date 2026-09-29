@@ -25,10 +25,11 @@ func (t *IOSTarget) Serial() string {
 	return t.SimInfo.UDID
 }
 
-// Model is a human name for the device.
+// Model is a human name for the device: a phone's model, never its owner's
+// name for it.
 func (t *IOSTarget) Model() string {
 	if t.Phone != nil {
-		return t.Phone.Phone.Name
+		return t.Phone.Phone.Label()
 	}
 	return t.SimInfo.Name
 }

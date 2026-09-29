@@ -7,7 +7,7 @@ the source.
 
 The pattern across them is the reason the document exists: **almost nothing
 here was found by reading code or by a test written from imagination.** Of
-174 defects, 138 were found only by running against a real device. The other
+175 defects, 139 were found only by running against a real device. The other
 thirty-six — 4, 5, 6, 14, 23, 24, 32, 35, 36, 39, 44, 50, 53, 54, 57, 66, 89,
 99, 100, 121, 123, 129, 130, 133, 134, 139, 140, 141, 142, 144, 150, 158, 162,
 164, 165 and 172 — came from reading code, the compiler, a test, a linter,
@@ -3921,6 +3921,26 @@ what the app says was picked — and asserts only whether. It also finds its
 way from Recents through Browse and On My iPhone to the app's folder. A
 failure that names the wrong cause was fixed on the way: a device that was
 not connected was reported as MobiumApp not being installed.
+
+### 175. Every phone message named its owner
+
+**Found by:** the iPhone runs above, whose output began "starting
+WebDriverAgent on Lana Begunova's iPhone".
+
+161 took the owner's name for the phone out of `app_devices`' structured
+answer and left it in two places: the `mobium devices` line, read by the
+person at the machine, who needs it to pick a phone, and every message.
+The message route was the one that travels. The start line, the refusals
+for a phone that is not paired, locked or without Developer Mode, a tunnel
+that did not come up, a phone no longer listed, WebDriverAgent failing to
+start, the list of devices to choose between, and the device model a
+session reports all named it, and all of it lands in logs, CI output and
+`mobium test` reports. They now name the phone by `Phone.Label()`, its
+model ("iPhone 15 Plus"), and "the iPhone" when there is none. The devices
+line keeps the name, and a name given as `--device` still matches, since
+that is input, not output. On the phone, the start line now reads "starting
+WebDriverAgent on iPhone 15 Plus", and the owner's name is in none of the
+output.
 
 ## Findings that were not defects
 

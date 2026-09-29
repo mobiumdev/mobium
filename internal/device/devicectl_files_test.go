@@ -1,6 +1,7 @@
 package device
 
 import (
+	"strings"
 	"testing"
 	"time"
 )
@@ -28,5 +29,23 @@ func TestParsePhoneFilesKeepsTheFolderFilesAlone(t *testing.T) {
 	}
 	if files[0].Bytes != 24 || !files[0].Modified.Equal(time.Date(2026, 9, 29, 19, 37, 12, 0, time.UTC)) {
 		t.Errorf("invoice-42.txt = %+v", files[0])
+	}
+}
+
+// A message names a phone by its model, never by its owner's name for it;
+// with no model it says "the iPhone" (CHALLENGES 175).
+func TestAPhoneIsLabeledByItsModel(t *testing.T) {
+	p := Phone{Name: "Somebody's iPhone", Model: "iPhone 15 Plus"}
+	if got := p.Label(); got != "iPhone 15 Plus" {
+		t.Errorf("Label() = %q", got)
+	}
+	p.Model = ""
+	if got := p.Label(); got != "the iPhone" {
+		t.Errorf("with no model, Label() = %q", got)
+	}
+	for _, err := range []error{Phone{Name: "Somebody's iPhone", Model: "iPhone 15 Plus"}.Usable()} {
+		if err != nil && strings.Contains(err.Error(), "Somebody") {
+			t.Errorf("a refusal names the owner: %v", err)
+		}
 	}
 }

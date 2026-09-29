@@ -443,7 +443,7 @@ func iosKind(ctx context.Context, ref string) string {
 	phones, _ := device.Phones(ctx)
 	for _, p := range phones {
 		if p.Matches(ref) {
-			return "an iPhone (" + p.Name + ")"
+			return "an iPhone (" + p.Label() + ")"
 		}
 	}
 	return ""

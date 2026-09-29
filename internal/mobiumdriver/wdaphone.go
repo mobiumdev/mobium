@@ -65,7 +65,7 @@ func (w *WDA) startPhone(ctx context.Context, progress func(string)) error {
 			if w.runner == nil {
 				return mobiumerr.New(mobiumerr.DeviceNotReady, "a WebDriverAgent that Mobium did not start is "+
 					"running on %s and answers on the phone's Wi-Fi, so anyone on that network could drive the "+
-					"phone through it; Mobium will not use it", p.Name).
+					"phone through it; Mobium will not use it", p.Label()).
 					WithRemedy("stop it — end the Xcode test or the xcodebuild that runs it — and run the " +
 						"command again; Mobium then starts its own, reachable only over the cable")
 			}
@@ -84,7 +84,7 @@ func (w *WDA) startPhone(ctx context.Context, progress func(string)) error {
 		return err
 	}
 	if progress != nil {
-		progress("starting WebDriverAgent on " + p.Name)
+		progress("starting WebDriverAgent on " + p.Label())
 	}
 	// Bound to the tunnel, not every interface: on Wi-Fi an unbound runner
 	// answered the whole network (CHALLENGES 153). With no tunnel address to
@@ -110,11 +110,11 @@ func (w *WDA) startPhone(ctx context.Context, progress func(string)) error {
 		if runner.Exited() {
 			w.runner = nil
 			return mobiumerr.New(mobiumerr.DeviceNotReady, "WebDriverAgent did not start on %s: %s. The full log is %s",
-				p.Name, runner.Failure(), runner.Log)
+				p.Label(), runner.Failure(), runner.Log)
 		}
 		if why := runner.Blocked(); why != "" {
 			w.teardownLocked(ctx)
-			return mobiumerr.New(mobiumerr.DeviceNotReady, "WebDriverAgent cannot start on %s: %s", p.Name, why)
+			return mobiumerr.New(mobiumerr.DeviceNotReady, "WebDriverAgent cannot start on %s: %s", p.Label(), why)
 		}
 		if w.w3c.ready(ctx) {
 			return nil
@@ -138,7 +138,7 @@ func (w *WDA) startPhone(ctx context.Context, progress func(string)) error {
 	}
 	w.teardownLocked(ctx)
 	return mobiumerr.New(mobiumerr.Timeout, "WebDriverAgent did not answer on %s within %s. Keep the phone "+
-		"unlocked while it starts; the runner's log is %s", p.Name, phoneReadyTimeout, runner.Log)
+		"unlocked while it starts; the runner's log is %s", p.Label(), phoneReadyTimeout, runner.Log)
 }
 
 // phoneScreenshot captures the screen through WebDriverAgent: devicectl has no
