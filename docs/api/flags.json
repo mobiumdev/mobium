@@ -2525,6 +2525,17 @@
       ]
     },
     {
+      "command": "inspect",
+      "flags": [
+        "--open",
+        "--port"
+      ],
+      "sends": [
+        "darwin",
+        "windows"
+      ]
+    },
+    {
       "command": "install",
       "tools": [
         "app_install"

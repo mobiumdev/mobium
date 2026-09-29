@@ -14,7 +14,8 @@ this is what is not.
   the step shorthand, soft assertions, a trace per test and `--debug`.
   Next: the suite on the real phones, where a password needs the phone's
   keyboard to have its letters (CHALLENGES 159). Later: an interactive
-  mode, recording a test from what a person does, and parameters.
+  mode, and parameters. Recording a test from what a person does is
+  `mobium inspect`, since 2026-09-29 ([decisions/0007](decisions/0007-an-inspector.md)).
   [decisions/0006](decisions/0006-a-test-runner.md).
 - **Windows.** Everything that needs no device passes on a GitHub-hosted
   Windows runner, every run: both modules' tests, the named-pipe daemon

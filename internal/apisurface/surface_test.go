@@ -67,6 +67,9 @@ func TestCLICommandsWithoutAToolAreTheProcessOnes(t *testing.T) {
 		// The test runner calls tools, but from test files through
 		// internal/testrun, not by name here; show-report opens a file.
 		"test": true, "show-report": true,
+		// The inspector calls tools too, from what its page asks for,
+		// through internal/inspect.
+		"inspect": true,
 	}
 	for _, cmd := range sweep(t).Extra {
 		if !expected[cmd] {

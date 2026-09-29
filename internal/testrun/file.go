@@ -140,6 +140,27 @@ func (s Step) argumentsOrEmpty() map[string]interface{} {
 	return s.Arguments
 }
 
+// Shorthand is a tool call spelled as the step shorthand reads it: the tool's
+// name without "app_", and its main argument as a string when that is all
+// the call has, or its arguments. What `mobium inspect` records, so a test it
+// writes reads the way one written by hand does.
+func Shorthand(name string, args map[string]interface{}) map[string]interface{} {
+	short := strings.TrimPrefix(name, "app_")
+	if len(args) == 1 {
+		if schema, ok := toolSchema(name); ok {
+			if main, err := mainArgument(name, schema); err == nil {
+				if v, ok := args[main].(string); ok {
+					return map[string]interface{}{short: v}
+				}
+			}
+		}
+	}
+	if args == nil {
+		args = map[string]interface{}{}
+	}
+	return map[string]interface{}{short: args}
+}
+
 // toolSchema is a tool's input schema.
 func toolSchema(name string) (map[string]interface{}, bool) {
 	for _, t := range agent.GetToolSchemas() {

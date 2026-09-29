@@ -245,6 +245,11 @@ flowchart LR
     webview --> devices
 ```
 
+`mobium inspect` serves the same tools as a page on this machine: the
+screen with every element outlined, the locator for the one clicked, and
+what you do recorded as a test
+([docs/guides/inspector.md](docs/guides/inspector.md)).
+
 [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) has the full picture: every
 layer, the package graph, and one call traced end to end.
 

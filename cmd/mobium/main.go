@@ -150,6 +150,7 @@ func main() {
 		newNetworkCmd(),
 		newTestCmd(),
 		newShowReportCmd(),
+		newInspectCmd(),
 	)
 
 	err := root.Execute()
