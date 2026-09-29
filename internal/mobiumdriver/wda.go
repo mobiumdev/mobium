@@ -46,6 +46,13 @@ type WDA struct {
 	hintMu    sync.Mutex
 	expecting string
 
+	// axSeen is what the last visit to a phone's Settings read, which a
+	// read of every accessibility setting answers from. See phoneAX.
+	axSeen axSeen
+	// axPend is what each accessibility setting changed on a phone was
+	// before, which restoreAX puts back all at once.
+	axPend axPending
+
 	mu sync.Mutex
 	// scale converts WebDriverAgent's points to device pixels. Mobium's
 	// coordinate space is pixels on both platforms, so this is applied to

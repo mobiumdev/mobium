@@ -41,10 +41,13 @@ type Daemon struct {
 }
 
 // closeTimeout bounds closing the device sessions at shutdown. A var so
-// tests can shrink it. Closing is normally a second or two — stopping an
-// instrumentation, deleting a WebDriverAgent session — so this only ever
-// runs out when a tool call is stuck holding the sessions.
-var closeTimeout = 20 * time.Second
+// tests can shrink it. Closing is usually a second or two — stopping an
+// instrumentation, deleting a WebDriverAgent session — but putting a real
+// iPhone's accessibility settings back goes through its Settings app, about
+// ten seconds a page, and at 20s the stop ran out after two of six and left
+// four of a person's settings changed (CHALLENGES 160). Running out is the
+// worse harm, so it is generous.
+var closeTimeout = 75 * time.Second
 
 // Options configures a Daemon.
 type Options struct {

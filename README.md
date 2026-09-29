@@ -182,9 +182,9 @@ idle and so cannot read one that animates.
 with `simctl`. **A real iPhone** takes the same backend: turn on Developer
 Mode and Settings > Developer > Enable UI Automation, add an Apple ID to
 Xcode, and the first command builds and signs WebDriverAgent for your team.
-Controls that only `simctl` has — permissions, appearance, accessibility
-settings, clipboard, simulated location — are refused on a phone with the
-reason.
+Controls that only `simctl` has — permissions, appearance, clipboard,
+simulated location — are refused on a phone with the reason; accessibility
+settings go through the phone's own Settings app.
 [docs/SETUP.md](docs/SETUP.md#ios-real-device) has the steps.
 
 **Windows is not supported yet.** Everything cross-compiles for Windows, and

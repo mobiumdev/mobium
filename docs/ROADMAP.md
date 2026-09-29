@@ -47,9 +47,6 @@ this is what is not.
     says true there, and false for a pass-through the tap reaches — so what
     is left needs a signal from below accessibility, which nothing outside
     the app has yet.
-- **Accessibility settings on a real iPhone.** `app_accessibility` works on a
-  simulator and on Android; on a phone nothing outside changes them, and the
-  Settings screens are the route.
 - **Session recording and `diff map`.** Screen recording is done; a filmstrip of
   what each call did, and a way to see what changed between two screens, are
   not.

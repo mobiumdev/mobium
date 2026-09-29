@@ -13,8 +13,8 @@ func newAccessibilityCmd() *cobra.Command {
 			"button_shapes, differentiate_without_color, invert_colors, grayscale, and text\n" +
 			"size — text_size (a category) on iOS, text_scale (a number) on Android.\n" +
 			"A switch takes \"on\" or \"off\". A platform that lacks one says so.\n\n" +
-			"An iOS simulator and Android are supported. On a real iPhone nothing outside\n" +
-			"can change these; the refusal names the Settings route.",
+			"On a real iPhone, where nothing outside can change them, Mobium goes through\n" +
+			"the Settings app for the six switches and comes back to the app in front.",
 		Example: `  mobium accessibility                       # everything, as it is now
   mobium accessibility bold_text on
   mobium accessibility text_size accessibility-large   # iOS
