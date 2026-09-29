@@ -235,3 +235,34 @@ supported when those pass, and only then.
 - [ ] `make crosscompile` passes (CI does this)
 - [ ] On Windows: `go test ./internal/daemon/ ./internal/paths/` passes, and
       the CLI auto-starts a daemon that survives its terminal closing
+
+## The MCP Registry
+
+The release workflow attaches `mobium-<version>.mcpb` — the MCP bundle for
+macOS and Linux — and `server.json`, the registry entry pointing at it,
+after checking both ([packaging/mcp](../packaging/mcp/README.md)). Publishing
+the entry is a person's step, under the name `dev.mobium/mobium`, which the
+registry grants to whoever proves control of `mobium.dev`.
+
+Once, before the first publish:
+
+- [ ] An Ed25519 key, made with OpenSSL 3 (macOS's own `openssl` cannot):
+      `/opt/homebrew/opt/openssl@3/bin/openssl genpkey -algorithm Ed25519 -out mcp-registry.pem`,
+      kept out of every repository
+- [ ] Its TXT record on the **apex** of `mobium.dev` — not under a selector —
+      as `mcp-publisher` prints it:
+      `mobium.dev. IN TXT "v=MCPv1; k=ed25519; p=<public key>"`, beside the
+      Maven Central record already there
+
+Each release, after the release workflow has attached the assets:
+
+- [ ] `mcp-publisher` v1.8.1 or later, checked against the release's
+      `registry_<version>_checksums.txt`
+- [ ] `mcp-publisher login dns --domain mobium.dev --private-key <hex>`
+- [ ] Download the release's `server.json` and, beside it,
+      `mcp-publisher publish`
+- [ ] The entry is there:
+      `curl -s "https://registry.modelcontextprotocol.io/v0/servers?search=mobium" | grep -o '"dev.mobium/mobium"[^}]*"version":"[^"]*"'`
+      shows the new version. Search matches the part of a name after the
+      slash, so searching for `dev.mobium` finds nothing, measured with the
+      registry's own `io.modelcontextprotocol/everything`

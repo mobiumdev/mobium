@@ -1,0 +1,35 @@
+{
+  "manifest_version": "0.3",
+  "name": "mobium",
+  "display_name": "Mobium",
+  "version": "@VERSION@",
+  "description": "Drive native Android and iOS apps on emulators, phones, simulators and iPhones, WebViews included.",
+  "long_description": "Mobium automates native mobile apps for AI agents: map the screen, tap, type and swipe by locator, wait for states, answer system dialogs, reach into WebViews, take screenshots and recordings, and set network conditions, location and accessibility settings. It drives Android through UiAutomator2 and iOS through WebDriverAgent, directly, with no Appium and no Node. It needs the platform's own tools on the machine: Android's platform-tools for Android, Xcode for iOS.",
+  "author": {
+    "name": "Lana Begunova",
+    "url": "https://github.com/mobiumdev"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/mobiumdev/mobium"
+  },
+  "homepage": "https://github.com/mobiumdev/mobium",
+  "documentation": "https://github.com/mobiumdev/mobium/blob/main/docs/guides/mcp.md",
+  "support": "https://github.com/mobiumdev/mobium/issues",
+  "license": "MIT",
+  "icon": "icon.png",
+  "keywords": ["mobile", "android", "ios", "automation", "testing", "uiautomator2", "webdriveragent", "emulator", "simulator"],
+  "server": {
+    "type": "binary",
+    "entry_point": "server/mobium",
+    "mcp_config": {
+      "command": "${__dirname}/server/mobium",
+      "args": ["mcp"],
+      "env": {}
+    }
+  },
+  "tools": [],
+  "compatibility": {
+    "platforms": ["darwin", "linux"]
+  }
+}

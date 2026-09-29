@@ -19,6 +19,7 @@ on:
     paths:
       - Makefile
       - .github/workflows/release.yml
+      - packaging/mcp/**
 
 permissions:
   contents: read
@@ -50,6 +51,10 @@ jobs:
       - name: make dist
         run: make dist VERSION="$VERSION"
 
+      # The MCP bundle and the MCP Registry entry, from the archives above.
+      - name: make mcpb
+        run: make mcpb VERSION="$VERSION"
+
       # Read back, not assumed: every archive against its checksum, and the
       # binary asked what version it is.
       - name: Verify
@@ -62,6 +67,40 @@ jobs:
           [ "$got" = "mobium version $VERSION" ] || { echo "the binary says '$got', not $VERSION"; exit 1; }
           rm -rf "mobium_${VERSION}_linux_amd64"
           ls -l
+
+      # The bundle checked by the tools that will read it: its manifest by
+      # the MCPB CLI, the registry entry by mcp-publisher against the live
+      # registry, both pinned, mcp-publisher checked against its checksums —
+      # and the bundle run, through its launcher, as an MCP server.
+      - name: Verify the MCP bundle and registry entry
+        env:
+          DISABLE_TELEMETRY: '1'
+        run: |
+          mkdir -p /tmp/mcpb && cd /tmp/mcpb
+          unzip -q "$GITHUB_WORKSPACE/dist/mobium-${VERSION}.mcpb"
+          npx -y @anthropic-ai/mcpb@2.1.2 validate manifest.json
+          python3 - <<'PY'
+          import json, subprocess
+          p = subprocess.Popen(["server/mobium", "mcp"], stdin=subprocess.PIPE, stdout=subprocess.PIPE, text=True)
+          def req(i, m, params):
+              p.stdin.write(json.dumps({"jsonrpc": "2.0", "id": i, "method": m, "params": params}) + "\n")
+              p.stdin.flush()
+              while True:
+                  r = json.loads(p.stdout.readline())
+                  if r.get("id") == i:
+                      return r["result"]
+          req(1, "initialize", {"protocolVersion": "2024-11-05", "capabilities": {}, "clientInfo": {"name": "ci", "version": "1"}})
+          n = len(req(2, "tools/list", {})["tools"])
+          p.stdin.close(); p.wait(timeout=30)
+          assert n > 0, "the bundle's server listed no tools"
+          print(f"the bundle's server answered, with {n} tools")
+          PY
+          b=https://github.com/modelcontextprotocol/registry/releases/download/v1.8.1
+          curl -fsSLO "$b/mcp-publisher_linux_amd64.tar.gz" && curl -fsSLO "$b/registry_1.8.1_checksums.txt"
+          grep ' mcp-publisher_linux_amd64.tar.gz$' registry_1.8.1_checksums.txt | sha256sum -c
+          tar -xzf mcp-publisher_linux_amd64.tar.gz mcp-publisher
+          cd "$GITHUB_WORKSPACE/dist" && /tmp/mcpb/mcp-publisher validate server.json
+          shasum -a 256 -c SHA256SUMS
 
       - uses: actions/upload-artifact@v4
         with:
@@ -88,4 +127,4 @@ jobs:
         run: |
           gh release create "$GITHUB_REF_NAME" dist/* \
             --repo "$GITHUB_REPOSITORY" --verify-tag --title "mobium ${GITHUB_REF_NAME}" \
-            --notes "Prebuilt mobium for macOS, Linux and Windows, amd64 and arm64. Check a download against SHA256SUMS. The macOS binaries are not notarized; see docs/SETUP.md."
+            --notes "Prebuilt mobium for macOS, Linux and Windows, amd64 and arm64, and mobium-${GITHUB_REF_NAME#v}.mcpb, the MCP bundle for macOS and Linux. Check a download against SHA256SUMS. The macOS binaries are not notarized; see docs/SETUP.md."
