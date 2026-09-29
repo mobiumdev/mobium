@@ -85,8 +85,9 @@ this is what is not.
 - ~~**Pulling a file off the device**~~ (written down 2026-09-28) — done
   2026-09-29 as `upload` and `download`: the shared Download folder on
   Android, an app's Documents on an iOS simulator, each confirmed at the far
-  end (`docs/checks/files.sh`). A real iPhone is next, through the
-  CoreDevice file service; it is refused as not built yet.
+  end (`docs/checks/files.sh`). Since 2026-09-29 also a real iPhone,
+  through CoreDevice's file service, which has no delete (CHALLENGES 173).
+  The check passes on the iPhone 15 Plus and the Pixel 8 Pro.
 - **Booting and shutting down emulators and simulators** (written down
   2026-09-28). `devices` lists them; starting one is still the platform's
   own command.

@@ -13,7 +13,8 @@ func newUploadCmd() *cobra.Command {
 			"downloads, which is where an app's file picker looks: Android's shared\n" +
 			"Download folder, or on iOS an app's own Documents folder (the app in front,\n" +
 			"or --app). On Android the file is indexed by MediaStore, which is what the\n" +
-			"picker reads, and read back there. A real iPhone is not built yet.",
+			"picker reads, and read back there. On a real iPhone the upload is read back\n" +
+			"from the phone and its bytes compared.",
 		Example: `  mobium upload ./fixtures/invoice.pdf
   mobium upload report.csv --name q3.csv
   mobium upload photo.jpg --app com.example.shop    # iOS: that app's Documents`,
@@ -42,8 +43,7 @@ func newDownloadCmd() *cobra.Command {
 		Long: "Downloads a file from where the device keeps what a person downloads —\n" +
 			"Android's shared Download folder, or on iOS an app's own Documents — to this\n" +
 			"machine, to check what an app saved. With no name, lists the folder. The\n" +
-			"copy's size is read back against the device's. A real iPhone is not built\n" +
-			"yet.",
+			"copy's size is read back against the device's, a real iPhone's included.",
 		Example: `  mobium download                              # what is there
   mobium download mobium-report.txt            # saves ./mobium-report.txt
   mobium download invoice.pdf -o out/invoice.pdf`,

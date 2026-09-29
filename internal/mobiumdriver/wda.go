@@ -642,26 +642,27 @@ func (w *WDA) ListApps(ctx context.Context, includeSystem bool) ([]device.Instal
 	return w.sim.ListApps(ctx, includeSystem)
 }
 
-// UploadFile puts a file in an app's Documents on the simulator.
+// UploadFile puts a file in an app's Documents: simctl on a simulator,
+// CoreDevice on a phone.
 func (w *WDA) UploadFile(ctx context.Context, local, name, appID string) (device.Transfer, error) {
-	if err := w.simOnly(CapFiles); err != nil {
-		return device.Transfer{}, err
+	if w.phone != nil {
+		return w.phone.UploadFile(ctx, local, name, appID)
 	}
 	return w.sim.UploadFile(ctx, local, name, appID)
 }
 
-// DownloadFile copies a file from an app's Documents on the simulator.
+// DownloadFile copies a file from an app's Documents.
 func (w *WDA) DownloadFile(ctx context.Context, name, appID, local string) (device.Transfer, error) {
-	if err := w.simOnly(CapFiles); err != nil {
-		return device.Transfer{}, err
+	if w.phone != nil {
+		return w.phone.DownloadFile(ctx, name, appID, local)
 	}
 	return w.sim.DownloadFile(ctx, name, appID, local)
 }
 
-// ListFiles lists an app's Documents on the simulator.
+// ListFiles lists an app's Documents.
 func (w *WDA) ListFiles(ctx context.Context, appID string) ([]device.DeviceFile, error) {
-	if err := w.simOnly(CapFiles); err != nil {
-		return nil, err
+	if w.phone != nil {
+		return w.phone.ListFiles(ctx, appID)
 	}
 	return w.sim.ListFiles(ctx, appID)
 }

@@ -184,12 +184,6 @@ var simulatorOnly = map[string]string{
 	// A phone's screen is not a file on the Mac, and WebDriverAgent offers
 	// no video; not built yet rather than impossible.
 	CapRecording: "record its screen (simctl io; a phone's screen needs a video stream, not built yet)",
-	// devicectl can list an app's container and copy into and out of it, and
-	// has no way to delete from it.
-	// Not built rather than impossible: devicectl copies into and out of an
-	// app's container, and nothing here uses it yet.
-	CapFiles: "move files to and from an app's Documents (simctl here; on a phone devicectl can, and " +
-		"is not wired up yet)",
 	CapClearData: "clear an app's data (simctl; devicectl cannot delete from an app's container — " +
 		"uninstalling and reinstalling the app is the reset a phone has)",
 }
@@ -197,10 +191,7 @@ var simulatorOnly = map[string]string{
 // phoneRemedies replaces "that needs a simulator" where a phone has a route
 // of its own that works. Accessibility settings had one here until the
 // route was built in (wdaaxphone.go).
-var phoneRemedies = map[string]string{
-	CapFiles: "moving files to and from a real iPhone is not built yet: devicectl copies into and out of " +
-		"an app's container, and nothing here uses it yet. On a simulator it works",
-}
+var phoneRemedies = map[string]string{}
 
 // HasCapability declines, on a phone, what only a simulator can do. On a
 // simulator every method is real, so the answer is always yes.

@@ -529,8 +529,9 @@ class Device:
         the file is indexed in MediaStore and read back there, because the
         picker reads MediaStore rather than the folder. On an iOS simulator it
         is an app's own Documents, which the Files app shows under On My
-        iPhone: the app named, or the one in front. A real iPhone is not
-        built yet.
+        iPhone: the app named, or the one in front. On a real iPhone it is
+        the same folder, and the upload is confirmed by reading its bytes
+        back.
 
         name is what to call it on the device — a name, not a path — and
         defaults to the file's own. Returns the transfer: ``name``,
@@ -548,8 +549,8 @@ class Device:
         what an app saved.
 
         The folder is Android's shared Download folder, or on an iOS simulator
-        an app's own Documents — the app named, or the one in front. A real
-        iPhone is not built yet. The copy's size is read back against the
+        an app's own Documents — the app named, or the one in front — and on
+        a real iPhone the same. The copy's size is read back against the
         device's.
 
         With path, saves it there and returns the transfer (``name``,
@@ -576,7 +577,7 @@ class Device:
 
         Android's shared Download folder, whatever app put it there; on an
         iOS simulator an app's own Documents — the app named, or the one in
-        front. A real iPhone is not built yet.
+        front — and on a real iPhone the same.
         """
         data = self._data("app_download", {} if app is None else {"app": app}) or {}
         return data.get("files", [])

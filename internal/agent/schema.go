@@ -1518,8 +1518,8 @@ func GetToolSchemas() []Tool {
 			Description: "Put a file from this machine where the device keeps downloads, so an app's file picker " +
 				"finds it: Android's shared Download folder, or on iOS an app's own Documents folder, which the " +
 				"Files app shows under On My iPhone. Android's picker reads MediaStore rather than the folder, so " +
-				"the file is indexed and read back there; the answer says how it was confirmed. A real iPhone " +
-				"is not built yet. Upload a file for a test that picks one; download what an app saved.",
+				"the file is indexed and read back there, and on a real iPhone its bytes are read back and " +
+				"compared; the answer says how it was confirmed. Upload a file for a test that picks one; download what an app saved.",
 			InputSchema: map[string]interface{}{
 				"type": "object",
 				"properties": withDevice(map[string]interface{}{
@@ -1550,7 +1550,7 @@ func GetToolSchemas() []Tool {
 			Description: "Bring back a file from where the device keeps downloads — Android's shared Download " +
 				"folder, or on iOS an app's own Documents — to check what an app saved. With no name, lists what " +
 				"the folder holds. With a path, saves it there; without one, the file comes back in the answer, " +
-				"base64. The copy's size is read back against the device's. A real iPhone is not built yet.",
+				"base64. The copy's size is read back against the device's, a real iPhone's included.",
 			InputSchema: map[string]interface{}{
 				"type": "object",
 				"properties": withDevice(map[string]interface{}{
