@@ -178,5 +178,5 @@ func (d *Devicectl) requireApp(ctx context.Context, bundleID string) error {
 			return nil
 		}
 	}
-	return mobiumerr.New(mobiumerr.InvalidArgument, "%s is not installed on %s", bundleID, d.Phone.Name)
+	return mobiumerr.New(mobiumerr.InvalidArgument, "%s is not installed on this iPhone", bundleID)
 }
