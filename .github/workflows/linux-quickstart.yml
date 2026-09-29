@@ -1,13 +1,14 @@
 # The public quick start (docs/quickstart/) followed on a fresh x86_64 Ubuntu
 # machine, against an Android emulator booted on that machine.
 #
-# PARKED (2026-09-28). This branch is kept, not merged: it ran once, on a
+# PARKED (2026-09-28): run by hand, never on a push. It ran once, on a
 # GitHub-hosted ubuntu-24.04 x86_64 runner with KVM, and every quick-start
 # page passed there (docs/quickstart/README.md, "Where it runs"; the one
 # defect it found, the .NET icon that was never committed, is CHALLENGES 150
-# and fixed on main). Which Linux distributions and architectures Mobium
-# supports, and how that is checked, will be addressed at a later time. Until
-# then it runs only by hand, so pushing this branch starts nothing.
+# and fixed). Which Linux distributions and architectures Mobium supports,
+# and how that is checked, will be addressed at a later time. Until then it
+# is here to be run from the Actions tab — "Linux quick start", "Run
+# workflow" — which GitHub offers only for a workflow on the default branch.
 
 name: Linux quick start
 
