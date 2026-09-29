@@ -316,8 +316,11 @@ class Device:
 
         map() only sees what is currently visible, and tap(), type() and
         long_press() already scroll to a target that is not — so call this to
-        look without acting, or to scroll back up. Vertical only; use swipe()
-        for a horizontal pager. Raises MobiumError if it is not found.
+        look without acting, or to scroll back up. direction is "down", "up",
+        "left" or "right" -- nothing on screen says which way a container
+        scrolls, so a horizontal pager needs "left" or "right". Swiping the
+        wrong way is not a no-op, so if a swipe navigates instead of
+        scrolling, it stops after one. Raises MobiumError if it is not found.
         """
         data = self._data("app_scroll_to", {"target": target, "direction": direction}) or {}
         found = data.get("element")
