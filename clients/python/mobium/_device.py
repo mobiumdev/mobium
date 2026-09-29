@@ -535,6 +535,28 @@ class Device:
         data = self._data("app_batch", {"steps": wire}) or {}
         return list(data.get("steps") or [])
 
+    def network(self) -> dict:
+        """The network: ``airplane``, ``online``, and the shaping —
+        ``latency_ms``, ``download_kbps``, ``upload_kbps``, zero for none.
+        Android only."""
+        return self._data("app_network") or {}
+
+    def set_offline(self, offline: bool = True) -> dict:
+        """Turn airplane mode on (or off) and wait for the network to go (or
+        come back) — on an emulator or a real Android phone."""
+        return self._data("app_network", {"offline": offline}) or {}
+
+    def shape_network(self, latency_ms: int = 0, download_kbps: int = 0, upload_kbps: int = 0) -> dict:
+        """Add latency to each round trip and limit download and upload, in
+        kbit/s, replacing any shaping set before; zero is none. Needs root,
+        so an emulator."""
+        return self._data("app_network", {"latency_ms": latency_ms, "download_kbps": download_kbps,
+                                          "upload_kbps": upload_kbps}) or {}
+
+    def reset_network(self) -> dict:
+        """Remove the shaping and turn airplane mode off."""
+        return self._data("app_network", {"reset": True}) or {}
+
     def battery(self) -> dict:
         """The battery: ``level`` in percent, ``state`` (charging,
         discharging, not_charging, full or unknown) and on Android

@@ -197,6 +197,7 @@ func (h *Handlers) sessionEnd(args map[string]interface{}) (*ToolsCallResult, er
 	view := SessionView{Action: "end", Device: s.dev.Serial, Platform: sessionPlatform(s), Driver: string(s.backend), Ended: true}
 	closed, stopped := h.stopLaunched(s)
 	view.ClosedTabs = closed
+	restored := h.restoreNetwork(s)
 	s.close()
 	delete(h.sessions, keys[0])
 	delete(h.refs, s.dev.Serial)
@@ -205,6 +206,9 @@ func (h *Handlers) sessionEnd(args map[string]interface{}) (*ToolsCallResult, er
 	text := fmt.Sprintf("session ended on %s; anything it changed for the session is put back", view.Device)
 	if closed > 0 {
 		text += fmt.Sprintf("; closed the %d tab(s) it opened", closed)
+	}
+	if restored {
+		text += "; the network is as it was before app_network changed it"
 	}
 	switch {
 	case stopped == nil && s.launched != "":

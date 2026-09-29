@@ -656,6 +656,52 @@ public final class Mobium implements AutoCloseable {
     }
 
     /**
+     * The network: {@code airplane}, {@code online}, and the shaping —
+     * {@code latency_ms}, {@code download_kbps}, {@code upload_kbps}, zero for
+     * none. Android only.
+     *
+     * @return the network, read from the device
+     */
+    public Map<String, Object> network() {
+        return data("app_network", null);
+    }
+
+    /**
+     * Turns airplane mode on or off and waits for the network to follow — on
+     * an emulator or a real Android phone.
+     *
+     * @param offline true for airplane mode
+     * @return the network, read back
+     */
+    public Map<String, Object> setOffline(boolean offline) {
+        return data("app_network", args("offline", offline));
+    }
+
+    /**
+     * Adds latency to each round trip and limits download and upload, in
+     * kbit/s, replacing any shaping set before; zero is none. Needs root, so
+     * an emulator.
+     *
+     * @param latencyMs milliseconds added to each round trip
+     * @param downloadKbps the download limit
+     * @param uploadKbps the upload limit
+     * @return the network, read back
+     */
+    public Map<String, Object> shapeNetwork(int latencyMs, int downloadKbps, int uploadKbps) {
+        return data("app_network", args("latency_ms", latencyMs, "download_kbps", downloadKbps,
+                "upload_kbps", uploadKbps));
+    }
+
+    /**
+     * Removes the shaping and turns airplane mode off.
+     *
+     * @return the network, read back
+     */
+    public Map<String, Object> resetNetwork() {
+        return data("app_network", args("reset", true));
+    }
+
+    /**
      * The battery: {@code level} in percent, {@code state} (charging,
      * discharging, not_charging, full or unknown) and on Android
      * {@code plugged}. An iOS simulator has none: {@code present} is false.

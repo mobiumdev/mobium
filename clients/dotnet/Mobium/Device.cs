@@ -343,6 +343,31 @@ namespace Mobium
         }
 
         /// <summary>
+        /// The network: <c>airplane</c>, <c>online</c>, and the shaping —
+        /// <c>latency_ms</c>, <c>download_kbps</c>, <c>upload_kbps</c>, zero
+        /// for none. Android only.
+        /// </summary>
+        public IDictionary<string, object?> Network() => Data("app_network", null);
+
+        /// <summary>
+        /// Turns airplane mode on or off and waits for the network to follow —
+        /// on an emulator or a real Android phone.
+        /// </summary>
+        public IDictionary<string, object?> SetOffline(bool offline = true) =>
+            Data("app_network", Args("offline", offline));
+
+        /// <summary>
+        /// Adds latency to each round trip and limits download and upload, in
+        /// kbit/s, replacing any shaping set before; zero is none. Needs root,
+        /// so an emulator.
+        /// </summary>
+        public IDictionary<string, object?> ShapeNetwork(int latencyMs = 0, int downloadKbps = 0, int uploadKbps = 0) =>
+            Data("app_network", Args("latency_ms", latencyMs, "download_kbps", downloadKbps, "upload_kbps", uploadKbps));
+
+        /// <summary>Removes the shaping and turns airplane mode off.</summary>
+        public IDictionary<string, object?> ResetNetwork() => Data("app_network", Args("reset", true));
+
+        /// <summary>
         /// The battery: <c>level</c> in percent, <c>state</c> (charging,
         /// discharging, not_charging, full or unknown) and on Android
         /// <c>plugged</c>. An iOS simulator has none: <c>present</c> is false.

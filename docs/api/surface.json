@@ -398,6 +398,18 @@
     },
     {
       "n": 34,
+      "tool": "app_network",
+      "cli": "network",
+      "clients": {
+        "dotnet": "Network",
+        "go": "ResetNetwork",
+        "java": "network",
+        "javascript": "network",
+        "python": "network"
+      }
+    },
+    {
+      "n": 35,
       "tool": "app_notifications",
       "cli": "notifications",
       "clients": {
@@ -409,7 +421,7 @@
       }
     },
     {
-      "n": 35,
+      "n": 36,
       "tool": "app_open_url",
       "cli": "open",
       "clients": {
@@ -421,7 +433,7 @@
       }
     },
     {
-      "n": 36,
+      "n": 37,
       "tool": "app_orientation",
       "cli": "orientation",
       "clients": {
@@ -433,7 +445,7 @@
       }
     },
     {
-      "n": 37,
+      "n": 38,
       "tool": "app_press",
       "cli": "press",
       "clients": {
@@ -445,7 +457,7 @@
       }
     },
     {
-      "n": 38,
+      "n": 39,
       "tool": "app_press_drag",
       "cli": "press-drag",
       "clients": {
@@ -457,7 +469,7 @@
       }
     },
     {
-      "n": 39,
+      "n": 40,
       "tool": "app_press_tap",
       "cli": "press-tap",
       "clients": {
@@ -469,7 +481,7 @@
       }
     },
     {
-      "n": 40,
+      "n": 41,
       "tool": "app_record",
       "cli": "record",
       "clients": {
@@ -481,7 +493,7 @@
       }
     },
     {
-      "n": 41,
+      "n": 42,
       "tool": "app_reset_permissions",
       "cli": "reset-permissions",
       "clients": {
@@ -493,7 +505,7 @@
       }
     },
     {
-      "n": 42,
+      "n": 43,
       "tool": "app_revoke",
       "cli": "revoke",
       "clients": {
@@ -505,7 +517,7 @@
       }
     },
     {
-      "n": 43,
+      "n": 44,
       "tool": "app_rotate",
       "cli": "rotate",
       "clients": {
@@ -517,7 +529,7 @@
       }
     },
     {
-      "n": 44,
+      "n": 45,
       "tool": "app_screen",
       "cli": "screen",
       "clients": {
@@ -529,7 +541,7 @@
       }
     },
     {
-      "n": 45,
+      "n": 46,
       "tool": "app_screenshot",
       "cli": "screenshot",
       "clients": {
@@ -541,7 +553,7 @@
       }
     },
     {
-      "n": 46,
+      "n": 47,
       "tool": "app_scroll_to",
       "cli": "scroll-to",
       "clients": {
@@ -553,7 +565,7 @@
       }
     },
     {
-      "n": 47,
+      "n": 48,
       "tool": "app_session",
       "cli": "session",
       "clients": {
@@ -565,7 +577,7 @@
       }
     },
     {
-      "n": 48,
+      "n": 49,
       "tool": "app_shake",
       "cli": "shake",
       "clients": {
@@ -577,7 +589,7 @@
       }
     },
     {
-      "n": 49,
+      "n": 50,
       "tool": "app_sms",
       "cli": "sms",
       "clients": {
@@ -589,7 +601,7 @@
       }
     },
     {
-      "n": 50,
+      "n": 51,
       "tool": "app_source",
       "cli": "source",
       "clients": {
@@ -601,7 +613,7 @@
       }
     },
     {
-      "n": 51,
+      "n": 52,
       "tool": "app_state",
       "cli": "state",
       "clients": {
@@ -613,7 +625,7 @@
       }
     },
     {
-      "n": 52,
+      "n": 53,
       "tool": "app_storage",
       "cli": "storage",
       "clients": {
@@ -625,7 +637,7 @@
       }
     },
     {
-      "n": 53,
+      "n": 54,
       "tool": "app_swipe",
       "cli": "swipe",
       "clients": {
@@ -637,7 +649,7 @@
       }
     },
     {
-      "n": 54,
+      "n": 55,
       "tool": "app_tap",
       "cli": "tap, double-tap",
       "clients": {
@@ -649,7 +661,7 @@
       }
     },
     {
-      "n": 55,
+      "n": 56,
       "tool": "app_terminate",
       "cli": "terminate",
       "clients": {
@@ -661,7 +673,7 @@
       }
     },
     {
-      "n": 56,
+      "n": 57,
       "tool": "app_text",
       "cli": "text",
       "clients": {
@@ -673,7 +685,7 @@
       }
     },
     {
-      "n": 57,
+      "n": 58,
       "tool": "app_time",
       "cli": "time",
       "clients": {
@@ -685,7 +697,7 @@
       }
     },
     {
-      "n": 58,
+      "n": 59,
       "tool": "app_timezone",
       "cli": "timezone",
       "clients": {
@@ -697,7 +709,7 @@
       }
     },
     {
-      "n": 59,
+      "n": 60,
       "tool": "app_type",
       "cli": "type",
       "clients": {
@@ -709,7 +721,7 @@
       }
     },
     {
-      "n": 60,
+      "n": 61,
       "tool": "app_uninstall",
       "cli": "uninstall",
       "clients": {
@@ -721,7 +733,7 @@
       }
     },
     {
-      "n": 61,
+      "n": 62,
       "tool": "app_wait_for",
       "cli": "wait",
       "clients": {
@@ -733,7 +745,7 @@
       }
     },
     {
-      "n": 62,
+      "n": 63,
       "tool": "app_zoom",
       "cli": "zoom",
       "clients": {
@@ -749,37 +761,37 @@
     {
       "language": "go",
       "file": "clients/go/mobium.go",
-      "covers": 62
+      "covers": 63
     },
     {
       "language": "python",
       "file": "clients/python/mobium/_device.py",
-      "covers": 62
+      "covers": 63
     },
     {
       "language": "javascript",
       "file": "clients/javascript/index.js",
-      "covers": 62
+      "covers": 63
     },
     {
       "language": "java",
       "file": "clients/java/src/main/java/dev/mobium/Mobium.java",
-      "covers": 62
+      "covers": 63
     },
     {
       "language": "dotnet",
       "file": "clients/dotnet/Mobium/Device.cs",
-      "covers": 62
+      "covers": 63
     }
   ],
   "counts": {
-    "tools": 62,
-    "cliRegistered": 68,
-    "cliVisible": 67,
+    "tools": 63,
+    "cliRegistered": 69,
+    "cliVisible": 68,
     "cliHidden": [
       "pipe"
     ],
-    "cliConstructors": 74,
+    "cliConstructors": 75,
     "clients": 5
   },
   "cliWithoutTool": [

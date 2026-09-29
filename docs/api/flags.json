@@ -1064,6 +1064,64 @@
       "global": true
     },
     {
+      "tool": "app_network",
+      "arg": "device",
+      "type": "string",
+      "setBy": [
+        "--device"
+      ],
+      "global": true
+    },
+    {
+      "tool": "app_network",
+      "arg": "download_kbps",
+      "type": "integer",
+      "setBy": [
+        "network"
+      ]
+    },
+    {
+      "tool": "app_network",
+      "arg": "driver",
+      "type": "string",
+      "setBy": [
+        "--driver"
+      ],
+      "global": true
+    },
+    {
+      "tool": "app_network",
+      "arg": "latency_ms",
+      "type": "integer",
+      "setBy": [
+        "network"
+      ]
+    },
+    {
+      "tool": "app_network",
+      "arg": "offline",
+      "type": "boolean",
+      "setBy": [
+        "network"
+      ]
+    },
+    {
+      "tool": "app_network",
+      "arg": "reset",
+      "type": "boolean",
+      "setBy": [
+        "network"
+      ]
+    },
+    {
+      "tool": "app_network",
+      "arg": "upload_kbps",
+      "type": "integer",
+      "setBy": [
+        "network"
+      ]
+    },
+    {
       "tool": "app_notifications",
       "arg": "device",
       "type": "string",
@@ -2557,6 +2615,27 @@
     },
     {
       "command": "mcp"
+    },
+    {
+      "command": "network",
+      "tools": [
+        "app_network"
+      ],
+      "flags": [
+        "--download",
+        "--latency",
+        "--offline",
+        "--online",
+        "--reset",
+        "--upload"
+      ],
+      "sends": [
+        "download_kbps",
+        "latency_ms",
+        "offline",
+        "reset",
+        "upload_kbps"
+      ]
     },
     {
       "command": "notifications",

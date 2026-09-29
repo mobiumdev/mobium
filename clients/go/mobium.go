@@ -723,6 +723,50 @@ func (d *Device) DeviceTime(ctx context.Context) (DeviceClock, error) {
 	return out, err
 }
 
+// NetworkStatus is the device's network, read back by Network and each call
+// that changes it.
+type NetworkStatus struct {
+	// Airplane is airplane mode; Online whether the device has a network.
+	Airplane bool `json:"airplane"`
+	Online   bool `json:"online"`
+	// LatencyMs is added to each round trip; the rates are kbit/s. Zero is none.
+	LatencyMs    int `json:"latency_ms"`
+	DownloadKbps int `json:"download_kbps"`
+	UploadKbps   int `json:"upload_kbps"`
+	// Changed says whether the call changed anything.
+	Changed bool `json:"changed"`
+}
+
+// Network reads the device's network conditions. Android only.
+func (d *Device) Network(ctx context.Context) (NetworkStatus, error) {
+	return d.network(ctx, map[string]any{})
+}
+
+// SetOffline turns airplane mode on or off and waits for the network to
+// follow — on an emulator or a real Android phone.
+func (d *Device) SetOffline(ctx context.Context, offline bool) (NetworkStatus, error) {
+	return d.network(ctx, map[string]any{"offline": offline})
+}
+
+// ShapeNetwork sets the latency added to each round trip and the download
+// and upload limits in kbit/s, replacing any set before; zero is none. It
+// needs root, so an emulator.
+func (d *Device) ShapeNetwork(ctx context.Context, latencyMs, downloadKbps, uploadKbps int) (NetworkStatus, error) {
+	return d.network(ctx, map[string]any{"latency_ms": latencyMs, "download_kbps": downloadKbps,
+		"upload_kbps": uploadKbps})
+}
+
+// ResetNetwork removes the shaping and turns airplane mode off.
+func (d *Device) ResetNetwork(ctx context.Context) (NetworkStatus, error) {
+	return d.network(ctx, map[string]any{"reset": true})
+}
+
+func (d *Device) network(ctx context.Context, args map[string]any) (NetworkStatus, error) {
+	var out NetworkStatus
+	err := d.data(ctx, "app_network", args, &out)
+	return out, err
+}
+
 // Shake shakes an emulator or simulator — what shake-to-undo and
 // shake-to-report listen for. Whether the app reacts is up to its own
 // detector, so check the screen after. A real phone returns an error.

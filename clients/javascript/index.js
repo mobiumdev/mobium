@@ -797,6 +797,38 @@ export class Device {
   }
 
   /**
+   * The network: `airplane`, `online`, and the shaping — `latency_ms`,
+   * `download_kbps`, `upload_kbps`, zero for none. Android only.
+   */
+  async network() {
+    return (await this.#data('app_network', {})) || {}
+  }
+
+  /**
+   * Turns airplane mode on (or off) and waits for the network to go (or come
+   * back) — on an emulator or a real Android phone.
+   */
+  async setOffline(offline = true) {
+    return (await this.#data('app_network', { offline })) || {}
+  }
+
+  /**
+   * Adds latency to each round trip and limits download and upload, in
+   * kbit/s, replacing any shaping set before; zero is none. Needs root, so
+   * an emulator.
+   */
+  async shapeNetwork({ latencyMs = 0, downloadKbps = 0, uploadKbps = 0 } = {}) {
+    return (await this.#data('app_network', {
+      latency_ms: latencyMs, download_kbps: downloadKbps, upload_kbps: uploadKbps,
+    })) || {}
+  }
+
+  /** Removes the shaping and turns airplane mode off. */
+  async resetNetwork() {
+    return (await this.#data('app_network', { reset: true })) || {}
+  }
+
+  /**
    * The battery: `level` in percent, `state` (charging, discharging,
    * not_charging, full or unknown) and on Android `plugged`. An iOS
    * simulator has none: `present` is false.

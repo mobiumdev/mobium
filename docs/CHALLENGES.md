@@ -3648,6 +3648,26 @@ ever printed.
 
 Worth recording because each one closed off an approach that looked obvious.
 
+- **The emulator console's network throttling reads back and does
+  nothing.** On emulator 37.1.11 with the Pixel 7 AVD (API 35), `network
+  speed` and `network delay` were accepted, and `network status` read them
+  back as set; 2MB from the Mac at a 1000 kbit/s limit still took 1.1s
+  where 16s was due, a 500ms delay left a ping to the Mac at 1ms and a TCP
+  connect to the internet at 490ms, over Wi-Fi and over emulated mobile data
+  alike. Given at launch, `-netdelay` did slow outside traffic, and then the
+  console could take the delay away but not put one back. So `app_network`
+  does not use it: an emulator's Google APIs image is a userdebug build,
+  and `tc` under `su` shapes every packet — a netem delay, and token buckets
+  for upload and, through ifb0, download — measured by the traffic, not the
+  settings. Two more things the traffic showed before this shipped: airplane
+  mode removes the filter that feeds the download limit while the limit
+  stays, so a read-back from the limit alone reported one nothing applied;
+  and back from airplane mode the emulator is online on eth0 and moves to
+  wlan0 seconds later, so a delay put on the default interface of that
+  moment was on one nothing used. And on a phone with wireless debugging on,
+  the network coming back raises "Allow wireless debugging on this
+  network?" — a prompt only the owner should answer.
+
 - **WebDriverAgent's `hittable` cannot see an overlay hidden from
   accessibility either.** The page source never emits it (see the step 4
   entry), but one element can be asked for it, and XCTest computes it with a

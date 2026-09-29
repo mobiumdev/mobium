@@ -85,6 +85,9 @@ type Handlers struct {
 	// restarted. handled is what they answered during the current call,
 	// reported in its result; Call holds mu, so there is one call at a time.
 	dialogRules map[string][]dialogRule
+	// netBaseline is each device's network before app_network first changed
+	// it, which the end of the session puts back.
+	netBaseline map[string]networkBaseline
 	handled     []HandledDialog
 }
 
@@ -94,6 +97,7 @@ func NewHandlers() *Handlers {
 		refs:          map[string]*refTable{},
 		sessions:      map[string]*session{},
 		dialogRules:   map[string][]dialogRule{},
+		netBaseline:   map[string]networkBaseline{},
 		backend:       DefaultBackend,
 		implicitWait:  implicitWait,
 		settleWindow:  settleWindowFromEnv(),
@@ -129,6 +133,7 @@ func (h *Handlers) Close() {
 	// drivers closes sessions too, and is not the end of anything.
 	for _, s := range h.sessions {
 		_, _ = h.stopLaunched(s)
+		h.restoreNetwork(s)
 	}
 	h.closeSessions()
 }
@@ -297,6 +302,8 @@ func (h *Handlers) dispatch(ctx context.Context, name string, args map[string]in
 		return h.deviceTime(ctx, args)
 	case "app_shake":
 		return h.shake(ctx, args)
+	case "app_network":
+		return h.network(ctx, args)
 	case "app_state":
 		return h.appState(ctx, args)
 	case "app_background":

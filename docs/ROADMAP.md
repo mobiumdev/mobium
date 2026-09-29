@@ -50,8 +50,6 @@ this is what is not.
 - **Accessibility settings on a real iPhone.** `app_accessibility` works on a
   simulator and on Android; on a phone nothing outside changes them, and the
   Settings screens are the route.
-- **Network conditions.** Android only when it lands: the emulator console can
-  throttle and read back, while `simctl` has no network control.
 - **Session recording and `diff map`.** Screen recording is done; a filmstrip of
   what each call did, and a way to see what changed between two screens, are
   not.
