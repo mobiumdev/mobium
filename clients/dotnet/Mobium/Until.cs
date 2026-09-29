@@ -23,11 +23,25 @@ namespace Mobium
         private readonly string _condition;
         private readonly string? _text;
         private readonly TimeSpan? _timeout;
+        private readonly bool _not;
+        private readonly bool _exact;
+        private readonly int? _count;
 
-        private Until(string condition, string? text, TimeSpan? timeout)
+        private Until(string condition, string? text, TimeSpan? timeout,
+            bool not = false, bool exact = false, int? count = null)
         {
             _condition = condition; _text = text; _timeout = timeout;
+            _not = not; _exact = exact; _count = count;
         }
+
+        /// <summary>Wait until its text is exactly this, where <see cref="Text"/> waits for a part.</summary>
+        public static Until ExactText(string expected) => new Until("text", expected, null, exact: true);
+
+        /// <summary>Wait until the locator matches exactly this many elements on screen.</summary>
+        public static Until Count(int n) => new Until("count", null, null, count: n);
+
+        /// <summary>The opposite of this condition: <c>Until.Text("Sending").Not()</c> waits for it to change.</summary>
+        public Until Not() => new Until(_condition, _text, _timeout, !_not, _exact, _count);
 
         /// <summary>Wait for the element to be on screen. The default.</summary>
         public static Until Visible() => new Until("visible", null, null);
@@ -57,7 +71,7 @@ namespace Mobium
         public static Until Focused() => new Until("focused", null, null);
 
         /// <summary>How long before giving up. Ten seconds by default, two minutes at most.</summary>
-        public Until Timeout(TimeSpan d) => new Until(_condition, _text, d);
+        public Until Timeout(TimeSpan d) => new Until(_condition, _text, d, _not, _exact, _count);
 
         internal IDictionary<string, object?> Args(string target)
         {
@@ -68,6 +82,9 @@ namespace Mobium
             };
             if (_text != null) m["text"] = _text;
             if (_timeout.HasValue) m["timeout_ms"] = (long)_timeout.Value.TotalMilliseconds;
+            if (_not) m["not"] = true;
+            if (_exact) m["exact"] = true;
+            if (_count.HasValue) m["count"] = _count.Value;
             return m;
         }
     }

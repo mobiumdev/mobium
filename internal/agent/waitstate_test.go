@@ -145,3 +145,83 @@ func TestWaitForFocusRefusesADriverThatCannotTell(t *testing.T) {
 		t.Fatalf("focus was waited for on a driver that cannot read it: %v", err)
 	}
 }
+
+// not inverts any condition: a spinner's text changing away from "Sending",
+// a checkbox coming unchecked by way of "not checked". The control is a
+// screen that never changes, which must time out saying what it shows.
+func TestWaitNotInvertsTheCondition(t *testing.T) {
+	h, sess, _ := withFake(t, screen(t, "Sending"), screen(t, "Sending"), screen(t, "Sent"))
+	res, err := wait(h, sess, map[string]interface{}{"target": "testid=b", "condition": "text", "text": "Sending",
+		"not": true, "timeout_ms": 5000})
+	if err != nil {
+		t.Fatalf("not text: %v", err)
+	}
+	if !strings.Contains(res.Content[0].Text, "no longer") {
+		t.Errorf("result %q", res.Content[0].Text)
+	}
+
+	h, sess, _ = withFake(t, screen(t, "Sending"))
+	_, err = wait(h, sess, map[string]interface{}{"target": "testid=b", "condition": "text", "text": "Sending",
+		"not": true, "timeout_ms": 200})
+	if mobiumerr.CodeOf(err) != mobiumerr.Timeout || !strings.Contains(err.Error(), `no longer contain "Sending"`) ||
+		!strings.Contains(err.Error(), `its text is "Sending"`) {
+		t.Fatalf("a text that never changed: %v", err)
+	}
+
+	on := field(t, "android.widget.CheckBox", `checkable="true" checked="true"`)
+	h, sess, _ = withFake(t, on)
+	_, err = wait(h, sess, map[string]interface{}{"target": "testid=f", "condition": "checked", "not": true,
+		"timeout_ms": 200})
+	if mobiumerr.CodeOf(err) != mobiumerr.Timeout || !strings.Contains(err.Error(), "it is checked") {
+		t.Fatalf("a box that stayed checked: %v", err)
+	}
+}
+
+// exact is Playwright's toHaveText where text is its toContainText.
+func TestWaitExactText(t *testing.T) {
+	h, sess, _ := withFake(t, screen(t, "Sent!"))
+	_, err := wait(h, sess, map[string]interface{}{"target": "testid=b", "condition": "text", "text": "Sent",
+		"exact": true, "timeout_ms": 200})
+	if mobiumerr.CodeOf(err) != mobiumerr.Timeout || !strings.Contains(err.Error(), `its text is "Sent!"`) {
+		t.Fatalf("\"Sent!\" satisfied an exact \"Sent\": %v", err)
+	}
+	if _, err := wait(h, sess, map[string]interface{}{"target": "testid=b", "condition": "text", "text": "Sent!",
+		"exact": true, "timeout_ms": 200}); err != nil {
+		t.Fatalf("the exact text: %v", err)
+	}
+	if _, err := wait(h, sess, map[string]interface{}{"target": "testid=b", "condition": "visible", "exact": true}); mobiumerr.CodeOf(err) != mobiumerr.InvalidArgument {
+		t.Errorf("exact without text: %v", err)
+	}
+}
+
+// count is Playwright's toHaveCount: a list growing to three rows, and a
+// list that never does, which must say how many it saw.
+func TestWaitCount(t *testing.T) {
+	rows := func(n int) *uitree.Tree {
+		body := ""
+		for i := 0; i < n; i++ {
+			body += fmt.Sprintf(`<node index="%d" text="row" resource-id="app:id/row" class="android.widget.TextView" `+
+				`clickable="true" enabled="true" bounds="[0,%d][1080,%d]" />`, i, 100*i, 100*i+90)
+		}
+		tree, err := uitree.ParseAndroid([]byte(`<?xml version='1.0' encoding='UTF-8'?><hierarchy rotation="0">` +
+			`<node index="0" class="android.widget.FrameLayout" bounds="[0,0][1080,2400]">` + body + `</node></hierarchy>`))
+		if err != nil {
+			t.Fatal(err)
+		}
+		return tree
+	}
+	h, sess, _ := withFake(t, rows(1), rows(2), rows(3))
+	if _, err := wait(h, sess, map[string]interface{}{"target": "testid=row", "condition": "count", "count": 3,
+		"timeout_ms": 5000}); err != nil {
+		t.Fatalf("count 3: %v", err)
+	}
+	h, sess, _ = withFake(t, rows(2))
+	_, err := wait(h, sess, map[string]interface{}{"target": "testid=row", "condition": "count", "count": 3,
+		"timeout_ms": 200})
+	if mobiumerr.CodeOf(err) != mobiumerr.Timeout || !strings.Contains(err.Error(), "2 match on screen") {
+		t.Fatalf("a list that stayed at two: %v", err)
+	}
+	if _, err := wait(h, sess, map[string]interface{}{"target": "testid=row", "condition": "count"}); mobiumerr.CodeOf(err) != mobiumerr.InvalidArgument {
+		t.Errorf("count without a number: %v", err)
+	}
+}

@@ -412,8 +412,22 @@ func GetToolSchemas() []Tool {
 							"\"enabled\" or \"disabled\" waits for a control to be one or " +
 							"the other — a Submit the app enables once a form is valid — " +
 							"\"checked\" or \"unchecked\" for a checkbox, radio or switch, and " +
-							"\"focused\" for a field to have keyboard focus.",
+							"\"focused\" for a field to have keyboard focus, and \"count\" until the " +
+							"locator matches count elements on screen. not inverts any of them.",
 						"enum": waitConditions,
+					},
+					"not": map[string]interface{}{
+						"type": "boolean",
+						"description": "Wait for the opposite of the condition: with \"text\", for the " +
+							"text to change; with \"checked\", for it to come unchecked.",
+					},
+					"exact": map[string]interface{}{
+						"type":        "boolean",
+						"description": "With condition \"text\", match the whole text rather than a part.",
+					},
+					"count": map[string]interface{}{
+						"type":        "integer",
+						"description": "With condition \"count\", how many elements the locator must match on screen.",
 					},
 					"text": map[string]interface{}{
 						"type": "string",

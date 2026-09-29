@@ -112,11 +112,13 @@ const (
 	condUnchecked = "unchecked"
 	condFocused   = "focused"
 	condValue     = "value"
+	// Count is how many elements the locator matches on screen.
+	condCount = "count"
 )
 
 // waitConditions is every condition, in the order an error lists them.
 var waitConditions = []string{condVisible, condHidden, condText, condValue, condEnabled, condDisabled,
-	condChecked, condUnchecked, condFocused}
+	condChecked, condUnchecked, condFocused, condCount}
 
 // waitFor is app_wait_for: block until the screen says what the caller is
 // waiting for, or fail naming what it was.
@@ -146,6 +148,18 @@ func (h *Handlers) waitOn(ctx context.Context, s *session, args map[string]inter
 	}
 	want := stringArg(args, "text")
 	_, hasText := args["text"]
+	negate, _, err := boolParam(args, "not")
+	if err != nil {
+		return nil, err
+	}
+	exact, _, err := boolParam(args, "exact")
+	if err != nil {
+		return nil, err
+	}
+	if exact && cond != condText {
+		return nil, mobiumerr.New(mobiumerr.InvalidArgument, "exact goes with condition \"text\"; value is always exact")
+	}
+	count := -1
 	var focus mobiumdriver.FocusReader
 	switch cond {
 	case condVisible, condHidden, condEnabled, condDisabled, condChecked, condUnchecked:
@@ -160,6 +174,13 @@ func (h *Handlers) waitOn(ctx context.Context, s *session, args map[string]inter
 			return nil, mobiumerr.New(mobiumerr.InvalidArgument, "condition \"value\" needs the value to wait for, "+
 				"in text; \"\" waits for an empty field")
 		}
+	case condCount:
+		f, err := floatArg(args, "count")
+		if err != nil || f < 0 || f != float64(int(f)) {
+			return nil, mobiumerr.New(mobiumerr.InvalidArgument, "condition \"count\" needs count, a whole number "+
+				"of matches, 0 or more")
+		}
+		count = int(f)
 	case condFocused:
 		f, ok := mobiumdriver.AsFocusReader(s.driver)
 		if !ok {
@@ -220,102 +241,25 @@ func (h *Handlers) waitOn(ctx context.Context, s *session, args map[string]inter
 			}
 			nodes = shown
 		}
-		switch cond {
-		case condVisible:
-			if len(nodes) == 0 {
-				saw = notOnScreen
-				return false, nil
-			}
-			matched = nodes[0]
-			return true, nil
-		case condHidden:
-			if len(nodes) > 0 {
-				saw = fmt.Sprintf("%d still on screen", len(nodes))
-				return false, nil
-			}
-			return true, nil
-		case condEnabled, condDisabled:
-			if len(nodes) == 0 {
-				saw = notOnScreen
-				return false, nil
-			}
-			if nodes[0].Enabled == (cond == condEnabled) {
-				matched = nodes[0]
-				return true, nil
-			}
-			saw = "it is " + map[bool]string{true: condEnabled, false: condDisabled}[nodes[0].Enabled]
-			return false, nil
-		case condChecked, condUnchecked:
-			if len(nodes) == 0 {
-				saw = notOnScreen
-				return false, nil
-			}
-			// Refused at once, as app_check refuses it: nothing without a
-			// checked state will ever be checked, and waiting says nothing.
-			if !nodes[0].Checkable {
-				return false, mobiumerr.New(mobiumerr.InvalidArgument, "%s is not a checkbox, radio or switch, so "+
-					"it has no checked state to wait for", loc)
-			}
-			if nodes[0].Checked == (cond == condChecked) {
-				matched = nodes[0]
-				return true, nil
-			}
-			saw = "it is " + stateWord(nodes[0].Checked)
-			return false, nil
-		case condFocused:
-			if len(nodes) == 0 {
-				saw = notOnScreen
-				return false, nil
-			}
-			has, err := focus.HasFocus(ctx, nodes[0])
-			if err != nil {
-				return false, err
-			}
-			if has {
-				matched = nodes[0]
-				return true, nil
-			}
-			saw = "it does not have keyboard focus"
-			return false, nil
-		case condValue:
-			if len(nodes) == 0 {
-				saw = notOnScreen
-				return false, nil
-			}
-			// Never compared, so that nothing can be learned from it and no
-			// failure has a value to print (CHALLENGES 43).
-			if nodes[0].Password {
-				return false, mobiumerr.New(mobiumerr.InvalidArgument, "%s is a password field, and its value is "+
-					"never read — wait for what the app shows once it is accepted", loc)
-			}
-			v := fieldValue(nodes[0])
-			if v == want {
-				matched = nodes[0]
-				return true, nil
-			}
-			saw = fmt.Sprintf("its value is %q", v)
-			return false, nil
-		default: // condText
-			if len(nodes) == 0 {
-				saw = notOnScreen
-				return false, nil
-			}
-			for _, n := range nodes {
-				if strings.Contains(nodeText(n), want) {
-					matched = n
-					return true, nil
-				}
-			}
-			saw = fmt.Sprintf("its text is %q", nodeText(nodes[0]))
-			return false, nil
+		holds, match, desc, err := judge(ctx, cond, nodes, notOnScreen, loc, want, exact, count, focus)
+		if err != nil {
+			return false, err
 		}
+		if holds != negate {
+			if !negate {
+				matched = match
+			}
+			return true, nil
+		}
+		saw = desc
+		return false, nil
 	})
 
 	waited := time.Since(started)
 	if err != nil {
 		if errors.Is(err, errPollTimeout) {
 			return nil, mobiumerr.New(mobiumerr.Timeout, "timed out after %s waiting for %s to %s — %s",
-				waited.Round(time.Millisecond), loc, condPhrase(cond, want), saw)
+				waited.Round(time.Millisecond), loc, phrase(condPhrase(cond, want, exact, count), negate), saw)
 		}
 		return nil, err
 	}
@@ -325,7 +269,14 @@ func (h *Handlers) waitOn(ctx context.Context, s *session, args map[string]inter
 		Condition: cond,
 		WaitedMs:  int(waited.Milliseconds()),
 	}
-	msg := fmt.Sprintf("%s %s after %s", loc, condState(cond, want), waited.Round(time.Millisecond))
+	state := condState(cond, want, exact, count)
+	if negate {
+		state = "is no longer " + strings.TrimPrefix(strings.TrimPrefix(state, "is "), "")
+		if cond == condText || cond == condValue || cond == condCount {
+			state = "no longer " + condState(cond, want, exact, count)
+		}
+	}
+	msg := fmt.Sprintf("%s %s after %s", loc, state, waited.Round(time.Millisecond))
 
 	// A wait that found something leaves a fresh ref table behind, so the
 	// element it waited for can be tapped without a separate app_map. This is
@@ -356,26 +307,109 @@ func visible(nodes []*uitree.Node) []*uitree.Node {
 
 // condPhrase says what a condition waits for, after "waiting for X to":
 // "hold \"\"", "become checked". condState says it held: "is checked".
-func condPhrase(cond, want string) string {
+func condPhrase(cond, want string, exact bool, count int) string {
 	switch cond {
 	case condText:
+		if exact {
+			return fmt.Sprintf("say exactly %q", want)
+		}
 		return fmt.Sprintf("contain %q", want)
 	case condValue:
 		return fmt.Sprintf("hold %q", want)
 	case condFocused:
 		return "have keyboard focus"
+	case condCount:
+		return fmt.Sprintf("match %d on screen", count)
 	}
 	return "become " + cond
 }
 
-func condState(cond, want string) string {
+// phrase negates a condPhrase: "not contain \"x\"", "stop being visible".
+func phrase(p string, negate bool) string {
+	if !negate {
+		return p
+	}
+	if rest, ok := strings.CutPrefix(p, "become "); ok {
+		return "stop being " + rest
+	}
+	return "no longer " + p
+}
+
+func condState(cond, want string, exact bool, count int) string {
 	switch cond {
 	case condText:
+		if exact {
+			return fmt.Sprintf("says exactly %q", want)
+		}
 		return fmt.Sprintf("contains %q", want)
 	case condValue:
 		return fmt.Sprintf("holds %q", want)
+	case condCount:
+		return fmt.Sprintf("matches %d on screen", count)
 	}
 	return "is " + cond
+}
+
+// judge says whether a condition holds for what the locator matched on
+// screen, which node satisfied it, and what the screen showed in words — the
+// half a timeout reports, whichever way the wait was asked. A non-nil error
+// is a refusal: nothing on this screen could ever satisfy it.
+func judge(ctx context.Context, cond string, nodes []*uitree.Node, notOnScreen string, loc uitree.Locator,
+	want string, exact bool, count int, focus mobiumdriver.FocusReader) (bool, *uitree.Node, string, error) {
+	if cond == condCount {
+		return len(nodes) == count, nil, fmt.Sprintf("%d match on screen", len(nodes)), nil
+	}
+	if cond == condHidden {
+		if len(nodes) > 0 {
+			return false, nil, fmt.Sprintf("%d still on screen", len(nodes)), nil
+		}
+		return true, nil, notOnScreen, nil
+	}
+	if len(nodes) == 0 {
+		return false, nil, notOnScreen, nil
+	}
+	n := nodes[0]
+	switch cond {
+	case condVisible:
+		return true, n, "it is on screen", nil
+	case condEnabled, condDisabled:
+		word := map[bool]string{true: condEnabled, false: condDisabled}[n.Enabled]
+		return n.Enabled == (cond == condEnabled), n, "it is " + word, nil
+	case condChecked, condUnchecked:
+		// Refused at once, as app_check refuses it: nothing without a
+		// checked state will ever be checked, and waiting says nothing.
+		if !n.Checkable {
+			return false, nil, "", mobiumerr.New(mobiumerr.InvalidArgument, "%s is not a checkbox, radio or "+
+				"switch, so it has no checked state to wait for", loc)
+		}
+		return n.Checked == (cond == condChecked), n, "it is " + stateWord(n.Checked), nil
+	case condFocused:
+		has, err := focus.HasFocus(ctx, n)
+		if err != nil {
+			return false, nil, "", err
+		}
+		if has {
+			return true, n, "it has keyboard focus", nil
+		}
+		return false, n, "it does not have keyboard focus", nil
+	case condValue:
+		// Never compared, so that nothing can be learned from it and no
+		// failure has a value to print (CHALLENGES 43).
+		if n.Password {
+			return false, nil, "", mobiumerr.New(mobiumerr.InvalidArgument, "%s is a password field, and its "+
+				"value is never read — wait for what the app shows once it is accepted", loc)
+		}
+		v := fieldValue(n)
+		return v == want, n, fmt.Sprintf("its value is %q", v), nil
+	}
+	// condText
+	for _, m := range nodes {
+		t := nodeText(m)
+		if (exact && t == want) || (!exact && strings.Contains(t, want)) {
+			return true, m, fmt.Sprintf("its text is %q", t), nil
+		}
+	}
+	return false, n, fmt.Sprintf("its text is %q", nodeText(n)), nil
 }
 
 // fieldValue is what a field holds: its text, and nothing when the text is

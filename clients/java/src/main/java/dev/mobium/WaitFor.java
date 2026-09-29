@@ -9,6 +9,8 @@ import java.time.Duration;
  * device.waitFor("text=Welcome");                                  // visible, 10s
  * device.waitFor("role=progressbar", WaitFor.hidden());            // until it goes
  * device.waitFor("@e4", WaitFor.text("Sent").timeout(ofSeconds(30)));
+ * device.waitFor("@e4", WaitFor.text("Sending").not());         // until it changes
+ * device.waitFor("testid=row", WaitFor.count(3));                // three rows
  * }</pre>
  */
 public final class WaitFor {
@@ -16,12 +18,46 @@ public final class WaitFor {
     private final String condition;
     private final String text;
     private final Duration timeout;
+    private final boolean negate;
+    private final boolean exact;
+    private final Integer count;
 
     private WaitFor(String condition, String text, Duration timeout) {
+        this(condition, text, timeout, false, false, null);
+    }
+
+    private WaitFor(String condition, String text, Duration timeout, boolean negate, boolean exact, Integer count) {
         this.condition = condition;
         this.text = text;
         this.timeout = timeout;
+        this.negate = negate;
+        this.exact = exact;
+        this.count = count;
     }
+
+    /**
+     * Wait until its text is exactly this, where {@link #text} waits for a part.
+     *
+     * @param expected the whole text
+     * @return the condition
+     */
+    public static WaitFor exactText(String expected) { return new WaitFor("text", expected, null, false, true, null); }
+
+    /**
+     * Wait until the locator matches exactly this many elements on screen.
+     *
+     * @param n how many, 0 or more
+     * @return the condition
+     */
+    public static WaitFor count(int n) { return new WaitFor("count", null, null, false, false, n); }
+
+    /**
+     * The opposite of this condition: {@code text("Sending").not()} waits for the
+     * text to change.
+     *
+     * @return a copy of this condition, negated
+     */
+    public WaitFor not() { return new WaitFor(condition, text, timeout, !negate, exact, count); }
 
     /**
      * Wait for the element to be on screen. The default.
@@ -95,7 +131,7 @@ public final class WaitFor {
      * @param d how long, at most two minutes
      * @return a copy of this condition with the timeout set
      */
-    public WaitFor timeout(Duration d) { return new WaitFor(condition, text, d); }
+    public WaitFor timeout(Duration d) { return new WaitFor(condition, text, d, negate, exact, count); }
 
     java.util.Map<String, Object> args(String target) {
         java.util.Map<String, Object> m = new java.util.LinkedHashMap<>();
@@ -103,6 +139,9 @@ public final class WaitFor {
         m.put("condition", condition);
         if (text != null) m.put("text", text);
         if (timeout != null) m.put("timeout_ms", timeout.toMillis());
+        if (negate) m.put("not", true);
+        if (exact) m.put("exact", true);
+        if (count != null) m.put("count", count);
         return m;
     }
 }
