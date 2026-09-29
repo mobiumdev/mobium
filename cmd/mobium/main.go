@@ -148,6 +148,8 @@ func main() {
 		newTimeCmd(),
 		newShakeCmd(),
 		newNetworkCmd(),
+		newTestCmd(),
+		newShowReportCmd(),
 	)
 
 	err := root.Execute()

@@ -2858,6 +2858,13 @@
       ]
     },
     {
+      "command": "show-report",
+      "sends": [
+        "darwin",
+        "windows"
+      ]
+    },
+    {
       "command": "sms",
       "tools": [
         "app_sms"
@@ -2961,6 +2968,25 @@
       ],
       "sends": [
         "app"
+      ]
+    },
+    {
+      "command": "test",
+      "flags": [
+        "--config",
+        "--grep",
+        "--last-failed",
+        "--list",
+        "--no-screenshots",
+        "--output",
+        "--project",
+        "--reporter",
+        "--retries",
+        "--timeout",
+        "--workers"
+      ],
+      "sends": [
+        "list"
       ]
     },
     {

@@ -351,6 +351,7 @@ arguments and the two global flags.
 | `scroll-to` | app_scroll_to | --direction | direction, target |
 | `session` | app_session | --app --platform | action, app, platform |
 | `shake` | app_shake | — | — |
+| `show-report` | — | — | darwin, windows |
 | `sms` | app_sms | --from | from, text |
 | `source` | app_source | — | — |
 | `start` | — | --idle-timeout | — |
@@ -362,6 +363,7 @@ arguments and the two global flags.
 | `swipe` | app_swipe | --duration | direction, duration_ms, x1, x2, y1, y2 |
 | `tap` | app_tap, app_tap | --fingers | fingers, target, x, y |
 | `terminate` | app_terminate | — | app |
+| `test` | — | --config --grep --last-failed --list --no-screenshots --output --project --reporter --retries --timeout --workers | list |
 | `text` | app_text | — | target |
 | `time` | app_time | — | — |
 | `timezone` | app_timezone | — | timezone |

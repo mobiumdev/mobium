@@ -262,3 +262,20 @@ func checkStepArgs(n int, name string, schema map[string]interface{}, args map[s
 	}
 	return nil
 }
+
+// CheckStep checks one step as app_batch would before running anything: the
+// tool exists, is not a batch, and takes every argument given and every one
+// it requires. For the test runner, which checks every file before the first
+// test runs, as a batch checks every step.
+func CheckStep(n int, name string, args map[string]interface{}) error {
+	if name == "app_batch" {
+		return mobiumerr.New(mobiumerr.InvalidArgument, "step %d is app_batch; list its steps instead", n)
+	}
+	for _, t := range GetToolSchemas() {
+		if t.Name == name {
+			return checkStepArgs(n, name, t.InputSchema, args)
+		}
+	}
+	return mobiumerr.New(mobiumerr.InvalidArgument, "step %d names %q, which is not a tool (have: %s)",
+		n, name, strings.Join(ToolNames(), ", "))
+}
