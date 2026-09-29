@@ -114,8 +114,19 @@ func (c cdpCookie) cookie() Cookie {
 
 // Cookies lists the cookies the page's URL would be sent, HttpOnly ones
 // included.
+//
+// The URL is the page's own, from location.href, and named in the call.
+// With none, Chrome answers for the frame's URL as it recorded it, which is
+// not always where the page is: a page loaded as HTML with a base URL — an
+// app's WebView given a string and an origin, MobiumApp's Web storage page —
+// is recorded as about:blank, so its cookies, which the page itself could
+// read, came back as none. CHALLENGES 168.
 func (s *Session) Cookies(ctx context.Context) ([]Cookie, error) {
-	raw, err := s.call(ctx, "Network.getCookies", map[string]interface{}{})
+	params := map[string]interface{}{}
+	if u, err := pageURL(ctx, s); err == nil {
+		params["urls"] = []string{u.String()}
+	}
+	raw, err := s.call(ctx, "Network.getCookies", params)
 	if err != nil {
 		return nil, err
 	}

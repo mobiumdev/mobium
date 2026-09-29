@@ -7,7 +7,7 @@ the source.
 
 The pattern across them is the reason the document exists: **almost nothing
 here was found by reading code or by a test written from imagination.** Of
-167 defects, 132 were found only by running against a real device. The other
+168 defects, 133 were found only by running against a real device. The other
 thirty-five — 4, 5, 6, 14, 23, 24, 32, 35, 36, 39, 44, 50, 53, 54, 57, 66, 89,
 99, 100, 121, 123, 129, 130, 133, 134, 139, 140, 141, 142, 144, 150, 158, 162,
 164 and 165 — came from reading code, the compiler, a test, a linter,
@@ -3792,6 +3792,24 @@ nothing in the tree says so, so a tap on "Storage Demo" would have reported a
 view over its point. They are known by their shape rather than their label,
 which is in the device's language — an Other that is not accessible, whose
 value is a percentage — and are never covers now.
+
+### 168. On Android, `cookies` found none on a page that held one
+
+**Found by:** `docs/checks/web-storage.sh`, the first check of `app_cookies`
+and `app_storage` against a page's own view, on MobiumApp's new Web storage
+page on an Android 15 emulator.
+
+The page — inline HTML loaded with the base URL `https://mobiumapp.test/`,
+the way an app hands its WebView a string and an origin — saved a cookie and
+read it back from `document.cookie`, and `mobium cookies` answered "no
+cookies for https://mobiumapp.test/". `Network.getCookies` with no URLs
+answers for the frame's URL as Chrome recorded it, and for a page loaded that
+way that is `about:blank` — which is also what `contexts` lists for it — not
+where the page says it is. The read now names the page's own URL, from
+`location.href`, and is still scoped to it. Until this page existed, every
+WebView MobiumApp showed had no origin at all, so neither tool had been
+pointed at a page that could hold what it reads; the iOS simulator, through
+WebKit's own cookie call, read the cookie from the start.
 
 ## Findings that were not defects
 
