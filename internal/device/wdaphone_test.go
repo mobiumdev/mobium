@@ -1,6 +1,7 @@
 package device
 
 import (
+	"os"
 	"strings"
 	"testing"
 )
@@ -29,5 +30,43 @@ func TestOrphanedRunnerIsOnlyOursAndOnlyOrphaned(t *testing.T) {
 func TestStartPhoneWDARefusesToStartUnbound(t *testing.T) {
 	if _, err := StartPhoneWDA("unused.xctestrun", "udid", t.TempDir()+"/run.log", ""); err == nil {
 		t.Fatal("a runner was started with no address to bind to")
+	}
+}
+
+// A runner xcodebuild is about to install is announced, and one that was
+// installed before is announced as removed — the silence that hid another
+// tool deleting it (CHALLENGES 189). One already on the phone says nothing.
+func TestPhoneWDAInstallNotice(t *testing.T) {
+	t.Setenv("MOBIUM_HOME", t.TempDir())
+	p := Phone{UDID: "UDID-1", Name: "Test iPhone"}
+	ours := []InstalledApp{{ID: PhoneWDABundleID("TEAM"), Name: PhoneWDAName + "-Runner"}}
+	other := []InstalledApp{{ID: "com.facebook.WebDriverAgentRunner.xctrunner", Name: "WebDriverAgentRunner-Runner"}}
+
+	if got := PhoneWDAInstallNotice("TEAM", p, ours); got != "" {
+		t.Errorf("runner on the phone, notice %q, want none", got)
+	}
+	if got := PhoneWDAInstallNotice("TEAM", p, other); !strings.HasPrefix(got, "installing WebDriverAgent") {
+		t.Errorf("first install announced as %q", got)
+	}
+	if err := os.MkdirAll(phoneWDADir("TEAM", p.UDID), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	MarkPhoneWDAInstalled("TEAM", p.UDID)
+	if got := PhoneWDAInstallNotice("TEAM", p, other); !strings.Contains(got, "no longer installed") {
+		t.Errorf("a removed runner announced as %q", got)
+	}
+	if got := PhoneWDAInstallNotice("TEAM", Phone{UDID: "UDID-2"}, other); strings.Contains(got, "no longer") {
+		t.Errorf("another phone's install read as a removal: %q", got)
+	}
+}
+
+// Only the runner target is renamed: a PRODUCT_NAME given outright would
+// rename WebDriverAgentLib too, and the runner would not link.
+func TestPhoneWDANameRenamesOnlyTheRunner(t *testing.T) {
+	joined := strings.Join(phoneWDANameSettings, " ")
+	for _, want := range []string{"MOBIUM_PRODUCT_WebDriverAgentRunner=" + PhoneWDAName, ":default=$(TARGET_NAME)"} {
+		if !strings.Contains(joined, want) {
+			t.Errorf("settings %q lack %q", joined, want)
+		}
 	}
 }
