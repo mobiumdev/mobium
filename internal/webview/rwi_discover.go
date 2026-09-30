@@ -529,6 +529,21 @@ func (i *Inspector) AppBehind(appID string) bool {
 	return behind(appID, i.states)
 }
 
+// FrontKnown reports whether webinspectord names any application as the one
+// in front. On the home screen it names none — SpringBoard publishes no
+// pages — and behind then cannot tell a page's app is not in front
+// (CHALLENGES 188).
+func (i *Inspector) FrontKnown() bool {
+	i.mu.Lock()
+	defer i.mu.Unlock()
+	for _, st := range i.states {
+		if st.known && st.active == appActive {
+			return true
+		}
+	}
+	return false
+}
+
 // Pages is Contexts without the presentation, for Attach.
 func (i *Inspector) Pages(ctx context.Context) ([]iosPage, error) {
 	return i.list(ctx)

@@ -131,6 +131,23 @@ func (h *Handlers) switchContext(ctx context.Context, args map[string]interface{
 				WithRemedy(fmt.Sprintf("app_launch %s to bring it forward, then app_context again", c.App)).
 				WithDetail("app", c.App)
 		}
+		// WebKit names no app in front on the home screen, and then cannot
+		// say a page is behind: Safari's page, left open, was attached with
+		// SpringBoard in front and its cookies read (CHALLENGES 188). The
+		// native side knows what is in front; ask it only then, since an
+		// in-app browser's pages belong to another process than the app
+		// hosting them, which WebKit's own answer accounts for.
+		if s.insp != nil && !s.insp.FrontKnown() {
+			if tree, terr := s.driver.Snapshot(ctx); terr == nil {
+				if front := tree.Package(); front != "" && !strings.EqualFold(front, c.App) {
+					return nil, mobiumerr.New(mobiumerr.DeviceNotReady,
+						"%s belongs to %s, which is not in front (%s is), so its page is not on screen and a tap "+
+							"into it would land on whatever is", c.ID, c.App, front).
+						WithRemedy(fmt.Sprintf("app_launch %s to bring it forward, then app_context again", c.App)).
+						WithDetail("app", c.App)
+				}
+			}
+		}
 		sess, err := h.attachWeb(ctx, s, c)
 		if err != nil {
 			return nil, err
