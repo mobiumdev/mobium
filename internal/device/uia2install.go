@@ -94,17 +94,23 @@ func EnsureUIA2APKs(ctx context.Context, progress func(string)) ([]string, error
 }
 
 func fileMatches(path, want string) (bool, error) {
+	got, err := fileSHA256(path)
+	return got == want, err
+}
+
+// fileSHA256 is the hex SHA-256 of a file's contents.
+func fileSHA256(path string) (string, error) {
 	f, err := os.Open(path)
 	if err != nil {
-		return false, err
+		return "", err
 	}
 	defer f.Close()
 
 	h := sha256.New()
 	if _, err := io.Copy(h, f); err != nil {
-		return false, err
+		return "", err
 	}
-	return hex.EncodeToString(h.Sum(nil)) == want, nil
+	return hex.EncodeToString(h.Sum(nil)), nil
 }
 
 func download(ctx context.Context, a uia2Artifact, dest string) error {

@@ -33,6 +33,7 @@ var GoWireTypes = map[string][2]string{
 	"AppStatus":       {"internal/agent", "AppStateView"},
 	"BatteryStatus":   {"internal/agent", "BatteryView"},
 	"BiometricStatus": {"internal/agent", "BiometricView"},
+	"HitTestResult":   {"internal/agent", "HitTestView"},
 	"NetworkStatus":   {"internal/agent", "NetworkView"},
 	"DeviceClock":     {"internal/agent", "TimeView"},
 	"Bounds":          {"internal/agent", "BoundsView"},

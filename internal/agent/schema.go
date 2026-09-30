@@ -1709,6 +1709,29 @@ func GetToolSchemas() []Tool {
 			},
 		},
 		{
+			Name: "app_hit_test",
+			Description: "Ask the platform's own hit test, below accessibility, whether a touch at " +
+				"the point app_tap would use reaches the target — and if not, what it would reach. " +
+				"The accessibility tree, and XCTest's hittable, leave out a view hidden from " +
+				"accessibility, so a tap under such an overlay lands on it while every check passes; " +
+				"UIKit's hitTest:withEvent: does not. Fails, as app_tap does, when the touch would " +
+				"go elsewhere, naming the receiver and whether accessibility can see it. iOS " +
+				"simulators only, and opt-in: it attaches lldb to the app, which stops it for about " +
+				"two seconds, and loads a small probe built from source on first use. Android needs " +
+				"none — its tree lists what accessibility hides — and a real iPhone refuses.",
+			InputSchema: map[string]interface{}{
+				"type": "object",
+				"properties": withDevice(map[string]interface{}{
+					"target": map[string]interface{}{
+						"type":        "string",
+						"description": "A ref from app_map (\"@e5\") or a locator (\"testid=submit\")",
+					},
+				}),
+				"required":             []string{"target"},
+				"additionalProperties": false,
+			},
+		},
+		{
 			Name: "app_biometric",
 			Description: "Biometrics on an emulator or simulator: read whether a face or finger is " +
 				"enrolled, enroll or unenroll one, and present a matching (match) or non-matching " +

@@ -7,7 +7,7 @@ the source.
 
 The pattern across them is the reason the document exists: **almost nothing
 here was found by reading code or by a test written from imagination.** Of
-180 defects, 144 were found only by running against a real device. The other
+181 defects, 145 were found only by running against a real device. The other
 thirty-six — 4, 5, 6, 14, 23, 24, 32, 35, 36, 39, 44, 50, 53, 54, 57, 66, 89,
 99, 100, 121, 123, 129, 130, 133, 134, 139, 140, 141, 142, 144, 150, 158, 162,
 164, 165 and 172 — came from reading code, the compiler, a test, a linter,
@@ -2697,6 +2697,15 @@ hidden from accessibility is still tapped, because WebDriverAgent's tree does
 not contain it. That is recorded as the rule's blind spot, and a test
 asserts it so it stays known.
 
+**Closed on a simulator, 2026-09-29, by asking UIKit:** `mobium hit-test`
+attaches lldb to the app and asks UIKit's own `hitTest:withEvent:` which
+view a touch at the point `tap` would use goes to, and fails when it is not
+the target, naming it and saying it is hidden from accessibility. Opt-in,
+since the attach stops the app for about two seconds; a real iPhone is still
+blind. `docs/checks/hit-test.sh` holds it to what a touch at the same point
+really reached, case by case, and all seven agreed
+([decisions/0008](decisions/0008-a-hit-test-below-accessibility.md)).
+
 The first version reported a non-control cover over nearly every target on
 every captured screen — iOS puts a later, transparent XCUIElementTypeWindow
 or Other over whole screens, and the Android launcher its drag layer. A
@@ -4040,6 +4049,25 @@ after `am start` for Settings, found MobiumApp still in front, and reported
 that enrollment had left Settings — the rule about dispatch and foreground,
 met again. It now waits for Settings to arrive, and only an app in front
 after Settings has been is a walk that left.
+
+### 181. mobium drove a WebDriverAgent it had not installed, believing it its own
+
+**Found by:** another tool's session on the same simulator, during the work
+on [decisions/0008](decisions/0008-a-hit-test-below-accessibility.md). A
+WebDriverAgent built from source elsewhere is installed under the bundle id
+every build of it shares, `com.facebook.WebDriverAgentRunner.xctrunner`. On
+a simulator mobium checked only that an app with that id was installed, and
+went on driving that 16.12.11 build while it pins 16.12.8 — the drift the pin
+exists to prevent, with nothing to say it had happened. The two could not be
+told apart by version either: both runners' Info.plist says "1.0".
+
+A simulator's app container is a folder on the Mac, so mobium now compares
+the installed test bundle, `WebDriverAgentRunner.xctest`, with its verified
+copy, and replaces a runner that is not its own. Measured: the first session
+after the other build said "replacing a WebDriverAgent that is not mobium's
+16.12.8", the installed bundle then hashed to mobium's, and the next session
+left it alone. Two tools on one simulator will go on replacing each other's
+runner; mobium now notices.
 
 ## Findings that were not defects
 

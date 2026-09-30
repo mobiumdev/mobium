@@ -133,19 +133,51 @@ func writeZipEntry(f *zip.File, target string) error {
 	return nil
 }
 
-// EnsureWDAInstalled makes sure the runner is installed on the simulator.
+// wdaTestBinary is WebDriverAgent itself: the test bundle inside the runner.
+// The host app around it is a stub whose version reads "1.0" in every build.
+const wdaTestBinary = "PlugIns/WebDriverAgentRunner.xctest/WebDriverAgentRunner"
+
+// EnsureWDAInstalled makes sure mobium's pinned runner is the one installed
+// on the simulator.
+//
+// Every WebDriverAgent build has the same bundle id, and a tool that builds
+// its own from source installs it over whatever is there. Checking only that
+// the id was installed, mobium went on driving such a 16.12.11 build while it
+// pinned 16.12.8 (CHALLENGES 181), and both report version "1.0". A
+// simulator's app container is a folder on this Mac, so the installed test
+// bundle is compared with the verified one instead, and replaced when they
+// differ.
 func (s *Simctl) EnsureWDAInstalled(ctx context.Context, progress func(string)) error {
-	if s.AppInstalled(ctx, WDABundleID) {
-		return nil
-	}
 	app, err := EnsureWDARunner(ctx, progress)
 	if err != nil {
 		return err
 	}
+	msg := "installing WebDriverAgent on " + s.UDID
+	if s.AppInstalled(ctx, WDABundleID) {
+		if s.installedWDAIs(ctx, app) {
+			return nil
+		}
+		msg = "replacing a WebDriverAgent that is not mobium's " + WDAVersion + " on " + s.UDID
+	}
 	if progress != nil {
-		progress("installing WebDriverAgent on " + s.UDID)
+		progress(msg)
 	}
 	return s.InstallApp(ctx, app)
+}
+
+// installedWDAIs reports whether the runner installed on the simulator is
+// the one at app, by its test bundle's contents.
+func (s *Simctl) installedWDAIs(ctx context.Context, app string) bool {
+	out, err := s.Run(ctx, "get_app_container", s.UDID, WDABundleID)
+	if err != nil {
+		return false
+	}
+	want, err := fileSHA256(filepath.Join(app, wdaTestBinary))
+	if err != nil {
+		return false
+	}
+	ok, err := fileMatches(filepath.Join(strings.TrimSpace(string(out)), wdaTestBinary), want)
+	return err == nil && ok
 }
 
 // FreePorts asks the system for n TCP ports free on this Mac right now.

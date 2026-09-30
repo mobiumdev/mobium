@@ -298,6 +298,8 @@ export class Device {
   shake(): Promise<void>
   /** Enroll, read or present a face or finger on an emulator or simulator. */
   biometric(action?: 'status' | 'enroll' | 'unenroll' | 'match' | 'nomatch'): Promise<Data>
+  /** Whether a tap on the target would reach it, by UIKit's hit test (iOS simulators). */
+  hitTest(target: string): Promise<Data>
   /** One app's state: not_installed, not_running, background or foreground. */
   appState(app: string): Promise<Data>
   /** Sends the app in front away for seconds and brings it back. */

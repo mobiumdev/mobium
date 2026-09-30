@@ -531,6 +531,16 @@ namespace Mobium
             Data("app_biometric", Args("action", action));
 
         /// <summary>
+        /// Asks UIKit's own hit test, below accessibility, whether a tap on
+        /// the target would reach it. Throws when the touch would go
+        /// elsewhere, naming what would take it and whether accessibility can
+        /// see it. iOS simulators only, and opt-in: it attaches lldb to the
+        /// app for about two seconds.
+        /// </summary>
+        public IDictionary<string, object?> HitTest(string target) =>
+            Data("app_hit_test", Args("target", target));
+
+        /// <summary>
         /// One app's state, for any app: <c>state</c> is not_installed,
         /// not_running, background or foreground. An app under its own
         /// permission prompt is still in front, and <c>covered_by</c> names

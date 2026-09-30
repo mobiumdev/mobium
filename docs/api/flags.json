@@ -753,6 +753,32 @@
       ]
     },
     {
+      "tool": "app_hit_test",
+      "arg": "device",
+      "type": "string",
+      "setBy": [
+        "--device"
+      ],
+      "global": true
+    },
+    {
+      "tool": "app_hit_test",
+      "arg": "driver",
+      "type": "string",
+      "setBy": [
+        "--driver"
+      ],
+      "global": true
+    },
+    {
+      "tool": "app_hit_test",
+      "arg": "target",
+      "type": "string",
+      "setBy": [
+        "hit-test"
+      ]
+    },
+    {
       "tool": "app_install",
       "arg": "content",
       "type": "string"
@@ -2732,6 +2758,15 @@
       "flags": [
         "--holder",
         "--want"
+      ]
+    },
+    {
+      "command": "hit-test",
+      "tools": [
+        "app_hit_test"
+      ],
+      "sends": [
+        "target"
       ]
     },
     {

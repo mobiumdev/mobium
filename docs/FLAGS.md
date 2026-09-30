@@ -111,6 +111,9 @@ command mentions them.
 | `app_grant` | `device` | string | _global_ --device |
 | `app_grant` | `driver` | string | _global_ --driver |
 | `app_grant` | `permissions` | array | grant |
+| `app_hit_test` | `device` | string | _global_ --device |
+| `app_hit_test` | `driver` | string | _global_ --driver |
+| `app_hit_test` | `target` | string | hit-test |
 | `app_install` | `content` | string | — |
 | `app_install` | `device` | string | _global_ --device |
 | `app_install` | `driver` | string | _global_ --driver |
@@ -349,6 +352,7 @@ arguments and the two global flags.
 | `find` | app_find | — | locator |
 | `grant` | app_grant | — | app, permissions |
 | `grid` | — | --holder --want | — |
+| `hit-test` | app_hit_test | — | target |
 | `inspect` | — | --open --port | darwin, windows |
 | `install` | app_install | — | path |
 | `keyboard` | app_keyboard | --hide --key --text | hide, key, text |
