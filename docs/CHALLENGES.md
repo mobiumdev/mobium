@@ -7,7 +7,7 @@ the source.
 
 The pattern across them is the reason the document exists: **almost nothing
 here was found by reading code or by a test written from imagination.** Of
-181 defects, 145 were found only by running against a real device. The other
+183 defects, 147 were found only by running against a real device. The other
 thirty-six — 4, 5, 6, 14, 23, 24, 32, 35, 36, 39, 44, 50, 53, 54, 57, 66, 89,
 99, 100, 121, 123, 129, 130, 133, 134, 139, 140, 141, 142, 144, 150, 158, 162,
 164, 165 and 172 — came from reading code, the compiler, a test, a linter,
@@ -4068,6 +4068,39 @@ after the other build said "replacing a WebDriverAgent that is not mobium's
 16.12.8", the installed bundle then hashed to mobium's, and the next session
 left it alone. Two tools on one simulator will go on replacing each other's
 runner; mobium now notices.
+
+### 182. A remedy that could not work, for a device whose UiAutomation was taken
+
+**Found by:** another automation tool's session on the same Pixel 7 AVD.
+Its on-device server, run from the shell as `app_process` and left running
+after the tool exited, held UiAutomation — which one client may use at a
+time — and mobium's UiAutomator2 session failed with "UiAutomation not
+connected". The error ended "To run without the UiAutomator2 server, use
+--driver uiautomator", and that cannot help: `uiautomator dump` needs
+UiAutomation too, and was killed (exit 137). A remedy that is obeyed and
+fails is worse than none.
+
+Now, when that is the failure, mobium lists the shell's `app_process` and
+`uiautomator` processes, and names the holder, its process id and the
+`adb … shell kill` that frees it; with none found, it says another client
+holds UiAutomation and to stop the other tool. Measured: with the holder
+named, the one `kill` it gave was enough, and the next session started.
+
+### 183. A ref pressed another element after the screen changed
+
+**Found by:** a stale-reference case in a measurement driven over MCP. A ref
+resolves by the locator `map` gave it, and nothing checked that the element
+it now finds is the one mapped. MobiumApp's home button "Login Demo" and
+the Login screen's "Log In" button share a test id, so a ref taken for the
+first, used after navigating, pressed the second and reported success — on
+an iOS simulator and an Android emulator alike.
+
+Each ref now keeps what it said and where it was when mapped, and one whose
+locator finds something that differs in both is refused, "the screen has
+changed; run app_map again", which is a remedy that works. Either alone is
+allowed: a button's words change as it counts down, and a list scrolls.
+Measured on the simulator: the stale ref refused and Log In not pressed;
+and a ref taken before a swipe still tapped its button, moved.
 
 ## Findings that were not defects
 

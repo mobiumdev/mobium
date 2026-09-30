@@ -466,8 +466,7 @@ func (h *Handlers) rememberRefs(serial string, tree *uitree.Tree, want *uitree.N
 	table := &refTable{entries: map[string]uitree.Locator{}, taken: time.Now()}
 	byNode := make(map[*uitree.Node]uitree.Entry, len(entries))
 	for _, e := range entries {
-		table.entries[e.Ref] = e.Locator
-		table.lines = append(table.lines, e.Line())
+		table.add(e)
 		byNode[e.Node] = e
 	}
 	h.refs[serial] = table

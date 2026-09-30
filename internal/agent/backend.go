@@ -288,6 +288,13 @@ func (h *Handlers) resolveSession(ctx context.Context, args map[string]interface
 	default:
 		d := mobiumdriver.NewUIA2(adb)
 		if err := d.Start(ctx, h.progress); err != nil {
+			// UiAutomation belongs to one client at a time, and the dump
+			// backend needs it as much as UiAutomator2 does — so switching
+			// backend, which this error used to suggest, cannot help. Name
+			// what holds it instead (CHALLENGES 182).
+			if strings.Contains(err.Error(), "UiAutomation not connected") {
+				return nil, uiAutomationHeld(ctx, adb, dev.Serial, err)
+			}
 			return nil, fmt.Errorf("%w\n\nTo run without the UiAutomator2 server, "+
 				"use --driver uiautomator (slower, and it cannot type).", err)
 		}
@@ -461,4 +468,28 @@ func cannot(s *session, capability, what string) error {
 		return err
 	}
 	return mobiumerr.New(mobiumerr.Unsupported, "the %s driver cannot %s", s.backend, what)
+}
+
+// uiAutomationHeld is the refusal for a device whose UiAutomation another
+// process holds. Measured: another tool's on-device server, run from the
+// shell as app_process and left running after its tool exited, kept it, and
+// UiAutomator2's session and even `uiautomator dump` failed until that one
+// process was stopped.
+func uiAutomationHeld(ctx context.Context, adb *device.ADB, serial string, cause error) error {
+	holders := adb.UIAutomationHolders(ctx)
+	if len(holders) == 0 {
+		return mobiumerr.New(mobiumerr.DeviceNotReady, "another client holds UiAutomation on %s, which "+
+			"one client may use at a time, so nothing here can read the screen — stop any other automation "+
+			"tool using this device (another automation framework, a test runner, an inspector) and try again: %w", serial, cause).
+			WithRemedy("stop the other automation tool using this device")
+	}
+	var names []string
+	for _, p := range holders {
+		names = append(names, fmt.Sprintf("%s (pid %d)", p.Args, p.PID))
+	}
+	return mobiumerr.New(mobiumerr.DeviceNotReady, "UiAutomation on %s is held by %s — another tool's process, "+
+		"and one client may use UiAutomation at a time; stop it with `adb -s %s shell kill %d`, or quit the "+
+		"tool that started it: %w", serial, strings.Join(names, ", "), serial, holders[0].PID, cause).
+		WithRemedy(fmt.Sprintf("adb -s %s shell kill %d", serial, holders[0].PID)).
+		WithDetail("holder", holders[0].Args)
 }

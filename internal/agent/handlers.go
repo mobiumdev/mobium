@@ -38,6 +38,12 @@ const callTimeout = 240 * time.Second
 // which is also where a UiAutomator2 or WebDriverAgent session will live.
 type refTable struct {
 	entries map[string]uitree.Locator
+	// seen is what each ref was when the map was taken: what it said and
+	// where it was. A ref resolves by its locator, and after the screen
+	// changed that locator can find another element — home's "Login Demo"
+	// and the Login screen's "Log In" share a test id in MobiumApp, and a ref
+	// for the first pressed the second, reporting success.
+	seen map[string]refSeen
 	// web holds refs taken inside a WebView, which resolve by re-running the
 	// page map rather than against a native snapshot.
 	web   map[string]webRef
@@ -464,8 +470,7 @@ func (h *Handlers) mapScreen(ctx context.Context, args map[string]interface{}) (
 	table := &refTable{entries: map[string]uitree.Locator{}, taken: time.Now()}
 	view := MapView{Elements: []ElementView{}, Context: webview.NativeContext, Device: dev.Serial}
 	for _, e := range entries {
-		table.entries[e.Ref] = e.Locator
-		table.lines = append(table.lines, e.Line())
+		table.add(e)
 		view.Elements = append(view.Elements, elementView(e))
 	}
 	h.refs[dev.Serial] = table
@@ -722,8 +727,7 @@ func (h *Handlers) find(ctx context.Context, args map[string]interface{}) (*Tool
 	table := &refTable{entries: map[string]uitree.Locator{}, taken: time.Now()}
 	byNode := map[*uitree.Node]uitree.Entry{}
 	for _, e := range entries {
-		table.entries[e.Ref] = e.Locator
-		table.lines = append(table.lines, e.Line())
+		table.add(e)
 		byNode[e.Node] = e
 	}
 	h.refs[dev.Serial] = table
@@ -803,6 +807,55 @@ func (h *Handlers) locatorFor(serial, target string) (uitree.Locator, error) {
 		return uitree.Locator{}, mobiumerr.New(mobiumerr.InvalidArgument, "unknown ref %s — %s", target, knownRefs(table))
 	}
 	return loc, nil
+}
+
+// refSeen is a ref's element as the map saw it.
+type refSeen struct {
+	name   string
+	bounds uitree.Rect
+}
+
+// add records one map entry under its ref.
+func (t *refTable) add(e uitree.Entry) {
+	t.entries[e.Ref] = e.Locator
+	t.lines = append(t.lines, e.Line())
+	if t.seen == nil {
+		t.seen = map[string]refSeen{}
+	}
+	if e.Node != nil {
+		t.seen[e.Ref] = refSeen{name: uitree.Describe(e.Node), bounds: e.Node.Bounds}
+	}
+}
+
+// staleRef refuses a ref whose locator now finds a different element: one
+// that neither says what the mapped one said nor sits where it sat. Either
+// alone is allowed — a button's words change as it counts down, and a list
+// scrolls — so only both at once count as another element, which is what
+// a new screen with a reused id looks like.
+func (h *Handlers) staleRef(serial, ref string, node *uitree.Node) error {
+	table, ok := h.refs[serial]
+	if !ok || !strings.HasPrefix(ref, "@") {
+		return nil
+	}
+	was, ok := table.seen[ref]
+	if !ok {
+		return nil
+	}
+	now := uitree.Describe(node)
+	if now == was.name || nearlySameRect(was.bounds, node.Bounds) {
+		return nil
+	}
+	return mobiumerr.New(mobiumerr.NoSuchElement, "%s was %q at %s when the map was taken, and its locator now "+
+		"finds %q at %s — the screen has changed; run app_map again", ref, was.name, was.bounds, now, node.Bounds).
+		WithRemedy("run app_map again, and use the ref it gives").
+		WithDetail("ref", ref)
+}
+
+// nearlySameRect allows the two pixels a node nested at its parent's bounds
+// can be off by (CHALLENGES 176).
+func nearlySameRect(a, b uitree.Rect) bool {
+	d := func(x, y int) bool { return x-y <= 2 && y-x <= 2 }
+	return d(a.X1, b.X1) && d(a.Y1, b.Y1) && d(a.X2, b.X2) && d(a.Y2, b.Y2)
 }
 
 func knownRefs(t *refTable) string {
@@ -1227,6 +1280,13 @@ func (h *Handlers) resolveNodeOnce(ctx context.Context, s *session, target strin
 		}
 		tree = t
 		node, resolveErr = pickOne(loc, t)
+		// Not waited for: a ref's element does not come back once its
+		// screen has gone.
+		if resolveErr == nil {
+			if err := h.staleRef(s.dev.Serial, target, node); err != nil {
+				return false, err
+			}
+		}
 		// Enabled is part of being actionable, as it is in Playwright and
 		// Vibium: a disabled control ignores a tap, which then reports
 		// success for nothing. Waited for within the same budget, since a
