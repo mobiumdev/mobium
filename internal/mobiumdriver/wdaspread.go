@@ -17,6 +17,10 @@ type spread struct {
 	Parts []string
 	// Lost are the characters of the text found in none of them.
 	Lost string
+	// Fields are the target and every text-entry field after it, filled or
+	// not, in document order: the boxes a lost character can be typed into
+	// again, one to a box.
+	Fields []*uitree.Node
 }
 
 // Complete says every character arrived, in order, across the fields.
@@ -59,7 +63,7 @@ func findSpread(tree *uitree.Tree, target *uitree.Node, text string) (spread, bo
 	if !ok {
 		return spread{}, false
 	}
-	return spread{Parts: parts, Lost: lost}, true
+	return spread{Parts: parts, Lost: lost, Fields: fields[at:]}, true
 }
 
 // missing returns the characters of want absent from got, when got is want

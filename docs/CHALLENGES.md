@@ -3600,6 +3600,17 @@ reported typed, one lost a digit and named it, and none retried. On the
 iPhone 15 Plus the whole code arrived and was reported typed, in each of three
 runs of `otp.sh`. Android is unaffected: it sets a field's text at once, and the app spreads it.
 
+Since 2026-09-30 a lost character is typed again rather than only named.
+Typed whole, the code lost a digit at a focus change in 2 runs of 10 on
+the simulator, and in none of 10 on the iPhone, which types at half the
+speed. Typing into each box in turn cannot race the focus change, since each
+keystroke goes to the element it names. So on a loss the boxes are
+cleared, last first, each is given its character and read back, and the row
+must then hold the code in order. A box that still takes nothing is named
+as before. Measured: 30 of 30 on the simulator, five of them recovered at
+about 8s against 2s, and 10 of 10 on the iPhone. A fake that loses a digit
+the same way fails the test with the old behavior and passes with the new.
+
 ### 157. An iOS background of a minute or more timed out
 
 **Found by:** `docs/checks/otp.sh`, sending MobiumApp away for 62 seconds to

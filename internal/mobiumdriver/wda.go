@@ -454,7 +454,7 @@ func (w *WDA) SetText(ctx context.Context, n *uitree.Node, text string) error {
 					if sp.Complete() {
 						return nil
 					}
-					return spreadError(text, sp)
+					return w.retypeSpread(ctx, text, sp)
 				}
 			}
 		}
@@ -467,6 +467,60 @@ func (w *WDA) SetText(ctx context.Context, n *uitree.Node, text string) error {
 	return mobiumerr.New(mobiumerr.NotConfirmed, "typed %q and the field holds %q — iOS dropped a keystroke, and "+
 		"retrying %d times, down to %d keys a second, did not recover it", text, got, setTextAttempts-1,
 		typingFrequencies[setTextAttempts-1])
+}
+
+// retypeSpread types text again one character to a box, after typing it
+// whole into the first box lost a character as the app moved focus on.
+//
+// On an iPhone 17 Pro simulator, typing a six-digit code into MobiumApp's
+// first OTP box lost a digit at a focus change in two runs of ten: the
+// keyboard types faster than the app moves focus. The iPhone 15 Plus, which
+// types at half the speed, lost none in ten. Typing into each box in turn
+// cannot race the focus change, because each keystroke goes to the element
+// it names. So the boxes are cleared, last first, since clearing one can
+// move focus back, and each gets its character and is read back; then the
+// row is read again and must hold the text in order. Only on a loss: when
+// the whole code arrives, it costs nothing.
+func (w *WDA) retypeSpread(ctx context.Context, text string, sp spread) error {
+	chars := []rune(text)
+	if len(sp.Fields) < len(chars) {
+		return spreadError(text, sp)
+	}
+	boxes := sp.Fields[:len(chars)]
+	ids := make([]string, len(boxes))
+	for i, b := range boxes {
+		id, err := w.elementFor(ctx, b)
+		if err != nil {
+			return spreadError(text, sp)
+		}
+		ids[i] = id
+	}
+	for i := len(ids) - 1; i >= 0; i-- {
+		if err := w.w3c.clearElement(ctx, ids[i]); err != nil {
+			return err
+		}
+	}
+	for i, r := range chars {
+		if err := w.w3c.setElementValueAt(ctx, ids[i], string(r), 0); err != nil {
+			return err
+		}
+		if got, err := w.w3c.elementValue(ctx, ids[i]); err != nil || got != string(r) {
+			break
+		}
+	}
+	tree, err := w.Snapshot(ctx)
+	if err != nil {
+		return mobiumerr.New(mobiumerr.NotConfirmed, "typed %q one character to a box after a character was "+
+			"lost, and could not read the boxes back to confirm it: %w", text, err)
+	}
+	again, ok := findSpread(tree, sp.Fields[0], text)
+	if !ok {
+		return spreadError(text, sp)
+	}
+	if again.Complete() && len(again.Parts) == len(chars) {
+		return nil
+	}
+	return spreadError(text, again)
 }
 
 // keyboardLacks is the refusal for a password that came up short because the

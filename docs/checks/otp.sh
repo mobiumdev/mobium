@@ -14,9 +14,10 @@
 #   - Digit by digit into the boxes, and `entered` must say exactly the code.
 #   - The whole code into the first box: Android sets a field's text at once
 #     and the screen spreads it; iOS types through the keyboard and the app
-#     moves focus as it goes. Either every digit arrives, and `entered` says
-#     so, or Mobium says which never arrived — never "iOS dropped a keystroke"
-#     with retries that type the code again into the next boxes (156).
+#     moves focus as it goes. A digit lost as focus moves is typed again,
+#     one to a box. Either every digit arrives, and `entered` says so, or
+#     Mobium says which never arrived — never "iOS dropped a keystroke" with
+#     retries that type the code again into the next boxes (156).
 #   - The outcomes the app reports: no code, verified, already used, wrong,
 #     locked, and expired — the last reached by sending the app to the
 #     background past the code's life, so `background` is exercised too.

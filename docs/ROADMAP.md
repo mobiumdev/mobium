@@ -122,13 +122,10 @@ this is what is not.
   from the app. Orientation can go through WebDriverAgent's `/orientation`,
   refusing an app pinned to one orientation as Android already does.
   Timezone on a simulator can be `TZ` in the launch environment.
-- **Auto-advancing code boxes on iOS.** In one simulator run the OTP Demo's
-  six boxes lost a digit as focus moved. Mobium reported the loss (`"6"
-  never arrived, lost as focus moved`) instead of passing, but the step
-  failed. When a field
-  moves focus by itself after each character, type one, wait for focus to
-  land on the next field, then go on. Done when `otp-boxes` passes ten runs
-  in ten on a simulator and on the iPhone.
+- ~~**Auto-advancing code boxes on iOS.**~~ Done 2026-09-30. A code typed
+  whole into the first box that loses a character as focus moves is typed
+  again one character to a box and confirmed (CHALLENGES 156): 30 of 30 on
+  a simulator, five of them recovered, and 10 of 10 on the iPhone.
 
 ## Under consideration
 
