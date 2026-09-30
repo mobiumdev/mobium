@@ -7,7 +7,7 @@ the source.
 
 The pattern across them is the reason the document exists: **almost nothing
 here was found by reading code or by a test written from imagination.** Of
-185 defects, 149 were found only by running against a real device. The other
+187 defects, 151 were found only by running against a real device. The other
 thirty-six — 4, 5, 6, 14, 23, 24, 32, 35, 36, 39, 44, 50, 53, 54, 57, 66, 89,
 99, 100, 121, 123, 129, 130, 133, 134, 139, 140, 141, 142, 144, 150, 158, 162,
 164, 165 and 172 — came from reading code, the compiler, a test, a linter,
@@ -4136,6 +4136,34 @@ of one element are merged (179): the one whose whole text or label is the
 value, ignoring case, wins, and a part that is nobody's whole stays
 ambiguous. Measured: the paste prompt answered by `label=Allow Paste`, and
 the app read the 14 characters put on the clipboard.
+
+### 186. The emulator console answered nothing, and the error said nothing
+
+**Found by:** `app_shake` on the Pixel 7 AVD, which had passed its check two
+days before, failing with "the emulator did not say where its accelerometer
+rests:" — and nothing after the colon. Every `adb emu` command printed
+nothing and exited 0, while the same commands typed into the console's own
+port answered at once.
+
+Another automation tool had rewritten `~/.emulator_console_auth_token`
+empty, a documented step of its own, to skip the console's authentication.
+With the file empty, `adb emu` sent each command without authenticating and
+read no answer; restarting the emulator with the file still empty changed
+nothing. The emulator writes a fresh token only when the file is missing at
+its start. The console always answers "OK" or "KO", so silence now fails as
+`device_not_ready`, and with the token file present and empty the refusal
+names it and the fix. Measured both ways: with the file emptied and the
+emulator restarted, the refusal named the file; following it — delete the
+file, restart the emulator — gave a 16-byte token and a working shake.
+
+### 187. A tap at (50000, 50000) was reported done on iOS
+
+**Found by:** a sweep of requests that cannot succeed, each expected to fail.
+On an iPhone 17 Pro simulator `app_tap` with x and y far off the screen
+answered "tapped (50000, 50000)"; on Android UiAutomator2 happened to refuse
+it, with a message about W3C actions. A coordinate tap now checks the point
+against the screen's bounds first and refuses one outside them, on both
+platforms, naming the screen's size; a point on screen is tapped as before.
 
 ## Findings that were not defects
 
