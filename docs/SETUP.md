@@ -505,6 +505,13 @@ so on a phone they are refused, each with the reason, rather than
 approximated: **permissions, appearance, the clipboard, simulated location
 and routes.**
 
+**Screen recording works on a phone**, differently: the frames come from
+WebDriverAgent's screen stream, about ten a second whether or not anything
+moves, and are written into the MP4 on the Mac as JPEG images rather than
+as H.264. Apple's AVFoundation, which QuickTime Player is built on, opens
+and decodes it (measured); browsers are not known to play JPEG video in an
+MP4, and none has been tried.
+
 ### WebViews and Safari
 
 They work on a phone, reached through the same lockdown service Appium uses
