@@ -301,14 +301,18 @@ func (l Locator) Resolve(t *Tree) []*Node {
 	if len(exact) == 1 {
 		return exact
 	}
-	if l.Kind != KindText {
+	if l.Kind != KindText && l.Kind != KindLabel {
 		return out
 	}
 	// A control whose label is the text of something inside it is not a
 	// second match: the text node is the one, as it was before. Nor is a node
 	// inside another at the same bounds: React Native nests a Text in a Text
 	// and iOS reports both, so text=Back found two on MobiumApp's Dialog Demo
-	// — one thing drawn once, which Android reports once.
+	// — one thing drawn once, which Android reports once. label= is the same
+	// case: iOS's Face ID sheet reports each of its buttons as a button
+	// inside a button, same label, same frame, and label=Cancel found two,
+	// with a remedy — ",role=button" — that could not tell them apart. A
+	// test ID is a name the app gave, so two nodes carrying one stay two.
 	kept := make([]*Node, 0, len(out))
 	for _, n := range out {
 		if byLabel[n] && containsAny(n, out) || sameAsAncestor(n, out) {

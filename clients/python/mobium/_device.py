@@ -679,6 +679,17 @@ class Device:
         """
         self._call("app_shake")
 
+    def biometric(self, action: str = "status") -> dict:
+        """Biometrics on an emulator or simulator. ``action`` is ``status``,
+        ``enroll`` or ``unenroll``, or ``match`` / ``nomatch`` to present a
+        matching or a stranger's face or finger to the prompt that is up.
+        Returns ``kind`` (face or fingerprint), ``enrolled``, and for a match
+        or non-match the ``outcome`` read back: accepted, not recognized,
+        failed (the prompt gave up) or locked out. With no prompt up it
+        raises rather than sending to nothing. A real phone refuses.
+        """
+        return self._data("app_biometric", {"action": action}) or {}
+
     def app_state(self, app: str) -> dict:
         """One app's state: ``not_installed``, ``not_running``, ``background``
         or ``foreground``, for any app.

@@ -43,6 +43,9 @@ command mentions them.
 | `app_batch` | `steps` | array | batch |
 | `app_battery` | `device` | string | _global_ --device |
 | `app_battery` | `driver` | string | _global_ --driver |
+| `app_biometric` | `action` | string | biometric |
+| `app_biometric` | `device` | string | _global_ --device |
+| `app_biometric` | `driver` | string | _global_ --driver |
 | `app_call` | `action` | string | call |
 | `app_call` | `device` | string | _global_ --device |
 | `app_call` | `driver` | string | _global_ --driver |
@@ -324,6 +327,7 @@ arguments and the two global flags.
 | `background` | app_background | --app | app, seconds |
 | `batch` | app_batch | — | steps |
 | `battery` | app_battery | — | — |
+| `biometric` | app_biometric | — | action |
 | `call` | app_call | --number | action, number |
 | `check` | app_check | — | checked, target |
 | `clear-data` | app_clear_data | — | app |

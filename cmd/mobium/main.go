@@ -150,6 +150,7 @@ func main() {
 		newBatteryCmd(),
 		newTimeCmd(),
 		newShakeCmd(),
+		newBiometricCmd(),
 		newNetworkCmd(),
 		newTestCmd(),
 		newShowReportCmd(),

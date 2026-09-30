@@ -884,6 +884,22 @@ public final class Mobium implements AutoCloseable {
     }
 
     /**
+     * Biometrics on an emulator or simulator: {@code status}, {@code enroll}
+     * or {@code unenroll}, or {@code match} / {@code nomatch} to present a
+     * matching or a stranger's face or finger to the prompt that is up. The
+     * answer has {@code kind} (face or fingerprint), {@code enrolled}, and
+     * for a match or non-match the {@code outcome} read back: accepted, not
+     * recognized, failed (the prompt gave up) or locked out. With no prompt
+     * up it throws rather than sending to nothing. A real phone refuses.
+     *
+     * @param action status, enroll, unenroll, match or nomatch
+     * @return what was found or done
+     */
+    public Map<String, Object> biometric(String action) {
+        return data("app_biometric", args("action", action));
+    }
+
+    /**
      * One app's state, for any app: {@code state} is not_installed,
      * not_running, background or foreground. An app under its own permission
      * prompt is still in front, and {@code covered_by} names the prompt's

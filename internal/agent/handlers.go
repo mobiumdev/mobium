@@ -329,6 +329,8 @@ func (h *Handlers) dispatch(ctx context.Context, name string, args map[string]in
 		return h.deviceTime(ctx, args)
 	case "app_shake":
 		return h.shake(ctx, args)
+	case "app_biometric":
+		return h.biometric(ctx, args)
 	case "app_network":
 		return h.network(ctx, args)
 	case "app_state":

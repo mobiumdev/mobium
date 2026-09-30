@@ -1709,6 +1709,32 @@ func GetToolSchemas() []Tool {
 			},
 		},
 		{
+			Name: "app_biometric",
+			Description: "Biometrics on an emulator or simulator: read whether a face or finger is " +
+				"enrolled, enroll or unenroll one, and present a matching (match) or non-matching " +
+				"(nomatch) one to a prompt that is up. An iOS simulator is a Face ID or a Touch ID " +
+				"model, by its device type; an Android emulator has a fingerprint, and enrolling " +
+				"walks Settings' own enrollment — setting a PIN of 1111 first when the emulator has " +
+				"no screen lock, since Android enrolls none without one; unenroll removes both. " +
+				"match and nomatch report what the device made of it, read back: accepted, not " +
+				"recognized, failed (the prompt gave up) or locked out — and are refused when no prompt or lock screen is " +
+				"asking, rather than sent to nothing. Whether the app signed in is the app's to " +
+				"show: check the screen after. A real phone refuses — nothing outside it can " +
+				"present a finger or a face.",
+			InputSchema: map[string]interface{}{
+				"type": "object",
+				"properties": withDevice(map[string]interface{}{
+					"action": map[string]interface{}{
+						"type": "string",
+						"enum": []string{"status", "enroll", "unenroll", "match", "nomatch"},
+						"description": "status (the default) reads; enroll and unenroll set the " +
+							"enrollment; match and nomatch present a face or finger to the prompt",
+					},
+				}),
+				"additionalProperties": false,
+			},
+		},
+		{
 			Name: "app_network",
 			Description: "Read or set the device's network conditions: offline, latency and " +
 				"bandwidth. With no arguments, reports what is in place, read from the device. " +

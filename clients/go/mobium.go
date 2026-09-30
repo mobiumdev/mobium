@@ -977,6 +977,33 @@ func (d *Device) Shake(ctx context.Context) error {
 	return d.act(ctx, "app_shake", map[string]any{})
 }
 
+// BiometricStatus is what Biometric found or did.
+type BiometricStatus struct {
+	// Kind is "face" or "fingerprint": the one this device can be shown.
+	Kind     string `json:"kind"`
+	Enrolled bool   `json:"enrolled"`
+	// LockedOut is an emulator's sensor refusing every touch for now, after
+	// too many that did not match.
+	LockedOut bool `json:"locked_out,omitempty"`
+	// Outcome is what the device made of a face or finger presented by
+	// "match" or "nomatch": "accepted", "not recognized", "failed" (the
+	// prompt gave up) or "locked out" — empty when nothing on screen could
+	// say. Whether the app signed in is the app's to show.
+	Outcome string `json:"outcome,omitempty"`
+	Note    string `json:"note,omitempty"`
+}
+
+// Biometric reads or sets the enrollment of an emulator's fingerprint or a
+// simulator's face or finger — action "status", "enroll" or "unenroll" —
+// or presents a matching ("match") or a stranger's ("nomatch") one to the
+// prompt that is up. With no prompt up it returns an error rather than
+// sending to nothing. A real phone returns an error.
+func (d *Device) Biometric(ctx context.Context, action string) (BiometricStatus, error) {
+	var out BiometricStatus
+	err := d.data(ctx, "app_biometric", map[string]any{"action": action}, &out)
+	return out, err
+}
+
 // AppStatus is one app's state, from AppState.
 type AppStatus struct {
 	// State is "not_installed", "not_running", "background" or "foreground".

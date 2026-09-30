@@ -939,6 +939,19 @@ export class Device {
   }
 
   /**
+   * Biometrics on an emulator or simulator. `action` is `status`, `enroll`
+   * or `unenroll`, or `match` / `nomatch` to present a matching or a
+   * stranger's face or finger to the prompt that is up. Resolves to `kind`
+   * (face or fingerprint), `enrolled`, and for a match or non-match the
+   * `outcome` read back: accepted, not recognized, failed (the prompt gave
+   * up) or locked out. With no prompt up it rejects rather than sending to
+   * nothing. A real phone refuses.
+   */
+  async biometric(action = 'status') {
+    return (await this.#data('app_biometric', { action })) || {}
+  }
+
+  /**
    * One app's state: `not_installed`, `not_running`, `background` or
    * `foreground`, for any app. An app under its own permission prompt is
    * still in front, and `covered_by` names the prompt's process. On iOS a
