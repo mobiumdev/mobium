@@ -900,6 +900,20 @@ public final class Mobium implements AutoCloseable {
     }
 
     /**
+     * Asks UIKit's own hit test, below accessibility, whether a tap on the
+     * target would reach it. Throws when the touch would go elsewhere,
+     * naming what would take it and whether accessibility can see it. iOS
+     * simulators only, and opt-in: it attaches lldb to the app for about two
+     * seconds.
+     *
+     * @param target a ref from map, or a locator
+     * @return the point a tap would use, and that it reaches the target
+     */
+    public Map<String, Object> hitTest(String target) {
+        return data("app_hit_test", args("target", target));
+    }
+
+    /**
      * One app's state, for any app: {@code state} is not_installed,
      * not_running, background or foreground. An app under its own permission
      * prompt is still in front, and {@code covered_by} names the prompt's

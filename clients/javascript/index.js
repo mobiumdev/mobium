@@ -952,6 +952,17 @@ export class Device {
   }
 
   /**
+   * Asks UIKit's own hit test, below accessibility, whether a tap on
+   * `target` would reach it. Rejects when the touch would go elsewhere,
+   * naming what would take it and whether accessibility can see it. iOS
+   * simulators only, and opt-in: it attaches lldb to the app for about two
+   * seconds.
+   */
+  async hitTest(target) {
+    return (await this.#data('app_hit_test', { target })) || {}
+  }
+
+  /**
    * One app's state: `not_installed`, `not_running`, `background` or
    * `foreground`, for any app. An app under its own permission prompt is
    * still in front, and `covered_by` names the prompt's process. On iOS a

@@ -57,11 +57,13 @@ this is what is not.
   unchecked, focused and a value (`docs/checks/wait-states.sh`). Still to
   come:
   - An overlay hidden from accessibility on iOS, which WebDriverAgent's tree
-    does not contain, so a tap under one still lands on it. WebDriverAgent's
-    per-element `hittable` was measured and does not see it either — it
-    says true there, and false for a pass-through the tap reaches — so what
-    is left needs a signal from below accessibility, which nothing outside
-    the app has yet.
+    does not contain, so a tap under one still lands on it. **On a
+    simulator, `mobium hit-test` sees it** since 2026-09-29: UIKit's own hit
+    test, asked through lldb, opt-in because the attach stops the app for
+    about two seconds ([decisions/0008](decisions/0008-a-hit-test-below-accessibility.md)).
+    Still open: a real iPhone, which needs the app signed for debugging and
+    a debug server on the phone; and doing it in milliseconds before every
+    tap, which would mean loading the probe at launch.
 - ~~**Session recording and `diff map`.**~~ Done 2026-09-29. `mobium trace
   start|stop` records a session as Vibium does: a zip in the Playwright
   trace format, with every call a step, the screen after it and the map

@@ -65,6 +65,10 @@ you cannot do it for them from mobium. Say so rather than retrying.
   failed, locked out). Emulators and simulators only; an emulator gets PIN
   1111 to enroll, which `unenroll` removes. With no prompt up it refuses —
   start the app's sign-in first
+- `mobium hit-test <target>` — on an iOS simulator, whether UIKit would give
+  a tap there to the target, and if not, to what; the one way to see an
+  overlay hidden from accessibility. Takes about three seconds: use it when
+  a tap "worked" and the app disagrees
 - `mobium background 5` — send the app in front away for 5 seconds and bring
   it back where it was: how a resume path is tested
 - `mobium launch <package|bundle-id>` — open an app

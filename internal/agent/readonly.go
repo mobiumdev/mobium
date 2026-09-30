@@ -14,7 +14,7 @@ var readOnlyTools = map[string]bool{
 	"app_devices": true, "app_doctor": true, "app_current": true, "app_state": true,
 	"app_map": true, "app_find": true, "app_text": true, "app_source": true,
 	"app_screenshot": true, "app_wait_for": true, "app_contexts": true, "app_list_apps": true,
-	"app_battery": true, "app_time": true, "app_logs": true, "app_crashes": true,
+	"app_battery": true, "app_time": true, "app_hit_test": true, "app_logs": true, "app_crashes": true,
 	"app_download": true,
 }
 

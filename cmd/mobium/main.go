@@ -151,6 +151,7 @@ func main() {
 		newTimeCmd(),
 		newShakeCmd(),
 		newBiometricCmd(),
+		newHitTestCmd(),
 		newNetworkCmd(),
 		newTestCmd(),
 		newShowReportCmd(),

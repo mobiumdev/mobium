@@ -690,6 +690,15 @@ class Device:
         """
         return self._data("app_biometric", {"action": action}) or {}
 
+    def hit_test(self, target: str) -> dict:
+        """Ask UIKit's own hit test, below accessibility, whether a tap on
+        ``target`` would reach it. Raises when the touch would go elsewhere,
+        naming what would take it and whether accessibility can see it.
+        iOS simulators only, and opt-in: it attaches lldb to the app for
+        about two seconds.
+        """
+        return self._data("app_hit_test", {"target": target}) or {}
+
     def app_state(self, app: str) -> dict:
         """One app's state: ``not_installed``, ``not_running``, ``background``
         or ``foreground``, for any app.

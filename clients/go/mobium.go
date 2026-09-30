@@ -1004,6 +1004,26 @@ func (d *Device) Biometric(ctx context.Context, action string) (BiometricStatus,
 	return out, err
 }
 
+// HitTestResult is HitTest's answer when the touch reaches its target.
+type HitTestResult struct {
+	Target string `json:"target"`
+	// X and Y are the point Tap would touch, in device pixels.
+	X       int  `json:"x"`
+	Y       int  `json:"y"`
+	Reaches bool `json:"reaches"`
+}
+
+// HitTest asks UIKit's own hit test, below accessibility, whether a tap on
+// target would reach it. It returns an error when the touch would go
+// elsewhere, naming what would take it and whether accessibility can see
+// it. iOS simulators only, and opt-in: it attaches lldb to the app for
+// about two seconds.
+func (d *Device) HitTest(ctx context.Context, target string) (HitTestResult, error) {
+	var out HitTestResult
+	err := d.data(ctx, "app_hit_test", map[string]any{"target": target}, &out)
+	return out, err
+}
+
 // AppStatus is one app's state, from AppState.
 type AppStatus struct {
 	// State is "not_installed", "not_running", "background" or "foreground".

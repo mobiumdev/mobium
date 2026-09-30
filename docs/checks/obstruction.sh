@@ -12,7 +12,8 @@
 # negative control, reaching its target, and the plain view swallows the tap
 # with the report the only warning. On iOS an overlay hidden from
 # accessibility is not in the tree at all, and the tap still lands on it —
-# asserted, so that fixing it changes this check on purpose.
+# asserted, so that fixing it changes this check on purpose. `mobium
+# hit-test` sees it, on a simulator and opt-in: hit-test.sh.
 #
 #   docs/checks/obstruction.sh <serial|udid>
 #
@@ -102,7 +103,7 @@ else
   # The blind spot: WebDriverAgent's tree does not contain the overlay.
   [ -z "$REFUSED" ] || fail "iOS refused the hidden overlay — the blind spot is closed; update this check: $SAID"
   case "$(outcome)" in *"cover hidden overlay") ;; *) fail "the tap reached $(outcome), not the overlay" ;; esac
-  row "hidden" "KNOWN BLIND SPOT: not in the tree, tap lands on it"
+  row "hidden" "not in the tree, tap lands on it; hit-test.sh sees it"
 fi
 
 # --- a translucent scrim: refused -----------------------------------------
