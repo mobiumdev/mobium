@@ -34,3 +34,30 @@ func TestHitCoveredRemedies(t *testing.T) {
 		t.Errorf("visible: %v / %s", seen, remedyOf(seen))
 	}
 }
+
+// A ref whose locator now finds another element — different words and a
+// different place — is refused; one that only moved, or only changed its
+// words, is not.
+func TestStaleRef(t *testing.T) {
+	h := &Handlers{refs: map[string]*refTable{}}
+	table := &refTable{entries: map[string]uitree.Locator{}}
+	home := &uitree.Node{Text: "Login Demo", TestID: "loginBtn", Bounds: uitree.Rect{X1: 48, Y1: 866, X2: 1158, Y2: 1007}}
+	table.add(uitree.Entry{Ref: "@e4", Locator: uitree.Locator{Kind: uitree.KindTestID, Value: "loginBtn"}, Node: home})
+	h.refs["sim"] = table
+
+	logIn := &uitree.Node{Text: "Log In", TestID: "loginBtn", Bounds: uitree.Rect{X1: 48, Y1: 1540, X2: 1158, Y2: 1682}}
+	if err := h.staleRef("sim", "@e4", logIn); mobiumerr.CodeOf(err) != mobiumerr.NoSuchElement {
+		t.Errorf("another element: %v", err)
+	}
+	moved := &uitree.Node{Text: "Login Demo", TestID: "loginBtn", Bounds: uitree.Rect{X1: 48, Y1: 400, X2: 1158, Y2: 541}}
+	if err := h.staleRef("sim", "@e4", moved); err != nil {
+		t.Errorf("the same element, scrolled: %v", err)
+	}
+	relabeled := &uitree.Node{Text: "Signing in…", TestID: "loginBtn", Bounds: home.Bounds}
+	if err := h.staleRef("sim", "@e4", relabeled); err != nil {
+		t.Errorf("the same element, its words changed: %v", err)
+	}
+	if err := h.staleRef("sim", "testid=loginBtn", logIn); err != nil {
+		t.Errorf("a locator is not a ref: %v", err)
+	}
+}

@@ -1427,3 +1427,41 @@ func diff(a, b float64) float64 {
 	}
 	return b - a
 }
+
+// Process is one process on the device, as ps reports it.
+type Process struct {
+	PID  int
+	Args string
+}
+
+// UIAutomationHolders lists what may be holding UiAutomation: a process the
+// shell user started with app_process, or a uiautomator command, both of
+// which take UiAutomation for as long as they run. UiAutomator2's own server
+// is an instrumented app, not the shell's, and is not listed.
+func (a *ADB) UIAutomationHolders(ctx context.Context) []Process {
+	out, err := a.Shell(ctx, "ps", "-A", "-o", "PID,USER,ARGS")
+	if err != nil {
+		return nil
+	}
+	return parseUIAutomationHolders(string(out))
+}
+
+func parseUIAutomationHolders(ps string) []Process {
+	var found []Process
+	for _, line := range strings.Split(ps, "\n") {
+		f := strings.Fields(line)
+		if len(f) < 3 || f[1] != "shell" {
+			continue
+		}
+		args := strings.Join(f[2:], " ")
+		if !strings.HasPrefix(args, "app_process") && !strings.Contains(args, "uiautomator") {
+			continue
+		}
+		pid, err := strconv.Atoi(f[0])
+		if err != nil {
+			continue
+		}
+		found = append(found, Process{PID: pid, Args: args})
+	}
+	return found
+}
