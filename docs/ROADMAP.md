@@ -72,13 +72,15 @@ this is what is not.
   changed since the last map (`docs/checks/map-diff.sh`). Next, if wanted:
   `mobium test --trace` writing the same zip, and a batch's steps as a group
   in it.
-- **Screen recording on a real iPhone**, which needs a video stream Mobium does
-  not build yet. WebDriverAgent already serves one, as MJPEG on its port
-  9100. The plan is to read it over the same tunnel address as the HTTP port
-  and write the frames into a container in Go, so nothing else needs
-  installing. Record the frame rate achieved, not the one asked for. Done
-  when a recording of MobiumApp's Motion Demo plays back with the confetti in
-  it, and nothing is left on the phone.
+- ~~**Screen recording on a real iPhone.**~~ Done 2026-09-30. `record`
+  reads WebDriverAgent's MJPEG stream on the phone's port 9100 over the
+  tunnel and writes the frames into an MP4 in Go — JPEG samples, each
+  lasting until the next arrived, so the video carries the rate achieved:
+  9.7 frames a second against the stream's default of 10, at the full
+  1290x2796. AVFoundation opens and decodes it, and MobiumApp's Motion
+  Demo recorded with its confetti falling. Nothing is written on the phone
+  (`docs/checks/record.sh`). Later, if wanted: a higher rate through
+  WebDriverAgent's `mjpegServerFramerate`, measured rather than assumed.
 - ~~**Keep Mobium's runner on a phone that other tools also drive.**~~ Done
   2026-09-30. The phone build is named `MobiumWDA-Runner`, out of the sweep
   other tools make for `WebDriverAgentRunner-Runner`, and a session that finds

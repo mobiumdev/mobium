@@ -540,14 +540,17 @@ func TestServerErrorsKeepTheirW3CCode(t *testing.T) {
 // phone, false of the backend, and silent on the reason.
 func TestAPhoneSaysWhyItDeclines(t *testing.T) {
 	phone := &WDA{phone: &device.Devicectl{}}
-	for _, c := range []string{CapAppearance, CapPermissions, CapRecording, CapClearData} {
+	for _, c := range []string{CapAppearance, CapPermissions, CapClearData} {
 		err := Declined(phone, c)
 		if err == nil || !strings.Contains(err.Error(), "real iPhone") {
 			t.Errorf("%s: %v", c, err)
 		}
 	}
-	if err := Declined(phone, CapGestures); err != nil {
-		t.Errorf("a capability the phone has was declined: %v", err)
+	// Recording is from WebDriverAgent's stream on a phone, since 2026-09-30.
+	for _, c := range []string{CapGestures, CapRecording} {
+		if err := Declined(phone, c); err != nil {
+			t.Errorf("a capability the phone has was declined: %v", err)
+		}
 	}
 	if err := Declined(&WDA{}, CapRecording); err != nil {
 		t.Errorf("a simulator declined: %v", err)

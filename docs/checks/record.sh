@@ -6,11 +6,13 @@
 #
 #   docs/checks/record.sh <android-serial | simulator-udid | iphone-udid>
 #
-# A real iPhone refuses to record for now, and the check asserts the
-# refusal names the reason. Android writes a frame only when the screen
-# changes, so a still screen is one or two frames of almost no duration;
-# the simulator's recorder writes one frame and calls it the whole wall
-# time. Both are right, and the check holds each to its own.
+# Android writes a frame only when the screen changes, so a still screen is
+# one or two frames of almost no duration; the simulator's recorder writes
+# one frame and calls it the whole wall time. A real iPhone is recorded from
+# WebDriverAgent's screen stream, which sends frames at a steady rate
+# whether or not anything moves, so a still screen there is as many frames
+# as its seconds allow. All three are right, and the check holds each to its
+# own.
 set -e
 DEV="$1"
 if [ -z "$DEV" ]; then echo "usage: $0 <serial|udid>" >&2; exit 2; fi
@@ -27,12 +29,6 @@ case "$DEV" in
 esac
 echo "--- $DEV ($PLATFORM)"
 
-if [ "$PLATFORM" = iphone ]; then
-  out=$($M record start 2>&1) && fail "a real iPhone started recording, which is not built: $out"
-  echo "$out" | grep -q "record its screen" || fail "the refusal did not say why: $out"
-  echo "    refused        a real iPhone, with the reason                     ok"
-  exit 0
-fi
 
 [ "$($M record --json | json 'd["recording"]')" = False ] || fail "a recording was already running"
 $M record start >/dev/null
@@ -40,7 +36,7 @@ $M record start >/dev/null 2>&1 && fail "a second start was accepted"
 # Something that moves: Settings launched and scrolled.
 case "$PLATFORM" in
   android) APP=com.android.settings ;;
-  ios)     APP=com.apple.Preferences ;;
+  ios|iphone) APP=com.apple.Preferences ;;
 esac
 $M terminate "$APP" >/dev/null 2>&1 || true
 $M launch "$APP" >/dev/null
@@ -59,17 +55,30 @@ $M record start >/dev/null
 sleep 3
 out=$($M record stop -o "$TMP/still.mp4" --json)
 still=$(echo "$out" | json 'd["frames"]')
-# Fewer frames than the moving recording and a valid file — not "one or
-# two": the status bar, or a screen still settling from the swipes, adds
-# frames, and a first run here counted 22 on a screen that looked still.
-[ "$still" -ge 1 ] && [ "$still" -lt "$frames" ] || fail "a still screen recorded $still frames against $frames moving"
-echo "    still          $still frame(s) against $frames moving, a valid file  ok"
+if [ "$PLATFORM" = iphone ]; then
+  # The stream does not wait for a change: three still seconds are about
+  # thirty frames at its default of ten a second. Fewer than two a second
+  # would mean it stalled.
+  sdur=$(echo "$out" | json 'd["duration"]//1000000')
+  [ "$still" -ge $((sdur * 2 / 1000)) ] && [ "$still" -ge 2 ] || fail "a still screen recorded $still frames over ${sdur}ms"
+  echo "    still          $still frames over ${sdur}ms, the stream's steady rate  ok"
+else
+  # Fewer frames than the moving recording and a valid file — not "one or
+  # two": the status bar, or a screen still settling from the swipes, adds
+  # frames, and a first run here counted 22 on a screen that looked still.
+  [ "$still" -ge 1 ] && [ "$still" -lt "$frames" ] || fail "a still screen recorded $still frames against $frames moving"
+  echo "    still          $still frame(s) against $frames moving, a valid file  ok"
+fi
 
 $M record stop -o "$TMP/x.mp4" >/dev/null 2>&1 && fail "stop with nothing recording was accepted"
 [ "$($M record --json | json 'd["recording"]')" = False ] || fail "still recording after stop"
 if [ "$PLATFORM" = android ]; then
   adb -s "$DEV" shell ls /data/local/tmp | grep -q mobium-recording && fail "the recording was left on the device"
   adb -s "$DEV" shell pidof screenrecord >/dev/null 2>&1 && fail "screenrecord is still running"
+elif [ "$PLATFORM" = iphone ]; then
+  # The stream is read on the Mac and nothing is written on the phone; the
+  # frames wait in a temporary file here until the stop writes the video.
+  ls "${TMPDIR:-/tmp}"/mobium-recordings/*.mjpeg >/dev/null 2>&1 && fail "the stream's frames were left on the Mac"
 else
   pgrep -f "recordVideo" >/dev/null && fail "simctl is still recording"
 fi

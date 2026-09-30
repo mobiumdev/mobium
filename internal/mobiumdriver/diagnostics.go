@@ -105,10 +105,11 @@ func (u *UIA2) StartRecording(ctx context.Context) (device.Recording, error) {
 	return u.adb.StartScreenRecord(ctx)
 }
 
-// StartRecording records the simulator's screen to a file on the Mac.
+// StartRecording records the simulator's screen to a file on the Mac, and a
+// phone's from WebDriverAgent's screen stream.
 func (w *WDA) StartRecording(ctx context.Context) (device.Recording, error) {
-	if err := w.simOnly(CapRecording); err != nil {
-		return nil, err
+	if w.phone != nil {
+		return w.phoneScreenRecord(ctx)
 	}
 	return w.sim.StartScreenRecord(ctx, filepath.Join(os.TempDir(), "mobium-recordings"))
 }

@@ -8,6 +8,7 @@ import (
 	"github.com/mobiumdev/mobium/internal/mobiumerr"
 	"net"
 	"net/http"
+	"net/url"
 	"time"
 
 	"github.com/mobiumdev/mobium/internal/device"
@@ -180,6 +181,19 @@ func (w *WDA) phoneOpenURL(ctx context.Context, url string) error {
 		map[string]interface{}{"url": url}, nil)
 }
 
+// phoneScreenRecord records from the runner's screen stream, at the tunnel
+// address the runner answers on. The stream is read on the Mac and nothing
+// is written on the phone.
+func (w *WDA) phoneScreenRecord(ctx context.Context) (device.Recording, error) {
+	base, _ := w.w3c.endpoint()
+	u, err := url.Parse(base)
+	if err != nil || u.Hostname() == "" {
+		return nil, mobiumerr.New(mobiumerr.DeviceNotReady, "WebDriverAgent has no address on %s to record from",
+			w.phone.Phone.Label())
+	}
+	return device.StartPhoneScreenRecord(ctx, u.Hostname())
+}
+
 // simulatorOnly is what a real iPhone lacks, and why. Each is done by simctl
 // on a simulator, and devicectl has no counterpart.
 var simulatorOnly = map[string]string{
@@ -189,9 +203,6 @@ var simulatorOnly = map[string]string{
 	CapClipboardRead: "read the clipboard (simctl pbpaste)",
 	CapGeolocation:   "simulate a location (simctl location)",
 	CapRoutes:        "simulate a route (simctl location)",
-	// A phone's screen is not a file on the Mac, and WebDriverAgent offers
-	// no video; not built yet rather than impossible.
-	CapRecording: "record its screen (simctl io; a phone's screen needs a video stream, not built yet)",
 	CapClearData: "clear an app's data (simctl; devicectl cannot delete from an app's container — " +
 		"uninstalling and reinstalling the app is the reset a phone has)",
 }
