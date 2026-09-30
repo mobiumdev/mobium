@@ -290,6 +290,19 @@ func AsKeyboard(d Driver) (Keyboard, bool) {
 	return k, ok && has(d, CapKeyboard)
 }
 
+// PointScaler is implemented by backends whose device measures in points and
+// reports them to Mobium as pixels — iOS — and can say how many pixels a
+// point is. Built in only: nothing else needs converting.
+type PointScaler interface {
+	PointScale() float64
+}
+
+// AsPointScaler returns the driver's pixels-per-point, if it has one.
+func AsPointScaler(d Driver) (PointScaler, bool) {
+	p, ok := d.(PointScaler)
+	return p, ok
+}
+
 // AsScreenRecorder returns the driver's screen recording support, if any.
 func AsScreenRecorder(d Driver) (ScreenRecorder, bool) {
 	r, ok := d.(ScreenRecorder)

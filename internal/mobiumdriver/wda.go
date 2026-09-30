@@ -366,6 +366,12 @@ const setTextAttempts = 3
 // 60.
 var typingFrequencies = [setTextAttempts]int{0, 20, 6}
 
+// PointScale is how many device pixels a point is, as WebDriverAgent
+// reported when the session opened — 3 on an iPhone 15 Plus or 17 Pro. It is
+// the scale the tree was converted with, so a threshold in points times this
+// is in the tree's own units even if the read failed and it stayed 1.
+func (w *WDA) PointScale() float64 { return w.scale }
+
 // SetText types into the element a node names, and confirms what landed.
 //
 // **XCUITest's keyboard drops characters.** Typing into one field and then

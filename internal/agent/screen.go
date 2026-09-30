@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/mobiumdev/mobium/internal/formflux"
+	"github.com/mobiumdev/mobium/internal/mobiumdriver"
 	"github.com/mobiumdev/mobium/internal/uitree"
 )
 
@@ -114,8 +115,8 @@ func (h *Handlers) screen(ctx context.Context, args map[string]interface{}) (*To
 	return Result(msg, view), nil
 }
 
-// screenReportIOS answers the read-only half on a simulator, where the screen
-// is whatever the device is.
+// screenReportIOS answers the read-only half on a simulator or an iPhone,
+// where the screen is whatever the device is.
 func (h *Handlers) screenReportIOS(ctx context.Context, s *session, inspect bool) (*ToolsCallResult, error) {
 	tree, err := s.driver.Snapshot(ctx)
 	if err != nil {
@@ -133,18 +134,36 @@ func (h *Handlers) screenReportIOS(ctx context.Context, s *session, inspect bool
 		PhysicalWidthPx: rect.Width(), PhysicalHeightPx: rect.Height(),
 		Profiles: formflux.Names(formflux.IOS), Device: s.dev.Serial,
 	}
-	msg := fmt.Sprintf("%dx%d device pixels (an iOS simulator's screen is fixed; boot another device type to change it)",
-		rect.Width(), rect.Height())
+	msg := fmt.Sprintf("%dx%d device pixels (an iOS device's screen is fixed; on a simulator, boot another device "+
+		"type to change it)", rect.Width(), rect.Height())
 	if inspect {
-		view.Findings = collectFindings(tree, rect, 0, formflux.IOS)
+		// Touch targets are judged in points, which needs the device's scale;
+		// without it they are not judged, and the report says so rather than
+		// reading as a clean screen.
+		var scale float64
+		if p, ok := mobiumdriver.AsPointScaler(s.driver); ok {
+			scale = p.PointScale()
+		}
+		view.Findings = collectIOSFindings(tree, rect, scale)
 		msg += "\n\n" + describeFindings(view.Findings)
+		if scale <= 0 {
+			msg += "\nTouch targets were not checked: this driver gives no point scale."
+		}
 	}
 	return Result(msg, view), nil
 }
 
 func collectFindings(tree *uitree.Tree, screen uitree.Rect, dpi int, platform formflux.Platform) []FindingView {
+	return findingViews(formflux.Inspect(tree, screen, dpi, platform))
+}
+
+func collectIOSFindings(tree *uitree.Tree, screen uitree.Rect, scale float64) []FindingView {
+	return findingViews(formflux.InspectIOS(tree, screen, scale))
+}
+
+func findingViews(fs []formflux.Finding) []FindingView {
 	var out []FindingView
-	for _, f := range formflux.Inspect(tree, screen, dpi, platform) {
+	for _, f := range fs {
 		out = append(out, FindingView{
 			Kind: string(f.Kind), Label: f.Label, Detail: f.Detail,
 			Locator: f.Locator, Path: f.Path,
