@@ -91,11 +91,11 @@ this is what is not.
   and keep the unit in the field's name. Done when the Layout Demo's small
   target is named on a simulator and on the iPhone, and a 44 pt button is
   not.
-- **No `--driver` for a device Mobium has identified.** `mobium alert
-  --device <udid>` on the iPhone answered that the device is an iPhone,
-  driven by `wda`, and to pass `--driver wda`. When the lookup settles on one
-  platform, use its driver, and refuse only a `--driver` that contradicts the
-  device.
+- ~~**No `--driver` for a device Mobium has identified.**~~ Done 2026-09-30.
+  A device named with no driver named goes to `wda` when it is an iPhone or a
+  simulator; a `--driver` that contradicts the device is still refused
+  (CHALLENGES 88). Still to decide: a call that names no device, with only an
+  iOS device connected, keeps Android's default.
 - **The cost of an action on iOS.** Every action reads the whole hierarchy
   through WebDriverAgent, about 500 ms, and on 2026-09-30 a tap's median was
   1.1 s on the simulator. Resolve `testid=` and `label=` with
