@@ -362,7 +362,7 @@ xcodebuild -downloadPlatform iOS     # the runtime, if it is missing
 xcrun simctl list devices available
 xcrun simctl boot <udid>             # boots headless — no window appears
 open -a Simulator                    # only this puts it on screen
-mobium --driver wda --device <udid> map
+mobium --device <udid> map
 ```
 
 **`simctl boot` shows you nothing.** It starts the runtime with no window, so
@@ -481,11 +481,15 @@ guess: set `MOBIUM_IOS_TEAM=<team id>`.
 
 ```sh
 mobium devices                                   # the phone is listed as "ios device"
-mobium --driver wda --device <udid> map
+mobium --device <udid> map
 ```
 
+A device named by `--device` needs no `--driver`: an iPhone or a simulator
+is driven by `wda`, the only driver either has.
+
 With exactly one iOS device available — one booted simulator, or one
-connected phone — `--device` can be left out.
+connected phone — `--device` can be left out, but then `--driver wda` is
+needed, since a call that names neither is Android's.
 
 ### How long a signature lasts
 

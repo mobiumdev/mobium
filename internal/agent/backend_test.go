@@ -240,3 +240,35 @@ func TestOnOtherPlatformLeavesOtherErrorsAlone(t *testing.T) {
 		t.Errorf("success became %v", got)
 	}
 }
+
+// A device named with no driver named is driven by the one driver its
+// platform has; a driver named explicitly is not overridden, whatever the
+// device.
+func TestIOSByReferenceOnlyWithNoDriverNamed(t *testing.T) {
+	ctx := context.Background()
+	defer func(orig func(context.Context, string) string) { iosKindOf = orig }(iosKindOf)
+	iosKindOf = func(_ context.Context, ref string) string {
+		if ref == "PHONE-1" {
+			return "an iPhone (Test iPhone)"
+		}
+		return ""
+	}
+	h := NewHandlers()
+	h.backend = DefaultBackend
+	if !h.iosByReference(ctx, map[string]interface{}{}, "PHONE-1") {
+		t.Error("an iPhone named with no driver was not taken to wda")
+	}
+	if h.iosByReference(ctx, map[string]interface{}{"driver": "uiautomator2"}, "PHONE-1") {
+		t.Error("an explicit driver was overridden")
+	}
+	if h.iosByReference(ctx, map[string]interface{}{}, "emulator-5554") {
+		t.Error("a device iOS does not know was taken to wda")
+	}
+	if h.iosByReference(ctx, map[string]interface{}{}, "") {
+		t.Error("a call naming no device was taken to wda")
+	}
+	h.backend = BackendDump
+	if h.iosByReference(ctx, map[string]interface{}{}, "PHONE-1") {
+		t.Error("a server started with another default was overridden")
+	}
+}

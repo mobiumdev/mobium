@@ -2108,6 +2108,15 @@ neither platform knows keeps the old answer, which is right for it.
 Choosing the backend from the serial automatically would remove the error
 altogether, and is a larger change to what an unset backend means.
 
+Since 2026-09-30 it does, for the one case where nothing was asked: a device
+named with no driver named. When Android's lookup does not find it and it is
+an iPhone or a simulator, the call goes to `wda`, the only driver either has.
+A driver named explicitly is still the caller's choice, and one that cannot
+drive the device is refused as above, now adding that naming no driver
+works. Measured: the iPhone 15 Plus by UDID alone started in 5.4s and the
+next call took 0.5s; an iPhone 17 Pro simulator by UDID alone started; and
+the iPhone with `--driver uiautomator2` was refused.
+
 ### 89. A stuck tool call made the daemon impossible to stop, and invisible
 
 **Found by:** the deadlock introduced — and fixed — while building 87: a

@@ -267,6 +267,14 @@ func (h *Handlers) resolveSession(ctx context.Context, args map[string]interface
 
 	adb, dev, err := device.Select(ctx, serial)
 	if err != nil {
+		// Named by a device that is not Android's, with no driver named:
+		// when it is an iPhone or a simulator there is one driver for it,
+		// and asking for that driver by name told the caller nothing they
+		// had not already said by naming the device. Only after Android's
+		// lookup fails, so an Android call pays nothing for it.
+		if h.iosByReference(ctx, args, serial) {
+			return h.iosSessionFor(ctx, serial)
+		}
 		return nil, onOtherPlatform(ctx, serial, err, true)
 	}
 
@@ -409,6 +417,20 @@ func (h *Handlers) iosSessionFor(ctx context.Context, ref string) (*session, err
 	return s, nil
 }
 
+// iosByReference reports whether a call that Android could not place is for
+// an iOS device it named, with no driver named to contradict that. A driver
+// named explicitly is the caller's choice, and one that cannot drive the
+// device is still refused (onOtherPlatform), as is a server started with
+// another default.
+func (h *Handlers) iosByReference(ctx context.Context, args map[string]interface{}, serial string) bool {
+	return serial != "" && stringArg(args, "driver") == "" && h.backend == DefaultBackend &&
+		iosKindOf(ctx, serial) != ""
+}
+
+// iosKindOf is iosKind, replaceable in tests, which have no simulators or
+// phones to list.
+var iosKindOf = iosKind
+
 // onOtherPlatform replaces "no such device" with the remedy that works when
 // the device exists and the backend is for the other platform.
 //
@@ -423,9 +445,9 @@ func onOtherPlatform(ctx context.Context, serial string, err error, wasAndroid b
 		return err
 	}
 	if wasAndroid {
-		if kind := iosKind(ctx, serial); kind != "" {
+		if kind := iosKindOf(ctx, serial); kind != "" {
 			return mobiumerr.New(mobiumerr.InvalidArgument, "%s is %s, and iOS is driven by the %s driver — "+
-				"pass driver %q or platform \"ios\" (on the CLI, --driver %s)", serial, kind, BackendWDA, BackendWDA, BackendWDA)
+				"pass driver %q or platform \"ios\" (on the CLI, --driver %s), or name no driver", serial, kind, BackendWDA, BackendWDA, BackendWDA)
 		}
 		return err
 	}
