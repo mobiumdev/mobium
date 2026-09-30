@@ -14,6 +14,7 @@ import (
 func TestConsoleSilentNamesAnEmptyToken(t *testing.T) {
 	home := t.TempDir()
 	t.Setenv("HOME", home)
+	t.Setenv("USERPROFILE", home) // os.UserHomeDir's source on Windows
 	err := consoleSilent([]string{"sensor", "get", "acceleration"})
 	if mobiumerr.CodeOf(err) != mobiumerr.DeviceNotReady || strings.Contains(err.Error(), "auth_token") {
 		t.Errorf("no token file: %v", err)
