@@ -73,7 +73,65 @@ this is what is not.
   `mobium test --trace` writing the same zip, and a batch's steps as a group
   in it.
 - **Screen recording on a real iPhone**, which needs a video stream Mobium does
-  not build yet.
+  not build yet. WebDriverAgent already serves one, as MJPEG on its port
+  9100. The plan is to read it over the same tunnel address as the HTTP port
+  and write the frames into a container in Go, so nothing else needs
+  installing. Record the frame rate achieved, not the one asked for. Done
+  when a recording of MobiumApp's Motion Demo plays back with the confetti in
+  it, and nothing is left on the phone.
+- **Keep Mobium's runner on a phone that other tools also drive.** Tools that
+  install their own WebDriverAgent can remove every installed runner whose
+  `CFBundleName` is WebDriverAgent's, whatever its bundle id. Mobium's is
+  built from WebDriverAgent's source and carries that name, so it gets
+  removed (measured on the iPhone 15 Plus, 2026-09-30; see CHALLENGES 181
+  for the simulator case). Mobium rebuilds it on its next session and says
+  nothing. Two changes: give the device build a name of its own through an
+  Info.plist override at `xcodebuild` time, and when a session finds its
+  runner missing, say so rather than reinstall silently.
+- **Touch targets on iOS.** `app_screen inspect` checks none on iOS, since
+  the threshold was found wrong by the pixel-to-point scale (FORMFLUX.md).
+  Divide a node's bounds by the screen's scale, compare with Apple's 44 pt,
+  and keep the unit in the field's name. Done when the Layout Demo's small
+  target is named on a simulator and on the iPhone, and a 44 pt button is
+  not.
+- **No `--driver` for a device Mobium has identified.** `mobium alert
+  --device <udid>` on the iPhone answered that the device is an iPhone,
+  driven by `wda`, and to pass `--driver wda`. When the lookup settles on one
+  platform, use its driver, and refuse only a `--driver` that contradicts the
+  device.
+- **The cost of an action on iOS.** Every action reads the whole hierarchy
+  through WebDriverAgent, about 500 ms, and on 2026-09-30 a tap's median was
+  1.1 s on the simulator. Resolve `testid=` and `label=` with
+  WebDriverAgent's own element queries, read the full source only where a
+  check needs it (covered, keyboard, dialog), share one read across an
+  action's checks, and try `snapshotMaxDepth` and excluded attributes. Done
+  when the median tap is under 600 ms and every refusal in
+  `docs/checks/obstruction.sh` and `autowait.sh` is unchanged.
+- **Launching on a real iPhone.** `app_launch` had a median of 5.8 s on the
+  iPhone 15 Plus against 2.3 s on the simulator (2026-09-30, 36 launches).
+  First find where it goes: the launch, setting `defaultActiveApplication`
+  before the switch (CHALLENGES 71), or waiting for the app to come to the
+  front. Done when the median is under 2.5 s, the foreground is still
+  confirmed, and `docs/checks/ios-device.sh` passes.
+- **A reset a phone can do.** `app_clear_data` is refused on a real iPhone,
+  which has no way to clear an app's container, and the refusal already
+  names uninstalling and reinstalling as the reset. Take an app bundle path
+  and do it, as `MOBIUMAPP_BUNDLE` does in the checks, and say that
+  permissions are reset too. Measure that first: on 2026-09-28 the iPhone
+  kept a notification denial through a reinstall.
+- **The iOS settings still refused as not built:** orientation, locale,
+  timezone and notifications. Per-app locale can work on a phone too, as
+  launch arguments (`-AppleLanguages (xx) -AppleLocale xx_YY`) read back
+  from the app. Orientation can go through WebDriverAgent's `/orientation`,
+  refusing an app pinned to one orientation as Android already does.
+  Timezone on a simulator can be `TZ` in the launch environment.
+- **Auto-advancing code boxes on iOS.** In one simulator run the OTP Demo's
+  six boxes lost a digit as focus moved. Mobium reported the loss (`"6"
+  never arrived, lost as focus moved`) instead of passing, but the step
+  failed. When a field
+  moves focus by itself after each character, type one, wait for focus to
+  land on the next field, then go on. Done when `otp-boxes` passes ten runs
+  in ten on a simulator and on the iPhone.
 
 ## Under consideration
 
