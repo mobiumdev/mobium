@@ -689,6 +689,14 @@ func (h *Handlers) text(ctx context.Context, args map[string]interface{}) (*Tool
 	}
 	node, err := pickToRead(loc, tree)
 	if err != nil {
+		// Android leaves out what the keyboard covers, so a label under it
+		// is a plain miss there, and "run app_map again" cannot find it;
+		// hiding the keyboard can.
+		if kb, ok := mobiumdriver.AsKeyboard(s.driver); ok && mobiumerr.CodeOf(err) == mobiumerr.NoSuchElement {
+			if shown, kerr := kb.KeyboardShown(ctx); kerr == nil && shown {
+				return nil, keyboardOver(loc, false)
+			}
+		}
 		return nil, err
 	}
 	if err := h.staleRef(dev.Serial, target, node); err != nil {

@@ -4118,6 +4118,12 @@ It now resolves through `pickToRead`, which keeps that and the ref check of
 183, and leaves the rest to actions. Waiting keeps treating what a dialog
 covers as not on screen, as decided in 145.
 
+Android is the other half of it: there the keyboard is a window of its own
+and what it covers is not in the tree at all, so the same read was a plain
+miss, "run app_map again" — a remedy that cannot find it. A read that misses
+while the keyboard is up now says so, and to hide it; measured on the Pixel
+7 AVD, hiding it brought back "entered: 950359".
+
 ### 185. label=Allow Paste found two buttons, and nothing could say which
 
 **Found by:** answering iOS's paste prompt on the same simulator. Its buttons
