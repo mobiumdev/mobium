@@ -7,7 +7,7 @@ the source.
 
 The pattern across them is the reason the document exists: **almost nothing
 here was found by reading code or by a test written from imagination.** Of
-187 defects, 151 were found only by running against a real device. The other
+188 defects, 152 were found only by running against a real device. The other
 thirty-six — 4, 5, 6, 14, 23, 24, 32, 35, 36, 39, 44, 50, 53, 54, 57, 66, 89,
 99, 100, 121, 123, 129, 130, 133, 134, 139, 140, 141, 142, 144, 150, 158, 162,
 164, 165 and 172 — came from reading code, the compiler, a test, a linter,
@@ -4164,6 +4164,25 @@ answered "tapped (50000, 50000)"; on Android UiAutomator2 happened to refuse
 it, with a message about W3C actions. A coordinate tap now checks the point
 against the screen's bounds first and refuses one outside them, on both
 platforms, naming the screen's size; a point on screen is tapped as before.
+
+### 188. With the home screen in front, a page behind was attached
+
+**Found by:** exercising `app_cookies` on an iPhone 17 Pro simulator in a
+session that had just closed MobiumApp. Safari's page, left open by an
+earlier step, was attached although Safari was not in front, and its cookies
+were read. With MobiumApp in front the same switch was refused, as 138 has
+it.
+
+Whether a page is behind is WebKit's answer, from each application's active
+flag, and that answer needs some application named active to compare with.
+On the home screen none is — SpringBoard publishes no pages — so every page
+counted as not behind. When WebKit names no application in front,
+`app_context` now asks the native side which app is, and refuses a page
+whose app is not it. Where WebKit does name one it is still the answer,
+since an in-app browser's pages belong to another process than the app that
+hosts them. Measured: home screen in front, Safari's page refused naming
+SpringBoard; Safari brought forward, attached; MobiumApp's own page with
+MobiumApp in front, attached.
 
 ## Findings that were not defects
 
