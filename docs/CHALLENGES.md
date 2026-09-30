@@ -7,7 +7,7 @@ the source.
 
 The pattern across them is the reason the document exists: **almost nothing
 here was found by reading code or by a test written from imagination.** Of
-183 defects, 147 were found only by running against a real device. The other
+185 defects, 149 were found only by running against a real device. The other
 thirty-six — 4, 5, 6, 14, 23, 24, 32, 35, 36, 39, 44, 50, 53, 54, 57, 66, 89,
 99, 100, 121, 123, 129, 130, 133, 134, 139, 140, 141, 142, 144, 150, 158, 162,
 164, 165 and 172 — came from reading code, the compiler, a test, a linter,
@@ -4101,6 +4101,35 @@ changed; run app_map again", which is a remedy that works. Either alone is
 allowed: a button's words change as it counts down, and a list scrolls.
 Measured on the simulator: the stale ref refused and Log In not pressed;
 and a ref taken before a swipe still tapped its button, moved.
+
+### 184. Reading a label under the keyboard was refused as if it were a tap
+
+**Found by:** MobiumApp's OTP Demo on an iPhone 17 Pro simulator, typing a
+code into the six boxes and reading back the line that says what they hold.
+The one-time-code number pad was up over it, and `app_text` answered "failed
+check receivesEvents: the keyboard is over it". Nothing was being touched:
+iOS keeps what the keyboard covers in the tree, with its text, and the text
+was right there — `app_find` printed it in the same breath.
+
+`app_text` resolved its target with the same check a tap uses, and a tap
+must refuse a dialog or the keyboard over its target, since that is where
+the touch would land. A read needs only that the locator find one element.
+It now resolves through `pickToRead`, which keeps that and the ref check of
+183, and leaves the rest to actions. Waiting keeps treating what a dialog
+covers as not on screen, as decided in 145.
+
+### 185. label=Allow Paste found two buttons, and nothing could say which
+
+**Found by:** answering iOS's paste prompt on the same simulator. Its buttons
+are "Allow Paste" and "Don’t Allow Paste", `label=` and `text=` match a part
+of a label as well as the whole, and the tap was refused as ambiguous — with
+the remedy to append `,role=button`, which both are, and no syntax to ask for
+the whole label. `testid=` has long preferred the one element whose id is
+the whole value; `text=` and `label=` now do the same, after nested copies
+of one element are merged (179): the one whose whole text or label is the
+value, ignoring case, wins, and a part that is nobody's whole stays
+ambiguous. Measured: the paste prompt answered by `label=Allow Paste`, and
+the app read the 14 characters put on the clipboard.
 
 ## Findings that were not defects
 

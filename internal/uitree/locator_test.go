@@ -304,3 +304,31 @@ func TestLabelOfAButtonInsideItselfIsOne(t *testing.T) {
 		t.Errorf("the sheet is not seen as a dialog: %+v", d)
 	}
 }
+
+// A whole match beats a part for text= and label= as it does for testid=:
+// "Allow Paste" is one button of two on iOS's paste prompt, and the other
+// is "Don’t Allow Paste".
+func TestWholeLabelBeatsPart(t *testing.T) {
+	tree, err := ParseIOS([]byte(`<?xml version="1.0" encoding="UTF-8"?>
+<XCUIElementTypeApplication type="XCUIElementTypeApplication" name="MobiumApp" label="MobiumApp" enabled="true" visible="true" accessible="false" x="0" y="0" width="402" height="874">
+  <XCUIElementTypeAlert type="XCUIElementTypeAlert" name="MobiumApp would like to paste" label="MobiumApp would like to paste" enabled="true" visible="true" accessible="false" x="41" y="300" width="320" height="200">
+    <XCUIElementTypeButton type="XCUIElementTypeButton" name="Don’t Allow Paste" label="Don’t Allow Paste" enabled="true" visible="true" accessible="true" x="57" y="400" width="288" height="44"/>
+    <XCUIElementTypeButton type="XCUIElementTypeButton" name="Allow Paste" label="Allow Paste" enabled="true" visible="true" accessible="true" x="57" y="450" width="288" height="44"/>
+  </XCUIElementTypeAlert>
+</XCUIElementTypeApplication>`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, s := range []string{"label=Allow Paste", "text=Allow Paste", "label=allow paste"} {
+		loc, _ := ParseLocator(s)
+		got := loc.Resolve(tree)
+		if len(got) != 1 || got[0].Label != "Allow Paste" {
+			t.Errorf("%s resolved to %d nodes", s, len(got))
+		}
+	}
+	// A part that is nobody's whole stays ambiguous, as before.
+	loc, _ := ParseLocator("label=Allow")
+	if n := len(loc.Resolve(tree)); n != 2 {
+		t.Errorf("label=Allow resolved to %d, want 2", n)
+	}
+}

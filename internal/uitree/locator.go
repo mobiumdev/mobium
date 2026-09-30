@@ -320,7 +320,32 @@ func (l Locator) Resolve(t *Tree) []*Node {
 		}
 		kept = append(kept, n)
 	}
+	// And a whole match beats a part, as it does for a test id: iOS's paste
+	// prompt has "Allow Paste" and "Don’t Allow Paste", and label=Allow Paste
+	// found both — with a remedy, ",role=button", that could not tell two
+	// buttons apart, and no syntax to ask for the whole of it (CHALLENGES 185).
+	if !l.Exact && len(kept) > 1 {
+		var whole []*Node
+		for _, n := range kept {
+			if l.wholeMatch(n) {
+				whole = append(whole, n)
+			}
+		}
+		if len(whole) == 1 {
+			return whole
+		}
+	}
 	return kept
+}
+
+// wholeMatch reports whether n's text or label — the field this locator
+// reads — is its whole value, ignoring case and surrounding space.
+func (l Locator) wholeMatch(n *Node) bool {
+	eq := func(s string) bool { return strings.EqualFold(strings.TrimSpace(s), strings.TrimSpace(l.Value)) }
+	if l.Kind == KindLabel {
+		return eq(n.Label)
+	}
+	return eq(n.Text) || (n.Text == "" && eq(n.Label))
 }
 
 // sameAsAncestor reports whether one of nodes is an ancestor of n at exactly
