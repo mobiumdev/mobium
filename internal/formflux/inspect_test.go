@@ -162,11 +162,49 @@ func TestTouchThresholdFollowsDensity(t *testing.T) {
 	if got := minTouchPixels(0, Android); got != 0 {
 		t.Errorf("with no density there is no conversion, got %d", got)
 	}
-	// iOS is deliberately unchecked: mobium reports iOS bounds in device
-	// pixels, so a 44pt threshold would be wrong by the scale factor. A
-	// wrong threshold is worse than no threshold.
-	if got := minTouchPixels(0, IOS); got != 0 {
-		t.Errorf("iOS touch targets should not be checked yet, got a threshold of %d", got)
+	// iOS is judged in points, converted by the device's scale — mobium
+	// reports iOS bounds in device pixels, so a bare 44 was wrong by 3x. With
+	// no scale there is no threshold: a wrong one is worse than none.
+	if got := iosMinTouchPixels(3); got != 132 {
+		t.Errorf("at 3x, 44pt should be 132px, got %d", got)
+	}
+	if got := iosMinTouchPixels(0); got != 0 {
+		t.Errorf("with no scale there is no conversion, got %d", got)
+	}
+}
+
+// MobiumApp's Layout Demo, as an iPhone reports it at 3x: a 24pt target is
+// named in points, a 43pt one is too, and a 44pt and a 54pt one are not.
+// With no scale, none is judged.
+func TestIOSTouchTargetsAreJudgedInPoints(t *testing.T) {
+	src := `<XCUIElementTypeApplication type="XCUIElementTypeApplication" name="MobiumApp" bundleId="dev.mobium.mobiumapp" x="0" y="0" width="430" height="932" visible="true" enabled="true" accessible="false">` +
+		`<XCUIElementTypeButton type="XCUIElementTypeButton" name="tinyTarget" label="Tiny target" x="16" y="200" width="24" height="24" visible="true" enabled="true" accessible="true"/>` +
+		`<XCUIElementTypeButton type="XCUIElementTypeButton" name="justUnder" label="Just under" x="16" y="260" width="43" height="60" visible="true" enabled="true" accessible="true"/>` +
+		`<XCUIElementTypeButton type="XCUIElementTypeButton" name="exact" label="Exact" x="16" y="340" width="44" height="44" visible="true" enabled="true" accessible="true"/>` +
+		`<XCUIElementTypeButton type="XCUIElementTypeButton" name="narrowTarget" label="Narrow target" x="16" y="400" width="54" height="60" visible="true" enabled="true" accessible="true"/>` +
+		`</XCUIElementTypeApplication>`
+	tree, err := uitree.ParseIOS([]byte(src))
+	if err != nil {
+		t.Fatal(err)
+	}
+	tree.Scale(3)
+	screen := tree.Root.Bounds
+	named := map[string]string{}
+	for _, f := range InspectIOS(tree, screen, 3) {
+		if f.Kind == KindTinyTarget {
+			named[f.Label] = f.Detail
+		}
+	}
+	if len(named) != 2 || named["Tiny target"] == "" || named["Just under"] == "" {
+		t.Fatalf("tiny targets = %v, want Tiny target and Just under", named)
+	}
+	if d := named["Tiny target"]; !strings.Contains(d, "24x24pt") || !strings.Contains(d, "72x72px") {
+		t.Errorf("the finding should give points and the pixels measured: %q", d)
+	}
+	for _, f := range InspectIOS(tree, screen, 0) {
+		if f.Kind == KindTinyTarget {
+			t.Errorf("with no scale a target was judged: %v", f)
+		}
 	}
 }
 

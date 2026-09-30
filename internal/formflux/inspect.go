@@ -80,9 +80,8 @@ const (
 	KindUnlabeled Kind = "unlabeled"
 )
 
-// Minimum touch target, in Android's density-independent pixels.
-//
-// iOS's equivalent is 44pt and is deliberately not here: see minTouchPixels.
+// Minimum touch target, in Android's density-independent pixels. iOS's is
+// iosMinTouchPt.
 const androidMinTouchDP = 48
 
 func (f Finding) String() string {
@@ -103,12 +102,25 @@ func (f Finding) String() string {
 	return fmt.Sprintf("%-11s %s — %s", f.Kind, label, f.Detail)
 }
 
-// Inspect walks a snapshot and reports what is wrong with it at this screen.
-//
-// screen is the size the tree was captured at, and dpi its density; dpi may be
-// zero on iOS, where the touch-target check uses points and the tree is
-// already in them.
+// Inspect walks an Android snapshot and reports what is wrong with it at
+// this screen. screen is the size the tree was captured at, and dpi its
+// density; with no density, touch targets are not judged.
 func Inspect(t *uitree.Tree, screen uitree.Rect, dpi int, platform Platform) []Finding {
+	if platform == IOS {
+		return InspectIOS(t, screen, 0)
+	}
+	return inspect(t, screen, minTouchPixels(dpi, platform), 0, platform)
+}
+
+// InspectIOS is Inspect for an iOS snapshot, whose bounds are device pixels
+// and whose guideline is in points: scale is the device's pixels per point,
+// which is what makes Apple's 44pt comparable at all. With no scale, touch
+// targets are not judged — see iosMinTouchPixels.
+func InspectIOS(t *uitree.Tree, screen uitree.Rect, scale float64) []Finding {
+	return inspect(t, screen, iosMinTouchPixels(scale), scale, IOS)
+}
+
+func inspect(t *uitree.Tree, screen uitree.Rect, minTouch int, scale float64, platform Platform) []Finding {
 	if t == nil || t.Root == nil {
 		return nil
 	}
@@ -127,8 +139,6 @@ func Inspect(t *uitree.Tree, screen uitree.Rect, dpi int, platform Platform) []F
 		seen[key] = true
 		out = append(out, f)
 	}
-
-	minTouch := minTouchPixels(dpi, platform)
 
 	walk(t.Root, func(n *uitree.Node) {
 		if !n.Displayed || n.Bounds.Empty() {
@@ -161,11 +171,16 @@ func Inspect(t *uitree.Tree, screen uitree.Rect, dpi int, platform Platform) []F
 			w, h := n.Bounds.Width(), n.Bounds.Height()
 			cutW, cutH := clippedByScroll(n)
 			if (w < minTouch && !cutW) || (h < minTouch && !cutH) {
+				detail := fmt.Sprintf("%dx%dpx, below the %dpx minimum (%s)", w, h, minTouch, touchRule(platform))
+				if platform == IOS {
+					// Said in points, the guideline's own unit, with the
+					// pixels it was measured in beside them.
+					detail = fmt.Sprintf("%dx%dpt (%dx%dpx at %gx), below Apple's 44pt minimum",
+						points(w, scale), points(h, scale), w, h, scale)
+				}
 				add(Finding{
 					Kind: KindTinyTarget, Label: name, Bounds: n.Bounds,
-					Detail: fmt.Sprintf("%dx%dpx, below the %dpx minimum (%s)",
-						w, h, minTouch, touchRule(platform)),
-					Locator: locator(n), Path: n.Path,
+					Detail: detail, Locator: locator(n), Path: n.Path,
 				})
 			}
 		}
@@ -228,25 +243,39 @@ func minTouchPixels(dpi int, platform Platform) int {
 		// Android's dp is defined against a 160dpi baseline.
 		return androidMinTouchDP * dpi / 160
 	case IOS:
-		// Not checked, and this is a correction rather than an omission.
-		//
-		// It first returned 44 on the assumption that an iOS hierarchy is in
-		// points. It is not: mobium normalizes iOS coordinates to device
-		// pixels, so an iPhone 17 Pro reports 1206x2622 and not 402x874. The
-		// check was therefore comparing pixels against points and was wrong
-		// by the scale factor — it called Apple's own 39px status-bar items
-		// undersized when they are 13pt, which is small, but not for the
-		// reason given.
-		//
-		// The fix needs the device's point-to-pixel scale, which the WDA
-		// driver reads but does not expose. Reaching it means a real
-		// capability on the driver seam rather than a bare type assertion.
-		// Until then this returns 0 and the check does not run,
-		// because a threshold off by 3x produces confident findings about
-		// working screens, which is worse than finding nothing.
+		// Not through here: an iOS threshold needs the device's scale, not a
+		// density. See iosMinTouchPixels.
 		return 0
 	}
 	return 0
+}
+
+// iosMinTouchPixels is Apple's 44pt in the device pixels an iOS tree is in.
+//
+// This first returned 44, on the assumption that an iOS hierarchy is in
+// points. It is not: mobium normalizes iOS coordinates to device pixels, so
+// an iPhone 17 Pro reports 1206x2622 and not 402x874, and the check compared
+// pixels against points — wrong by the scale factor, calling Apple's own 39px
+// status-bar items undersized when they are 13pt. So it was switched off
+// until the scale could reach it. With no scale it still returns 0 and the
+// check does not run, because a threshold off by 3x produces confident
+// findings about working screens.
+func iosMinTouchPixels(scale float64) int {
+	if scale <= 0 {
+		return 0
+	}
+	return int(iosMinTouchPt*scale + 0.5)
+}
+
+// iosMinTouchPt is Apple's minimum touch target.
+const iosMinTouchPt = 44
+
+// points converts device pixels to points at scale, rounded.
+func points(px int, scale float64) int {
+	if scale <= 0 {
+		return px
+	}
+	return int(float64(px)/scale + 0.5)
 }
 
 func touchRule(platform Platform) string {

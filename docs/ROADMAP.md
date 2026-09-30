@@ -87,12 +87,10 @@ this is what is not.
   its runner gone says so before installing it again (CHALLENGES 189). The
   simulator runner is still the prebuilt one under WebDriverAgent's name;
   there mobium already notices a runner that is not its own (181).
-- **Touch targets on iOS.** `app_screen inspect` checks none on iOS, since
-  the threshold was found wrong by the pixel-to-point scale (FORMFLUX.md).
-  Divide a node's bounds by the screen's scale, compare with Apple's 44 pt,
-  and keep the unit in the field's name. Done when the Layout Demo's small
-  target is named on a simulator and on the iPhone, and a 44 pt button is
-  not.
+- ~~**Touch targets on iOS.**~~ Done 2026-09-30. Judged in points, through
+  the scale WebDriverAgent reports: the Layout Demo's 24pt target is named on
+  a simulator and on the iPhone, and its 50pt and 54pt bar is not
+  (FORMFLUX.md, "iOS touch targets").
 - ~~**No `--driver` for a device Mobium has identified.**~~ Done 2026-09-30.
   A device named with no driver named goes to `wda` when it is an iPhone or a
   simulator; a `--driver` that contradicts the device is still refused

@@ -250,17 +250,25 @@ defaults to a type that is not.
 clients, with `internal/apisurface` enforcing it. `mobium screen`,
 `mobium screen small-phone`, `mobium screen --inspect`, `mobium screen reset`.
 
+## iOS touch targets
+
+Checked since 2026-09-30, in points. A node's bounds on iOS are **device
+pixels** — mobium converts them on the way out, so an iPhone 17 Pro reports
+1206x2622, not 402x874 — so Apple's 44pt is multiplied by the scale
+WebDriverAgent reported when the session opened (3 on current iPhones), and
+a finding gives both units: `24x25pt (72x75px at 3x)`. The check first ran
+against a bare 44, wrong by the scale factor, and was switched off until the
+scale could reach it through the driver seam (`mobiumdriver.AsPointScaler`).
+A driver with no scale still judges no touch target, and the report says so.
+
+Measured on MobiumApp's Layout Demo: its 24pt target is named on an iPhone
+17 Pro simulator and on an iPhone 15 Plus, and its narrow bar, 50pt and 54pt
+wide there, is not. On the simulator's Settings the one finding is Apple's
+own Search field, 38pt tall — a real measurement, and the case the check
+warns about: a control's tap area can be larger than its bounds.
+
 ## What is still not here
 
-- **iOS touch targets are not checked**, and that is a correction. The check
-  first used 44pt against bounds that are **device pixels** — mobium
-  normalizes iOS coordinates on the way out, so an iPhone 17 Pro reports
-  1206x2622, not 402x874. It was wrong by the scale factor and called Apple's
-  own status-bar items undersized. Fixing it needs the point-to-pixel scale,
-  which the WDA driver reads but does not expose; that means a real capability
-  on the driver seam rather than a bare type assertion. Until then the check
-  does not run, because a threshold off by 3x produces confident findings
-  about working screens.
 - **Overlap** is unimplemented. Two controls on top of each other is a real
   defect, but a container legitimately contains its children, so it needs
   ancestry-aware comparison to avoid reporting every list.
