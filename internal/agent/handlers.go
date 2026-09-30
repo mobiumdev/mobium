@@ -583,6 +583,15 @@ func (h *Handlers) tapOn(ctx context.Context, s *session, args map[string]interf
 	}
 
 	if hasX {
+		// A point off the screen touches nothing, and an iPhone simulator
+		// answered a tap at (50000, 50000) as done (CHALLENGES 187).
+		if tree, err := driver.Snapshot(ctx); err == nil && tree.Root != nil {
+			if b := tree.Root.Bounds; !b.Empty() && (x < b.X1 || y < b.Y1 || x >= b.X2 || y >= b.Y2) {
+				return nil, mobiumerr.New(mobiumerr.InvalidArgument, "(%d, %d) is off the screen, which is %s in device "+
+					"pixels — a touch there reaches nothing", x, y, b).
+					WithRemedy("give a point on the screen, or tap an element by its ref or locator")
+			}
+		}
 		if err := touch(ctx, x, y); err != nil {
 			return nil, err
 		}

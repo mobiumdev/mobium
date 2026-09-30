@@ -1063,6 +1063,9 @@ func (a *ADB) emuConsole(ctx context.Context, args ...string) error {
 		return err
 	}
 	text := strings.TrimSpace(string(out) + " " + string(diag))
+	if text == "" {
+		return consoleSilent(args)
+	}
 	// The console answers "OK" or "KO: <reason>", and exits 0 either way.
 	if strings.Contains(text, "KO") {
 		return mobiumerr.New(mobiumerr.Unsupported, "the emulator refused `%s`: %s",
@@ -1464,4 +1467,25 @@ func parseUIAutomationHolders(ps string) []Process {
 		found = append(found, Process{PID: pid, Args: args})
 	}
 	return found
+}
+
+// consoleSilent is the refusal for an emulator console that answered
+// nothing. The console always answers, "OK" or "KO", so silence means the
+// command never reached it — and exit 0 says nothing. Measured: with
+// ~/.emulator_console_auth_token emptied by another tool while the emulator
+// had one, `adb emu` sent each command without authenticating and read no
+// answer, every time, exit 0 (CHALLENGES 186). The emulator writes a fresh
+// token when the file is missing at its start.
+func consoleSilent(args []string) error {
+	msg := "the emulator console gave no answer to `adb emu %s` — the command did not reach it"
+	remedy := "restart the emulator"
+	if home, err := os.UserHomeDir(); err == nil {
+		tok := filepath.Join(home, ".emulator_console_auth_token")
+		if fi, err := os.Stat(tok); err == nil && fi.Size() == 0 {
+			msg += "; " + tok + " is empty, which leaves adb unable to authenticate to it — delete that file " +
+				"and restart the emulator, which writes a new token"
+			remedy = "delete " + tok + " and restart the emulator"
+		}
+	}
+	return mobiumerr.New(mobiumerr.DeviceNotReady, msg, strings.Join(args, " ")).WithRemedy(remedy)
 }

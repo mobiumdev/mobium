@@ -74,6 +74,9 @@ func (a *ADB) acceleration(ctx context.Context) (string, error) {
 			return strings.TrimSpace(v), nil
 		}
 	}
+	if strings.TrimSpace(string(out)+string(diag)) == "" {
+		return "", consoleSilent([]string{"sensor", "get", "acceleration"})
+	}
 	return "", mobiumerr.New(mobiumerr.DeviceServer, "the emulator did not say where its accelerometer rests: %s",
 		strings.TrimSpace(string(out)))
 }
