@@ -518,6 +518,19 @@ namespace Mobium
         public void Shake() => Act("app_shake", Args());
 
         /// <summary>
+        /// Biometrics on an emulator or simulator: <c>status</c>,
+        /// <c>enroll</c> or <c>unenroll</c>, or <c>match</c> / <c>nomatch</c>
+        /// to present a matching or a stranger's face or finger to the prompt
+        /// that is up. The answer has <c>kind</c> (face or fingerprint),
+        /// <c>enrolled</c>, and for a match or non-match the <c>outcome</c>
+        /// read back: accepted, not recognized, failed (the prompt gave up) or
+        /// locked out. With no prompt up it throws rather than sending to
+        /// nothing. A real phone refuses.
+        /// </summary>
+        public IDictionary<string, object?> Biometric(string action = "status") =>
+            Data("app_biometric", Args("action", action));
+
+        /// <summary>
         /// One app's state, for any app: <c>state</c> is not_installed,
         /// not_running, background or foreground. An app under its own
         /// permission prompt is still in front, and <c>covered_by</c> names

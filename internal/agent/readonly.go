@@ -45,7 +45,7 @@ var actingTools = map[string]bool{
 	"app_call": true, "app_sms": true, "app_zoom": true, "app_rotate": true, "app_press_tap": true,
 	"app_press_drag": true, "app_check": true, "app_press": true, "app_lock": true,
 	"app_session": true, "app_screen": true, "app_uninstall": true, "app_clear_data": true,
-	"app_batch": true, "app_shake": true, "app_background": true, "app_install": true,
+	"app_batch": true, "app_shake": true, "app_biometric": true, "app_background": true, "app_install": true,
 	"app_upload": true, "app_trace": true,
 }
 

@@ -284,3 +284,23 @@ func TestTextFindsALabelOnlyControlOnIOS(t *testing.T) {
 		t.Errorf("text= matched an Android content-desc: %d nodes", n)
 	}
 }
+
+// iOS's Face ID sheet reports each button as a button inside a button, same
+// label and frame, and label=Cancel resolved to two — refused as ambiguous,
+// with ",role=button" as the remedy, which both of them are. Captured on an
+// iPhone 17 Pro simulator after a face that did not match.
+func TestLabelOfAButtonInsideItselfIsOne(t *testing.T) {
+	tree := loadIOS(t, "ios26-faceid-not-recognized.xml")
+	for _, s := range []string{"label=Cancel", "label=Try Face ID Again", "label=Cancel,role=button"} {
+		loc, err := ParseLocator(s)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if got := loc.Resolve(tree); len(got) != 1 {
+			t.Errorf("%s resolved to %d nodes, want 1", s, len(got))
+		}
+	}
+	if d := tree.Dialog(); d == nil || d.Label != "Face Not Recognized" {
+		t.Errorf("the sheet is not seen as a dialog: %+v", d)
+	}
+}

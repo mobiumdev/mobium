@@ -173,6 +173,32 @@
       "global": true
     },
     {
+      "tool": "app_biometric",
+      "arg": "action",
+      "type": "string",
+      "setBy": [
+        "biometric"
+      ]
+    },
+    {
+      "tool": "app_biometric",
+      "arg": "device",
+      "type": "string",
+      "setBy": [
+        "--device"
+      ],
+      "global": true
+    },
+    {
+      "tool": "app_biometric",
+      "arg": "driver",
+      "type": "string",
+      "setBy": [
+        "--driver"
+      ],
+      "global": true
+    },
+    {
       "tool": "app_call",
       "arg": "action",
       "type": "string",
@@ -2475,6 +2501,15 @@
       "command": "battery",
       "tools": [
         "app_battery"
+      ]
+    },
+    {
+      "command": "biometric",
+      "tools": [
+        "app_biometric"
+      ],
+      "sends": [
+        "action"
       ]
     },
     {

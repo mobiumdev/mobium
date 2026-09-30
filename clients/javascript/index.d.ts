@@ -296,6 +296,8 @@ export class Device {
   deviceTime(): Promise<Data>
   /** Shakes an emulator or simulator; a real phone refuses. */
   shake(): Promise<void>
+  /** Enroll, read or present a face or finger on an emulator or simulator. */
+  biometric(action?: 'status' | 'enroll' | 'unenroll' | 'match' | 'nomatch'): Promise<Data>
   /** One app's state: not_installed, not_running, background or foreground. */
   appState(app: string): Promise<Data>
   /** Sends the app in front away for seconds and brings it back. */

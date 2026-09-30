@@ -7,7 +7,7 @@ the source.
 
 The pattern across them is the reason the document exists: **almost nothing
 here was found by reading code or by a test written from imagination.** Of
-178 defects, 142 were found only by running against a real device. The other
+180 defects, 144 were found only by running against a real device. The other
 thirty-six — 4, 5, 6, 14, 23, 24, 32, 35, 36, 39, 44, 50, 53, 54, 57, 66, 89,
 99, 100, 121, 123, 129, 130, 133, 134, 139, 140, 141, 142, 144, 150, 158, 162,
 164, 165 and 172 — came from reading code, the compiler, a test, a linter,
@@ -3998,9 +3998,79 @@ own, and a row with no state, like Display language, is still refused.
 `docs/checks/compose-app.sh` holds all three against the app, and passes on
 an Android 15 emulator and on the Pixel 8 Pro on Android 17.
 
+### 179. `label=` found a Face ID button twice, and the remedy could not narrow it
+
+**Found by:** answering the Face ID prompt by hand on an iPhone 17 Pro
+simulator, while building `app_biometric`. `mobium tap "label=Try Face ID
+Again"` was refused as ambiguous — two elements — with the remedy to append
+`,role=button`; appended, it was refused again, because both are buttons.
+The ref from `map` worked, since `map` merges what stacks on one rectangle.
+
+LocalAuthentication's sheet reports each button as a button inside a button:
+same name, same label, same frame, one accessible and one not. `text=`
+already counted a node at exactly its ancestor's bounds as the ancestor —
+React Native nests a Text in a Text the same way — and `label=` did not.
+Now it does. `testid=` still does not: a test id is a name the app gave, and
+two nodes carrying it stay two. The fixture is the sheet itself,
+`ios26-faceid-not-recognized.xml`.
+
+### 180. Two first drafts of the biometric prompt reading, corrected by the simulators
+
+**Found by:** running `app_biometric` against both kinds of iOS simulator
+before it was committed.
+
+The first draft answered a Face ID face that did not match, shown to the Not
+Recognized alert, with "tap Try Again". Tapped by coordinates, or through
+WebDriverAgent's own element click, Try Again leaves that alert up on a
+simulator, and a second failure changes nothing — so the remedy could never
+work. It names what does: a match, which the alert still accepts, or Cancel.
+
+The same draft took the LocalAuthentication alert to mean "not recognized",
+which is true of Face ID, whose waiting prompt is an element named
+`authentication_ui` and becomes an alert only after a failure. Touch ID's
+prompt is that alert from the start, so on an iPhone SE simulator every
+non-match was refused before it was sent. The prompt is now compared before
+and after: a match closes it (accepted); a non-match changes it (not
+recognized) or closes it (failed — Touch ID gives up on the third, and the
+app hears `authentication_failed`). Touch ID's second failure changes
+nothing on screen, and that answer says so rather than claiming a result.
+
+And on the emulator, the first draft of enrollment read the screen straight
+after `am start` for Settings, found MobiumApp still in front, and reported
+that enrollment had left Settings — the rule about dispatch and foreground,
+met again. It now waits for Settings to arrive, and only an app in front
+after Settings has been is a walk that left.
+
 ## Findings that were not defects
 
 Worth recording because each one closed off an approach that looked obvious.
+
+- **A biometric prompt, seen from outside, on each virtual device.** On an
+  Android emulator the fingerprint service counts every touch it looks at —
+  accepted, rejected, locked out — in `dumpsys fingerprint`, so a finger
+  presented to no prompt moves nothing and can be told from one a prompt
+  refused; five refusals lock the sensor out, which the service reports live
+  as `timedLockout=true`. An emulator enrolls no fingerprint without a
+  screen lock, and clearing the lock removes every print with it. On an iOS
+  simulator nothing counts: the prompt is read from SpringBoard's tree
+  instead, and while Face ID waits for a face the app's own tree reads as
+  one bare scroll view. `app_alert dismiss` does not close Face ID's Not
+  Recognized alert — WebDriverAgent's endpoint returns and the alert stays,
+  which `app_alert` reports — while a tap on its Cancel does. Enrollment on a
+  simulator is a notification's state, `com.apple.BiometricKit.enrollmentChanged`,
+  and a running app hears the change within a second.
+
+- **An emulator's fingerprint failures carry over, and nothing outside
+  resets them but a restart.** On a freshly booted Pixel 7 AVD a prompt
+  locked out on the fifth stranger. After that, failures from earlier prompts
+  counted: the lockout came on the second or third, whatever came between —
+  a finger accepted, the PIN at the lock screen, thirty seconds' wait. Twenty
+  in all made it permanent, which the PIN at the lock screen cleared, and the
+  next stranger locked it again. The touch that finds the sensor locked is
+  counted as a lockout, so a match can be answered "locked out", and
+  `app_biometric` says the failures carried over. `docs/checks/biometric.sh`
+  asserts no count for that reason: each stranger is not recognized until one
+  is locked out, the app hears lockout, and the finger signs in once it ends.
 
 - **The emulator console's network throttling reads back and does
   nothing.** On emulator 37.1.11 with the Pixel 7 AVD (API 35), `network

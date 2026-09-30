@@ -59,6 +59,12 @@ you cannot do it for them from mobium. Say so rather than retrying.
 - `mobium shake` — shake an emulator or simulator (shake-to-undo, a debug
   menu); a real phone refuses. Check the screen after: whether the app
   reacts is its own detector's business
+- `mobium biometric` — whether a face or finger is enrolled; `enroll` /
+  `unenroll` set it, and `match` / `nomatch` present one to the prompt that
+  is up and say what the device made of it (accepted, not recognized,
+  failed, locked out). Emulators and simulators only; an emulator gets PIN
+  1111 to enroll, which `unenroll` removes. With no prompt up it refuses —
+  start the app's sign-in first
 - `mobium background 5` — send the app in front away for 5 seconds and bring
   it back where it was: how a resume path is tested
 - `mobium launch <package|bundle-id>` — open an app

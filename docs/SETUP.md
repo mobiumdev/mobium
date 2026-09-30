@@ -414,7 +414,8 @@ of this exists to be driven —
 light sensor, barometer, Bluetooth, and audio input.** Face ID and Touch ID
 are *simulated outcomes* rather than recognition: the simulator can be told
 the match succeeded or failed, which exercises an app's branches and proves
-nothing about the sensor.
+nothing about the sensor. `mobium biometric` does the telling — and on an
+Android emulator, a fingerprint's — and a real phone refuses it.
 
 **Calls, SMS and anything behind them, including 2FA.** Worth contrasting with
 Android, where the emulator is the *only* thing that can be made to ring —
