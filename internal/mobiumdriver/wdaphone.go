@@ -84,6 +84,13 @@ func (w *WDA) startPhone(ctx context.Context, progress func(string)) error {
 		return err
 	}
 	if progress != nil {
+		// xcodebuild installs the runner if it is missing and says nothing,
+		// so ask the phone first. A listing that fails costs only the notice.
+		if apps, err := w.phone.ListApps(ctx, false); err == nil {
+			if notice := device.PhoneWDAInstallNotice(team, p, apps); notice != "" {
+				progress(notice)
+			}
+		}
 		progress("starting WebDriverAgent on " + p.Label())
 	}
 	// Bound to the tunnel, not every interface: on Wi-Fi an unbound runner
@@ -117,6 +124,7 @@ func (w *WDA) startPhone(ctx context.Context, progress func(string)) error {
 			return mobiumerr.New(mobiumerr.DeviceNotReady, "WebDriverAgent cannot start on %s: %s", p.Label(), why)
 		}
 		if w.w3c.ready(ctx) {
+			device.MarkPhoneWDAInstalled(team, p.UDID)
 			return nil
 		}
 		// The tunnel's address is per connection. If it reconnected while

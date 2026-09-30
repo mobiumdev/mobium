@@ -79,15 +79,12 @@ this is what is not.
   installing. Record the frame rate achieved, not the one asked for. Done
   when a recording of MobiumApp's Motion Demo plays back with the confetti in
   it, and nothing is left on the phone.
-- **Keep Mobium's runner on a phone that other tools also drive.** Tools that
-  install their own WebDriverAgent can remove every installed runner whose
-  `CFBundleName` is WebDriverAgent's, whatever its bundle id. Mobium's is
-  built from WebDriverAgent's source and carries that name, so it gets
-  removed (measured on the iPhone 15 Plus, 2026-09-30; see CHALLENGES 181
-  for the simulator case). Mobium rebuilds it on its next session and says
-  nothing. Two changes: give the device build a name of its own through an
-  Info.plist override at `xcodebuild` time, and when a session finds its
-  runner missing, say so rather than reinstall silently.
+- ~~**Keep Mobium's runner on a phone that other tools also drive.**~~ Done
+  2026-09-30. The phone build is named `MobiumWDA-Runner`, out of the sweep
+  other tools make for `WebDriverAgentRunner-Runner`, and a session that finds
+  its runner gone says so before installing it again (CHALLENGES 189). The
+  simulator runner is still the prebuilt one under WebDriverAgent's name;
+  there mobium already notices a runner that is not its own (181).
 - **Touch targets on iOS.** `app_screen inspect` checks none on iOS, since
   the threshold was found wrong by the pixel-to-point scale (FORMFLUX.md).
   Divide a node's bounds by the screen's scale, compare with Apple's 44 pt,

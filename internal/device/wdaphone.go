@@ -53,6 +53,29 @@ func PhoneWDABundleID(team string) string {
 	return "dev.mobium.wda." + team + ".xctrunner"
 }
 
+// PhoneWDAName is the product name the phone runner is built under, so the
+// app on the phone is MobiumWDA-Runner rather than WebDriverAgentRunner-Runner.
+//
+// Tools that install their own WebDriverAgent find the runners already on a
+// phone by that CFBundleName and uninstall every one but their own, whatever
+// its bundle id: on 2026-09-30 appium-xcuitest-driver's session removed
+// Mobium's runner from the iPhone 15 Plus that way (CHALLENGES 189). A name
+// of Mobium's own takes it out of that sweep. Only the runner target is
+// renamed — the build setting is looked up by target name, so
+// WebDriverAgentLib keeps its name and the runner still links it.
+const PhoneWDAName = "MobiumWDA"
+
+// phoneWDANameSettings are the xcodebuild settings that rename the runner
+// target and nothing else. A setting given on the command line applies to
+// every target, so PRODUCT_NAME looks up a per-target setting and falls back
+// to the target's own name. Measured: the runner came out as
+// MobiumWDA-Runner.app with CFBundleName MobiumWDA-Runner, beside an
+// unrenamed WebDriverAgentLib.framework.
+var phoneWDANameSettings = []string{
+	"MOBIUM_PRODUCT_WebDriverAgentRunner=" + PhoneWDAName,
+	"PRODUCT_NAME=$(MOBIUM_PRODUCT_$(TARGET_NAME):default=$(TARGET_NAME))",
+}
+
 // SigningTeam returns the development team to sign WebDriverAgent with.
 //
 // MOBIUM_IOS_TEAM wins. Otherwise the team is read from the keychain: an
@@ -189,16 +212,17 @@ func EnsurePhoneWDA(ctx context.Context, team, udid string, progress func(string
 	}
 	defer logFile.Close()
 
-	cmd := exec.CommandContext(ctx, "xcodebuild", "build-for-testing",
+	args := []string{"build-for-testing",
 		"-project", filepath.Join(src, "WebDriverAgent.xcodeproj"),
 		"-scheme", "WebDriverAgentRunner",
-		"-destination", "id="+udid,
+		"-destination", "id=" + udid,
 		"-derivedDataPath", derived,
 		"-allowProvisioningUpdates",
-		"DEVELOPMENT_TEAM="+team,
+		"DEVELOPMENT_TEAM=" + team,
 		"CODE_SIGN_STYLE=Automatic",
-		"PRODUCT_BUNDLE_IDENTIFIER="+strings.TrimSuffix(PhoneWDABundleID(team), ".xctrunner"),
-	)
+		"PRODUCT_BUNDLE_IDENTIFIER=" + strings.TrimSuffix(PhoneWDABundleID(team), ".xctrunner"),
+	}
+	cmd := exec.CommandContext(ctx, "xcodebuild", append(args, phoneWDANameSettings...)...)
 	cmd.Stdout = logFile
 	cmd.Stderr = logFile
 	runErr := cmd.Run()
@@ -211,6 +235,37 @@ func EnsurePhoneWDA(ctx context.Context, team, udid string, progress func(string
 	}
 	return "", mobiumerr.New(mobiumerr.ToolchainMissing, "building WebDriverAgent failed: %s. The full log is %s",
 		buildFailure(logPath), logPath)
+}
+
+// installedMarker records that a runner built here was installed on the
+// phone and answered, so a later session that finds it gone can tell a
+// removal from a first install.
+func installedMarker(team, udid string) string {
+	return filepath.Join(phoneWDADir(team, udid), "mobium-installed")
+}
+
+// MarkPhoneWDAInstalled records that the runner is on the phone.
+func MarkPhoneWDAInstalled(team, udid string) {
+	_ = os.WriteFile(installedMarker(team, udid), []byte(PhoneWDABundleID(team)+"\n"), 0o644)
+}
+
+// PhoneWDAInstallNotice is what to say before starting a runner that
+// xcodebuild is about to install, or "" when it is already on the phone.
+// Without it a runner another tool removed was put back in silence
+// (CHALLENGES 189), and a person watching could not tell why the phone
+// gained an app or why the start took longer.
+func PhoneWDAInstallNotice(team string, p Phone, installed []InstalledApp) string {
+	id := PhoneWDABundleID(team)
+	for _, a := range installed {
+		if a.ID == id {
+			return ""
+		}
+	}
+	if _, err := os.Stat(installedMarker(team, p.UDID)); err == nil {
+		return "Mobium's WebDriverAgent (" + id + ") is no longer installed on " + p.Label() +
+			" — something removed it since the last session, often another tool installing its own; installing it again"
+	}
+	return "installing WebDriverAgent (" + id + ") on " + p.Label()
 }
 
 // buildFailure pulls the first xcodebuild error out of a build log.

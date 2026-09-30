@@ -7,7 +7,7 @@ the source.
 
 The pattern across them is the reason the document exists: **almost nothing
 here was found by reading code or by a test written from imagination.** Of
-188 defects, 152 were found only by running against a real device. The other
+189 defects, 153 were found only by running against a real device. The other
 thirty-six — 4, 5, 6, 14, 23, 24, 32, 35, 36, 39, 44, 50, 53, 54, 57, 66, 89,
 99, 100, 121, 123, 129, 130, 133, 134, 139, 140, 141, 142, 144, 150, 158, 162,
 164, 165 and 172 — came from reading code, the compiler, a test, a linter,
@@ -4183,6 +4183,39 @@ since an in-app browser's pages belong to another process than the app that
 hosts them. Measured: home screen in front, Safari's page refused naming
 SpringBoard; Safari brought forward, attached; MobiumApp's own page with
 MobiumApp in front, attached.
+
+### 189. Another tool removed Mobium's runner from the iPhone, and Mobium put it back in silence
+
+**Found by:** comparing another tool's session on the iPhone 15 Plus,
+2026-09-30. Before installing its own WebDriverAgent, appium-xcuitest-driver
+uninstalls every user app whose `CFBundleName` is `WebDriverAgentRunner-Runner`
+except its own, whatever the bundle id. Mobium's runner is built from
+WebDriverAgent's source and carried that name, so it went, along with runners
+other people had built. Mobium's next session started one anyway:
+`xcodebuild test-without-building` installs the runner if it is missing, and
+says nothing, so nobody could tell the phone had lost an app or why the start
+took longer.
+
+The phone build is now named `MobiumWDA`, so the app on the phone is
+`MobiumWDA-Runner`. Only the runner target is renamed: a `PRODUCT_NAME` on the
+command line applies to every target, so it looks up a setting keyed by the
+target's name and falls back to the name itself, and `WebDriverAgentLib`
+keeps its own. Before starting a runner, a session lists the phone's apps; a
+missing runner is announced, and one this Mac installed before is announced
+as removed. Measured on the iPhone: the rebuilt runner read back from the
+phone as `MobiumWDA-Runner` under the same bundle id; after it was uninstalled
+between sessions, the next one said "Mobium's WebDriverAgent … is no longer
+installed on iPhone 15 Plus — something removed it since the last session" and
+started; and the session after that said nothing.
+
+The sweep was then run on the phone: appium-xcuitest-driver 12.13.3's own
+lookup and removal, called directly, without the install of Appium's runner
+that follows it. The phone held no runner but Mobium's. As a positive
+control, Mobium's runner was first built and installed under the old name;
+the sweep listed it and removed it. A Mobium session then announced it
+missing and installed `MobiumWDA-Runner`, and the same sweep listed nothing
+under `WebDriverAgentRunner-Runner` and removed nothing, and `devicectl` read
+the runner back from the phone afterward.
 
 ## Findings that were not defects
 

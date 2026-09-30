@@ -9,9 +9,10 @@ import (
 )
 
 // wdaPatchLevel names the changes Mobium makes to WebDriverAgent's pinned
-// source before building it for a phone. A build made at an older level is
-// built again, so a phone never keeps running a runner from before a fix.
-const wdaPatchLevel = "1"
+// source, or to how it is built, before building it for a phone. A build made
+// at an older level is built again, so a phone never keeps running a runner
+// from before a fix. Level 2 renamed the runner (PhoneWDAName).
+const wdaPatchLevel = "2"
 
 // wdaStreamBind is the one change, to WebDriverAgentLib/Routing/FBWebServer.m.
 //
