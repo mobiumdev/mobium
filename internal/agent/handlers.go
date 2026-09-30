@@ -687,8 +687,11 @@ func (h *Handlers) text(ctx context.Context, args map[string]interface{}) (*Tool
 	if err != nil {
 		return nil, err
 	}
-	node, err := pickOne(loc, tree)
+	node, err := pickToRead(loc, tree)
 	if err != nil {
+		return nil, err
+	}
+	if err := h.staleRef(dev.Serial, target, node); err != nil {
 		return nil, err
 	}
 	value := node.Text
@@ -1073,6 +1076,19 @@ func pickOne(loc uitree.Locator, tree *uitree.Tree) (*uitree.Node, error) {
 			WithDetail("locator", loc.String()).
 			WithDetail("matches", len(matches))
 	}
+}
+
+// pickToRead resolves a locator to exactly one node for reading it. What a
+// touch must be refused for — a dialog or the keyboard over it, no bounds on
+// screen — does not stop a read: the text is in the hierarchy either way.
+// Reading the label under an iPhone's number pad was refused as "the
+// keyboard is over it" while the text was right there (CHALLENGES 184).
+func pickToRead(loc uitree.Locator, tree *uitree.Tree) (*uitree.Node, error) {
+	if matches := loc.Resolve(tree); len(matches) == 1 {
+		return matches[0], nil
+	}
+	// None, or several: pickOne says which, with its remedies.
+	return pickOne(loc, tree)
 }
 
 func stringArg(args map[string]interface{}, key string) string {
