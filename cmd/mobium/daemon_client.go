@@ -20,6 +20,12 @@ const daemonIdleTimeout = "30m"
 
 // daemonCall runs a tool through the daemon, starting one if none is running.
 func daemonCall(tool string, args map[string]interface{}) (*agent.ToolsCallResult, error) {
+	return daemonCallMeta(tool, args, nil)
+}
+
+// daemonCallMeta is daemonCall with the request's _meta passed through, for
+// the pipe, whose clients may send one.
+func daemonCallMeta(tool string, args, meta map[string]interface{}) (*agent.ToolsCallResult, error) {
 	if gridActive && !gridRouted {
 		if err := routeGrid(args); err != nil {
 			return nil, err
@@ -41,7 +47,7 @@ func daemonCall(tool string, args map[string]interface{}) (*agent.ToolsCallResul
 		return nil, err
 	}
 
-	result, err := daemon.Call(tool, args)
+	result, err := daemon.CallMeta(tool, args, meta)
 	if err == nil {
 		return finish(result)
 	}
@@ -61,7 +67,7 @@ func daemonCall(tool string, args map[string]interface{}) (*agent.ToolsCallResul
 	if err := autoStartDaemon(); err != nil {
 		return nil, err
 	}
-	result, err = daemon.Call(tool, args)
+	result, err = daemon.CallMeta(tool, args, meta)
 	if err != nil {
 		return nil, err
 	}

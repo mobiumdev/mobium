@@ -13,7 +13,7 @@ import (
 
 func decode(t *testing.T, msg string) *agent.Response {
 	t.Helper()
-	return newPipe(daemonCall).handle([]byte(msg))
+	return newPipe(daemonCallMeta).handle([]byte(msg))
 }
 
 func TestPipeAnswersInitialize(t *testing.T) {
@@ -107,7 +107,7 @@ type fakeDaemon struct {
 	open  map[string]bool
 }
 
-func (f *fakeDaemon) call(tool string, args map[string]interface{}) (*agent.ToolsCallResult, error) {
+func (f *fakeDaemon) call(tool string, args, _ map[string]interface{}) (*agent.ToolsCallResult, error) {
 	device, _ := args["device"].(string)
 	action, _ := args["action"].(string)
 	f.calls = append(f.calls, tool+" "+action+" "+device)

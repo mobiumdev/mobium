@@ -17,7 +17,14 @@ import (
 
 // Caller calls one tool, as the CLI's own commands do — through the daemon,
 // starting it if need be. The runner holds no connection of its own.
-type Caller func(tool string, args map[string]interface{}) (*agent.ToolsCallResult, error)
+//
+// meta, when given, is the request's _meta: the runner marks the screenshots
+// and maps it takes for its own report agent.MetaUntraced, so a trace of the
+// test holds the test's steps and not the runner looking at them.
+type Caller func(tool string, args map[string]interface{}, meta ...map[string]interface{}) (*agent.ToolsCallResult, error)
+
+// untraced is the _meta of a call the runner makes for itself.
+var untraced = map[string]interface{}{agent.MetaUntraced: true}
 
 // Options is one run.
 type Options struct {
@@ -121,6 +128,10 @@ type Result struct {
 	// Trace is every step of that attempt with the screen after it, when the
 	// run was traced.
 	Trace []TraceStep `json:"trace,omitempty"`
+	// TraceFile is that attempt as a Playwright trace — a zip that
+	// trace.playwright.dev opens, as `mobium trace` writes — relative to the
+	// output directory.
+	TraceFile string `json:"trace_file,omitempty"`
 }
 
 // ID names a test on a project, for --last-failed.
@@ -420,6 +431,7 @@ func runTest(j job, t Test, opts Options, call Caller) Result {
 	start := time.Now()
 	var first []*Failure
 	var firstTrace, lastTrace []TraceStep
+	firstAttempt := 0
 	for attempt := 1; attempt <= opts.Retries+1; attempt++ {
 		r.Attempts = attempt
 		fs, tr := runOnce(j, t, opts, call, attempt)
@@ -433,7 +445,7 @@ func runTest(j job, t Test, opts Options, call Caller) Result {
 			break
 		}
 		if first == nil {
-			first, firstTrace = fs, tr
+			first, firstTrace, firstAttempt = fs, tr, attempt
 		}
 		r.Status = Failed
 		r.setFailures(fs)
@@ -443,14 +455,21 @@ func runTest(j job, t Test, opts Options, call Caller) Result {
 	}
 	// The trace kept is the attempt reported: a flaky test's failure, a
 	// failed test's last attempt, a passing test's pass.
+	kept := r.Attempts
 	r.Trace = lastTrace
 	if r.Status == Flaky {
-		r.Trace = firstTrace
+		r.Trace, kept = firstTrace, firstAttempt
 	}
-	if opts.Trace == TraceRetainOnFailure && r.Status == Passed {
-		r.Trace = nil
+	if !traced(opts) || opts.Trace == TraceRetainOnFailure && r.Status == Passed {
+		r.Trace, kept = nil, 0
 	}
-	pruneTraces(opts.OutputDir, j, t, r.Trace)
+	pruneTraces(opts.OutputDir, j, t, kept)
+	if kept > 0 {
+		zip := filepath.Join(traceDir(j, t, kept), traceZip)
+		if _, err := os.Stat(filepath.Join(opts.OutputDir, zip)); err == nil {
+			r.TraceFile = zip
+		}
+	}
 	r.Duration = time.Since(start)
 	return r
 }
@@ -469,14 +488,19 @@ func traceDir(j job, t Test, attempt int) string {
 	return filepath.Join("artifacts", "trace", fmt.Sprintf("%s-%d", traceStem(j, t), attempt))
 }
 
-// pruneTraces removes every attempt's trace screenshots but the one kept.
-func pruneTraces(out string, j job, t Test, kept []TraceStep) {
+// traceZip is the Playwright trace in an attempt's trace directory.
+const traceZip = "trace.zip"
+
+// traced says whether a run keeps a trace of its tests.
+func traced(opts Options) bool { return opts.Trace == TraceOn || opts.Trace == TraceRetainOnFailure }
+
+// pruneTraces removes every attempt's trace directory but the one kept, by
+// its number, 0 for none. By number, not by a screenshot's directory: a run
+// without screenshots keeps its trace as a zip alone.
+func pruneTraces(out string, j job, t Test, kept int) {
 	keep := ""
-	for _, s := range kept {
-		if s.Screenshot != "" {
-			keep = filepath.Base(filepath.Dir(s.Screenshot))
-			break
-		}
+	if kept > 0 {
+		keep = filepath.Base(traceDir(j, t, kept))
 	}
 	prefix := traceStem(j, t) + "-"
 	entries, _ := os.ReadDir(filepath.Join(out, "artifacts", "trace"))
@@ -535,9 +559,20 @@ func runOnce(j job, t Test, opts Options, call Caller, attempt int) ([]*Failure,
 
 	h := &hooks{}
 	var trace []TraceStep
-	if opts.Trace == TraceOn || opts.Trace == TraceRetainOnFailure {
+	if traced(opts) {
 		h.single = true
 		dir := traceDir(j, t, attempt)
+		// The test as a Playwright trace too: every call it makes on the
+		// device, the app's launch included, with the screen after each.
+		// The runner's own screenshots and maps are kept out of it. A trace
+		// already running on the device — the person's own — is left
+		// alone, and this attempt has no zip.
+		if zip, err := filepath.Abs(filepath.Join(opts.OutputDir, dir, traceZip)); err == nil && os.MkdirAll(filepath.Dir(zip), 0o755) == nil {
+			if _, err := call("app_trace", dev(map[string]interface{}{"action": "start", "name": j.file.Title(t),
+				"screenshots": opts.Evidence})); err == nil {
+				defer func() { _, _ = call("app_trace", dev(map[string]interface{}{"action": "stop", "path": zip})) }()
+			}
+		}
 		h.after = func(step int, s *Step, err error, took time.Duration) {
 			ts := TraceStep{Step: step, Name: s.label(), Description: s.Description, Duration: took}
 			if err != nil {
@@ -547,7 +582,7 @@ func runOnce(j job, t Test, opts Options, call Caller, attempt int) ([]*Failure,
 			if opts.Evidence {
 				name := fmt.Sprintf("%02d.png", len(trace)+1)
 				if abs, e := filepath.Abs(filepath.Join(opts.OutputDir, dir, name)); e == nil && os.MkdirAll(filepath.Dir(abs), 0o755) == nil {
-					if _, e := call("app_screenshot", dev(map[string]interface{}{"path": abs})); e == nil {
+					if _, e := call("app_screenshot", dev(map[string]interface{}{"path": abs}), untraced); e == nil {
 						ts.Screenshot = filepath.Join(dir, name)
 					}
 				}
@@ -600,7 +635,7 @@ func runOnce(j job, t Test, opts Options, call Caller, attempt int) ([]*Failure,
 // it is shown to a person, or kept in a trace, and never compared.
 func settledMap(call Caller, dev func(map[string]interface{}) map[string]interface{}) string {
 	read := func() string {
-		if res, e := call("app_map", dev(map[string]interface{}{})); e == nil && len(res.Content) > 0 {
+		if res, e := call("app_map", dev(map[string]interface{}{}), untraced); e == nil && len(res.Content) > 0 {
 			return res.Content[0].Text
 		}
 		return ""
@@ -822,11 +857,11 @@ func evidence(f *Failure, j job, t Test, attempt, n int, out string, call Caller
 	}
 	shot := filepath.Join(dir, stem+".png")
 	if abs, err := filepath.Abs(shot); err == nil {
-		if _, err := call("app_screenshot", dev(map[string]interface{}{"path": abs})); err == nil {
+		if _, err := call("app_screenshot", dev(map[string]interface{}{"path": abs}), untraced); err == nil {
 			f.Screenshot = filepath.Join("artifacts", stem+".png")
 		}
 	}
-	if res, err := call("app_map", dev(map[string]interface{}{})); err == nil && len(res.Content) > 0 {
+	if res, err := call("app_map", dev(map[string]interface{}{}), untraced); err == nil && len(res.Content) > 0 {
 		f.Map = res.Content[0].Text
 	}
 }

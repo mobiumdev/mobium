@@ -95,9 +95,20 @@ this is what is not.
   trace format, with every call a step, the screen after it and the map
   drawn over it. trace.playwright.dev opens it (`docs/checks/trace.sh`,
   measured with `MOBIUM_TRACE_VIEWER=1`). `mobium map --diff` answers what
-  changed since the last map (`docs/checks/map-diff.sh`). Next, if wanted:
-  `mobium test --trace` writing the same zip, and a batch's steps as a group
-  in it.
+  changed since the last map (`docs/checks/map-diff.sh`). Since
+  2026-10-01 `mobium test --trace` writes the same zip for each test it
+  keeps, beside the filmstrip, and the HTML report links it; the runner's
+  own screenshots and maps are sent with MCP's `_meta` marking them
+  untraced, so the zip holds the test's calls alone (`test-runner.sh`).
+  And since 2026-10-01 it plays in Vibium's player, player.vibium.dev, as
+  well as trace.playwright.dev, checked on a simulator and an emulator by
+  `trace.sh` with `MOBIUM_TRACE_VIEWER=1`. Getting there: the player names a
+  fill by Playwright's `selector` and `value`, which Mobium did not send, so
+  it read `Type "" into field` — they are recorded now, the value masked a
+  dot a character; and both viewers show at each step the frame kept after
+  the one before, which after a launch was blank — an action's frame is now
+  taken once the screen has settled, as `mobium test` reads its own.
+  Next, if wanted: a batch's steps as a group in it.
 - ~~**Screen recording on a real iPhone.**~~ Done 2026-09-30. `record`
   reads WebDriverAgent's MJPEG stream on the phone's port 9100 over the
   tunnel and writes the frames into an MP4 in Go — JPEG samples, each

@@ -16,6 +16,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/mobiumdev/mobium/internal/agent"
 	"github.com/mobiumdev/mobium/internal/mobiumerr"
 	"github.com/mobiumdev/mobium/internal/testrun"
 )
@@ -159,7 +160,13 @@ func newTestCmd() *cobra.Command {
 					}
 				}, nil
 			}
-			sum, err := testrun.Run(cfg, opts, daemonCall)
+			sum, err := testrun.Run(cfg, opts, func(tool string, args map[string]interface{}, meta ...map[string]interface{}) (*agent.ToolsCallResult, error) {
+				var m map[string]interface{}
+				if len(meta) > 0 {
+					m = meta[0]
+				}
+				return daemonCallMeta(tool, args, m)
+			})
 			if err != nil {
 				return err
 			}
@@ -197,7 +204,7 @@ func newTestCmd() *cobra.Command {
 	f.BoolVar(&noShot, "no-screenshots", false, "Keep no screenshot of a failure — on a real phone it is somebody's screen")
 	f.StringVar(&configPath, "config", "", "The config to use (default: mobium.config.json here or above)")
 	f.StringVar(&outDir, "output", "", "Where reports go (default: mobium-report beside the config)")
-	f.StringVar(&trace, "trace", "off", "Keep a screenshot and the map after every step: on, off, or retain-on-failure")
+	f.StringVar(&trace, "trace", "off", "Keep a screenshot and the map after every step, and the test as a Playwright trace zip: on, off, or retain-on-failure")
 	f.BoolVar(&debug, "debug", false, "Stop before each step, show it and the screen, and wait: Enter steps, c continues, q quits")
 	return cmd
 }

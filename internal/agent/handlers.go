@@ -197,6 +197,12 @@ func settleWindowFromEnv() time.Duration {
 
 // Call dispatches a tool by name.
 func (h *Handlers) Call(name string, args map[string]interface{}) (*ToolsCallResult, error) {
+	return h.CallMeta(name, args, nil)
+}
+
+// CallMeta is Call with the request's _meta, which says how the call is to
+// be treated rather than what the tool is to do (MetaUntraced).
+func (h *Handlers) CallMeta(name string, args, meta map[string]interface{}) (*ToolsCallResult, error) {
 	h.mu.Lock()
 	defer h.mu.Unlock()
 
@@ -211,7 +217,7 @@ func (h *Handlers) Call(name string, args map[string]interface{}) (*ToolsCallRes
 	h.handled = nil
 	// While a device has a trace running, each call on it is recorded, and
 	// the screen after it (app_trace).
-	if name != "app_trace" {
+	if untraced, _ := meta[MetaUntraced].(bool); name != "app_trace" && !untraced {
 		if s := h.tracedSession(args); s != nil {
 			t := s.trace
 			id := traceBefore(t, name, args)
@@ -219,7 +225,7 @@ func (h *Handlers) Call(name string, args map[string]interface{}) (*ToolsCallRes
 			res, err = h.reportHandled(res, err)
 			// A call that ended the session ended the trace with it.
 			if s.trace == t {
-				h.traceAfter(s, t, id, res, err)
+				h.traceAfter(s, t, id, !IsReadCall(name, args), res, err)
 			}
 			return res, err
 		}

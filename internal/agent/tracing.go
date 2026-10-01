@@ -16,6 +16,7 @@ import (
 
 	"github.com/mobiumdev/mobium/internal/mobiumerr"
 	"github.com/mobiumdev/mobium/internal/trace"
+	"github.com/mobiumdev/mobium/internal/uitree"
 )
 
 // app_trace: a session recorded as Vibium records one, into a zip that
@@ -169,8 +170,18 @@ func traceBefore(t *sessionTrace, name string, args map[string]interface{}) stri
 	switch name {
 	case "app_type", "app_fill", "app_alert":
 		if text, ok := params["text"].(string); ok {
-			params["text"] = fmt.Sprintf("(%d characters, not recorded)", len([]rune(text)))
+			n := len([]rune(text))
+			params["text"] = fmt.Sprintf("(%d characters, not recorded)", n)
+			// Playwright's name for typed text, which player.vibium.dev
+			// shows as "Type "…" into <selector>": a dot a character,
+			// so it reads as masked and says how much was typed.
+			params["value"] = strings.Repeat("•", min(n, 20))
 		}
+	}
+	// Playwright's name for the element acted on, which player.vibium.dev
+	// reads — without it a fill showed as `Type "" into field`.
+	if target, ok := args["target"].(string); ok && target != "" {
+		params["selector"] = target
 	}
 	title := strings.TrimPrefix(name, "app_")
 	for _, k := range []string{"target", "action", "app", "url", "key", "name"} {
@@ -182,8 +193,16 @@ func traceBefore(t *sessionTrace, name string, args map[string]interface{}) stri
 	return t.rec.Before(name, title, params)
 }
 
-// traceAfter closes a call and keeps the screen as it is after it.
-func (h *Handlers) traceAfter(s *session, t *sessionTrace, id string, res *ToolsCallResult, err error) {
+// traceSettle bounds the wait for the screen to stop changing after an
+// action, before its frame is kept, and traceSettlePause is between reads.
+var traceSettle, traceSettlePause = 2 * time.Second, 300 * time.Millisecond
+
+// traceAfter closes a call and keeps the screen as it is after it. After an
+// action that is the screen once it has stopped changing: a launch returns
+// before the app has drawn, and its frame was blank — which both viewers
+// show at the next step, the screen it acted on. Read-only calls change
+// nothing, and are kept at once.
+func (h *Handlers) traceAfter(s *session, t *sessionTrace, id string, settle bool, res *ToolsCallResult, err error) {
 	result := ""
 	if res != nil && len(res.Content) > 0 {
 		result = res.Content[0].Text
@@ -206,6 +225,10 @@ func (h *Handlers) traceAfter(s *session, t *sessionTrace, id string, res *Tools
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), traceCapture)
 	defer cancel()
+	var settled *uitree.Tree
+	if settle && err == nil {
+		settled = settledTree(ctx, s)
+	}
 	png, serr := s.driver.Screenshot(ctx)
 	if serr != nil || len(png) == 0 {
 		return
@@ -220,7 +243,11 @@ func (h *Handlers) traceAfter(s *session, t *sessionTrace, id string, res *Tools
 	}
 	var boxes []trace.Box
 	if t.maps {
-		if tree, terr := s.driver.Snapshot(ctx); terr == nil {
+		tree, terr := settled, error(nil)
+		if tree == nil {
+			tree, terr = s.driver.Snapshot(ctx)
+		}
+		if terr == nil {
 			for _, e := range tree.Map() {
 				boxes = append(boxes, trace.Box{Ref: e.Ref, Label: e.Label, Role: e.Role,
 					X1: e.Bounds.X1, Y1: e.Bounds.Y1, X2: e.Bounds.X2, Y2: e.Bounds.Y2})
@@ -229,4 +256,39 @@ func (h *Handlers) traceAfter(s *session, t *sessionTrace, id string, res *Tools
 	}
 	b := img.Bounds()
 	t.rec.Frame(id, buf.Bytes(), b.Dx(), b.Dy(), boxes)
+}
+
+// settledTree reads the screen until two reads a pause apart map the same,
+// or traceSettle has passed, and returns the last read: what mobium test's
+// settledMap does for its own report. A screen with a clock never agrees,
+// and its last read is as good as any.
+func settledTree(ctx context.Context, s *session) *uitree.Tree {
+	key := func(t *uitree.Tree) string {
+		var b strings.Builder
+		for _, e := range t.Map() {
+			fmt.Fprintf(&b, "%s|%s|%v\n", e.Line(), e.Bounds, e.Checked)
+		}
+		return b.String()
+	}
+	last, err := s.driver.Snapshot(ctx)
+	if err != nil {
+		return nil
+	}
+	end := time.Now().Add(traceSettle)
+	for time.Now().Before(end) {
+		select {
+		case <-ctx.Done():
+			return last
+		case <-time.After(traceSettlePause):
+		}
+		now, err := s.driver.Snapshot(ctx)
+		if err != nil {
+			return last
+		}
+		if key(now) == key(last) {
+			return now
+		}
+		last = now
+	}
+	return last
 }

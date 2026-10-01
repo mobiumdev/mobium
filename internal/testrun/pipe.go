@@ -115,8 +115,12 @@ func (p *Pipe) request(method string, params map[string]interface{}) (json.RawMe
 
 // Call is a Caller over the pipe: a tool's answer, or its failure as the
 // coded error it was.
-func (p *Pipe) Call(tool string, args map[string]interface{}) (*agent.ToolsCallResult, error) {
-	raw, err := p.request("tools/call", map[string]interface{}{"name": tool, "arguments": args})
+func (p *Pipe) Call(tool string, args map[string]interface{}, meta ...map[string]interface{}) (*agent.ToolsCallResult, error) {
+	params := map[string]interface{}{"name": tool, "arguments": args}
+	if len(meta) > 0 && meta[0] != nil {
+		params["_meta"] = meta[0]
+	}
+	raw, err := p.request("tools/call", params)
 	if err != nil {
 		return nil, err
 	}

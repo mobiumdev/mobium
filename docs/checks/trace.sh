@@ -13,8 +13,10 @@
 #
 # With MOBIUM_TRACE_VIEWER=1 and Vibium installed, the zip is also opened in
 # Playwright's own viewer at trace.playwright.dev — a consumer that is not
-# ours — and every step must be listed there. That needs the network; the
-# viewer reads the file in the browser and sends it nowhere.
+# ours — and every step must be listed there; and in Vibium's player at
+# player.vibium.dev, which must count every call and name each as it steps
+# through, a fill included. That needs the network; both read the file in
+# the browser and send it nowhere.
 #
 #   docs/checks/trace.sh <emulator-serial | simulator-udid>
 #
@@ -105,7 +107,34 @@ if [ "${MOBIUM_TRACE_VIEWER:-}" = 1 ] && command -v vibium >/dev/null 2>&1; then
   for step in "launch $APP" "tap label=Login Demo" "fill testid=password" "tap testid=noSuchButton"; do
     echo "$page" | grep -q -F "$step" || fail "Playwright's viewer does not list \"$step\""
   done
-  $V quit >/dev/null 2>&1 || true
   row "viewer" "trace.playwright.dev lists every step"
+
+  # And Vibium's player, which plays Playwright traces too: it takes the
+  # zip from its file input, says how many actions it holds, and names each
+  # as it steps — a fill by Playwright's selector and value, which Mobium
+  # records masked, a dot a character.
+  $V go https://player.vibium.dev >/dev/null
+  for _ in 1 2 3 4 5 6 7 8 9 10; do
+    [ "$($V eval 'document.querySelectorAll("input[type=file]").length' 2>/dev/null)" = 1 ] && break
+    sleep 1
+  done
+  $V eval 'document.querySelector("input[type=file]").id = "vfile"; "ok"' >/dev/null
+  $V upload '#vfile' "$OUT/t.zip" >/dev/null
+  sleep 4
+  calls=$(python3 -c "import json,zipfile,sys; z=zipfile.ZipFile(sys.argv[1]); print(sum(1 for l in z.read('trace.trace').decode().splitlines() if l.strip() and json.loads(l).get('type')=='before'))" "$OUT/t.zip")
+  $V eval 'document.body.innerText' | grep -q "$calls actions" || fail "player.vibium.dev does not say $calls actions"
+  seen=""
+  for _ in $(seq 1 "$calls"); do
+    $V eval '[...document.querySelectorAll("button")].filter(b => b.textContent.trim() === "▶")[1].click(); "ok"' >/dev/null
+    sleep 1
+    seen="$seen
+$($V eval 'document.body.innerText')"
+  done
+  for step in "tap label=Login Demo" "into testid=password" "tap testid=noSuchButton"; do
+    echo "$seen" | grep -q -F "$step" || fail "player.vibium.dev never showed \"$step\""
+  done
+  echo "$seen" | grep -q 'Type "" into' && fail "player.vibium.dev shows a fill with no value"
+  $V quit >/dev/null 2>&1 || true
+  row "player" "player.vibium.dev plays it: $calls actions, each named"
 fi
 echo PASS

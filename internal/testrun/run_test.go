@@ -48,11 +48,16 @@ type fake struct {
 	// batchFails, when set, decides a batch's fate instead.
 	batchFails func(steps []interface{}) (int, bool)
 	answer     func(tool string, args map[string]interface{}) (*agent.ToolsCallResult, error)
+	// untraced are the calls sent marked agent.MetaUntraced.
+	untraced []string
 }
 
-func (f *fake) call(tool string, args map[string]interface{}) (*agent.ToolsCallResult, error) {
+func (f *fake) call(tool string, args map[string]interface{}, meta ...map[string]interface{}) (*agent.ToolsCallResult, error) {
 	f.mu.Lock()
 	f.calls = append(f.calls, tool)
+	if len(meta) > 0 && meta[0][agent.MetaUntraced] == true {
+		f.untraced = append(f.untraced, tool)
+	}
 	f.mu.Unlock()
 	if f.answer != nil {
 		if r, err := f.answer(tool, args); r != nil || err != nil {
@@ -403,7 +408,7 @@ func TestEachProjectConnectsOnItsOwn(t *testing.T) {
 	closed := map[string]bool{}
 	opts := Options{Files: []string{p}, Timeout: time.Minute, OutputDir: t.TempDir(),
 		Connect: func(pr Project) (Caller, func(), error) {
-			return func(tool string, args map[string]interface{}) (*agent.ToolsCallResult, error) {
+			return func(tool string, args map[string]interface{}, _ ...map[string]interface{}) (*agent.ToolsCallResult, error) {
 					mu.Lock()
 					defer mu.Unlock()
 					if len(calls[pr.Name]) == 0 {
@@ -450,7 +455,7 @@ func TestAProjectTheGridCannotServeRefusesTheRun(t *testing.T) {
 	var closedA bool
 	opts := Options{Files: []string{p}, Timeout: time.Minute, OutputDir: t.TempDir(),
 		Connect: func(pr Project) (Caller, func(), error) {
-			return func(tool string, args map[string]interface{}) (*agent.ToolsCallResult, error) {
+			return func(tool string, args map[string]interface{}, _ ...map[string]interface{}) (*agent.ToolsCallResult, error) {
 				if pr.Name == "b" {
 					return nil, mobiumerr.New(mobiumerr.Timeout, "no free android device on the grid after 60s")
 				}
@@ -563,6 +568,57 @@ func TestATraceIsEveryStepAndRetainOnFailureKeepsFailures(t *testing.T) {
 				t.Errorf("on: the passing test's trace has %d steps, want 2", len(r.Trace))
 			case r.Status == Passed && mode == TraceRetainOnFailure && r.Trace != nil:
 				t.Errorf("retain-on-failure kept a passing test's trace")
+			}
+		}
+	}
+}
+
+// A traced test is a Playwright trace too: app_trace starts before the app
+// is launched and stops after the last step, into the attempt's trace
+// directory, and the runner's own screenshots and maps are sent untraced so
+// the zip holds the test. retain-on-failure keeps a failed test's zip only.
+func TestATracedTestIsAPlaywrightTrace(t *testing.T) {
+	dir := t.TempDir()
+	p := write(t, dir, "login.test.json", loginFile)
+	for _, mode := range []string{TraceOn, TraceRetainOnFailure} {
+		out := t.TempDir()
+		var starts, stops int
+		f := &fake{}
+		f.answer = func(tool string, args map[string]interface{}) (*agent.ToolsCallResult, error) {
+			if tool != "app_trace" {
+				return nil, nil
+			}
+			switch args["action"] {
+			case "start":
+				starts++
+			case "stop":
+				stops++
+				path, _ := args["path"].(string)
+				if !filepath.IsAbs(path) || filepath.Base(path) != traceZip {
+					t.Errorf("%s: the trace was saved to %q", mode, path)
+				}
+				_ = os.WriteFile(path, []byte("zip"), 0o600)
+			}
+			return &agent.ToolsCallResult{}, nil
+		}
+		s := run(t, &Config{Dir: dir}, Options{Files: []string{p}, Trace: mode, Evidence: true, OutputDir: out}, f)
+		if starts != 2 || stops != 2 {
+			t.Errorf("%s: %d starts and %d stops for two tests", mode, starts, stops)
+		}
+		if strings.Contains(strings.Join(f.untraced, " "), "app_tap") || !strings.Contains(strings.Join(f.untraced, " "), "app_screenshot") ||
+			!strings.Contains(strings.Join(f.untraced, " "), "app_map") {
+			t.Errorf("%s: untraced calls %v — want the runner's screenshots and maps, and no step", mode, f.untraced)
+		}
+		for _, r := range s.Results {
+			want := r.Status == Failed || mode == TraceOn
+			if got := r.TraceFile != ""; got != want {
+				t.Errorf("%s: %s test has trace file %q", mode, r.Status, r.TraceFile)
+				continue
+			}
+			if want {
+				if _, err := os.Stat(filepath.Join(out, r.TraceFile)); err != nil {
+					t.Errorf("%s: the trace file the result names is not there: %v", mode, err)
+				}
 			}
 		}
 	}
