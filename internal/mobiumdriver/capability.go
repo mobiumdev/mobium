@@ -303,6 +303,12 @@ func AsPointScaler(d Driver) (PointScaler, bool) {
 	return p, ok
 }
 
+// AsLightReader returns the driver's light read, if it has one.
+func AsLightReader(d Driver) (LightReader, bool) {
+	l, ok := d.(LightReader)
+	return l, ok
+}
+
 // AsForegroundReader returns the driver's cheap foreground read, if any.
 func AsForegroundReader(d Driver) (ForegroundReader, bool) {
 	f, ok := d.(ForegroundReader)

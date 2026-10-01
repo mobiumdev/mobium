@@ -87,6 +87,10 @@ type Handlers struct {
 	settleWindow  time.Duration
 	settleTimeout time.Duration
 
+	// lightAbove is how slow a session's last full read must have been for
+	// an action to try a light one first; see lightReadAbove.
+	lightAbove time.Duration
+
 	// progress reports slow one-time work (downloading and installing the
 	// UiAutomator2 server) so a first run does not look like a hang.
 	progress func(string)
@@ -113,6 +117,7 @@ func NewHandlers() *Handlers {
 		backend:       DefaultBackend,
 		implicitWait:  implicitWait,
 		settleWindow:  settleWindowFromEnv(),
+		lightAbove:    lightAboveFromEnv(),
 		settleTimeout: settleTimeout,
 	}
 }
@@ -159,6 +164,22 @@ func (h *Handlers) Close() {
 // server and every client have to be able to agree on it.
 //
 // Unset means the default. "0" turns the check off.
+// lightAboveFromEnv reads MOBIUM_LIGHT_READ_MS, which moves the line above
+// which an action tries a light read. 0 tries it on every action, which is
+// how a check holds it to the same answers on a small screen; a typo keeps
+// the default.
+func lightAboveFromEnv() time.Duration {
+	raw, ok := os.LookupEnv("MOBIUM_LIGHT_READ_MS")
+	if !ok {
+		return lightReadAbove
+	}
+	ms, err := strconv.Atoi(strings.TrimSpace(raw))
+	if err != nil || ms < 0 {
+		return lightReadAbove
+	}
+	return time.Duration(ms) * time.Millisecond
+}
+
 func settleWindowFromEnv() time.Duration {
 	raw, ok := os.LookupEnv("MOBIUM_SETTLE_MS")
 	if !ok {
@@ -1302,10 +1323,17 @@ func (h *Handlers) resolveNodeOnce(ctx context.Context, s *session, target strin
 	// counts toward its window.
 	var readTook time.Duration
 
+	if n, t, took, ok := h.lightResolve(ctx, s, loc, target); ok {
+		return h.settle(ctx, s, loc, n, t, took)
+	}
+
 	err = pollUntil(ctx, h.implicitWait, func(ctx context.Context) (bool, error) {
 		readAt := time.Now()
 		t, err := s.driver.Snapshot(ctx)
 		readTook = time.Since(readAt)
+		if err == nil {
+			s.fullReadTook = readTook
+		}
 		if err != nil {
 			// Not fatal. UiAutomator2 fails to read the hierarchy while the
 			// screen is animating — "Cannot set AccessibilityNodeInfo's field
@@ -1421,8 +1449,8 @@ func (h *Handlers) resolveNodeOnce(ctx context.Context, s *session, target strin
 // nothing. lastRead, how long the reading that found node took, is counted
 // toward the window, and only the rest is waited. And where the driver can
 // read the one element instead of the screen — WebDriverAgent, by a test id
-// unique on screen — the second reading is that, and only an exact match is
-// taken from it: anything else reads the screen as before.
+// or a label unique on screen — the second reading is that, and only an
+// exact match is taken from it: anything else reads the screen as before.
 func (h *Handlers) settle(ctx context.Context, s *session, loc uitree.Locator,
 	node *uitree.Node, tree *uitree.Tree, lastRead time.Duration) (*uitree.Node, *uitree.Tree, error) {
 
@@ -1433,7 +1461,7 @@ func (h *Handlers) settle(ctx context.Context, s *session, loc uitree.Locator,
 	was := node.Bounds
 
 	wait := h.settleWindow - lastRead
-	if b, ok := mobiumdriver.AsElementBounder(s.driver); ok && node.TestID != "" && uniqueTestID(tree, node.TestID) {
+	if b, ok := mobiumdriver.AsElementBounder(s.driver); ok {
 		if wait > 0 {
 			select {
 			case <-ctx.Done():
@@ -1442,7 +1470,7 @@ func (h *Handlers) settle(ctx context.Context, s *session, loc uitree.Locator,
 			}
 		}
 		readAt := time.Now()
-		r, read, err := b.ElementBounds(ctx, node)
+		r, read, err := b.ElementBounds(ctx, node, tree)
 		if err == nil && read && r == was {
 			return node, tree, nil
 		}
@@ -1489,17 +1517,63 @@ func (h *Handlers) settle(ctx context.Context, s *session, loc uitree.Locator,
 	}
 }
 
-// uniqueTestID says whether exactly one node on screen has this test id, so a
-// lookup by it can only find the node that was resolved.
-func uniqueTestID(t *uitree.Tree, id string) bool {
-	n := 0
-	t.Walk(func(node *uitree.Node) bool {
-		if node.TestID == id {
-			n++
+// lightReadAbove is how slow a session's last full read must have been for
+// an action to try a light one first. A light read and the one element's
+// visibility cost more than a small screen's full read — 26ms and 29ms
+// against 42ms for MobiumApp's Layout Demo on a simulator — and far less
+// than a large one's: 110ms and 124ms against 426ms for Settings, and on an
+// iPhone 15 Plus 0.29s against 1.81s.
+const lightReadAbove = 250 * time.Millisecond
+
+// lightResolve resolves a locator on a read without visible, and answers
+// only when that read decides the action exactly as a full one would: no
+// dialog or keyboard on screen, one enabled match inside its scroll
+// container, nothing drawn over it, and the element itself visible when
+// asked alone. A light read takes every element as shown, so it can only
+// add matches and covers, never remove them; with none added, and the one
+// element confirmed, the full read would say the same. Anything else
+// returns false, and the screen is read in full as before.
+func (h *Handlers) lightResolve(ctx context.Context, s *session, loc uitree.Locator,
+	target string) (*uitree.Node, *uitree.Tree, time.Duration, bool) {
+
+	lr, ok := mobiumdriver.AsLightReader(s.driver)
+	if !ok || s.fullReadTook < h.lightAbove {
+		return nil, nil, 0, false
+	}
+	readAt := time.Now()
+	t, ok, err := lr.LightSnapshot(ctx)
+	took := time.Since(readAt)
+	if err != nil || !ok || hasDialogOrKeyboard(t) {
+		return nil, nil, 0, false
+	}
+	n, err := pickOne(loc, t)
+	if err != nil || !n.Enabled || h.staleRef(s.dev.Serial, target, n) != nil {
+		return nil, nil, 0, false
+	}
+	if c := scrollContainerOf(n); c != nil && !encloses(c.Bounds, n.Bounds) {
+		return nil, nil, 0, false
+	}
+	if aim := t.AimAt(n); aim.Moved || aim.Blocker != nil || aim.Over != nil {
+		return nil, nil, 0, false
+	}
+	if visible, asked, err := lr.ElementVisible(ctx, n, t); err != nil || !asked || !visible {
+		return nil, nil, 0, false
+	}
+	return n, t, took, true
+}
+
+// hasDialogOrKeyboard says whether a read holds anything whose visibility
+// the action's own checks turn on.
+func hasDialogOrKeyboard(t *uitree.Tree) bool {
+	found := false
+	t.Walk(func(n *uitree.Node) bool {
+		switch n.Class {
+		case "XCUIElementTypeAlert", "XCUIElementTypeSheet", "XCUIElementTypeKeyboard":
+			found = true
 		}
-		return n < 2
+		return !found
 	})
-	return n == 1
+	return found
 }
 
 // typeText puts text into a specific element: after what it holds for
