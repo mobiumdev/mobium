@@ -7,7 +7,7 @@ the source.
 
 The pattern across them is the reason the document exists: **almost nothing
 here was found by reading code or by a test written from imagination.** Of
-197 defects, 161 were found only by running against a real device. The other
+198 defects, 162 were found only by running against a real device. The other
 thirty-six — 4, 5, 6, 14, 23, 24, 32, 35, 36, 39, 44, 50, 53, 54, 57, 66, 89,
 99, 100, 121, 123, 129, 130, 133, 134, 139, 140, 141, 142, 144, 150, 158, 162,
 164, 165 and 172 — came from reading code, the compiler, a test, a linter,
@@ -4365,6 +4365,34 @@ under a toolbar from 2538: the build before this answered "tapped … at
 (645, 2553)" and opened nothing, and this one scrolled the row out, tapped
 it at y 1669, and the article opened. The check taps the lowest article row
 on screen on both devices for that reason.
+
+### 198. A simulator typed into once believed a hardware keyboard was attached
+
+**Found by:** `docs/checks/keyboard.sh` failing its first step — "focusing a
+field did not bring the keyboard up" — after one run in two on an iPhone
+17 Pro simulator, on `main` as on a branch, and passing on a freshly booted
+one. The field had focus, empty and ready; the keyboard was in the tree
+with its top at y 952 on a screen 874 points tall, below the edge, with
+its input-assistant bar under it: the state iOS keeps it in when a
+hardware keyboard is attached (CHALLENGES 107). Simulator's own Connect
+Hardware Keyboard setting was off throughout.
+
+What put it there is XCTest's typing, now and then. After a reboot, one
+`fill` or `type` left it there in some runs and not others, with the same
+requests in the same order, traced; WebDriverAgent's value and keys
+requests sent by hand did not, five times out of five; a full run of the
+check left it there four times in four. Once there, relaunching the app
+did not bring the keyboard back, nor did restarting
+`com.apple.TextInput.kbd`, nor anything `simctl` offers. A reboot did.
+
+Mobium's answer in that state is the true one: the keyboard is not shown,
+and a target under it is not covered. What was wrong was the check, which
+assumed a simulator nobody had typed into since it booted. On a simulator
+it now reboots once, saying so, when a focused field leaves the keyboard
+held below the screen, and judges the step after that; four runs in a row
+passed, each with its reboot. A real iPhone does not do it: on the iPhone
+15 Plus three runs in a row passed with the keyboard up each time, so the
+reboot is a simulator's only, as the state is.
 
 ## Findings that were not defects
 
