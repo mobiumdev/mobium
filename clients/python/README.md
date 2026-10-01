@@ -18,8 +18,8 @@ with start(platform="android", app="com.android.settings") as device:
 # the with block has quit: the session on the device is over
 ```
 
-`start()` opens a session on the device and launches the app fresh, as
-Appium's new session does; `quit()` — or leaving the `with` block — ends it.
+`start()` opens a session on the device and launches the app fresh;
+`quit()` — or leaving the `with` block — ends it.
 `platform="ios"` drives an iOS simulator or iPhone the same way.
 
 ## Requirements

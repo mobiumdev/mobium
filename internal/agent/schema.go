@@ -633,9 +633,9 @@ func GetToolSchemas() []Tool {
 		{
 			Name: "app_storage",
 			Description: "Save, restore or clear the current WebView's storage state: its cookies and its " +
-				"origin's localStorage and sessionStorage, in the shape Playwright and Vibium save — " +
+				"origin's localStorage and sessionStorage, in the shape Vibium saves — " +
 				"{cookies, origins: [{origin, localStorage, sessionStorage}]} — so a state saved by one " +
-				"restores in another. Vibium's storage command, on a WebView: switch with app_context first. " +
+				"restores in the other. Vibium's storage command, on a WebView: switch with app_context first. " +
 				"\"get\" (the default) answers the state; \"restore\" sets its cookies and writes each origin's " +
 				"storage only into a page on that origin, saying which it skipped; \"clear\" empties all three. " +
 				"Every write is read back. A page with no origin of its own — an app's inline HTML, about:blank " +
@@ -738,8 +738,8 @@ func GetToolSchemas() []Tool {
 			Name: "app_trace",
 			Description: "Record a session as a trace: start, then every call on this device is a step — " +
 				"before and after, the point an action touched, a failure's error — and after each the " +
-				"screen, with the map's elements drawn over it; stop with a path saves a zip in the " +
-				"Playwright trace format that trace.playwright.dev and player.vibium.dev open. Omit the " +
+				"screen, with the map's elements drawn over it; stop with a path saves a zip in " +
+				"Vibium's record format, which player.vibium.dev opens. Omit the " +
 				"action to ask whether one is running. Text typed into a field is not recorded, only its " +
 				"length. On a real phone the screenshots are its owner's screen; screenshots false keeps " +
 				"none. One trace per device; ending the session discards it.",
@@ -1300,13 +1300,12 @@ func GetToolSchemas() []Tool {
 		},
 		{
 			Name: "app_session",
-			Description: "Start or end the session on a device, as Appium's new session and quit " +
-				"do. Every other tool opens a session on first use, so this is never required; " +
+			Description: "Start or end the session on a device. Every other tool opens a session on first use, so this is never required; " +
 				"it is for putting the slow first start — installing UiAutomator2, building " +
 				"WebDriverAgent on an iPhone — where you asked for it, and for ending one " +
 				"device's session without stopping the daemon. \"start\" opens it (or keeps " +
 				"one already open, reported as reused) and, given an app, launches it fresh — " +
-				"stopped first if it was running, as Appium does, so the session begins at the " +
+				"stopped first if it was running, so the session begins at the " +
 				"app's first screen; its data is kept — and waits for it to be in front. \"end\" closes it with the daemon's own teardown: " +
 				"accessibility settings put back, a recording or route stopped, WebViews " +
 				"detached, the device-side server stopped, and the device's refs and dialog " +
@@ -1552,7 +1551,7 @@ func GetToolSchemas() []Tool {
 			Name: "app_source",
 			Description: "The raw hierarchy, as the device-side server sent it: UiAutomator2's or " +
 				"uiautomator's XML on Android, WebDriverAgent's on iOS, and in a WebView context " +
-				"the page's current markup. What Appium calls the page source. app_map is what " +
+				"the page's current markup: the page source. app_map is what " +
 				"to act on — it hands out refs and leaves out what cannot be acted on; this is " +
 				"for when map leaves out the thing you need to see. Password fields have their " +
 				"contents hidden, keeping the length. Geometry is in the platform's units: " +

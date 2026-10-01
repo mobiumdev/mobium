@@ -5,7 +5,7 @@ import (
 	"testing"
 )
 
-// A test with "each" is one test per case, Playwright's parameterized test:
+// A test with "each" is one test per case:
 // ${key} in its steps is the case's value, a step argument that is nothing
 // but ${key} keeps the value's type, and with no ${key} in the name each
 // case is numbered rather than named after its values.

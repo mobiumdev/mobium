@@ -80,7 +80,7 @@ press "Arm: disable the next one for 2 s"
 reached "Enabled after Arm + 2 s" "target wEnabling"
 row "enabled late" "waited for it, then reached it"
 refused "aria-disabled" enabled "aria-disabled"
-row "aria-disabled" "refused, as Playwright and Vibium do"
+row "aria-disabled" "refused, as Vibium does"
 
 # --- receives events -----------------------------------------------------
 refused "Fully covered" receivesEvents "full cover"

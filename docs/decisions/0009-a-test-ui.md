@@ -1,7 +1,7 @@
 # 0009 — A test UI: `mobium test --ui`
 
 **2026-10-01. Iteration 1.** The interactive mode decision 0006 left for
-later, after Playwright's `test --ui`: a page on this machine that lists the
+later: a page on this machine that lists the
 suite, runs any part of it on any of its projects, shows every step with the
 screen after it as it happens, and runs again what failed.
 
@@ -10,9 +10,8 @@ screen after it as it happens, and runs again what failed.
 `mobium test` answers once a run is over, in a terminal and a report. The loop
 a person is in while writing a test is shorter than that: change a step, run
 that one test, look at the screen it stopped on, change it again. `--debug`
-serves one test at a time in a terminal. Playwright's UI mode is the tool
-people reach for in that loop, and the one feature of its runner most often
-named when someone explains why they moved to it.
+serves one test at a time in a terminal; a page that runs any test and
+shows its steps as they happen serves the whole loop.
 
 ## What was decided
 
@@ -37,7 +36,7 @@ and from nowhere else.
 
 **The files are read again for every list and every run**, so an edited test
 is the test that runs, without restarting anything — the part of
-Playwright's watch mode that matters while writing one.
+a watch mode that matters while writing one.
 
 **When a run ends** its HTML and JSON reports are written as `--reporter
 html,json` writes them, and `--last-failed` sees its failures.

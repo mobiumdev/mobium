@@ -36,7 +36,7 @@ type Test struct {
 	Name        string `json:"name"`
 	Description string `json:"description,omitempty"`
 	Steps       []Step `json:"steps"`
-	// Each runs the test once per case, Playwright's parameterized test:
+	// Each runs the test once per case, a test over its data:
 	// ${key} in its name and steps is that case's value. See expandEach.
 	Each []map[string]interface{} `json:"each,omitempty"`
 }
@@ -488,8 +488,8 @@ func Discover(cfg *Config, paths []string) ([]string, error) {
 // placeholderRe is ${key} in a test's name or steps; $${ is a literal ${.
 var placeholderRe = regexp.MustCompile(`\$\$\{|\$\{([A-Za-z_][A-Za-z0-9_]*)\}`)
 
-// expandEach makes a test with "each" one test per case, as a Playwright
-// test in a loop over its data is. ${key} anywhere in a step's strings is
+// expandEach makes a test with "each" one test per case, as a test in a
+// loop over its data is. ${key} anywhere in a step's strings is
 // the case's value, and a string that is nothing but ${key} takes the
 // value's own type, so a count stays a number. The name is the case's too:
 // with a ${key} in it, substituted, and without one, numbered — "[1]",

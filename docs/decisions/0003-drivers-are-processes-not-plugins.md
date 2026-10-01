@@ -3,8 +3,7 @@
 **2026-09-13.** Answers a structural criticism of the design: the extension
 point is private. `mobiumdriver.Driver` lives under `internal/`, so nobody outside
 this repository can add a Roku, Flutter, tvOS or Tizen backend without forking.
-Appium's ecosystem exists precisely because strangers can, and that is the
-single largest advantage it has over Mobium.
+An ecosystem of drivers exists only where strangers can add one.
 
 ## The three ways to open it
 
@@ -35,8 +34,8 @@ talks to it for the life of the session.
 - **The single-binary property survives.** Mobium still ships as one static
   executable with no runtime dependencies. A driver is a separate file the user
   chooses to install; nothing is required to run Mobium without one.
-- **No language lock-in.** Appium's ecosystem is Node-only because Appium is
-  Node. A Mobium driver can be a shell script, a Python file, a Go binary or a
+- **No language lock-in.** A plugin must be written in its host's language.
+  A Mobium driver can be a shell script, a Python file, a Go binary or a
   Rust one. For a device whose SDK is Python — which is most of the odd ones —
   that is the difference between possible and not.
 - **Nothing internal is frozen.** The contract is the wire format, which is
@@ -171,8 +170,8 @@ typed value straight into `text`, and mobium leaked one until it honored this
 `displayed` and `enabled` are the two fields that default to **true** when
 absent, so a driver that does not track them does not accidentally report an
 empty screen or a screen of dead controls. `enabled` is acted on since
-2026-09-26: an action waits for its target to be enabled, as Playwright's and
-Vibium's do, and refuses one that stays disabled — so a driver that sends
+2026-09-26: an action waits for its target to be enabled, as Vibium's do, and
+refuses one that stays disabled — so a driver that sends
 `enabled:false` for a control the user can tap will find every tap on it
 refused.
 Sending `false` explicitly is believed, and it is the only field a driver can

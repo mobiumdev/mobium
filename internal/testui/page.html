@@ -159,7 +159,7 @@ function drawDetail() {
     box.append(head);
     if (done && done.failure) box.append(el("div", {class: "err", text: "step " + done.failure.step + ": " + done.failure.message}));
     if (done && done.trace_file) box.append(el("div", {}, el("a", {href: artifact(done.trace_file), text: "trace.zip"}),
-      document.createTextNode(" — open it at trace.playwright.dev or player.vibium.dev")));
+      document.createTextNode(" — open it at player.vibium.dev")));
     box.append(frames(live ? live.steps : done.trace));
   }
   if (!any) box.append(el("div", {class: "muted", text: "Not run yet. ▶ runs it on every project."}));

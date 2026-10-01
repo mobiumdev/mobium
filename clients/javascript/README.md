@@ -20,8 +20,8 @@ try {
 }
 ```
 
-`start()` opens a session on the device and launches the app fresh, as
-Appium's new session does; `quit()` ends it. `platform: 'ios'` drives an iOS
+`start()` opens a session on the device and launches the app fresh;
+`quit()` ends it. `platform: 'ios'` drives an iOS
 simulator or iPhone the same way.
 
 ## Requirements

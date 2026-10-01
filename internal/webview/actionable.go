@@ -11,8 +11,8 @@ import (
 // Actionability is what a page says about one element just before a touch:
 // whether it can be touched, and if so where.
 //
-// The checks are Vibium's, from clicker/internal/api/actionability.go, which
-// are Playwright's matrix for a click: visible, enabled and receives events,
+// The checks are Vibium's, from clicker/internal/api/actionability.go: for a
+// click, visible, enabled and receives events,
 // with stability compared across two calls by the caller. Two things are
 // Mobium's. The element is scrolled into view first — measured on MobiumApp's
 // Actionability page, a target below the fold was tapped at y=6221 on a

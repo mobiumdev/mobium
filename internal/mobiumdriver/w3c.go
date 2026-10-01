@@ -29,7 +29,7 @@ type w3cClient struct {
 
 	// reopen re-establishes a session that the server no longer knows about.
 	// Both servers hold exactly one session per device, so anything else that
-	// attaches — a second mobium process, or Appium — silently invalidates
+	// attaches — a second mobium process, or another tool — silently invalidates
 	// ours. Recovering beats failing every later command.
 	reopen func(context.Context) error
 }
@@ -440,8 +440,8 @@ func (c *w3cClient) wdaDoubleTap(ctx context.Context, x, y int) error {
 // There is deliberately no counterpart. `get_clipboard` exists on the same
 // server and returns an empty string on Android 10 and later whatever the
 // clipboard holds: reading it requires the *requesting* app to have focus, and
-// the UiAutomator2 server has no activity of its own. Appium works around that
-// with a separate helper app; mobium installs no such thing, so the honest
+// the UiAutomator2 server has no activity of its own. Working around that takes
+// a separate helper app; mobium installs no such thing, so the honest
 // answer is to refuse rather than to report an empty clipboard that may be
 // full. Measured on Android 15 — see CHALLENGES 60.
 func (c *w3cClient) setClipboard(ctx context.Context, text string) error {

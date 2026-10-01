@@ -573,11 +573,11 @@ func TestATraceIsEveryStepAndRetainOnFailureKeepsFailures(t *testing.T) {
 	}
 }
 
-// A traced test is a Playwright trace too: app_trace starts before the app
+// A traced test is a recording too: app_trace starts before the app
 // is launched and stops after the last step, into the attempt's trace
 // directory, and the runner's own screenshots and maps are sent untraced so
 // the zip holds the test. retain-on-failure keeps a failed test's zip only.
-func TestATracedTestIsAPlaywrightTrace(t *testing.T) {
+func TestATracedTestIsARecording(t *testing.T) {
 	dir := t.TempDir()
 	p := write(t, dir, "login.test.json", loginFile)
 	for _, mode := range []string{TraceOn, TraceRetainOnFailure} {

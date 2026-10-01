@@ -25,8 +25,7 @@ func button(t *testing.T, enabled bool) *uitree.Tree {
 	return tree
 }
 
-// An action waits for its target to be enabled, as Playwright's and Vibium's
-// do, and taps once it is: MobiumApp's Log In is disabled while it signs in.
+// An action waits for its target to be enabled, as Vibium's do, and taps once it is: MobiumApp's Log In is disabled while it signs in.
 func TestATapWaitsForItsTargetToBeEnabled(t *testing.T) {
 	h, s, f := withFake(t, button(t, false), button(t, false), button(t, true))
 	h.implicitWait = 2 * time.Second

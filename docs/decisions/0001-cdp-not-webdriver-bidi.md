@@ -75,8 +75,7 @@ error entered.
 This would have preserved the original design exactly. Rejected: it puts a
 chromedriver binary on the user's machine, matched to the WebView's Chromium
 version. That breaks the single-binary, zero-runtime-dependency property, which
-is the first of Mobium's three design commitments and the main reason to build
-it instead of using Appium.
+is the first of Mobium's three design commitments.
 
 **B. Implement a BiDi mapper inside Mobium.** Rejected on cost. Chromedriver's
 mapper is a substantial piece of software, and Mobium needs roughly two calls'
@@ -109,16 +108,12 @@ be wrong wherever the WebView does not fill the screen, which is most hybrid
 apps. (The viewport choice has its own trap; see
 [CHALLENGES.md](../CHALLENGES.md#6-the-visual-viewport).)
 
-## Corroboration, from the side that pays for it
+## The cost avoided
 
-Appium's own newsletter documents the cost this decision avoided, in more
-detail than the decision itself did: chromedriver's version must match the
-device's Chrome, Appium bundles one version, and a device whose Chrome has
-fallen behind fails with `Chrome version must be >= 76`. Four mitigations
-exist, including a capability to download chromedrivers at run time
-(`chromedriver_autodownload`).
-
-That is the option-A cost, described by the people living with it.
+Chromedriver's version must match the device's Chrome: a tool that bundles
+one version fails on a device whose Chrome has fallen behind, with `Chrome
+version must be >= 76`, and the remedies are to download a matching
+chromedriver at run time or keep several. That is option A's cost.
 
 ## Consequences
 

@@ -26,7 +26,7 @@ func TestParseBackend(t *testing.T) {
 		// of a possible third-party driver, and whether one exists is decided
 		// when a session opens, where PATH can be named in the failure. See
 		// docs/decisions/0003.
-		{"appium", "appium", false},
+		{"tizen", "tizen", false},
 		{"roku", "roku", false},
 		// A near miss on a built-in name is still an error, because it is a
 		// typo rather than a driver nobody has installed.

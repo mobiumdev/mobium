@@ -248,8 +248,8 @@ func (h *Handlers) resolveSession(ctx context.Context, args map[string]interface
 		}
 		backend = parsed
 	} else if open := h.openSessionFor(serial); open != nil && backend == DefaultBackend {
-		// No driver named: the session already open is the context, as it is
-		// in Appium. Without this, a session started with platform "ios" was
+		// No driver named: the session already open is the context. Without
+		// this, a session started with platform "ios" was
 		// followed by a call with no driver, which took Android's default
 		// and failed asking for "wda" — from every client, since platform is
 		// sent only with start.

@@ -1,9 +1,8 @@
 # 0006 — A test runner: `mobium test`, over JSON test files
 
 **2026-09-28. Iteration 1 built the same day** — see "What iteration 1
-showed", at the end. Mobium gets a test runner in
-the shape of Playwright's — `mobium test`, projects, workers, retries,
-reporters, a report to open — whose tests are **JSON files of the steps
+showed", at the end. Mobium gets a test runner —
+`mobium test`, projects, workers, retries, reporters, a report to open — whose tests are **JSON files of the steps
 `app_batch` already runs**, executed by the Go binary itself.
 
 ## Why now
@@ -12,12 +11,10 @@ Every tool a test needs exists: actions that wait and refuse, `app_wait_for`
 for every state an assertion checks (visible, hidden, text, value, enabled,
 checked, focused), `app_batch` to run checked sequences, sessions that put the
 device back, and four kinds of device verified. What does not exist is the
-thing a CI job runs and publishes. The competitor notes say it plainly:
-"Mobium produces no artifact a CI job can publish. This is the difference
-between a tool and a testing framework, and most buyers want the framework"
-(`landscape/mobilewright.md`, gap 2). Until now the tests of Mobium itself
-have been the shell scripts in `docs/checks/`, which is the same gap from the
-inside.
+thing a CI job runs and publishes: an artifact a CI job can publish is the
+difference between a tool and a testing framework. Until now the tests of
+Mobium itself have been the shell scripts in `docs/checks/`, which is the
+same gap from the inside.
 
 ## What was decided
 
@@ -47,8 +44,8 @@ are programs that call Mobium, as they are today.
 "Assertions" below). Mutatis
 mutandis: no second vocabulary. A step is `{"name": "app_tap", "arguments":
 {...}}`; an expectation is an `app_wait_for` step, which already retries until
-its timeout and fails saying what the screen showed — Playwright's
-auto-retrying `expect`. A dedicated `expect` shorthand is a later nicety, not
+its timeout and fails saying what the screen showed — an auto-retrying
+assertion. A dedicated `expect` shorthand is a later nicety, not
 a new mechanism.
 
 **The runner is a client of the tools, not a tool.** It lives in
@@ -64,23 +61,23 @@ is the clients' kind of code. If agents need to run a test file over MCP, an
 Three layers, each the existing mechanism with what it lacks added, never a
 parallel one.
 
-**On screen: `app_wait_for`.** Playwright's `expect(locator)` is a check that
+**On screen: `app_wait_for`.** An assertion on the screen is a check that
 retries until its timeout, and a failure that says what it found. That is
 what `app_wait_for` already is — "timed out after 10s waiting for
-testid=username to hold \"mo\" — its value is \"mob\"". Against
-Playwright's matchers:
+testid=username to hold \"mo\" — its value is \"mob\"". What a test needs
+to assert, against what it had:
 
-| Playwright | `app_wait_for` | Gap |
+| A test asserts | `app_wait_for` | Gap |
 | --- | --- | --- |
-| `toBeVisible`, `toBeHidden` | `visible`, `hidden` | — |
-| `toBeEnabled`, `toBeDisabled` | `enabled`, `disabled` | — |
-| `toBeChecked`, `not.toBeChecked` | `checked`, `unchecked` | — |
-| `toBeFocused` | `focused` | its negation |
-| `toHaveValue` | `value`, exact; a password field is refused | its negation |
-| `toContainText` | `text`, a substring | its negation |
-| `toHaveText`, exact or a pattern | — | missing |
-| `toHaveCount` | — | missing |
-| `.not` in general | only where a pair exists | missing |
+| shown, hidden | `visible`, `hidden` | — |
+| enabled, disabled | `enabled`, `disabled` | — |
+| checked, unchecked | `checked`, `unchecked` | — |
+| focused | `focused` | its negation |
+| a field's value | `value`, exact; a password field is refused | its negation |
+| text containing | `text`, a substring | its negation |
+| text, exactly | — | missing |
+| how many match | — | missing |
+| the opposite of any of these | only where a pair exists | missing |
 
 Iteration 1 adds three arguments to `app_wait_for` — `exact` for `text`, a
 `count` condition, and `not`, which inverts any condition — so the CLI, MCP
@@ -172,33 +169,33 @@ directory:
 }
 ```
 
-A project is a device — Playwright's browsers, mapped onto what Mobium drives.
+A project is a device.
 A device serial in a checked-in file is fine for an emulator and a simulator;
 a real phone's identifier is personal and belongs in a local override or the
 command line, never the repository (the UDID scrub of 2026-09-23 is why).
 
-## The commands, against Playwright's
+## The commands
 
-| Playwright | `mobium` | Iteration |
+| `mobium` | What it does | Iteration |
 | --- | --- | --- |
-| `test` | `mobium test` — every `*.test.json` under `testDir` | 1 |
-| `test <file>` | `mobium test tests/login.test.json` | 1 |
-| `test -g "login"` | `mobium test -g login` — tests whose name matches | 1 |
-| `test --last-failed` | `mobium test --last-failed`, from `.mobium-test/last-run.json` | 1 |
-| `test --project=chromium` | `mobium test --project=android` | 1 |
-| `test --workers=4` | `--workers`: one per device, projects in parallel; a device holds one session, so never two workers on one | 1 |
-| `test --retries=2` | `--retries=2`, and a pass after a retry is reported **flaky**, not passed | 1 |
-| `test --timeout=30000` | `--timeout=30000`, per test | 1 |
-| `test --reporter=html` | `--reporter=list` (default), `json`, `junit`, `html` | 1 |
-| `show-report` | `mobium show-report` — opens the last HTML report | 1 |
+| `mobium test` | every `*.test.json` under `testDir` | 1 |
+| `mobium test tests/login.test.json` | one file | 1 |
+| `mobium test -g login` | tests whose name matches | 1 |
+| `mobium test --last-failed` | what failed last time, from `.mobium-test/last-run.json` | 1 |
+| `--project=android` | one project | 1 |
+| `--workers` | one per device, projects in parallel; a device holds one session, so never two workers on one | 1 |
+| `--retries=2` | a pass after a retry is reported **flaky**, not passed | 1 |
+| `--timeout=30000` | per test | 1 |
+| `--reporter` | `list` (default), `json`, `junit`, `html` | 1 |
+| `mobium show-report` | opens the last HTML report | 1 |
 | `--version`, `test --help` | exist already | — |
-| `test --headed` | a simulator is headless until `open -a Simulator`; an emulator decides at launch | later |
-| `test --debug` | `--debug`: stop before each step, show it and the map; Enter steps, `c` continues, `q` quits | 2 |
-| `test --ui` | an interactive mode | later |
-| `test --trace on` | `--trace on` or `retain-on-failure`: each step's screenshot and map, a filmstrip in the HTML report | 2 |
-| `show-trace <file>` | the trace is in the HTML report, so `show-report` opens it | 2 |
-| `codegen <url>` | record the tool calls a person or agent makes as a test file — the daemon already sees every call | later |
-| `install`, `install --with-deps` | `mobium doctor` checks; the device-side agents install themselves, pinned and checksummed | mostly exists |
+| a window | a simulator is headless until `open -a Simulator`; an emulator decides at launch | later |
+| `--debug` | stop before each step, show it and the map; Enter steps, `c` continues, `q` quits | 2 |
+| `--ui` | an interactive mode | later |
+| `--trace on`, `retain-on-failure` | each step's screenshot and map, a filmstrip in the HTML report | 2 |
+| a trace viewer | the trace is in the HTML report, so `show-report` opens it | 2 |
+| recording a test | the tool calls a person or agent makes, kept as a test file — the daemon already sees every call | later |
+| setting up | `mobium doctor` checks; the device-side agents install themselves, pinned and checksummed | mostly exists |
 
 What a failure leaves: the step that failed, its error code and message, and
 a screenshot and a `map` taken at the moment of failure, in the report. `map`
@@ -314,13 +311,13 @@ on the Pixel 7 AVD and the iPhone 17 Pro simulator:
   that failed leaves nothing after it worth checking. The control,
   `tests/controls/soft.test.json`, fails with both of its soft failures and
   reaches its last step, which is how it shows the test carried on.
-- **A trace per test**, Playwright's names: `--trace on` or
+- **A trace per test**: `--trace on` or
   `retain-on-failure`, or `trace` in the config. Steps run one at a time
   rather than as a batch, and after each the runner keeps a screenshot and
   the map; the HTML report shows them as a filmstrip. A traced run is slower
   by a screenshot and a map a step, which is why it is off by default.
   `--no-screenshots` keeps the maps and no picture, for a phone. Since
-  2026-10-01 each kept attempt is also a Playwright trace, `trace.zip` in
+  2026-10-01 each kept attempt is also a recording in Vibium's record format, `trace.zip` in
   its trace directory, as `mobium trace` writes one, linked from the report
   and named in `trace_file`: the runner starts a session trace before the
   app is launched and stops it after the last step, and sends its own
@@ -338,8 +335,8 @@ person does (`codegen`), and test parameters.
 
 ## Parameters
 
-Added 2026-10-01: Playwright's parameterized test, a test in a loop over
-its data, as a key on the test. `"each"` is a list of cases, objects, and
+Added 2026-10-01: a parameterized test, a test in a loop over its data, as
+a key on the test. `"each"` is a list of cases, objects, and
 the test runs once per case as a test of its own:
 
 ```json

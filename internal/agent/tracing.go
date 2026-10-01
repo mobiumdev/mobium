@@ -19,8 +19,8 @@ import (
 	"github.com/mobiumdev/mobium/internal/uitree"
 )
 
-// app_trace: a session recorded as Vibium records one, into a zip that
-// trace.playwright.dev and player.vibium.dev open. See internal/trace for
+// app_trace: a session recorded as Vibium records one, into a zip in
+// Vibium's record format, which player.vibium.dev opens. See internal/trace for
 // the format. The recording itself happens in Call, which every front door
 // goes through: while a device has a trace running, each call on it is a
 // before/after pair, and after it the screen is kept with its map.
@@ -127,8 +127,7 @@ func (h *Handlers) traceTool(ctx context.Context, args map[string]interface{}) (
 // TraceSavedMessage is app_trace stop's answer once the zip is saved, the
 // same whether the daemon saved it or a remote caller did.
 func TraceSavedMessage(path string, v TraceView) string {
-	return fmt.Sprintf("saved a trace of %d calls to %s (%d bytes) — open it at https://trace.playwright.dev "+
-		"or https://player.vibium.dev", v.Calls, path, v.Bytes)
+	return fmt.Sprintf("saved a trace of %d calls to %s (%d bytes) — open it at https://player.vibium.dev", v.Calls, path, v.Bytes)
 }
 
 func platformOf(s *session) string {
@@ -172,13 +171,13 @@ func traceBefore(t *sessionTrace, name string, args map[string]interface{}) stri
 		if text, ok := params["text"].(string); ok {
 			n := len([]rune(text))
 			params["text"] = fmt.Sprintf("(%d characters, not recorded)", n)
-			// Playwright's name for typed text, which player.vibium.dev
+			// The record format's name for typed text, which player.vibium.dev
 			// shows as "Type "…" into <selector>": a dot a character,
 			// so it reads as masked and says how much was typed.
 			params["value"] = strings.Repeat("•", min(n, 20))
 		}
 	}
-	// Playwright's name for the element acted on, which player.vibium.dev
+	// The record format's name for the element acted on, which player.vibium.dev
 	// reads — without it a fill showed as `Type "" into field`.
 	if target, ok := args["target"].(string); ok && target != "" {
 		params["selector"] = target

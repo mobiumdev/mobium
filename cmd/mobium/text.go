@@ -24,7 +24,7 @@ func newSourceCmd() *cobra.Command {
 	return &cobra.Command{
 		Use:   "source",
 		Short: "Print the raw hierarchy, as the device-side server sent it",
-		Long: "What Appium calls the page source: the platform's own XML on a native screen,\n" +
+		Long: "The page source: the platform's own XML on a native screen,\n" +
 			"the page's current markup in a WebView context. `map` is what to act on; this is\n" +
 			"for when map leaves out the thing you need to see.\n\n" +
 			"Password fields have their contents hidden, keeping the length. Geometry is in\n" +

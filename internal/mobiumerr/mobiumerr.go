@@ -9,7 +9,7 @@
 // matching message text. See docs/decisions/0005-errors.md.
 //
 // The codes are modeled on W3C WebDriver's — lowercase, underscore-separated,
-// stable — because that is the vocabulary Selenium and Appium users already
+// stable — because that is the vocabulary WebDriver users already
 // catch, and the one WebDriverAgent and UiAutomator2 answer in. Where a W3C
 // code names the same thing, the Mobium code has the same spelling
 // (no_such_element, no_such_alert, timeout). `not_confirmed` has no W3C

@@ -87,7 +87,7 @@ export interface Session {
   app: string
 }
 
-/** One of a page's cookies, with Playwright's and Vibium's keys. */
+/** One of a page's cookies, with Vibium's keys. */
 export interface Cookie {
   name: string
   value: string
@@ -102,7 +102,7 @@ export interface Cookie {
   sameSite?: 'Strict' | 'Lax' | 'None'
 }
 
-/** A page's cookies and web storage, in the shape Playwright and Vibium save. */
+/** A page's cookies and web storage, in the shape Vibium saves. */
 export interface StorageState {
   cookies: Cookie[]
   origins: {
@@ -208,7 +208,7 @@ export interface WaitOptions {
 // -- connecting ------------------------------------------------------------
 
 /**
- * Connect and open the session on the device, as Appium's new session does.
+ * Connect and open the session on the device.
  * End it with `quit()`.
  */
 export function start(options?: StartOptions): Promise<Device>
@@ -349,7 +349,7 @@ export class Device {
   crashes(options?: { app?: string; limit?: number }): Promise<Data[]>
   crash(id: string): Promise<Data>
   record(options?: { action?: 'start' | 'stop'; path?: string }): Promise<Data>
-  /** Start, stop or ask about a trace; stop with a path saves a Playwright trace zip. */
+  /** Start, stop or ask about a trace; stop with a path saves a zip in Vibium's record format. */
   traceStart(options?: { name?: string; screenshots?: boolean; maps?: boolean }): Promise<Trace>
   traceStop(path: string): Promise<Trace>
   trace(): Promise<Trace>
@@ -377,8 +377,7 @@ export class Device {
   /** The sessions open on the daemon. */
   sessions(): Promise<{ device: string; platform: string; driver: string }[]>
   /**
-   * End the session on the device, as Appium's quit does, and close the
-   * connection. The app start() launched, if any, is stopped too.
+   * End the session on the device and close the connection. The app start() launched, if any, is stopped too.
    */
   quit(): Promise<void>
   /** Close the connection; the session stays open. Resolves once mobium has exited. */

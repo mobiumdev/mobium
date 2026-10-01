@@ -35,7 +35,7 @@
     <PackageProjectUrl>https://github.com/mobiumdev/mobium</PackageProjectUrl>
     <RepositoryUrl>https://github.com/mobiumdev/mobium</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
-    <PackageTags>mobile;automation;testing;android;ios;appium;uiautomator2;webdriveragent;mcp</PackageTags>
+    <PackageTags>mobile;automation;testing;android;ios;uiautomator2;webdriveragent;mcp</PackageTags>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageIcon>icon.png</PackageIcon>
 

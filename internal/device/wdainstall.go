@@ -12,10 +12,10 @@ import (
 	"strings"
 )
 
-// WebDriverAgent is Appium's, under Apache-2.0. Appium publishes a prebuilt
-// runner for arm64 simulators, so mobium downloads that rather than requiring
-// an xcodebuild of WDA from source — the step that makes an Appium iOS setup
-// slow and version-fragile.
+// WebDriverAgent is under Apache-2.0. Its project publishes a prebuilt runner
+// for arm64 simulators, so mobium downloads that rather than requiring an
+// xcodebuild of WDA from source — the step that makes an iOS setup slow and
+// version-fragile.
 //
 // Pinned, not tracked, for the same reason as the UiAutomator2 server: a
 // device-side agent that changes underneath you is the drift this tool exists

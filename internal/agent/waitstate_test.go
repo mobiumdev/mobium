@@ -177,7 +177,7 @@ func TestWaitNotInvertsTheCondition(t *testing.T) {
 	}
 }
 
-// exact is Playwright's toHaveText where text is its toContainText.
+// exact matches the whole text, where text matches a part of it.
 func TestWaitExactText(t *testing.T) {
 	h, sess, _ := withFake(t, screen(t, "Sent!"))
 	_, err := wait(h, sess, map[string]interface{}{"target": "testid=b", "condition": "text", "text": "Sent",
@@ -194,7 +194,7 @@ func TestWaitExactText(t *testing.T) {
 	}
 }
 
-// count is Playwright's toHaveCount: a list growing to three rows, and a
+// count waits for a number of matches: a list growing to three rows, and a
 // list that never does, which must say how many it saw.
 func TestWaitCount(t *testing.T) {
 	rows := func(n int) *uitree.Tree {

@@ -84,7 +84,7 @@ func TestEndingWithTwoOpenAndNoDeviceIsRefused(t *testing.T) {
 }
 
 func TestEndingASessionThatIsNotOpenSucceeds(t *testing.T) {
-	// Idempotent, as Appium's quit on a session already gone.
+	// Idempotent: a session already gone is a session ended.
 	h := NewHandlers()
 	v, err := sessionCall(t, h, map[string]interface{}{"action": "end", "device": "emulator-5554"})
 	if err != nil {
@@ -173,7 +173,7 @@ func TestACallNamingNoDriverUsesTheSessionOpen(t *testing.T) {
 	// A session started with platform "ios" is followed by calls that name
 	// no driver — from every client, since platform goes only with start.
 	// Before this, those calls took Android's default and failed asking for
-	// "wda". The session open is the context, as in Appium.
+	// "wda". The session open is the context.
 	h := NewHandlers()
 	ios := &session{dev: &device.Device{Serial: "457C7DC2-C706-45D9-8D68-1D26953E28B1"}, driver: &fakeDriver{}, backend: BackendWDA}
 	h.sessions[ios.dev.Serial] = ios

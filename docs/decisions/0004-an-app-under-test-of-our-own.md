@@ -23,14 +23,15 @@ unless the app sets `isInspectable`.** An app that does not opt in publishes
 no target, so mobium cannot attach to it whatever mobium does — and the opt-in
 is a property of the app, not of the device or the debugger.
 
-Measured, not read: Appium's TheApp v1.12.0 is a React Native hybrid app whose
+Measured, not read: TheApp v1.12.0, a third-party demo app, is a React Native
+hybrid app whose
 prebuilt simulator bundle installs and runs fine on iOS 26.5. mobium drives its
 native side — launch, map, tap, type, navigation. Its WebView is unreachable.
 Writing the developer-extras default into the app's own domain, in both
 spellings, changes nothing:
 
 ```sh
-xcrun simctl spawn <udid> defaults write com.appiumpro.the_app \
+xcrun simctl spawn <udid> defaults write <its bundle id> \
     WebKitDeveloperExtrasEnabledPreferenceKey -bool true
 ```
 
@@ -150,12 +151,13 @@ platform's and not one app's:
   verified — so nothing is broken, but a hand-written `label=` or `testid=`
   locator is unreliable against any RN app. Use a ref from `map`.
 - **An empty text input is labeled with its placeholder**, so `map` prints
-  `https://appiumpro.com (input)` for a field containing nothing. It reads
+  the placeholder, a URL, followed by `(input)` for a field containing
+  nothing. It reads
   exactly like a value and cost two wrong turns here.
 
 ## A correction
 
-ROADMAP recorded that Appium's TheApp "still cannot be installed on this
+ROADMAP recorded that TheApp "still cannot be installed on this
 machine — `TheApp-v1.10.0.apk` ships `armeabi-v7a` and `x86` against an
 `arm64-v8a` emulator." **v1.12.0 ships `arm64-v8a` and `x86_64`.** That
 blocker was true of v1.10.0 and is stale.
@@ -164,7 +166,7 @@ TheApp was used here only as a reference for what an app under test should
 contain, and nothing was taken from it: it carries **no license at all** — no
 `LICENSE` file, no `license` field, `"license": null` from GitHub's API — so
 there is nothing to take. The screens here are chosen against this project's
-defect log rather than against Appium's feature list.
+defect log rather than against another tool's feature list.
 
 ## What Android found
 

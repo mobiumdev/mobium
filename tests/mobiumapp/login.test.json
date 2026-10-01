@@ -8,7 +8,7 @@
   ],
   "tests": [
     {"name": "a bad sign-in is refused, and says why: ${why}",
-     "description": "One test per case, Playwright's parameterized test; each names its own message under its own field.",
+     "description": "One test per case; each names its own message under its own field.",
      "each": [
       {"why": "a wrong password", "user": "mobium", "pass": "wrongpass1", "error": "loginError",
        "message": "Incorrect username or password."},

@@ -30,7 +30,7 @@ import (
 // later lift named a pointer nobody was tracking and never arrived. Measured
 // on a Pixel 7 AVD against MobiumApp's Multi-Touch pad and Android's
 // pointer-location overlay, which read "P: 0 / 1" for a press-tap the tool
-// had reported as sent (appium-uiautomator2-server 10.6.6,
+// had reported as sent (UiAutomator2 server 10.6.6,
 // ActionsExecutor.executeMotionEvents; CHALLENGES 84). Pinch never met either, because both
 // its fingers move in every step. On WebDriverAgent a move to the current
 // point is simply a finger that did not move.

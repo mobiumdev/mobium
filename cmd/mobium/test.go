@@ -243,7 +243,7 @@ func newTestCmd() *cobra.Command {
 	f.BoolVar(&noShot, "no-screenshots", false, "Keep no screenshot of a failure — on a real phone it is somebody's screen")
 	f.StringVar(&configPath, "config", "", "The config to use (default: mobium.config.json here or above)")
 	f.StringVar(&outDir, "output", "", "Where reports go (default: mobium-report beside the config)")
-	f.StringVar(&trace, "trace", "off", "Keep a screenshot and the map after every step, and the test as a Playwright trace zip: on, off, or retain-on-failure")
+	f.StringVar(&trace, "trace", "off", "Keep a screenshot and the map after every step, and the test as a recording in Vibium's record format: on, off, or retain-on-failure")
 	f.BoolVar(&debug, "debug", false, "Stop before each step, show it and the screen, and wait: Enter steps, c continues, q quits")
 	f.BoolVar(&ui, "ui", false, "Serve a page on this machine to pick tests, run them and watch each step (docs/decisions/0009)")
 	f.IntVar(&uiPort, "ui-port", 0, "With --ui, the port on 127.0.0.1 (default: any free one)")

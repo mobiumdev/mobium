@@ -115,7 +115,7 @@ emulator-5554                          device     (android emulator, model: sdk_
 
 ## 4. Start, work, quit
 
-Every client does the same three things, as an Appium script does:
+Every client does the same three things:
 
 | | Start a session | Quit it |
 | --- | --- | --- |

@@ -22,8 +22,8 @@ elements, err := dev.Map(ctx)
 // find a row by its label, tap its ref, wait for the next screen ...
 ```
 
-`Start` opens a session on the device and launches the app fresh, as
-Appium's new session does; `Quit` ends it. `WithPlatform("ios")` drives an
+`Start` opens a session on the device and launches the app fresh;
+`Quit` ends it. `WithPlatform("ios")` drives an
 iOS simulator or iPhone the same way.
 
 - [Quick start for Go](https://github.com/mobiumdev/mobium/blob/main/docs/quickstart/go.md)

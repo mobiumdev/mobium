@@ -16,8 +16,8 @@ import (
 	"github.com/mobiumdev/mobium/internal/uitree"
 )
 
-// UiAutomator2 is Appium's device-side server, driven directly over HTTP with
-// no Appium process in between. It replaces `uiautomator dump`, which costs a
+// UiAutomator2 is the device-side server, driven directly over HTTP with no
+// other process in between. It replaces `uiautomator dump`, which costs a
 // couple of seconds per snapshot and cannot type or gesture at all.
 const (
 	// uia2DevicePort is the port the server listens on inside the device.
