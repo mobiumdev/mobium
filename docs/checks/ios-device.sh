@@ -108,11 +108,20 @@ refused() { # refused <what> <phrase> <mobium args...>
 # the check passed on refusals that gave no reason at all.
 refused appearance "switch light and dark (simctl ui)" appearance
 refused permissions "grant or revoke permissions (simctl privacy)" grant com.apple.Preferences location
-refused recording "record its screen" record start
 refused clipboard "real iPhone's clipboard" clipboard
 refused orientation "orientation is not built" orientation
 refused call "cannot be made to ring" call
 refused uninstall "is not installed" uninstall com.example.not.installed
+
+# Recording is not refused: a phone records from WebDriverAgent's screen
+# stream (record.sh has the whole check). Two seconds are about twenty frames.
+vid="$(mktemp -t mobium-rec).mp4"
+$M record start >/dev/null
+sleep 2
+frames=$($M record stop -o "$vid" --json | python3 -c "import json,sys; print(json.load(sys.stdin)['frames'])")
+rm -f "$vid"
+[ "$frames" -ge 5 ] || fail "two seconds of recording held $frames frames"
+echo "    recording      $frames frames in two seconds, from the screen stream        ok"
 
 # WebViews are reachable on a phone — through usbmuxd and lockdown, not the
 # simulator's socket — so contexts answers rather than refusing. Settings has

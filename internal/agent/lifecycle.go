@@ -192,7 +192,11 @@ func (h *Handlers) launchAppOn(ctx context.Context, s *session, args map[string]
 	// session pointing at a page that is no longer on screen.
 	s.closeWeb()
 
-	wasApp, wasScreen := h.screenNow(ctx, s)
+	// No read of the screen before launching: the wait below is for the app
+	// named, so what was in front is never compared. It was read anyway, and
+	// what is in front before a launch is usually the home screen, whose
+	// hierarchy took 4.5s to read on an iPhone 15 Plus — most of a launch
+	// that took 5.2s against 2.5s from Settings.
 
 	if err := ctrl.Launch(ctx, id); err != nil {
 		return nil, err
@@ -203,7 +207,7 @@ func (h *Handlers) launchAppOn(ctx context.Context, s *session, args map[string]
 	// Wait for it to actually be in front. Without this, launching an app
 	// over a running one and immediately asking what is in the foreground
 	// answered with the app being replaced.
-	app := h.awaitForeground(ctx, s, id, wasApp, wasScreen)
+	app := h.awaitForeground(ctx, s, id, "", "")
 	if app != id {
 		if err := h.lockedInstead(ctx, s, "launched "+id); err != nil {
 			return nil, err
