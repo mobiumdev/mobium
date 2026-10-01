@@ -401,7 +401,7 @@ arguments and the two global flags.
 | `swipe` | app_swipe | --duration | direction, duration_ms, target, x1, x2, y1, y2 |
 | `tap` | app_tap, app_tap | --fingers | fingers, target, x, y |
 | `terminate` | app_terminate | — | app |
-| `test` | — | --config --debug --grep --last-failed --list --no-screenshots --output --project --reporter --retries --timeout --trace --workers | list |
+| `test` | — | --config --debug --grep --last-failed --list --no-screenshots --open --output --project --reporter --retries --timeout --trace --ui --ui-port --workers | list |
 | `text` | app_text | — | target |
 | `time` | app_time | — | — |
 | `timezone` | app_timezone | — | timezone |

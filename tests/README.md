@@ -9,6 +9,7 @@ cd tests
 mobium test --project android                       # emulator-5554
 MOBIUM_IOS_DEVICE=<simulator-udid> mobium test      # and an iOS simulator
 mobium test --reporter list,junit,html && mobium show-report
+mobium test --ui --open                             # pick, run and watch on a page
 ```
 
 - `mobiumapp/` is the suite: the Login and Form Demos — the Form in the

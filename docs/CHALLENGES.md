@@ -7,7 +7,7 @@ the source.
 
 The pattern across them is the reason the document exists: **almost nothing
 here was found by reading code or by a test written from imagination.** Of
-198 defects, 162 were found only by running against a real device. The other
+199 defects, 163 were found only by running against a real device. The other
 thirty-six — 4, 5, 6, 14, 23, 24, 32, 35, 36, 39, 44, 50, 53, 54, 57, 66, 89,
 99, 100, 121, 123, 129, 130, 133, 134, 139, 140, 141, 142, 144, 150, 158, 162,
 164, 165 and 172 — came from reading code, the compiler, a test, a linter,
@@ -4393,6 +4393,28 @@ held below the screen, and judges the step after that; four runs in a row
 passed, each with its reboot. A real iPhone does not do it: on the iPhone
 15 Plus three runs in a row passed with the keyboard up each time, so the
 reboot is a simulator's only, as the state is.
+
+### 199. An interrupted test run left its daemons running
+
+**Found by:** `docs/checks/test-ui.sh`, which failed on its first draft
+partway through a run on an emulator and a simulator; its cleanup killed
+`mobium test --ui`, and two daemons, `mobium-<run>-1` and `-2`, were still
+running afterwards with their sockets left. A run gives each project a
+`mobium pipe` and a daemon of its own and stops them when it ends — in a
+deferred cleanup, which a killed process never reaches. They would have
+stopped themselves after their thirty-minute idle timeout, holding their
+devices' sessions until then. Failing runs that never reached a device did
+not show it; only a run that was driving devices when it was stopped did.
+
+Plain `mobium test` had the same gap on Ctrl-C, and the first fix half
+closed it: closing the connections made the run's remaining calls fail at
+once, so the command printed its summary and exited before the daemons it
+was stopping had stopped, and one was left. Now both commands remember every
+project connection a run opens, and on an interrupt or SIGTERM close each one
+still open — ending its session and stopping its daemon — while the run's
+own path waits for that and does not exit first. Killed mid-run with SIGTERM,
+`--ui` left no daemon; interrupted mid-run three times, `mobium test` left
+none.
 
 ## Findings that were not defects
 

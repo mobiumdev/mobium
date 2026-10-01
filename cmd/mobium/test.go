@@ -5,13 +5,19 @@ import (
 	"crypto/rand"
 	"fmt"
 	"io"
+	"net/http"
 	"os"
 	"os/exec"
+	"os/signal"
 	"path/filepath"
 	"regexp"
 	"runtime"
 	"slices"
+	"strconv"
 	"strings"
+	"sync"
+	"sync/atomic"
+	"syscall"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -19,6 +25,7 @@ import (
 	"github.com/mobiumdev/mobium/internal/agent"
 	"github.com/mobiumdev/mobium/internal/mobiumerr"
 	"github.com/mobiumdev/mobium/internal/testrun"
+	"github.com/mobiumdev/mobium/internal/testui"
 )
 
 // defaultOutputDir is where a run's reports go, beside the config.
@@ -33,6 +40,8 @@ func newTestCmd() *cobra.Command {
 		workers, retries         int
 		timeout                  time.Duration
 		lastFailed, list, noShot bool
+		ui, uiOpen               bool
+		uiPort                   int
 	)
 	cmd := &cobra.Command{
 		Use:   "test [file or directory...]",
@@ -51,7 +60,8 @@ func newTestCmd() *cobra.Command {
   mobium test --reporter list,junit,html && mobium show-report
   mobium test --last-failed
   mobium test --trace retain-on-failure --reporter list,html
-  mobium test --debug -g "wrong password" --project android`,
+  mobium test --debug -g "wrong password" --project android
+  mobium test --ui --open                  # pick, run and watch tests on a page`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			wd, err := os.Getwd()
 			if err != nil {
@@ -97,6 +107,9 @@ func newTestCmd() *cobra.Command {
 			case "", testrun.TraceOff, testrun.TraceOn, testrun.TraceRetainOnFailure:
 			default:
 				return mobiumerr.New(mobiumerr.InvalidArgument, "--trace %q: on, off or retain-on-failure", opts.Trace)
+			}
+			if debug && ui {
+				return mobiumerr.New(mobiumerr.InvalidArgument, "--debug waits at a terminal and --ui on a page; give one")
 			}
 			if debug {
 				opts.Debug = debugger(os.Stdin, os.Stderr)
@@ -160,13 +173,39 @@ func newTestCmd() *cobra.Command {
 					}
 				}, nil
 			}
-			sum, err := testrun.Run(cfg, opts, func(tool string, args map[string]interface{}, meta ...map[string]interface{}) (*agent.ToolsCallResult, error) {
+			// Interrupted, every project's connection still open is closed
+			// before exiting: its session ended and its daemon stopped. A
+			// killed run runs no deferred cleanup, and an interrupted
+			// --ui left a run's daemons alive until their idle timeout.
+			var closeOpen func()
+			opts.Connect, closeOpen = closedOnExit(opts.Connect)
+			interrupted := make(chan os.Signal, 1)
+			signal.Notify(interrupted, os.Interrupt, syscall.SIGTERM)
+			var stopping atomic.Bool
+			go func() {
+				<-interrupted
+				stopping.Store(true)
+				fmt.Fprintln(os.Stderr, "\nstopping: ending each project's session")
+				closeOpen()
+				os.Exit(130)
+			}()
+			call := func(tool string, args map[string]interface{}, meta ...map[string]interface{}) (*agent.ToolsCallResult, error) {
 				var m map[string]interface{}
 				if len(meta) > 0 {
 					m = meta[0]
 				}
 				return daemonCallMeta(tool, args, m)
-			})
+			}
+			if ui {
+				return serveTestUI(cfg, args, opts, call, uiPort, uiOpen)
+			}
+			sum, err := testrun.Run(cfg, opts, call)
+			// Closing the connections ends the run early, and it must not
+			// then exit before the daemons it is stopping have stopped: the
+			// handler exits, when it is done.
+			if stopping.Load() {
+				select {}
+			}
 			if err != nil {
 				return err
 			}
@@ -206,6 +245,9 @@ func newTestCmd() *cobra.Command {
 	f.StringVar(&outDir, "output", "", "Where reports go (default: mobium-report beside the config)")
 	f.StringVar(&trace, "trace", "off", "Keep a screenshot and the map after every step, and the test as a Playwright trace zip: on, off, or retain-on-failure")
 	f.BoolVar(&debug, "debug", false, "Stop before each step, show it and the screen, and wait: Enter steps, c continues, q quits")
+	f.BoolVar(&ui, "ui", false, "Serve a page on this machine to pick tests, run them and watch each step (docs/decisions/0009)")
+	f.IntVar(&uiPort, "ui-port", 0, "With --ui, the port on 127.0.0.1 (default: any free one)")
+	f.BoolVar(&uiOpen, "open", false, "With --ui, open the page in the browser")
 	return cmd
 }
 
@@ -323,4 +365,99 @@ func newRunID() string {
 	b := make([]byte, 3)
 	_, _ = rand.Read(b)
 	return fmt.Sprintf("t%x", b)
+}
+
+// serveTestUI is --ui: a page that runs the run this command would, any
+// part of it at a time (docs/decisions/0009).
+func serveTestUI(cfg *testrun.Config, args []string, opts testrun.Options, call testrun.Caller, port int, open bool) error {
+	var projects []string
+	for _, p := range cfg.Projects {
+		if len(opts.Projects) == 0 || slices.Contains(opts.Projects, p.Name) {
+			projects = append(projects, p.Name)
+		}
+	}
+	if len(cfg.Projects) == 0 {
+		projects = []string{"default"}
+	}
+	srv, err := testui.New(testui.Setup{
+		Discover: func() ([]string, error) { return testrun.Discover(cfg, args) },
+		Projects: projects,
+		Base:     opts,
+		Run:      func(o testrun.Options) (*testrun.Summary, error) { return testrun.Run(cfg, o, call) },
+		Report: func(dir string, s *testrun.Summary) error {
+			for _, write := range []func(string, *testrun.Summary) (string, error){testrun.WriteJSON, testrun.WriteHTML} {
+				if _, err := write(dir, s); err != nil {
+					return err
+				}
+			}
+			return nil
+		},
+	})
+	if err != nil {
+		return err
+	}
+	ln, err := srv.Listen(strconv.Itoa(port))
+	if err != nil {
+		return err
+	}
+	url := srv.URL()
+	fmt.Printf("mobium test --ui on %s — Ctrl-C to stop\n", url)
+	if open {
+		opener := map[string][]string{"darwin": {"open"}, "windows": {"cmd", "/c", "start", ""}}[runtime.GOOS]
+		if opener == nil {
+			opener = []string{"xdg-open"}
+		}
+		_ = exec.Command(opener[0], append(opener[1:], url)...).Start()
+	}
+	// Ctrl-C ends the process through the run's own handler, which closes
+	// whatever a run left open.
+	hs := &http.Server{Handler: srv.Handler(), ReadHeaderTimeout: 10 * time.Second}
+	return hs.Serve(ln)
+}
+
+// closedOnExit wraps connect so every connection it opens is remembered
+// until it is closed, and returns closeOpen, which closes the ones still
+// open — each once, whoever gets there first.
+func closedOnExit(connect func(testrun.Project) (testrun.Caller, func(), error)) (
+	func(testrun.Project) (testrun.Caller, func(), error), func()) {
+	var mu sync.Mutex
+	open := map[int]func(){}
+	next := 0
+	take := func(k int) func() {
+		mu.Lock()
+		defer mu.Unlock()
+		f := open[k]
+		delete(open, k)
+		return f
+	}
+	wrapped := func(p testrun.Project) (testrun.Caller, func(), error) {
+		c, closer, err := connect(p)
+		if err != nil {
+			return nil, nil, err
+		}
+		mu.Lock()
+		next++
+		k := next
+		open[k] = closer
+		mu.Unlock()
+		return c, func() {
+			if f := take(k); f != nil {
+				f()
+			}
+		}, nil
+	}
+	closeOpen := func() {
+		mu.Lock()
+		var keys []int
+		for k := range open {
+			keys = append(keys, k)
+		}
+		mu.Unlock()
+		for _, k := range keys {
+			if f := take(k); f != nil {
+				f()
+			}
+		}
+	}
+	return wrapped, closeOpen
 }
