@@ -132,6 +132,7 @@ command mentions them.
 | `app_launch` | `app` | string | launch |
 | `app_launch` | `device` | string | _global_ --device |
 | `app_launch` | `driver` | string | _global_ --driver |
+| `app_launch` | `hit_test` | boolean | launch |
 | `app_list_apps` | `device` | string | _global_ --device |
 | `app_list_apps` | `driver` | string | _global_ --driver |
 | `app_list_apps` | `system` | boolean | apps |
@@ -362,7 +363,7 @@ arguments and the two global flags.
 | `inspect` | — | --open --port | darwin, windows |
 | `install` | app_install | — | path |
 | `keyboard` | app_keyboard | --hide --key --text | hide, key, text |
-| `launch` | app_launch | — | app |
+| `launch` | app_launch | --hit-test | app, hit_test |
 | `locale` | app_locale | — | app, locale |
 | `location` | app_location | --clear --gpx --lat --lon --speed | clear, gpx, latitude, longitude, speed, waypoints |
 | `lock` | app_lock | — | state |

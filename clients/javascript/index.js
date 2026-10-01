@@ -757,9 +757,16 @@ export class Device {
    *
    * Every ref from the previous screen is discarded — call map(), or just
    * act, since actions re-resolve their target anyway.
+   *
+   * `hitTest`, on an iOS simulator, loads the hit probe into the app as it
+   * launches: every action on an element in it then asks UIKit where the
+   * touch goes first, and is refused when it would land elsewhere. A real
+   * iPhone and Android refuse it.
    */
-  async launch(app) {
-    await this.#text('app_launch', { app })
+  async launch(app, { hitTest = false } = {}) {
+    const args = { app }
+    if (hitTest) args.hit_test = true
+    await this.#text('app_launch', args)
   }
 
   /** Stop a running app. */

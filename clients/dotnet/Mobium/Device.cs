@@ -308,6 +308,15 @@ namespace Mobium
         /// </summary>
         public void Launch(string app) => Act("app_launch", Args("app", app));
 
+        /// <summary>
+        /// Launches an app on an iOS simulator with the hit probe loaded in it:
+        /// every action on an element in it then asks UIKit where the touch
+        /// goes first, and is refused when it would land elsewhere — an
+        /// overlay hidden from accessibility included. A real iPhone and
+        /// Android refuse.
+        /// </summary>
+        public void LaunchWithHitTest(string app) => Act("app_launch", Args("app", app, "hit_test", true));
+
         /// <summary>Stops a running app.</summary>
         public void Terminate(string app) => Act("app_terminate", Args("app", app));
 

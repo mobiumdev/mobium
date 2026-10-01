@@ -261,7 +261,7 @@ export class Device {
   zoom(direction?: 'in' | 'out', target?: string): Promise<Data>
 
   // apps
-  launch(app: string): Promise<void>
+  launch(app: string, options?: { hitTest?: boolean }): Promise<void>
   terminate(app: string): Promise<void>
   install(path: string): Promise<string>
   uninstall(app: string): Promise<void>

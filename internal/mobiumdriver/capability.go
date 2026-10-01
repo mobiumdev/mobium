@@ -393,6 +393,19 @@ func AsHitTester(d Driver) (HitTester, bool) {
 	return t, ok && has(d, CapHitTest)
 }
 
+// AsHitProbeLauncher returns the driver's launch with the hit probe, if any.
+func AsHitProbeLauncher(d Driver) (HitProbeLauncher, bool) {
+	l, ok := d.(HitProbeLauncher)
+	return l, ok && has(d, CapHitTest)
+}
+
+// AsLoadedHitTester returns the driver's hit test from a probe loaded at
+// launch, if any.
+func AsLoadedHitTester(d Driver) (LoadedHitTester, bool) {
+	t, ok := d.(LoadedHitTester)
+	return t, ok && has(d, CapHitTest)
+}
+
 // AsAuditor returns the driver's accessibility audit, if any.
 func AsAuditor(d Driver) (Auditor, bool) {
 	a, ok := d.(Auditor)

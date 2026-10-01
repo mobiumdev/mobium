@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/mobiumdev/mobium/internal/mobiumdriver"
 	"github.com/mobiumdev/mobium/internal/mobiumerr"
 	"github.com/mobiumdev/mobium/internal/uitree"
 )
@@ -46,7 +47,25 @@ func (h *Handlers) resolveAim(ctx context.Context, s *session, target string) (*
 		}
 		aim := tree.AimAt(node)
 		if aim.Blocker == nil {
-			return node, aim, nil
+			refusal, err := h.loadedHitRefusal(ctx, s, target, node, tree, aim)
+			if err != nil {
+				return nil, uitree.Aim{}, err
+			}
+			if refusal == nil {
+				return node, aim, nil
+			}
+			// What UIKit gives the touch to is waited for as a control
+			// over the target is: an overlay on its way out is the
+			// ordinary case.
+			if time.Since(start) >= h.implicitWait {
+				return nil, uitree.Aim{}, refusal
+			}
+			select {
+			case <-ctx.Done():
+				return nil, uitree.Aim{}, ctx.Err()
+			case <-time.After(coverPoll):
+			}
+			continue
 		}
 		// A notification banner goes by itself, in five to eight seconds
 		// measured — longer than the implicit wait — so it is waited out,
@@ -64,6 +83,38 @@ func (h *Handlers) resolveAim(ctx context.Context, s *session, target string) (*
 		case <-time.After(coverPoll):
 		}
 	}
+}
+
+// loadedHitRefusal asks the hit probe loaded into the app at launch, when
+// there is one, whether a touch at aim reaches the target, and is the
+// refusal when it would not (docs/decisions/0008). With no probe loaded the
+// question is not asked: through lldb it takes seconds, which is app_hit_test's
+// to spend. An answer of unknown — no view in the app is the element, which
+// happens to one named by label — leaves the action to the checks the tree
+// allows, as before the probe.
+func (h *Handlers) loadedHitRefusal(ctx context.Context, s *session, target string, node *uitree.Node, tree *uitree.Tree, aim uitree.Aim) (*mobiumerr.Error, error) {
+	if s.web != nil {
+		return nil, nil
+	}
+	lt, ok := mobiumdriver.AsLoadedHitTester(s.driver)
+	if !ok {
+		return nil, nil
+	}
+	hit, loaded, err := lt.LoadedHitTest(ctx, node, aim.X, aim.Y, tree.Package())
+	if !loaded || err != nil {
+		return nil, err
+	}
+	loc, lerr := h.locatorFor(s.dev.Serial, target)
+	if lerr != nil {
+		loc = uitree.Locator{Kind: uitree.KindText, Value: target}
+	}
+	switch hit.Verdict {
+	case "nothing":
+		return hitNothing(loc, aim), nil
+	case "covered":
+		return hitCovered(loc, aim, hit), nil
+	}
+	return nil, nil
 }
 
 // coveredBy is the refusal for a target a control lies over. Its remedies can

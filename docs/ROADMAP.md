@@ -65,9 +65,14 @@ this is what is not.
     expression, through `xcrun lldb`'s own Python, and all seven cases of
     the Obstruction Demo agreed with where a raw touch went on the iPhone
     15 Plus, about nine seconds a case (decisions/0008, "On a real
-    iPhone"). It needs the app built for development. Still open: doing it
-    in milliseconds before every tap, which would mean loading the probe at
-    launch.
+    iPhone"). It needs the app built for development. **Before every
+    action, on a simulator**, since 2026-09-30: `launch --hit-test` loads
+    the probe as the app starts and it answers on a Unix socket on the
+    Mac's own disk in under a millisecond, so every action on an element
+    asks it first; the seven cases agreed with a raw touch, and a tap cost
+    the same with it as without (decisions/0008, "Loaded at launch"). Not
+    on a phone, where Mobium could reach a probe only over the phone's
+    network; it refuses, and `hit-test` there stays the debugger's.
 - ~~**Session recording and `diff map`.**~~ Done 2026-09-29. `mobium trace
   start|stop` records a session as Vibium does: a zip in the Playwright
   trace format, with every call a step, the screen after it and the map

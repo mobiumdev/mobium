@@ -498,13 +498,21 @@ class Device:
 
     # -- app lifecycle -----------------------------------------------------
 
-    def launch(self, app: str) -> None:
+    def launch(self, app: str, hit_test: bool = False) -> None:
         """Bring an app to the foreground by package name or bundle id.
 
         Every ref from the previous screen is discarded — call map(), or just
         act, since actions re-resolve their target anyway.
+
+        ``hit_test``, on an iOS simulator, loads the hit probe into the app as
+        it launches: every action on an element in it then asks UIKit where
+        the touch goes first, and is refused when it would land elsewhere. A
+        real iPhone and Android refuse it.
         """
-        self._call("app_launch", {"app": app})
+        args: dict[str, Any] = {"app": app}
+        if hit_test:
+            args["hit_test"] = True
+        self._call("app_launch", args)
 
     def terminate(self, app: str) -> None:
         """Stop a running app."""

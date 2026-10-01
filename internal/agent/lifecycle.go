@@ -213,7 +213,15 @@ func (h *Handlers) launchAppOn(ctx context.Context, s *session, args map[string]
 	// hierarchy took 4.5s to read on an iPhone 15 Plus — most of a launch
 	// that took 5.2s against 2.5s from Settings.
 
-	if err := ctrl.Launch(ctx, id); err != nil {
+	launch := ctrl.Launch
+	if boolArg(args, "hit_test") {
+		l, ok := mobiumdriver.AsHitProbeLauncher(s.driver)
+		if !ok {
+			return nil, cannot(s, mobiumdriver.CapHitTest, "load the hit probe at launch")
+		}
+		launch = l.LaunchWithHitProbe
+	}
+	if err := launch(ctx, id); err != nil {
 		return nil, err
 	}
 	// A launch invalidates every ref from the previous screen.
@@ -229,6 +237,9 @@ func (h *Handlers) launchAppOn(ctx context.Context, s *session, args map[string]
 		}
 	}
 	msg := fmt.Sprintf("launched %s", id)
+	if boolArg(args, "hit_test") {
+		msg += ", with the hit probe: every action on an element in it asks UIKit first"
+	}
 	if app != "" && app != id {
 		// Worth saying rather than hiding: the launch was accepted but
 		// something else is on screen — a permission dialog, a chooser, or an

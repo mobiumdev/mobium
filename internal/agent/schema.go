@@ -325,6 +325,16 @@ func GetToolSchemas() []Tool {
 						"description": "Package name on Android (\"com.example.shop\") or bundle " +
 							"id on iOS (\"com.example.Shop\").",
 					},
+					"hit_test": map[string]interface{}{
+						"type": "boolean",
+						"description": "iOS simulator only: load the hit probe into the app as it " +
+							"launches, so every action on an element in it — tap, long press, check — " +
+							"first asks UIKit where the touch goes, in under a millisecond, and is " +
+							"refused as app_hit_test refuses when it would land elsewhere, an overlay " +
+							"hidden from accessibility included. Kept for the session's own relaunches " +
+							"of the app, for a language or a time zone. A real iPhone refuses: the " +
+							"probe would have to listen on its network; call app_hit_test there instead.",
+					},
 				}),
 				"required":             []string{"app"},
 				"additionalProperties": false,
