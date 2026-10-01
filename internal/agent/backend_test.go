@@ -2,9 +2,12 @@ package agent
 
 import (
 	"context"
+	"fmt"
+	"runtime"
 	"strings"
 	"testing"
 
+	"github.com/mobiumdev/mobium/internal/device"
 	"github.com/mobiumdev/mobium/internal/mobiumerr"
 	"github.com/mobiumdev/mobium/internal/uitree"
 )
@@ -269,6 +272,63 @@ func TestIOSByReferenceOnlyWithNoDriverNamed(t *testing.T) {
 	}
 	h.backend = BackendDump
 	if h.iosByReference(ctx, map[string]interface{}{}, "PHONE-1") {
+		t.Error("a server started with another default was overridden")
+	}
+}
+
+// A call that names no device and no driver, with no Android device
+// connected, goes to the iOS device when there is exactly one; with several
+// it is refused naming them, and with none on either platform the refusal
+// says both. Anything else — a device or a driver named, a server started
+// with another default, an Android error other than "no device" — is not
+// this case, and is answered as before.
+func TestNoAndroidDeviceFallsToTheOnlyIOSOne(t *testing.T) {
+	if runtime.GOOS != "darwin" {
+		t.Skip("iOS devices are reached from a Mac only")
+	}
+	ctx := context.Background()
+	defer func(orig func(context.Context, string) (*device.IOSTarget, error)) { selectIOSDevice = orig }(selectIOSDevice)
+	noAndroid := mobiumerr.New(mobiumerr.NoDevice, "no Android device or emulator is running")
+	h := NewHandlers()
+	h.backend = DefaultBackend
+
+	asked := false
+	selectIOSDevice = func(context.Context, string) (*device.IOSTarget, error) {
+		asked = true
+		return nil, mobiumerr.New(mobiumerr.InvalidArgument, "2 iOS devices are available (a, b) — pick one with --device")
+	}
+	for name, c := range map[string]struct {
+		args   map[string]interface{}
+		serial string
+		err    error
+	}{
+		"a device named":  {map[string]interface{}{}, "emulator-5554", noAndroid},
+		"a driver named":  {map[string]interface{}{"driver": "uiautomator2"}, "", noAndroid},
+		"another failure": {map[string]interface{}{}, "", mobiumerr.New(mobiumerr.ToolchainMissing, "adb is not installed")},
+	} {
+		asked = false
+		if _, handled, _ := h.onlyIOS(ctx, c.args, c.serial, c.err); handled || asked {
+			t.Errorf("%s: taken for a call with no device anywhere", name)
+		}
+	}
+
+	_, handled, err := h.onlyIOS(ctx, map[string]interface{}{}, "", noAndroid)
+	if !handled || !strings.Contains(fmt.Sprint(err), "pick one with --device") {
+		t.Errorf("several iOS devices: handled %v, %v", handled, err)
+	}
+
+	selectIOSDevice = func(context.Context, string) (*device.IOSTarget, error) {
+		return nil, mobiumerr.New(mobiumerr.NoDevice, "no iOS simulator is booted and no iPhone is connected")
+	}
+	_, handled, err = h.onlyIOS(ctx, map[string]interface{}{}, "", noAndroid)
+	msg := fmt.Sprint(err)
+	if !handled || mobiumerr.CodeOf(err) != mobiumerr.NoDevice || !strings.Contains(msg, "emulator") || !strings.Contains(msg, "simulator") {
+		t.Errorf("no device on either platform: %v", err)
+	}
+
+	other := NewHandlers()
+	other.backend = BackendDump
+	if _, handled, _ := other.onlyIOS(ctx, map[string]interface{}{}, "", noAndroid); handled {
 		t.Error("a server started with another default was overridden")
 	}
 }

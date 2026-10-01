@@ -6,6 +6,7 @@ import (
 	"github.com/mobiumdev/mobium/internal/grid"
 	"github.com/mobiumdev/mobium/internal/mobiumerr"
 	"github.com/mobiumdev/mobium/internal/paths"
+	"runtime"
 	"strings"
 	"time"
 
@@ -279,6 +280,9 @@ func (h *Handlers) resolveSession(ctx context.Context, args map[string]interface
 		if h.iosByReference(ctx, args, serial) {
 			return h.iosSessionFor(ctx, serial)
 		}
+		if s, ok, ierr := h.onlyIOS(ctx, args, serial, err); ok {
+			return s, ierr
+		}
 		return nil, onOtherPlatform(ctx, serial, err, true)
 	}
 
@@ -430,6 +434,39 @@ func (h *Handlers) iosByReference(ctx context.Context, args map[string]interface
 	return serial != "" && stringArg(args, "driver") == "" && h.backend == DefaultBackend &&
 		iosKindOf(ctx, serial) != ""
 }
+
+// onlyIOS answers a call that names no device and no driver when no
+// Android device is connected: the iOS device, when there is exactly one.
+// Android stays the default whenever one is connected; this is only what
+// was a dead end. A Mac with a simulator booted and nothing else answered
+// "no Android device or emulator is running — start one", which named
+// neither the device in front of the caller nor the way to it. With several
+// iOS devices it refuses, naming them, as --driver wda does; with none on
+// either platform, it says both. handled is false when the call is not this
+// case, and the caller answers as before.
+func (h *Handlers) onlyIOS(ctx context.Context, args map[string]interface{}, serial string, androidErr error) (s *session, handled bool, err error) {
+	if serial != "" || stringArg(args, "driver") != "" || h.backend != DefaultBackend ||
+		mobiumerr.CodeOf(androidErr) != mobiumerr.NoDevice || runtime.GOOS != "darwin" {
+		return nil, false, nil
+	}
+	target, err := selectIOSDevice(ctx, "")
+	switch {
+	case err == nil:
+		s, serr := h.iosSessionFor(ctx, target.Serial())
+		return s, true, serr
+	case mobiumerr.CodeOf(err) == mobiumerr.NoDevice:
+		return nil, true, mobiumerr.New(mobiumerr.NoDevice, "no device is connected: no Android device or emulator is "+
+			"running, no iOS simulator is booted and no iPhone is connected — start an emulator (`emulator -avd "+
+			"<name>`), boot a simulator (`xcrun simctl boot <udid>`), or connect a phone, then see `mobium devices`")
+	default:
+		// Several iOS devices, and nothing to choose between them by.
+		return nil, true, err
+	}
+}
+
+// selectIOSDevice is device.SelectIOS, replaceable in tests, which have no
+// simulators or phones to list.
+var selectIOSDevice = device.SelectIOS
 
 // iosKindOf is iosKind, replaceable in tests, which have no simulators or
 // phones to list.
