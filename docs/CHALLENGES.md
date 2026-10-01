@@ -4241,6 +4241,17 @@ the runner back from the phone afterward.
 
 Worth recording because each one closed off an approach that looked obvious.
 
+- **A reinstall resets a phone app's permissions — an install over it does
+  not.** A note from 2026-09-28 said the iPhone kept a notification denial
+  through a reinstall, which would have left a phone no way to reset
+  permissions at all. Measured on the iPhone 15 Plus, iOS 26.6.2, with
+  MobiumApp's notification, location and camera permissions denied: an
+  uninstall and an install brought back all three prompts and emptied the
+  data container (65 entries to 9); an install over the app, with no
+  uninstall, kept all three denials. The second is an update, and is most
+  likely what the earlier note saw. `app_clear_data` on a phone uninstalls
+  first for that reason.
+
 - **A biometric prompt, seen from outside, on each virtual device.** On an
   Android emulator the fingerprint service counts every touch it looks at —
   accepted, rejected, locked out — in `dumpsys fingerprint`, so a finger

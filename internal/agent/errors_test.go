@@ -272,3 +272,34 @@ func TestAnAndroidTargetUnderTheClipboardPreviewWaits(t *testing.T) {
 		t.Errorf("a preview that stayed: %v", err)
 	}
 }
+
+// A real iPhone's clear-data refusal sends the caller to path, and the CLI's
+// to --bundle: both must exist, or the remedy is obeyed and fails.
+func TestTheClearDataRemedyNamesRealArguments(t *testing.T) {
+	found := false
+	for _, tool := range GetToolSchemas() {
+		if tool.Name != "app_clear_data" {
+			continue
+		}
+		found = true
+		props := tool.InputSchema["properties"].(map[string]interface{})
+		if _, ok := props["path"]; !ok {
+			t.Error("app_clear_data no longer takes path, which a phone's refusal names")
+		}
+	}
+	if !found {
+		t.Fatal("no app_clear_data tool")
+	}
+	if !strings.Contains(string(mustRead(t, "../../docs/FLAGS.md")), "--bundle") {
+		t.Error("the CLI no longer has --bundle, which a phone's refusal names")
+	}
+}
+
+func mustRead(t *testing.T, path string) []byte {
+	t.Helper()
+	b, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return b
+}

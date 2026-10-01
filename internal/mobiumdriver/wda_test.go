@@ -633,3 +633,15 @@ func TestWDARetriesMoreSlowly(t *testing.T) {
 		t.Errorf("typed at %v, want the server's speed then slower: %v", speeds, want)
 	}
 }
+
+// A phone's clear-data refusal names the reset it has, by the argument and
+// the flag that ask for it; app_clear_data's schema and the CLI hold them to
+// it (TestTheClearDataRemedyNamesRealArguments, in the agent package).
+func TestAPhoneNamesItsResetWhenItCannotClear(t *testing.T) {
+	err := Declined(&WDA{phone: &device.Devicectl{}}, CapClearData)
+	for _, want := range []string{"path in app_clear_data", "--bundle on the CLI", "uninstalled and installed again"} {
+		if err == nil || !strings.Contains(err.Error(), want) {
+			t.Errorf("the refusal lacks %q: %v", want, err)
+		}
+	}
+}

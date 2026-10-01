@@ -55,8 +55,11 @@ command mentions them.
 | `app_check` | `driver` | string | _global_ --driver |
 | `app_check` | `target` | string | check, uncheck |
 | `app_clear_data` | `app` | string | clear-data |
+| `app_clear_data` | `content` | string | — |
 | `app_clear_data` | `device` | string | _global_ --device |
 | `app_clear_data` | `driver` | string | _global_ --driver |
+| `app_clear_data` | `name` | string | — |
+| `app_clear_data` | `path` | string | clear-data |
 | `app_clipboard` | `device` | string | _global_ --device |
 | `app_clipboard` | `driver` | string | _global_ --driver |
 | `app_clipboard` | `text` | string | clipboard |
@@ -333,7 +336,7 @@ arguments and the two global flags.
 | `biometric` | app_biometric | — | action |
 | `call` | app_call | --number | action, number |
 | `check` | app_check | — | checked, target |
-| `clear-data` | app_clear_data | — | app |
+| `clear-data` | app_clear_data | --bundle | app, path |
 | `clipboard` | app_clipboard | — | text |
 | `context` | app_context | — | context |
 | `contexts` | app_contexts | — | — |

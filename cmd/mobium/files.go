@@ -27,28 +27,22 @@ func sendFilesAsContent(tool string, args map[string]interface{}) (func(*agent.T
 	same := func(r *agent.ToolsCallResult) (*agent.ToolsCallResult, error) { return r, nil }
 	path, _ := args["path"].(string)
 	switch tool {
+	case "app_clear_data":
+		// A phone's reset reinstalls from the bundle, which the daemon reads.
+		if path == "" {
+			return same, nil
+		}
+		if err := bundleAsContent(path, args); err != nil {
+			return nil, err
+		}
+		return same, nil
 	case "app_install":
 		if path == "" {
 			return same, nil
 		}
-		info, err := os.Stat(path)
-		if err != nil {
-			return nil, mobiumerr.New(mobiumerr.InvalidArgument, "no app bundle at %s", path)
+		if err := bundleAsContent(path, args); err != nil {
+			return nil, err
 		}
-		var raw []byte
-		name := filepath.Base(path)
-		if info.IsDir() {
-			// A .app is a directory, and goes as an archive of it.
-			raw, err = device.TarGz(path)
-			name += ".tar.gz"
-		} else {
-			raw, err = os.ReadFile(path)
-		}
-		if err != nil {
-			return nil, fmt.Errorf("read %s: %w", path, err)
-		}
-		delete(args, "path")
-		args["content"], args["name"] = base64.StdEncoding.EncodeToString(raw), name
 		// The daemon installed a copy in a directory of its own, and names
 		// that; the caller named this one.
 		return func(r *agent.ToolsCallResult) (*agent.ToolsCallResult, error) {
@@ -296,4 +290,27 @@ func prepareBatchFiles(args map[string]interface{}) (func(*agent.ToolsCallResult
 		}
 		return agent.BatchResult(v, out), nil
 	}, nil
+}
+
+// bundleAsContent replaces an app bundle's path in args with the bundle
+// itself: a file as it is, and a .app, which is a directory, as a .tar.gz.
+func bundleAsContent(path string, args map[string]interface{}) error {
+	info, err := os.Stat(path)
+	if err != nil {
+		return mobiumerr.New(mobiumerr.InvalidArgument, "no app bundle at %s", path)
+	}
+	var raw []byte
+	name := filepath.Base(path)
+	if info.IsDir() {
+		raw, err = device.TarGz(path)
+		name += ".tar.gz"
+	} else {
+		raw, err = os.ReadFile(path)
+	}
+	if err != nil {
+		return fmt.Errorf("read %s: %w", path, err)
+	}
+	delete(args, "path")
+	args["content"], args["name"] = base64.StdEncoding.EncodeToString(raw), name
+	return nil
 }

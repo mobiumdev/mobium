@@ -705,11 +705,13 @@ func (d *Device) ClearDialogRules(ctx context.Context) error {
 }
 
 // ClearedData is what ClearData did: the stores read back empty, what was
-// kept, and on Android the runtime permissions still granted afterwards.
+// kept, on Android the runtime permissions still granted afterwards, and on a
+// real iPhone what the reset changed that nothing can read back.
 type ClearedData struct {
 	Emptied      []string `json:"emptied"`
 	Kept         []string `json:"kept,omitempty"`
 	StillGranted []string `json:"still_granted"`
+	NotReadBack  []string `json:"not_read_back,omitempty"`
 }
 
 // ClearData deletes an app's data and leaves it installed — the state of a
@@ -719,6 +721,17 @@ type ClearedData struct {
 func (d *Device) ClearData(ctx context.Context, app string) (ClearedData, error) {
 	var out ClearedData
 	err := d.data(ctx, "app_clear_data", map[string]any{"app": app}, &out)
+	return out, err
+}
+
+// ResetFromBundle resets an app on a real iPhone, which cannot clear one in
+// place: it is uninstalled and installed again from bundle, its own .app or
+// .ipa. Its data container is read back empty; its privacy permissions,
+// which nothing outside the app can read, are in NotReadBack. Any other
+// device refuses a bundle, since it clears in place.
+func (d *Device) ResetFromBundle(ctx context.Context, app, bundle string) (ClearedData, error) {
+	var out ClearedData
+	err := d.data(ctx, "app_clear_data", map[string]any{"app": app, "path": bundle}, &out)
 	return out, err
 }
 

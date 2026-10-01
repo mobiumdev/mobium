@@ -265,7 +265,7 @@ export class Device {
   terminate(app: string): Promise<void>
   install(path: string): Promise<string>
   uninstall(app: string): Promise<void>
-  clearData(app: string): Promise<Data>
+  clearData(app: string, bundle?: string): Promise<Data>
 
   // files
   /**
