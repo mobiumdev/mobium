@@ -159,8 +159,8 @@ Three things follow.
 
 ### In Mobium
 
-Fixed on 2026-10-01, and held by `docs/checks/back.sh`, which passed on both
-AVDs, the simulator and the iPhone 15 Plus:
+Fixed on 2026-10-01, and held by `docs/checks/back.sh`, which passed on the
+Pixel 8 Pro, both AVDs, the simulator and the iPhone 15 Plus:
 
 - `press back` says what back did: "it left <app>; <app> is in the
   foreground", or "<app> is still in the foreground", and on iOS what the

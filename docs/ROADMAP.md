@@ -63,7 +63,7 @@ this is what is not.
   on all three Android devices (mobium-app #12). Done the same day for Mobium: `press back` says what back did,
   `--gesture` swipes back and is refused with button navigation, `devices`
   names the mode, the iOS refusal names the gesture, and
-  `docs/checks/back.sh` holds it on both AVDs, the simulator and the iPhone.
+  `docs/checks/back.sh` holds it on both phones, both AVDs and the simulator.
   Left: MobiumApp's swipe back on iOS, back in its WebView screens, and
   predictive back turned on.
 - **Windows.** Everything that needs no device passes on a GitHub-hosted
