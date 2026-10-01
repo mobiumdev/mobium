@@ -82,6 +82,9 @@ func (w *WDA) asApp(ctx context.Context, app string, fn func() error) error {
 	}
 	w.hintMu.Lock()
 	restore := w.expecting
+	if restore == "" && w.shadeHint {
+		restore = springboardBundleID
+	}
 	w.hintMu.Unlock()
 	if restore == "" {
 		restore = "auto"

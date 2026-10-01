@@ -50,6 +50,14 @@ func coverEffects(tree *Tree) (blocked, moved, over int) {
 // Other on iOS and the launcher's drag layer on Android, which the first
 // version reported over nearly every target (CHALLENGES 115). The obstruction
 // screens are the positive control: the same count there is not zero.
+// coveredCaptures are real screens captured with something drawn over their
+// targets, so they must show a cover as the obstruction screens do, and why.
+var coveredCaptures = map[string]string{
+	"ios26-notification-center-group.xml": "an expanded group in Notification Center stacks its oldest " +
+		"notifications under each other, and Clear sits over Show less: a tap of Show less was aimed at a " +
+		"clear point of it, and collapsed the group",
+}
+
 func TestTheCoverRuleLeavesOrdinaryScreensAlone(t *testing.T) {
 	ents, err := os.ReadDir("testdata")
 	if err != nil {
@@ -62,7 +70,7 @@ func TestTheCoverRuleLeavesOrdinaryScreensAlone(t *testing.T) {
 			continue
 		}
 		b, m, o := coverEffects(loadTree(t, name))
-		if strings.HasPrefix(name, "obstruction-") {
+		if strings.HasPrefix(name, "obstruction-") || coveredCaptures[name] != "" {
 			if b+m+o == 0 {
 				t.Errorf("%s: the screen built to be covered showed no cover — the test cannot fail", name)
 			}
