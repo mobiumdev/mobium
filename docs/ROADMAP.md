@@ -120,8 +120,11 @@ this is what is not.
 - ~~**No `--driver` for a device Mobium has identified.**~~ Done 2026-09-30.
   A device named with no driver named goes to `wda` when it is an iPhone or a
   simulator; a `--driver` that contradicts the device is still refused
-  (CHALLENGES 88). Still to decide: a call that names no device, with only an
-  iOS device connected, keeps Android's default.
+  (CHALLENGES 88). And since 2026-10-01 a call that names no device and no
+  driver, with no Android device connected, goes to the iOS device when
+  there is exactly one, and with several is refused naming them; Android
+  stays the default whenever one is connected. Measured with the iPhone 15
+  Plus alone, and with it and a simulator together.
 - ~~**The cost of an action on iOS.**~~ Done 2026-09-30, by its measure: a
   tap on the Layout Demo, timed from the CLI, went from a median of 600 ms
   to 524 ms on a simulator and from 961 ms to 807 ms on the iPhone, and

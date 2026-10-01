@@ -63,7 +63,7 @@ func main() {
 	}
 
 	root.PersistentFlags().StringVar(&deviceSerial, "device", "",
-		"Target device serial (default: the only running device)")
+		"Target device serial or UDID (default: the only running device — an Android one, when any is connected)")
 	root.PersistentFlags().StringVar(&backendName, "driver", "",
 		"Driver: uiautomator2 (default, Android), uiautomator (Android, installs nothing), "+
 			"wda (WebDriverAgent: iOS simulators and iPhones), or the name of a third-party driver "+

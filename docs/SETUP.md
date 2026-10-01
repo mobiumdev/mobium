@@ -488,8 +488,12 @@ A device named by `--device` needs no `--driver`: an iPhone or a simulator
 is driven by `wda`, the only driver either has.
 
 With exactly one iOS device available — one booted simulator, or one
-connected phone — `--device` can be left out, but then `--driver wda` is
-needed, since a call that names neither is Android's.
+connected phone — and no Android device connected, `--device` and
+`--driver` can both be left out: a call that names neither goes to the only
+device there is. Android stays the default when any Android device is
+connected, so with both platforms connected, name the device. With several
+iOS devices and no Android one, a call that names none is refused, listing
+them.
 
 ### How long a signature lasts
 
