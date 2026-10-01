@@ -420,10 +420,21 @@ func (h *Handlers) devices(ctx context.Context) (*ToolsCallResult, error) {
 		if d.Model != "" {
 			line += ", model: " + d.Model
 		}
+		// The navigation mode decides what an edge swipe is, so it is worth
+		// one read per ready device. docs/BACK.md.
+		nav := ""
+		if d.State == "device" {
+			if adb, err := device.New(d.Serial); err == nil {
+				nav, _ = adb.NavigationMode(ctx)
+			}
+		}
+		if nav != "" {
+			line += ", navigation: " + nav
+		}
 		lines = append(lines, line+")")
 		view.Devices = append(view.Devices, DeviceView{
 			ID: d.Serial, Platform: "android", State: d.State,
-			Model: d.Model, Emulator: d.Emulator,
+			Model: d.Model, Emulator: d.Emulator, Navigation: nav,
 		})
 	}
 

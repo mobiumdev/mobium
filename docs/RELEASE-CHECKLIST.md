@@ -4,7 +4,7 @@
 [CI workflow](../.github/workflows/ci.yml) runs on every push — formatting,
 vet, both modules' tests, the four non-Go clients' own tests, and six
 cross-compile targets. This file is the rest, and the rest is where most
-serious defects in this project have come from: 167 of 203 were found only by
+serious defects in this project have come from: 168 of 204 were found only by
 running against a real device.
 
 Work through it before tagging a release, on three substrates: an Android
@@ -183,6 +183,7 @@ vouches for none of them. What each proves, and the devices it runs on, is in
 - [ ] Inside a WebView: `web-actionability.sh`, `web-type.sh` and
       `web-storage.sh`; and `ios-webview-probe.sh <simulator-udid>`, the
       platform assumption with no Mobium code
+- [ ] Back: `back.sh <android-serial | simulator-udid | iphone-udid>`
 - [ ] A mobile browser and a PWA: `chrome.sh <emulator-serial | android-serial>`
       and `pwa.sh <emulator-serial | android-serial | simulator-udid>`, both
       with the network

@@ -1303,10 +1303,17 @@ func GetToolSchemas() []Tool {
 				"\"recents\", \"volume-up\", \"volume-down\". **back is primary " +
 				"navigation on Android** — an app that opened a detail screen expects it, " +
 				"and no amount of tapping substitutes. iOS has no back button by design, " +
-				"and mobium refuses rather than sending an edge swipe, which is a different " +
-				"event that apps can tell apart. Any press can move the screen, so the refs " +
-				"from the last app_map are discarded; map again before acting. Only home " +
-				"reports a confirmed outcome — what back does is the app's business.",
+				"and mobium refuses back there rather than sending an edge swipe in its " +
+				"place. **gesture: true** asks for back as the finger gives it — a swipe " +
+				"in from the left edge — on both platforms: on iOS it starts in the " +
+				"navigation bar, since a list row with swipe actions takes the swipe for " +
+				"itself; on Android it is refused where the device navigates with " +
+				"buttons, because an edge swipe is not back there. **Back says what it " +
+				"did**: whether it left the app and what is in front now, and on iOS " +
+				"what the navigation bar says — the difference between going back a " +
+				"screen and closing the app. Home reports the launcher coming forward. " +
+				"Any press can move the screen, so the refs from the last app_map are " +
+				"discarded; map again before acting.",
 			InputSchema: map[string]interface{}{
 				"type": "object",
 				"properties": withDevice(map[string]interface{}{
@@ -1314,6 +1321,12 @@ func GetToolSchemas() []Tool {
 						"type":        "string",
 						"description": "Which button. Refused with the list of what this platform has.",
 						"enum":        []string{"back", "home", "recents", "volume-up", "volume-down"},
+					},
+					"gesture": map[string]interface{}{
+						"type": "boolean",
+						"description": "Back only: a swipe in from the left edge instead of the key. " +
+							"The way to test what predictive back or an iOS navigation stack does; " +
+							"refused on an Android device using button navigation.",
 					},
 				}),
 				"required":             []string{"button"},

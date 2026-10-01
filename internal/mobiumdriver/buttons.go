@@ -158,10 +158,13 @@ func (w *WDA) Press(ctx context.Context, button string) error {
 	if !ok {
 		if button == ButtonBack {
 			return mobiumerr.New(mobiumerr.Unsupported, "iOS has no back button — navigating back is a per-app "+
-				"affordance there, usually a chevron in the navigation bar. Map it and tap "+
-				"it, or use an edge swipe with app_swipe if the app supports one. Mobium "+
-				"will not send a swipe in place of a button press: they are different "+
-				"events and an app can tell them apart")
+				"affordance there, usually a chevron in the navigation bar. Mobium will not "+
+				"send a swipe in place of a button press: they are different events and an "+
+				"app can tell them apart. Tap the chevron, or ask for the swipe by name — "+
+				"`mobium press back --gesture`, app_press back with gesture true").
+				WithRemedy("map the navigation bar's back button and tap it, or ask for the swipe by " +
+					"name: app_press back with gesture true, which starts in the navigation bar, " +
+					"where a list row's swipe actions cannot take it")
 		}
 		return mobiumerr.New(mobiumerr.Unsupported, "iOS has no %q button — it has %s",
 			button, ButtonNames(iosButtons()))

@@ -384,6 +384,8 @@ type buttonDriver struct {
 	locked    bool
 	setLocked []bool
 	tree      *uitree.Tree
+	// afterBack, when set, is the screen once back has been pressed.
+	afterBack *uitree.Tree
 }
 
 func (b *buttonDriver) Snapshot(ctx context.Context) (*uitree.Tree, error) { return b.tree, nil }
@@ -394,6 +396,9 @@ func (b *buttonDriver) Press(ctx context.Context, button string) error {
 	for _, s := range b.buttons {
 		if s == button {
 			b.pressed = append(b.pressed, button)
+			if button == mobiumdriver.ButtonBack && b.afterBack != nil {
+				b.tree = b.afterBack
+			}
 			return nil
 		}
 	}
@@ -470,17 +475,70 @@ func TestPressDropsRefs(t *testing.T) {
 	}
 }
 
-// TestPressSaysWhenItConfirmedSomething: only home has a platform-wide
-// outcome. Claiming the others were confirmed would be the same overreach as
+// TestPressReportsOnlyWhatItChecked: home and back have outcomes worth
+// reading; volume has none, and claiming one would be the same overreach as
 // reporting a set that was never read back.
 func TestPressReportsOnlyWhatItChecked(t *testing.T) {
-	h, s, _ := withButtons(t, mobiumdriver.AllButtons()...)
-	res, err := callPress(h, s, mobiumdriver.ButtonBack)
+	h, s, d := withButtons(t, mobiumdriver.AllButtons()...)
+	d.tree = screenOf(t, "dev.mobium.mobiumapp", "Login")
+	res, err := callPress(h, s, mobiumdriver.ButtonVolumeUp)
 	if err != nil {
 		t.Fatal(err)
 	}
 	if strings.Contains(textOf(res), "foreground") {
-		t.Errorf("back claimed a confirmed outcome: %q", textOf(res))
+		t.Errorf("volume claimed a confirmed outcome: %q", textOf(res))
+	}
+}
+
+func screenOf(t *testing.T, pkg, text string) *uitree.Tree {
+	t.Helper()
+	tree, err := uitree.ParseAndroid([]byte(`<?xml version='1.0' encoding='UTF-8'?><hierarchy rotation="0">` +
+		`<node index="0" package="` + pkg + `" class="android.widget.FrameLayout" bounds="[0,0][1080,2400]">` +
+		`<node index="0" package="` + pkg + `" class="android.widget.TextView" text="` + text + `" ` +
+		`bounds="[100,200][900,280]" /></node></hierarchy>`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	return tree
+}
+
+// Back says what it did. It closing the app and it going back a screen are
+// the difference MobiumApp's report was about — every back from a demo
+// closed the app, and Mobium answered "pressed back" (docs/BACK.md).
+func TestBackSaysWhetherItLeftTheApp(t *testing.T) {
+	h, s, d := withButtons(t, mobiumdriver.AllButtons()...)
+	d.tree = screenOf(t, "dev.mobium.mobiumapp", "Login")
+	d.afterBack = screenOf(t, "com.google.android.apps.nexuslauncher", "Clock")
+	res, err := callPress(h, s, mobiumdriver.ButtonBack)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(textOf(res), "it left dev.mobium.mobiumapp") {
+		t.Errorf("a back that closed the app did not say so: %q", textOf(res))
+	}
+
+	d.tree = screenOf(t, "dev.mobium.mobiumapp", "Login")
+	d.afterBack = screenOf(t, "dev.mobium.mobiumapp", "Home")
+	res, err = callPress(h, s, mobiumdriver.ButtonBack)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(textOf(res), "dev.mobium.mobiumapp is still in the foreground") {
+		t.Errorf("a back inside the app did not say it stayed: %q", textOf(res))
+	}
+}
+
+// Only back has a gesture, and asking for one elsewhere is refused before
+// anything is touched. Where the device navigates with buttons the gesture
+// is not back at all, and that is refused too — tested on the device, since
+// the mode is read from it.
+func TestOnlyBackHasAGesture(t *testing.T) {
+	h, s, d := withButtons(t, mobiumdriver.AllButtons()...)
+	ctx, cancel := context.WithTimeout(context.Background(), callTimeout)
+	defer cancel()
+	_, err := h.pressOn(ctx, s, map[string]interface{}{"button": "home", "gesture": true})
+	if mobiumerr.CodeOf(err) != mobiumerr.InvalidArgument || len(d.pressed) != 0 {
+		t.Errorf("a home gesture was not refused before touching the device: %v, pressed %v", err, d.pressed)
 	}
 }
 

@@ -191,6 +191,7 @@ command mentions them.
 | `app_press` | `button` | string | press |
 | `app_press` | `device` | string | _global_ --device |
 | `app_press` | `driver` | string | _global_ --driver |
+| `app_press` | `gesture` | boolean | press |
 | `app_press_drag` | `device` | string | _global_ --device |
 | `app_press_drag` | `driver` | string | _global_ --driver |
 | `app_press_drag` | `duration_ms` | integer | press-drag |
@@ -381,7 +382,7 @@ arguments and the two global flags.
 | `open` | app_open_url | — | url |
 | `orientation` | app_orientation | — | orientation |
 | `pipe` | — | — | — |
-| `press` | app_press | — | button |
+| `press` | app_press | --gesture | button, gesture |
 | `press-drag` | app_press_drag | --duration-ms --lead-ms | duration_ms, from, hold, lead_ms, to, x1, x2, x3, y1, y2, y3 |
 | `press-tap` | app_press_tap | --lead-ms | hold, lead_ms, tap, x1, x2, y1, y2 |
 | `record` | app_record | --output | action, path |
