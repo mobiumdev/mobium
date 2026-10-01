@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"regexp"
 	"sort"
 	"strings"
 
@@ -35,6 +36,9 @@ type Test struct {
 	Name        string `json:"name"`
 	Description string `json:"description,omitempty"`
 	Steps       []Step `json:"steps"`
+	// Each runs the test once per case, Playwright's parameterized test:
+	// ${key} in its name and steps is that case's value. See expandEach.
+	Each []map[string]interface{} `json:"each,omitempty"`
 }
 
 // Step is either a tool call — exactly an app_batch step — or an expect.
@@ -261,6 +265,13 @@ func LoadFile(path string) (*File, error) {
 	if len(f.Tests) == 0 {
 		return nil, mobiumerr.New(mobiumerr.InvalidArgument, "%s has no tests", path)
 	}
+	// Cases become tests before anything is checked, so each is checked as
+	// any test is — its name unique, every step one that could run.
+	tests, err := expandEach(path, f.Tests)
+	if err != nil {
+		return nil, err
+	}
+	f.Tests = tests
 	seen := map[string]bool{}
 	for i, s := range f.BeforeEach {
 		if err := s.check(fmt.Sprintf("%s beforeEach step %d", path, i+1)); err != nil {
@@ -472,4 +483,164 @@ func Discover(cfg *Config, paths []string) ([]string, error) {
 		return nil, mobiumerr.New(mobiumerr.InvalidArgument, "no *.test.json files in %s", strings.Join(paths, ", "))
 	}
 	return files, nil
+}
+
+// placeholderRe is ${key} in a test's name or steps; $${ is a literal ${.
+var placeholderRe = regexp.MustCompile(`\$\$\{|\$\{([A-Za-z_][A-Za-z0-9_]*)\}`)
+
+// expandEach makes a test with "each" one test per case, as a Playwright
+// test in a loop over its data is. ${key} anywhere in a step's strings is
+// the case's value, and a string that is nothing but ${key} takes the
+// value's own type, so a count stays a number. The name is the case's too:
+// with a ${key} in it, substituted, and without one, numbered — "[1]",
+// "[2]" — rather than spelled out from the values, which may be a password.
+// A key a case does not have is refused here, before anything runs.
+func expandEach(path string, tests []Test) ([]Test, error) {
+	var out []Test
+	for _, t := range tests {
+		if t.Each == nil {
+			if err := noPlaceholders(path, t); err != nil {
+				return nil, err
+			}
+			// What is left is $${, the escape, which is ${ as sent.
+			if raw, _ := json.Marshal(t.Steps); !strings.Contains(string(raw), "$${") {
+				out = append(out, t)
+				continue
+			}
+			t.Each = []map[string]interface{}{{}}
+			cases, err := expandEach(path, []Test{t})
+			if err != nil {
+				return nil, err
+			}
+			cases[0].Name = t.Name
+			out = append(out, cases[0])
+			continue
+		}
+		if len(t.Each) == 0 {
+			return nil, mobiumerr.New(mobiumerr.InvalidArgument, "%s › %s has \"each\" with no cases", path, t.Name)
+		}
+		// Every field of every step — its call, description, soft — as the
+		// long form, which Step reads back as it reads a file.
+		raw, err := json.Marshal(t.Steps)
+		if err != nil {
+			return nil, err
+		}
+		var generic interface{}
+		if err := json.Unmarshal(raw, &generic); err != nil {
+			return nil, err
+		}
+		named := placeholderRe.MatchString(strings.ReplaceAll(t.Name, "$${", ""))
+		for i, c := range t.Each {
+			where := fmt.Sprintf("%s › %s, case %d", path, t.Name, i+1)
+			steps, err := substitute(generic, c, where)
+			if err != nil {
+				return nil, err
+			}
+			b, err := json.Marshal(steps)
+			if err != nil {
+				return nil, err
+			}
+			var ct Test
+			if err := json.Unmarshal(b, &ct.Steps); err != nil {
+				return nil, mobiumerr.New(mobiumerr.InvalidArgument, "%s: %v", where, err)
+			}
+			name, err := substituteString(t.Name, c, where, false)
+			if err != nil {
+				return nil, err
+			}
+			ct.Name = fmt.Sprint(name)
+			if !named {
+				ct.Name = fmt.Sprintf("%s [%d]", t.Name, i+1)
+			}
+			ct.Description = t.Description
+			out = append(out, ct)
+		}
+	}
+	return out, nil
+}
+
+// substitute replaces every ${key} in v's strings with the case's values.
+func substitute(v interface{}, c map[string]interface{}, where string) (interface{}, error) {
+	switch x := v.(type) {
+	case string:
+		return substituteString(x, c, where, true)
+	case []interface{}:
+		out := make([]interface{}, len(x))
+		for i, e := range x {
+			s, err := substitute(e, c, where)
+			if err != nil {
+				return nil, err
+			}
+			out[i] = s
+		}
+		return out, nil
+	case map[string]interface{}:
+		out := make(map[string]interface{}, len(x))
+		for k, e := range x {
+			s, err := substitute(e, c, where)
+			if err != nil {
+				return nil, err
+			}
+			out[k] = s
+		}
+		return out, nil
+	}
+	return v, nil
+}
+
+// substituteString replaces ${key} in s; when s is nothing but one ${key}
+// and typed is set, the value itself, of whatever type, is the answer.
+func substituteString(s string, c map[string]interface{}, where string, typed bool) (interface{}, error) {
+	if m := placeholderRe.FindStringSubmatch(s); typed && m != nil && m[0] == s && m[1] != "" {
+		v, ok := c[m[1]]
+		if !ok {
+			return nil, missingKey(where, m[1], c)
+		}
+		return v, nil
+	}
+	var missing string
+	out := placeholderRe.ReplaceAllStringFunc(s, func(p string) string {
+		if p == "$${" {
+			return "${"
+		}
+		key := p[2 : len(p)-1]
+		v, ok := c[key]
+		if !ok {
+			if missing == "" {
+				missing = key
+			}
+			return p
+		}
+		return fmt.Sprint(v)
+	})
+	if missing != "" {
+		return nil, missingKey(where, missing, c)
+	}
+	return out, nil
+}
+
+func missingKey(where, key string, c map[string]interface{}) error {
+	var have []string
+	for k := range c {
+		have = append(have, k)
+	}
+	sort.Strings(have)
+	return mobiumerr.New(mobiumerr.InvalidArgument, "%s uses ${%s}, which the case does not have (it has %s)",
+		where, key, strings.Join(have, ", "))
+}
+
+// noPlaceholders refuses ${key} in a test with no "each": it would be sent
+// as written, and a step that types "${user}" is a test that cannot fail
+// the way its author meant.
+func noPlaceholders(path string, t Test) error {
+	raw, _ := json.Marshal(t.Steps)
+	for _, s := range []string{t.Name, string(raw)} {
+		for _, m := range placeholderRe.FindAllStringSubmatch(s, -1) {
+			if m[1] != "" {
+				return mobiumerr.New(mobiumerr.InvalidArgument, "%s › %s uses ${%s} and has no \"each\" to fill it "+
+					"in — add \"each\": [{%q: ...}], or write $${ for a literal ${", path, t.Name, m[1], m[1])
+			}
+		}
+	}
+	return nil
 }

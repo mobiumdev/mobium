@@ -13,7 +13,8 @@ mobium test --reporter list,junit,html && mobium show-report
 
 - `mobiumapp/` is the suite: the Login and Form Demos — the Form in the
   step shorthand, the Login in the long form — each test from a
-  freshly launched app.
+  freshly launched app. The Login's refusals are one test over three cases
+  (`"each"`), each with its own message.
 - `controls/` are for the runner, not the app, and are not run by default:
   `must-fail.test.json` must fail, every test of it, and `flaky.test.json`
   must pass only on a retry, from cleared app data, and `soft.test.json`
