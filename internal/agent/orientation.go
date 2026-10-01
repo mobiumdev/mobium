@@ -45,7 +45,7 @@ func (h *Handlers) orientationOn(ctx context.Context, s *session, args map[strin
 	}
 
 	if want == "" {
-		return Result(describeOrientation(before, lockedBefore),
+		return Result(describeOrientation(s, before, lockedBefore),
 			OrientationView{Orientation: before, Locked: lockedBefore, Device: s.dev.Serial}), nil
 	}
 
@@ -69,7 +69,7 @@ func (h *Handlers) orientationOn(ctx context.Context, s *session, args map[strin
 	if err != nil {
 		return nil, err
 	}
-	msg := describeOrientation(after, locked)
+	msg := describeOrientation(s, after, locked)
 	if after != before {
 		msg = fmt.Sprintf("%s (was %s)", msg, before)
 	}
@@ -79,8 +79,13 @@ func (h *Handlers) orientationOn(ctx context.Context, s *session, args map[strin
 }
 
 // describeOrientation says both facts, because they are different questions:
-// which way the screen is pointing, and whether it will stay there.
-func describeOrientation(mode string, locked bool) string {
+// which way the screen is pointing, and whether it will stay there. On iOS
+// the second cannot be read: nothing outside the device sees its rotation
+// lock, and a turn made here holds until the device is physically turned.
+func describeOrientation(s *session, mode string, locked bool) string {
+	if s.backend == BackendWDA {
+		return mode + " (iOS: holds until the device is physically turned; its rotation lock cannot be read)"
+	}
 	if locked {
 		return mode + " (locked)"
 	}

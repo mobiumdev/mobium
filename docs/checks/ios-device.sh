@@ -109,9 +109,18 @@ refused() { # refused <what> <phrase> <mobium args...>
 refused appearance "switch light and dark (simctl ui)" appearance
 refused permissions "grant or revoke permissions (simctl privacy)" grant com.apple.Preferences location
 refused clipboard "real iPhone's clipboard" clipboard
-refused orientation "orientation is not built" orientation
 refused call "cannot be made to ring" call
 refused uninstall "is not installed" uninstall com.example.not.installed
+
+# Orientation reads and turns through WebDriverAgent's rotation endpoint.
+# Settings supports portrait alone on an iPhone, so it reads portrait and a
+# turn to landscape is refused, naming where it stayed, rather than reported
+# done; Safari turning is in orientation.sh.
+$M launch com.apple.Preferences >/dev/null
+$M orientation | grep -q '^portrait ' || fail "Settings did not read as portrait: $($M orientation 2>&1)"
+out=$($M orientation landscape 2>&1) && fail "Settings, which is portrait only, was reported turned: $out"
+echo "$out" | grep -q "still portrait" || fail "the refusal did not say where it stayed: $out"
+echo "    orientation    portrait, and a turn Settings does not support refused  ok"
 
 # Recording is not refused: a phone records from WebDriverAgent's screen
 # stream (record.sh has the whole check). Two seconds are about twenty frames.

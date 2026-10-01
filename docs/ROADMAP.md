@@ -128,12 +128,16 @@ this is what is not.
   and do it, as `MOBIUMAPP_BUNDLE` does in the checks, and say that
   permissions are reset too. Measure that first: on 2026-09-28 the iPhone
   kept a notification denial through a reinstall.
-- **The iOS settings still refused as not built:** orientation, locale,
-  timezone and notifications. Per-app locale can work on a phone too, as
-  launch arguments (`-AppleLanguages (xx) -AppleLocale xx_YY`) read back
-  from the app. Orientation can go through WebDriverAgent's `/orientation`,
-  refusing an app pinned to one orientation as Android already does.
+- **The iOS settings still refused as not built:** locale, timezone and
+  notifications. Per-app locale can work on a phone too, as launch arguments
+  (`-AppleLanguages (xx) -AppleLocale xx_YY`) read back from the app.
   Timezone on a simulator can be `TZ` in the launch environment.
+  Orientation is done (2026-09-30), through WebDriverAgent's `/rotation`
+  rather than `/orientation`, which reads both landscapes as one: an app
+  that turns is turned and read back, and one pinned to portrait is refused
+  naming where it stayed, on a simulator and on the iPhone
+  (`docs/checks/orientation.sh`). iOS has no `auto`, and a Face ID iPhone
+  is never upside down; both are refused with the reason.
 - ~~**Auto-advancing code boxes on iOS.**~~ Done 2026-09-30. A code typed
   whole into the first box that loses a character as focus moves is typed
   again one character to a box and confirmed (CHALLENGES 156): 30 of 30 on

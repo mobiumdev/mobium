@@ -226,8 +226,6 @@ func (w *WDA) HasCapability(name string) bool {
 // and why — each worded for what is known: "not built" where the platform
 // has a way nobody here has wired up, "cannot" only where it has none.
 var iosNotBuilt = map[string]string{
-	CapOrientation: "iOS orientation is not built yet: WebDriverAgent has an orientation endpoint, " +
-		"and nothing here uses it",
 	CapLocalization: "per-app language is not built for iOS yet: a simulator takes AppleLanguages at " +
 		"launch, and nothing here passes it",
 	CapClock:         "the timezone is not built for iOS yet",
