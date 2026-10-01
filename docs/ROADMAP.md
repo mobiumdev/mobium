@@ -150,10 +150,15 @@ this is what is not.
   keeps all three, which is what the 2026-09-28 note had seen. Permissions
   are reported as reset and not read back, since nothing outside the app can
   read them on a phone.
-- **The iOS settings still refused as not built:** locale, timezone and
-  notifications. Per-app locale can work on a phone too, as launch arguments
-  (`-AppleLanguages (xx) -AppleLocale xx_YY`) read back from the app.
-  Timezone on a simulator can be `TZ` in the launch environment.
+- **The iOS settings still refused as not built:** timezone and
+  notifications. Timezone on a simulator can be `TZ` in the launch
+  environment. Per-app locale is done (2026-09-30): iOS stores no per-app
+  language that can be set from outside, so `app_locale` keeps it for the
+  session and every launch passes it as `-AppleLanguages (xx) -AppleLocale
+  xx_YY`; a running app is launched again in it at once. Settings, pinned to
+  ja-JP, read 一般 for General on a simulator and on the iPhone, on the
+  pin's relaunch and on a later launch, and General again once cleared
+  (`docs/checks/locale-ios.sh`).
   Orientation is done (2026-09-30), through WebDriverAgent's `/rotation`
   rather than `/orientation`, which reads both landscapes as one: an app
   that turns is turned and read back, and one pinned to portrait is refused

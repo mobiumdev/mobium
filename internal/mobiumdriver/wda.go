@@ -46,6 +46,13 @@ type WDA struct {
 	hintMu    sync.Mutex
 	expecting string
 
+	// locales is the language each app is pinned to, by bundle id, for the
+	// life of the session. iOS stores no per-app language Mobium could set,
+	// so it is a launch argument, and this is what every launch here passes.
+	// See wdalocale.go.
+	localeMu sync.Mutex
+	locales  map[string][]string
+
 	// axSeen is what the last visit to a phone's Settings read, which a
 	// read of every accessibility setting answers from. See phoneAX.
 	axSeen axSeen
@@ -682,8 +689,12 @@ func iosXPathFor(n *uitree.Node) string {
 	return sb.String()
 }
 
-// Launch brings an app to the foreground by bundle id.
+// Launch brings an app to the foreground by bundle id — in the language it
+// is pinned to, if it is.
 func (w *WDA) Launch(ctx context.Context, appID string) error {
+	if tags := w.pinnedLocale(appID); len(tags) > 0 {
+		return w.launchInLocale(ctx, appID, tags)
+	}
 	if w.phone != nil {
 		w.expectApp(ctx, appID)
 		if err := w.phone.LaunchApp(ctx, appID); err != nil {
