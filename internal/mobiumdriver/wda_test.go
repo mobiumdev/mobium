@@ -540,7 +540,7 @@ func TestServerErrorsKeepTheirW3CCode(t *testing.T) {
 // phone, false of the backend, and silent on the reason.
 func TestAPhoneSaysWhyItDeclines(t *testing.T) {
 	phone := &WDA{phone: &device.Devicectl{}}
-	for _, c := range []string{CapAppearance, CapPermissions, CapClearData} {
+	for _, c := range []string{CapAppearance, CapPermissions, CapClearData, CapNotifications} {
 		err := Declined(phone, c)
 		if err == nil || !strings.Contains(err.Error(), "real iPhone") {
 			t.Errorf("%s: %v", c, err)

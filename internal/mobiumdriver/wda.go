@@ -45,6 +45,9 @@ type WDA struct {
 	// it. See expectApp.
 	hintMu    sync.Mutex
 	expecting string
+	// shadeHint is set while Notification Center was opened here, which
+	// points every read at SpringBoard so map shows it. See wdanotify.go.
+	shadeHint bool
 
 	// found is the element findUnique found last, by how it was found, until
 	// the next read of the screen.
@@ -291,6 +294,14 @@ func (w *WDA) Snapshot(ctx context.Context) (*uitree.Tree, error) {
 	xml, err := w.w3c.source(ctx)
 	if err != nil {
 		return nil, err
+	}
+	// Notification Center opened here and gone since — a notification
+	// tapped opens its app — leaves reads pointed at SpringBoard; the app
+	// that came forward is what is read instead.
+	if w.dropShadeHint(ctx, xml) {
+		if xml, err = w.w3c.source(ctx); err != nil {
+			return nil, err
+		}
 	}
 	tree, err := uitree.ParseIOS([]byte(xml))
 	if err != nil {

@@ -170,9 +170,20 @@ this is what is not.
   keeps all three, which is what the 2026-09-28 note had seen. Permissions
   are reported as reset and not read back, since nothing outside the app can
   read them on a phone.
-- **The iOS settings still refused as not built:** timezone and
-  notifications. Timezone on a simulator can be `TZ` in the launch
-  environment. Per-app locale is done (2026-09-30): iOS stores no per-app
+- **The iOS settings still refused as not built:** timezone. Setting it
+  is a choice not yet made: a per-app `TZ` at launch, which is a different
+  meaning from Android's device-wide tool, or driving Settings, which on a
+  phone changes its owner's clock; reading it already works through the
+  device clock. Notifications are done on a simulator (2026-09-30),
+  through Notification Center read as SpringBoard: a post goes out with
+  `simctl push` as the app in front and is confirmed by its banner, a read
+  takes any banner and then Notification Center, opened for it and closed
+  again, and the shade, once opened, is what `map` reads
+  (`docs/checks/notifications-ios.sh`). A group expanded is read in full;
+  collapsed, only its newest shows. A notification tapped in Notification
+  Center did not open its app on the simulator, by tap or by element click,
+  while Show less in the same view did respond. A real iPhone is refused:
+  its Notification Center is its owner's. Per-app locale is done (2026-09-30): iOS stores no per-app
   language that can be set from outside, so `app_locale` keeps it for the
   session and every launch passes it as `-AppleLanguages (xx) -AppleLocale
   xx_YY`; a running app is launched again in it at once. Settings, pinned to
