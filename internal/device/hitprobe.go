@@ -155,6 +155,11 @@ func parseHitAnswer(out []byte) (Hit, error) {
 	if err != nil {
 		return Hit{}, mobiumerr.New(mobiumerr.DeviceServer, "read the hit probe's answer %s: %w", m[1], err)
 	}
+	return parseHitLine(line)
+}
+
+// parseHitLine reads the probe's answer, on a simulator or a phone.
+func parseHitLine(line string) (Hit, error) {
 	f := strings.Split(line, "\t")
 	h := Hit{Verdict: f[0]}
 	switch {
