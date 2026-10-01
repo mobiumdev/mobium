@@ -10,11 +10,12 @@
 # for (CHALLENGES 115, docs/decisions/0008); the pass-through view is the
 # negative control, reached although something is drawn over it.
 #
-#   docs/checks/hit-test.sh <simulator-udid>
-#   docs/checks/hit-test.sh <emulator-serial | phone>   # the refusal
+#   docs/checks/hit-test.sh <simulator-udid | iphone-udid>
+#   docs/checks/hit-test.sh <emulator-serial>   # the refusal
 #
-# Needs MobiumApp installed. The simulator's app is stopped for about two
-# seconds a case while lldb is attached; nothing on it is changed.
+# Needs MobiumApp installed — on an iPhone, built for development, as it is
+# from Xcode. The app is stopped while lldb is attached, about two seconds
+# a case on a simulator and nine on a phone; nothing on either is changed.
 set -e
 DEV="$1"
 if [ -z "$DEV" ]; then echo "usage: $0 <serial|udid>" >&2; exit 2; fi
@@ -37,13 +38,10 @@ $M scroll-to "testid=obstructionBtn" --direction down >/dev/null 2>&1 || true
 $M tap "testid=obstructionBtn" >/dev/null
 $M wait "testid=obstructionOutcome" >/dev/null
 
-if [ "$KIND" != simulator ]; then
+if [ "$KIND" = android ]; then
   set +e; out=$($M hit-test testid=hiddenTarget 2>&1); status=$?; set -e
   [ "$status" = 5 ] || fail "not refused as unsupported (exit $status): $out"
-  case "$KIND" in
-    android) echo "$out" | grep -q "needs no hit test" || fail "the refusal does not say why: $out" ;;
-    phone) echo "$out" | grep -q "simulator only" || fail "the refusal does not say why: $out" ;;
-  esac
+  echo "$out" | grep -q "needs no hit test" || fail "the refusal does not say why: $out"
   row "refused" "unsupported, saying why"
   echo PASS; exit 0
 fi

@@ -73,6 +73,27 @@ target got it, at a clear point beside the center cover, past the edge
 cover, and through the pass-through view. The app's outcome line was
 unchanged by the hit tests themselves.
 
+## On a real iPhone
+
+Added 2026-09-30. A phone runs only code signed for it, so the probe cannot
+be loaded as a library: the same question is asked as one Objective-C
+expression, evaluated in the app by lldb, with the recursion over views made
+an explicit stack and UIKit touched on the main thread only. The app must
+let a debugger in — `get-task-allow`, which a development build from Xcode
+has and an App Store app does not.
+
+lldb reaches an app on a phone through CoreDevice with `device process
+attach`. In batch mode that attach never surfaces the stop: the process
+read as running and stopped at once, `process interrupt` answered that it
+must be launched, and an lldb that quit on that error took the app down
+with it. So the probe runs as a command inside `xcrun lldb`'s own Python
+(`internal/device/hitprobe/phone.py`), on a debugger of its own in
+asynchronous mode, waits for the stop as an event, and always detaches; no
+Python of the user's is involved. Measured on an iPhone 15 Plus, iOS
+26.6.2: about nine seconds a case, five of them the attach, and all seven
+cases of the Obstruction Demo agreed with where a raw touch went
+(`docs/checks/hit-test.sh`), as they do on a simulator.
+
 ## What it does not do
 
 - It is not consulted by `tap`. A test that needs the guarantee calls it

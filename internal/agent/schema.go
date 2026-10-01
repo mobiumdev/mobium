@@ -1734,10 +1734,12 @@ func GetToolSchemas() []Tool {
 				"The accessibility tree, and XCTest's hittable, leave out a view hidden from " +
 				"accessibility, so a tap under such an overlay lands on it while every check passes; " +
 				"UIKit's hitTest:withEvent: does not. Fails, as app_tap does, when the touch would " +
-				"go elsewhere, naming the receiver and whether accessibility can see it. iOS " +
-				"simulators only, and opt-in: it attaches lldb to the app, which stops it for about " +
-				"two seconds, and loads a small probe built from source on first use. Android needs " +
-				"none — its tree lists what accessibility hides — and a real iPhone refuses.",
+				"go elsewhere, naming the receiver and whether accessibility can see it. iOS only, " +
+				"and opt-in: it attaches lldb to the app, which stops it for about two seconds on a " +
+				"simulator, where a small probe built from source is loaded on first use, and about " +
+				"nine on a real iPhone, where the probe is evaluated as an expression and the app must " +
+				"be built for development (get-task-allow), as one installed from Xcode is. Android needs " +
+				"none — its tree lists what accessibility hides.",
 			InputSchema: map[string]interface{}{
 				"type": "object",
 				"properties": withDevice(map[string]interface{}{

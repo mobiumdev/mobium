@@ -141,7 +141,7 @@ the wrong string.
 | Files | `upload` and `download` between this machine and where the device keeps downloads — the Download folder on Android, an app's Documents on an iOS simulator |
 | Device state | permissions, appearance, accessibility settings for the session (reduce motion, bold text, contrast, text size and more; a simulator and Android), orientation, per-app language, hardware buttons, shake and biometrics (enroll, then a matching or a stranger's face or finger) on emulators and simulators, screen lock, simulated calls and messages, notifications, timezone and the device's clock, battery, clipboard, geolocation and routes |
 | Dialogs | `alert` reads, answers and types into a system or app dialog; `dialogs` declares answers for one that gets in an action's way |
-| Diagnostics | device logs, crash reports and ANRs, screen recording, a session `trace` for the Playwright trace viewer, `hit-test` — which view UIKit would really give a tap, below accessibility (iOS simulators), `doctor` |
+| Diagnostics | device logs, crash reports and ANRs, screen recording, a session `trace` for the Playwright trace viewer, `hit-test` — which view UIKit would really give a tap, below accessibility (iOS), `doctor` |
 | Batches | `batch` runs a known sequence of calls in one, each checked before the first runs, stopping at the first failure |
 
 [docs/API.md](docs/API.md) lists every tool and which front door reaches it,

@@ -33,14 +33,11 @@ func (u *UIA2) HitTest(context.Context, *uitree.Node, int, int, string) (device.
 	return device.Hit{}, mobiumerr.New(mobiumerr.Unsupported, "%s", androidNeedsNoHitTest)
 }
 
-// HitTest asks UIKit inside the app, on a simulator, through lldb. A real
-// iPhone refuses: attaching a debugger to an app on a phone is not built.
+// HitTest asks UIKit inside the app through lldb: on a simulator by loading
+// the probe, and on a real iPhone by evaluating it as an expression, which
+// needs the app built for development — get-task-allow — as one a developer
+// installs from Xcode is; an App Store app refuses the debugger.
 func (w *WDA) HitTest(ctx context.Context, target *uitree.Node, x, y int, app string) (device.Hit, error) {
-	if w.phone != nil {
-		return device.Hit{}, mobiumerr.New(mobiumerr.Unsupported, "the hit test attaches a debugger to the app, "+
-			"which mobium does on a simulator only — on an iPhone it would need the app signed for debugging and "+
-			"a debug server on the phone, which is not built. Run the check on a simulator")
-	}
 	if app == "" {
 		return device.Hit{}, mobiumerr.New(mobiumerr.DeviceServer, "could not tell which app is in front")
 	}
@@ -50,7 +47,13 @@ func (w *WDA) HitTest(ctx context.Context, target *uitree.Node, x, y int, app st
 	}
 	b := target.Bounds
 	frame := [4]float64{float64(b.X1) / scale, float64(b.Y1) / scale, float64(b.Width()) / scale, float64(b.Height()) / scale}
-	hit, err := w.sim.HitTest(ctx, app, float64(x)/scale, float64(y)/scale, frame, target.TestID)
+	var hit device.Hit
+	var err error
+	if w.phone != nil {
+		hit, err = w.phone.HitTest(ctx, app, float64(x)/scale, float64(y)/scale, frame, target.TestID)
+	} else {
+		hit, err = w.sim.HitTest(ctx, app, float64(x)/scale, float64(y)/scale, frame, target.TestID)
+	}
 	if err != nil {
 		return hit, err
 	}

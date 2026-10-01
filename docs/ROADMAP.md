@@ -61,9 +61,13 @@ this is what is not.
     simulator, `mobium hit-test` sees it** since 2026-09-29: UIKit's own hit
     test, asked through lldb, opt-in because the attach stops the app for
     about two seconds ([decisions/0008](decisions/0008-a-hit-test-below-accessibility.md)).
-    Still open: a real iPhone, which needs the app signed for debugging and
-    a debug server on the phone; and doing it in milliseconds before every
-    tap, which would mean loading the probe at launch.
+    On a real iPhone since 2026-09-30: the probe is evaluated as an lldb
+    expression, through `xcrun lldb`'s own Python, and all seven cases of
+    the Obstruction Demo agreed with where a raw touch went on the iPhone
+    15 Plus, about nine seconds a case (decisions/0008, "On a real
+    iPhone"). It needs the app built for development. Still open: doing it
+    in milliseconds before every tap, which would mean loading the probe at
+    launch.
 - ~~**Session recording and `diff map`.**~~ Done 2026-09-29. `mobium trace
   start|stop` records a session as Vibium does: a zip in the Playwright
   trace format, with every call a step, the screen after it and the map
