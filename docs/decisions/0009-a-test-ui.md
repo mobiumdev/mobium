@@ -73,4 +73,7 @@ iPhone simulator at once:
 The check's first draft looked for a step six seconds after the click and
 found none: each run starts a daemon and a driver per project, as
 `mobium test` does, and the first step waits for them. It now waits for a
-step while the run is still going, which is the claim.
+step while the run is still going, which is the claim. That failed draft
+also found a defect: killed mid-run, `mobium test --ui` left the run's
+daemons running, and Ctrl-C did the same to plain `mobium test`
+(CHALLENGES 199). Both now close whatever a run left open before exiting.

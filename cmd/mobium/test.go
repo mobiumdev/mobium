@@ -15,6 +15,9 @@ import (
 	"slices"
 	"strconv"
 	"strings"
+	"sync"
+	"sync/atomic"
+	"syscall"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -170,6 +173,22 @@ func newTestCmd() *cobra.Command {
 					}
 				}, nil
 			}
+			// Interrupted, every project's connection still open is closed
+			// before exiting: its session ended and its daemon stopped. A
+			// killed run runs no deferred cleanup, and an interrupted
+			// --ui left a run's daemons alive until their idle timeout.
+			var closeOpen func()
+			opts.Connect, closeOpen = closedOnExit(opts.Connect)
+			interrupted := make(chan os.Signal, 1)
+			signal.Notify(interrupted, os.Interrupt, syscall.SIGTERM)
+			var stopping atomic.Bool
+			go func() {
+				<-interrupted
+				stopping.Store(true)
+				fmt.Fprintln(os.Stderr, "\nstopping: ending each project's session")
+				closeOpen()
+				os.Exit(130)
+			}()
 			call := func(tool string, args map[string]interface{}, meta ...map[string]interface{}) (*agent.ToolsCallResult, error) {
 				var m map[string]interface{}
 				if len(meta) > 0 {
@@ -181,6 +200,12 @@ func newTestCmd() *cobra.Command {
 				return serveTestUI(cfg, args, opts, call, uiPort, uiOpen)
 			}
 			sum, err := testrun.Run(cfg, opts, call)
+			// Closing the connections ends the run early, and it must not
+			// then exit before the daemons it is stopping have stopped: the
+			// handler exits, when it is done.
+			if stopping.Load() {
+				select {}
+			}
 			if err != nil {
 				return err
 			}
@@ -384,12 +409,55 @@ func serveTestUI(cfg *testrun.Config, args []string, opts testrun.Options, call 
 		}
 		_ = exec.Command(opener[0], append(opener[1:], url)...).Start()
 	}
+	// Ctrl-C ends the process through the run's own handler, which closes
+	// whatever a run left open.
 	hs := &http.Server{Handler: srv.Handler(), ReadHeaderTimeout: 10 * time.Second}
-	stop := make(chan os.Signal, 1)
-	signal.Notify(stop, os.Interrupt)
-	go func() { <-stop; _ = hs.Close() }()
-	if err := hs.Serve(ln); err != http.ErrServerClosed {
-		return err
+	return hs.Serve(ln)
+}
+
+// closedOnExit wraps connect so every connection it opens is remembered
+// until it is closed, and returns closeOpen, which closes the ones still
+// open — each once, whoever gets there first.
+func closedOnExit(connect func(testrun.Project) (testrun.Caller, func(), error)) (
+	func(testrun.Project) (testrun.Caller, func(), error), func()) {
+	var mu sync.Mutex
+	open := map[int]func(){}
+	next := 0
+	take := func(k int) func() {
+		mu.Lock()
+		defer mu.Unlock()
+		f := open[k]
+		delete(open, k)
+		return f
 	}
-	return nil
+	wrapped := func(p testrun.Project) (testrun.Caller, func(), error) {
+		c, closer, err := connect(p)
+		if err != nil {
+			return nil, nil, err
+		}
+		mu.Lock()
+		next++
+		k := next
+		open[k] = closer
+		mu.Unlock()
+		return c, func() {
+			if f := take(k); f != nil {
+				f()
+			}
+		}, nil
+	}
+	closeOpen := func() {
+		mu.Lock()
+		var keys []int
+		for k := range open {
+			keys = append(keys, k)
+		}
+		mu.Unlock()
+		for _, k := range keys {
+			if f := take(k); f != nil {
+				f()
+			}
+		}
+	}
+	return wrapped, closeOpen
 }
