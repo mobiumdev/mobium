@@ -911,7 +911,10 @@ func GetToolSchemas() []Tool {
 				"caching and anything that stored a local timestamp, which is why time-based " +
 				"interruptions are worth testing. Takes an IANA name such as \"Asia/Tokyo\". " +
 				"Confirmed by reading it back — an unknown zone name is accepted and ignored, " +
-				"so the check is the only thing that makes the answer worth anything.",
+				"so the check is the only thing that makes the answer worth anything. iOS has no " +
+				"device time zone that can be set from outside, so there it is the session's: every " +
+				"app Mobium launches gets it as TZ, the app in front is launched again in it, and " +
+				"setting the device's own zone ends it; an unknown zone is refused.",
 			InputSchema: map[string]interface{}{
 				"type": "object",
 				"properties": withDevice(map[string]interface{}{

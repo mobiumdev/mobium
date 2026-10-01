@@ -111,17 +111,26 @@ func launchArguments(tags []string) []string {
 	}
 }
 
-// launchInLocale launches an app through WebDriverAgent with its language as
-// launch arguments; devicectl and simctl would take them too, but only
-// WebDriverAgent returns once the app is running.
-func (w *WDA) launchInLocale(ctx context.Context, appID string, tags []string) error {
+// launchWith launches an app through WebDriverAgent with its language as
+// launch arguments and the session's time zone as TZ; devicectl and simctl
+// would take them too, but only WebDriverAgent returns once the app is
+// running.
+func (w *WDA) launchWith(ctx context.Context, appID string, tags []string, zone string) error {
+	args := []string{}
+	if len(tags) > 0 {
+		args = launchArguments(tags)
+	}
+	env := map[string]string{}
+	if zone != "" {
+		env["TZ"] = zone
+	}
 	w.expectApp(ctx, appID)
 	err := w.w3c.do(ctx, http.MethodPost, w.w3c.sessionPath("/wda/apps/launch"), map[string]interface{}{
-		"bundleId": appID, "arguments": launchArguments(tags), "environment": map[string]string{},
+		"bundleId": appID, "arguments": args, "environment": env,
 	}, nil)
 	if err != nil {
 		w.clearExpected(ctx)
-		return fmt.Errorf("launch %s in %s: %w", appID, strings.Join(tags, ","), err)
+		return fmt.Errorf("launch %s with %v %v: %w", appID, args, env, err)
 	}
 	return nil
 }

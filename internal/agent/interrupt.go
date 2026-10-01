@@ -151,8 +151,14 @@ func (h *Handlers) timezoneOn(ctx context.Context, s *session, args map[string]i
 		return nil, err
 	}
 	delete(h.refs, s.dev.Serial)
-	return Result(fmt.Sprintf("%s (was %s)", want, before),
-		TimezoneView{Timezone: want, Previous: before, Device: s.dev.Serial}), nil
+	msg := fmt.Sprintf("%s (was %s)", want, before)
+	if s.backend == BackendWDA {
+		// Said because it is not Android's device-wide change: iOS has none
+		// that can be made from outside, so it is the launch environment.
+		msg += " — on iOS for the apps Mobium launches in this session, as TZ in their environment; " +
+			"the app in front was launched again in it, and setting the device's own zone ends it"
+	}
+	return Result(msg, TimezoneView{Timezone: want, Previous: before, Device: s.dev.Serial}), nil
 }
 
 // TimezoneView is the result of app_timezone.
