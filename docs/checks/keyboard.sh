@@ -13,6 +13,14 @@
 # reports its placeholder as its value on both platforms, which once made
 # every append look like a dropped keystroke and, on iOS, the retry for one
 # write the placeholder into the field.
+#
+# A simulator can be left believing a hardware keyboard is attached:
+# XCTest's typing does it now and then, iOS then keeps the software keyboard
+# below the screen, and only a reboot brings it back — not relaunching the
+# app, not restarting the keyboard daemon (CHALLENGES 198). Mobium answers
+# "not shown" then, truthfully, and this check's first step failed after
+# one run in two. So on a simulator, a focused field with the keyboard held
+# below the screen gets one reboot, said aloud, before the step is judged.
 set -e
 DEV="$1"
 if [ -z "$DEV" ]; then echo "usage: $0 <serial|udid>" >&2; exit 2; fi
@@ -21,6 +29,8 @@ fail() { echo "FAIL: $*" >&2; exit 1; }
 json() { python3 -c "import json,sys; d=json.load(sys.stdin); print($1)"; }
 APP=dev.mobium.mobiumapp
 
+KIND=device
+case "$DEV" in *-*-*-*-*) KIND=simulator ;; esac
 case "$DEV" in
   *-*-*-*-*|????????-????????????????) PLATFORM=ios
              M="$ROOT/bin/mobium --driver wda --device $DEV"
@@ -43,6 +53,25 @@ $M tap "label=Login Demo" >/dev/null
 [ "$($M keyboard --json | json 'd["shown"]')" = False ] || fail "the keyboard was up before anything had focus"
 $M tap testid=username >/dev/null
 sleep 1
+# held_below: the keyboard is in the tree with its top at or below the
+# screen's bottom edge — the hardware-keyboard state, not a missing one.
+held_below() {
+  $M source 2>/dev/null | python3 -c '
+import re, sys
+src = sys.stdin.read()
+app = re.search(r"<XCUIElementTypeApplication [^>]*height=\"(\d+)\"", src)
+kb = re.search(r"<XCUIElementTypeKeyboard [^>]*y=\"(-?\d+)\"", src)
+print("yes" if app and kb and int(kb.group(1)) >= int(app.group(1)) else "no")'
+}
+if [ "$($M keyboard --json | json 'd["shown"]')" != True ] && [ "$KIND" = simulator ] && [ "$(held_below)" = yes ]; then
+  echo "    reboot         the simulator held its keyboard below the screen, as with a hardware keyboard — rebooting it"
+  $M daemon stop >/dev/null 2>&1 || true
+  xcrun simctl shutdown "$DEV" && xcrun simctl boot "$DEV" && xcrun simctl bootstatus "$DEV" -b >/dev/null
+  $M launch "$APP" >/dev/null
+  $M tap "label=Login Demo" >/dev/null
+  $M tap testid=username >/dev/null
+  sleep 1
+fi
 [ "$($M keyboard --json | json 'd["shown"]')" = True ] || fail "focusing a field did not bring the keyboard up"
 [ "$($M keyboard --json | json 'd["focused"].get("empty", False)')" = True ] \
   || fail "an empty field was not read as empty — its placeholder was taken for its value"
