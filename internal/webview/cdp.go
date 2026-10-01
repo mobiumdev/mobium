@@ -3,8 +3,10 @@ package webview
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/mobiumdev/mobium/internal/mobiumerr"
+	"net"
 	"net/url"
 	"strconv"
 	"sync"
@@ -15,7 +17,7 @@ import (
 )
 
 // evalTimeout bounds one Runtime.evaluate round trip.
-const evalTimeout = 30 * time.Second
+var evalTimeout = 30 * time.Second
 
 // Session is an attached CDP connection to one web target.
 type Session struct {
@@ -98,20 +100,25 @@ func (s *Session) call(ctx context.Context, method string, params map[string]int
 		return nil, err
 	}
 
-	deadline, ok := ctx.Deadline()
-	if !ok {
-		deadline = time.Now().Add(evalTimeout)
+	// Each round trip is bounded by evalTimeout even inside a call with a
+	// later deadline of its own, as WebKit's is by rwiTimeout. It was used
+	// only when the call had none, and every tool call has one — four
+	// minutes — so a page whose renderer had gone held a context switch for
+	// all of it. CHALLENGES 203.
+	deadline := time.Now().Add(evalTimeout)
+	if d, ok := ctx.Deadline(); ok && d.Before(deadline) {
+		deadline = d
 	}
 	s.conn.SetWriteDeadline(deadline)
 	if err := s.conn.WriteMessage(websocket.TextMessage, msg); err != nil {
-		return nil, fmt.Errorf("%s: %w", method, err)
+		return nil, cdpErr(method, err)
 	}
 
 	s.conn.SetReadDeadline(deadline)
 	for {
 		_, data, err := s.conn.ReadMessage()
 		if err != nil {
-			return nil, fmt.Errorf("%s: %w", method, err)
+			return nil, cdpErr(method, err)
 		}
 		var resp struct {
 			ID     int             `json:"id"`
@@ -132,6 +139,16 @@ func (s *Session) call(ctx context.Context, method string, params map[string]int
 		}
 		return resp.Result, nil
 	}
+}
+
+// cdpErr names a round trip that ran out of time as a timeout, as the iOS
+// transport does, rather than as the socket's own i/o error.
+func cdpErr(method string, err error) error {
+	var ne net.Error
+	if errors.As(err, &ne) && ne.Timeout() {
+		return mobiumerr.New(mobiumerr.Timeout, "%s did not answer in time: %w", method, err)
+	}
+	return fmt.Errorf("%s: %w", method, err)
 }
 
 // Evaluate runs an expression in the page and returns its value as a string.

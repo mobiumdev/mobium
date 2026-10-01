@@ -61,9 +61,37 @@ func (a *ADB) AppState(ctx context.Context, pkg string) (AppState, error) {
 	return AppState{State: AppBackground}, nil
 }
 
+// WebApkHost names the browser showing pkg's pages when pkg is a WebAPK in
+// front: an installed web app whose task is its own, with the browser's
+// web-app activity on top of it. Its windows belong to the browser, so the
+// hierarchy and every foreground read name the browser, never pkg — a
+// launch of one was reported as the browser being in front instead
+// (CHALLENGES 202). Only a top activity that is a browser's WebApkActivity
+// counts: a permission prompt is in the launching app's task too, and that
+// is something else in front.
+func (a *ADB) WebApkHost(ctx context.Context, pkg string) (string, bool) {
+	acts, err := a.Shell(ctx, "dumpsys", "activity", "activities")
+	if err != nil {
+		return "", false
+	}
+	return webApkHost(string(acts), pkg)
+}
+
+func webApkHost(dump, pkg string) (string, bool) {
+	m := topActivityRe.FindStringSubmatch(dump)
+	if m == nil || !strings.HasSuffix(m[2], "WebApkActivity") {
+		return "", false
+	}
+	if _, root := taskInFront(dump); root != pkg || m[1] == pkg {
+		return "", false
+	}
+	return m[1], true
+}
+
 var (
-	topResumedRe = regexp.MustCompile(`topResumedActivity=ActivityRecord\{\S+ u\d+ ([^/\s]+)/\S+ t(\d+)`)
-	histRe       = regexp.MustCompile(`\* Hist\s+#\d+: ActivityRecord\{\S+ u\d+ ([^/\s]+)/\S+ t(\d+)`)
+	topActivityRe = regexp.MustCompile(`topResumedActivity=ActivityRecord\{\S+ u\d+ ([^/\s]+)/(\S+) t\d+`)
+	topResumedRe  = regexp.MustCompile(`topResumedActivity=ActivityRecord\{\S+ u\d+ ([^/\s]+)/\S+ t(\d+)`)
+	histRe        = regexp.MustCompile(`\* Hist\s+#\d+: ActivityRecord\{\S+ u\d+ ([^/\s]+)/\S+ t(\d+)`)
 )
 
 // taskInFront reads `dumpsys activity activities`: the package of the

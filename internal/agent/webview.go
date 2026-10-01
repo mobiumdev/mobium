@@ -92,6 +92,10 @@ func (h *Handlers) contexts(ctx context.Context, args map[string]interface{}) (*
 }
 
 // switchContext moves the session between the native shell and a WebView.
+// pageAnswerTimeout is how long a page just attached to has to answer before
+// the switch into it is refused.
+const pageAnswerTimeout = 10 * time.Second
+
 func (h *Handlers) switchContext(ctx context.Context, args map[string]interface{}) (*ToolsCallResult, error) {
 	s, err := h.sessionFor(ctx, args)
 	if err != nil {
@@ -151,6 +155,23 @@ func (h *Handlers) switchContext(ctx context.Context, args map[string]interface{
 		sess, err := h.attachWeb(ctx, s, c)
 		if err != nil {
 			return nil, err
+		}
+		// A page can be listed and attachable and still never answer:
+		// Android keeps a background tab whose renderer has gone in the
+		// listing, and every call into it waited out its whole budget, the
+		// switch itself included (CHALLENGES 203). So the page is asked
+		// first, briefly.
+		pctx, cancel := context.WithTimeout(ctx, pageAnswerTimeout)
+		_, perr := sess.Evaluate(pctx, "1")
+		cancel()
+		if perr != nil {
+			_ = sess.Close()
+			return nil, mobiumerr.New(mobiumerr.DeviceNotReady, "%s is listed but its page did not answer within %s — "+
+				"a page whose renderer has gone, as Android leaves a tab unloaded in the background, is still listed "+
+				"and reaches nothing: %v", c.ID, pageAnswerTimeout, perr).
+				WithRemedy(fmt.Sprintf("bring the page to the front in %s — for a browser tab, choose it in the tab "+
+					"switcher, which reloads it — then app_context %s again", c.App, c.ID)).
+				WithDetail("app", c.App)
 		}
 		s.web = sess
 		s.webCtx = c.ID

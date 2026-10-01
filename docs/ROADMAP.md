@@ -43,18 +43,18 @@ this is what is not.
   the iPhone its center was at y 2553 pixels, under the toolbar from 2538,
   and `main` tapped it there and opened nothing, while this scrolls it out
   and the article opens.
-- **A tap in Chrome's web app after Chrome stops reporting its WebView.**
-  Opened while Chrome is running, an installed web app's WebView leaves the
-  accessibility tree within about five seconds, and Mobium refuses taps in
-  it with the reason (CHALLENGES 200). What could place one is unmeasured:
-  CDP can say where the page's viewport is in Chrome's own coordinates, and
-  whether those can be tied to the screen without a native host is the
-  question. Seen alongside it on 2026-10-01, each once and not reproduced:
-  switching into a long-backgrounded Chrome tab hung until the client gave
-  up after two minutes, where an `eval` in the same tab timed out at thirty
-  seconds with an error; and the emulator and the booted simulators went
-  away mid-session with nothing in Mobium stopping them and nothing in
-  their logs saying why.
+- **A tap in an emulator's Chrome web app after Chrome stops reporting its
+  WebView.** Without Play services Chrome installs a web app as a launcher
+  shortcut, and opened while Chrome is running its WebView leaves the
+  accessibility tree within about five seconds; Mobium refuses taps in it
+  with the reason (CHALLENGES 200). A WebAPK on the Pixel 8 Pro kept its
+  WebView and took taps, so this is narrower than it first looked. What
+  could place one is unmeasured: CDP can say where the page's viewport is in
+  Chrome's own coordinates, and whether those can be tied to the screen
+  without a native host is the question. Seen once on 2026-10-01 and not
+  reproduced: the emulator and the booted simulators went away mid-session
+  with nothing in Mobium stopping them and nothing in their logs saying
+  why. The hang switching into a background tab is CHALLENGES 203, fixed.
 - **Windows.** Everything that needs no device passes on a GitHub-hosted
   Windows runner, every run: both modules' tests, the named-pipe daemon
   transport's acceptance tests five times over, and the built `mobium.exe` —
