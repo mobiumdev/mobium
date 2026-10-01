@@ -233,7 +233,8 @@ it has been seen to come back the other way:
 
 - A shorthand for steps (`{"tap": "label=Login Demo"}`). Worth doing once the
   long form has been written by hand enough to know which steps are common.
-- Test-level parameters and data (the same test on several inputs).
+- Test-level parameters and data (the same test on several inputs) — done
+  later; see "Parameters" below.
 - Sharding across machines — the grid already lends devices; how a run
   splits across it is iteration 2 at the earliest.
 
@@ -334,3 +335,42 @@ on the Pixel 7 AVD and the iPhone 17 Pro simulator:
 
 Left for later: the phones, an interactive mode, recording a test from what a
 person does (`codegen`), and test parameters.
+
+## Parameters
+
+Added 2026-10-01: Playwright's parameterized test, a test in a loop over
+its data, as a key on the test. `"each"` is a list of cases, objects, and
+the test runs once per case as a test of its own:
+
+```json
+{"name": "a bad sign-in is refused, and says why: ${why}",
+ "each": [
+   {"why": "a wrong password", "pass": "wrongpass1", "error": "loginError"},
+   {"why": "a short password", "pass": "abc", "error": "passError"}
+ ],
+ "steps": [
+   {"fill": {"target": "testid=password", "text": "${pass}"}},
+   {"tap": "testid=loginBtn"},
+   {"wait_for": {"target": "testid=${error}", "condition": "visible"}}
+ ]}
+```
+
+- `${key}` in any string of a step — its arguments, an expect, its
+  description — is the case's value. A string that is nothing but one
+  `${key}` takes the value's own type, so `"count": "${rows}"` stays a number.
+  `$${` is a literal `${`, in any test.
+- The name is the case's too. With a `${key}` in it, it is filled in; without
+  one, the cases are numbered — `[1]`, `[2]` — and not named after their
+  values, which may be a password and would then be in every report.
+  Expanded names must be unique, as any test's are, so `-g` and
+  `--last-failed` find one case.
+- Cases become tests when the file is read, before anything runs, and are
+  checked as any test is. A `${key}` a case does not have is refused naming
+  the case and the keys it has; one in a test with no `"each"` is refused
+  too, since it would be typed as written.
+
+In `mobium.config.json` `${NAME}` is an environment variable — the iOS
+project's device — and in a test file it is a case's value; the two are read
+separately. The suite's Login test runs three cases, and a copy with one
+case's message wrong failed that case alone, on an emulator and a simulator,
+with the substituted values in the failure.

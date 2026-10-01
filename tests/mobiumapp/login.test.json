@@ -1,5 +1,5 @@
 {
-  "description": "MobiumApp's Login Demo: the negative paths, the demo account, and the fields' state as the form is filled.",
+  "description": "MobiumApp's Login Demo: the negative paths, as one test over three cases, the demo account, and the fields' state as the form is filled.",
   "app": "dev.mobium.mobiumapp",
   "beforeEach": [
     {"name": "app_dialogs", "arguments": {"when": "Save Password", "press": "Not Now"},
@@ -7,12 +7,22 @@
     {"name": "app_tap", "arguments": {"target": "label=Login Demo"}}
   ],
   "tests": [
-    {"name": "a wrong password is refused, and says so", "steps": [
-      {"name": "app_fill", "arguments": {"target": "testid=username", "text": "mobium"}},
-      {"name": "app_fill", "arguments": {"target": "testid=password", "text": "wrongpass1"}},
+    {"name": "a bad sign-in is refused, and says why: ${why}",
+     "description": "One test per case, Playwright's parameterized test; each names its own message under its own field.",
+     "each": [
+      {"why": "a wrong password", "user": "mobium", "pass": "wrongpass1", "error": "loginError",
+       "message": "Incorrect username or password."},
+      {"why": "a short password", "user": "mobium", "pass": "abc", "error": "passError",
+       "message": "Password must be at least 6 characters."},
+      {"why": "a short username", "user": "mo", "pass": "hunter2", "error": "userError",
+       "message": "Username must be at least 3 characters."}
+     ],
+     "steps": [
+      {"name": "app_fill", "arguments": {"target": "testid=username", "text": "${user}"}},
+      {"name": "app_fill", "arguments": {"target": "testid=password", "text": "${pass}"}},
       {"name": "app_tap", "arguments": {"target": "testid=loginBtn"}},
-      {"name": "app_wait_for", "arguments": {"target": "testid=loginError", "condition": "text",
-        "text": "Incorrect username or password.", "exact": true}},
+      {"name": "app_wait_for", "arguments": {"target": "testid=${error}", "condition": "text",
+        "text": "${message}", "exact": true}},
       {"name": "app_wait_for", "arguments": {"target": "testid=welcomeText", "condition": "hidden"}}
     ]},
     {"name": "the demo account signs in, and out", "steps": [

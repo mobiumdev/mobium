@@ -17,8 +17,9 @@ this is what is not.
   they must. The flaky control clears app data, which a phone cannot, so it
   stays on emulators and simulators. Getting there found CHALLENGES
   170–172. On an iPhone a password still needs a keyboard with its letters
-  up (159). Later: an interactive
-  mode, and parameters. Recording a test from what a person does is
+  up (159). Parameters since 2026-10-01: `"each"` runs a test once per case,
+  `${key}` filled in (decisions/0006, "Parameters"). Later: an interactive
+  mode. Recording a test from what a person does is
   `mobium inspect`, since 2026-09-29 ([decisions/0007](decisions/0007-an-inspector.md)).
   [decisions/0006](decisions/0006-a-test-runner.md).
 - ~~**A second third-party app on iOS.**~~ Done 2026-10-01: NetNewsWire, an
