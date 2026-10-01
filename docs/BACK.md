@@ -159,6 +159,24 @@ Three things follow.
 
 ### In Mobium
 
+Fixed on 2026-10-01, and held by `docs/checks/back.sh`, which passed on both
+AVDs, the simulator and the iPhone 15 Plus:
+
+- `press back` says what back did: "it left <app>; <app> is in the
+  foreground", or "<app> is still in the foreground", and on iOS what the
+  navigation bar says now. It waits for that outcome by its own clock — a
+  back that left an app handed focus over in about 0.1s — so a back inside
+  an app answers in one to two seconds, where the launch wait it first
+  borrowed took 2.4.
+- `press back --gesture` (`app_press` with `gesture`) swipes in from the left
+  edge, mid-height on Android and in the navigation bar on iOS, and is
+  refused with the reason on an Android device using button navigation.
+- `devices` names an Android device's navigation mode.
+- The iOS refusal names the gesture, the CLI flag and the MCP argument.
+- Every client has a back that returns the outcome.
+
+What was open before, kept for the record:
+
 1. **`press back` does not say what back did.** On Android it answers
    "pressed back" whether the app went to a parent screen or closed —
    exactly the difference this report was about, and a test cannot see it

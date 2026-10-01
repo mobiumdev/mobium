@@ -340,8 +340,9 @@ Relaunch an app after changing its language, or it keeps the old one.
 ### Interruptions and hardware buttons
 
 ```sh
-mobium press back                  # primary navigation on Android
-mobium press home                  # the one press mobium can confirm
+mobium press back                  # primary navigation on Android; says where it went
+mobium press back --gesture        # the swipe in from the edge; the only back on iOS
+mobium press home                  # says the launcher came forward
 mobium lock lock                   # a state, not a toggle
 mobium call ring                   # then accept, or hang
 mobium sms "your code is 123456"
@@ -353,17 +354,22 @@ mobium notifications --shade open  # now the notification can be tapped
 
 Every one of these can move the screen, so map again before acting.
 
-- **iOS has no back button.** Mobium refuses rather than sending an edge
-  swipe — a different event an app can tell apart. Map the app's own back
-  chevron and tap it.
+- **iOS has no back button.** `press back` is refused; tap the app's own
+  back chevron, or ask for the swipe with `press back --gesture`, which
+  starts in the navigation bar because a list row's swipe actions would take
+  it anywhere else. An app with no navigation stack has no swipe back at all.
+- **On Android `--gesture` is refused with three-button navigation** — an
+  edge swipe is not back there. `mobium devices` names the mode.
 - **Calls and messages are emulator-only.** A real phone cannot be made to ring
   from outside. Mobium says which it is rather than failing obscurely.
 - **A notification cannot be tapped until the shade is open.** Until then it is
   not on screen and `map` cannot see it: `notifications --shade open`, then
   `map`, then tap it. Close the shade when finished, or every later locator
   fails against a panel covering the app.
-- **Only `press home` reports a confirmed outcome.** What `back` does is the
-  app's business; re-map to see where you ended up.
+- **Back says what it did.** "it left com.example.shop" means back closed the
+  app — usually a bug when the app had a screen to go back to; "still in the
+  foreground" means it went somewhere inside it, and on iOS the navigation
+  bar's new title is given. Map again to see which screen.
 
 ### Dialogs
 

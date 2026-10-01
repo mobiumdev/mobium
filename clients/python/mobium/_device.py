@@ -1047,6 +1047,21 @@ class Device:
         """
         self._data("app_press", {"button": button})
 
+    def back(self, gesture: bool = False) -> dict:
+        """Go back, and say where it went.
+
+        Returns ``foreground`` (the app in front afterwards), ``left`` (the
+        app back closed, absent when it stayed in front), ``title`` (an iOS
+        navigation bar's, afterwards) and ``confirmed``. With
+        ``gesture=True`` it is a swipe in from the left edge rather than the
+        key: the only back iOS has, and refused on an Android device that
+        navigates with buttons.
+        """
+        args: dict = {"button": "back"}
+        if gesture:
+            args["gesture"] = True
+        return self._data("app_press", args) or {}
+
     def screen_locked(self) -> bool:
         """Whether the screen is locked."""
         data = self._data("app_lock") or {}

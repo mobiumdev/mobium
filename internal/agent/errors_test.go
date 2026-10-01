@@ -9,6 +9,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/mobiumdev/mobium/internal/mobiumdriver"
 	"github.com/mobiumdev/mobium/internal/mobiumerr"
 	"github.com/mobiumdev/mobium/internal/uitree"
 )
@@ -302,4 +303,26 @@ func mustRead(t *testing.T, path string) []byte {
 		t.Fatal(err)
 	}
 	return b
+}
+
+// The iOS refusal of back names app_press's gesture argument as the way to
+// swipe back; a remedy naming an argument the tool lost would be obeyed and
+// refused.
+func TestTheBackRemedyNamesARealArgument(t *testing.T) {
+	err := (&mobiumdriver.WDA{}).Press(context.Background(), mobiumdriver.ButtonBack)
+	e, ok := mobiumerr.As(err)
+	if !ok || !strings.Contains(e.Remedy, "app_press back with gesture") {
+		t.Fatalf("the iOS back refusal does not name the gesture: %v", err)
+	}
+	for _, tool := range GetToolSchemas() {
+		if tool.Name != "app_press" {
+			continue
+		}
+		props := tool.InputSchema["properties"].(map[string]interface{})
+		if _, ok := props["gesture"]; !ok {
+			t.Error("app_press no longer takes gesture, which the remedy names")
+		}
+		return
+	}
+	t.Error("no app_press tool")
 }

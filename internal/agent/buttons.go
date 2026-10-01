@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/mobiumdev/mobium/internal/mobiumdriver"
+	"github.com/mobiumdev/mobium/internal/uitree"
 )
 
 // press is app_press: a hardware button.
@@ -50,24 +51,61 @@ func (h *Handlers) pressOn(ctx context.Context, s *session, args map[string]inte
 			button, mobiumdriver.ButtonNames(mobiumdriver.AllButtons()))
 	}
 
-	// Home is the one press with an outcome worth checking: the launcher
-	// should come to the front. The others have no platform-wide signal —
-	// what `back` does is the app's business, and volume moved nothing
-	// measurable on a device with no audio playing — so they are reported as
-	// sent rather than as confirmed, which is the honest difference.
-	var before string
-	if button == mobiumdriver.ButtonHome {
-		before, _ = h.screenNow(ctx, s)
+	// Home and back have outcomes worth checking. Home brings the launcher
+	// forward. Back either leaves the app or keeps it in front, and which
+	// one is the difference between going back a screen and closing the
+	// app — MobiumApp closed on every back from a demo and Mobium said only
+	// "pressed back" (docs/BACK.md). The others have no platform-wide signal
+	// — volume moved nothing measurable on a device with no audio playing —
+	// so they are reported as sent rather than as confirmed.
+	gesture := boolArg(args, "gesture")
+	if gesture && button != mobiumdriver.ButtonBack {
+		return nil, mobiumerr.New(mobiumerr.InvalidArgument, "only back has a gesture; press %s without one", button)
+	}
+	var before, beforeScreen, beforeTitle string
+	var beforeTree *uitree.Tree
+	if button == mobiumdriver.ButtonHome || button == mobiumdriver.ButtonBack {
+		if tree, err := s.driver.Snapshot(ctx); err == nil && tree != nil {
+			beforeTree, before, beforeScreen = tree, tree.Package(), fingerprint(tree.Root)
+			beforeTitle = navigationTitle(tree)
+		}
 	}
 
-	if err := ctrl.Press(ctx, button); err != nil {
+	how := "pressed " + button
+	if gesture {
+		from, err := h.gestureBack(ctx, s, beforeTree)
+		if err != nil {
+			return nil, err
+		}
+		how = "swiped back from " + from
+	} else if err := ctrl.Press(ctx, button); err != nil {
 		return nil, err
 	}
 
 	// Any press can move the screen, so refs from the last map are gone.
 	delete(h.refs, s.dev.Serial)
 
-	view := PressView{Button: button, Device: s.dev.Serial}
+	view := PressView{Button: button, Gesture: gesture, Device: s.dev.Serial}
+	if button == mobiumdriver.ButtonBack {
+		// Without a read from before, there is nothing to compare: say so
+		// rather than wait for a change that cannot be seen.
+		var after string
+		if beforeTree != nil {
+			after = h.awaitBack(ctx, s, before, beforeScreen)
+		}
+		var afterTitle string
+		if s.backend == BackendWDA {
+			if tree, err := s.driver.Snapshot(ctx); err == nil && tree != nil {
+				afterTitle = navigationTitle(tree)
+			}
+		}
+		msg, ok := backOutcome(how, before, after, beforeTitle, afterTitle)
+		view.Confirmed, view.Foreground, view.Title = ok, after, afterTitle
+		if ok && before != "" && after != before {
+			view.Left = before
+		}
+		return Result(msg, view), nil
+	}
 	if button == mobiumdriver.ButtonHome {
 		if after, ok := h.awaitLauncher(ctx, s, before); ok {
 			view.Confirmed, view.Foreground = true, after
@@ -103,7 +141,14 @@ type PressView struct {
 	// was merely sent. Only home has a platform-wide outcome to check.
 	Confirmed  bool   `json:"confirmed"`
 	Foreground string `json:"foreground,omitempty"`
-	Device     string `json:"device"`
+	// Gesture is a back given as a swipe in from the edge, not the key.
+	Gesture bool `json:"gesture,omitempty"`
+	// Left is the app a back took the user out of. Empty when the app
+	// stayed in front: back went somewhere inside it.
+	Left string `json:"left,omitempty"`
+	// Title is what an iOS navigation bar says after a back.
+	Title  string `json:"title,omitempty"`
+	Device string `json:"device"`
 }
 
 // lock is app_lock: read whether the screen is locked, or lock and unlock it.

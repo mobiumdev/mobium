@@ -916,6 +916,18 @@ namespace Mobium
         /// </summary>
         public void Press(string button) => Act("app_press", Args("button", button));
 
+        /// <summary>
+        /// Goes back and says where it went: <c>foreground</c>, the app in
+        /// front afterwards; <c>left</c>, the app back closed, absent when it
+        /// stayed in front; <c>title</c>, an iOS navigation bar's; and
+        /// <c>confirmed</c>. With <paramref name="gesture"/> it is a swipe in
+        /// from the left edge rather than the key: the only back iOS has, and
+        /// refused on an Android device that navigates with buttons.
+        /// </summary>
+        public IDictionary<string, object?> Back(bool gesture = false) =>
+            gesture ? Data("app_press", Args("button", "back", "gesture", true))
+                    : Data("app_press", Args("button", "back"));
+
         /// <summary>Whether the screen is locked.</summary>
         public bool ScreenLocked() => Json.Bool(Data("app_lock", null), "locked");
 

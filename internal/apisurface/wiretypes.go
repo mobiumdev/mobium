@@ -31,6 +31,7 @@ import (
 var GoWireTypes = map[string][2]string{
 	"App":             {"internal/agent", "AppEntry"},
 	"AppStatus":       {"internal/agent", "AppStateView"},
+	"BackResult":      {"internal/agent", "PressView"},
 	"BatteryStatus":   {"internal/agent", "BatteryView"},
 	"BiometricStatus": {"internal/agent", "BiometricView"},
 	"AuditFinding":    {"internal/agent", "AuditFindingView"},

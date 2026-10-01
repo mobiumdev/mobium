@@ -1470,6 +1470,24 @@ public final class Mobium implements AutoCloseable {
     public void press(String button) { data("app_press", args("button", button)); }
 
     /**
+     * Goes back with the key and says where it went.
+     *
+     * @return {@code foreground}, the app in front afterwards; {@code left}, the app back closed,
+     *     absent when it stayed in front; {@code title}, an iOS navigation bar's; and {@code confirmed}
+     */
+    public Map<String, Object> back() { return back(false); }
+
+    /**
+     * Goes back and says where it went. With {@code gesture} it is a swipe in from the left edge
+     * rather than the key: the only back iOS has, and refused on an Android device that navigates
+     * with buttons.
+     */
+    public Map<String, Object> back(boolean gesture) {
+        return gesture ? data("app_press", args("button", "back", "gesture", true))
+                       : data("app_press", args("button", "back"));
+    }
+
+    /**
      * Whether the screen is locked.
      *
      * @return true when the screen is locked

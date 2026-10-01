@@ -65,6 +65,9 @@ type DeviceView struct {
 	Model    string `json:"model,omitempty"`
 	Runtime  string `json:"runtime,omitempty"`
 	Emulator bool   `json:"emulator"`
+	// Navigation is an Android device's navigation mode: "gestures",
+	// "three-button" or "two-button". It decides what an edge swipe is.
+	Navigation string `json:"navigation,omitempty"`
 }
 
 // DevicesView is the result of app_devices.

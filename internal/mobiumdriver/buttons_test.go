@@ -2,6 +2,7 @@ package mobiumdriver
 
 import (
 	"context"
+	"github.com/mobiumdev/mobium/internal/mobiumerr"
 	"strings"
 	"testing"
 )
@@ -43,10 +44,17 @@ func TestIOSRefusesBackWithTheReason(t *testing.T) {
 	if err == nil {
 		t.Fatal("iOS accepted a back press")
 	}
-	for _, want := range []string{"no back button", "chevron", "app_swipe", "different events"} {
+	for _, want := range []string{"no back button", "chevron", "different events"} {
 		if !strings.Contains(err.Error(), want) {
 			t.Errorf("the refusal does not mention %q: %v", want, err)
 		}
+	}
+	// The remedy asks for the swipe by name, where a row cannot take it:
+	// the swipe measured on the iPhone did nothing when it started on a
+	// row with swipe actions (docs/BACK.md).
+	e, ok := mobiumerr.As(err)
+	if !ok || !strings.Contains(e.Remedy, "app_press back with gesture") || !strings.Contains(e.Remedy, "navigation bar") {
+		t.Errorf("the remedy does not name the gesture and where it starts: %+v", e)
 	}
 
 	// A button iOS simply lacks gets the shorter treatment: there is nothing

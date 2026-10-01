@@ -1341,6 +1341,20 @@ export class Device {
     await this.#data('app_press', { button })
   }
 
+  /**
+   * Go back, and say where it went: `foreground` (the app in front
+   * afterwards), `left` (the app back closed, absent when it stayed in
+   * front), `title` (an iOS navigation bar's) and `confirmed`. With
+   * `{ gesture: true }` it is a swipe in from the left edge rather than the
+   * key: the only back iOS has, and refused on an Android device that
+   * navigates with buttons.
+   */
+  async back({ gesture = false } = {}) {
+    const args = { button: 'back' }
+    if (gesture) args.gesture = true
+    return (await this.#data('app_press', args)) || {}
+  }
+
   /** Whether the screen is locked. */
   async screenLocked() {
     const data = (await this.#data('app_lock')) || {}

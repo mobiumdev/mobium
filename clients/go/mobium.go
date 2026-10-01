@@ -1575,6 +1575,33 @@ func (d *Device) Press(ctx context.Context, button string) error {
 	return d.data(ctx, "app_press", map[string]any{"button": button}, &out)
 }
 
+// BackResult is what a back did.
+type BackResult struct {
+	// Foreground is the app in front afterwards.
+	Foreground string `json:"foreground"`
+	// Left is the app back took the user out of; empty when it stayed in
+	// front and back went somewhere inside it.
+	Left string `json:"left"`
+	// Title is what an iOS navigation bar says afterwards.
+	Title string `json:"title"`
+	// Confirmed says the outcome was read rather than assumed.
+	Confirmed bool `json:"confirmed"`
+}
+
+// Back goes back and says where it went: whether it left the app, and on
+// iOS what the navigation bar says. With gesture it is a swipe in from the
+// left edge rather than the key — the only back iOS has, and refused on an
+// Android device that navigates with buttons.
+func (d *Device) Back(ctx context.Context, gesture bool) (BackResult, error) {
+	var out BackResult
+	args := map[string]any{"button": "back"}
+	if gesture {
+		args["gesture"] = true
+	}
+	err := d.data(ctx, "app_press", args, &out)
+	return out, err
+}
+
 // ScreenLocked reports whether the screen is locked.
 func (d *Device) ScreenLocked(ctx context.Context) (bool, error) {
 	var out struct {

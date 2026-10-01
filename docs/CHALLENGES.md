@@ -7,7 +7,7 @@ the source.
 
 The pattern across them is the reason the document exists: **almost nothing
 here was found by reading code or by a test written from imagination.** Of
-203 defects, 167 were found only by running against a real device. The other
+204 defects, 168 were found only by running against a real device. The other
 thirty-six — 4, 5, 6, 14, 23, 24, 32, 35, 36, 39, 44, 50, 53, 54, 57, 66, 89,
 99, 100, 121, 123, 129, 130, 133, 134, 139, 140, 141, 142, 144, 150, 158, 162,
 164, 165 and 172 — came from reading code, the compiler, a test, a linter,
@@ -4519,6 +4519,24 @@ within ten seconds with what happened and a remedy that works: choosing the
 tab in Chrome's tab switcher reloaded it, and the same switch then attached
 and read it. A unit test with a server that accepts and never answers held
 the old code for its whole one-minute deadline.
+
+### 204. Back said "pressed back" whether it went back or closed the app
+
+**Found by:** Lana, on the Pixel 8 Pro: in MobiumApp a swipe back from any
+demo closed the app. Measuring it on five devices (docs/BACK.md) showed the
+app was at fault — it handled no back — and that Mobium would never have
+said so: `press back` answered "pressed back" whether the app went to its
+home screen or closed, its result claimed nothing, and a test using it saw
+the same answer for the bug and for the fix. Back was reported as "sent"
+on the reasoning that what it does is the app's business — true, and the
+reason to report what the app did rather than nothing.
+
+Now back reads what is in front before and after, says when it left the
+app, and on iOS gives the navigation bar's title; it has its own wait,
+since the launch wait it first borrowed held every back inside an app for
+2.4s. Asked for, it is the gesture rather than the key — on iOS the only
+back there is — and refused where an edge swipe is not back. The check
+that holds it is `docs/checks/back.sh`.
 
 ## Findings that were not defects
 

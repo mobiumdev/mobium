@@ -336,6 +336,8 @@ export class Device {
   followRoute(waypoints: [number, number][], speed?: number): Promise<Data>
   followGpx(path: string, speed?: number): Promise<Data>
   press(button: 'back' | 'home' | 'recents' | 'volume-up' | 'volume-down'): Promise<void>
+  /** Go back and say where it went; `gesture` swipes in from the left edge instead of the key. */
+  back(options?: { gesture?: boolean }): Promise<{ foreground?: string; left?: string; title?: string; confirmed: boolean }>
   screenLocked(): Promise<boolean>
   setScreenLocked(locked: boolean): Promise<boolean>
   incomingCall(action?: 'ring' | 'accept' | 'hang', number?: string): Promise<void>

@@ -1412,6 +1412,14 @@
       "global": true
     },
     {
+      "tool": "app_press",
+      "arg": "gesture",
+      "type": "boolean",
+      "setBy": [
+        "press"
+      ]
+    },
+    {
       "tool": "app_press_drag",
       "arg": "device",
       "type": "string",
@@ -3070,8 +3078,12 @@
       "tools": [
         "app_press"
       ],
+      "flags": [
+        "--gesture"
+      ],
       "sends": [
-        "button"
+        "button",
+        "gesture"
       ]
     },
     {
