@@ -919,6 +919,14 @@
       "global": true
     },
     {
+      "tool": "app_launch",
+      "arg": "hit_test",
+      "type": "boolean",
+      "setBy": [
+        "launch"
+      ]
+    },
+    {
       "tool": "app_list_apps",
       "arg": "device",
       "type": "string",
@@ -2856,8 +2864,12 @@
       "tools": [
         "app_launch"
       ],
+      "flags": [
+        "--hit-test"
+      ],
       "sends": [
-        "app"
+        "app",
+        "hit_test"
       ]
     },
     {

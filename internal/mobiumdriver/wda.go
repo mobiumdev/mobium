@@ -66,6 +66,10 @@ type WDA struct {
 	// environment, for the life of the session; empty follows the device.
 	// Guarded by localeMu. See wdatimezone.go.
 	zone string
+	// probed is the apps whose last launch here loaded the hit probe, so a
+	// launch Mobium makes again — for a language or a zone — loads it too.
+	// Guarded by localeMu. See hittest.go.
+	probed map[string]bool
 
 	// axSeen is what the last visit to a phone's Settings read, which a
 	// read of every accessibility setting answers from. See phoneAX.
@@ -750,6 +754,7 @@ func iosXPathFor(n *uitree.Node) string {
 // Launch brings an app to the foreground by bundle id — in the language it
 // is pinned to, if it is.
 func (w *WDA) Launch(ctx context.Context, appID string) error {
+	w.setProbed(appID, false)
 	if tags, zone := w.pinnedLocale(appID), w.sessionZone(); len(tags) > 0 || zone != "" {
 		return w.launchWith(ctx, appID, tags, zone)
 	}

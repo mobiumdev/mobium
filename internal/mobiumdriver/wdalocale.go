@@ -124,6 +124,15 @@ func (w *WDA) launchWith(ctx context.Context, appID string, tags []string, zone 
 	if zone != "" {
 		env["TZ"] = zone
 	}
+	if w.isProbed(appID) && w.sim != nil {
+		probe, err := w.sim.HitProbeEnv(ctx, appID)
+		if err != nil {
+			return err
+		}
+		for k, v := range probe {
+			env[k] = v
+		}
+	}
 	w.expectApp(ctx, appID)
 	err := w.w3c.do(ctx, http.MethodPost, w.w3c.sessionPath("/wda/apps/launch"), map[string]interface{}{
 		"bundleId": appID, "arguments": args, "environment": env,

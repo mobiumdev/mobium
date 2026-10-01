@@ -607,6 +607,14 @@ func (d *Device) Launch(ctx context.Context, app string) error {
 	return d.act(ctx, "app_launch", map[string]any{"app": app})
 }
 
+// LaunchWithHitTest launches an app on an iOS simulator with the hit probe
+// loaded in it, so every action on an element in it first asks UIKit where
+// the touch goes, and is refused when it would land elsewhere — an overlay
+// hidden from accessibility included. A real iPhone and Android refuse.
+func (d *Device) LaunchWithHitTest(ctx context.Context, app string) error {
+	return d.act(ctx, "app_launch", map[string]any{"app": app, "hit_test": true})
+}
+
 // Terminate stops a running app.
 func (d *Device) Terminate(ctx context.Context, app string) error {
 	return d.act(ctx, "app_terminate", map[string]any{"app": app})

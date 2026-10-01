@@ -1,12 +1,14 @@
 package device
 
 import (
+	"bufio"
 	"bytes"
 	"context"
 	"crypto/sha256"
 	_ "embed"
 	"encoding/hex"
 	"fmt"
+	"net"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -22,7 +24,9 @@ import (
 // The hit test below accessibility, on an iOS simulator. See
 // hitprobe/probe.m for what it asks and why accessibility cannot answer it,
 // and docs/decisions/0008 for why it is opt-in: it attaches a debugger to
-// the app, which stops it for about two seconds.
+// the app, which stops it for about two seconds — unless the probe was
+// loaded when the app launched, when it answers on a Unix socket in well
+// under a millisecond.
 
 //go:embed hitprobe/probe.m
 var hitProbeSource []byte
@@ -86,6 +90,80 @@ func (s *Simctl) hitProbeLibrary(ctx context.Context) (string, error) {
 		return "", mobiumerr.New(mobiumerr.ToolchainMissing, "build the hit probe: %v: %s", err, firstLine(string(out)))
 	}
 	return lib, os.Rename(tmp, lib)
+}
+
+// hitSocketPathMax is sun_path on macOS, the only place a simulator runs,
+// less its terminating zero.
+const hitSocketPathMax = 103
+
+// hitProbeSocket is where the probe loaded into an app at launch answers:
+// one socket per simulator and app, under MOBIUM_HOME, which is on the Mac's
+// own disk and so reachable from inside the simulator and from nowhere else.
+func (s *Simctl) hitProbeSocket(bundleID string) (string, error) {
+	sum := sha256.Sum256([]byte(s.UDID + "\x00" + bundleID))
+	path := filepath.Join(cacheRoot(), "h", hex.EncodeToString(sum[:6])+".sock")
+	if len(path) > hitSocketPathMax {
+		return "", mobiumerr.New(mobiumerr.InvalidArgument, "the hit probe's socket path %q is %d bytes, over the "+
+			"%d-byte OS limit: point MOBIUM_HOME at a shorter path", path, len(path), hitSocketPathMax)
+	}
+	return path, nil
+}
+
+// HitProbeEnv is the environment that loads the probe into bundleID when it
+// launches, and the socket it will answer on. The library unsets
+// DYLD_INSERT_LIBRARIES as it loads, so nothing the app starts inherits it.
+func (s *Simctl) HitProbeEnv(ctx context.Context, bundleID string) (map[string]string, error) {
+	lib, err := s.hitProbeLibrary(ctx)
+	if err != nil {
+		return nil, err
+	}
+	sock, err := s.hitProbeSocket(bundleID)
+	if err != nil {
+		return nil, err
+	}
+	if err := os.MkdirAll(filepath.Dir(sock), 0o700); err != nil {
+		return nil, fmt.Errorf("create the hit probe's socket directory: %w", err)
+	}
+	// A socket left by an earlier launch would answer for nothing, and the
+	// probe could not tell it from its own.
+	_ = os.Remove(sock)
+	return map[string]string{"DYLD_INSERT_LIBRARIES": lib, "MOBIUM_HIT_SOCKET": sock}, nil
+}
+
+// loadedHitTimeout bounds one question to a probe loaded at launch: it
+// answers in under a millisecond, but on the app's main thread, which a
+// busy app can hold.
+const loadedHitTimeout = 5 * time.Second
+
+// LoadedHitTest asks the probe loaded into bundleID at launch, as HitTest
+// asks through lldb. loaded is false, with no error, when no probe answers
+// there: the app was launched without it, or has been launched again since.
+func (s *Simctl) LoadedHitTest(ctx context.Context, bundleID string, x, y float64, frame [4]float64, id string) (hit Hit, loaded bool, err error) {
+	sock, err := s.hitProbeSocket(bundleID)
+	if err != nil {
+		return Hit{}, false, err
+	}
+	var d net.Dialer
+	conn, err := d.DialContext(ctx, "unix", sock)
+	if err != nil {
+		return Hit{}, false, nil
+	}
+	defer conn.Close()
+	_ = conn.SetDeadline(time.Now().Add(loadedHitTimeout))
+	clean := strings.NewReplacer("\t", " ", "\n", " ").Replace(id)
+	if _, err := fmt.Fprintf(conn, "%g\t%g\t%g\t%g\t%g\t%g\t%s\n", x, y, frame[0], frame[1], frame[2], frame[3], clean); err != nil {
+		return Hit{}, true, mobiumerr.New(mobiumerr.DeviceServer, "ask the hit probe in %s: %w", bundleID, err)
+	}
+	line, err := bufio.NewReader(conn).ReadString('\n')
+	if err != nil {
+		if ne, ok := err.(net.Error); ok && ne.Timeout() {
+			return Hit{}, true, mobiumerr.New(mobiumerr.Timeout, "the hit probe in %s did not answer within %s — "+
+				"its main thread is busy", bundleID, loadedHitTimeout)
+		}
+		return Hit{}, true, mobiumerr.New(mobiumerr.DeviceServer, "read the hit probe's answer in %s: %w", bundleID, err)
+	}
+	hit, err = parseHitLine(strings.TrimRight(line, "\n"))
+	return hit, true, err
 }
 
 // appPIDRe finds an app's process in the simulator's launchctl list:

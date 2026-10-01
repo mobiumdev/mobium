@@ -3,16 +3,25 @@ package main
 import "github.com/spf13/cobra"
 
 func newLaunchCmd() *cobra.Command {
-	return &cobra.Command{
+	var hitTest bool
+	cmd := &cobra.Command{
 		Use:   "launch <package | bundle-id>",
 		Short: "Bring an app to the foreground",
 		Example: `  mobium launch com.google.android.dialer
-  mobium launch com.apple.Preferences`,
+  mobium launch com.apple.Preferences
+  mobium launch --hit-test dev.mobium.mobiumapp`,
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return runTool("app_launch", map[string]interface{}{"app": args[0]})
+			call := map[string]interface{}{"app": args[0]}
+			if hitTest {
+				call["hit_test"] = true
+			}
+			return runTool("app_launch", call)
 		},
 	}
+	cmd.Flags().BoolVar(&hitTest, "hit-test", false, "On an iOS simulator, load the hit probe into the app as it "+
+		"launches, so every tap on an element in it asks UIKit where the touch goes first (docs/decisions/0008)")
+	return cmd
 }
 
 func newTerminateCmd() *cobra.Command {

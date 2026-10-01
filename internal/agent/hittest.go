@@ -65,21 +65,26 @@ func (h *Handlers) hitTest(ctx context.Context, args map[string]interface{}) (*T
 		return Result(fmt.Sprintf("a touch at (%d, %d) reaches %s, by UIKit's own hit test", aim.X, aim.Y, target),
 			HitTestView{Device: s.dev.Serial, Target: target, X: aim.X, Y: aim.Y, Reaches: true}), nil
 	case "nothing":
-		return nil, failedCheck(mobiumerr.ElementNotReachable, loc, checkReceivesEvents,
-			fmt.Sprintf("no view takes a touch at (%d, %d), so a tap there would reach nothing", aim.X, aim.Y),
-			"something over it takes no touches and passes none on; wait for it to go, or do what removes it").
-			WithRemedy("remove what is over it in the app, or wait for it to go").
-			WithDetail("locator", loc.String()).WithDetail("x", aim.X).WithDetail("y", aim.Y)
+		return nil, hitNothing(loc, aim)
 	case "covered":
 		return nil, hitCovered(loc, aim, hit)
 	}
 	return nil, mobiumerr.New(mobiumerr.DeviceServer, "the hit test could not tell: %s", hit.Reason)
 }
 
+// hitNothing is the refusal for a touch no view would take.
+func hitNothing(loc uitree.Locator, aim uitree.Aim) *mobiumerr.Error {
+	return failedCheck(mobiumerr.ElementNotReachable, loc, checkReceivesEvents,
+		fmt.Sprintf("no view takes a touch at (%d, %d), so a tap there would reach nothing", aim.X, aim.Y),
+		"something over it takes no touches and passes none on; wait for it to go, or do what removes it").
+		WithRemedy("remove what is over it in the app, or wait for it to go").
+		WithDetail("locator", loc.String()).WithDetail("x", aim.X).WithDetail("y", aim.Y)
+}
+
 // hitCovered is the refusal for a touch UIKit would give to something else.
 // A receiver hidden from accessibility has no ref in app_map, so its remedy
 // cannot be to tap it.
-func hitCovered(loc uitree.Locator, aim uitree.Aim, hit device.Hit) error {
+func hitCovered(loc uitree.Locator, aim uitree.Aim, hit device.Hit) *mobiumerr.Error {
 	name := hit.Label
 	if name == "" {
 		name = hit.Class

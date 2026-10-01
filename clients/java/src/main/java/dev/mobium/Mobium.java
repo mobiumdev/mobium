@@ -598,6 +598,16 @@ public final class Mobium implements AutoCloseable {
     public void launch(String app) { act("app_launch", args("app", app)); }
 
     /**
+     * Launches an app on an iOS simulator with the hit probe loaded in it:
+     * every action on an element in it then asks UIKit where the touch goes
+     * first, and is refused when it would land elsewhere — an overlay hidden
+     * from accessibility included. A real iPhone and Android refuse.
+     *
+     * @param app the bundle id
+     */
+    public void launchWithHitTest(String app) { act("app_launch", args("app", app, "hit_test", true)); }
+
+    /**
      * Stops a running app.
      *
      * @param app the package name (Android) or bundle id (iOS)

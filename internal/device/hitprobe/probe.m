@@ -2,7 +2,9 @@
 //
 // mobium compiles this against the simulator SDK, loads it into the app in
 // front through lldb, calls MOBIUM_HIT once, and detaches. Nothing stays
-// behind but the loaded library, which does nothing unless called.
+// behind but the loaded library, which does nothing unless called. Or, for
+// `launch --hit-test`, it is loaded as the app starts and answers on a Unix
+// socket (listen_at_launch, below).
 //
 // WebDriverAgent's tree and XCTest's `hittable` are both accessibility, which
 // leaves out a view hidden from it: a tap under an overlay hidden from
@@ -13,6 +15,10 @@
 // MOBIUM_HIT is defined on the command line, a name unique to this source,
 // so a library loaded by an older mobium is never the one called.
 #import <UIKit/UIKit.h>
+#include <sys/socket.h>
+#include <sys/stat.h>
+#include <sys/un.h>
+#include <unistd.h>
 
 static UIWindow *keyWindow(void) {
     for (UIScene *scene in UIApplication.sharedApplication.connectedScenes) {
@@ -89,4 +95,52 @@ const char *MOBIUM_HIT(double x, double y, double fx, double fy, double fw, doub
     if (NSThread.isMainThread) probe();
     else dispatch_sync(dispatch_get_main_queue(), probe);
     return strdup(answer.UTF8String);
+}
+
+// Loaded at launch instead — DYLD_INSERT_LIBRARIES, with MOBIUM_HIT_SOCKET
+// naming a path — the probe answers on a Unix socket there, a file on the
+// Mac's own disk that only its user can open: one line in, the seven fields
+// MOBIUM_HIT takes, tab-separated, and its answer out, for as long as the
+// connection stays open. Nothing listens on a network.
+static void serve(int c) {
+    FILE *in = fdopen(c, "r+");
+    if (!in) { close(c); return; }
+    char *line = NULL;
+    size_t cap = 0;
+    while (getline(&line, &cap, in) > 0) {
+        NSArray<NSString *> *f = [[[NSString stringWithUTF8String:line]
+            stringByTrimmingCharactersInSet:NSCharacterSet.newlineCharacterSet] componentsSeparatedByString:@"\t"];
+        const char *answer;
+        if (f.count != 7) answer = strdup("unknown\tthe question was not seven fields");
+        else answer = MOBIUM_HIT(f[0].doubleValue, f[1].doubleValue, f[2].doubleValue, f[3].doubleValue,
+                                 f[4].doubleValue, f[5].doubleValue, f[6].UTF8String);
+        fprintf(in, "%s\n", answer);
+        fflush(in);
+        free((void *)answer);
+    }
+    free(line);
+    fclose(in);
+}
+
+__attribute__((constructor)) static void listen_at_launch(void) {
+    const char *path = getenv("MOBIUM_HIT_SOCKET");
+    unsetenv("DYLD_INSERT_LIBRARIES");
+    if (!path || strlen(path) >= sizeof(((struct sockaddr_un *)0)->sun_path)) return;
+    int s = socket(AF_UNIX, SOCK_STREAM, 0);
+    if (s < 0) return;
+    struct sockaddr_un a = {0};
+    a.sun_family = AF_UNIX;
+    strlcpy(a.sun_path, path, sizeof a.sun_path);
+    unlink(path);
+    mode_t old = umask(077);
+    int bound = bind(s, (struct sockaddr *)&a, sizeof a);
+    umask(old);
+    if (bound != 0 || listen(s, 4) != 0) { close(s); return; }
+    [NSThread detachNewThreadWithBlock:^{
+        for (;;) {
+            int c = accept(s, NULL, NULL);
+            if (c < 0) continue;
+            [NSThread detachNewThreadWithBlock:^{ serve(c); }];
+        }
+    }];
 }

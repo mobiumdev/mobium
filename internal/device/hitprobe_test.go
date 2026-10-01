@@ -1,6 +1,12 @@
 package device
 
 import (
+	"bufio"
+	"context"
+	"net"
+	"os"
+	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 
@@ -68,5 +74,71 @@ func TestAppPIDFromLaunchctl(t *testing.T) {
 	m := appPIDRe("dev.mobium.mobiumapp").FindStringSubmatch(list)
 	if m == nil || m[1] != "24456" {
 		t.Errorf("pid: %v", m)
+	}
+}
+
+// A probe loaded at launch is asked over its socket: the seven fields out,
+// its answer back. With nothing listening the app has no probe, which is
+// not an error — the action goes on without the question.
+func TestLoadedHitTest(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("a simulator runs only on macOS")
+	}
+	// A short MOBIUM_HOME, since the socket's path is capped at 103 bytes and
+	// a test's own temporary directory is long on macOS.
+	home, err := os.MkdirTemp("/tmp", "mh")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = os.RemoveAll(home) }()
+	t.Setenv("MOBIUM_HOME", home)
+	s := &Simctl{UDID: "457C7DC2-C706-45D9-8D68-1D26953E28B1"}
+
+	if _, loaded, err := s.LoadedHitTest(context.Background(), "dev.mobium.mobiumapp", 1, 2, [4]float64{0, 0, 10, 10}, "x"); loaded || err != nil {
+		t.Fatalf("with no probe: loaded %v, err %v", loaded, err)
+	}
+
+	sock, err := s.hitProbeSocket("dev.mobium.mobiumapp")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.MkdirAll(filepath.Dir(sock), 0o700); err != nil {
+		t.Fatal(err)
+	}
+	l, err := net.Listen("unix", sock)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = l.Close() }()
+	asked := make(chan string, 1)
+	go func() {
+		c, err := l.Accept()
+		if err != nil {
+			return
+		}
+		defer func() { _ = c.Close() }()
+		line, _ := bufio.NewReader(c).ReadString('\n')
+		asked <- line
+		_, _ = c.Write([]byte("covered\t1\tRCTView\thidden overlay\t1\t2\t3\t4\n"))
+	}()
+	h, loaded, err := s.LoadedHitTest(context.Background(), "dev.mobium.mobiumapp", 201, 760.5, [4]float64{16, 736, 370, 48}, "hidden\tTarget")
+	if !loaded || err != nil {
+		t.Fatalf("loaded %v, err %v", loaded, err)
+	}
+	if q := <-asked; q != "201\t760.5\t16\t736\t370\t48\thidden Target\n" {
+		t.Errorf("asked %q", q)
+	}
+	if h.Verdict != "covered" || !h.Hidden || h.Label != "hidden overlay" || h.Frame != [4]float64{1, 2, 3, 4} {
+		t.Errorf("read %+v", h)
+	}
+}
+
+// A MOBIUM_HOME too long for a socket is refused with a remedy, rather than
+// failing inside the app where nobody sees it.
+func TestHitProbeSocketTooLong(t *testing.T) {
+	t.Setenv("MOBIUM_HOME", "/"+strings.Repeat("d", 100))
+	_, err := (&Simctl{UDID: "u"}).hitProbeSocket("a")
+	if err == nil || !strings.Contains(err.Error(), "MOBIUM_HOME") {
+		t.Fatalf("got %v", err)
 	}
 }

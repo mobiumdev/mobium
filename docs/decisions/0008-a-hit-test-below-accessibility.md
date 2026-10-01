@@ -94,10 +94,51 @@ Python of the user's is involved. Measured on an iPhone 15 Plus, iOS
 cases of the Obstruction Demo agreed with where a raw touch went
 (`docs/checks/hit-test.sh`), as they do on a simulator.
 
+## Loaded at launch, on a simulator
+
+Added 2026-09-30, revisiting "Why opt-in". `launch --hit-test` (`hit_test`
+on `app_launch`, `LaunchWithHitTest` in the clients) loads the probe as the
+app starts, through `DYLD_INSERT_LIBRARIES` in the environment
+WebDriverAgent launches it with, and the probe listens on a Unix socket
+named in `MOBIUM_HIT_SOCKET`: a file under `MOBIUM_HOME`, created readable
+by its user only. Both objections to this were weighed again:
+
+- *A listener inside the app under test.* The socket is a file on the
+  Mac's own disk, which a simulator's apps share; nothing listens on a
+  network, and the library unsets `DYLD_INSERT_LIBRARIES` as it loads.
+- *Only apps Mobium launched.* Still true, and stated: an app without the
+  probe is not asked, and the per-action check is opt-in per launch. A
+  relaunch Mobium makes itself — for a language or a time zone — loads it
+  again; a plain `launch` does not.
+
+With it loaded, every action on an element — tap, long press, check —
+asks before touching, in the same place the tree's cover checks run
+(`resolveAim`), and is refused as `hit-test` refuses, after waiting out
+the implicit wait as a cover is. An answer of unknown, which comes for an
+element named only by its label, leaves the action to the tree's checks.
+`hit-test` itself answers from the loaded probe when there is one.
+
+Measured on the iPhone 17 Pro simulator: an answer in 0.2 to 0.5 ms over
+the socket, against about two seconds through lldb; `hit-test` from the
+CLI in 0.66 s, all of it the CLI and the read of the screen; a tap on
+the pass-through target at a median of 621 ms with the probe and 621 ms
+without. `checks/hit-test.sh` runs the seven cases as plain taps: the
+three that reach were tapped and the target got each, and the four that
+do not were refused with the app untouched — while without the probe,
+the hidden overlay's and the plain view's taps went through, the positive
+control.
+
+**Not on a real iPhone.** A probe loaded there would have to listen on
+the phone's network for Mobium to reach it, and opening a service on
+somebody's phone is not something Mobium does; `launch --hit-test`
+refuses, saying so, and `hit-test` there stays the nine-second debugger
+call.
+
 ## What it does not do
 
-- It is not consulted by `tap`. A test that needs the guarantee calls it
-  before the tap.
+- It is not consulted by `tap` unless the app was launched with
+  `--hit-test`, on a simulator. Otherwise a test that needs the guarantee
+  calls `hit-test` before the tap.
 - It answers for the key window. A system alert is another process, and has
   checks of its own (CHALLENGES 105).
 - It does not say whether a receiver will *handle* the touch. React Native
