@@ -138,30 +138,19 @@ this is what is not.
   The light path asks the element and refuses one, which is stricter;
   whether the full read should too wants a screen that has such an element,
   which none of the 20 captured did.
-- **Launching on a real iPhone.** `app_launch` had a median of 5.8 s on the
-  iPhone 15 Plus against 2.3 s on the simulator (2026-09-30, 36 launches).
-  Most of it was found and removed on 2026-09-30: a launch read the screen
-  before launching, though the wait after it is for the app named and never
-  compares, and what is in front is usually the home screen, whose
-  hierarchy takes 4.5 s to read on the phone. Without that read, over 24
-  launches of MobiumApp, Settings and Calendar, from the home screen and over
-  another app, the median went from 4.75 s to 2.51 s and the slowest from
-  7.6 s to 3.2 s; MobiumApp launches in 0.7 s, and `ios-device.sh` passes.
-  What is left is the one read of the launched app that confirms it is in
-  front, about 2 s for Settings. WebDriverAgent's `/wda/apps/state` answers
-  in 11 ms and is not fooled by the active-app hint (an app the hint named
-  but that was not running read 1, not running), so it could confirm
-  sooner — but that read is also what takes the hint off, and left on, the
-  hint hides a dialog the launch raised from the next `map` (CHALLENGES 76),
-  while taking it off as soon as the state flips risks the 61 s stall (71).
-  On 2026-09-30 a launch's wait learned to read only which app is in front,
-  without `visible`: on a simulator Settings went from 2.3-2.5 s to 1.6 s
-  and Calendar from 2.6 s to 1.3 s. On the iPhone it gave a median of
-  0.81 s — and once in eleven Calendar launches the next full read hung
-  until it timed out, because the light read had taken the active-app hint
-  off sooner than the full one would. So a phone still confirms with a full
-  read. Done when the median is under 2.5 s with the hint still off before
-  the launch returns, and no read after it stalls in fifty launches.
+- ~~**Launching on a real iPhone.**~~ Done 2026-09-30. `app_launch` had a
+  median of 5.8 s on the iPhone 15 Plus against 2.3 s on the simulator. A
+  launch read the screen before launching, usually the home screen at
+  4.5 s, for nothing; without it the median was 2.51 s. The rest was the
+  full read that confirmed the app in front and took the active-app hint
+  off. A read without `visible` answers that in a fraction of the time, but
+  took the hint off mid-switch, while iOS still reported the app being left
+  in front, and the next read then hung for a minute, once in fifty. The
+  hint now waits for the app being left to leave the front (CHALLENGES 71):
+  a hundred launches of MobiumApp, Settings and Calendar, from the home
+  screen and over another app, over fresh sessions, had a median of 0.89 s,
+  the slowest 1.05 s, no hang and the right app in front every time, and
+  `ios-device.sh` passes.
 - ~~**A reset a phone can do.**~~ Done 2026-09-30. `app_clear_data` takes
   the app's own bundle on a real iPhone (`path`; `--bundle` on the CLI),
   checks it is that app, uninstalls it and installs it again, and reads the

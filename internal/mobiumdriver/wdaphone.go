@@ -300,11 +300,29 @@ func (w *WDA) expectApp(ctx context.Context, bundleID string) {
 	if w.phone == nil {
 		return
 	}
+	// The app being left, read before the hint goes on: a light read can see
+	// the new app while iOS still reports both in front (wda.go,
+	// ForegroundApp), and this is the one that has to go first.
+	leaving := w.activeApp(ctx)
 	if w.setActiveAppHint(ctx, bundleID) == nil {
 		w.hintMu.Lock()
 		w.expecting = bundleID
+		w.leaving = leaving
 		w.hintMu.Unlock()
 	}
+}
+
+// activeApp is the app WebDriverAgent says is in front, or "".
+func (w *WDA) activeApp(ctx context.Context) string {
+	var resp struct {
+		Value struct {
+			BundleID string `json:"bundleId"`
+		} `json:"value"`
+	}
+	if w.w3c.do(ctx, http.MethodGet, w.w3c.sessionPath("/wda/activeAppInfo"), nil, &resp) != nil {
+		return ""
+	}
+	return resp.Value.BundleID
 }
 
 // settleExpected clears the hint once a read shows the app it named.
@@ -316,6 +334,7 @@ func (w *WDA) settleExpected(ctx context.Context, foreground string) {
 		return
 	}
 	w.expecting = ""
+	w.leaving = ""
 	w.hintMu.Unlock()
 	_ = w.setActiveAppHint(ctx, "auto")
 }
@@ -326,6 +345,7 @@ func (w *WDA) clearExpected(ctx context.Context) {
 	w.hintMu.Lock()
 	had := w.expecting != ""
 	w.expecting = ""
+	w.leaving = ""
 	w.hintMu.Unlock()
 	if had {
 		_ = w.setActiveAppHint(ctx, "auto")

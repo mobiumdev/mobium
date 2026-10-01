@@ -45,6 +45,8 @@ type WDA struct {
 	// it. See expectApp.
 	hintMu    sync.Mutex
 	expecting string
+	// leaving is the app that was in front when expecting was set.
+	leaving string
 	// shadeHint is set while Notification Center was opened here, which
 	// points every read at SpringBoard so map shows it. See wdanotify.go.
 	shadeHint bool
@@ -402,20 +404,19 @@ var typingFrequencies = [setTextAttempts]int{0, 20, 6}
 // app (CHALLENGES 155), which the full read sees through, so that answer is
 // left to the full read.
 //
-// Not on a phone. There the read that confirms a switch is also what takes
-// the active-app hint off (CHALLENGES 76), and the light read took it off
-// sooner: once in eleven Calendar launches the next full read then hung
-// until it timed out — the stall the hint exists to prevent (CHALLENGES 71).
-// Launches confirmed this way had a median of 0.81s against 2.51s, which is
-// not worth an occasional minute-long hang, so a phone reads in full.
+// On a phone the read that confirms a switch is also what takes the
+// active-app hint off (CHALLENGES 76), and taking it off mid-switch lets the
+// next read hang for a minute (CHALLENGES 71). The light read is pinned to
+// the new app by the hint, so it can see it while iOS still reports the app
+// being left in front too: on the iPhone 15 Plus both read state 4 from
+// about 0.33s to 0.64-0.89s into a switch, and the two hangs measured, one
+// in eleven launches and one in fifty, were both launches confirmed inside
+// that window, at 0.45s. So on a phone the hint comes off only once the app
+// being left is no longer in front, which WebDriverAgent answers in about
+// 11ms; SpringBoard, which always reads as in front, is not waited for. If
+// it has not gone within switchSettleWait, the full read decides, as it did
+// before.
 func (w *WDA) ForegroundApp(ctx context.Context) (string, error) {
-	if w.phone != nil {
-		full, err := w.Snapshot(ctx)
-		if err != nil {
-			return "", err
-		}
-		return full.Package(), nil
-	}
 	xml, err := w.w3c.sourceWithout(ctx, "visible,accessible")
 	if err != nil {
 		return "", err
@@ -432,7 +433,45 @@ func (w *WDA) ForegroundApp(ctx context.Context) (string, error) {
 		}
 		return full.Package(), nil
 	}
+	if w.phone != nil {
+		if !w.switchSettled(ctx, app) {
+			full, err := w.Snapshot(ctx)
+			if err != nil {
+				return "", err
+			}
+			return full.Package(), nil
+		}
+		w.settleExpected(ctx, app)
+	}
 	return app, nil
+}
+
+// switchSettleWait bounds the wait for the app being left to leave the front.
+const switchSettleWait = 2 * time.Second
+
+// switchSettled says whether a switch to app is far enough along that the
+// hint can come off: it is not the app expected, or nothing is being left
+// that could still be in front, or what is being left no longer is.
+func (w *WDA) switchSettled(ctx context.Context, app string) bool {
+	w.hintMu.Lock()
+	expecting, leaving := w.expecting, w.leaving
+	w.hintMu.Unlock()
+	if expecting == "" || app != expecting || leaving == "" || leaving == app || leaving == springboardBundleID {
+		return true
+	}
+	deadline := time.Now().Add(switchSettleWait)
+	for time.Now().Before(deadline) {
+		var resp struct {
+			Value int `json:"value"`
+		}
+		err := w.w3c.do(ctx, http.MethodPost, w.w3c.sessionPath("/wda/apps/state"),
+			map[string]interface{}{"bundleId": leaving}, &resp)
+		if err == nil && resp.Value != 4 {
+			return true
+		}
+		time.Sleep(50 * time.Millisecond)
+	}
+	return false
 }
 
 // ElementBounds reads one element's rectangle by its test id or label, when
