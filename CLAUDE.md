@@ -1,8 +1,10 @@
 # CLAUDE.md
 
-Mobile app automation for AI agents and humans: native apps on Android
-emulators and phones, iOS simulators and iPhones, WebViews included — one Go
-binary, driven from a CLI, an MCP server, or five language clients.
+Mobile app automation for AI agents and humans: native, hybrid and
+cross-platform apps, and pages in a mobile browser or installed as a PWA, on
+Android emulators and phones, iOS simulators and iPhones — one Go binary,
+driven from a CLI, an MCP server, or five language clients. docs/APP-TYPES.md
+says which app types were driven and how; a claim about one goes there too.
 
 ## Key Docs
 
@@ -11,7 +13,7 @@ binary, driven from a CLI, an MCP server, or five language clients.
 - docs/ARCHITECTURE.md — every layer, and one call traced end to end
 - docs/API.md and docs/FLAGS.md — every tool and argument, generated
 - docs/CHALLENGES.md — every defect and what it taught. Read before asserting platform behavior
-- docs/decisions/ — the design records; docs/guides/ — how to use each surface
+- docs/guides/ — how to use each surface; examples/drivers/PROTOCOL.md — the driver protocol
 - docs/ROADMAP.md — what is next
 
 ## Tech Stack

@@ -40,7 +40,8 @@ CLIENTS = [
         "install_note": "Not on PyPI yet — pip installs it straight from GitHub, which needs "
                         "`git` on your `PATH`. After the first release this becomes "
                         "`pip install mobium`.",
-        "install": ('python3 -m venv .venv\n'
+        "install": ('mkdir quickstart && cd quickstart\n'
+                    'python3 -m venv .venv\n'
                     '.venv/bin/pip install "mobium @ git+https://github.com/mobiumdev/mobium.git#subdirectory=clients/python"'),
         "run": {"dir": "", "cmd": "MOBIUM_PLATFORM={p} .venv/bin/python quickstart.py"},
         "start": "`start(platform=..., app=...)`",
@@ -59,7 +60,7 @@ CLIENTS = [
         "install_note": "Not on npm yet, and npm cannot install a package from a folder "
                         "inside a repository, so until the first release it installs from "
                         "a clone. After the release this becomes `npm install mobium`.",
-        "install": CLONE + "\nnpm init -y\nnpm install ~/mobium/clients/javascript",
+        "install": CLONE + "\nmkdir quickstart && cd quickstart\nnpm init -y\nnpm install ~/mobium/clients/javascript",
         "run": {"dir": "", "cmd": "MOBIUM_PLATFORM={p} node quickstart.mjs"},
         "start": "`await start({ platform, app })`",
         "quit": "`await device.quit()`",
@@ -74,7 +75,7 @@ CLIENTS = [
         "slug": "go", "name": "Go", "file": "go/main.go", "lang": "go",
         "needs": "Go 1.24 or later.",
         "install_note": "The Go module is published through GitHub, so this works today.",
-        "install": "go mod init quickstart\ngo get github.com/mobiumdev/mobium/clients/go",
+        "install": "mkdir quickstart && cd quickstart\ngo mod init quickstart\ngo get github.com/mobiumdev/mobium/clients/go",
         "run": {"dir": "", "cmd": "MOBIUM_PLATFORM={p} go run ."},
         "start": "`mobium.Start(ctx, mobium.WithPlatform(...), mobium.WithApp(...))`",
         "quit": "`device.Quit(ctx)`",
@@ -93,7 +94,8 @@ CLIENTS = [
         "install_note": "Not on Maven Central yet. Until the first release it installs "
                         "into your local Maven repository from a clone; after it, the "
                         "dependency below resolves from Central with no clone at all.",
-        "install": CLONE + "\ncd ~/mobium/clients/java && ./mvnw install -DskipTests && cd -",
+        "install": CLONE + "\ncd ~/mobium/clients/java && ./mvnw install -DskipTests && cd -\n"
+                   "mkdir quickstart && cd quickstart",
         "run": {
             "dir": "",
             "cmd": "MOBIUM_PLATFORM={p} java -cp ~/.m2/repository/dev/mobium/mobium/0.1.0-SNAPSHOT/mobium-0.1.0-SNAPSHOT.jar Quickstart.java",
@@ -130,11 +132,11 @@ CLIENTS = [
         "install": (CLONE + "\ndotnet pack ~/mobium/clients/dotnet/Mobium -o ~/mobium-packages\n"
                     "dotnet new console -o quickstart && cd quickstart\n"
                     "dotnet add package Mobium --version 0.1.0 --source ~/mobium-packages"),
+        "save_note": ", replacing the one `dotnet new` generated",
         "run": {"dir": "", "cmd": "MOBIUM_PLATFORM={p} dotnet run"},
         "start": "`Device.Builder().Platform(...).App(...).Start()`",
         "quit": "`device.Quit()`, or leaving the `using` block",
         "notes": [
-            "Replace the generated `Program.cs` with the example below.",
             "A `using` block around `Start()` quits when it ends, even on an "
             "exception. Around `Connect()` it only closes the connection.",
         ],
@@ -183,6 +185,7 @@ def page(c):
         "",
         f"Save this as `{fname}`"
         + (" in the project folder" if c["install"] else "")
+        + c.get("save_note", "")
         + f" — it is [examples/{c['file']}](examples/{c['file']}).",
         "",
         f"```{c['lang']}",
@@ -226,9 +229,11 @@ def page(c):
     ]
     lines += [f"- {n_}" for n_ in c["notes"]]
     lines += [
-        "- With more than one device attached, `start` refuses to guess and lists "
-        "them. Name one with `MOBIUM_DEVICE=<serial or UDID>`, which the example "
-        "passes on as the device.",
+        "- With more than one device of the session's platform running — two "
+        "Android devices, or two among the booted simulators and attached iPhones "
+        "— `start` refuses to guess and lists them. One Android device and one iOS "
+        "device are not ambiguous: the platform picks. Name one with "
+        "`MOBIUM_DEVICE=<serial or UDID>`, which the example passes on as the device.",
         "",
         "Next: [the rest of the tool surface](../API.md), and "
         "[setting up phones and simulators](../SETUP.md). Changing the client "

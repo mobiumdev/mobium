@@ -134,7 +134,7 @@ Wheel", is in [docs/PHILOSOPHY.md](../../docs/PHILOSOPHY.md).
 Set it in italics, capitalized as a sentence — *Mutatis mutandis* — and do not
 translate it inline in display use; the gloss belongs in body text, as above.
 It pairs with the mark rather than replacing the descriptive line: the mark
-says what it is called, "native app automation for AI agents and humans" says
+says what it is called, "mobile app automation for AI agents and humans" says
 what it does, and the motto says how it is built.
 
 ## Namespace

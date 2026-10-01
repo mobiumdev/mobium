@@ -22,8 +22,8 @@ import (
 )
 
 // The hit test below accessibility, on an iOS simulator. See
-// hitprobe/probe.m for what it asks and why accessibility cannot answer it,
-// and docs/decisions/0008 for why it is opt-in: it attaches a debugger to
+// hitprobe/probe.m for what it asks and why accessibility cannot answer it.
+// It is opt-in: it attaches a debugger to
 // the app, which stops it for about two seconds — unless the probe was
 // loaded when the app launched, when it answers on a Unix socket in well
 // under a millisecond.

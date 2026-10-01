@@ -1,7 +1,7 @@
 // Package inspect is `mobium inspect`: a page on this machine showing a
 // device's screen with every element map finds drawn over it, the locator
 // for the one clicked, actions on it, and what was done kept as a test file.
-// See docs/decisions/0007.
+// See docs/guides/inspector.md.
 //
 // It is a client of the tools, as the test runner is: every answer on the
 // page is a tool's answer, and every action is the tool a command would call,

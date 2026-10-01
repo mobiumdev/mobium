@@ -134,8 +134,8 @@ const aimCols, aimRows = 9, 5
 
 // AimAt decides where to touch target so a tap reaches it. The center, when
 // no control is drawn over it; otherwise the clear point nearest the center,
-// as EarlGrey does for a partly covered element — a button pressed off
-// center is the same button. When a control covers every point, Blocker says
+// for a partly covered element — a button pressed off center is the same
+// button. When a control covers every point, Blocker says
 // which.
 func (t *Tree) AimAt(target *Node) Aim {
 	cx, cy := target.Bounds.Center()

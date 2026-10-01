@@ -16,6 +16,7 @@ Not on npm yet, and npm cannot install a package from a folder inside a reposito
 
 ```sh
 git clone https://github.com/mobiumdev/mobium.git ~/mobium
+mkdir quickstart && cd quickstart
 npm init -y
 npm install ~/mobium/clients/javascript
 ```
@@ -127,6 +128,6 @@ The first start on a device is slow: it installs the UiAutomator2 server on Andr
 
 - Put `quit()` in a `finally`, as the example does, so an error part-way still ends the session. A second `quit()` does nothing.
 - `connect()` still exists: it opens a connection without touching the device, and its `close()` leaves the session open.
-- With more than one device attached, `start` refuses to guess and lists them. Name one with `MOBIUM_DEVICE=<serial or UDID>`, which the example passes on as the device.
+- With more than one device of the session's platform running — two Android devices, or two among the booted simulators and attached iPhones — `start` refuses to guess and lists them. One Android device and one iOS device are not ambiguous: the platform picks. Name one with `MOBIUM_DEVICE=<serial or UDID>`, which the example passes on as the device.
 
 Next: [the rest of the tool surface](../API.md), and [setting up phones and simulators](../SETUP.md). Changing the client itself? [DEVELOPMENT.md](../DEVELOPMENT.md) is the contributor's guide.

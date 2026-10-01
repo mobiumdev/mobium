@@ -67,8 +67,8 @@ does exactly what a wheel does for the load on top of it; only its outline is
 different. That is the relation Mobium keeps between its platforms. Android,
 iOS and a third-party device are three differently shaped rollers underneath,
 and what rides on top — the tools, `map` and its `@ref`s, the locators, the
-error codes, `start` and `quit` — stays at the same height on every one of
-them.
+error codes, a client's `start` and `quit` (the CLI's `session start` and
+`session end`) — stays at the same height on every one of them.
 
 **Change only what must change.** The traders did not reinvent transport; they
 changed the one property the law cared about and kept everything else. Mobium
@@ -93,7 +93,7 @@ necessary changes made:
 | One tool layer | the CLI, the MCP server and five language clients | only the front door; the CLI parses flags and calls a tool by name |
 | One way to read a web page | the WebView protocols — CDP on Android, WebKit's Remote Web Inspector on iOS simulators and iPhones — under one `Page` | only the wire; `map` and `text` are the same scripts |
 | One locator vocabulary | every platform's element tree | compiled per platform, instead of a dialect per platform |
-| The built-in drivers | third-party drivers, as separate processes | only the platform layer; waiting, scrolling and refs come for free ([decision 0003](decisions/0003-drivers-are-processes-not-plugins.md)) |
+| The built-in drivers | third-party drivers, as separate processes | only the platform layer; waiting, scrolling and refs come for free ([the driver protocol](../examples/drivers/PROTOCOL.md)) |
 | The Go client's connection | the Python, JavaScript, Java and .NET clients | each language's idiom: a lock, a timeout, the same failure rules |
 
 The rule's negative form is the one that catches mistakes: **a proposal that

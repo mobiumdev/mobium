@@ -6,12 +6,11 @@ desktop app, a set-top box, a car head unit, a platform that does not exist yet
 
 You do not need to fork Mobium, build Mobium, or write Go. A driver is an
 executable in any language that reads JSON-RPC on stdin and writes it on
-stdout. The protocol is specified in
-[../../docs/decisions/0003-drivers-are-processes-not-plugins.md](../../docs/decisions/0003-drivers-are-processes-not-plugins.md);
-this page is the short version.
+stdout. The protocol is specified in [PROTOCOL.md](PROTOCOL.md); this page is the
+short version.
 
 Everything above the driver — locators, `@ref`s, waiting, scrolling, the CLI,
-MCP and all four client libraries — you get for free. The driver's whole job is
+MCP and all five client libraries — you get for free. The driver's whole job is
 to answer *what is on screen* and *touch this point*.
 
 ## The smallest driver that works

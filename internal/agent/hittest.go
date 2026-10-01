@@ -27,8 +27,7 @@ type HitTestView struct {
 
 // hitTest asks the platform's own hit test, below accessibility, whether a
 // touch at the point app_tap would use reaches the target. Opt-in, because
-// on a simulator it attaches a debugger to the app for about two seconds
-// (docs/decisions/0008).
+// on a simulator it attaches a debugger to the app for about two seconds.
 func (h *Handlers) hitTest(ctx context.Context, args map[string]interface{}) (*ToolsCallResult, error) {
 	target := stringArg(args, "target")
 	if target == "" {

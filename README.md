@@ -4,7 +4,7 @@
 
 *Mutatis mutandis.*
 
-**Native app automation for AI agents and humans.** Android emulators, Android
+**Mobile app automation for AI agents and humans.** Android emulators, Android
 phones, iOS simulators and iPhones, driven through one tool layer from a single
 Go binary with no runtime dependencies.
 
@@ -12,7 +12,7 @@ Go binary with no runtime dependencies.
 mobium launch com.example.shop && mobium map && mobium tap @e5 && mobium map
 ```
 
-Mobium drives native mobile apps the way [Vibium](https://github.com/VibiumDev/vibium)
+Mobium drives mobile apps the way [Vibium](https://github.com/VibiumDev/vibium)
 drives browsers: a `map` → `@ref` → act loop that an agent can follow without
 learning a new model. It is Vibium's architecture with the browser swapped for
 a device.
@@ -25,6 +25,7 @@ person driving an emulator for it. People get the same commands.
 - [Quick start](#quick-start)
 - [How it works](#how-it-works)
 - [Platforms](#platforms)
+- [App types](#app-types)
 - [Hybrid apps and WebViews](#hybrid-apps-and-webviews)
 - [Front doors](#front-doors)
 - [Drivers for other platforms](#drivers-for-other-platforms)
@@ -188,12 +189,31 @@ simulated location — are refused on a phone with the reason; accessibility
 settings go through the phone's own Settings app.
 [docs/SETUP.md](docs/SETUP.md#ios-real-device) has the steps.
 
-**Windows is not supported yet.** Everything cross-compiles for Windows, and
-the daemon transport is written but not yet verified on a Windows machine; see
+**Windows is not supported yet.** Everything that needs no device, the
+named-pipe daemon transport included, passes in CI on a Windows runner; no
+emulator or phone has been driven from Windows yet. See
 [docs/WINDOWS.md](docs/WINDOWS.md).
 
 Both device-side agents are pinned by version, verified against checksums
 compiled into the binary, and refused on a mismatch.
+
+## App types
+
+What an app is built with decides where its elements are, so it decides what
+Mobium reaches. Each type has been driven on a device:
+
+| Type | How Mobium reaches it | Driven here |
+| --- | --- | --- |
+| **Native** — Android SDK, Jetpack Compose, UIKit, SwiftUI | the platform's accessibility tree | Settings, Calculator, Clock, Wikipedia, F-Droid, Aegis, Seal (Compose), NetNewsWire |
+| **Hybrid** — a native shell around WebViews | the shell through the tree; each WebView as its own context, [below](#hybrid-apps-and-webviews) | Wikipedia's articles, MobiumApp's web screens |
+| **Mobile web and PWAs** — a page in a browser, or installed to the home screen | the browser's page as a context; on iOS, taps through the native tree | Safari, Chrome, Squoosh as a PWA — on Android a PWA's taps only while Chrome reports its WebView |
+| **Cross-platform, native once removed** — React Native | an ordinary native app: it renders real native views | MobiumApp, on both platforms and on real phones |
+| **Cross-platform that paints** — Flutter | not through the tree; a job for a [driver](#drivers-for-other-platforms) | not yet |
+
+A browser is reachable but not managed — no tabs, no browser sessions; testing
+a website is [Vibium](https://github.com/VibiumDev/vibium)'s job.
+[docs/APP-TYPES.md](docs/APP-TYPES.md) has what was measured for each type,
+what is checked in and what was driven only once.
 
 ## Hybrid apps and WebViews
 
@@ -218,9 +238,8 @@ tapped @e2 at (462, 397) in WEBVIEW_com.example
 mapped by a script, its CSS coordinates are converted to device pixels using
 the WebView's on-screen frame and the page's visual viewport, and the tap is
 delivered by the native driver like any other. Android WebViews speak CDP; iOS
-WKWebViews speak WebKit's Remote Web Inspector
-([decisions/0001](docs/decisions/0001-cdp-not-webdriver-bidi.md),
-[0002](docs/decisions/0002-ios-webviews-are-reachable.md)).
+WKWebViews speak WebKit's Remote Web Inspector, over a Unix socket on a
+simulator and through usbmuxd and lockdown on a phone.
 
 A WebView is reachable only if the app opted in —
 `WebView.setWebContentsDebuggingEnabled(true)` on Android, `isInspectable` on
@@ -323,8 +342,8 @@ A driver needs three methods to be useful — `snapshot`, `screenshot` and
 `tap` — and inherits locators, `@ref`s, waiting, scrolling, the CLI, MCP and
 all five clients. [examples/drivers/](examples/drivers/) has the guide and a
 complete driver in dependency-free Python that produces the same map as the
-built-in backend; [decisions/0003](docs/decisions/0003-drivers-are-processes-not-plugins.md)
-is the protocol.
+built-in backend; [PROTOCOL.md](examples/drivers/PROTOCOL.md) is the
+protocol.
 
 ## Documentation
 
@@ -348,7 +367,7 @@ is the protocol.
 | [docs/WINDOWS.md](docs/WINDOWS.md) | the state of Windows support |
 | [docs/ROADMAP.md](docs/ROADMAP.md) | what is next |
 | [docs/RELEASE-CHECKLIST.md](docs/RELEASE-CHECKLIST.md) | the device checks CI cannot run |
-| [docs/decisions/](docs/decisions/) | architecture decision records |
+| [examples/drivers/PROTOCOL.md](examples/drivers/PROTOCOL.md) | the protocol a third-party driver speaks |
 | [docs/checks/](docs/checks/) | end-to-end scripts that drive a real device |
 | [examples/drivers/](examples/drivers/) | writing a driver |
 | [CONTRIBUTING.md](CONTRIBUTING.md) | building, testing and the project's rules |
@@ -356,8 +375,8 @@ is the protocol.
 Several checks drive **[MobiumApp](https://github.com/mobiumdev/mobium-app)**,
 a React Native app built to be driven: each screen is a control for a case
 that can go wrong, and on iOS it is the only way to reach an app's WebView,
-since one that has not opted into inspection is invisible to any debugger
-([decisions/0004](docs/decisions/0004-an-app-under-test-of-our-own.md)).
+since one that has not opted into inspection (`isInspectable`) is invisible
+to any debugger, and that cannot be forced from outside.
 
 ## License
 

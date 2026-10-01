@@ -14,7 +14,7 @@ import (
 )
 
 // A failed tool call carries its code on the wire, beside the unchanged text:
-// the structured half is what the clients and --json read. docs/decisions/0005.
+// the structured half is what the clients and --json read.
 func TestAFailedCallCarriesItsCode(t *testing.T) {
 	h := NewHandlers()
 	params, _ := json.Marshal(ToolsCallParams{Name: "app_no_such_tool"})

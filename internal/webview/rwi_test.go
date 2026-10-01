@@ -88,6 +88,23 @@ func TestInspectorListsAndDrivesAPage(t *testing.T) {
 		t.Errorf("1 + 1 came back as %q", got)
 	}
 
+	// An async expression is awaited, as over CDP; WebKit's evaluate alone
+	// answered `{}`, the promise by value. CHALLENGES 201.
+	for expr, want := range map[string]string{
+		"Promise.resolve(42)":    "42",
+		"(async () => 'done')()": "done",
+		"({a: 1})":               `{"a":1}`,
+		"new Promise(r => setTimeout(() => r([1, 2]), 50))": "[1,2]",
+		"document.title === document.title":                 "true",
+	} {
+		if got, err := page.Evaluate(ctx, expr); err != nil || got != want {
+			t.Errorf("%s = %q (err %v), want %q", expr, got, err, want)
+		}
+	}
+	if _, err := page.Evaluate(ctx, "Promise.reject(new Error('nope'))"); err == nil || !strings.Contains(err.Error(), "nope") {
+		t.Errorf("a rejected promise came back as %v, want the page's error", err)
+	}
+
 	m, err := page.LayoutMetrics(ctx)
 	if err != nil {
 		t.Fatalf("LayoutMetrics: %v", err)

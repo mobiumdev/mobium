@@ -1,6 +1,6 @@
 # Mobium for .NET
 
-Drives native apps on Android emulators, Android phones, iOS simulators and
+Drives mobile apps on Android emulators, Android phones, iOS simulators and
 iPhones from C#.
 
 ```csharp
@@ -81,7 +81,7 @@ code, `Remedy` what to do about it, `Retryable` whether a retry can help, and
 Each code has its own subclass — `NoSuchElementException`,
 `AmbiguousLocatorException`, `UnsupportedException`, `NotConfirmedException`,
 `TimedOutException` (not `TimeoutException`, which is .NET's) and the rest,
-the same set in every client (`docs/decisions/0005-errors.md`) — so a test
+the same set in every client ([the codes](../../docs/guides/cli.md#6-when-a-command-fails)) — so a test
 catches the kind it can handle:
 
 ```csharp

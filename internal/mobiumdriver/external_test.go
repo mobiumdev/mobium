@@ -16,7 +16,7 @@ import (
 // The driver protocol is the one part of Mobium meant to be implemented by
 // somebody who cannot read this code, so these tests drive it from the far
 // side: testdata/fakedriver imports nothing from this module and knows only
-// what docs/decisions/0003 says. If it ever needs something from here, the
+// what examples/drivers/PROTOCOL.md says. If it ever needs something from here, the
 // extension point is not open after all.
 
 var driverBinary string

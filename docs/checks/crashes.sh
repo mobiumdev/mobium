@@ -1,6 +1,6 @@
 #!/bin/sh
-# Device logs and crash reports, end to end, on an Android device or an iOS
-# simulator.
+# Device logs and crash reports, end to end, on an Android device, an iOS
+# simulator or a real iPhone.
 #
 # Each half needs a positive control — something known to have happened — or
 # an empty answer proves nothing. On Android that is `am crash`, which crashes

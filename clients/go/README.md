@@ -1,6 +1,6 @@
 # Mobium for Go
 
-Drive native apps on Android emulators, Android phones, iOS simulators and
+Drive mobile apps on Android emulators, Android phones, iOS simulators and
 iPhones — map the screen, tap, type, wait and screenshot — through the same
 tools as the [mobium](https://github.com/mobiumdev/mobium) command line and
 MCP server. Standard library only.

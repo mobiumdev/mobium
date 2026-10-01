@@ -87,7 +87,7 @@ func (h *Handlers) resolveAim(ctx context.Context, s *session, target string) (*
 
 // loadedHitRefusal asks the hit probe loaded into the app at launch, when
 // there is one, whether a touch at aim reaches the target, and is the
-// refusal when it would not (docs/decisions/0008). With no probe loaded the
+// refusal when it would not. With no probe loaded the
 // question is not asked: through lldb it takes seconds, which is app_hit_test's
 // to spend. An answer of unknown — no view in the app is the element, which
 // happens to one named by label — leaves the action to the checks the tree

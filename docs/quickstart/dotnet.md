@@ -23,7 +23,7 @@ dotnet add package Mobium --version 0.1.0 --source ~/mobium-packages
 
 ## 3. The code
 
-Save this as `Program.cs` in the project folder — it is [examples/dotnet/Program.cs](examples/dotnet/Program.cs).
+Save this as `Program.cs` in the project folder, replacing the one `dotnet new` generated — it is [examples/dotnet/Program.cs](examples/dotnet/Program.cs).
 
 ```csharp
 // Mobium quick start: start a session, drive Settings, quit.
@@ -132,8 +132,7 @@ The first start on a device is slow: it installs the UiAutomator2 server on Andr
 
 ## Notes
 
-- Replace the generated `Program.cs` with the example below.
 - A `using` block around `Start()` quits when it ends, even on an exception. Around `Connect()` it only closes the connection.
-- With more than one device attached, `start` refuses to guess and lists them. Name one with `MOBIUM_DEVICE=<serial or UDID>`, which the example passes on as the device.
+- With more than one device of the session's platform running — two Android devices, or two among the booted simulators and attached iPhones — `start` refuses to guess and lists them. One Android device and one iOS device are not ambiguous: the platform picks. Name one with `MOBIUM_DEVICE=<serial or UDID>`, which the example passes on as the device.
 
 Next: [the rest of the tool surface](../API.md), and [setting up phones and simulators](../SETUP.md). Changing the client itself? [DEVELOPMENT.md](../DEVELOPMENT.md) is the contributor's guide.

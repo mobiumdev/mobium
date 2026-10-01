@@ -2,7 +2,7 @@
 // steps and whose assertions are app_wait_for and expect, run against the
 // devices a config names, with retries, workers and reports. It is a client
 // of the tools, as the language clients are, and calls them through whatever
-// the caller hands it. See docs/decisions/0006.
+// the caller hands it. See docs/guides/test-runner.md.
 package testrun
 
 import (

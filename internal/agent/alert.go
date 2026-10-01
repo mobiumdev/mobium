@@ -100,8 +100,7 @@ func (h *Handlers) alertOn(ctx context.Context, s *session, args map[string]inte
 			// Native has no prompt there either, `Alert.prompt` being
 			// iOS-only. On iOS the endpoint exists and a plain alert simply
 			// has no field to type into.
-			// The server's W3C code, kept since docs/decisions/0005, rather
-			// than its wording.
+			// The server's W3C code, kept in details, rather than its wording.
 			if e, ok := mobiumerr.As(err); ok && e.Details["w3c"] == "unknown command" {
 				return nil, mobiumerr.New(mobiumerr.Unsupported, "this backend cannot type into a dialog: the "+
 					"device-side server does not implement it. Android has no prompt "+

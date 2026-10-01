@@ -20,8 +20,7 @@ import (
 )
 
 // External drives a device through a driver program that Mobium did not
-// compile in — the extension point described in
-// docs/decisions/0003-drivers-are-processes-not-plugins.md.
+// compile in — the extension point described in examples/drivers/PROTOCOL.md.
 //
 // The program reads JSON-RPC 2.0 on stdin and writes it on stdout, one object
 // per line. Its stderr is its log, not part of the protocol, which is what
@@ -116,7 +115,7 @@ func FindDriver(name string) (string, error) {
 	if err != nil {
 		return "", mobiumerr.New(mobiumerr.InvalidArgument, "there is no built-in backend named %q, and no %s on your PATH.\n"+
 			"A third-party backend is an executable of that name — see "+
-			"docs/decisions/0003-drivers-are-processes-not-plugins.md.\n"+
+			"examples/drivers/PROTOCOL.md in the mobium repository.\n"+
 			"To point at one without installing it, set %s=/path/to/driver and then run "+
 			"`mobium daemon stop`: the daemon is what looks for drivers, and a running one keeps "+
 			"the environment it started with.", name, exe, env)

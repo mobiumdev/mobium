@@ -41,8 +41,8 @@ mobium map "$@" | head -5
 
 # 3. Tap a row by its ref, then wait for the screen it opens. A row's label can
 #    carry its summary too ("Network & internet Mobile, Wi-Fi, ..."), so match
-#    its start.
-REF=$(mobium map "$@" | awk -v row="$ROW" 'index($0, " " row) {print $1; exit}')
+#    its start: the label begins right after the ref.
+REF=$(mobium map "$@" | awk -v row="$ROW" 'index($0, $1 " " row) == 1 {print $1; exit}')
 mobium tap "$REF" "$@"
 mobium wait "$NEXT" "$@"
 
@@ -112,6 +112,6 @@ The first start on a device is slow: it installs the UiAutomator2 server on Andr
 
 - Every command after `session start` uses that session, so none of them needs `--driver`. With more than one device attached, pass the same `--device` to each.
 - `mobium session status` lists the sessions open. `mobium daemon stop` ends all of them at once.
-- With more than one device attached, `start` refuses to guess and lists them. Name one with `MOBIUM_DEVICE=<serial or UDID>`, which the example passes on as the device.
+- With more than one device of the session's platform running — two Android devices, or two among the booted simulators and attached iPhones — `start` refuses to guess and lists them. One Android device and one iOS device are not ambiguous: the platform picks. Name one with `MOBIUM_DEVICE=<serial or UDID>`, which the example passes on as the device.
 
 Next: [the rest of the tool surface](../API.md), and [setting up phones and simulators](../SETUP.md). Changing the client itself? [DEVELOPMENT.md](../DEVELOPMENT.md) is the contributor's guide.

@@ -3,11 +3,10 @@
 A page on your own machine with the device's screen in it: every element
 `map` finds outlined, the locator for the one you click, actions on it, a
 place to try a locator and see what it matches — and what you do, kept as a
-test `mobium test` runs. The design and its reasons are
-[decisions/0007](../decisions/0007-an-inspector.md).
+test `mobium test` runs.
 
 Everything below was run on 2026-09-29 against
-[MobiumApp](../decisions/0004-an-app-under-test-of-our-own.md) on an
+[MobiumApp](https://github.com/mobiumdev/mobium-app) on an
 Android 15 emulator; the output is what mobium printed. Before this guide:
 [the quick start](../quickstart/README.md), and MobiumApp installed.
 

@@ -181,7 +181,7 @@ func TestTheFlagSweepCanFail(t *testing.T) {
 }
 
 // Every error code has its exception in every client, with the right wire
-// string. docs/decisions/0005.
+// string.
 func TestEveryClientCoversTheErrorCodes(t *testing.T) {
 	problems, err := ErrorCoverage(filepath.Join("..", ".."))
 	if err != nil {
@@ -235,7 +235,7 @@ func TestNoErrorLeavesWithoutACode(t *testing.T) {
 	}
 	for _, at := range found {
 		t.Errorf("%s creates an error with no code — use mobiumerr.New(mobiumerr.<Code>, ...), "+
-			"or wrap a classified error with %%w; see docs/decisions/0005", at)
+			"or wrap a classified error with %%w; the codes are in docs/guides/cli.md", at)
 	}
 }
 

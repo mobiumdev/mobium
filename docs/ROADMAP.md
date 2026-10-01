@@ -6,8 +6,8 @@ this is what is not.
 
 ## Next
 
-- **A test runner — `mobium test`, on the phones.** Iterations 1 and 2 are
-  built and checked (`docs/checks/test-runner.sh`): JSON test files of
+- ~~**A test runner — `mobium test`, on the phones.**~~ Done: iterations 1
+  and 2 are built and checked (`docs/checks/test-runner.sh`): JSON test files of
   `app_batch` steps, `app_wait_for` and `expect` assertions, projects as
   devices, workers, retries with flaky reported, `-g`, `--last-failed`,
   list, JSON, JUnit and HTML reports, `show-report` — and since 2026-09-29
@@ -18,14 +18,14 @@ this is what is not.
   stays on emulators and simulators. Getting there found CHALLENGES
   170–172. On an iPhone a password still needs a keyboard with its letters
   up (159). Parameters since 2026-10-01: `"each"` runs a test once per case,
-  `${key}` filled in (decisions/0006, "Parameters"). An interactive mode
+  `${key}` filled in (the test runner guide, section 9). An interactive mode
   since 2026-10-01: `mobium test --ui` serves a page that lists the suite,
   runs a test, a file or all of it on its projects, shows each step with
   its screen as it happens, and re-runs what failed, the files read again
-  for every run ([decisions/0009](decisions/0009-a-test-ui.md),
+  for every run ([the test runner guide, --ui](guides/test-runner.md#10-a-page-to-run-tests-from---ui),
   `docs/checks/test-ui.sh`). Recording a test from what a person does is
-  `mobium inspect`, since 2026-09-29 ([decisions/0007](decisions/0007-an-inspector.md)).
-  [decisions/0006](decisions/0006-a-test-runner.md).
+  `mobium inspect`, since 2026-09-29 ([the inspector guide](guides/inspector.md)).
+  The format is in [the test runner guide](guides/test-runner.md).
 - ~~**A second third-party app on iOS.**~~ Done 2026-10-01: NetNewsWire, an
   RSS reader, built from its MIT source for a simulator and from the App
   Store (7.1.4) on the iPhone 15 Plus, so the same app runs on both, as
@@ -43,6 +43,18 @@ this is what is not.
   the iPhone its center was at y 2553 pixels, under the toolbar from 2538,
   and `main` tapped it there and opened nothing, while this scrolls it out
   and the article opens.
+- **A tap in Chrome's web app after Chrome stops reporting its WebView.**
+  Opened while Chrome is running, an installed web app's WebView leaves the
+  accessibility tree within about five seconds, and Mobium refuses taps in
+  it with the reason (CHALLENGES 200). What could place one is unmeasured:
+  CDP can say where the page's viewport is in Chrome's own coordinates, and
+  whether those can be tied to the screen without a native host is the
+  question. Seen alongside it on 2026-10-01, each once and not reproduced:
+  switching into a long-backgrounded Chrome tab hung until the client gave
+  up after two minutes, where an `eval` in the same tab timed out at thirty
+  seconds with an error; and the emulator and the booted simulators went
+  away mid-session with nothing in Mobium stopping them and nothing in
+  their logs saying why.
 - **Windows.** Everything that needs no device passes on a GitHub-hosted
   Windows runner, every run: both modules' tests, the named-pipe daemon
   transport's acceptance tests five times over, and the built `mobium.exe` —
@@ -68,8 +80,9 @@ this is what is not.
   a decision, not a step; a Homebrew tap; and notarizing the macOS binaries,
   which needs an Apple Developer Program membership — until then
   [SETUP.md](SETUP.md#installing-a-release) says to download with `curl`.
-- **Video walkthroughs** of the quick start, one per client, once `start` and
-  `quit` have settled. The pages' examples and captured output are the script.
+- **Video walkthroughs** of the quick start, one per client, once the clients'
+  `start` and `quit` (the CLI's `session start` and `session end`) have
+  settled. The pages' examples and captured output are the script.
 - **Auto-wait, the rest of the actionability checks.** Actions already wait for
   a target to exist, be in view, stop moving and be enabled; refuse one under
   a dialog or the keyboard; and aim around, wait out or refuse a control the
@@ -82,17 +95,16 @@ this is what is not.
     does not contain, so a tap under one still lands on it. **On a
     simulator, `mobium hit-test` sees it** since 2026-09-29: UIKit's own hit
     test, asked through lldb, opt-in because the attach stops the app for
-    about two seconds ([decisions/0008](decisions/0008-a-hit-test-below-accessibility.md)).
+    about two seconds ([the hit test](guides/autowait.md#what-it-does-not-see)).
     On a real iPhone since 2026-09-30: the probe is evaluated as an lldb
     expression, through `xcrun lldb`'s own Python, and all seven cases of
     the Obstruction Demo agreed with where a raw touch went on the iPhone
-    15 Plus, about nine seconds a case (decisions/0008, "On a real
-    iPhone"). It needs the app built for development. **Before every
+    15 Plus, about nine seconds a case. It needs the app built for development. **Before every
     action, on a simulator**, since 2026-09-30: `launch --hit-test` loads
     the probe as the app starts and it answers on a Unix socket on the
     Mac's own disk in under a millisecond, so every action on an element
     asks it first; the seven cases agreed with a raw touch, and a tap cost
-    the same with it as without (decisions/0008, "Loaded at launch"). Not
+    the same with it as without. Not
     on a phone, where Mobium could reach a probe only over the phone's
     network; it refuses, and `hit-test` there stays the debugger's.
 - ~~**Session recording and `diff map`.**~~ Done 2026-09-29. `mobium trace
@@ -296,7 +308,10 @@ this is what is not.
   scrolled.
 - **Switching between apps** and more than one window.
 - **Seeding a device** with photos, files and other data before a flow.
-- **Uploads and downloads** through the system file pickers.
+- **Uploads and downloads** through the system file pickers. Copying a file
+  to and from the device is done (`upload` and `download`, above, verified
+  on a real iPhone on 2026-09-29); choosing it in the picker an app opens
+  is not.
 - **Frames and iframes** inside a WebView.
 - **Accessibility checks** as a side effect of the actions already being taken.
   An explicit one exists since 2026-09-30: `mobium audit` (`app_audit`)
@@ -423,7 +438,7 @@ this is what is not.
   become D-pad presses too; `press` already has back, home and the media
   keys. That makes it the existing backend with a focus strategy, not a new
   driver. Amazon's newer Linux-based OS, Vega, is not Android, and would be
-  the case for a driver process ([decisions/0003](decisions/0003-drivers-are-processes-not-plugins.md)).
+  the case for a driver process ([the driver protocol](../examples/drivers/PROTOCOL.md)).
   First, without code: does `mobium devices` list a TV after `adb connect`;
   does `map` work with `--driver uiautomator`, and does Fire OS let the
   UiAutomator2 server install; does the hierarchy report `focused` reliably
@@ -433,8 +448,10 @@ this is what is not.
 
 ## Not planned
 
-- **A test runner.** Mobium is a tool an agent or a test framework calls; it
-  does not want to be the framework. Test code generation is the same decision.
+- **Test code generation.** Mobium is a tool an agent or a test framework
+  calls. Its own runner, `mobium test`, runs JSON test files of tool calls,
+  and `mobium inspect` records one, but nothing generates test code in a
+  client's language.
 - **Device-cloud allocation.** Mobium drives devices you can reach; renting
   them is a separate concern.
 - **Anything that needs a runtime on the user's machine.** One static binary is

@@ -130,7 +130,8 @@ echo "    article        $links links from the page, natively              ok"
 # The article's WebView cannot be attached, and not because of the phone:
 # a phone's WebViews are reachable, and MobiumApp's are. The App Store build
 # of Wikipedia does not set isInspectable, so WebKit publishes no target for
-# it, which is decisions/0004 measured on a shipped app. The article is read
+# it: a WebView that has not opted in is unreachable, measured on a shipped
+# app. The article is read
 # through the native links above instead.
 if $M contexts | grep -q "WEBVIEW_$APP"; then
   echo "    webview        Wikipedia now opts into inspection — this check can attach and should"

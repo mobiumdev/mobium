@@ -210,8 +210,20 @@ func (h *Handlers) webFrame(ctx context.Context, s *session) (*webview.Frame, er
 		}
 	}
 	if host == nil {
-		return nil, mobiumerr.New(mobiumerr.NoSuchContext, "no WebView is visible in the native hierarchy — "+
-			"the app may have navigated away; switch back with `app_context NATIVE_APP`")
+		// Two causes look the same from here, and only the first has a
+		// remedy: the app moved to a screen with no WebView, or it still
+		// shows the page and has stopped putting the WebView in the
+		// accessibility tree — Chrome's installed web apps do when opened
+		// while Chrome is already running, within about five seconds, and
+		// then nothing native can say where the page is.
+		// CHALLENGES 200.
+		return nil, mobiumerr.New(mobiumerr.NoSuchContext, "%s is in front but its accessibility tree has no "+
+			"WebView, so where %s sits on screen cannot be measured and a tap is refused. Either the app "+
+			"moved to a screen without one, or it still shows the page and stopped reporting its WebView — "+
+			"Chrome's installed web apps do this when opened while Chrome is running. Reading the page still works: "+
+			"app_text, app_map and app_eval", tree.Package(), s.webCtx).
+			WithRemedy("if the app moved on, `app_context NATIVE_APP`; if it still shows the page, no tap " +
+				"inside it can be placed until the app reports its WebView again")
 	}
 
 	metrics, err := s.web.LayoutMetrics(ctx)
@@ -484,7 +496,7 @@ func (h *Handlers) inspectorFor(ctx context.Context, s *session) (*webview.Inspe
 	if err != nil {
 		return nil, err
 	}
-	// A simulator's inspector is a Unix socket on this Mac (decisions/0002);
+	// A simulator's inspector is a Unix socket on this Mac;
 	// a phone's is a service on the device, reached through usbmuxd and
 	// lockdown. The protocol after that is the same.
 	var insp *webview.Inspector

@@ -14,9 +14,9 @@ import (
 
 // Remote Web Inspector: how WebKit exposes a page for debugging, and the only
 // way into a WKWebView. It is a third protocol after WebDriver BiDi and CDP,
-// which is why iOS WebViews sat unstarted for so long — see
-// docs/decisions/0002-ios-webviews-are-reachable.md for what turned out to be
-// wrong about that.
+// which is why iOS WebViews sat unstarted for so long: it was believed to be
+// a Mach-port wall, and turned out to be a plain Unix socket carrying binary
+// property lists.
 //
 // Three things make it unlike CDP, and each one is a trap:
 //

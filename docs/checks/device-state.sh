@@ -1,10 +1,12 @@
 #!/bin/sh
-# Rotation and per-app language, end to end.
+# Rotation and per-app language, end to end — and lock, a call and an SMS
+# (an emulator's; a real phone's refusal), the timezone, notifications and
+# geolocation, each read back.
 #
-# Both exist because they change how every screen is laid out, and both are
-# only worth having because they can be read back — a rotation that the sensor
-# undoes a moment later, or a language the device did not store, is the shape
-# of defects 26 and 27.
+# The first two exist because they change how every screen is laid out, and
+# both are only worth having because they can be read back — a rotation that
+# the sensor undoes a moment later, or a language the device did not store,
+# is the shape of defects 26 and 27.
 #
 # The language half doubles as the only test of non-Latin text on a real
 # screen. Every label rule mobium has — truncation, markup stripping,

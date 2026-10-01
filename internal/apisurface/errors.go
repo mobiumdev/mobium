@@ -15,7 +15,7 @@ import (
 	"github.com/mobiumdev/mobium/internal/mobiumerr"
 )
 
-// Error codes are public API exactly as tools are (docs/decisions/0005), so
+// Error codes are public API exactly as tools are (docs/guides/cli.md), so
 // they get the same guard: every code the server can send has an exception in
 // every client, under the name mobiumerr.Name gives it, mapped to the right
 // wire string — and no client carries a code the server no longer sends.
@@ -132,8 +132,8 @@ func errorProblems(sources map[string]string) map[string][]string {
 // with no code: a fmt.Errorf or errors.New that does not wrap another error
 // with %w. A wrapping one is fine — mobiumerr.CodeOf sees through it to its
 // cause's code — but a new error made without mobiumerr.New reaches a client
-// as the bare code "error", which is exactly what docs/decisions/0005 exists
-// to end. mobiumerr itself and this package are exempt; tests are not scanned.
+// as the bare code "error", which is exactly what error codes exist to
+// end. mobiumerr itself and this package are exempt; tests are not scanned.
 func UnclassifiedErrors(root string) ([]string, error) {
 	var out []string
 	fset := token.NewFileSet()

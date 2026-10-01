@@ -7,7 +7,7 @@ commands fit together: the loop, sessions and the daemon, the flags every
 command takes, reading answers from a script, and exit statuses.
 
 Every command and every line of output below is what `mobium` printed on
-2026-09-28 against [MobiumApp](../decisions/0004-an-app-under-test-of-our-own.md)
+2026-09-28 against [MobiumApp](https://github.com/mobiumdev/mobium-app)
 on an Android 15 emulator. Where output is trimmed or a path shortened, it
 says so. The full list of commands and what each takes is generated:
 [API.md](../API.md) and [FLAGS.md](../FLAGS.md).
@@ -35,7 +35,9 @@ emulator-5554                          device     (android emulator, model: sdk_
 ```
 
 (Trimmed: the Mac also listed its iOS simulators, shut down, and a phone.)
-With one device running, no command needs to be told which; with several,
+To start one, `mobium boot <avd | simulator>` boots an Android emulator by its
+AVD's name, or an iOS simulator by its name or UDID, and answers once it has
+booted. With one device running, no command needs to be told which; with several,
 `--device <serial or udid>` picks one, on every command.
 
 ## 2. A session
@@ -107,6 +109,10 @@ $ mobium map
 
 A password field is labeled by its id and given the role `password`; what is
 typed into one is never printed, by `map` or any other command.
+
+`map --diff` answers only what changed since the last map of the device —
+`+` appeared, `-` went away, `~` changed label, checked state or place — which
+is what the action just did; its refs are the new map's either way.
 
 ## 4. Locators and refs
 
@@ -198,10 +204,32 @@ $ mobium --json tap testid=noSuchButton; echo $?
 | 5 | `unsupported` | this device or driver cannot do it — retrying will not help |
 | 6 | `timeout` | it did not happen in time — the one kind worth retrying as it is |
 | 7 | `not_confirmed` | the command ran and reading back says it did not take — a finding |
-| 1 | anything else | read the message |
+| 1 | `device_server`, `internal`, `error` | the device side failed, Mobium has a bug, or the failure is unclassified — read the message |
 
-The codes are the same in every client, as exceptions, and on the MCP wire
-([decisions/0005](../decisions/0005-errors.md)).
+The codes are the same in every client, as exceptions, and on the MCP wire,
+in `structuredContent`. Adding a code is safe; renaming or removing one would
+break every client that catches it, so they do not change:
+
+| Code | Means |
+| --- | --- |
+| `no_device` | nothing to drive |
+| `device_not_ready` | there, and not drivable yet: locked, not trusted, Developer Mode off |
+| `toolchain_missing` | missing on this machine: adb, Xcode, a signing certificate, a device agent that would not download or build |
+| `no_such_element` | a locator or ref matched nothing on screen; worth scrolling for |
+| `ambiguous_locator` | matched more than one; narrow it — Mobium never guesses |
+| `element_not_reachable` | found, and not touchable where it is |
+| `no_such_context` | a WebView context that is not there |
+| `no_such_alert` | a dialog was expected and none is up |
+| `unsupported` | this backend or platform cannot, and says why |
+| `timeout` | a wait ran out |
+| `not_confirmed` | the command said it worked and reading the state back disagreed |
+| `invalid_argument` | the request itself is wrong, or the command line was refused |
+| `device_server` | the device side failed — a device server, or adb, simctl, devicectl, lockdown — in a way no narrower code names; a server's own W3C code is in `details.w3c` |
+| `internal` | a bug in Mobium |
+| `error` | unclassified: a daemon too old to send a code, or a code a client does not know |
+
+Decide by the code, never by matching the message's words: the wording can
+improve, the code is the contract.
 
 ## 7. Several steps in one call: `batch`
 
@@ -262,7 +290,11 @@ Daemon running (pid 4384, up 1s)
 ```
 
 `mobium daemon stop` stops one, ending its sessions — stop it before shutting
-a device down, never after ([SHUTDOWN.md](../SHUTDOWN.md)). Keep session names
+a device down, never after ([SHUTDOWN.md](../SHUTDOWN.md)). `mobium shutdown
+<serial | avd | udid | simulator>` ends this daemon's session on the device,
+then shuts the emulator or simulator down and returns once it is gone; a
+real phone is refused. It ends only its own daemon's session, so stop any
+other daemon on the device first. Keep session names
 short: a name is part of a socket path, which the OS caps at about 104
 bytes.
 

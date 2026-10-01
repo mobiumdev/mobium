@@ -52,24 +52,11 @@ make ci
 ```
 
 It is exactly what the CI workflow runs, so a green local run means a green
-build. On a fresh clone it printed, among its other lines:
-
-```
-gofmt clean
-clients parse
-javascript errors: 14 codes mapped, all checks passed
-javascript connection: 27 checks passed
-javascript types: 20 exports and 77 Device methods declared
-python errors: 14 codes mapped, all checks passed
-python connection: 28 checks passed
-148 checks, 0 failed
-license copies match
-docs: spelling, anchors and quick-start pages clean
-169 checks, 0 failed
-```
-
-The `148` is the Java client's suite and the second `169` the .NET client's.
-It also covers `go vet`, the linter, both Go modules' tests, cross-compilation
+build. Among its other lines it prints `gofmt clean`, `clients parse`, a
+line per JavaScript and Python client check, a `checks, 0 failed` total for
+each of the Java and .NET suites, `license copies match` and `docs: spelling,
+anchors and quick-start pages clean`; the counts in them grow with the API,
+so none is quoted here. It also covers `go vet`, the linter, both Go modules' tests, cross-compilation
 for six targets, and the checks that the generated docs are current.
 
 `make test` alone is faster and skips most of that. `clients/go` is its own
@@ -85,8 +72,9 @@ Behavior on a device is checked by the scripts in [checks/](checks/), each of
 which drives a real emulator, simulator or phone and asserts on what happened
 rather than on an exit code.
 
-Start one device ([SETUP.md](SETUP.md) has every kind, and the traps), then
-run the check for what you changed. The five clients' end-to-end flows are
+Start one device — `mobium boot mobium-test` for an emulator, `mobium boot
+"iPhone 17 Pro"` for a simulator; [SETUP.md](SETUP.md) has every kind, and
+the traps — then run the check for what you changed. The five clients' end-to-end flows are
 one script:
 
 ```sh
@@ -108,6 +96,9 @@ release. When you are done, stop cleanly — the daemon before the device:
 ```sh
 sh docs/checks/clean-stop.sh --quit
 ```
+
+or, for one device, `mobium shutdown emulator-5554`, which ends its daemon's
+session and then shuts the device down ([SHUTDOWN.md](SHUTDOWN.md)).
 
 ## 5. Work on a client
 
@@ -146,8 +137,10 @@ before running `make ci`.
 ## 7. Send a pull request
 
 `main` is protected. A change reaches it through a pull request that has been
-reviewed and whose **Build, vet and test** check passes; a second job runs the
-.NET client's tests on Windows. History stays linear: pull requests are
+reviewed and whose **Build, vet and test** check passes. Two more jobs run on
+Windows: one runs the .NET client's tests, and `go-windows` runs both Go
+modules' tests, the named-pipe daemon transport's, and a smoke test of the
+built `mobium.exe`. History stays linear: pull requests are
 squash-merged, merge commits are off, force-pushes to `main` are refused, and a
 merged branch is deleted.
 

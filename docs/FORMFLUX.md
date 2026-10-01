@@ -30,7 +30,7 @@ element counts above are the positive control, not a demo.
 **On Android a screen is a setting.** `wm size` and `wm density` override the
 display for every app, both report their physical value alongside the
 override, and `reset` puts them back. Cost: about half a second per profile,
-measured across all six.
+measured across the first six; there are eight Android profiles now.
 
 **On iOS a screen is a device.** A simulator's geometry is fixed when it is
 created and nothing resizes a booted one. Covering four screens means creating
@@ -179,6 +179,15 @@ MOBIUM_DEVICE_TESTS=1 MOBIUM_DEVICE=emulator-5554 \
 `TestDeviceCatchesThePlantedTargets` needs MobiumApp installed, and skips
 without it.
 
+The iOS test has its own switch, because it may create and delete
+simulators, which is more to consent to than resizing one. It defaults to
+`iphone-16e`, a type that is usually not booted; `MOBIUM_SIM_PROFILE` names
+another:
+
+```sh
+MOBIUM_SIM_TESTS=1 go test ./internal/formflux/ -run DeviceEnsures -v
+```
+
 It applies every Android profile, checks each against a readback, and
 restores the physical screen **in a deferred call, so it runs even when an
 assertion fails**. A half-applied profile is a state left on somebody's phone;
@@ -208,7 +217,7 @@ written against a page somebody controls is a check that agrees with itself.
 That last point is the one formflux should eventually assert. A page serving a
 2× image to a 3× screen is a real, machine-checkable defect of exactly the
 kind a resolution factory exists to find, and it is invisible to a human
-looking at a screenshot. Nothing asserts it yet — see below.
+looking at a screenshot. Nothing asserts it yet.
 
 It is a third-party page and it will change without telling us, so a check
 built on it must fail loudly rather than silently pass when the markup moves,
@@ -238,7 +247,9 @@ Two things it learned by being run:
 - Findings carry the element's path, because without it two problems on two
   unlabeled containers print identically and neither can be acted on.
 
-**iOS.** `Ensure` finds a simulator of a profile's device type, boots it, or
+**iOS.** `Ensure` and `Release` are called only by the device-backed test;
+nothing in the tool layer calls them, so `app_screen` never boots or creates
+a simulator. `Ensure` finds a simulator of a profile's device type, boots it, or
 creates one if none exists; `Release` shuts down only what it booted and
 deletes only what it created. Verified both ways: against an already-booted
 simulator, which it correctly left alone, and against a shut-down type, which
@@ -272,4 +283,7 @@ warns about: a control's tap area can be larger than its bounds.
 - **Overlap** is unimplemented. Two controls on top of each other is a real
   defect, but a container legitimately contains its children, so it needs
   ancestry-aware comparison to avoid reporting every list.
-- **Font scale.** Display size is driveable; `font_scale` is not.
+- **Font scale in a profile.** `font_scale` is settable on its own —
+  `mobium accessibility text_scale 1.3` (`app_accessibility`) — but no profile
+  sets it, so `app_screen` cannot check a layout at a screen size and a text
+  scale together.

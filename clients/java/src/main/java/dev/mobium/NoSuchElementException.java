@@ -5,8 +5,8 @@ import java.util.Map;
 /**
  * A locator or ref matched nothing on screen. Worth scrolling for.
  *
- * <p>Shares its simple name with {@code java.util.NoSuchElementException}, as
- * Selenium's does; import this one by name rather than through a wildcard.
+ * <p>Shares its simple name with {@code java.util.NoSuchElementException};
+ * import this one by name rather than through a wildcard.
  *
  * <p>Error code {@code no_such_element}. See {@link MobiumException}.
  */

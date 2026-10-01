@@ -106,7 +106,8 @@ still coming, the bar under the address still moving:
 
 ![GitHub's header loaded and the page below it still blank, the progress bar under the address bar part-way](images/network-3-slow.jpg)
 
-`--json` gives the same answer to code:
+`--json` gives the same answer to code — read here while the shaping above
+was on, before `--reset`:
 
 ```
 $ mobium --json network

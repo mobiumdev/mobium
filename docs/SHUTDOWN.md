@@ -44,8 +44,8 @@ cannot be closed from outside and come back.
 returns holds the sessions, and shutdown used to wait for it indefinitely —
 SIGTERM and `daemon stop` both hung, with the socket already gone, so the
 daemon looked dead while its PID file refused a replacement (CHALLENGES 89).
-Now it waits 10 seconds for calls to finish and 20 more for the sessions to
-close, then exits and says on stderr that a session was left open. A second
+Now it waits 10 seconds for calls to finish and up to 75 more for the
+sessions to close, then exits and says on stderr that a session was left open. A second
 Ctrl-C or SIGTERM exits at once. Either way, what a session left behind is
 still there: run `docs/checks/clean-stop.sh --quit`, or the commands under
 "On the device" below.
@@ -59,8 +59,9 @@ adb -s emulator-5554 emu kill
 
 `mobium shutdown <serial | avd | udid | simulator>` does this for one
 device in the same order — its session ended, then the device — and
-returns once the device is gone. Other daemons' sessions on it are theirs
-to end first: it ends only its own.
+returns once the device is gone. It ends only its own daemon's session and
+does not check for other daemons on the device, so stop those first
+(`MOBIUM_SESSION=<name> mobium daemon stop` for each).
 
 A **headless** emulator (`-no-window`) is stopped exactly the same way, and
 this is where the check below earns its keep: there is no window whose absence

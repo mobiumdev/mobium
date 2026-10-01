@@ -183,8 +183,8 @@ func TestAlertTypesWithoutAnswering(t *testing.T) {
 // React Native has no prompt there either, while on iOS a plain alert simply
 // has no field.
 func TestAlertSaysWhyItCannotType(t *testing.T) {
-	// Shaped as the W3C client returns it since docs/decisions/0005: the
-	// server's own code kept in Details, not only in the wording.
+	// Shaped as the W3C client returns it: the server's own code kept in
+	// Details, not only in the wording.
 	unsupported := &alertDriver{text: "Delete?", typeErr: mobiumerr.New(mobiumerr.Unsupported,
 		"unknown command: no such route").WithDetail("w3c", "unknown command")}
 	_, err := alertOn(t, unsupported, map[string]interface{}{"text": "x"})

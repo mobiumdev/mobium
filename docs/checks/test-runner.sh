@@ -1,5 +1,5 @@
 #!/bin/sh
-# `mobium test`, held to the controls decision 0006 promised: a runner is
+# `mobium test`, held to its controls: a runner is
 # only believed once each of its verdicts has been seen to come out the other
 # way.
 #

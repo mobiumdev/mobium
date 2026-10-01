@@ -35,7 +35,7 @@ what it printed.
 | --- | --- | --- |
 | **macOS** | Yes | Yes — needs Xcode |
 | **Linux** | Yes — every page below run on Ubuntu 24.04, x86_64, against an Android 15 emulator. [SETUP.md](../SETUP.md#on-linux) has the emulator's Linux steps | No — iOS needs Xcode, which runs only on macOS |
-| **Windows** | Not yet: the code is written and compiles, and has not run on Windows. See [WINDOWS.md](../WINDOWS.md) | No — no Xcode |
+| **Windows** | Not yet: everything that needs no device, the named-pipe daemon transport included, passes in CI on a Windows runner; no emulator or phone has been driven from Windows. See [WINDOWS.md](../WINDOWS.md) | No — no Xcode |
 
 ## 1. Install mobium
 
@@ -64,13 +64,15 @@ One device is enough. Start any of these.
 
 Install [Android Studio](https://developer.android.com/studio) or the
 command-line tools, then create a virtual device (Device Manager in Android
-Studio, or `avdmanager`) and boot it:
+Studio, or `avdmanager`) and boot it by name:
 
 ```sh
-emulator -avd <name> &
-adb wait-for-device
+mobium boot <avd>
 ```
 
+It finds the SDK's `emulator` itself, through `ANDROID_HOME` or the SDK's
+usual place, and answers once Android has finished booting — not merely once
+`adb` can see it. Add `--window` to watch it; it runs headless otherwise.
 `adb` comes with the SDK's platform-tools; put it on your `PATH`. On Linux the
 emulator needs KVM. [SETUP.md](../SETUP.md#android-emulator) has the exact
 commands and two traps whose errors name the wrong cause.
@@ -85,11 +87,11 @@ covers Wi-Fi and what each failure means.
 ### iOS simulator (macOS)
 
 Install Xcode from the App Store, open it once, and add an iOS simulator
-runtime (Settings → Components). Then boot a simulator:
+runtime (Settings → Components). Then boot a simulator by name:
 
 ```sh
 xcrun simctl list devices available | grep iPhone    # pick one
-xcrun simctl boot "iPhone 17 Pro"
+mobium boot "iPhone 17 Pro"
 open -a Simulator                                    # to watch it; optional
 ```
 
@@ -150,7 +152,9 @@ machine's devices.
 
 ## When something goes wrong
 
-- **"2 devices are available … pick one"** — `start` refuses to guess. Name
+- **`2 devices are ready (…) — pick one with --device <serial>`** on Android,
+  or **`2 iOS devices are available (…) — pick one with --device`** on iOS — more than one device of the session's platform is running, and `start`
+  refuses to guess. An Android device beside an iOS one is not ambiguous. Name
   one: `MOBIUM_DEVICE=<serial or UDID>` for the examples, `--device` on the
   command line, or the client's `device` option. `mobium devices` lists them.
 - **The first start seems stuck** — it installs the UiAutomator2 server on

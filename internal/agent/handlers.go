@@ -937,7 +937,7 @@ func knownRefs(t *refTable) string {
 // one that matched too much. The two want opposite responses: nothing found
 // may be below the fold and worth scrolling for, while an ambiguous match is
 // already on screen twice and scrolling can only make it worse. It was a type
-// of its own here until docs/decisions/0005; it is the code now, so a client
+// of its own here before Mobium had error codes; it is the code now, so a client
 // can tell the two apart as well.
 func matchedNothing(err error) bool {
 	if isNearMiss(err) {

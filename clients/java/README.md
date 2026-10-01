@@ -1,6 +1,6 @@
 # Mobium Java client
 
-Drives native apps on Android emulators, Android phones, iOS simulators and
+Drives mobile apps on Android emulators, Android phones, iOS simulators and
 iPhones, over the same tool layer the CLI and the MCP server use.
 
 ```java
@@ -174,8 +174,8 @@ try {
 `TimedOutException` (not `TimeoutException`, which is Java's),
 `InvalidArgumentException`, `DeviceServerException`, `InternalException`.
 Import `dev.mobium.NoSuchElementException` by name: it shares its simple name
-with `java.util`'s, as Selenium's does. The codes are the same in every client;
-see `docs/decisions/0005-errors.md`.
+with `java.util`'s. The codes are the same in every client;
+see [the codes](../../docs/guides/cli.md#6-when-a-command-fails).
 
 ### Threads, timeouts and closing
 

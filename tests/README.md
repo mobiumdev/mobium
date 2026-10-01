@@ -1,8 +1,8 @@
 # Tests
 
 Mobium's own tests of MobiumApp, run by `mobium test` — and the suite that
-holds the runner to its word. The format and the reasons are in
-[decisions/0006](../docs/decisions/0006-a-test-runner.md).
+holds the runner to its word. The format is in the
+[test runner guide](../docs/guides/test-runner.md).
 
 ```sh
 cd tests

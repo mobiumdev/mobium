@@ -4,7 +4,7 @@
 # and refuses, saying why, what it cannot wait out. Judged by what MobiumApp
 # says it received, never by the tool's own report.
 #
-#   docs/checks/autowait.sh <android-serial | simulator-udid>
+#   docs/checks/autowait.sh <android-serial | simulator-udid | iphone-udid>
 #
 # Stable, on the Motion Demo: a tap on a target sliding in waits for the slide
 # to end — the app's own stopwatch says how long after Replay the tap came —

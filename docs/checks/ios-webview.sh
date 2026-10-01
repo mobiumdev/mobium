@@ -53,7 +53,11 @@ sleep 3
 [ "$($M current 2>/dev/null | tail -1)" = "com.apple.mobilesafari" ] \
   || fail "Safari is not in the foreground; the native WebView element will not be there"
 
-ctx=$(appContexts com.apple.mobilesafari | head -1)
+# By URL: Safari keeps every tab it has open as a context, numbered in
+# listing order, so the first one is whatever tab happens to list first — a
+# Squoosh tab left by pwa.sh, once, and this read the wrong page.
+ctx=$(for c in $(appContexts com.apple.mobilesafari); do
+  $M contexts | awk -v id="$c" '$1 == id' | grep -q "https://example.com/" && echo "$c"; done | head -1)
 [ -n "$ctx" ] || fail "no WebView context on a simulator showing a web page: $($M contexts 2>&1 | grep -m1 "^error:" || echo "mobium listed none for this app")"
 echo "    contexts       $ctx"
 
@@ -86,7 +90,9 @@ echo "    geometry       refused to tap, and said why                    ok"
 # target once per connection.
 $M context NATIVE_APP >/dev/null
 $M context "$ctx" >/dev/null
-$M text | grep -q "Example Domain" || fail "re-attaching to the same page did not work"
+# The body text, not the heading: example.com has dropped its "Example Domain"
+# heading, and the title is all that still says it.
+$M text | grep -q "This domain is for use in" || fail "re-attaching to the same page did not work"
 echo "    re-attach      detached and attached again cleanly             ok"
 
 $M context NATIVE_APP >/dev/null

@@ -17,6 +17,7 @@ Not on Maven Central yet. Until the first release it installs into your local Ma
 ```sh
 git clone https://github.com/mobiumdev/mobium.git ~/mobium
 cd ~/mobium/clients/java && ./mvnw install -DskipTests && cd -
+mkdir quickstart && cd quickstart
 ```
 
 ## 3. The code
@@ -169,6 +170,6 @@ The first start on a device is slow: it installs the UiAutomator2 server on Andr
 
   with `Quickstart.java` in `src/main/java/`, then `gradle run`.
 - try-with-resources around `start()` quits when it ends. Around `connect()` it only closes the connection, leaving the session open.
-- With more than one device attached, `start` refuses to guess and lists them. Name one with `MOBIUM_DEVICE=<serial or UDID>`, which the example passes on as the device.
+- With more than one device of the session's platform running — two Android devices, or two among the booted simulators and attached iPhones — `start` refuses to guess and lists them. One Android device and one iOS device are not ambiguous: the platform picks. Name one with `MOBIUM_DEVICE=<serial or UDID>`, which the example passes on as the device.
 
 Next: [the rest of the tool surface](../API.md), and [setting up phones and simulators](../SETUP.md). Changing the client itself? [DEVELOPMENT.md](../DEVELOPMENT.md) is the contributor's guide.

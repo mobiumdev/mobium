@@ -174,7 +174,7 @@ func CallTool(params json.RawMessage, h *Handlers) (interface{}, *Error) {
 // door reports it. The text is unchanged, so an agent reading Content sees
 // what it always has; the structured half carries the code, the remedy and
 // whether a retry can help, for callers that act on the failure rather than
-// read it. docs/decisions/0005.
+// read it. The codes are in docs/guides/cli.md.
 //
 // Shared because a second copy of it went wrong: `mobium pipe`, which every
 // client spawns, built its own result without the structured half, so every

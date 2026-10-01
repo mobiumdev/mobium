@@ -20,6 +20,7 @@
 # phone whose saved timers all have "Timer" in the name.
 set -e
 DEV="$1"; M="./bin/mobium --device $DEV"
+if [ -z "$DEV" ]; then echo "usage: $0 <serial>" >&2; exit 2; fi
 ID=com.google.android.deskclock:id
 
 # show normalizes both layouts to HH:MM:SS.

@@ -1,59 +1,11 @@
-# 0003 — A third-party driver is a process, not a Go plugin
+# The driver protocol
 
-**2026-09-13.** Answers a structural criticism of the design: the extension
-point is private. `mobiumdriver.Driver` lives under `internal/`, so nobody outside
-this repository can add a Roku, Flutter, tvOS or Tizen backend without forking.
-An ecosystem of drivers exists only where strangers can add one.
-
-## The three ways to open it
-
-**Export the Go interface.** Move `internal/mobiumdriver` to `mobiumdriver/`, and a
-third party imports it. Cheapest to do and the worst of the three. It makes
-every type reachable from `Driver` public API — `uitree.Node`, `uitree.Tree`,
-`device.InstalledApp`, `Rect` — and each of them is still moving. The eleven
-capability interfaces would freeze on the day they were exported, which is
-about ten interfaces too early. Worse, a driver written this way is a Go
-library: the author has to import Mobium and build their own binary, so
-"install a driver" means "build a different Mobium". That is a fork with extra
-steps.
-
-**`plugin.Open`.** Rejected outright. Go plugins require the exact same
-compiler version, the exact same versions of every shared dependency, and the
-exact same build flags; they do not work on Windows at all, and they are
-effectively unsupported on macOS with CGO disabled — which is how Mobium is
-built. A distribution mechanism that fails on two of three platforms is not
-one.
-
-**A subprocess speaking a protocol.** Chosen. The driver is an executable that
-reads JSON-RPC 2.0 on stdin and writes it on stdout, exactly the framing
-`mobium pipe` already speaks to its clients. Mobium spawns it, negotiates, and
-talks to it for the life of the session.
-
-## Why the subprocess wins
-
-- **The single-binary property survives.** Mobium still ships as one static
-  executable with no runtime dependencies. A driver is a separate file the user
-  chooses to install; nothing is required to run Mobium without one.
-- **No language lock-in.** A plugin must be written in its host's language.
-  A Mobium driver can be a shell script, a Python file, a Go binary or a
-  Rust one. For a device whose SDK is Python — which is most of the odd ones —
-  that is the difference between possible and not.
-- **Nothing internal is frozen.** The contract is the wire format, which is
-  small and deliberately conservative, rather than every Go type reachable from
-  an interface. `uitree.Node` can keep changing; `WireNode` cannot, and it is
-  the only thing a driver author sees.
-- **A crashing driver is not a crashing Mobium.** In-process plugins share the
-  address space. A third-party driver segfaulting takes the daemon with it, and
-  the daemon holds the device session.
-- **It matches how this already works.** Mobium speaks JSON-RPC over a pipe to
-  five clients today. Speaking it downward as well as upward adds a direction,
-  not a mechanism.
-
-The cost is a process boundary per call. Measured against the dump backend's
-1.96s snapshot, and even against UiAutomator2's 0.04s, the pipe is not where
-the time goes: the round trip through a spawned process is tens of
-microseconds, and every driver worth writing is talking to a device over USB or
-TCP behind it.
+What a third-party driver speaks: a process Mobium starts, talking JSON-RPC
+over its stdin and stdout, which gives Mobium a platform it does not know —
+a Roku, a Flutter engine, a TV. Everything above the driver — refs, waiting,
+scrolling, `map` — comes from Mobium unchanged. [README.md](README.md) is the
+guide to writing one; this is the protocol it follows, and
+[`mobium-driver-adb`](mobium-driver-adb) is a working one in Python.
 
 ## The protocol
 
@@ -165,7 +117,7 @@ would notice.
 printed by `map` — it is labeled by its `testid`, given `role=password`, and
 read back masked with only its length kept. Android puts a password field's
 typed value straight into `text`, and mobium leaked one until it honored this
-([CHALLENGES 43](../CHALLENGES.md)). Nothing downstream can infer it.
+([CHALLENGES 43](../../docs/CHALLENGES.md)). Nothing downstream can infer it.
 
 `displayed` and `enabled` are the two fields that default to **true** when
 absent, so a driver that does not track them does not accidentally report an
@@ -179,11 +131,11 @@ use to say "this exists but the user cannot see it": a node marked
 `displayed:false` is kept in the hierarchy, so a locator still resolves to it
 and the error explains why it cannot be touched, but it is left out of `map`.
 
-That last part was not true when this was first written — `Actionable` did not
-consult the field at all, so a driver could say `false` and be mapped anyway.
+That last part was not always true — `Actionable` once did not consult the
+field at all, so a driver could say `false` and be mapped anyway.
 Fixed, with a test that fails if it regresses; recorded as
-[CHALLENGES 39](../CHALLENGES.md). A protocol that documents a field which
-changes nothing is worse than one that omits it.
+[CHALLENGES 39](../../docs/CHALLENGES.md). A protocol that documents a field
+which changes nothing is worse than one that omits it.
 
 ### Errors
 
@@ -206,40 +158,3 @@ develop a driver without installing it.
 
 `mobium doctor` lists the drivers it can find, so "is it installed" has an
 answer that is not "run it and see".
-
-## What this does not do
-
-It does not make Mobium's *tool* layer extensible — there is no way to add an
-`app_foo` tool from outside, and there should not be one. The value of a single
-shared tool layer is that every client gets every tool with the same semantics;
-a third-party tool would break that for whoever did not install it. The
-platform seam is the right place to open, and the only one.
-
-## How to re-check this
-
-The claims here are about a protocol somebody outside this repository has to
-implement, so they are worth re-running rather than trusting:
-
-```sh
-# The reference driver still needs nothing from this module. Every line should
-# name a Python standard-library module and nothing else — anything from
-# mobium here means the extension point is not as open as this document says.
-grep -n "^import\|^from" examples/drivers/mobium-driver-adb
-
-# Every capability has an As* helper, and nothing above internal/mobiumdriver
-# asserts a capability interface directly.
-grep -rn 's\.driver\.(mobiumdriver\.' internal/
-
-# The whole thing, against a device.
-docs/checks/external-driver.sh <serial>
-```
-
-**Re-run 2026-09-14**: the two that need no device both hold — the reference
-driver imports `base64`, `json`, `os`, `subprocess`, `sys` and `xml` and
-nothing more, and no capability interface is asserted directly anywhere above
-`internal/mobiumdriver`.
-
-It also does not promise version-1 stability yet. `protocolVersion` is `"1"`
-and Mobium refuses anything else, so the negotiation is in place from the
-start; whether `"1"` is frozen is a decision for the public release, not for
-today.

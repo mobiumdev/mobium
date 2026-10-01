@@ -1,4 +1,4 @@
-// Command mobium automates native apps on virtual devices.
+// Command mobium automates mobile apps on devices, virtual and real.
 //
 // Step 1 scope: Android emulators, via adb and uiautomator, with the map/@ref
 // model that the rest of the tool will be built on.
@@ -57,7 +57,8 @@ func main() {
 			gridActive = len(gridNodes()) > 0
 			return nil
 		},
-		Long: "Mobium automates native apps on Android emulators and phones, iOS simulators\n" +
+		Long: "Mobium automates mobile apps — native, hybrid, cross-platform and pages in a\n" +
+			"mobile browser — on Android emulators and phones, iOS simulators\n" +
 			"and iPhones, using the same map/@ref workflow as vibium:\n\n" +
 			"  mobium map && mobium tap @e1 && mobium map",
 	}

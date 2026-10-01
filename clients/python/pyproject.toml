@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "mobium"
 version = "0.1.0"
-description = "Drive native apps on Android emulators, Android phones, iOS simulators and iPhones. No dependencies."
+description = "Drive mobile apps on Android emulators, Android phones, iOS simulators and iPhones. No dependencies."
 readme = "README.md"
 requires-python = ">=3.9"
 license = "MIT"

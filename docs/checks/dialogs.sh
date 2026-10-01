@@ -4,6 +4,7 @@
 # dialog going away.
 #
 #   docs/checks/dialogs.sh <android-serial | simulator-udid>
+#   MOBIUMAPP_BUNDLE=<path to MobiumApp.app> docs/checks/dialogs.sh <iphone-udid>
 #
 # What it holds each platform to is what was measured (CHALLENGES 106):
 # accept and dismiss press a button the platform picks, and it is not the

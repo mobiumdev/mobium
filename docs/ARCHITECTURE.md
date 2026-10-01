@@ -13,6 +13,8 @@ flowchart TB
         cli["CLI<br/>mobium map, mobium tap @e5"]
         clients["Language clients<br/>Python · JavaScript · Go · Java · .NET"]
         mcp["MCP client<br/>an agent"]
+        test["mobium test<br/>JSON test files · --ui page"]
+        inspect["mobium inspect<br/>a page showing the screen"]
     end
 
     pipe["mobium pipe<br/>JSON-RPC on stdio"]
@@ -22,6 +24,11 @@ flowchart TB
     cli --> daemon
     clients --> pipe --> daemon
     mcp --> mcpcmd
+    test --> daemon
+    test -- "a pipe per project on a grid" --> pipe
+    inspect --> daemon
+    remote["another machine's daemon<br/>--remote, MOBIUM_GRID"]
+    cli & pipe -.->|"SSH socket forward"| remote
 
     subgraph core["internal/agent — the tool layer, written once"]
         tools["Tools and schemas<br/>map · tap · type · wait · scroll-to · alert · …"]
@@ -75,7 +82,7 @@ flowchart TB
   the ordinary driver.
 - **A third-party backend is a process**, not a Go plugin: any executable named
   `mobium-driver-<name>` on `PATH`, speaking JSON-RPC
-  ([decisions/0003](decisions/0003-drivers-are-processes-not-plugins.md)).
+  ([the driver protocol](../examples/drivers/PROTOCOL.md)).
 
 ## Packages
 
@@ -92,25 +99,36 @@ flowchart LR
     driver["internal/mobiumdriver<br/>backends"]
     webview["internal/webview<br/>CDP, RWI"]
     formflux["internal/formflux<br/>screen profiles"]
+    testrun["internal/testrun<br/>mobium test"]
+    testui["internal/testui<br/>mobium test --ui"]
+    inspect["internal/inspect<br/>mobium inspect"]
+    grid["internal/grid<br/>leases on a node"]
+    trace["internal/trace<br/>session recording"]
     uitree["internal/uitree<br/>nodes, locators, map"]
     device["internal/device<br/>adb, simctl, devicectl, lockdown"]
     plist["internal/plist<br/>property lists"]
     paths["internal/paths"]
     err["internal/mobiumerr<br/>error codes"]
 
-    cmd --> agent & daemon & paths
+    cmd --> agent & daemon & testrun & testui & inspect & grid & device & paths
     daemon --> agent & paths
     apisurface --> agent
-    agent --> driver & webview & formflux & uitree & device & paths
+    testrun --> agent
+    testui --> testrun
+    inspect --> agent & testrun & uitree
+    agent --> driver & webview & formflux & uitree & device & grid & trace & paths
+    grid --> paths
     driver --> device & uitree
     webview --> device & uitree & plist
     formflux --> uitree
     device --> plist & paths
 ```
 
-Every package also imports `internal/mobiumerr`, left out above for
-legibility: every failure carries one of its codes, which are public API
-([decisions/0005](decisions/0005-errors.md)).
+Nearly every package also imports `internal/mobiumerr`, left out above for
+legibility; only `internal/trace`, `internal/testui` and the test helper
+`internal/fakecmd` do not. Every failure carries one of its codes, which are
+public API
+([the codes](guides/cli.md#6-when-a-command-fails)).
 
 | Package | Responsibility |
 | --- | --- |
@@ -123,6 +141,11 @@ legibility: every failure carries one of its codes, which are public API
 | `internal/device` | adb, simctl, devicectl, usbmuxd and lockdown; installing the pinned device agents |
 | `internal/formflux` | one device impersonating many screens ([FORMFLUX.md](FORMFLUX.md)) |
 | `internal/plist` | the property-list codec iOS's inspector and lockdown speak |
+| `internal/testrun` | `mobium test`: JSON test files run through the tools, with retries, workers and reports |
+| `internal/testui` | `mobium test --ui`: a page that runs the suite and shows each step |
+| `internal/inspect` | `mobium inspect`: a page showing the screen and its elements, recording a test file |
+| `internal/grid` | a grid node's device leases |
+| `internal/trace` | recording a session in Vibium's record format |
 | `internal/apisurface` | build-time checks that every tool and flag is reachable from every front door |
 | `internal/paths` | socket, PID and session paths, and the OS length limit on them |
 | `internal/mobiumerr` | the error codes |

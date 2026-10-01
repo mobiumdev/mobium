@@ -20,7 +20,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// A grid is Selenium Grid's shape without its hub: MOBIUM_GRID names the
+// A grid has no hub: MOBIUM_GRID names the
 // nodes, the caller's own mobium routes each run to a free device that
 // matches, and the lease that keeps a device to one run lives on the node, so
 // callers on different machines cannot take the same one. Nothing new listens
