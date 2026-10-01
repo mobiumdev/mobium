@@ -8,6 +8,7 @@ import (
 	"github.com/mobiumdev/mobium/internal/mobiumerr"
 	"os"
 	"path/filepath"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -724,7 +725,7 @@ func (h *Handlers) text(ctx context.Context, args map[string]interface{}) (*Tool
 		// Android leaves out what the keyboard covers, so a label under it
 		// is a plain miss there, and "run app_map again" cannot find it;
 		// hiding the keyboard can.
-		if kb, ok := mobiumdriver.AsKeyboard(s.driver); ok && mobiumerr.CodeOf(err) == mobiumerr.NoSuchElement {
+		if kb, ok := mobiumdriver.AsKeyboard(s.driver); ok && mobiumerr.CodeOf(err) == mobiumerr.NoSuchElement && !isNearMiss(err) {
 			if shown, kerr := kb.KeyboardShown(ctx); kerr == nil && shown {
 				return nil, keyboardOver(loc, false)
 			}
@@ -929,6 +930,9 @@ func knownRefs(t *refTable) string {
 // of its own here until docs/decisions/0005; it is the code now, so a client
 // can tell the two apart as well.
 func matchedNothing(err error) bool {
+	if isNearMiss(err) {
+		return false
+	}
 	switch mobiumerr.CodeOf(err) {
 	case mobiumerr.NoSuchElement, mobiumerr.ElementNotReachable:
 		return true
@@ -1064,12 +1068,55 @@ func notEnabled(loc uitree.Locator, waited time.Duration) error {
 		WithDetail("locator", loc.String())
 }
 
+// nearMiss is the locator that finds exactly one element by the same words
+// under another of text, label and testid, when loc finds none. map prints a
+// node's text when it has any, so a field shown as "URL (input)" — its
+// placeholder — has no label "URL"; NetNewsWire's Add Feed sheet was refused
+// for label=URL, saying the keyboard might be covering a field at the top of
+// the screen. A remedy that names the locator that works is one that can.
+func nearMiss(loc uitree.Locator, tree *uitree.Tree) *uitree.Locator {
+	kinds := []uitree.Kind{uitree.KindText, uitree.KindLabel, uitree.KindTestID}
+	if !slices.Contains(kinds, loc.Kind) || loc.Value == "" {
+		return nil
+	}
+	for _, k := range kinds {
+		if k == loc.Kind {
+			continue
+		}
+		alt := loc
+		alt.Kind = k
+		if len(alt.Resolve(tree)) == 1 {
+			return &alt
+		}
+	}
+	return nil
+}
+
+// isNearMiss reports a miss that nearMiss explained: the element is on
+// screen under other words, so neither scrolling nor the keyboard is why.
+func isNearMiss(err error) bool {
+	var e *mobiumerr.Error
+	if !errors.As(err, &e) {
+		return false
+	}
+	_, ok := e.Details["near_miss"]
+	return ok
+}
+
 // pickOne resolves a locator to exactly one node, refusing an ambiguous match
 // rather than guessing which element the caller meant.
 func pickOne(loc uitree.Locator, tree *uitree.Tree) (*uitree.Node, error) {
 	matches := loc.Resolve(tree)
 	switch len(matches) {
 	case 0:
+		if alt := nearMiss(loc, tree); alt != nil {
+			return nil, mobiumerr.New(mobiumerr.NoSuchElement, "no element matches %s, but %s does: those words are "+
+				"its %s, not its %s — map prints an element's text when it has any, and a field's placeholder is its text",
+				loc, alt, alt.Kind, loc.Kind).
+				WithRemedy("use "+alt.String()+", or the element's ref from app_map").
+				WithDetail("locator", loc.String()).
+				WithDetail("near_miss", alt.String())
+		}
 		return nil, mobiumerr.New(mobiumerr.NoSuchElement, "no element matches %s on the current screen — "+
 			"the screen may have changed, run app_map again", loc).
 			WithRemedy("run app_map again, or app_scroll_to if it may be off screen").
@@ -1095,7 +1142,7 @@ func pickOne(loc uitree.Locator, tree *uitree.Tree) (*uitree.Node, error) {
 		// of the keyboard's way relies on — MobiumApp's Log In, below a
 		// scroll view shrunk above the keyboard, was refused until this.
 		if k := tree.Keyboard(); k != nil && !matches[0].Within(k) && k.Bounds.Covers(matches[0]) {
-			if c := scrollContainerOf(matches[0]); c == nil || encloses(c.Bounds, matches[0].Bounds) {
+			if c, v := viewOf(tree, matches[0]); c == nil || encloses(v, matches[0].Bounds) {
 				return nil, keyboardOver(loc, true)
 			}
 		}
@@ -1417,7 +1464,7 @@ func (h *Handlers) resolveNodeOnce(ctx context.Context, s *session, target strin
 				WithRemedy("app_scroll_to with a direction, or app_swipe, then act on it").
 				WithDetail("locator", loc.String())
 		}
-		if container == nil || encloses(container.Bounds, node.Bounds) {
+		if container == nil || encloses(tree.Viewport(container), node.Bounds) {
 			return h.settle(ctx, s, loc, node, tree, readTook)
 		}
 	}
@@ -1431,7 +1478,7 @@ func (h *Handlers) resolveNodeOnce(ctx context.Context, s *session, target strin
 		if resolveErr != nil {
 			// Android leaves out what the keyboard covers, so a target under
 			// it is a plain miss there; say the keyboard is up when it is.
-			if kb, ok := mobiumdriver.AsKeyboard(s.driver); ok && mobiumerr.CodeOf(resolveErr) == mobiumerr.NoSuchElement {
+			if kb, ok := mobiumdriver.AsKeyboard(s.driver); ok && mobiumerr.CodeOf(resolveErr) == mobiumerr.NoSuchElement && !isNearMiss(resolveErr) {
 				if shown, kerr := kb.KeyboardShown(ctx); kerr == nil && shown {
 					return nil, nil, keyboardOver(loc, false)
 				}
@@ -1567,7 +1614,7 @@ func (h *Handlers) lightResolve(ctx context.Context, s *session, loc uitree.Loca
 	if err != nil || !n.Enabled || h.staleRef(s.dev.Serial, target, n) != nil {
 		return nil, nil, 0, false
 	}
-	if c := scrollContainerOf(n); c != nil && !encloses(c.Bounds, n.Bounds) {
+	if c, v := viewOf(t, n); c != nil && !encloses(v, n.Bounds) {
 		return nil, nil, 0, false
 	}
 	if on, _ := centerOnScreen(t, n); !on {
@@ -1776,6 +1823,10 @@ func (h *Handlers) swipe(ctx context.Context, args map[string]interface{}) (*Too
 			"or all four of x1, y1, x2, y2; got direction=%q", dir)
 	}
 
+	if target := stringArg(args, "target"); target != "" {
+		return h.swipeOn(ctx, s, gest, target, dir, duration)
+	}
+
 	// Swipe within the screen the device actually reports, not an assumed size.
 	tree, err := s.driver.Snapshot(ctx)
 	if err != nil {
@@ -1793,6 +1844,48 @@ func (h *Handlers) swipe(ctx context.Context, args map[string]interface{}) (*Too
 	}
 	return Result(fmt.Sprintf("swiped %s: (%d,%d) to (%d,%d)", dir, sx, sy, ex, ey),
 		ActionView{Action: "swipe", Target: dir, X: ex, Y: ey}), nil
+}
+
+// swipeFrom and swipeTo are where a swipe on an element starts and ends, as
+// fractions of the element's extent along the direction it goes: from near
+// the far edge, a little over a third of the way back. On NetNewsWire's
+// article rows on an iPhone 17 Pro simulator that much revealed the row's
+// actions, and a swipe across the whole row performed the first of them —
+// starred an article — which is the app's choice, not the caller's. So the
+// actions are revealed and then tapped by name.
+const swipeFrom, swipeTo = 0.9, 0.5
+
+// swipeOn swipes across target, after the checks a tap makes: it is there,
+// enabled and not covered. A row's swipe actions were reachable only by
+// coordinates taken from an earlier map, which the screen does not keep.
+func (h *Handlers) swipeOn(ctx context.Context, s *session, gest mobiumdriver.Gesturer, target, dir string, duration time.Duration) (*ToolsCallResult, error) {
+	if s.web != nil {
+		return nil, mobiumerr.New(mobiumerr.Unsupported, "a swipe on an element in a WebView is not built: the "+
+			"page decides what a swipe does — switch to NATIVE_APP with app_context, or give x1, y1, x2, y2")
+	}
+	node, aim, err := h.resolveAim(ctx, s, target)
+	if err != nil {
+		return nil, err
+	}
+	b := node.Bounds
+	along := func(lo, hi int, f float64) int { return lo + int(float64(hi-lo)*f) }
+	sx, sy, ex, ey := aim.X, aim.Y, aim.X, aim.Y
+	switch dir {
+	case "left":
+		sx, ex = along(b.X1, b.X2, swipeFrom), along(b.X1, b.X2, swipeTo)
+	case "right":
+		sx, ex = along(b.X2, b.X1, swipeFrom), along(b.X2, b.X1, swipeTo)
+	case "up":
+		sy, ey = along(b.Y1, b.Y2, swipeFrom), along(b.Y1, b.Y2, swipeTo)
+	case "down":
+		sy, ey = along(b.Y2, b.Y1, swipeFrom), along(b.Y2, b.Y1, swipeTo)
+	}
+	if err := gest.Swipe(ctx, sx, sy, ex, ey, duration); err != nil {
+		return nil, err
+	}
+	delete(h.refs, s.dev.Serial)
+	return Result(fmt.Sprintf("swiped %s %s: (%d,%d) to (%d,%d) — map again to see what it revealed", target, dir, sx, sy, ex, ey),
+		ActionView{Action: "swipe", Target: target, X: ex, Y: ey}), nil
 }
 
 func (h *Handlers) longPress(ctx context.Context, args map[string]interface{}) (*ToolsCallResult, error) {

@@ -657,3 +657,44 @@ func TestKeyboardCoversWhatIsUnderIt(t *testing.T) {
 		t.Error("the Back button, at the top, reads as covered")
 	}
 }
+
+// NetNewsWire, the second third-party app driven on iOS, on its Settings and
+// search screens. Four things map got wrong on its first look, all from
+// reading WebDriverAgent's attributes but not its traits:
+//   - a table printed as "XCUIElementTypeTable", XCUITest's own type name;
+//   - section headers, traits="Header", printed as buttons;
+//   - rows named "On My iPhone chevron", from a disclosure arrow VoiceOver
+//     never reads (accessible="false");
+//   - and no sign of which search scope was chosen (traits="Selected").
+func TestNetNewsWireReadsTraits(t *testing.T) {
+	lines := map[string]bool{}
+	for _, e := range loadIOS(t, "ios26-netnewswire-settings.xml").Map() {
+		line := strings.TrimPrefix(e.Line(), e.Ref+" ")
+		lines[line] = true
+		if strings.Contains(e.Label, "XCUIElementType") {
+			t.Errorf("%q prints XCUITest's type name", line)
+		}
+		if strings.Contains(e.Label, "chevron") {
+			t.Errorf("%q borrows the disclosure arrow's name", line)
+		}
+	}
+	for _, want := range []string{"Table (list)", "On My iPhone (button)", "Add Account (button)",
+		"Sort Oldest to Newest (switch, unchecked)", "Confirm Mark All as Read (switch, checked)"} {
+		if !lines[want] {
+			t.Errorf("Settings does not map %q", want)
+		}
+	}
+	for _, header := range []string{"Accounts (button)", "Feeds (button)", "Timeline (button)"} {
+		if lines[header] {
+			t.Errorf("the section header %q maps as a button", header)
+		}
+	}
+
+	scope := map[string]string{}
+	for _, e := range loadIOS(t, "ios26-netnewswire-search.xml").Map() {
+		scope[e.Label] = strings.TrimPrefix(e.Line(), e.Ref+" ")
+	}
+	if scope["Here"] != "Here (button, selected)" || scope["All Articles"] != "All Articles (button)" {
+		t.Errorf("the search scope maps as %q and %q", scope["Here"], scope["All Articles"])
+	}
+}

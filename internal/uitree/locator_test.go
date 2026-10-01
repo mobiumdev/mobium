@@ -253,6 +253,30 @@ func TestTheRoleMapPrintsIsOneALocatorFinds(t *testing.T) {
 	}
 }
 
+// And only that role, for a link: map prints an iOS link as (link), and the
+// touchable-means-button fallback found it by role=button as well, so in
+// NetNewsWire an article's "NetNewsWire Blog" link made the back button of
+// the same name ambiguous to label=NetNewsWire Blog,role=button.
+func TestAnIOSLinkIsNotAButton(t *testing.T) {
+	tree := loadIOS(t, "ios26-netnewswire-article.xml")
+	links := 0
+	for _, e := range tree.Map() {
+		if e.Role == "link" {
+			links++
+			if HasRole(e.Node, "button") {
+				t.Errorf("%s prints as (link) and matches role=button", e.Label)
+			}
+		}
+	}
+	if links == 0 {
+		t.Fatal("no links mapped on the article — the fixture no longer shows one")
+	}
+	loc, _ := ParseLocator("label=NetNewsWire Blog,role=button")
+	if got := loc.Resolve(tree); len(got) != 1 || got[0].TestID != "BackButton" {
+		t.Errorf("label=NetNewsWire Blog,role=button resolved to %d nodes, want the back button", len(got))
+	}
+}
+
 // text= finds the same control on both platforms. On iOS a node's text is its
 // value, and a React Native button has only a label, so text=Dialog Demo
 // found nothing on MobiumApp's home screen while Android, where the label is

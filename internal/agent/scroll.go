@@ -397,7 +397,7 @@ func resolvedAndVisible(loc uitree.Locator, tree *uitree.Tree, container *uitree
 	}
 	// Judge it against the container that would move it, not whichever
 	// scrollable happens to be biggest.
-	if own := scrollContainerOf(n); own != nil && !encloses(own.Bounds, n.Bounds) {
+	if own, v := viewOf(tree, n); own != nil && !encloses(v, n.Bounds) {
 		return nil, errOffScreen
 	}
 	return n, nil
@@ -411,11 +411,13 @@ func offScreenTarget(loc uitree.Locator, tree *uitree.Tree) (*uitree.Node, *uitr
 	if err != nil || n.Bounds.Empty() {
 		return nil, nil
 	}
-	own := scrollContainerOf(n)
-	if own == nil || encloses(own.Bounds, n.Bounds) {
+	own, v := viewOf(tree, n)
+	if own == nil || encloses(v, n.Bounds) {
 		return nil, nil
 	}
-	return n, own
+	// What the nudge measures against is the part of the list in view, not
+	// the part behind a bar.
+	return n, &uitree.Node{Bounds: v}
 }
 
 // nudgeInto swipes a found target into its container by the distance it is
@@ -468,6 +470,18 @@ var errOffScreen = mobiumerr.New(mobiumerr.ElementNotReachable, "the element is 
 func encloses(outer, inner uitree.Rect) bool {
 	return inner.X1 >= outer.X1 && inner.Y1 >= outer.Y1 &&
 		inner.X2 <= outer.X2 && inner.Y2 <= outer.Y2
+}
+
+// viewOf is n's scroll container and the part of it in view: its bounds
+// less any bar drawn over its top or bottom edge (uitree.Viewport). A row
+// behind iOS 26's toolbar is inside the list and not in view. Nil and empty
+// when nothing around n scrolls.
+func viewOf(tree *uitree.Tree, n *uitree.Node) (*uitree.Node, uitree.Rect) {
+	c := scrollContainerOf(n)
+	if c == nil {
+		return nil, uitree.Rect{}
+	}
+	return c, tree.Viewport(c)
 }
 
 // scrollContainerOf returns the scrollable that would actually move a node:

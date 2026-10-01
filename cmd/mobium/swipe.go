@@ -9,10 +9,11 @@ import (
 
 func newSwipeCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "swipe <up|down|left|right | x1 y1 x2 y2>",
-		Short: "Swipe the screen",
+		Use:   "swipe <up|down|left|right | @ref|locator direction | x1 y1 x2 y2>",
+		Short: "Swipe the screen, or an element",
 		Example: `  mobium swipe up                    # scroll down the page
   mobium swipe left                  # next pager screen
+  mobium swipe @e5 left              # reveal a list row's swipe actions
   mobium swipe 540 1800 540 600      # exact drag
   mobium swipe up --duration 800ms   # slow drag rather than a fling`,
 		Args: cobra.RangeArgs(1, 4),
@@ -23,6 +24,8 @@ func newSwipeCmd() *cobra.Command {
 			switch len(args) {
 			case 1:
 				toolArgs["direction"] = args[0]
+			case 2:
+				toolArgs["target"], toolArgs["direction"] = args[0], args[1]
 			case 4:
 				for i, key := range []string{"x1", "y1", "x2", "y2"} {
 					v, err := strconv.Atoi(args[i])
@@ -32,7 +35,7 @@ func newSwipeCmd() *cobra.Command {
 					toolArgs[key] = v
 				}
 			default:
-				return fmt.Errorf("give a direction, or all four of x1 y1 x2 y2")
+				return fmt.Errorf("give a direction, an element and a direction, or all four of x1 y1 x2 y2")
 			}
 			return runTool("app_swipe", toolArgs)
 		},

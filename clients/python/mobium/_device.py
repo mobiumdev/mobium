@@ -43,6 +43,8 @@ class Element:
     context: str = ""
     checked: bool | None = None
     """A checkbox, radio or switch's state; None for anything with no such state."""
+    selected: bool = False
+    """True for what the platform reports chosen: the current tab, a segment."""
 
     def __str__(self) -> str:
         return f"{self.ref} {self.label} ({self.role})" if self.role else f"{self.ref} {self.label}"
@@ -237,7 +239,7 @@ class Device:
 
     def map_diff(self) -> dict[str, Any]:
         """What the screen did since the last map of this device: the elements
-        that appeared, went away, or changed their label, checked state or
+        that appeared, went away, or changed their label, checked or selected state or
         place. Map, act, then map_diff() says what the action just did.
 
         Returns a dict with ``added`` and ``removed`` as lists of the same
@@ -473,13 +475,22 @@ class Device:
         direction: str | None = None,
         coordinates: tuple[int, int, int, int] | None = None,
         duration_ms: int = 300,
+        target: str | None = None,
     ) -> None:
-        """Swipe by direction ("up", "down", "left", "right") or exact points."""
+        """Swipe by direction ("up", "down", "left", "right") or exact points.
+
+        With a ``target`` and a direction, swipe across that element, after
+        the checks a tap makes — part of the way, which reveals a list row's
+        swipe actions without performing the first. Map again and tap the
+        action you mean.
+        """
         args: dict[str, Any] = {"duration_ms": duration_ms}
         if coordinates:
             args["x1"], args["y1"], args["x2"], args["y2"] = coordinates
         elif direction:
             args["direction"] = direction
+            if target:
+                args["target"] = target
         else:
             raise MobiumError("swipe needs a direction or four coordinates")
         self._call("app_swipe", args)
@@ -1318,6 +1329,7 @@ def _element(e: dict[str, Any]) -> Element:
         locator=f"{loc['kind']}={loc['value']}" if loc.get("kind") else "",
         context=e.get("context", ""),
         checked=e.get("checked"),
+        selected=bool(e.get("selected")),
     )
 
 

@@ -79,7 +79,7 @@ namespace Mobium
         /// of this device, which it then replaces: <c>added</c> is what
         /// appeared, <c>removed</c> what went away, and <c>changed</c> what
         /// changed its label, its checked state or its place, each as
-        /// <c>before</c>, <c>after</c> and <c>what</c> — "label", "checked"
+        /// <c>before</c>, <c>after</c> and <c>what</c> — "label", "checked", "selected"
         /// or "moved". Taken right after an action, it is what that action
         /// just did, without the rest of the screen that stayed put.
         /// <c>since</c> is when the map compared with was taken. <c>first</c>
@@ -287,6 +287,14 @@ namespace Mobium
         /// <c>"up"</c> scrolls a page down.
         /// </summary>
         public void Swipe(string direction) => Act("app_swipe", Args("direction", direction));
+
+        /// <summary>
+        /// Swipes across an element, after the checks a tap makes — part of
+        /// the way, which reveals a list row's swipe actions without
+        /// performing the first. Map again and tap the action you mean.
+        /// </summary>
+        public void Swipe(string target, string direction) =>
+            Act("app_swipe", Args("target", target, "direction", direction));
 
         /// <summary>Drags between two points in device pixels.</summary>
         public void Swipe(int x1, int y1, int x2, int y2) =>

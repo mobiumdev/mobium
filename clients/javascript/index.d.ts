@@ -33,6 +33,8 @@ export interface Element {
   context: string
   /** A checkbox, radio or switch's state; null for anything with no such state. */
   checked: boolean | null
+  /** True for what the platform reports chosen: the current tab, a segment. */
+  selected: boolean
 }
 
 /** One element that is on both maps and differs between them, from `mapDiff()`. */
@@ -41,7 +43,7 @@ export interface MapChange {
   before: Element
   /** As it is now; its ref is the new map's. */
   after: Element
-  /** What differs: `"label"`, `"checked"` or `"moved"`. */
+  /** What differs: `"label"`, `"checked"`, `"selected"`, `"moved"` or `"resized"`. */
   what: string[]
 }
 
@@ -254,7 +256,7 @@ export class Device {
   pressDrag(hold: string, from: string, to: string, options?: { leadMs?: number }): Promise<Data>
   type(target: string, text: string): Promise<void>
   fill(target: string, text: string): Promise<void>
-  swipe(direction?: 'up' | 'down' | 'left' | 'right', options?: { durationMs?: number; from?: Point; to?: Point }): Promise<void>
+  swipe(direction?: 'up' | 'down' | 'left' | 'right', options?: { durationMs?: number; from?: Point; to?: Point; target?: string }): Promise<void>
   longPress(target: string | Point, options?: { durationMs?: number }): Promise<void>
   check(target: string, checked?: boolean): Promise<Data>
   rotate(degrees?: number, target?: string): Promise<Data>

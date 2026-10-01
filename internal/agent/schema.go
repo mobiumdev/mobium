@@ -243,7 +243,10 @@ func GetToolSchemas() []Tool {
 			Name: "app_swipe",
 			Description: "Swipe the screen. Give a direction (up, down, left, right) to scroll " +
 				"across the middle of the screen, or all four of x1/y1/x2/y2 for an exact drag. " +
-				"Swiping up scrolls content down, as a finger does.",
+				"Swiping up scrolls content down, as a finger does. With a target and a direction, " +
+				"swipe across that element instead, after the checks app_tap makes — part of the " +
+				"way, which reveals a list row's swipe actions without performing the first; map " +
+				"again and tap the one you mean.",
 			InputSchema: map[string]interface{}{
 				"type": "object",
 				"properties": withDevice(map[string]interface{}{
@@ -251,6 +254,10 @@ func GetToolSchemas() []Tool {
 						"type":        "string",
 						"description": "Direction to swipe.",
 						"enum":        []string{"up", "down", "left", "right"},
+					},
+					"target": map[string]interface{}{
+						"type":        "string",
+						"description": "A ref from app_map (\"@e5\") or a locator, to swipe across in direction.",
 					},
 					"x1": map[string]interface{}{"type": "integer", "description": "Start X in device pixels."},
 					"y1": map[string]interface{}{"type": "integer", "description": "Start Y in device pixels."},

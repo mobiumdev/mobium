@@ -205,6 +205,8 @@ function toElement(e) {
     context: e.context || '',
     // A checkbox, radio or switch's state; null for anything with no such state.
     checked: typeof e.checked === 'boolean' ? e.checked : null,
+    // What the platform reports chosen: the current tab, a segment.
+    selected: e.selected === true,
   }
 }
 
@@ -514,7 +516,7 @@ export class Device {
    * in each change's `after` are the new map's; those in `removed` and in
    * `before` are stale. `first` is true when there was no earlier map to
    * compare with, and then the whole screen is in `added`. A change's `what` names the fields that differ:
-   * "label", "checked" or "moved".
+   * "label", "checked", "selected", "moved" or "resized".
    */
   async mapDiff() {
     const diff = ((await this.#data('app_map', { diff: true })) || {}).diff || {}
@@ -714,9 +716,15 @@ export class Device {
     await this.#text('app_fill', { target, text })
   }
 
-  /** Swipe by direction ('up' | 'down' | 'left' | 'right') or exact points. */
-  async swipe(direction, { durationMs = 300, from, to } = {}) {
+  /**
+   * Swipe by direction ('up' | 'down' | 'left' | 'right') or exact points.
+   * With `target` and a direction, swipe across that element, after the
+   * checks a tap makes — part of the way, which reveals a list row's swipe
+   * actions without performing the first. Map again and tap the one you mean.
+   */
+  async swipe(direction, { durationMs = 300, from, to, target } = {}) {
     const args = { duration_ms: durationMs }
+    if (target && !(from && to)) args.target = target
     if (from && to) {
       args.x1 = from.x
       args.y1 = from.y
