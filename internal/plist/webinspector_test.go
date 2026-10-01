@@ -125,7 +125,7 @@ func TestDrivesWebinspectord(t *testing.T) {
 			case "Target.targetCreated":
 				// WebKit is multi-target: an unwrapped Runtime.evaluate
 				// answers "'Runtime' domain was not found", which reads like
-				// something quite different. See docs/decisions/0002.
+				// something quite different.
 				params, _ := m["params"].(map[string]any)
 				info, _ := params["targetInfo"].(map[string]any)
 				inner, _ := json.Marshal(map[string]any{"id": 10, "method": "Runtime.evaluate",

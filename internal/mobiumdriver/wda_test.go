@@ -326,7 +326,7 @@ func TestWDARefusesWhenTheTextNeverLands(t *testing.T) {
 			t.Errorf("the error does not say what it found (%q): %v", want, err)
 		}
 	} // Reported as the failure this project exists to catch: it said it
-	// typed, and reading back said otherwise. docs/decisions/0005.
+	// typed, and reading back said otherwise.
 	if mobiumerr.CodeOf(err) != mobiumerr.NotConfirmed {
 		t.Errorf("code = %s, want not_confirmed", mobiumerr.CodeOf(err))
 	}

@@ -203,7 +203,7 @@ public final class Tests {
         }
     }
 
-    // -- error codes: docs/decisions/0005 -----------------------------------
+    // -- error codes: docs/guides/cli.md -------------------------------------
 
     static final String[] CODES = {"no_device", "device_not_ready", "toolchain_missing",
         "no_such_element", "ambiguous_locator", "element_not_reachable", "no_such_context",

@@ -5,7 +5,7 @@
 // big-endian length followed by a binary plist; the JSON that Mobium actually
 // cares about travels inside that envelope. The standard library has no
 // plist, and this is the only reason iOS WebView support is not simply a
-// matter of reusing the Android code — see docs/decisions/0002.
+// matter of reusing the Android code.
 //
 // It is deliberately not a general-purpose plist library. Dictionaries,
 // strings, integers, booleans, arrays and data are what the protocol uses,

@@ -16,8 +16,8 @@ import { createInterface } from 'node:readline'
 
 /**
  * A tool reported that it could not do what was asked. Every failure carries
- * a stable code, the same in every client and on the wire (docs/decisions/0005
- * in the mobium repository), and each code has a subclass below, so a script
+ * a stable code, the same in every client and on the wire (the error codes
+ * in the mobium repository's docs/guides/cli.md), and each code has a subclass below, so a script
  * catches the kind it can handle:
  *
  *   try { await device.tap('text=Continue') }

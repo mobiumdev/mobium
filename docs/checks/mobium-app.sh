@@ -24,7 +24,7 @@
 # MobiumApp is that app: React Native, `webviewDebuggingEnabled` on every
 # WebView, pages shipped inline rather than fetched. It lives outside this
 # repository because it needs Node, Gradle and CocoaPods, and mobium's
-# no-runtime-dependencies property is load-bearing. See docs/decisions/0004.
+# no-runtime-dependencies property is load-bearing.
 #
 # The same script drives both platforms. Only the backend differs, which is the
 # whole point of where the driver seam was put: `map`, `contexts`, `context`

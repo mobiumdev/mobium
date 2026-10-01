@@ -18,7 +18,7 @@ package mobiumdriver
 // which on a real iPhone declines what only simctl could do on a simulator.
 type Capable interface {
 	// HasCapability reports whether this driver supports a named capability.
-	// The names are the ones in docs/decisions/0003.
+	// The names are the ones in examples/drivers/PROTOCOL.md.
 	HasCapability(name string) bool
 }
 

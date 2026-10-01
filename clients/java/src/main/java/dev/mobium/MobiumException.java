@@ -7,8 +7,8 @@ import java.util.Map;
  * Mobium failed.
  *
  * <p>Every tool failure carries a stable {@link #code() code}, the same in
- * every client and on the wire (docs/decisions/0005 in the mobium
- * repository), and each code has a subclass — {@link NoSuchElementException},
+ * every client and on the wire (the error codes in the mobium
+ * repository's docs/guides/cli.md), and each code has a subclass — {@link NoSuchElementException},
  * {@link UnsupportedException} and so on — so a test catches the kind it can
  * handle and lets the rest through. {@link #remedy()} says what to do about
  * it, {@link #retryable()} whether the same call can succeed if made again.

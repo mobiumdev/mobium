@@ -484,7 +484,7 @@ func (h *Handlers) inspectorFor(ctx context.Context, s *session) (*webview.Inspe
 	if err != nil {
 		return nil, err
 	}
-	// A simulator's inspector is a Unix socket on this Mac (decisions/0002);
+	// A simulator's inspector is a Unix socket on this Mac;
 	// a phone's is a service on the device, reached through usbmuxd and
 	// lockdown. The protocol after that is the same.
 	var insp *webview.Inspector

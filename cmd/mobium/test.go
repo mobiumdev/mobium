@@ -52,7 +52,7 @@ func newTestCmd() *cobra.Command {
 			"testDir. With MOBIUM_GRID set, each project leases a device of its own from\n" +
 			"the grid — by its platform, or its device — for the whole run. Exits 0 when\n" +
 			"every test passed — a flaky one passes and is listed — and 1 when any failed.\n" +
-			"See docs/decisions/0006-a-test-runner.md.",
+			"See docs/guides/test-runner.md.",
 		Example: `  mobium test                              # everything, every project
   mobium test tests/login.test.json
   mobium test -g "wrong password"
@@ -245,7 +245,7 @@ func newTestCmd() *cobra.Command {
 	f.StringVar(&outDir, "output", "", "Where reports go (default: mobium-report beside the config)")
 	f.StringVar(&trace, "trace", "off", "Keep a screenshot and the map after every step, and the test as a recording in Vibium's record format: on, off, or retain-on-failure")
 	f.BoolVar(&debug, "debug", false, "Stop before each step, show it and the screen, and wait: Enter steps, c continues, q quits")
-	f.BoolVar(&ui, "ui", false, "Serve a page on this machine to pick tests, run them and watch each step (docs/decisions/0009)")
+	f.BoolVar(&ui, "ui", false, "Serve a page on this machine to pick tests, run them and watch each step (docs/guides/test-runner.md)")
 	f.IntVar(&uiPort, "ui-port", 0, "With --ui, the port on 127.0.0.1 (default: any free one)")
 	f.BoolVar(&uiOpen, "open", false, "With --ui, open the page in the browser")
 	return cmd
@@ -368,7 +368,7 @@ func newRunID() string {
 }
 
 // serveTestUI is --ui: a page that runs the run this command would, any
-// part of it at a time (docs/decisions/0009).
+// part of it at a time.
 func serveTestUI(cfg *testrun.Config, args []string, opts testrun.Options, call testrun.Caller, port int, open bool) error {
 	var projects []string
 	for _, p := range cfg.Projects {

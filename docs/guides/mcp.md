@@ -6,7 +6,7 @@ devices with the same tools the command line and the language clients use.
 This guide is how to connect one, what it sees, and how its answers and
 failures come back.
 
-Everything below is what ran on 2026-09-28 against [MobiumApp](../decisions/0004-an-app-under-test-of-our-own.md)
+Everything below is what ran on 2026-09-28 against [MobiumApp](https://github.com/mobiumdev/mobium-app)
 on an Android 15 emulator: a Claude Code agent given only Mobium's tools, and
 the raw protocol, as an MCP client speaks it. Long answers are trimmed where
 they say so. The full tool list is generated: [API.md](../API.md).
@@ -266,8 +266,8 @@ message, a remedy that works, and whether retrying could help:
 ```
 
 The codes are the same everywhere — the command line's exit status, every
-client's exceptions — and listed in [the CLI guide](cli.md#6-when-a-command-fails)
-and [decisions/0005](../decisions/0005-errors.md). An agent should decide by
+client's exceptions — and listed in [the CLI guide](cli.md#6-when-a-command-fails).
+An agent should decide by
 `code`, and read `remedy` for what to do next.
 
 ## 6. Sessions, and sharing a device

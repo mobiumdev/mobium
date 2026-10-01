@@ -671,9 +671,9 @@ func (c *w3cClient) doOnce(ctx context.Context, method, path string, body, out i
 // errorFrom extracts a W3C error payload, returning "" for a success.
 // errorFrom reads the error a W3C server put in a response body, keeping the
 // server's own code: WebDriverAgent and UiAutomator2 both answer in W3C
-// WebDriver's vocabulary ("no such element", "invalid session id"), and until
-// docs/decisions/0005 that code was flattened into the message and later
-// recovered by string matching. It is now kept, in Details["w3c"], and mapped
+// WebDriver's vocabulary ("no such element", "invalid session id"). That code
+// was once flattened into the message and recovered by string matching; it is
+// now kept, in Details["w3c"], and mapped
 // onto Mobium's codes where one names the same thing. nil means no error.
 func errorFrom(raw json.RawMessage) *mobiumerr.Error {
 	w3c, msg := w3cError(raw)

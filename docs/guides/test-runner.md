@@ -1,13 +1,11 @@
 # Quick start: `mobium test`
 
 From an empty directory to a test suite that runs on a device, fails with
-evidence, retries, and leaves a report CI can publish. The design and its
-reasons are
-[decisions/0006](../decisions/0006-a-test-runner.md).
+evidence, retries, and leaves a report CI can publish.
 
 Every command and every line of output below is what `mobium test` printed on
 2026-09-28 — section 8 on 2026-09-29 — against
-[MobiumApp](../decisions/0004-an-app-under-test-of-our-own.md) on an Android 15
+[MobiumApp](https://github.com/mobiumdev/mobium-app) on an Android 15
 emulator. Where a path to a report is shortened, it says so.
 
 Before this guide: [the quick start](../quickstart/README.md) — mobium
@@ -24,6 +22,8 @@ installed and a device running — and MobiumApp installed
 - [6. More than one device](#6-more-than-one-device)
 - [7. In CI](#7-in-ci)
 - [8. Shorter steps, soft checks, a trace and a debugger](#8-shorter-steps-soft-checks-a-trace-and-a-debugger)
+- [9. One test over several cases: `each`](#9-one-test-over-several-cases-each)
+- [10. A page to run tests from: `--ui`](#10-a-page-to-run-tests-from---ui)
 - [Writing tests](#writing-tests)
 - [The commands](#the-commands)
 
@@ -344,6 +344,46 @@ Enter runs it · m maps again · c runs the rest of the test · q quits >
 used. Quitting reports the test `stopped` and runs nothing after it; closed
 input — a pipe that ends — runs the rest rather than wait.
 
+## 9. One test over several cases: `each`
+
+A test with `"each"` runs once per case, as a test of its own. `${key}` in
+any string of its steps is that case's value; a string that is nothing but
+`${key}` keeps the value's type, so a count stays a number. `$${` writes a
+literal `${`.
+
+```json
+{"name": "a bad sign-in is refused, and says why: ${why}",
+ "each": [
+   {"why": "a wrong password", "pass": "wrongpass1", "error": "loginError"},
+   {"why": "a short password", "pass": "abc", "error": "passError"}
+ ],
+ "steps": [
+   {"fill": {"target": "testid=password", "text": "${pass}"}},
+   {"tap": "testid=loginBtn"},
+   {"wait_for": {"target": "testid=${error}", "condition": "visible"}}
+ ]}
+```
+
+With a `${key}` in its name, each case is named by it; without one, the
+cases are numbered — `[1]`, `[2]` — rather than named after values that may
+be a password. A key a case does not have is refused when the file is read,
+before anything runs.
+
+## 10. A page to run tests from: `--ui`
+
+```sh
+mobium test --ui --open
+```
+
+serves a page on this machine that lists the suite by file, with each test's
+result on each project. ▶ runs one test, a file, or everything; each step
+appears with the screen after it as it runs, and **Re-run failed** runs
+exactly what failed. The files are read again for every run, so a test you
+just saved is the test that runs. A run from the page is the run `mobium
+test` makes from the same config and flags, and writes the same reports. The
+page answers only its own address with the token it prints, as `mobium
+inspect`'s does.
+
 ## Writing tests
 
 - **Find targets with `map` first.** `mobium map` on the screen you are
@@ -384,10 +424,10 @@ input — a pipe that ends — runs the rest rather than wait.
 | `mobium test --reporter list,json,junit,html` | which reports to write, comma-separated |
 | `mobium test --list` | lists the tests a run would cover, and runs nothing |
 | `mobium test --no-screenshots` | keeps no screenshot of a failure, and a trace keeps only the maps |
-| `mobium test --trace on` | a screenshot and the map after every step; `retain-on-failure` keeps a failed test's only |
+| `mobium test --trace on` | a screenshot and the map after every step, and the test as a recording in Vibium's record format that player.vibium.dev opens; `retain-on-failure` keeps a failed test's only |
 | `mobium test --debug` | stops before each step: Enter steps, `m` maps again, `c` continues, `q` quits |
+| `mobium test --ui` | serves a page to pick, run and watch tests (`--open`, `--ui-port`) |
 | `mobium show-report` | opens the last HTML report |
 
-Not yet: a visible device, an interactive mode, and recording a test from
-what you do — [decisions/0006](../decisions/0006-a-test-runner.md) says what
-each will be.
+Recording a test from what you do is [`mobium inspect`](inspector.md): what
+you do on its page is kept as steps, and downloads as a `*.test.json`.

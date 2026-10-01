@@ -20,7 +20,7 @@ func newLaunchCmd() *cobra.Command {
 		},
 	}
 	cmd.Flags().BoolVar(&hitTest, "hit-test", false, "On an iOS simulator, load the hit probe into the app as it "+
-		"launches, so every tap on an element in it asks UIKit where the touch goes first (docs/decisions/0008)")
+		"launches, so every tap on an element in it asks UIKit where the touch goes first (docs/guides/autowait.md)")
 	return cmd
 }
 

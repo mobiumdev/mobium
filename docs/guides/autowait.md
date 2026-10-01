@@ -6,7 +6,7 @@ checks that a finger could really press it. It **waits** for the checks that
 time can fix, and **refuses** the ones it can't — with a reason, never with
 a touch somewhere else reported as success.
 
-This guide goes through each check on [MobiumApp](../decisions/0004-an-app-under-test-of-our-own.md),
+This guide goes through each check on [MobiumApp](https://github.com/mobiumdev/mobium-app),
 Mobium's own app under test, whose screens were built to fail each one. Every
 command and every line of output below is what an Android 15 emulator printed
 on 2026-09-28; the iOS simulator behaves the same, and where it differs, it
@@ -221,15 +221,21 @@ person and may change. Every client raises the code as its own exception:
 `ElementNotReachableError` in Python and JavaScript,
 `ElementNotReachableException` in Java and .NET, and in Go an error that
 `errors.Is(err, mobium.ErrElementNotReachable)`
-([decisions/0005](../decisions/0005-errors.md)).
+([the codes](cli.md#6-when-a-command-fails)).
 
 ## What it does not see
 
-- **An overlay hidden from accessibility on iOS.** WebDriverAgent's tree does
-  not contain it, so a tap under one lands on it, and nothing outside the app
-  can tell — WebDriverAgent's own `hittable` gets it wrong too, measured. It is
-  the one known blind spot ([CHALLENGES](../CHALLENGES.md), "Findings that
-  were not defects").
+- **An overlay hidden from accessibility on iOS**, unless asked for.
+  WebDriverAgent's tree does not contain it, so a tap under one lands on it —
+  WebDriverAgent's own `hittable` gets it wrong too, measured. UIKit's own
+  hit test does see it: `mobium hit-test <target>` asks it whether a touch
+  at the point a tap would use reaches the target, and names what it would
+  reach instead. It attaches a debugger to the app, about two seconds a call
+  on a simulator and nine on an iPhone, where the app must be a development
+  build. On a simulator, `mobium launch --hit-test <app>` loads the check
+  into the app as it starts, and then every action on an element in it asks
+  first, in under a millisecond, and is refused when the touch would land
+  elsewhere.
 - **Whether a plain view swallows a tap.** A view with no handler over the
   target looks exactly like one that lets touches through. Mobium taps and
   says a view is over the point, in the result, rather than refuse something

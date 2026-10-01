@@ -16,7 +16,7 @@ Anderson's "The Three-Cornered Wheel" — and the rule applied across the codeba
 
 - `internal/mobiumdriver` is the only platform-specific layer. Everything above
   it is written once. A third party adds a backend as a **driver process**
-  ([decisions/0003](docs/decisions/0003-drivers-are-processes-not-plugins.md)),
+  ([the driver protocol](examples/drivers/PROTOCOL.md)),
   not by importing this package.
 - `internal/device` finds, launches and readies the thing being automated.
 - The CLI parses flags and calls a tool by name. Behavior lives in
@@ -60,7 +60,7 @@ old binary.
 - **Every error has a code.** Create one with `mobiumerr.New(mobiumerr.<Code>,
   ...)`, never a bare `fmt.Errorf` or `errors.New`. The codes are public API,
   the same in every client and in the CLI's exit status
-  ([decisions/0005](docs/decisions/0005-errors.md)).
+  ([the codes](docs/guides/cli.md#6-when-a-command-fails)).
 - A tool that fails returns `isError` with an explanation, never a JSON-RPC
   error. An error that suggests a remedy must suggest one that can work.
 

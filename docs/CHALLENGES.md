@@ -77,7 +77,7 @@ with the evidence.
 | `map` offers something that is not on screen | Visibility. Android never reports it, iOS does, and a driver may — 39 |
 | A measurement comes back "zero" or "no difference" | Show it can report non-zero before believing it. A probe reported 0 for four apps and had never left the launcher — 39 |
 | An app "launched" and the screen did not change | `monkey` is a fuzzer, not a launcher: chatter on stdout, exit 0 for a package that does not exist — 37. Resolve the activity and `am start -n` it |
-| A third-party driver's answer is ignored | Only advertised capabilities are wired up; `mobium doctor` lists drivers found, and the refusal names the backend — [decisions/0003](decisions/0003-drivers-are-processes-not-plugins.md) |
+| A third-party driver's answer is ignored | Only advertised capabilities are wired up; `mobium doctor` lists drivers found, and the refusal names the backend — [the driver protocol](../examples/drivers/PROTOCOL.md) |
 
 ---
 
@@ -753,7 +753,7 @@ Mobium** — an independent implementation of the same approach hit the same
 wall in the same place. And **the protocol carried the diagnosis intact**: the
 driver's own sentence, including its advice to use `--driver uiautomator2`,
 reached the user verbatim with the driver's name in front of it, which is what
-the pass-through rule in [decisions/0003](decisions/0003-drivers-are-processes-not-plugins.md)
+the pass-through rule in [the driver protocol](../examples/drivers/PROTOCOL.md)
 is for.
 
 ### 39. A visibility field that nothing consulted
@@ -778,7 +778,7 @@ the code:
   invisible scroll view or switch, whose `Scrollable`/`Checkable` come from the
   element type rather than from visibility, would still have been offered.
 - **An external driver may send it**, and after
-  [decisions/0003](decisions/0003-drivers-are-processes-not-plugins.md) the
+  [the driver protocol](../examples/drivers/PROTOCOL.md) the
   protocol documents `displayed:false` as meaningful. It was not: a driver
   could have said false and been mapped anyway. A protocol that documents a
   field which changes nothing is worse than one that omits it.
@@ -2174,7 +2174,7 @@ The code never reached them. Clients spawn `mobium pipe`, and `pipe` turned
 a failed call into a result with its text and no `structuredContent`, where
 the MCP server built the same result with the structured half. Two front
 doors, two copies of one answer, and the copy every client used was the
-incomplete one. Nothing had caught it: decision 0005's measurements went
+incomplete one. Nothing had caught it: the error codes' measurements went
 through the CLI, which reads the daemon's error itself, and each client's
 error tests feed a hand-built result to its mapper, which is exactly the
 half that works.
@@ -2724,7 +2724,7 @@ the target, naming it and saying it is hidden from accessibility. Opt-in,
 since the attach stops the app for about two seconds; a real iPhone is still
 blind. `docs/checks/hit-test.sh` holds it to what a touch at the same point
 really reached, case by case, and all seven agreed
-([decisions/0008](decisions/0008-a-hit-test-below-accessibility.md)).
+([the hit test](guides/autowait.md#what-it-does-not-see)).
 
 The first version reported a non-control cover over nearly every target on
 every captured screen — iOS puts a later, transparent XCUIElementTypeWindow
@@ -4084,7 +4084,7 @@ after Settings has been is a walk that left.
 ### 181. mobium drove a WebDriverAgent it had not installed, believing it its own
 
 **Found by:** another tool's session on the same simulator, during the work
-on [decisions/0008](decisions/0008-a-hit-test-below-accessibility.md). A
+on [the hit test](guides/autowait.md#what-it-does-not-see). A
 WebDriverAgent built from source elsewhere is installed under the bundle id
 every build of it shares, `com.facebook.WebDriverAgentRunner.xctrunner`. On
 a simulator mobium checked only that an app with that id was installed, and
@@ -4668,8 +4668,8 @@ Worth recording because each one closed off an approach that looked obvious.
 
 - **A shipped app's WebView stays shut on a real phone too.** With a phone's
   WebViews reachable, Wikipedia's App Store build still published no page:
-  it does not set `isInspectable`. decisions/0004 said so from a simulator
-  measurement of another app; this is the same answer from a shipped app on
+  it does not set `isInspectable`. That had been measured on a simulator
+  with another app; this is the same answer from a shipped app on
   real hardware, and why the Wikipedia check reads articles through the
   native tree.
 
@@ -4710,7 +4710,7 @@ Worth recording because each one closed off an approach that looked obvious.
   debugger client could solve, and it is not a simulator limitation either: a
   shipped App Store app that has not opted in is just as unreachable on real
   hardware. It is why the app under test had to be one we control
-  ([decisions/0004](decisions/0004-an-app-under-test-of-our-own.md)).
+  ([MobiumApp](https://github.com/mobiumdev/mobium-app)).
 
   The measurement took three attempts to become valid, each failing the same
   way this project keeps documenting: the first read "no contexts" on a screen
@@ -4765,7 +4765,7 @@ Worth recording because each one closed off an approach that looked obvious.
   recorded without anyone checking what that is, and the phrase did the work
   of a decision for months. It is a Unix socket. Ten minutes of probing turned
   a wall into a specification — see
-  [decisions/0002](decisions/0002-ios-webviews-are-reachable.md). The lesson is
+  [SETUP, "WebViews and Safari"](SETUP.md#webviews-and-safari). The lesson is
   the same one as the rest of this document, applied to an assumption rather
   than to code: **a name written down is not a finding until someone has run
   it.**

@@ -29,7 +29,7 @@ func newInspectCmd() *cobra.Command {
 			"daemon, so a terminal and the page drive one session.\n\n" +
 			"It listens on 127.0.0.1 only, and answers only requests carrying the token in\n" +
 			"the URL it prints — any other page in the browser can reach 127.0.0.1. See\n" +
-			"docs/decisions/0007-an-inspector.md.",
+			"docs/guides/inspector.md.",
 		Example: `  mobium inspect                       # the only device running
   mobium inspect --device emulator-5554 --open
   mobium inspect --driver wda --device <simulator-udid>`,

@@ -173,7 +173,7 @@ somebody else's code that we cannot see.
 - [ ] `examples/drivers/mobium-driver-adb` still imports nothing but the Python
       standard library. If a reference driver needs anything from this
       repository, the extension point is not open
-- [ ] `docs/decisions/0003`'s method table matches what `internal/mobiumdriver`
+- [ ] `examples/drivers/PROTOCOL.md`'s method table matches what `internal/mobiumdriver`
       actually sends, field for field
 - [ ] Every capability in `mobiumdriver.KnownCapabilities` has a matching `As*`
       helper, and nothing above `internal/mobiumdriver` asserts a capability

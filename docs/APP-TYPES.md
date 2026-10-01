@@ -130,12 +130,11 @@ area — it spans the window, and no element exposes the content rectangle. That
 is the difference between a description that is true and one you can compute
 against.
 
-Web content is reached over CDP on Android
-([decisions/0001](decisions/0001-cdp-not-webdriver-bidi.md)) and Remote Web
-Inspector on iOS ([decisions/0002](decisions/0002-ios-webviews-are-reachable.md)),
-and on iOS the app must have opted in with `isInspectable` — which cannot be
-forced from outside, and is why the app under test had to be one we control
-([decisions/0004](decisions/0004-an-app-under-test-of-our-own.md)).
+Web content is reached over CDP on Android, which needs no chromedriver to
+match the device's Chrome, and Remote Web Inspector on iOS, and on iOS the
+app must have opted in with `isInspectable` — which cannot be forced from
+outside, and is why the app under test had to be one we control:
+[MobiumApp](https://github.com/mobiumdev/mobium-app).
 
 Cordova and Ionic sit here. Neither has been driven.
 
@@ -162,7 +161,7 @@ special support — and the hierarchy it produces was different enough to find
 engine, so there are no per-widget native views; what reaches the accessibility
 tree is a *synthesized* semantics tree over a single surface. This is the same
 shape as the Chrome case above, which is why Flutter appears in
-[decisions/0003](decisions/0003-drivers-are-processes-not-plugins.md) as
+[the driver protocol](../examples/drivers/PROTOCOL.md) as
 something a third party would add **as a driver process**, rather than as an
 app type that happens to work.
 

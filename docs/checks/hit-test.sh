@@ -7,7 +7,7 @@
 # app's outcome line says what it reached. The two must agree: "reaches"
 # only where the target got the touch, and a named receiver where something
 # else did. The overlay hidden from accessibility is the case this exists
-# for (CHALLENGES 115, docs/decisions/0008); the pass-through view is the
+# for (CHALLENGES 115); the pass-through view is the
 # negative control, reached although something is drawn over it.
 #
 #   docs/checks/hit-test.sh <simulator-udid | iphone-udid>

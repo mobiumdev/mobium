@@ -1,6 +1,6 @@
 // Package testui is `mobium test --ui`: a page on this machine that lists a
 // suite, runs any part of it on its projects, and shows each step with the
-// screen after it as it happens. See docs/decisions/0009.
+// screen after it as it happens. See docs/guides/test-runner.md, "--ui".
 //
 // It runs nothing of its own: a run is the one `mobium test` makes from the
 // same flags and config, with the tests to run picked by ID.

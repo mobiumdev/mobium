@@ -36,8 +36,7 @@ const DefaultBackend = BackendUIA2
 
 // builtinBackends is every backend compiled into this binary. Any other name
 // is looked for on PATH as `mobium-driver-<name>`, which is how a third party
-// adds a platform without forking — see
-// docs/decisions/0003-drivers-are-processes-not-plugins.md.
+// adds a platform without forking — see examples/drivers/PROTOCOL.md.
 var builtinBackends = []Backend{BackendUIA2, BackendDump, BackendWDA}
 
 // ParseBackend validates a backend name.

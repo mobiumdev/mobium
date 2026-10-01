@@ -1,7 +1,7 @@
 // A driver used to test the external driver protocol from the other side.
 //
 // It is deliberately written the way a third party would write one: it imports
-// nothing from mobium, it knows only what docs/decisions/0003 says, and it
+// nothing from mobium, it knows only what examples/drivers/PROTOCOL.md says, and it
 // speaks the protocol by hand. If this file needs anything from the mobium
 // module to work, the extension point is not actually open.
 //
@@ -152,7 +152,7 @@ func orDefault(s, d string) string {
 	return s
 }
 
-// screen is a small hierarchy in the shape docs/decisions/0003 specifies:
+// screen is a small hierarchy in the shape examples/drivers/PROTOCOL.md specifies:
 // what the platform said, and nothing derived.
 func screen() map[string]interface{} {
 	return map[string]interface{}{

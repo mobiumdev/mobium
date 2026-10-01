@@ -25,7 +25,7 @@ func TestParseBackend(t *testing.T) {
 		// An unrecognized name is not an error here any more: it is the name
 		// of a possible third-party driver, and whether one exists is decided
 		// when a session opens, where PATH can be named in the failure. See
-		// docs/decisions/0003.
+		// examples/drivers/PROTOCOL.md.
 		{"tizen", "tizen", false},
 		{"roku", "roku", false},
 		// A near miss on a built-in name is still an error, because it is a
@@ -217,7 +217,7 @@ func TestMissingDriverExplainsItself(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected an error for a driver that is not installed")
 	}
-	for _, want := range []string{"mobium-driver-roku", "MOBIUM_DRIVER_ROKU", "0003"} {
+	for _, want := range []string{"mobium-driver-roku", "MOBIUM_DRIVER_ROKU", "PROTOCOL.md"} {
 		if !strings.Contains(err.Error(), want) {
 			t.Errorf("the message does not mention %q:\n%v", want, err)
 		}

@@ -3,7 +3,7 @@
 # buttons. The server's own tests cover what it answers; this covers the page
 # — which tests its buttons ask for, the steps it draws as they come, the
 # screens it loads under its content security policy, and what it means by
-# "re-run failed" — none of which runs without a browser (docs/decisions/0009).
+# "re-run failed" — none of which runs without a browser.
 #
 #   docs/checks/test-ui.sh                                # Android emulator-5554
 #   MOBIUM_IOS_DEVICE=<simulator-udid> docs/checks/test-ui.sh   # and iOS

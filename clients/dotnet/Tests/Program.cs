@@ -738,7 +738,7 @@ namespace Mobium.Tests
 
         // -- the harness ----------------------------------------------------
 
-        // -- error codes: docs/decisions/0005 -----------------------------
+        // -- error codes: docs/guides/cli.md -------------------------------
 
         private static readonly string[] Codes = {"no_device", "device_not_ready", "toolchain_missing",
             "no_such_element", "ambiguous_locator", "element_not_reachable", "no_such_context",

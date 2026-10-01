@@ -18,14 +18,14 @@ this is what is not.
   stays on emulators and simulators. Getting there found CHALLENGES
   170–172. On an iPhone a password still needs a keyboard with its letters
   up (159). Parameters since 2026-10-01: `"each"` runs a test once per case,
-  `${key}` filled in (decisions/0006, "Parameters"). An interactive mode
+  `${key}` filled in (the test runner guide, section 9). An interactive mode
   since 2026-10-01: `mobium test --ui` serves a page that lists the suite,
   runs a test, a file or all of it on its projects, shows each step with
   its screen as it happens, and re-runs what failed, the files read again
-  for every run ([decisions/0009](decisions/0009-a-test-ui.md),
+  for every run ([the test runner guide, --ui](guides/test-runner.md#10-a-page-to-run-tests-from---ui),
   `docs/checks/test-ui.sh`). Recording a test from what a person does is
-  `mobium inspect`, since 2026-09-29 ([decisions/0007](decisions/0007-an-inspector.md)).
-  [decisions/0006](decisions/0006-a-test-runner.md).
+  `mobium inspect`, since 2026-09-29 ([the inspector guide](guides/inspector.md)).
+  The format is in [the test runner guide](guides/test-runner.md).
 - ~~**A second third-party app on iOS.**~~ Done 2026-10-01: NetNewsWire, an
   RSS reader, built from its MIT source for a simulator and from the App
   Store (7.1.4) on the iPhone 15 Plus, so the same app runs on both, as
@@ -82,17 +82,16 @@ this is what is not.
     does not contain, so a tap under one still lands on it. **On a
     simulator, `mobium hit-test` sees it** since 2026-09-29: UIKit's own hit
     test, asked through lldb, opt-in because the attach stops the app for
-    about two seconds ([decisions/0008](decisions/0008-a-hit-test-below-accessibility.md)).
+    about two seconds ([the hit test](guides/autowait.md#what-it-does-not-see)).
     On a real iPhone since 2026-09-30: the probe is evaluated as an lldb
     expression, through `xcrun lldb`'s own Python, and all seven cases of
     the Obstruction Demo agreed with where a raw touch went on the iPhone
-    15 Plus, about nine seconds a case (decisions/0008, "On a real
-    iPhone"). It needs the app built for development. **Before every
+    15 Plus, about nine seconds a case. It needs the app built for development. **Before every
     action, on a simulator**, since 2026-09-30: `launch --hit-test` loads
     the probe as the app starts and it answers on a Unix socket on the
     Mac's own disk in under a millisecond, so every action on an element
     asks it first; the seven cases agreed with a raw touch, and a tap cost
-    the same with it as without (decisions/0008, "Loaded at launch"). Not
+    the same with it as without. Not
     on a phone, where Mobium could reach a probe only over the phone's
     network; it refuses, and `hit-test` there stays the debugger's.
 - ~~**Session recording and `diff map`.**~~ Done 2026-09-29. `mobium trace
@@ -423,7 +422,7 @@ this is what is not.
   become D-pad presses too; `press` already has back, home and the media
   keys. That makes it the existing backend with a focus strategy, not a new
   driver. Amazon's newer Linux-based OS, Vega, is not Android, and would be
-  the case for a driver process ([decisions/0003](decisions/0003-drivers-are-processes-not-plugins.md)).
+  the case for a driver process ([the driver protocol](../examples/drivers/PROTOCOL.md)).
   First, without code: does `mobium devices` list a TV after `adb connect`;
   does `map` work with `--driver uiautomator`, and does Fire OS let the
   UiAutomator2 server install; does the hierarchy report `focused` reliably

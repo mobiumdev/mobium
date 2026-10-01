@@ -9,7 +9,8 @@ namespace Mobium
     /// </summary>
     /// <remarks>
     /// Every tool failure carries a stable <see cref="Code"/>, the same in every
-    /// client and on the wire (docs/decisions/0005 in the mobium repository),
+    /// client and on the wire (the error codes in the mobium repository's
+    /// docs/guides/cli.md),
     /// and each code has a subclass — <see cref="NoSuchElementException"/>,
     /// <see cref="UnsupportedException"/> and so on — so a test catches the kind
     /// it can handle and lets the rest through. <see cref="Remedy"/> says what

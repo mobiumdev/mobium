@@ -6,7 +6,7 @@
 // 1 for everything. The sentences were good — the project requires each to
 // name a cause and a remedy that works — but nothing could act on them without
 // parsing prose, and the code itself decided "stale session" and "no alert" by
-// matching message text. See docs/decisions/0005-errors.md.
+// matching message text. The codes are listed in docs/guides/cli.md.
 //
 // The codes are modeled on W3C WebDriver's — lowercase, underscore-separated,
 // stable — because that is the vocabulary WebDriver users already

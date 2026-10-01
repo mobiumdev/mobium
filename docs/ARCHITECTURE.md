@@ -75,7 +75,7 @@ flowchart TB
   the ordinary driver.
 - **A third-party backend is a process**, not a Go plugin: any executable named
   `mobium-driver-<name>` on `PATH`, speaking JSON-RPC
-  ([decisions/0003](decisions/0003-drivers-are-processes-not-plugins.md)).
+  ([the driver protocol](../examples/drivers/PROTOCOL.md)).
 
 ## Packages
 
@@ -110,7 +110,7 @@ flowchart LR
 
 Every package also imports `internal/mobiumerr`, left out above for
 legibility: every failure carries one of its codes, which are public API
-([decisions/0005](decisions/0005-errors.md)).
+([the codes](guides/cli.md#6-when-a-command-fails)).
 
 | Package | Responsibility |
 | --- | --- |

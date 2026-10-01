@@ -218,9 +218,8 @@ tapped @e2 at (462, 397) in WEBVIEW_com.example
 mapped by a script, its CSS coordinates are converted to device pixels using
 the WebView's on-screen frame and the page's visual viewport, and the tap is
 delivered by the native driver like any other. Android WebViews speak CDP; iOS
-WKWebViews speak WebKit's Remote Web Inspector
-([decisions/0001](docs/decisions/0001-cdp-not-webdriver-bidi.md),
-[0002](docs/decisions/0002-ios-webviews-are-reachable.md)).
+WKWebViews speak WebKit's Remote Web Inspector, over a Unix socket on a
+simulator and through usbmuxd and lockdown on a phone.
 
 A WebView is reachable only if the app opted in —
 `WebView.setWebContentsDebuggingEnabled(true)` on Android, `isInspectable` on
@@ -323,8 +322,8 @@ A driver needs three methods to be useful — `snapshot`, `screenshot` and
 `tap` — and inherits locators, `@ref`s, waiting, scrolling, the CLI, MCP and
 all five clients. [examples/drivers/](examples/drivers/) has the guide and a
 complete driver in dependency-free Python that produces the same map as the
-built-in backend; [decisions/0003](docs/decisions/0003-drivers-are-processes-not-plugins.md)
-is the protocol.
+built-in backend; [PROTOCOL.md](examples/drivers/PROTOCOL.md) is the
+protocol.
 
 ## Documentation
 
@@ -348,7 +347,7 @@ is the protocol.
 | [docs/WINDOWS.md](docs/WINDOWS.md) | the state of Windows support |
 | [docs/ROADMAP.md](docs/ROADMAP.md) | what is next |
 | [docs/RELEASE-CHECKLIST.md](docs/RELEASE-CHECKLIST.md) | the device checks CI cannot run |
-| [docs/decisions/](docs/decisions/) | architecture decision records |
+| [examples/drivers/PROTOCOL.md](examples/drivers/PROTOCOL.md) | the protocol a third-party driver speaks |
 | [docs/checks/](docs/checks/) | end-to-end scripts that drive a real device |
 | [examples/drivers/](examples/drivers/) | writing a driver |
 | [CONTRIBUTING.md](CONTRIBUTING.md) | building, testing and the project's rules |
@@ -356,8 +355,8 @@ is the protocol.
 Several checks drive **[MobiumApp](https://github.com/mobiumdev/mobium-app)**,
 a React Native app built to be driven: each screen is a control for a case
 that can go wrong, and on iOS it is the only way to reach an app's WebView,
-since one that has not opted into inspection is invisible to any debugger
-([decisions/0004](docs/decisions/0004-an-app-under-test-of-our-own.md)).
+since one that has not opted into inspection (`isInspectable`) is invisible
+to any debugger, and that cannot be forced from outside.
 
 ## License
 

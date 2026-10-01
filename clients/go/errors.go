@@ -6,8 +6,8 @@ import (
 )
 
 // Code classifies a failure. The strings are Mobium's stable error codes,
-// the same in every client and on the wire; see docs/decisions/0005 in the
-// mobium repository. A client is not required to know every code: one it
+// the same in every client and on the wire; see the error codes in the
+// mobium repository's docs/guides/cli.md. A client is not required to know every code: one it
 // does not recognize is still an *Error, with Code set.
 type Code string
 
@@ -43,8 +43,7 @@ var (
 	ErrUnsupported         = &Error{Code: CodeUnsupported}
 	ErrNotConfirmed        = &Error{Code: CodeNotConfirmed}
 	// TimedOut, not Timeout, as in every client: Python's TimeoutError and
-	// Java's TimeoutException are builtins a Timeout name would shadow
-	// (docs/decisions/0005).
+	// Java's TimeoutException are builtins a Timeout name would shadow.
 	ErrTimedOut        = &Error{Code: CodeTimeout}
 	ErrInvalidArgument = &Error{Code: CodeInvalidArgument}
 	ErrDeviceServer    = &Error{Code: CodeDeviceServer}

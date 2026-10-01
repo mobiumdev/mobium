@@ -1,7 +1,8 @@
 """Mobium's failures, one exception per error code.
 
 Every failure a tool reports carries a stable code — the same in every client
-and on the wire (docs/decisions/0005 in the mobium repository). Each code has
+and on the wire (the error codes in the mobium repository's
+docs/guides/cli.md). Each code has
 an exception here, all subclasses of MobiumError, so a script catches the kind
 it can handle and lets the rest through::
 

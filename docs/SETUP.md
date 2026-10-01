@@ -387,8 +387,8 @@ reports progress. It is cached under `~/.mobium` afterwards.
 
 ### WebViews on a simulator
 
-WKWebViews work, over WebKit's Remote Web Inspector rather than CDP — see
-[decisions/0002](decisions/0002-ios-webviews-are-reachable.md). Two
+WKWebViews work, over WebKit's Remote Web Inspector rather than CDP — a
+Unix socket on a simulator, carrying binary property lists. Two
 preconditions, neither of which mobium can arrange:
 
 ```sh
@@ -425,9 +425,9 @@ from outside. The capability runs in opposite directions on the two platforms.
 **The binary you ship.** `simctl install` takes a `.app` built against the
 simulator SDK. The `.ipa` that goes to the App Store is device-signed and for a
 different architecture, so nothing about signing, entitlements or store
-packaging is exercised on a simulator. This is the reason
-[decisions/0004](decisions/0004-an-app-under-test-of-our-own.md) could not
-close the hybrid-app gap by installing somebody's shipped app.
+packaging is exercised on a simulator. This is also why somebody's shipped
+app could not close the hybrid-app gap here, and
+[MobiumApp](https://github.com/mobiumdev/mobium-app) was built instead.
 
 The Android emulator has its own list — no Bluetooth, NFC, SD card
 insert/eject, attached headphones or USB — and it is a different list, which is
@@ -525,8 +525,7 @@ MP4, and none has been tried.
 ### WebViews and Safari
 
 They work on a phone, reached through the phone's lockdown service and
-speaking the same protocol as a simulator's
-([decisions/0002](decisions/0002-ios-webviews-are-reachable.md)). It needs
+speaking the same protocol as a simulator's. It needs
 the phone connected by cable — usbmuxd, which carries it, is USB — and:
 
 - **an app's WebView** is inspectable only if the app sets

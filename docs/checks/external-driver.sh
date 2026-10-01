@@ -2,7 +2,7 @@
 # The third-party driver protocol, end to end against a real Android device.
 #
 # What this proves is not "the code runs". It is that a driver written from
-# docs/decisions/0003 alone, in a different language, importing nothing from
+# examples/drivers/PROTOCOL.md alone, in a different language, importing nothing from
 # this repository, sees the same screen mobium's own backend sees. The
 # load-bearing step is the diff: `examples/drivers/mobium-driver-adb` covers
 # deliberately the same ground as --driver uiautomator, so the two maps can be

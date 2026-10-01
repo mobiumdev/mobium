@@ -7,8 +7,8 @@ compared against a known-good implementation on the same screen. That
 comparison is the point: it is how you tell a driver that works from a driver
 that returns something plausible.
 
-It exists to prove three claims in
-docs/decisions/0003-drivers-are-processes-not-plugins.md:
+It exists to prove three claims about the protocol in
+examples/drivers/PROTOCOL.md:
 
   1. A driver needs nothing from the Mobium codebase. This file imports the
      Python standard library and nothing else, and was written from the
