@@ -479,6 +479,18 @@ type DataClearer interface {
 	ClearData(ctx context.Context, appID string) (device.ClearedData, error)
 }
 
+// LightReader is implemented by backends that can read the screen without
+// working out which elements are visible, and ask that of one element
+// alone. Built in only, on the WDA driver, where visible is most of a read.
+type LightReader interface {
+	// LightSnapshot reads the screen with every element taken as shown. ok is
+	// false when it should not be used now, and the caller reads in full.
+	LightSnapshot(ctx context.Context) (t *uitree.Tree, ok bool, err error)
+	// ElementVisible asks whether one node of a light read is visible. ok is
+	// false when the node cannot be asked about alone.
+	ElementVisible(ctx context.Context, n *uitree.Node, t *uitree.Tree) (visible, ok bool, err error)
+}
+
 // ForegroundReader is implemented by backends that can say which app is in
 // front more cheaply than by reading the screen. Built in only, on the WDA
 // driver.
@@ -491,9 +503,9 @@ type ForegroundReader interface {
 // driver, where a full read is the slow part of every action.
 type ElementBounder interface {
 	// ElementBounds reads the rectangle, in device pixels, of the element a
-	// node names. ok is false when it cannot be read that way — the node has
-	// no test id — and the caller reads the screen instead.
-	ElementBounds(ctx context.Context, n *uitree.Node) (r uitree.Rect, ok bool, err error)
+	// node of t names. ok is false when it cannot be read that way — nothing
+	// names it uniquely in t — and the caller reads the screen instead.
+	ElementBounds(ctx context.Context, n *uitree.Node, t *uitree.Tree) (r uitree.Rect, ok bool, err error)
 }
 
 // BundleResetter is implemented by backends that reset an app by installing

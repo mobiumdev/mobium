@@ -46,6 +46,11 @@ type WDA struct {
 	hintMu    sync.Mutex
 	expecting string
 
+	// found is the element findUnique found last, by how it was found, until
+	// the next read of the screen.
+	foundMu sync.Mutex
+	found   map[string]string
+
 	// locales is the language each app is pinned to, by bundle id, for the
 	// life of the session. iOS stores no per-app language Mobium could set,
 	// so it is a launch argument, and this is what every launch here passes.
@@ -282,6 +287,7 @@ func (w *WDA) teardownLocked(ctx context.Context) {
 
 // Snapshot fetches and parses the UI hierarchy.
 func (w *WDA) Snapshot(ctx context.Context) (*uitree.Tree, error) {
+	w.forgetFound()
 	xml, err := w.w3c.source(ctx)
 	if err != nil {
 		return nil, err
@@ -414,18 +420,16 @@ func (w *WDA) ForegroundApp(ctx context.Context) (string, error) {
 	return app, nil
 }
 
-// ElementBounds reads one element's rectangle by its test id — two small
+// ElementBounds reads one element's rectangle by its test id or label, when
+// that is unique on screen — two small
 // requests, against a read of the whole screen. Measured on an iPhone 15
 // Plus: 148ms for MobiumApp's tiny target, against 167ms for MobiumApp's
 // whole screen and about 2s for Settings'. Converted to device pixels with
 // the tree's own rounding, so an element that has not moved compares equal.
-func (w *WDA) ElementBounds(ctx context.Context, n *uitree.Node) (uitree.Rect, bool, error) {
-	if n.TestID == "" {
-		return uitree.Rect{}, false, nil
-	}
-	id, err := w.w3c.findElement(ctx, "accessibility id", n.TestID)
-	if err != nil {
-		return uitree.Rect{}, true, err
+func (w *WDA) ElementBounds(ctx context.Context, n *uitree.Node, t *uitree.Tree) (uitree.Rect, bool, error) {
+	id, ok, err := w.findUnique(ctx, n, t)
+	if !ok || err != nil {
+		return uitree.Rect{}, ok, err
 	}
 	var resp struct {
 		Value struct {

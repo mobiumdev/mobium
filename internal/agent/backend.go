@@ -153,6 +153,10 @@ type session struct {
 	// trace is a session trace in progress (app_trace), or nil. Ending the
 	// session discards it, as it does a recording.
 	trace *sessionTrace
+
+	// fullReadTook is how long the last full read of the screen took, which
+	// decides whether an action tries a light read first (lightResolve).
+	fullReadTook time.Duration
 }
 
 // stopRoute ends any route this session is stepping. Safe to call when none is.

@@ -111,13 +111,33 @@ this is what is not.
   hierarchy took 1.81 s to read and 0.29 s without the `visible`
   attribute: WebDriverAgent works it out for every element, and it is 85%
   of a read. Leaving out the attributes Mobium does not parse changed
-  nothing. `visible` is what keeps a previous navigation screen, which iOS
-  keeps in the tree hidden, out of `map` and out of a locator's matches,
-  and the dialog refusals use it (CHALLENGES 105), so it cannot simply go.
-  The likely shape: read without it, and ask for it only for the nodes a
-  decision needs — the target, and anything a locator matched more than
-  once. Done when a tap in Settings on the iPhone is under a second and
-  every check that touches `map`, locators or dialogs is unchanged.
+  nothing. `visible` is what keeps hidden elements out of `map` and out of a
+  locator's matches, and the dialog refusals use it (CHALLENGES 105), so it
+  cannot simply go. Built on 2026-09-30 for actions: a read without it takes
+  every element as shown, which can only add matches and covers, so an
+  action uses it when it decides cleanly — no dialog or keyboard, one
+  enabled match inside its container, nothing drawn over it — and the one
+  element, asked alone, is visible; anything else reads in full. Measured
+  first, by replaying Mobium's own decisions on 20 captured simulator
+  screens with and without the attribute: 17 decided everything the same,
+  and Safari and SpringBoard only added matches and covers. It is tried
+  only where a session's full reads are slow, 250 ms or more
+  (`MOBIUM_LIGHT_READ_MS`, 0 for every action): on a small screen a light
+  read and the check cost more than the full read. On a simulator a tap of
+  General in Settings went from 1.7 s to 1.5 s, most of what is left being
+  WebDriverAgent waiting out the navigation, and every refusal in
+  obstruction, autowait, dialogs, keyboard, login and wait-states held with
+  it forced on. On the iPhone, tapping General in Settings went from 3.5 s
+  to 2.2 s and tapping back from 4.6 s to 2.1 s, and obstruction and
+  autowait (forced) and ios-device.sh pass. Still to do: `map` and `text`,
+  which read in full, and what is left of a Settings tap, mostly
+  WebDriverAgent waiting out the page animation after the touch. Found on the
+  way: a locator's resolution (`pickOne`) does not consult visibility on a
+  full read either, so a uniquely labeled element iOS calls hidden is
+  acted on unless it is under a dialog or the keyboard, or has no bounds.
+  The light path asks the element and refuses one, which is stricter;
+  whether the full read should too wants a screen that has such an element,
+  which none of the 20 captured did.
 - **Launching on a real iPhone.** `app_launch` had a median of 5.8 s on the
   iPhone 15 Plus against 2.3 s on the simulator (2026-09-30, 36 launches).
   Most of it was found and removed on 2026-09-30: a launch read the screen

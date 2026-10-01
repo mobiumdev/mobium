@@ -205,7 +205,7 @@ func (d *boundedSliding) Snapshot(ctx context.Context) (*uitree.Tree, error) {
 	return uitree.ParseAndroid([]byte(xml))
 }
 
-func (d *boundedSliding) ElementBounds(ctx context.Context, n *uitree.Node) (uitree.Rect, bool, error) {
+func (d *boundedSliding) ElementBounds(ctx context.Context, n *uitree.Node, t *uitree.Tree) (uitree.Rect, bool, error) {
 	d.bounds++
 	y := d.y
 	if d.moves > 0 {
