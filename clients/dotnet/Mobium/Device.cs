@@ -544,11 +544,23 @@ namespace Mobium
         /// Asks UIKit's own hit test, below accessibility, whether a tap on
         /// the target would reach it. Throws when the touch would go
         /// elsewhere, naming what would take it and whether accessibility can
-        /// see it. iOS simulators only, and opt-in: it attaches lldb to the
-        /// app for about two seconds.
+        /// see it. iOS only, and opt-in: it attaches lldb to the app, about
+        /// two seconds on a simulator and nine on an iPhone, where the app must
+        /// be a development build.
         /// </summary>
         public IDictionary<string, object?> HitTest(string target) =>
             Data("app_hit_test", Args("target", target));
+
+        /// <summary>
+        /// Runs the platform's own accessibility audit on the screen in front:
+        /// on iOS, Apple's, on a simulator or an iPhone (iOS 17 and later).
+        /// The answer holds <c>findings</c>, each with its type, summary,
+        /// detail, element, a locator when it has one, and bounds in device
+        /// pixels when the audit names an element. Android throws: its audits
+        /// run inside the app.
+        /// </summary>
+        public IDictionary<string, object?> Audit() =>
+            Data("app_audit", Args());
 
         /// <summary>
         /// One app's state, for any app: <c>state</c> is not_installed,

@@ -21,7 +21,7 @@ type HitTester interface {
 // see what a hit test would.
 const androidNeedsNoHitTest = "Android needs no hit test from outside: its hierarchy lists a view that " +
 	"accessibility hides — the Obstruction Demo's hidden overlay is a clickable, unnamed view there — and " +
-	"app_tap already refuses a control drawn over its target. The hit test is for an iOS simulator"
+	"app_tap already refuses a control drawn over its target. The hit test is for iOS"
 
 // HitTest refuses on Android, saying why none is needed.
 func (a *Android) HitTest(context.Context, *uitree.Node, int, int, string) (device.Hit, error) {

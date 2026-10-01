@@ -34,6 +34,8 @@ command mentions them.
 | `app_appearance` | `appearance` | string | appearance |
 | `app_appearance` | `device` | string | _global_ --device |
 | `app_appearance` | `driver` | string | _global_ --driver |
+| `app_audit` | `device` | string | _global_ --device |
+| `app_audit` | `driver` | string | _global_ --driver |
 | `app_background` | `app` | string | background |
 | `app_background` | `device` | string | _global_ --device |
 | `app_background` | `driver` | string | _global_ --driver |
@@ -330,6 +332,7 @@ arguments and the two global flags.
 | `alert` | app_alert | --text | action, text |
 | `appearance` | app_appearance | — | appearance |
 | `apps` | app_list_apps | --system | system |
+| `audit` | app_audit | — | — |
 | `background` | app_background | --app | app, seconds |
 | `batch` | app_batch | — | steps |
 | `battery` | app_battery | — | — |

@@ -1029,11 +1029,38 @@ type HitTestResult struct {
 // HitTest asks UIKit's own hit test, below accessibility, whether a tap on
 // target would reach it. It returns an error when the touch would go
 // elsewhere, naming what would take it and whether accessibility can see
-// it. iOS simulators only, and opt-in: it attaches lldb to the app for
-// about two seconds.
+// it. iOS only, and opt-in: it attaches lldb to the app, about two seconds
+// on a simulator and nine on an iPhone, where the app must be a development
+// build.
 func (d *Device) HitTest(ctx context.Context, target string) (HitTestResult, error) {
 	var out HitTestResult
 	err := d.data(ctx, "app_hit_test", map[string]any{"target": target}, &out)
+	return out, err
+}
+
+// AuditFinding is one thing the platform's accessibility audit found.
+type AuditFinding struct {
+	Type    string `json:"type"`
+	Summary string `json:"summary"`
+	Detail  string `json:"detail,omitempty"`
+	Element string `json:"element,omitempty"`
+	// Locator names the element, when it has a test id or a label.
+	Locator string `json:"locator,omitempty"`
+	// Bounds are device pixels, or nil when the audit names no element.
+	Bounds *Bounds `json:"bounds,omitempty"`
+}
+
+// AuditResult is Audit's answer.
+type AuditResult struct {
+	Findings []AuditFinding `json:"findings"`
+}
+
+// Audit runs the platform's own accessibility audit on the screen in front:
+// on iOS, Apple's, on a simulator or an iPhone (iOS 17 and later). Android
+// refuses: its audits run inside the app.
+func (d *Device) Audit(ctx context.Context) (AuditResult, error) {
+	var out AuditResult
+	err := d.data(ctx, "app_audit", map[string]any{}, &out)
 	return out, err
 }
 

@@ -65,6 +65,7 @@ const (
 	CapFiles            = "files"
 	CapBiometric        = "biometric"
 	CapHitTest          = "hitTest"
+	CapAudit            = "audit"
 )
 
 // KnownCapabilities is every capability Mobium understands, for diagnostics
@@ -77,7 +78,7 @@ var KnownCapabilities = []string{
 	CapClipboard, CapClipboardRead, CapAlerts, CapPinch,
 	CapDoubleTap, CapDrag, CapMultiTouch, CapDeviceLogs, CapCrashes, CapKeyboard, CapRecording,
 	CapClearData, CapSource, CapAccessibility, CapAppState, CapBattery, CapDeviceClock, CapShake,
-	CapNetwork, CapFiles, CapBiometric, CapHitTest,
+	CapNetwork, CapFiles, CapBiometric, CapHitTest, CapAudit,
 }
 
 // has reports whether d claims the capability. A driver that does not report
@@ -390,6 +391,12 @@ func AsBiometrics(d Driver) (Biometrics, bool) {
 func AsHitTester(d Driver) (HitTester, bool) {
 	t, ok := d.(HitTester)
 	return t, ok && has(d, CapHitTest)
+}
+
+// AsAuditor returns the driver's accessibility audit, if any.
+func AsAuditor(d Driver) (Auditor, bool) {
+	a, ok := d.(Auditor)
+	return a, ok && has(d, CapAudit)
 }
 
 // AsShaker returns the driver's shake, if any.
