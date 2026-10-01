@@ -61,15 +61,22 @@ func TestATraceKeepsNoTypedText(t *testing.T) {
 	h := NewHandlers()
 
 	id := traceBefore(st, "app_fill", map[string]interface{}{"target": "testid=password", "text": "Sup3rSecret!"})
-	h.traceAfter(s, st, id, Result("filled", ActionView{Action: "fill", Target: "testid=password"}), nil)
+	h.traceAfter(s, st, id, true, Result("filled", ActionView{Action: "fill", Target: "testid=password"}), nil)
 	id = traceBefore(st, "app_tap", map[string]interface{}{"target": "@e3"})
-	h.traceAfter(s, st, id, Result("tapped", ActionView{Action: "tap", X: 540, Y: 1200}), nil)
+	h.traceAfter(s, st, id, true, Result("tapped", ActionView{Action: "tap", X: 540, Y: 1200}), nil)
 	id = traceBefore(st, "app_tap", map[string]interface{}{"target": "@e9"})
-	h.traceAfter(s, st, id, nil, errors.New("no element matches @e9"))
+	h.traceAfter(s, st, id, true, nil, errors.New("no element matches @e9"))
 
 	out := traceOf(t, st)
 	if strings.Contains(out, "Sup3rSecret") {
 		t.Fatal("the typed text is in the trace")
+	}
+	// Playwright's names, which player.vibium.dev reads to say what a step
+	// typed into: the element, and the text as a dot a character.
+	for _, want := range []string{`"selector":"testid=password"`, `"value":"••••••••••••"`, `"selector":"@e3"`} {
+		if !strings.Contains(out, want) {
+			t.Errorf("the trace has no %s", want)
+		}
 	}
 	for _, want := range []string{`"(12 characters, not recorded)"`, `"title":"fill testid=password"`,
 		`"point":{"x":540,"y":1200}`, `"message":"no element matches @e9"`} {
@@ -79,5 +86,22 @@ func TestATraceKeepsNoTypedText(t *testing.T) {
 	}
 	if strings.Count(out, `"type":"input"`) != 1 {
 		t.Errorf("want one input event, the tap's:\n%s", out)
+	}
+}
+
+// A call whose _meta marks it untraced stays out of a trace running on its
+// device: mobium test's own screenshots and maps, taken for its report, are
+// the runner looking, not the test acting. Any other call is recorded.
+func TestAnUntracedCallStaysOutOfTheTrace(t *testing.T) {
+	h := NewHandlers()
+	st := &sessionTrace{rec: trace.New(trace.Options{})}
+	h.sessions["a"] = &session{dev: &device.Device{Serial: "A"}, trace: st}
+	_, _ = h.CallMeta("app_no_such_tool", map[string]interface{}{"device": "A"}, map[string]interface{}{MetaUntraced: true})
+	if n := st.rec.Calls(); n != 0 {
+		t.Fatalf("an untraced call was recorded: %d calls", n)
+	}
+	_, _ = h.Call("app_no_such_tool", map[string]interface{}{"device": "A"})
+	if n := st.rec.Calls(); n != 1 {
+		t.Errorf("an ordinary call was not recorded: %d calls", n)
 	}
 }

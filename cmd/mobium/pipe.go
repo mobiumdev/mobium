@@ -27,7 +27,7 @@ func newPipeCmd() *cobra.Command {
 		Args:   cobra.NoArgs,
 		Hidden: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			p := newPipe(daemonCall)
+			p := newPipe(daemonCallMeta)
 			// The sessions this client started end with it, unless it said
 			// it was leaving them open. A client that crashes, or a script
 			// that returns without quit(), closes stdin the same way a
@@ -95,7 +95,7 @@ const DetachMethod = "mobium/detach"
 // pipe is one client's connection: the calls it forwards, and the sessions
 // it started and so answers for.
 type pipe struct {
-	call func(tool string, args map[string]interface{}) (*agent.ToolsCallResult, error)
+	call func(tool string, args, meta map[string]interface{}) (*agent.ToolsCallResult, error)
 
 	mu       sync.Mutex
 	owned    map[string]bool // devices whose session this client started
@@ -103,7 +103,7 @@ type pipe struct {
 	released bool
 }
 
-func newPipe(call func(string, map[string]interface{}) (*agent.ToolsCallResult, error)) *pipe {
+func newPipe(call func(string, map[string]interface{}, map[string]interface{}) (*agent.ToolsCallResult, error)) *pipe {
 	return &pipe{call: call, owned: map[string]bool{}}
 }
 
@@ -125,7 +125,7 @@ func (p *pipe) release() {
 	p.mu.Unlock()
 	sort.Strings(devices)
 	for _, d := range devices {
-		if _, err := p.call("app_session", map[string]interface{}{"action": "end", "device": d}); err != nil {
+		if _, err := p.call("app_session", map[string]interface{}{"action": "end", "device": d}, nil); err != nil {
 			fmt.Fprintf(os.Stderr, "mobium pipe: the client went away and its session on %s could not be ended: %v\n", d, err)
 		}
 	}
@@ -195,7 +195,7 @@ func (p *pipe) handle(line []byte) *agent.Response {
 				Code: agent.InvalidParams, Message: "Invalid params", Data: err.Error(),
 			}}
 		}
-		result, err := p.call(params.Name, orEmpty(params.Arguments))
+		result, err := p.call(params.Name, orEmpty(params.Arguments), params.Meta)
 		p.track(params.Name, result)
 		if err != nil {
 			// A tool that ran and failed is a result, not a protocol error:

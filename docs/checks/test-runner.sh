@@ -18,7 +18,9 @@
 # - A project whose device is unset is refused before any test runs.
 # - Iteration 2: the soft control fails with both of its soft failures and
 #   still reaches its last step; a retain-on-failure trace keeps a failed
-#   test's steps, each with a screenshot, and nothing of a passing one; and
+#   test's steps, each with a screenshot, and nothing of a passing one — and
+#   the failed test as a Playwright trace zip, holding its calls and none of
+#   the runner's own screenshots and maps; and
 #   --debug, answered through a pipe, stops before each step and quits.
 #   The suite's form.test.json is written in the step shorthand.
 #
@@ -163,6 +165,30 @@ for r in json.load(open(os.path.join(out, "results.json")))["results"]:
 if 'class="film"' not in open(os.path.join(out, "index.html")).read():
     sys.exit("FAIL: the HTML report shows no filmstrip")
 print("    %-14s %-58s ok" % ("trace", "a failed test's every step kept; a passing test's, none"))
+
+# The same test as a Playwright trace: a zip trace.playwright.dev opens,
+# holding the test's calls and not the runner's own screenshots and maps.
+import zipfile
+for r in json.load(open(os.path.join(out, "results.json")))["results"]:
+    zf = r.get("trace_file")
+    if r["status"] == "passed":
+        if zf:
+            sys.exit("FAIL: retain-on-failure kept a Playwright trace of %s, which passed" % r["title"])
+        continue
+    if not zf or not os.path.exists(os.path.join(out, zf)):
+        sys.exit("FAIL: %s has no Playwright trace (%r)" % (r["title"], zf))
+    with zipfile.ZipFile(os.path.join(out, zf)) as z:
+        events = [json.loads(l) for l in z.read("trace.trace").decode().splitlines() if l.strip()]
+        frames = [n for n in z.namelist() if n.startswith("resources/")]
+    methods = [e["method"] for e in events if e.get("type") == "before"]
+    if any(m in ("mobium:app_map", "mobium:app_screenshot") for m in methods):
+        sys.exit("FAIL: the runner's own screenshots or maps are in %s's trace: %s" % (r["title"], methods))
+    if len(methods) < len(r["trace"]) or not frames:
+        sys.exit("FAIL: %s's Playwright trace has %d calls and %d frames for %d steps" % (r["title"], len(methods), len(frames), len(r["trace"])))
+    calls = len(methods)
+if "trace.playwright.dev" not in open(os.path.join(out, "index.html")).read():
+    sys.exit("FAIL: the HTML report does not link the Playwright trace")
+print("    %-14s %-58s ok" % ("trace zip", "the failed test as a Playwright trace, %d calls, none the runner's" % calls))
 EOF
 
 # --- debug: stops before each step, and quits ------------------------------

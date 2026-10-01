@@ -163,7 +163,7 @@ func CallTool(params json.RawMessage, h *Handlers) (interface{}, *Error) {
 	if err := json.Unmarshal(params, &p); err != nil {
 		return nil, &Error{Code: InvalidParams, Message: "Invalid params", Data: err.Error()}
 	}
-	result, err := h.Call(p.Name, p.Arguments)
+	result, err := h.CallMeta(p.Name, p.Arguments, p.Meta)
 	if err != nil {
 		return ErrorResult(err), nil
 	}

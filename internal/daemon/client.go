@@ -68,7 +68,12 @@ func IsConnectionError(err error) bool {
 
 // Call sends a tools/call request to the daemon.
 func Call(tool string, args map[string]interface{}) (*agent.ToolsCallResult, error) {
-	params, err := json.Marshal(agent.ToolsCallParams{Name: tool, Arguments: args})
+	return CallMeta(tool, args, nil)
+}
+
+// CallMeta is Call with the request's _meta passed through.
+func CallMeta(tool string, args, meta map[string]interface{}) (*agent.ToolsCallResult, error) {
+	params, err := json.Marshal(agent.ToolsCallParams{Name: tool, Arguments: args, Meta: meta})
 	if err != nil {
 		return nil, err
 	}

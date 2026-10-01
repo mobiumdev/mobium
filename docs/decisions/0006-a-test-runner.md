@@ -318,7 +318,13 @@ on the Pixel 7 AVD and the iPhone 17 Pro simulator:
   rather than as a batch, and after each the runner keeps a screenshot and
   the map; the HTML report shows them as a filmstrip. A traced run is slower
   by a screenshot and a map a step, which is why it is off by default.
-  `--no-screenshots` keeps the maps and no picture, for a phone.
+  `--no-screenshots` keeps the maps and no picture, for a phone. Since
+  2026-10-01 each kept attempt is also a Playwright trace, `trace.zip` in
+  its trace directory, as `mobium trace` writes one, linked from the report
+  and named in `trace_file`: the runner starts a session trace before the
+  app is launched and stops it after the last step, and sends its own
+  screenshots and maps with `_meta` `dev.mobium/untraced`, which keeps them
+  out of it.
 - **`--debug`** stops before every step, prints it in the long form and the
   map, and waits: Enter runs the step, `m` maps again, `c` runs the rest of
   the test, `q` quits — the test is reported `stopped`, and nothing after it

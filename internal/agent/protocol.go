@@ -96,7 +96,17 @@ type Tool struct {
 type ToolsCallParams struct {
 	Name      string                 `json:"name"`
 	Arguments map[string]interface{} `json:"arguments,omitempty"`
+	// Meta is MCP's _meta: what the caller says about the call rather than
+	// to the tool, so no tool's schema carries it. Mobium reads one key,
+	// MetaUntraced.
+	Meta map[string]interface{} `json:"_meta,omitempty"`
 }
+
+// MetaUntraced is the _meta key that, true, keeps a call out of a trace
+// running on its device. mobium test sets it on the screenshot and maps it
+// takes after each step for its own report: they are the runner looking,
+// not the test acting, and a trace of the test should hold the test.
+const MetaUntraced = "dev.mobium/untraced"
 
 // ToolsCallResult is what a tool returns to an MCP client.
 //
