@@ -800,11 +800,18 @@ export class Device {
    * without reinstalling. Resolves to what was read back empty (`emptied`),
    * what was kept (`kept`) and, on Android, the runtime permissions still
    * granted (`still_granted`): `pm clear` revokes what the user granted. An
-   * iOS simulator keeps its privacy grants and keychain; a real iPhone
-   * refuses.
+   * iOS simulator keeps its privacy grants and keychain.
+   *
+   * A real iPhone cannot clear in place: pass the app's own `bundle`, a .app
+   * or .ipa, and it is uninstalled and installed again. Its data container
+   * is read back empty, and its permissions, which nothing outside the app
+   * can read, are listed in `not_read_back`. Without a bundle a phone
+   * refuses, and with one any other device does.
    */
-  async clearData(app) {
-    return (await this.#data('app_clear_data', { app })) || {}
+  async clearData(app, bundle) {
+    const args = { app }
+    if (bundle) args.path = bundle
+    return (await this.#data('app_clear_data', args)) || {}
   }
 
   /**

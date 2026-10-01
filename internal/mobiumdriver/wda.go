@@ -735,6 +735,17 @@ func (w *WDA) ClearData(ctx context.Context, appID string) (device.ClearedData, 
 	return w.sim.ClearAppData(ctx, appID)
 }
 
+// ResetFromBundle resets an app on a phone by uninstalling it and installing
+// the bundle again. A simulator clears in place, and is refused a bundle
+// rather than given a different reset from the one it was asked for.
+func (w *WDA) ResetFromBundle(ctx context.Context, appID, bundle string) (device.ClearedData, error) {
+	if w.phone == nil {
+		return device.ClearedData{}, mobiumerr.New(mobiumerr.InvalidArgument, "a simulator clears an app's data in "+
+			"place, so it takes no bundle — leave out path (--bundle on the CLI)")
+	}
+	return w.phone.ResetFromBundle(ctx, appID, bundle)
+}
+
 // Uninstall removes an app from the simulator.
 func (w *WDA) Uninstall(ctx context.Context, appID string) error {
 	if w.phone != nil {

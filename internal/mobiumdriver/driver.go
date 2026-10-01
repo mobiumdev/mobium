@@ -478,3 +478,10 @@ type FileTransfer interface {
 type DataClearer interface {
 	ClearData(ctx context.Context, appID string) (device.ClearedData, error)
 }
+
+// BundleResetter is implemented by backends that reset an app by installing
+// it again from its bundle, where nothing can clear it in place — a real
+// iPhone.
+type BundleResetter interface {
+	ResetFromBundle(ctx context.Context, appID, bundle string) (device.ClearedData, error)
+}

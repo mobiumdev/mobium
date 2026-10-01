@@ -505,6 +505,12 @@ so on a phone they are refused, each with the reason, rather than
 approximated: **permissions, appearance, the clipboard, simulated location
 and routes.**
 
+**Clearing an app's data takes its bundle on a phone.** Nothing can delete
+from an app's container there, so `mobium clear-data <app> --bundle
+<App.app or .ipa>` uninstalls the app and installs it again, which empties
+its container, read back, and resets its permissions. Installing over the
+app without uninstalling would keep both.
+
 **Screen recording works on a phone**, differently: the frames come from
 WebDriverAgent's screen stream, about ten a second whether or not anything
 moves, and are written into the MP4 on the Mac as JPEG images rather than

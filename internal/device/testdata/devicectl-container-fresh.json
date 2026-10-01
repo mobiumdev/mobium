@@ -1,0 +1,67 @@
+{
+ "files": [
+  {
+   "name": "Documents",
+   "relativePath": "Documents",
+   "resources": {
+    "isDirectory": true
+   }
+  },
+  {
+   "name": "Library",
+   "relativePath": "Library",
+   "resources": {
+    "isDirectory": true
+   }
+  },
+  {
+   "name": "Library/Caches",
+   "relativePath": "Library/Caches",
+   "resources": {
+    "isDirectory": true
+   }
+  },
+  {
+   "name": "Library/Preferences",
+   "relativePath": "Library/Preferences",
+   "resources": {
+    "isDirectory": true
+   }
+  },
+  {
+   "name": "Library/SplashBoard",
+   "relativePath": "Library/SplashBoard",
+   "resources": {
+    "isDirectory": true
+   }
+  },
+  {
+   "name": "Library/SplashBoard/Snapshots",
+   "relativePath": "Library/SplashBoard/Snapshots",
+   "resources": {
+    "isDirectory": true
+   }
+  },
+  {
+   "name": "Library/SplashBoard/Snapshots/dev.mobium.mobiumapp - {DEFAULT GROUP}",
+   "relativePath": "Library/SplashBoard/Snapshots/dev.mobium.mobiumapp - {DEFAULT GROUP}",
+   "resources": {
+    "isDirectory": true
+   }
+  },
+  {
+   "name": "Library/SplashBoard/Snapshots/dev.mobium.mobiumapp - {DEFAULT GROUP}/246EFE8D-D16D-4042-8BC6-7CF67F3A1EE1@3x.ktx",
+   "relativePath": "Library/SplashBoard/Snapshots/dev.mobium.mobiumapp - {DEFAULT GROUP}/246EFE8D-D16D-4042-8BC6-7CF67F3A1EE1@3x.ktx",
+   "resources": {
+    "isDirectory": false
+   }
+  },
+  {
+   "name": "tmp",
+   "relativePath": "tmp",
+   "resources": {
+    "isDirectory": true
+   }
+  }
+ ]
+}

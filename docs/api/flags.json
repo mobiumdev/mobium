@@ -278,6 +278,11 @@
     },
     {
       "tool": "app_clear_data",
+      "arg": "content",
+      "type": "string"
+    },
+    {
+      "tool": "app_clear_data",
       "arg": "device",
       "type": "string",
       "setBy": [
@@ -293,6 +298,19 @@
         "--driver"
       ],
       "global": true
+    },
+    {
+      "tool": "app_clear_data",
+      "arg": "name",
+      "type": "string"
+    },
+    {
+      "tool": "app_clear_data",
+      "arg": "path",
+      "type": "string",
+      "setBy": [
+        "clear-data"
+      ]
     },
     {
       "tool": "app_clipboard",
@@ -2566,8 +2584,12 @@
       "tools": [
         "app_clear_data"
       ],
+      "flags": [
+        "--bundle"
+      ],
       "sends": [
-        "app"
+        "app",
+        "path"
       ]
     },
     {

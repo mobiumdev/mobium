@@ -108,6 +108,8 @@ type ArgExemption struct {
 var argExemptions = []ArgExemption{
 	{"app_install", "content", "set by the CLI and pipe from --path when the daemon is on another machine; a person gives a path"},
 	{"app_install", "name", "set by the CLI and pipe with content, from the path's file name"},
+	{"app_clear_data", "content", "set by the CLI and pipe from --bundle when the daemon is on another machine; a person gives a path"},
+	{"app_clear_data", "name", "set by the CLI and pipe with content, from the bundle's file name"},
 	{"app_location", "gpx_data", "set by the CLI and pipe from --gpx when the daemon is on another machine; a person gives a path"},
 	{"app_upload", "content", "set by the CLI and pipe from the file when the daemon is on another machine; a person gives a path"},
 	{"app_trace", "return_data", "set by the CLI and pipe on stop when the daemon is on another machine, which then save the trace at the path given"},

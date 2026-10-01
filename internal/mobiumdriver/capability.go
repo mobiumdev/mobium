@@ -303,6 +303,13 @@ func AsPointScaler(d Driver) (PointScaler, bool) {
 	return p, ok
 }
 
+// AsBundleResetter returns the driver's reset-by-reinstall, if it has one.
+// Built in only, on the WDA driver.
+func AsBundleResetter(d Driver) (BundleResetter, bool) {
+	r, ok := d.(BundleResetter)
+	return r, ok
+}
+
 // AsScreenRecorder returns the driver's screen recording support, if any.
 func AsScreenRecorder(d Driver) (ScreenRecorder, bool) {
 	r, ok := d.(ScreenRecorder)

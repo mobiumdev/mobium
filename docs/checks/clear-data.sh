@@ -7,9 +7,17 @@
 #
 #   docs/checks/clear-data.sh <android-serial | simulator-udid | iphone-udid>
 #
-# Needs MobiumApp installed (mobiumdev/mobium-app). A real iPhone refuses, and
-# the check asserts the refusal names the reason. On Android it also grants a
+# Needs MobiumApp installed (mobiumdev/mobium-app). On Android it also grants a
 # location permission first and checks `pm clear` took it away, read back.
+#
+# A real iPhone cannot clear in place, and without a bundle it refuses: the
+# check asserts the refusal names the reason and the reset it has. With
+# MOBIUMAPP_BUNDLE=<MobiumApp.app> the reset itself is checked like the
+# others, with the app as the witness — `clear-data --bundle` uninstalls and
+# installs it again — and a bundle for another app is refused before
+# anything is uninstalled:
+#
+#   MOBIUMAPP_BUNDLE=<MobiumApp.app> docs/checks/clear-data.sh <iphone-udid>
 set -e
 DEV="$1"
 if [ -z "$DEV" ]; then echo "usage: $0 <serial|udid>" >&2; exit 2; fi
@@ -25,11 +33,17 @@ case "$DEV" in
 esac
 echo "--- $DEV ($PLATFORM)"
 
+CLEAR="clear-data $APP"
 if [ "$PLATFORM" = iphone ]; then
-  out=$($M clear-data "$APP" 2>&1) && fail "a real iPhone cleared an app's data, which nothing there can do: $out"
+  out=$($M clear-data "$APP" 2>&1) && fail "a real iPhone cleared an app's data in place, which nothing there can do: $out"
   echo "$out" | grep -q "cannot delete from an app's container" || fail "the refusal did not say why: $out"
-  echo "    refused        a real iPhone, with the reason                 ok"
-  exit 0
+  echo "$out" | grep -q -- "--bundle" || fail "the refusal did not name the reset a phone has: $out"
+  echo "    refused        no bundle: the reason, and --bundle named          ok"
+  if [ -z "$MOBIUMAPP_BUNDLE" ]; then
+    echo "    NOT CHECKED    the reset itself — set MOBIUMAPP_BUNDLE=<MobiumApp.app>"
+    exit 0
+  fi
+  CLEAR="clear-data $APP --bundle $MOBIUMAPP_BUNDLE"
 fi
 
 # Open the Storage screen from a cold start, so it reads the file afresh.
@@ -57,8 +71,15 @@ if [ "$PLATFORM" = android ]; then
   adb -s "$DEV" shell dumpsys package "$APP" | grep -q 'ACCESS_FINE_LOCATION: granted=true' ||
     fail "the location grant did not take, so its revocation proves nothing"
 fi
-out=$($M clear-data "$APP" --json)
+out=$($M $CLEAR --json)
 echo "$out" | json 'len(d["emptied"])' | grep -qv '^0$' || fail "nothing was reported emptied: $out"
+if [ "$PLATFORM" = iphone ]; then
+  # Permissions are reset by the uninstall and cannot be read from outside,
+  # so they must be said apart from what was read back.
+  echo "$out" | json 'len(d.get("not_read_back") or [])' | grep -qv '^0$' ||
+    fail "the reset did not say what it could not read back: $out"
+  echo "    reset          reinstalled from the bundle, container read back   ok"
+fi
 if [ "$PLATFORM" = android ]; then
   echo "$out" | json 'd.get("still_granted")' | grep -q ACCESS_FINE_LOCATION &&
     fail "the location grant survived pm clear: $out"
@@ -70,7 +91,17 @@ storage
 [ "$($M text testid=storedFile)" = "file: absent" ] || fail "the app still finds its file"
 echo "    cleared        the app reads 0 and no file after a relaunch       ok"
 
-out=$($M clear-data com.example.not.installed 2>&1) && fail "an app that is not installed was cleared: $out"
-echo "$out" | grep -q "is not installed" || fail "the refusal did not say why: $out"
-echo "    refused        an app that is not installed                       ok"
+if [ "$PLATFORM" = iphone ]; then
+  # MobiumApp's bundle named for another app: refused on the bundle id,
+  # before the other app is touched, and MobiumApp is left installed.
+  out=$($M clear-data com.example.not.installed --bundle "$MOBIUMAPP_BUNDLE" 2>&1) &&
+    fail "a reset ran from another app's bundle: $out"
+  echo "$out" | grep -q "is $APP, not com.example.not.installed" || fail "the refusal did not say why: $out"
+  $M apps | grep -q "^$APP " || fail "MobiumApp is gone after a refused reset"
+  echo "    refused        another app's bundle, and nothing uninstalled      ok"
+else
+  out=$($M clear-data com.example.not.installed 2>&1) && fail "an app that is not installed was cleared: $out"
+  echo "$out" | grep -q "is not installed" || fail "the refusal did not say why: $out"
+  echo "    refused        an app that is not installed                       ok"
+fi
 $M terminate "$APP" >/dev/null 2>&1 || true

@@ -23,6 +23,10 @@ type ClearedData struct {
 	// read back rather than assumed: `pm clear` revokes what the user granted
 	// and leaves what the system fixed. Nil where it was not read.
 	StillGranted []string `json:"still_granted"`
+	// NotReadBack names what the reset changed that nothing here can read
+	// back, and the measurement that says it does — a phone's privacy
+	// permissions. Said apart from Emptied, which is only what was read.
+	NotReadBack []string `json:"not_read_back,omitempty"`
 }
 
 // ClearAppData deletes an app's data, as `pm clear` does it: the app is

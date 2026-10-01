@@ -1551,14 +1551,30 @@ func GetToolSchemas() []Tool {
 				"which also revokes the runtime permissions the user granted; iOS simulators delete " +
 				"the app's preferences and empty its data container, and leave privacy grants and " +
 				"the keychain as they were. The answer says what was read back empty and what was " +
-				"kept. A real iPhone refuses: nothing can delete from an app's container there, and " +
-				"reinstalling is the reset it has.",
+				"kept. A real iPhone cannot clear in place: given the app's bundle as path, it " +
+				"uninstalls the app and installs it again, which empties its data container, read " +
+				"back, and resets its privacy permissions, which nothing outside the app can read. " +
+				"Without a path a phone refuses, and with one any other device does.",
 			InputSchema: map[string]interface{}{
 				"type": "object",
 				"properties": withDevice(map[string]interface{}{
 					"app": map[string]interface{}{
 						"type":        "string",
 						"description": "Package name on Android or bundle id on iOS.",
+					},
+					"path": map[string]interface{}{
+						"type": "string",
+						"description": "A real iPhone only: the app's own .app or .ipa, reinstalled as the " +
+							"reset. Its bundle id must be the app's.",
+					},
+					"content": map[string]interface{}{
+						"type": "string",
+						"description": "The bundle itself, base64, instead of a path: an .ipa, or a .app " +
+							"as a .tar.gz. Sent by the CLI and pipe when the daemon's disk is not the caller's.",
+					},
+					"name": map[string]interface{}{
+						"type":        "string",
+						"description": "With content: the file's name, such as \"MobiumApp.app.tar.gz\".",
 					},
 				}),
 				"required":             []string{"app"},
@@ -1892,6 +1908,7 @@ func ToolNames() []string {
 // takes a new path argument belongs here.
 var PathArguments = map[string][]string{
 	"app_install":    {"path"},
+	"app_clear_data": {"path"},
 	"app_screenshot": {"path"},
 	"app_location":   {"gpx"},
 	"app_record":     {"path"},

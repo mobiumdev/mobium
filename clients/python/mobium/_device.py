@@ -536,17 +536,25 @@ class Device:
         """
         self._call("app_uninstall", {"app": app})
 
-    def clear_data(self, app: str) -> dict:
+    def clear_data(self, app: str, bundle: str | None = None) -> dict:
         """Delete an app's data and leave it installed — a fresh install's
         state, without reinstalling.
 
         Returns what was read back empty (``emptied``), what was kept
         (``kept``) and, on Android, the runtime permissions still granted
         (``still_granted``): `pm clear` revokes what the user granted. An iOS
-        simulator keeps its privacy grants and keychain; a real iPhone
-        refuses.
+        simulator keeps its privacy grants and keychain.
+
+        A real iPhone cannot clear in place: pass the app's own ``bundle``, a
+        .app or .ipa, and it is uninstalled and installed again. Its data
+        container is read back empty, and its permissions, which nothing
+        outside the app can read, are listed in ``not_read_back``. Without a
+        bundle a phone refuses, and with one any other device does.
         """
-        return self._data("app_clear_data", {"app": app}) or {}
+        args: dict[str, Any] = {"app": app}
+        if bundle:
+            args["path"] = bundle
+        return self._data("app_clear_data", args) or {}
 
     def upload(self, path: str, name: str | None = None, app: str | None = None) -> dict:
         """Put a local file where the device keeps downloads, so an app's

@@ -203,14 +203,17 @@ var simulatorOnly = map[string]string{
 	CapClipboardRead: "read the clipboard (simctl pbpaste)",
 	CapGeolocation:   "simulate a location (simctl location)",
 	CapRoutes:        "simulate a route (simctl location)",
-	CapClearData: "clear an app's data (simctl; devicectl cannot delete from an app's container — " +
-		"uninstalling and reinstalling the app is the reset a phone has)",
+	CapClearData:     "clear an app's data in place (simctl; devicectl cannot delete from an app's container)",
 }
 
 // phoneRemedies replaces "that needs a simulator" where a phone has a route
 // of its own that works. Accessibility settings had one here until the
 // route was built in (wdaaxphone.go).
-var phoneRemedies = map[string]string{}
+var phoneRemedies = map[string]string{
+	CapClearData: "a real iPhone cannot clear an app's data in place — devicectl cannot delete from an app's " +
+		"container. Give the app's own .app or .ipa — path in app_clear_data, --bundle on the CLI — and the app " +
+		"is uninstalled and installed again from it, which is the reset a phone has",
+}
 
 // HasCapability declines, on a phone, what only a simulator can do. On a
 // simulator every method is real, so the answer is always yes.

@@ -636,6 +636,21 @@ public final class Mobium implements AutoCloseable {
         return data("app_clear_data", args("app", app));
     }
 
+    /**
+     * Resets an app on a real iPhone, which cannot clear one in place: it is
+     * uninstalled and installed again from its own bundle. Its data container
+     * is read back empty, and its privacy permissions, which nothing outside
+     * the app can read, are listed under {@code not_read_back}. Any other
+     * device refuses a bundle, since it clears in place.
+     *
+     * @param app the app's bundle id
+     * @param bundle the app's own .app or .ipa
+     * @return what was emptied, and what was reset and not read back
+     */
+    public Map<String, Object> clearData(String app, Path bundle) {
+        return data("app_clear_data", args("app", app, "path", bundle.toString()));
+    }
+
     // -- files -------------------------------------------------------------
 
     /**

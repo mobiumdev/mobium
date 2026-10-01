@@ -331,6 +331,16 @@ namespace Mobium
         public IDictionary<string, object?> ClearData(string app) =>
             Data("app_clear_data", Args("app", app));
 
+        /// <summary>
+        /// Resets an app on a real iPhone, which cannot clear one in place: it
+        /// is uninstalled and installed again from its own bundle, a .app or
+        /// .ipa. Its data container is read back empty, and its privacy
+        /// permissions, which nothing outside the app can read, are listed
+        /// under <c>not_read_back</c>. Any other device refuses a bundle.
+        /// </summary>
+        public IDictionary<string, object?> ClearData(string app, string bundle) =>
+            Data("app_clear_data", Args("app", app, "path", bundle));
+
         // -- files -----------------------------------------------------------
 
         /// <summary>

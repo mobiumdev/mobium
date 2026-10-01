@@ -122,12 +122,14 @@ this is what is not.
   while taking it off as soon as the state flips risks the 61 s stall (71).
   Done when the median is under 2.5 s with the hint still off before the
   launch returns.
-- **A reset a phone can do.** `app_clear_data` is refused on a real iPhone,
-  which has no way to clear an app's container, and the refusal already
-  names uninstalling and reinstalling as the reset. Take an app bundle path
-  and do it, as `MOBIUMAPP_BUNDLE` does in the checks, and say that
-  permissions are reset too. Measure that first: on 2026-09-28 the iPhone
-  kept a notification denial through a reinstall.
+- ~~**A reset a phone can do.**~~ Done 2026-09-30. `app_clear_data` takes
+  the app's own bundle on a real iPhone (`path`; `--bundle` on the CLI),
+  checks it is that app, uninstalls it and installs it again, and reads the
+  data container back. Measured first: the uninstall resets notifications,
+  location and camera, each asked again afterwards; installing over the app
+  keeps all three, which is what the 2026-09-28 note had seen. Permissions
+  are reported as reset and not read back, since nothing outside the app can
+  read them on a phone.
 - **The iOS settings still refused as not built:** locale, timezone and
   notifications. Per-app locale can work on a phone too, as launch arguments
   (`-AppleLanguages (xx) -AppleLocale xx_YY`) read back from the app.
