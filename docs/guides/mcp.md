@@ -123,7 +123,7 @@ The handshake, as sent and answered:
 }
 ```
 
-`tools/list` answered with 63 tools, 16 of them marked read-only. One, with
+`tools/list` answered with 71 tools, 19 of them marked read-only. One, with
 its description cut short and its schema reduced to the argument names:
 
 ```json
@@ -150,7 +150,7 @@ its description cut short and its schema reduced to the argument names:
 
 Every schema says `additionalProperties: false`, so an argument a tool does
 not take is refused rather than ignored. `readOnlyHint` is on every tool:
-true for the 16 that only read — `app_map`, `app_text`, `app_state` and the
+true for the 19 that only read — `app_map`, `app_text`, `app_state` and the
 like — and false for everything that can change the device.
 
 ## 4. Answers: text, data and images
@@ -293,5 +293,5 @@ disconnects.
 | Runs as | `mobium <command>` through the daemon | `mobium mcp`, in its own process | `mobium pipe`, spawned by the client, through the daemon |
 | Answers | text, or `--json` | `content` and `structuredContent` | typed results and exceptions |
 
-The same 63 tools behind each, checked by the build: a tool reachable from one
+The same 71 tools behind each, checked by the build: a tool reachable from one
 front door and not another fails it ([API.md](../API.md)).

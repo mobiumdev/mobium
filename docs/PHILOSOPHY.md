@@ -67,8 +67,8 @@ does exactly what a wheel does for the load on top of it; only its outline is
 different. That is the relation Mobium keeps between its platforms. Android,
 iOS and a third-party device are three differently shaped rollers underneath,
 and what rides on top — the tools, `map` and its `@ref`s, the locators, the
-error codes, `start` and `quit` — stays at the same height on every one of
-them.
+error codes, a client's `start` and `quit` (the CLI's `session start` and
+`session end`) — stays at the same height on every one of them.
 
 **Change only what must change.** The traders did not reinvent transport; they
 changed the one property the law cared about and kept everything else. Mobium

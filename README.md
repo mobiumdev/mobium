@@ -188,8 +188,9 @@ simulated location — are refused on a phone with the reason; accessibility
 settings go through the phone's own Settings app.
 [docs/SETUP.md](docs/SETUP.md#ios-real-device) has the steps.
 
-**Windows is not supported yet.** Everything cross-compiles for Windows, and
-the daemon transport is written but not yet verified on a Windows machine; see
+**Windows is not supported yet.** Everything that needs no device, the
+named-pipe daemon transport included, passes in CI on a Windows runner; no
+emulator or phone has been driven from Windows yet. See
 [docs/WINDOWS.md](docs/WINDOWS.md).
 
 Both device-side agents are pinned by version, verified against checksums

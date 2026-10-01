@@ -4,8 +4,8 @@ Two steps, the second built on the first:
 
 - **`--remote`** drives the devices plugged into one other machine, over
   SSH — with any command and any client, and no change to its code.
-- **`MOBIUM_GRID`** spreads runs over several machines' devices, as
-  Selenium Grid does, without a hub: each run gets the first free device that
+- **`MOBIUM_GRID`** spreads runs over several machines' devices, with no
+  hub: each run gets the first free device that
   matches, and waits when there is none.
 
 Every command and every line of output below is what mobium printed on

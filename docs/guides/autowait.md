@@ -34,7 +34,7 @@ Five checks, each with a name that a refusal carries:
 | --- | --- | --- |
 | `visible` | is the target on the screen, not just in the hierarchy? | scrolls to it, then refuses |
 | `stable` | has it stopped moving? | waits, up to 5 seconds |
-| `enabled` | does it take input? | waits, up to the implicit wait, then refuses |
+| `enabled` | does it take input? | waits, up to the implicit wait of 2 seconds, then refuses |
 | `receivesEvents` | would a finger reach it — no dialog, keyboard or other control over it? | waits for a transient cover (a toast), aims around one over its center, refuses one over all of it |
 | `editable` | for `type` and `fill`: is it a text field? | refuses at once |
 

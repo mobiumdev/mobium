@@ -61,13 +61,18 @@ func main() {
 	// 3. Tap a row by its ref, then wait for the screen it opens. A row's
 	//    label can carry its summary too ("Network & internet Mobile, Wi-Fi,
 	//    ..."), so match its start.
+	ref := ""
 	for _, e := range elements {
 		if strings.HasPrefix(e.Label, p.row) {
-			if err := device.Tap(ctx, e.Ref); err != nil {
-				log.Fatal(err)
-			}
+			ref = e.Ref
 			break
 		}
+	}
+	if ref == "" {
+		log.Fatalf("no row starting with %q", p.row)
+	}
+	if err := device.Tap(ctx, ref); err != nil {
+		log.Fatal(err)
 	}
 	if _, err := device.WaitFor(ctx, p.next, nil); err != nil {
 		log.Fatal(err)

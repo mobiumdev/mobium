@@ -61,8 +61,8 @@ with the evidence.
 | What you are seeing | What it usually is |
 | --- | --- |
 | A command "succeeded" and nothing changed | Nothing here reports failure by exit code. `pm grant`, `simctl privacy`, `am start`, `adb uninstall` and `uiautomator dump` each fail differently — 25, 26, 27, 30 |
-| An element is on screen but a locator says it is not | It matched more than once and the message said "no element matches" — 33; or it resolved but sits outside the container being judged — 33 |
-| A tap lands slightly wrong | The element was still moving; actions now wait for stable bounds — the settling section, and 17 for iOS points against pixels |
+| An element is on screen but a locator says it is not | It matched more than once and the message said "no element matches" — 29; or it resolved but sits outside the container being judged — 33 |
+| A tap lands slightly wrong | The element was still moving; actions now wait for stable bounds — 109 and 112, and 17 for iOS points against pixels |
 | `map` shows nothing useful, or every icon is a "link" | Role inference — 1, 4, 15, 16 |
 | Scrolling swipes forever, or refuses to scroll | A ticking clock defeating the progress check — 22; or a container the element is not inside — 33 |
 | The dump backend cannot read a screen at all | It waits for idle, and some screens never are — 25 |
@@ -2709,7 +2709,7 @@ an accessible Other. So, before a tap, long press or `check`: a control over
 all of the target is waited for within the implicit wait, which is what makes
 the toast work, and then refused as `element_not_reachable`, naming the cover;
 a control over the center only is aimed around, at the clear point nearest
-the center, as EarlGrey does; and something over the point that is not a
+the center; and something over the point that is not a
 control is tapped through and reported in the result, `cover` in the
 structured half. Measured again after the change, every row went the way
 the table says it should, on both platforms, except one: on iOS the overlay
@@ -4780,8 +4780,8 @@ Worth recording because each one closed off an approach that looked obvious.
 
 ## Environment traps
 
-Neither is Mobium's fault; both cost real time and neither error names its
-cause.
+None of these is a Mobium defect; each cost real time and no error named
+its cause.
 
 - **`platform-tools` must be installed into the SDK root** with `sdkmanager`,
   not only as the Homebrew cask. The emulator validates the SDK root by looking

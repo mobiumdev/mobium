@@ -14,8 +14,8 @@ import (
 	"github.com/mobiumdev/mobium/internal/plist"
 )
 
-// A real iPhone's Web Inspector is reached the way ios_webkit_debug_proxy
-// reaches it, and every step was measured on an iPhone
+// A real iPhone's Web Inspector is reached through usbmuxd and lockdown, and
+// every step was measured on an iPhone
 // 15 Plus on iOS 26.6.2 before any of this was written:
 //
 //  1. usbmuxd, a Unix socket on every Mac, lists the phone and hands over the

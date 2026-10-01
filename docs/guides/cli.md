@@ -35,7 +35,9 @@ emulator-5554                          device     (android emulator, model: sdk_
 ```
 
 (Trimmed: the Mac also listed its iOS simulators, shut down, and a phone.)
-With one device running, no command needs to be told which; with several,
+To start one, `mobium boot <avd | simulator>` boots an Android emulator by its
+AVD's name, or an iOS simulator by its name or UDID, and answers once it has
+booted. With one device running, no command needs to be told which; with several,
 `--device <serial or udid>` picks one, on every command.
 
 ## 2. A session
@@ -107,6 +109,10 @@ $ mobium map
 
 A password field is labeled by its id and given the role `password`; what is
 typed into one is never printed, by `map` or any other command.
+
+`map --diff` answers only what changed since the last map of the device —
+`+` appeared, `-` went away, `~` changed label, checked state or place — which
+is what the action just did; its refs are the new map's either way.
 
 ## 4. Locators and refs
 
@@ -284,7 +290,11 @@ Daemon running (pid 4384, up 1s)
 ```
 
 `mobium daemon stop` stops one, ending its sessions — stop it before shutting
-a device down, never after ([SHUTDOWN.md](../SHUTDOWN.md)). Keep session names
+a device down, never after ([SHUTDOWN.md](../SHUTDOWN.md)). `mobium shutdown
+<serial | avd | udid | simulator>` ends this daemon's session on the device,
+then shuts the emulator or simulator down and returns once it is gone; a
+real phone is refused. It ends only its own daemon's session, so stop any
+other daemon on the device first. Keep session names
 short: a name is part of a socket path, which the OS caps at about 104
 bytes.
 

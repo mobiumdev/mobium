@@ -39,6 +39,7 @@ multi-finger taps.
 | **Two-, three-finger tap** | `tap --fingers N` | Multi-Touch — each finger's landing, lifting and travel | yes | yes |
 | **Press and tap** | `press-tap` | Multi-Touch | Android 15: yes. 16 and later: **refused** | **refused** — see below |
 | **Press and drag** | `press-drag` | Multi-Touch | Android 15: yes. 16 and later: **refused** | **refused** |
+| **Swipe an element** (a list row's swipe actions) | `swipe @e5 left` | none in MobiumApp: NetNewsWire's article rows, `docs/checks/netnewswire-ios.sh`, not `gestures.sh` | not yet driven | yes, 2026-10-01: eight of eight revealed the actions and none performed one |
 
 Not here, deliberately: **system gestures.** iOS reserves three-finger swipes
 and pinches for undo, redo, copy and paste, four-finger swipes on iPad, and

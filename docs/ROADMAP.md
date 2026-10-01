@@ -6,8 +6,8 @@ this is what is not.
 
 ## Next
 
-- **A test runner — `mobium test`, on the phones.** Iterations 1 and 2 are
-  built and checked (`docs/checks/test-runner.sh`): JSON test files of
+- ~~**A test runner — `mobium test`, on the phones.**~~ Done: iterations 1
+  and 2 are built and checked (`docs/checks/test-runner.sh`): JSON test files of
   `app_batch` steps, `app_wait_for` and `expect` assertions, projects as
   devices, workers, retries with flaky reported, `-g`, `--last-failed`,
   list, JSON, JUnit and HTML reports, `show-report` — and since 2026-09-29
@@ -68,8 +68,9 @@ this is what is not.
   a decision, not a step; a Homebrew tap; and notarizing the macOS binaries,
   which needs an Apple Developer Program membership — until then
   [SETUP.md](SETUP.md#installing-a-release) says to download with `curl`.
-- **Video walkthroughs** of the quick start, one per client, once `start` and
-  `quit` have settled. The pages' examples and captured output are the script.
+- **Video walkthroughs** of the quick start, one per client, once the clients'
+  `start` and `quit` (the CLI's `session start` and `session end`) have
+  settled. The pages' examples and captured output are the script.
 - **Auto-wait, the rest of the actionability checks.** Actions already wait for
   a target to exist, be in view, stop moving and be enabled; refuse one under
   a dialog or the keyboard; and aim around, wait out or refuse a control the
@@ -295,7 +296,10 @@ this is what is not.
   scrolled.
 - **Switching between apps** and more than one window.
 - **Seeding a device** with photos, files and other data before a flow.
-- **Uploads and downloads** through the system file pickers.
+- **Uploads and downloads** through the system file pickers. Copying a file
+  to and from the device is done (`upload` and `download`, above, verified
+  on a real iPhone on 2026-09-29); choosing it in the picker an app opens
+  is not.
 - **Frames and iframes** inside a WebView.
 - **Accessibility checks** as a side effect of the actions already being taken.
   An explicit one exists since 2026-09-30: `mobium audit` (`app_audit`)
@@ -432,8 +436,10 @@ this is what is not.
 
 ## Not planned
 
-- **A test runner.** Mobium is a tool an agent or a test framework calls; it
-  does not want to be the framework. Test code generation is the same decision.
+- **Test code generation.** Mobium is a tool an agent or a test framework
+  calls. Its own runner, `mobium test`, runs JSON test files of tool calls,
+  and `mobium inspect` records one, but nothing generates test code in a
+  client's language.
 - **Device-cloud allocation.** Mobium drives devices you can reach; renting
   them is a separate concern.
 - **Anything that needs a runtime on the user's machine.** One static binary is

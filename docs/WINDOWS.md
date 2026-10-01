@@ -41,24 +41,26 @@ over is CoreDevice's, which is Xcode's. A Mac-built `.ipa` installed from Window
 route other projects take and is not this project's architecture today; it
 would be a driver, not a flag.
 
-Nothing here has been verified on Windows yet, only written — and everything
-this project has learned says that unverified means wrong. The list below is
-ordered so the first hour on a Windows machine is spent finding out what is
-broken rather than setting up.
+Everything that needs no device is verified in CI on Windows, `mobium mcp`
+answering `tools/list` included (the `go-windows` job). What has never run is
+a tool call against a device — and everything this project has learned says
+that unverified means wrong. The list below is ordered so the first hour on a
+Windows machine is spent finding out what is broken rather than setting up.
 
 **The first thing to do on Windows is not to write code.** It is to run
 `mobium mcp` and a client against a connected Android device and find out
-whether the claim above — that the MCP path already works on Windows — is true.
-It has never been run. If it is true, Windows users have a working tool today
-and the daemon is an improvement rather than a rescue; if it is false, the gap
-is much bigger than a transport and the plan changes.
+whether the claim above — that the MCP path already works on Windows — holds
+for a tool call that reaches a device. That has never been run. If it holds,
+Windows users have a working tool today and the daemon is an improvement
+rather than a rescue; if it does not, the gap is much bigger than a transport
+and the plan changes.
 
 ---
 
 ## What is expected to work already
 
-Never run on Windows — that is the point of this exercise — but these have no
-platform-specific code:
+Never run against a device on Windows — that is the point of this exercise —
+but these have no platform-specific code:
 
 - the tool layer, the driver interface, the tree parser, locators and refs
 - `adb` discovery and every Android command, including port forwarding
@@ -68,17 +70,18 @@ platform-specific code:
   touches the daemon socket
 
 The last one matters: **`mobium mcp` should be fully usable on Windows today.**
-If it is, Windows users have a working tool via MCP and the language clients
-are the only thing blocked.
+CI shows it starts and answers `tools/list` there; whether a tool call reaches
+a device is the unverified part. If it does, Windows users have a working tool
+via MCP.
 
-## The five gaps — written, not yet run
+## The five gaps — verified in CI, without a device
 
-Found by reading rather than running, and **since 2026-09-25 all five are
-written**. Everything below compiles and vets for `windows/amd64` and
-`windows/arm64`, and the Windows tests compile — none of it has run on
-Windows. Read "written" as "unverified", which this project's record says
-means wrong until shown otherwise. The list is still a starting point, not a
-complete inventory.
+Found by reading rather than running, **written on 2026-09-25**, and since
+2026-09-27 run on a GitHub-hosted Windows runner: everything below compiles
+and vets for `windows/amd64` and `windows/arm64`, and its tests pass on
+Windows. None of it has yet carried a session to a device, which is the part
+this project's record says is wrong until shown otherwise. The list is still a
+starting point, not a complete inventory.
 
 ### 1. The daemon transport — `internal/daemon/listener_windows.go`, `dial_windows.go`
 A named pipe through `github.com/Microsoft/go-winio`, as Vibium does it. It
@@ -120,7 +123,7 @@ exited process stays openable while anything holds a handle to it. Access
 denied answers false, as EPERM does on Unix: a PID taken by another user's
 process was reused.
 
-### 4. `setDetached` — `cmd/mobium/detach_windows.go`
+### 4. `device.Detach` — `internal/device/detach_windows.go` (and `detach_unix.go`)
 `CREATE_NEW_PROCESS_GROUP | DETACHED_PROCESS`: a Ctrl-C does not reach the
 daemon, and with no console it does not die when the terminal window closes.
 
@@ -231,10 +234,13 @@ git clone https://github.com/mobiumdev/mobium.git
 cd mobium
 go build -o bin\mobium.exe .\cmd\mobium
 go test ./...
+cd clients/go; go test ./...; cd ../..
 ```
 
-There is a `Makefile` but no `make` on Windows by default; the two commands
-above are all it does.
+There is a `Makefile` but no `make` on Windows by default. These are the
+build and test it runs, near enough: `make build` also stamps the version
+through `-ldflags`, and `make test` runs `clients/go` because it is a module
+of its own.
 
 ---
 
@@ -248,23 +254,23 @@ The failures are the useful part.
 ```powershell
 go test ./...
 ```
-445 Go tests, no device needed. Any failure here is a portability bug in code
+No device needed. Any failure here is a portability bug in code
 nobody suspected, which is the most valuable thing this exercise can find.
 
 **2. Does the MCP server work?** This is the path that should already be fine.
 ```powershell
 '{"jsonrpc":"2.0","id":1,"method":"tools/list"}' | .\bin\mobium.exe mcp
 ```
-Expect 43 tools — [API.md](API.md) is generated from the source and is the
-live number if this one has drifted again. It has, twice.
+Expect 71 tools — [API.md](API.md) is generated from the source and is the
+live number if this one has drifted again. It has before.
 
 Then, with an emulator running:
 ```powershell
 '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"app_map","arguments":{}}}' | .\bin\mobium.exe mcp
 ```
 
-**3. What exactly does the CLI do?** It goes through the daemon, which now
-has a named-pipe transport that has never run. Expect it to work; a hang, a
+**3. What exactly does the CLI do?** It goes through the daemon, whose
+named-pipe transport passes in CI but has never carried a device session. Expect it to work; a hang, a
 panic, or an error that names the wrong cause is a bug, and the exact text is
 what to report.
 ```powershell
@@ -289,8 +295,9 @@ of the above is meaningful.
 
 ## Doing the work
 
-Written; see "The five gaps" above. What is left is to run it. `internal/daemon`'s
-tests are the acceptance criteria: they start a real daemon, call it over
+Written and verified in CI without a device; see "The five gaps" above. What
+is left is to run it against one. `internal/daemon`'s tests are the
+acceptance criteria: they start a real daemon, call it over
 the real transport, check the pipe exists and is owner-only while it runs and
 is gone after, and check that a second home reaches no daemon. If those pass
 on Windows, the transport works:
@@ -300,7 +307,8 @@ go test ./internal/daemon/ ./internal/paths/ -v
 ```
 
 Then the CLI end to end, which the tests do not cover — auto-start in
-particular, which goes through `setDetached` and a real child process:
+particular, which goes through `device.Detach` and a real child process. The
+`go-windows` CI job runs all of this except closing the terminal window:
 
 ```powershell
 .\bin\mobium.exe daemon status   # "not running"
@@ -316,7 +324,7 @@ From [CONTRIBUTING.md](../CONTRIBUTING.md):
 
 - **Verify by outcome, never exit code.** Especially here: a named pipe that
   accepts a connection and never answers looks identical to success.
-- Run `go test ./...` before committing, and `mobium daemon stop` after
+- Run `make ci` before committing, and `mobium daemon stop` after
   rebuilding, or you will debug a binary you are not running.
 - Never name a Go file `*_windows.go` unless you intend the build constraint —
   though here, you do.

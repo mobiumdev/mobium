@@ -15,6 +15,7 @@ Go 1.24 or later.
 The Go module is published through GitHub, so this works today.
 
 ```sh
+mkdir quickstart && cd quickstart
 go mod init quickstart
 go get github.com/mobiumdev/mobium/clients/go
 ```
@@ -87,13 +88,18 @@ func main() {
 	// 3. Tap a row by its ref, then wait for the screen it opens. A row's
 	//    label can carry its summary too ("Network & internet Mobile, Wi-Fi,
 	//    ..."), so match its start.
+	ref := ""
 	for _, e := range elements {
 		if strings.HasPrefix(e.Label, p.row) {
-			if err := device.Tap(ctx, e.Ref); err != nil {
-				log.Fatal(err)
-			}
+			ref = e.Ref
 			break
 		}
+	}
+	if ref == "" {
+		log.Fatalf("no row starting with %q", p.row)
+	}
+	if err := device.Tap(ctx, ref); err != nil {
+		log.Fatal(err)
 	}
 	if _, err := device.WaitFor(ctx, p.next, nil); err != nil {
 		log.Fatal(err)
@@ -170,6 +176,6 @@ The first start on a device is slow: it installs the UiAutomator2 server on Andr
 - `defer device.Quit(ctx)` right after a successful `Start` is the usual shape. A second `Quit` does nothing, so an explicit one before it is fine.
 - The example in the repository builds against the client beside it, through a `replace` line in its `go.mod`; your own module uses `go get`.
 - `mobium.Connect` still exists: it opens a connection without touching the device, and `Close` leaves the session open.
-- With more than one device attached, `start` refuses to guess and lists them. Name one with `MOBIUM_DEVICE=<serial or UDID>`, which the example passes on as the device.
+- With more than one device of the session's platform running — two Android devices, or two among the booted simulators and attached iPhones — `start` refuses to guess and lists them. One Android device and one iOS device are not ambiguous: the platform picks. Name one with `MOBIUM_DEVICE=<serial or UDID>`, which the example passes on as the device.
 
 Next: [the rest of the tool surface](../API.md), and [setting up phones and simulators](../SETUP.md). Changing the client itself? [DEVELOPMENT.md](../DEVELOPMENT.md) is the contributor's guide.

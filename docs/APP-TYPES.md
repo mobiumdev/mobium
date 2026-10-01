@@ -60,8 +60,10 @@ What that line does *not* mean is that Mobium cannot see a browser, and until
   ([CHALLENGES 47](CHALLENGES.md)).
 
 So "not supported" is a statement about scope — no browser management, no
-tabs, no cookies, no network, and nothing checked in that drives a browser —
-not a wall Mobium puts up. What is reachable is reachable because a browser
+tabs, and nothing checked in that drives a browser — not a wall Mobium puts
+up. A web context's cookies (`app_cookies`) and the device's network
+conditions (`app_network`) are reachable, but they belong to the page and the
+device, not to managing a browser. What is reachable is reachable because a browser
 is, underneath, the hybrid case below.
 
 ## Progressive web apps

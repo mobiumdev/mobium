@@ -4,7 +4,7 @@
 [CI workflow](../.github/workflows/ci.yml) runs on every push — formatting,
 vet, both modules' tests, the four non-Go clients' own tests, and six
 cross-compile targets. This file is the rest, and the rest is where most
-serious defects in this project have come from: 154 of 190 were found only by
+serious defects in this project have come from: 163 of 199 were found only by
 running against a real device.
 
 Work through it before tagging a release, on three substrates: an Android
@@ -132,7 +132,8 @@ first command builds and signs WebDriverAgent, which takes a minute or two.
       the 61-second stall (defect 71), rows with no bounds, typing read back,
       and every refusal a phone owes
 - [ ] `./docs/checks/third-party-app-ios.sh <udid>` passes — Wikipedia from the
-      App Store, the only third-party app driven on iOS
+      App Store, one of two third-party apps driven on iOS; the other,
+      NetNewsWire, is `netnewswire-ios.sh`, below
 - [ ] `MOBIUMAPP_BUNDLE=<path>/MobiumApp.app ./docs/checks/mobium-app.sh <udid>`
       passes, WebViews included — the phone's reach them over lockdown, not the
       simulator's socket
@@ -154,9 +155,10 @@ first command builds and signs WebDriverAgent, which takes a minute or two.
 - [ ] `./docs/checks/device-state.sh <serial>` passes — all four orientations
       read back, the hierarchy follows the rotation, a tap lands in landscape,
       and an app pinned to `ja-JP` renders in Japanese with no split characters
-- [ ] `./docs/checks/third-party-app.sh <serial> wikipedia.apk` passes — the
-      only check that drives an app nobody at Google wrote. If a
-      labeling change is in this release, this is the one that catches it
+- [ ] `./docs/checks/third-party-app.sh <serial> wikipedia.apk` passes —
+      Wikipedia, the first app driven here that nobody at Google wrote; F-Droid
+      and Aegis followed, and Seal is `compose-app.sh`, below. If a labeling
+      change is in this release, these are the checks that catch it
 - [ ] `./docs/checks/gestures.sh` and `./docs/checks/zoom.sh` pass on the
       emulator, the simulator and the phone — each gesture asserted against
       the one it could be mistaken for, and the refusals where a platform
@@ -164,6 +166,30 @@ first command builds and signs WebDriverAgent, which takes a minute or two.
 - [ ] `./docs/checks/mobium-app.sh` passes on the emulator and the simulator
 - [ ] `./docs/checks/crashes.sh` passes on the emulator and the simulator —
       device logs and crash reports, each against a crash caused on purpose
+
+### Not in the last full run
+
+These checks are in [checks/](checks/) but were not on this list for the
+last full run (2026-09-25), and most were written after it, so that run
+vouches for none of them. What each proves, and the devices it runs on, is in
+[checks/README.md](checks/README.md).
+
+- [ ] Third-party apps: `netnewswire-ios.sh <udid>` (NetNewsWire, iOS) and
+      `compose-app.sh <serial>` (Seal, the first Jetpack Compose app)
+- [ ] MobiumApp's demos: `login.sh`, `keyboard.sh`, `otp.sh`, `dialogs.sh`,
+      `autowait.sh`, `obstruction.sh`, `hit-test.sh`, `wait-states.sh`,
+      `map-diff.sh`, `source.sh`, `clear-data.sh`, `files.sh`, `battery.sh`,
+      `biometric.sh` and `accessibility.sh`
+- [ ] Inside a WebView: `web-actionability.sh`, `web-type.sh` and
+      `web-storage.sh`; and `ios-webview-probe.sh <simulator-udid>`, the
+      platform assumption with no Mobium code
+- [ ] Device state: `orientation.sh`, `network.sh <android-serial>`,
+      `shake.sh`, and on iOS `locale-ios.sh`, `timezone-ios.sh`,
+      `notifications-ios.sh` and `audit.sh`
+- [ ] Recording: `record.sh` and `trace.sh`
+- [ ] Devices started and stopped: `boot.sh <avd> [simulator-udid]`
+- [ ] The test runner: `test-runner.sh`, `test-ui.sh` (needs Vibium), and
+      `MOBIUM_GRID=<node> test-grid.sh`
 
 ## Third-party drivers
 
@@ -233,8 +259,11 @@ other known gaps are written and cross-compile, and [WINDOWS.md](WINDOWS.md),
 supported when those pass, and only then.
 
 - [ ] `make crosscompile` passes (CI does this)
-- [ ] On Windows: `go test ./internal/daemon/ ./internal/paths/` passes, and
-      the CLI auto-starts a daemon that survives its terminal closing
+- [ ] On Windows: `go test ./internal/daemon/ ./internal/paths/` passes (CI
+      does this, five times over, in the `go-windows` job), and the CLI
+      auto-starts a daemon (CI does this too, and reads its status back) that
+      survives its terminal closing (still by hand: no runner has a terminal
+      to close)
 
 ## The MCP Registry
 

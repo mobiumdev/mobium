@@ -14,6 +14,7 @@
 # assertion names which one it means.
 set -e
 DEV="$1"; M="./bin/mobium --device $DEV"
+if [ -z "$DEV" ]; then echo "usage: $0 <serial>" >&2; exit 2; fi
 ID=com.google.android.calculator:id
 
 # The formula id appears on three nodes — the container and its children all

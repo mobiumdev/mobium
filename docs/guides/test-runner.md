@@ -170,11 +170,13 @@ The previous run's failures are kept in `mobium-report/.last-run.json`.
 test that fails and then passes is **flaky**: the run passes, and it says so.
 This is the runner's own control for it, from `tests/controls/` in this
 repository — it saves a counter, and passes only once the counter reaches 2,
-which the retry's relaunch makes it do:
+which the retry's relaunch makes it do. It counts from cleared app data, so
+clear it first — a counter left at 2 by an earlier run fails every attempt:
 
 ```
-$ mobium test tests/storage.test.json --retries 1
-  flaky [android] storage.test.json › passes on its second attempt (7.3s) — passed on attempt 2
+$ mobium clear-data dev.mobium.mobiumapp
+$ mobium test tests/controls/flaky.test.json --retries 1
+  flaky [android] flaky.test.json › passes on its second attempt (7.3s) — passed on attempt 2
 0 passed, 1 flaky (7.3s)
 ```
 
@@ -207,8 +209,9 @@ so two workers never share one — and `--workers 1` runs them one after
 another. On a grid, a project can name a `platform` instead of a device,
 and each project leases its own for the run: [the grid guide](grid.md#4-tests-on-a-grid). Each project also gets a daemon of its own for the run, so projects on
 different devices never queue behind one another: this repository's suite,
-[tests/](../../tests/README.md), ran its 14 tests on two Android emulators in
-40 seconds, for 75 seconds of work. When the run ends, each project's
+[tests/](../../tests/README.md), ran its tests — 14 of them then; 9 now,
+18 over its two projects — on two Android emulators in 40 seconds, for 75
+seconds of work. When the run ends, each project's
 session ends, and the end of a session puts back whatever the tests changed —
 the network, accessibility settings.
 
@@ -295,7 +298,11 @@ soft `tap` is refused before anything runs.
 
 `--trace on` keeps a screenshot and the map after every step, and the HTML
 report shows them as a filmstrip; `--trace retain-on-failure` keeps them only
-for a test that failed. `trace` in the config sets the default.
+for a test that failed. `trace` in the config sets the default. Each
+attempt is also kept as a recording in Vibium's record format, at
+`mobium-report/artifacts/trace/<project>-<file>-<test>-<attempt>/trace.zip`,
+which the report links and [player.vibium.dev](https://player.vibium.dev)
+opens.
 
 ```
 $ mobium test mobiumapp/form.test.json -g checkbox --project android --trace on --reporter list,html
@@ -419,9 +426,11 @@ inspect`'s does.
 | `mobium test --last-failed` | runs only the tests that failed last time |
 | `mobium test --project android` | runs on the named projects only |
 | `mobium test --workers 4` | how many devices run at once — at most one per device |
-| `mobium test --retries 2` | runs a failed test again, up to twice; a pass after a failure is flaky |
+| `mobium test --retries 2` | runs a failed test again, up to twice; a pass after a failure is flaky; `retries` in the config sets the default |
 | `mobium test --timeout 30s` | the time for each test; `timeout` in the config is milliseconds |
 | `mobium test --reporter list,json,junit,html` | which reports to write, comma-separated |
+| `mobium test --config ci.config.json` | uses this config, not `mobium.config.json` here or above |
+| `mobium test --output out` | where reports go; `mobium-report` beside the config by default, `outputDir` in the config |
 | `mobium test --list` | lists the tests a run would cover, and runs nothing |
 | `mobium test --no-screenshots` | keeps no screenshot of a failure, and a trace keeps only the maps |
 | `mobium test --trace on` | a screenshot and the map after every step, and the test as a recording in Vibium's record format that player.vibium.dev opens; `retain-on-failure` keeps a failed test's only |

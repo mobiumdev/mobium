@@ -174,7 +174,7 @@ try {
 `TimedOutException` (not `TimeoutException`, which is Java's),
 `InvalidArgumentException`, `DeviceServerException`, `InternalException`.
 Import `dev.mobium.NoSuchElementException` by name: it shares its simple name
-with `java.util`'s, as Selenium's does. The codes are the same in every client;
+with `java.util`'s. The codes are the same in every client;
 see [the codes](../../docs/guides/cli.md#6-when-a-command-fails).
 
 ### Threads, timeouts and closing

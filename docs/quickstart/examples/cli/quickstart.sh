@@ -24,8 +24,8 @@ mobium map "$@" | head -5
 
 # 3. Tap a row by its ref, then wait for the screen it opens. A row's label can
 #    carry its summary too ("Network & internet Mobile, Wi-Fi, ..."), so match
-#    its start.
-REF=$(mobium map "$@" | awk -v row="$ROW" 'index($0, " " row) {print $1; exit}')
+#    its start: the label begins right after the ref.
+REF=$(mobium map "$@" | awk -v row="$ROW" 'index($0, $1 " " row) == 1 {print $1; exit}')
 mobium tap "$REF" "$@"
 mobium wait "$NEXT" "$@"
 

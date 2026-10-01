@@ -8,12 +8,16 @@ most of them report something that names the wrong cause.
 device, and exits non-zero if it found something:
 
 ```
-ok    adb                    Android Debug Bridge version 1.0.41 at /opt/...
-ok    android sdk root       /opt/homebrew/share/android-commandlinetools
-ok    android devices        emulator-5554 (device)
-note  ios simulators         11 available, none booted
-ok    daemon socket          /Users/you/.mobium/daemon/mobium.sock (46 of ~104 bytes)
+ok    adb                    Android Debug Bridge version 1.0.41 at /opt/homebrew/bin/adb
+note  android sdk root       ANDROID_SDK_ROOT is not set — only needed to start emulators, not to drive them
+note  android devices        none running — start an emulator or plug in a phone
+ok    xcode                  /usr/bin/xcrun
+note  ios simulators         11 available, none booted — `xcrun simctl boot <udid>`
+ok    daemon socket          ~/.mobium/daemon/mobium.sock (46 bytes of ~104)
 ok    device agents          cached: uiautomator2, webdriveragent
+note  third-party drivers    none on PATH — a driver is an executable named mobium-driver-<name>, used with --driver <name>
+
+everything mobium needs is here
 ```
 
 `note` means something is missing that is only needed for part of the job —
@@ -78,6 +82,10 @@ avdmanager create avd -n mobium-test -d pixel_7 \
 emulator -avd mobium-test -no-snapshot-save -no-boot-anim &
 adb wait-for-device
 ```
+
+Or let Mobium start it: `mobium boot mobium-test` cold-boots the AVD headless
+(`--window` to see it) and answers with its serial once it has booted, and
+`mobium shutdown emulator-5554` ends the session on it and shuts it down.
 
 `sdkmanager` and `avdmanager` need a JDK. If they fail with a Java error:
 
@@ -166,12 +174,13 @@ mid-session and three things changed at once. The screen is the same; the
 is a restart, in the order `docs/SHUTDOWN.md` gives:
 
 ```sh
-mobium daemon stop                      # every session on this device, first
-adb -s emulator-5554 emu kill
-emulator -avd mobium-test -no-snapshot-load -no-boot-anim &            # headed
-emulator -avd mobium-test -no-snapshot-load -no-boot-anim -no-window & # headless
-adb -s emulator-5554 wait-for-device
+mobium shutdown emulator-5554 && mobium boot mobium-test --window  # headed
+mobium shutdown emulator-5554 && mobium boot mobium-test           # headless
 ```
+
+`mobium boot` cold-boots, passing `-no-snapshot-load`. `mobium shutdown` ends
+only its own daemon's session, so stop any other session on the device first
+(`docs/SHUTDOWN.md`).
 
 **`-no-snapshot-load`, not `-no-snapshot-save`.** `-no-snapshot-save` still
 *loads* the quick-boot snapshot on the next start, and everything installed
@@ -245,8 +254,8 @@ emulator -avd mobium-test    -no-snapshot-save -no-boot-anim &            # 5554
 emulator -avd mobium-test-17 -no-snapshot-save -no-boot-anim -port 5556 & # 5556
 ```
 
-Then pass `--device emulator-5556` to every command, or set it once with
-`mobium daemon start --device`.
+Then pass `--device emulator-5556` to every command, or run each one under
+its own `MOBIUM_SESSION`, or give a client the device option.
 
 ### What the images do *not* have
 
@@ -364,6 +373,9 @@ xcrun simctl boot <udid>             # boots headless — no window appears
 open -a Simulator                    # only this puts it on screen
 mobium --device <udid> map
 ```
+
+`mobium boot "iPhone 17 Pro"` boots one by name or UDID and waits until it
+has, and `mobium shutdown "iPhone 17 Pro"` ends the session and shuts it down.
 
 **`simctl boot` shows you nothing.** It starts the runtime with no window, so
 a simulator can be fully booted and driveable while the screen stays empty.
@@ -507,7 +519,7 @@ removing `~/.mobium/webdriveragent-device/` makes Mobium build a fresh one.
 These are done by `simctl` on a simulator and `devicectl` has no equivalent,
 so on a phone they are refused, each with the reason, rather than
 approximated: **permissions, appearance, the clipboard, simulated location
-and routes.**
+and routes, and notifications** — reading or posting them.
 
 **Clearing an app's data takes its bundle on a phone.** Nothing can delete
 from an app's container there, so `mobium clear-data <app> --bundle
@@ -536,8 +548,8 @@ the phone connected by cable — usbmuxd, which carries it, is USB — and:
   — Apple's documented switch for remote inspection, and on a simulator the
   measured one (its equivalent `defaults` key). On the phone this was
   verified with it on; it has not yet been measured with it off. Remote
-  Automation, on the same page, is Apple's switch for `safaridriver`, which
-  Mobium does not use.
+  Automation, on the same page, is Apple's switch for WebDriver automation
+  of Safari, which Mobium does not use.
 
 Tapping inside Safari's page is refused for the reason it is on a simulator:
 the page cannot say where it sits under Safari's own chrome (CHALLENGES 47).
@@ -638,8 +650,8 @@ recordings on the node's daemon, every file landing on the caller's side.
 
 ### A grid
 
-**`MOBIUM_GRID=node1,node2` spreads runs over several machines' devices**, as
-Selenium Grid does, without a hub. At a run's first call — which is where it
+**`MOBIUM_GRID=node1,node2` spreads runs over several machines' devices**,
+with no hub. At a run's first call — which is where it
 says what it wants: a serial, or `platform` when it starts a session — mobium
 asks every node over SSH for its devices and which of them are held, takes
 the first free one that matches, and connects to its node as `--remote`

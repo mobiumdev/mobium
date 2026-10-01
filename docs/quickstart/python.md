@@ -15,6 +15,7 @@ Python 3.9 or later.
 Not on PyPI yet — pip installs it straight from GitHub, which needs `git` on your `PATH`. After the first release this becomes `pip install mobium`.
 
 ```sh
+mkdir quickstart && cd quickstart
 python3 -m venv .venv
 .venv/bin/pip install "mobium @ git+https://github.com/mobiumdev/mobium.git#subdirectory=clients/python"
 ```
@@ -127,6 +128,6 @@ The first start on a device is slow: it installs the UiAutomator2 server on Andr
 
 - `with start(...) as device:` quits when the block ends, even on an exception. Without `with`, call `device.quit()` yourself — in a `finally`.
 - `connect()` still exists: it opens a connection without touching the device, and its `close()` leaves the session open for whoever started it.
-- With more than one device attached, `start` refuses to guess and lists them. Name one with `MOBIUM_DEVICE=<serial or UDID>`, which the example passes on as the device.
+- With more than one device of the session's platform running — two Android devices, or two among the booted simulators and attached iPhones — `start` refuses to guess and lists them. One Android device and one iOS device are not ambiguous: the platform picks. Name one with `MOBIUM_DEVICE=<serial or UDID>`, which the example passes on as the device.
 
 Next: [the rest of the tool surface](../API.md), and [setting up phones and simulators](../SETUP.md). Changing the client itself? [DEVELOPMENT.md](../DEVELOPMENT.md) is the contributor's guide.

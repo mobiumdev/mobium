@@ -24,8 +24,9 @@
 # app is device-signed and will not run on a simulator, which is why this gate
 # could not be met on iOS until there was a phone — and why the iOS half runs
 # on a phone only. It drives the native app and follows links through the
-# accessibility tree WebKit exposes, since a phone's WebViews cannot be
-# attached (yet); the Android half attaches to the WebView instead.
+# accessibility tree WebKit exposes: a phone's WebViews can be attached, but
+# the App Store build does not opt into inspection, so it publishes none. The
+# Android half attaches to the WebView instead.
 set -e
 DEV="$1"; APK="$2"
 if [ -z "$DEV" ]; then echo "usage: $0 <serial> [apk]" >&2; exit 2; fi
