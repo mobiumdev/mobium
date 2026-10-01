@@ -702,10 +702,21 @@ class Device:
         """Ask UIKit's own hit test, below accessibility, whether a tap on
         ``target`` would reach it. Raises when the touch would go elsewhere,
         naming what would take it and whether accessibility can see it.
-        iOS simulators only, and opt-in: it attaches lldb to the app for
-        about two seconds.
+        iOS only, and opt-in: it attaches lldb to the app, about two seconds
+        on a simulator and nine on an iPhone, where the app must be a
+        development build.
         """
         return self._data("app_hit_test", {"target": target}) or {}
+
+    def audit(self) -> dict:
+        """Run the platform's own accessibility audit on the screen in front:
+        on iOS, Apple's, on a simulator or an iPhone (iOS 17 and later).
+        ``findings`` lists each with its ``type``, ``summary``, ``detail``,
+        ``element``, a ``locator`` when it has one, and ``bounds`` in device
+        pixels when the audit names an element. Android raises: its audits
+        run inside the app.
+        """
+        return self._data("app_audit", {}) or {}
 
     def app_state(self, app: str) -> dict:
         """One app's state: ``not_installed``, ``not_running``, ``background``

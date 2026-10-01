@@ -241,6 +241,15 @@ this is what is not.
 - **Uploads and downloads** through the system file pickers.
 - **Frames and iframes** inside a WebView.
 - **Accessibility checks** as a side effect of the actions already being taken.
+  An explicit one exists since 2026-09-30: `mobium audit` (`app_audit`)
+  runs Apple's own audit on the screen in front, on a simulator and on the
+  iPhone (`docs/checks/audit.sh`). On the iPhone 15 Plus Settings gave
+  eight findings in about six seconds, seven of them contrast findings that
+  name no element, which a simulator's do; MobiumApp's Layout Demo gave
+  none, because Apple's hit-region rule is far below the 44 pt guideline
+  that `screen --inspect` holds. Android refuses: its audits run inside the
+  app. Running it as a side effect would cost those seconds on every
+  action, so it stays a call.
 - **The iPad's home screen, sometimes.** On the iPad mini simulator,
   WebDriverAgent reported the Dock's folder service as the app in front on
   the home screen, with nothing to map; on the iPad Pro 13-inch, freshly

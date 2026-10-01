@@ -918,14 +918,28 @@ public final class Mobium implements AutoCloseable {
      * Asks UIKit's own hit test, below accessibility, whether a tap on the
      * target would reach it. Throws when the touch would go elsewhere,
      * naming what would take it and whether accessibility can see it. iOS
-     * simulators only, and opt-in: it attaches lldb to the app for about two
-     * seconds.
+     * only, and opt-in: it attaches lldb to the app, about two seconds on a
+     * simulator and nine on an iPhone, where the app must be a development
+     * build.
      *
      * @param target a ref from map, or a locator
      * @return the point a tap would use, and that it reaches the target
      */
     public Map<String, Object> hitTest(String target) {
         return data("app_hit_test", args("target", target));
+    }
+
+    /**
+     * Runs the platform's own accessibility audit on the screen in front: on
+     * iOS, Apple's, on a simulator or an iPhone (iOS 17 and later). Android
+     * throws: its audits run inside the app.
+     *
+     * @return {@code findings}, each with its type, summary, detail, element,
+     *     a locator when it has one, and bounds in device pixels when the
+     *     audit names an element
+     */
+    public Map<String, Object> audit() {
+        return data("app_audit", args());
     }
 
     /**

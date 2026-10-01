@@ -1728,6 +1728,22 @@ func GetToolSchemas() []Tool {
 			},
 		},
 		{
+			Name: "app_audit",
+			Description: "Run the platform's own accessibility audit on the screen in front. On iOS it is " +
+				"Apple's, XCUITest's performAccessibilityAudit through WebDriverAgent (iOS 17 and later), on a " +
+				"simulator or a real iPhone: hit regions too small to touch, contrast, labels that repeat their " +
+				"traits, Dynamic Type, clipped text. Each finding has its type, Apple's summary and sentence, " +
+				"the element, a locator for it when it has a test id or a label, and its bounds in device " +
+				"pixels, as map's are. It audits only what is on screen. Its hit-region rule is Apple's own and " +
+				"far below the 44pt design guideline — a 24x25pt target passed it — so app_screen with inspect, " +
+				"which checks 44pt, can name what this does not. Android refuses: its audits run inside the app.",
+			InputSchema: map[string]interface{}{
+				"type":                 "object",
+				"properties":           withDevice(map[string]interface{}{}),
+				"additionalProperties": false,
+			},
+		},
+		{
 			Name: "app_hit_test",
 			Description: "Ask the platform's own hit test, below accessibility, whether a touch at " +
 				"the point app_tap would use reaches the target — and if not, what it would reach. " +

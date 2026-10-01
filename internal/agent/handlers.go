@@ -360,6 +360,8 @@ func (h *Handlers) dispatch(ctx context.Context, name string, args map[string]in
 		return h.biometric(ctx, args)
 	case "app_hit_test":
 		return h.hitTest(ctx, args)
+	case "app_audit":
+		return h.audit(ctx, args)
 	case "app_network":
 		return h.network(ctx, args)
 	case "app_state":
