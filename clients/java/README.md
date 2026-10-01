@@ -1,6 +1,6 @@
 # Mobium Java client
 
-Drives native apps on Android emulators, Android phones, iOS simulators and
+Drives mobile apps on Android emulators, Android phones, iOS simulators and
 iPhones, over the same tool layer the CLI and the MCP server use.
 
 ```java

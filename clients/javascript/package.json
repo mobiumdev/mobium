@@ -1,7 +1,7 @@
 {
   "name": "mobium",
   "version": "0.1.0",
-  "description": "Drive native apps on Android emulators, Android phones, iOS simulators and iPhones. No dependencies.",
+  "description": "Drive mobile apps on Android emulators, Android phones, iOS simulators and iPhones. No dependencies.",
   "keywords": ["mobile", "automation", "testing", "android", "ios", "uiautomator2", "webdriveragent", "mcp"],
   "homepage": "https://github.com/mobiumdev/mobium/blob/main/docs/quickstart/javascript.md",
   "bugs": "https://github.com/mobiumdev/mobium/issues",

@@ -1,4 +1,4 @@
-// Package mobium drives native apps on Android emulators, Android phones, iOS
+// Package mobium drives mobile apps on Android emulators, Android phones, iOS
 // simulators and iPhones.
 //
 // It speaks to the same tool layer the CLI and the MCP server use, over

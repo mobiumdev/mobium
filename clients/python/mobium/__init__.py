@@ -1,4 +1,4 @@
-"""Mobium — native mobile app automation on emulators, simulators and phones.
+"""Mobium — mobile app automation on emulators, simulators and phones.
 
     from mobium import start
 

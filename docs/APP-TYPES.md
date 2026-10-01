@@ -21,6 +21,22 @@ category reaches a different part of Mobium.
 | Mobile web | **not supported, and partly reachable** | a browser is [Vibium's](https://github.com/VibiumDev/vibium) job; what Mobium reaches anyway is below |
 | Progressive web app | **read on both, acted on in full only on Android** | the browser's web context; on iOS, taps go through the native tree |
 
+## What has been driven
+
+Every type has been driven here; not every framework within a type has.
+"Checked in" means a script in [checks/](checks/) holds it; "measured" means
+it was driven once, with the result written down below, and nothing re-runs it.
+
+| Type | Driven | Where |
+| --- | --- | --- |
+| Native | Android: Settings, Calculator, Clock, Wikipedia, F-Droid, Aegis, and Seal (Jetpack Compose). iOS: Settings, Wikipedia and NetNewsWire from the App Store | checked in — most of [checks/](checks/); `third-party-app.sh`, `compose-app.sh`, `netnewswire-ios.sh` for the apps nobody at Google or Apple wrote |
+| Hybrid | Wikipedia's articles, and MobiumApp's WebView screens, on both platforms and on real phones | checked in — `third-party-app.sh`, `mobium-app.sh`, `web-type.sh`, `web-actionability.sh`, `web-storage.sh` |
+| Mobile web | Safari on iOS; Chrome on Android | Safari checked in — `ios-webview.sh`, `orientation.sh`; Chrome's page as a context in `shake.sh`; `map`, `text`, `eval` and a tap in Chrome measured 2026-09-27 |
+| Progressive web app | Squoosh, installed to the home screen on both platforms | measured 2026-09-27; no check |
+| Cross-platform | React Native: MobiumApp, on both platforms and on real phones | checked in — `mobium-app.sh`, `login.sh`, `otp.sh`, `dialogs.sh` and every other MobiumApp check |
+| | Flutter, Xamarin/.NET MAUI | **never driven** — see below for why Flutter is expected to need a driver |
+| Hybrid frameworks | Cordova, Ionic | **never driven**; a WebView inside them is the hybrid case above |
+
 ## Native
 
 The core case. Built with the vendor SDKs, shipping as `.apk` or `.ipa`, and
@@ -59,9 +75,10 @@ What that line does *not* mean is that Mobium cannot see a browser, and until
   WebView spans the chrome and the page cannot see its own inset
   ([CHALLENGES 47](CHALLENGES.md)).
 
-So "not supported" is a statement about scope — no browser management, no
-tabs, and nothing checked in that drives a browser — not a wall Mobium puts
-up. A web context's cookies (`app_cookies`) and the device's network
+So "not supported" is a statement about scope — no browser management and
+no tabs — not a wall Mobium puts up. A browser's page is driven by checks all
+the same: Safari's in `ios-webview.sh` and `orientation.sh`, Chrome's in
+`shake.sh`. A web context's cookies (`app_cookies`) and the device's network
 conditions (`app_network`) are reachable, but they belong to the page and the
 device, not to managing a browser. What is reachable is reachable because a browser
 is, underneath, the hybrid case below.

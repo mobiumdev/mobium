@@ -1,11 +1,11 @@
 ---
 name: mobile-check
-description: Automate native mobile apps with the Mobium CLI, on Android emulators and phones and iOS simulators and iPhones. Use to launch and drive an app, fill forms, read the screen, answer system dialogs, reach into WebViews, capture screenshots and recordings, or confirm that a mobile change actually works.
+description: Automate mobile apps — native, hybrid, React Native, and pages in a mobile browser or installed as a PWA — with the Mobium CLI, on Android emulators and phones and iOS simulators and iPhones. Use to launch and drive an app, fill forms, read the screen, answer system dialogs, reach into WebViews, capture screenshots and recordings, or confirm that a mobile change actually works.
 ---
 
 # Mobium Mobile Automation — CLI Reference
 
-The `mobium` CLI automates **native apps** on Android emulators and phones, and
+The `mobium` CLI automates **mobile apps** on Android emulators and phones, and
 iOS simulators and iPhones.
 A background daemon keeps the device session alive between commands, so each
 command is fast after the first.
@@ -14,8 +14,19 @@ command is fast after the first.
 mobium launch com.example.shop && mobium map && mobium tap @e5 && mobium map
 ```
 
-If you need a *browser* rather than an app, use vibium instead. Mobium drives
-apps; a WebView inside an app is covered here, a browser is not.
+What the app is built with decides how to reach it:
+
+| App type | How |
+| --- | --- |
+| Native (Android SDK, Jetpack Compose, UIKit, SwiftUI) | `map` and act — the default |
+| React Native | the same as native: it renders real native views. Use the `@ref` from `map`, not a hand-written `label=` or `testid=`: one testID repeats across several views |
+| Hybrid (a WebView inside the app) | switch context into the WebView — [Hybrid apps](#hybrid-apps-webviews) |
+| A page in Chrome or Safari, or a PWA | the same contexts: the page is `WEBVIEW_…`. On iOS act from `NATIVE_APP` — taps in Safari's or a home-screen web app's page are refused |
+| Flutter | not reachable through `map`; it paints its own widgets. Say so rather than retrying |
+
+If you need to test a *website* — tabs, browser sessions, a desktop browser —
+use vibium instead. Mobium reaches a page already open on the device; it does
+not manage the browser.
 
 ## Core Workflow
 

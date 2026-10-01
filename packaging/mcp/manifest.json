@@ -3,8 +3,8 @@
   "name": "mobium",
   "display_name": "Mobium",
   "version": "@VERSION@",
-  "description": "Drive native Android and iOS apps on emulators, phones, simulators and iPhones, WebViews included.",
-  "long_description": "Mobium automates native mobile apps for AI agents: map the screen, tap, type and swipe by locator, wait for states, answer system dialogs, reach into WebViews, take screenshots and recordings, and set network conditions, location and accessibility settings. It drives Android through UiAutomator2 and iOS through WebDriverAgent, directly, with no Node. It needs the platform's own tools on the machine: Android's platform-tools for Android, Xcode for iOS.",
+  "description": "Drive Android and iOS apps — native, hybrid and React Native, WebViews and mobile browser pages included — on emulators, phones, simulators and iPhones.",
+  "long_description": "Mobium automates mobile apps for AI agents — native, hybrid, React Native and pages in a mobile browser: map the screen, tap, type and swipe by locator, wait for states, answer system dialogs, reach into WebViews, take screenshots and recordings, and set network conditions, location and accessibility settings. It drives Android through UiAutomator2 and iOS through WebDriverAgent, directly, with no Node. It needs the platform's own tools on the machine: Android's platform-tools for Android, Xcode for iOS.",
   "author": {
     "name": "Lana Begunova",
     "url": "https://github.com/mobiumdev"

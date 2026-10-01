@@ -11,7 +11,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Drives native apps on Android emulators, Android phones, iOS simulators
+ * Drives mobile apps on Android emulators, Android phones, iOS simulators
  * and iPhones.
  *
  * <p>Speaks to the same tool layer the CLI and the MCP server use, over

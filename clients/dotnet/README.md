@@ -1,6 +1,6 @@
 # Mobium for .NET
 
-Drives native apps on Android emulators, Android phones, iOS simulators and
+Drives mobile apps on Android emulators, Android phones, iOS simulators and
 iPhones from C#.
 
 ```csharp

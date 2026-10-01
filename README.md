@@ -4,7 +4,7 @@
 
 *Mutatis mutandis.*
 
-**Native app automation for AI agents and humans.** Android emulators, Android
+**Mobile app automation for AI agents and humans.** Android emulators, Android
 phones, iOS simulators and iPhones, driven through one tool layer from a single
 Go binary with no runtime dependencies.
 
@@ -12,7 +12,7 @@ Go binary with no runtime dependencies.
 mobium launch com.example.shop && mobium map && mobium tap @e5 && mobium map
 ```
 
-Mobium drives native mobile apps the way [Vibium](https://github.com/VibiumDev/vibium)
+Mobium drives mobile apps the way [Vibium](https://github.com/VibiumDev/vibium)
 drives browsers: a `map` → `@ref` → act loop that an agent can follow without
 learning a new model. It is Vibium's architecture with the browser swapped for
 a device.
@@ -25,6 +25,7 @@ person driving an emulator for it. People get the same commands.
 - [Quick start](#quick-start)
 - [How it works](#how-it-works)
 - [Platforms](#platforms)
+- [App types](#app-types)
 - [Hybrid apps and WebViews](#hybrid-apps-and-webviews)
 - [Front doors](#front-doors)
 - [Drivers for other platforms](#drivers-for-other-platforms)
@@ -195,6 +196,24 @@ emulator or phone has been driven from Windows yet. See
 
 Both device-side agents are pinned by version, verified against checksums
 compiled into the binary, and refused on a mismatch.
+
+## App types
+
+What an app is built with decides where its elements are, so it decides what
+Mobium reaches. Each type has been driven on a device:
+
+| Type | How Mobium reaches it | Driven here |
+| --- | --- | --- |
+| **Native** — Android SDK, Jetpack Compose, UIKit, SwiftUI | the platform's accessibility tree | Settings, Calculator, Clock, Wikipedia, F-Droid, Aegis, Seal (Compose), NetNewsWire |
+| **Hybrid** — a native shell around WebViews | the shell through the tree; each WebView as its own context, [below](#hybrid-apps-and-webviews) | Wikipedia's articles, MobiumApp's web screens |
+| **Mobile web and PWAs** — a page in a browser, or installed to the home screen | the browser's page as a context; on iOS, taps through the native tree | Safari, Chrome, Squoosh as a PWA |
+| **Cross-platform, native once removed** — React Native | an ordinary native app: it renders real native views | MobiumApp, on both platforms and on real phones |
+| **Cross-platform that paints** — Flutter | not through the tree; a job for a [driver](#drivers-for-other-platforms) | not yet |
+
+A browser is reachable but not managed — no tabs, no browser sessions; testing
+a website is [Vibium](https://github.com/VibiumDev/vibium)'s job.
+[docs/APP-TYPES.md](docs/APP-TYPES.md) has what was measured for each type,
+what is checked in and what was driven only once.
 
 ## Hybrid apps and WebViews
 

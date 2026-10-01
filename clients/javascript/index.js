@@ -1,5 +1,5 @@
 /**
- * Mobium — native mobile app automation on emulators, simulators and phones.
+ * Mobium — mobile app automation on emulators, simulators and phones.
  *
  *   import { start } from 'mobium'
  *

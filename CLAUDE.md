@@ -1,8 +1,10 @@
 # CLAUDE.md
 
-Mobile app automation for AI agents and humans: native apps on Android
-emulators and phones, iOS simulators and iPhones, WebViews included — one Go
-binary, driven from a CLI, an MCP server, or five language clients.
+Mobile app automation for AI agents and humans: native, hybrid and React
+Native apps, and pages in a mobile browser or installed as a PWA, on Android
+emulators and phones, iOS simulators and iPhones — one Go binary, driven from a
+CLI, an MCP server, or five language clients. docs/APP-TYPES.md says which app
+types were driven and how; a claim about one goes there too.
 
 ## Key Docs
 
