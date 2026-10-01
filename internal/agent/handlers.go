@@ -1400,6 +1400,21 @@ func (h *Handlers) resolveNodeOnce(ctx context.Context, s *session, target strin
 		// element with no scrollable ancestor cannot be scrolled to, however
 		// many scrollables the screen has elsewhere.
 		container := scrollContainerOf(node)
+		// Nor is being inside a container that is on screen the same as being
+		// on screen. A link in Wikipedia's feed on an iPhone 15 Plus, its
+		// center at y=2833 on a screen 2796 tall, had no scrolling ancestor
+		// in the tree, and was tapped there and reported done (CHALLENGES
+		// 190). It was the hidden rest of an extract its card clips, which
+		// no scroll brings into view — swiping for it ran a call out of
+		// time — so with nothing around it that scrolls, it is refused.
+		if on, _ := centerOnScreen(tree, node); !on && container == nil {
+			return nil, nil, failedCheck(mobiumerr.ElementNotReachable, loc, checkVisible,
+				fmt.Sprintf("its center is off the screen, at %d,%d, and nothing it is inside scrolls",
+					(node.Bounds.X1+node.Bounds.X2)/2, (node.Bounds.Y1+node.Bounds.Y2)/2),
+				"scroll the screen to it with app_scroll_to or app_swipe, then act on it").
+				WithRemedy("app_scroll_to with a direction, or app_swipe, then act on it").
+				WithDetail("locator", loc.String())
+		}
 		if container == nil || encloses(container.Bounds, node.Bounds) {
 			return h.settle(ctx, s, loc, node, tree, readTook)
 		}
@@ -1553,6 +1568,9 @@ func (h *Handlers) lightResolve(ctx context.Context, s *session, loc uitree.Loca
 	if c := scrollContainerOf(n); c != nil && !encloses(c.Bounds, n.Bounds) {
 		return nil, nil, 0, false
 	}
+	if on, _ := centerOnScreen(t, n); !on {
+		return nil, nil, 0, false
+	}
 	if aim := t.AimAt(n); aim.Moved || aim.Blocker != nil || aim.Over != nil {
 		return nil, nil, 0, false
 	}
@@ -1560,6 +1578,28 @@ func (h *Handlers) lightResolve(ctx context.Context, s *session, loc uitree.Loca
 		return nil, nil, 0, false
 	}
 	return n, t, took, true
+}
+
+// centerOnScreen says whether a node's center is on the screen a tree was
+// read from, and if not, whether it lies above it. The screen is the root's
+// rectangle, or its first child's where the root has none, as an iOS
+// hierarchy's does; with neither known, a node counts as on it.
+func centerOnScreen(t *uitree.Tree, n *uitree.Node) (on, above bool) {
+	if t == nil || t.Root == nil {
+		return true, false
+	}
+	screen := t.Root.Bounds
+	if screen.Empty() && len(t.Root.Children) > 0 {
+		screen = t.Root.Children[0].Bounds
+	}
+	if screen.Empty() {
+		return true, false
+	}
+	x, y := (n.Bounds.X1+n.Bounds.X2)/2, (n.Bounds.Y1+n.Bounds.Y2)/2
+	if x >= screen.X1 && x < screen.X2 && y >= screen.Y1 && y < screen.Y2 {
+		return true, false
+	}
+	return false, y < screen.Y1
 }
 
 // hasDialogOrKeyboard says whether a read holds anything whose visibility
