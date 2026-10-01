@@ -239,6 +239,10 @@ func (h *Handlers) dispatch(ctx context.Context, name string, args map[string]in
 	switch name {
 	case "app_devices":
 		return h.devices(ctx)
+	case "app_boot":
+		return h.boot(ctx, args)
+	case "app_shutdown":
+		return h.shutdown(ctx, args)
 	case "app_map":
 		return h.mapScreen(ctx, args)
 	case "app_tap":

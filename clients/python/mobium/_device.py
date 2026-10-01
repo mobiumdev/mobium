@@ -213,6 +213,22 @@ class Device:
 
     # -- reading -----------------------------------------------------------
 
+    def boot(self, name: str, window: bool = False) -> dict:
+        """Start an Android emulator by its AVD's name, or an iOS simulator by
+        its name or UDID, and return once it has booted: ``device`` (its serial
+        or UDID), ``name``, ``platform``, and ``already`` when it was running.
+        An emulator cold-boots headless unless ``window``."""
+        args: dict[str, Any] = {"name": name}
+        if window:
+            args["window"] = True
+        return self._data("app_boot", args) or {}
+
+    def shutdown(self, name: str) -> dict:
+        """Shut down an emulator or a simulator — by serial, AVD name, UDID or
+        simulator name — after ending the daemon's session on it, and return
+        once it is gone. A real phone is refused."""
+        return self._data("app_shutdown", {"name": name}) or {}
+
     def devices(self) -> list[DeviceInfo]:
         """Every attached device and simulator."""
         data = self._data("app_devices") or {}

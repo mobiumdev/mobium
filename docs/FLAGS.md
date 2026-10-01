@@ -48,6 +48,8 @@ command mentions them.
 | `app_biometric` | `action` | string | biometric |
 | `app_biometric` | `device` | string | _global_ --device |
 | `app_biometric` | `driver` | string | _global_ --driver |
+| `app_boot` | `name` | string | boot |
+| `app_boot` | `window` | boolean | boot |
 | `app_call` | `action` | string | call |
 | `app_call` | `device` | string | _global_ --device |
 | `app_call` | `driver` | string | _global_ --driver |
@@ -246,6 +248,7 @@ command mentions them.
 | `app_session` | `platform` | string | session |
 | `app_shake` | `device` | string | _global_ --device |
 | `app_shake` | `driver` | string | _global_ --driver |
+| `app_shutdown` | `name` | string | shutdown |
 | `app_sms` | `device` | string | _global_ --device |
 | `app_sms` | `driver` | string | _global_ --driver |
 | `app_sms` | `from` | string | sms |
@@ -339,6 +342,7 @@ arguments and the two global flags.
 | `batch` | app_batch | — | steps |
 | `battery` | app_battery | — | — |
 | `biometric` | app_biometric | — | action |
+| `boot` | app_boot | --window | name, window |
 | `call` | app_call | --number | action, number |
 | `check` | app_check | — | checked, target |
 | `clear-data` | app_clear_data | --bundle | app, path |
@@ -390,6 +394,7 @@ arguments and the two global flags.
 | `session` | app_session | --app --platform | action, app, platform |
 | `shake` | app_shake | — | — |
 | `show-report` | — | — | darwin, windows |
+| `shutdown` | app_shutdown | — | name |
 | `sms` | app_sms | --from | from, text |
 | `source` | app_source | — | — |
 | `start` | — | --idle-timeout | — |

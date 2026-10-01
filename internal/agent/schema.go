@@ -47,6 +47,48 @@ func GetToolSchemas() []Tool {
 			},
 		},
 		{
+			Name: "app_boot",
+			Description: "Start an Android emulator by its AVD's name, or an iOS simulator by its name or " +
+				"UDID, and wait until it has booted — adb sees it and Android says boot completed, or " +
+				"simctl's boot status returns — answering with its serial or UDID. One already running is " +
+				"said to be, not started again. An emulator cold-boots, headless unless window is true; its " +
+				"output goes to a log under ~/.mobium/emulator. Real phones are not booted: they are " +
+				"somebody's.",
+			InputSchema: map[string]interface{}{
+				"type": "object",
+				"properties": map[string]interface{}{
+					"name": map[string]interface{}{
+						"type":        "string",
+						"description": "An AVD's name (Android), or a simulator's name or UDID (iOS).",
+					},
+					"window": map[string]interface{}{
+						"type":        "boolean",
+						"description": "Show the emulator's window. Default false: headless.",
+					},
+				},
+				"required":             []string{"name"},
+				"additionalProperties": false,
+			},
+		},
+		{
+			Name: "app_shutdown",
+			Description: "Shut down an emulator or a simulator, after ending this daemon's session on it — " +
+				"the order that leaves nothing driving a device that is going away — and wait until it is " +
+				"gone. A real phone is refused: it is somebody's.",
+			InputSchema: map[string]interface{}{
+				"type": "object",
+				"properties": map[string]interface{}{
+					"name": map[string]interface{}{
+						"type": "string",
+						"description": "A running emulator's serial or AVD name, or a booted simulator's " +
+							"UDID or name.",
+					},
+				},
+				"required":             []string{"name"},
+				"additionalProperties": false,
+			},
+		},
+		{
 			Name: "app_map",
 			Description: "Map the actionable elements on the current screen and return them as " +
 				"refs (@e1, @e2, ...) with a label and role. Call this before interacting, and " +

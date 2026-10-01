@@ -229,6 +229,8 @@ export class Device {
   session: Session | null
 
   // reading
+  boot(name: string, options?: { window?: boolean }): Promise<Data>
+  shutdown(name: string): Promise<Data>
   devices(): Promise<DeviceInfo[]>
   map(): Promise<Element[]>
   mapDiff(): Promise<MapDiff>

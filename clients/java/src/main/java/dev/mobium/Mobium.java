@@ -203,6 +203,36 @@ public final class Mobium implements AutoCloseable {
     // -- reading -----------------------------------------------------------
 
     /**
+     * Starts an Android emulator by its AVD's name, or an iOS simulator by its
+     * name or UDID, and returns once it has booted, headless.
+     *
+     * @param name an AVD's name, or a simulator's name or UDID
+     * @return device (its serial or UDID), name, platform, and already when it was running
+     */
+    public Map<String, Object> boot(String name) { return boot(name, false); }
+
+    /**
+     * Starts an emulator or a simulator, as {@link #boot(String)} does, with
+     * the emulator's window shown when asked.
+     *
+     * @param name an AVD's name, or a simulator's name or UDID
+     * @param window show the emulator's window
+     * @return device (its serial or UDID), name, platform, and already when it was running
+     */
+    public Map<String, Object> boot(String name, boolean window) {
+        return window ? data("app_boot", args("name", name, "window", true)) : data("app_boot", args("name", name));
+    }
+
+    /**
+     * Shuts down an emulator or a simulator after ending the daemon's session
+     * on it, and returns once it is gone. A real phone is refused.
+     *
+     * @param name a running emulator's serial or AVD name, or a booted simulator's UDID or name
+     * @return device, and session_ended when this daemon had a session on it
+     */
+    public Map<String, Object> shutdown(String name) { return data("app_shutdown", args("name", name)); }
+
+    /**
      * Every attached device and simulator.
      *
      * @return each attached device and simulator

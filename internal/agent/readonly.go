@@ -38,6 +38,7 @@ var readUnless = map[string][]string{
 
 // actingTools change the device or the app with every call.
 var actingTools = map[string]bool{
+	"app_boot": true, "app_shutdown": true,
 	"app_tap": true, "app_drag": true, "app_type": true, "app_fill": true, "app_swipe": true,
 	"app_long_press": true, "app_launch": true, "app_terminate": true, "app_open_url": true,
 	"app_scroll_to": true, "app_grant": true, "app_revoke": true, "app_reset_permissions": true,

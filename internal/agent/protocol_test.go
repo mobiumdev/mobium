@@ -66,12 +66,14 @@ func TestToolSchemasAreWellFormed(t *testing.T) {
 }
 
 func TestEveryDeviceToolAcceptsDeviceArg(t *testing.T) {
-	// The two exceptions are tools that deliberately touch no device. Both
-	// are listed by name rather than the rule being relaxed, so a new tool
-	// that forgets the device argument still fails here.
+	// The exceptions are tools that deliberately touch no device the call is
+	// pinned to. Each is listed by name rather than the rule being relaxed,
+	// so a new tool that forgets the device argument still fails here.
 	deviceless := map[string]string{
-		"app_devices": "lists all devices; pinning one would be meaningless",
-		"app_doctor":  "checks the environment, and must work when no device exists",
+		"app_devices":  "lists all devices; pinning one would be meaningless",
+		"app_doctor":   "checks the environment, and must work when no device exists",
+		"app_boot":     "starts a device by name; none is running to pin it to",
+		"app_shutdown": "names its device by name, since a pipe pins every call to its own device",
 	}
 	for _, tool := range GetToolSchemas() {
 		if _, skip := deviceless[tool.Name]; skip {

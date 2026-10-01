@@ -157,6 +157,8 @@ func main() {
 		newTestCmd(),
 		newShowReportCmd(),
 		newInspectCmd(),
+		newBootCmd(),
+		newShutdownCmd(),
 		newUploadCmd(),
 		newDownloadCmd(),
 	)

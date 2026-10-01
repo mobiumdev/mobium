@@ -270,18 +270,25 @@ this is what is not.
   each call to its device's own lock would remove the wait in one daemon, and
   means reworking how every handler touches shared state.
 
-- **Battery and the device's clock** (written down 2026-09-28): the level
-  and whether it is charging, and the time as the device has it, which is
-  what a test of a timezone or a clock-dependent screen checks against.
+- ~~**Battery and the device's clock**~~ (written down 2026-09-28) — done:
+  `mobium battery` reads the level, the charging state and what it is
+  plugged into, and `mobium time` the device's clock in its own zone.
 - ~~**Pulling a file off the device**~~ (written down 2026-09-28) — done
   2026-09-29 as `upload` and `download`: the shared Download folder on
   Android, an app's Documents on an iOS simulator, each confirmed at the far
   end (`docs/checks/files.sh`). Since 2026-09-29 also a real iPhone,
   through CoreDevice's file service, which has no delete (CHALLENGES 173).
   The check passes on the iPhone 15 Plus and the Pixel 8 Pro.
-- **Booting and shutting down emulators and simulators** (written down
-  2026-09-28). `devices` lists them; starting one is still the platform's
-  own command.
+- ~~**Booting and shutting down emulators and simulators**~~ (written down
+  2026-09-28) — done 2026-10-01: `mobium boot <avd | simulator>`
+  (`app_boot`) starts one and answers once it has booted and a window has
+  focus — Android says boot completed a second or two before the launcher
+  is up, and the first call made then failed; `mobium shutdown` (`app_shutdown`)
+  ends this daemon's session on it first and waits until it is gone. The
+  device is named by `name`, never by `device`, which a client's pipe sets
+  to its own: shut down from a call pinned to a simulator, the emulator went
+  and the simulator stayed. A phone is refused by both. An agent over MCP,
+  which has no shell, can start a device now (`docs/checks/boot.sh`).
 - **Seeing an app's outgoing intents** on Android, so a test can assert that
   "share" asked for the chooser with the right text, without stubbing it.
 - **Sliders**, and range sliders, as a first-class action.

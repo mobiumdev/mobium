@@ -137,6 +137,7 @@ the wrong string.
 | Reading | `map`, and `map --diff` for what an action changed; `text`, `find`, `screenshot`, the raw `source` with passwords hidden, WebView contexts |
 | Acting | tap, double tap, type, swipe, long press, drag and drop, two-finger zoom and rotate; `check`/`uncheck` reach a state and confirm it |
 | Waiting | `wait` for appear, disappear, text, enabled or disabled |
+| Devices | `devices` lists them; `boot` starts an emulator or a simulator and answers once it is up, `shutdown` stops one after ending its session — an agent with no shell can start a device |
 | Apps | launch, terminate, install, uninstall, list, clear data, open a URL or deep link, foreground app, any app's state, backgrounding and resuming |
 | Files | `upload` and `download` between this machine and where the device keeps downloads — the Download folder on Android, an app's Documents on an iOS simulator |
 | Device state | permissions, appearance, accessibility settings for the session (reduce motion, bold text, contrast, text size and more; a simulator and Android), orientation, per-app language, hardware buttons, shake and biometrics (enroll, then a matching or a stranger's face or finger) on emulators and simulators, screen lock, simulated calls and messages, notifications, timezone and the device's clock, battery, clipboard, geolocation and routes |
