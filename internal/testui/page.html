@@ -1,0 +1,209 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>mobium test --ui</title>
+<style>
+:root{--bg:#f6f7fb;--panel:#fff;--fg:#141826;--muted:#5d6475;--line:#e3e6ef;--accent:#3552fd;--bad:#c62828;--ok:#1a7f37;--flaky:#b26a00;--code:#f1f3f9}
+@media (prefers-color-scheme:dark){:root{--bg:#10131c;--panel:#171b27;--fg:#e6e8f0;--muted:#a8aec0;--line:#2a3042;--accent:#7d8cff;--bad:#ff7b7b;--ok:#4ac26b;--flaky:#ffb14d;--code:#1f2433}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:14px/1.45 -apple-system,system-ui,sans-serif}
+header{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:10px 16px;border-bottom:1px solid var(--line);background:var(--panel);position:sticky;top:0;z-index:5}
+header h1{font-size:16px;margin:0 12px 0 0}
+#summary{color:var(--muted);margin-right:auto;font-size:13px}
+button{font:inherit;border:1px solid var(--line);background:var(--panel);color:var(--fg);border-radius:7px;padding:5px 10px;cursor:pointer}
+button:hover{border-color:var(--accent)}
+button.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+button:disabled{opacity:.5;cursor:default}
+button.run{padding:1px 7px;font-size:12px}
+main{display:grid;grid-template-columns:minmax(280px,430px) minmax(300px,1fr);gap:16px;padding:16px;align-items:start}
+@media (max-width:760px){main{grid-template-columns:1fr}}
+section{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:12px 14px;margin-bottom:14px}
+section h2{font-size:13px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);margin:0 0 8px}
+.file{margin:8px 0 4px;display:flex;gap:6px;align-items:center;font-weight:600;font-size:13px}
+.file .name{margin-right:auto;word-break:break-all}
+.test{display:flex;gap:6px;align-items:center;padding:4px 6px;border-radius:7px;cursor:pointer;font-size:13px}
+.test:hover,.test.sel{background:var(--code)}
+.test .name{margin-right:auto;min-width:0;overflow-wrap:anywhere}
+.chip{font-size:11px;border-radius:999px;padding:1px 7px;border:1px solid var(--line);white-space:nowrap;color:var(--muted)}
+.chip.passed{color:var(--ok);border-color:var(--ok)}
+.chip.failed{color:var(--bad);border-color:var(--bad)}
+.chip.flaky{color:var(--flaky);border-color:var(--flaky)}
+.chip.running{color:var(--accent);border-color:var(--accent)}
+.err{color:var(--bad);font-size:12px;white-space:pre-wrap}
+.muted{color:var(--muted)}
+.film{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+.frame{border:1px solid var(--line);border-radius:10px;padding:6px;font-size:12px;background:var(--panel)}
+.frame.bad{border-color:var(--bad)}
+.frame img{width:100%;height:auto;border-radius:6px;display:block;margin-bottom:4px}
+.frame .step{font-family:ui-monospace,Menlo,monospace;font-size:11.5px;overflow-wrap:anywhere}
+pre{font-family:ui-monospace,Menlo,monospace;font-size:12px;white-space:pre-wrap;background:var(--code);padding:6px 8px;border-radius:7px;max-height:220px;overflow:auto;margin:6px 0 0}
+details summary{cursor:pointer;color:var(--muted);font-size:12px}
+.proj{font-size:12px;color:var(--muted);margin:10px 0 4px}
+</style>
+</head>
+<body>
+<header>
+  <h1>mobium test --ui</h1>
+  <span id="summary">reading the suite…</span>
+  <button id="runAll" class="primary" title="Run every test on every project">Run all</button>
+  <button id="runFailed" title="Run again what failed in the last run">Re-run failed</button>
+  <button id="reload" title="Read the test files again">Reload</button>
+</header>
+<main>
+  <div>
+    <section>
+      <h2>Tests</h2>
+      <div id="list" class="muted">…</div>
+      <p class="muted" style="font-size:12px;margin:8px 0 0">The files are read again for every list and every run, so an edited test is the test that runs.</p>
+    </section>
+  </div>
+  <div>
+    <section>
+      <h2 id="detailTitle">Steps</h2>
+      <div id="detail" class="muted">Pick a test, or run one: each step appears here with the screen after it.</div>
+    </section>
+  </div>
+</main>
+<script>
+"use strict";
+const base = location.pathname;
+let list = null, status = null, selected = null, poll = null;
+
+const el = (tag, attrs = {}, ...kids) => {
+  const e = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs)) {
+    if (k === "class") e.className = v; else if (k === "text") e.textContent = v;
+    else if (k.startsWith("on")) e.addEventListener(k.slice(2), v); else e.setAttribute(k, v);
+  }
+  for (const k of kids) if (k) e.append(k);
+  return e;
+};
+const artifact = p => base + "artifact?p=" + encodeURIComponent(p);
+
+async function getJSON(path, opts) {
+  const r = await fetch(base + path, opts);
+  if (!r.ok) throw new Error(await r.text());
+  return r.json();
+}
+
+async function loadList() {
+  list = await getJSON("tests");
+  drawList();
+}
+
+// statusOf is how a test is on a project now: running, or the last run's.
+function statusOf(t, proj) {
+  const id = t.ids[proj];
+  if (status && status.running && status.live) {
+    for (const l of Object.values(status.live)) if (l.project === proj && l.title === t.title) return "running";
+  }
+  if (status && status.results) {
+    for (const r of status.results) if (r.project === proj && r.title === t.title) return r.status;
+  }
+  return (t.status && t.status[proj]) || "";
+}
+
+function drawList() {
+  const box = document.getElementById("list");
+  box.className = ""; box.textContent = "";
+  if (list.error) { box.append(el("div", {class: "err", text: list.error})); return; }
+  if (!list.files.length) { box.append(el("div", {class: "muted", text: "No test files found."})); return; }
+  for (const f of list.files) {
+    const ids = f.tests.flatMap(t => list.projects.map(p => t.ids[p]));
+    box.append(el("div", {class: "file"}, el("span", {class: "name", text: f.name}),
+      f.error ? null : el("button", {class: "run", title: "Run this file", onclick: () => run(ids), text: "▶"})));
+    if (f.error) { box.append(el("div", {class: "err", text: f.error})); continue; }
+    for (const t of f.tests) {
+      const row = el("div", {class: "test" + (selected === t.title ? " sel" : ""), onclick: () => { selected = t.title; drawList(); drawDetail(); }},
+        el("span", {class: "name", text: t.name}));
+      for (const p of list.projects) {
+        const s = statusOf(t, p);
+        row.append(el("span", {class: "chip " + s, title: p + (s ? ": " + s : ""), text: p + (s ? " · " + s : "")}));
+      }
+      row.append(el("button", {class: "run", title: "Run this test", onclick: e => { e.stopPropagation(); selected = t.title; run(list.projects.map(p => t.ids[p])); }, text: "▶"}));
+      box.append(row);
+    }
+  }
+}
+
+function frames(steps) {
+  const film = el("div", {class: "film"});
+  for (const s of steps || []) {
+    const where = s.step === 0 ? "beforeEach" : "step " + s.step;
+    film.append(el("div", {class: "frame" + (s.error ? " bad" : "")},
+      s.screenshot ? el("img", {src: artifact(s.screenshot), alt: "After " + where}) : null,
+      el("div", {class: "step"}, el("strong", {text: where + " "}), document.createTextNode(s.name || "")),
+      s.error ? el("div", {class: "err", text: s.error}) : null,
+      s.map ? el("details", {}, el("summary", {text: "map"}), el("pre", {text: s.map})) : null));
+  }
+  return film;
+}
+
+function drawDetail() {
+  const box = document.getElementById("detail");
+  document.getElementById("detailTitle").textContent = selected || "Steps";
+  if (!selected) return;
+  box.className = ""; box.textContent = "";
+  let any = false;
+  for (const p of (list ? list.projects : [])) {
+    let live = null, done = null;
+    if (status && status.live) for (const l of Object.values(status.live)) if (l.project === p && l.title === selected) live = l;
+    if (status && status.results) for (const r of status.results) if (r.project === p && r.title === selected) done = r;
+    if (!live && !done) continue;
+    any = true;
+    const head = el("div", {class: "proj"}, document.createTextNode(p + " — "));
+    if (live) head.append(el("span", {class: "chip running", text: "running, attempt " + live.attempt}));
+    else head.append(el("span", {class: "chip " + done.status, text: done.status + " in " + (done.duration_ns / 1e9).toFixed(1) + "s"}));
+    box.append(head);
+    if (done && done.failure) box.append(el("div", {class: "err", text: "step " + done.failure.step + ": " + done.failure.message}));
+    if (done && done.trace_file) box.append(el("div", {}, el("a", {href: artifact(done.trace_file), text: "trace.zip"}),
+      document.createTextNode(" — open it at trace.playwright.dev or player.vibium.dev")));
+    box.append(frames(live ? live.steps : done.trace));
+  }
+  if (!any) box.append(el("div", {class: "muted", text: "Not run yet. ▶ runs it on every project."}));
+}
+
+function drawSummary() {
+  const s = document.getElementById("summary");
+  const busy = status && status.running;
+  for (const id of ["runAll", "runFailed"]) document.getElementById(id).disabled = !!busy;
+  if (!status || !status.id) { s.textContent = list ? list.files.reduce((n, f) => n + f.tests.length, 0) + " tests, " + list.projects.join(", ") : ""; return; }
+  if (busy) { s.textContent = "running… " + status.results.length + " done"; return; }
+  s.textContent = `${status.passed} passed, ${status.failed} failed` + (status.flaky ? `, ${status.flaky} flaky` : "") + ` in ${status.took}` + (status.error ? " — " + status.error : "");
+}
+
+async function refresh() {
+  status = await getJSON("status");
+  if (status.running && selected === null) {
+    const l = Object.values(status.live || {})[0];
+    if (l) selected = l.title;
+  }
+  drawList(); drawDetail(); drawSummary();
+  if (!status.running && poll) { clearInterval(poll); poll = null; await loadList(); drawDetail(); drawSummary(); }
+}
+
+async function run(ids) {
+  try {
+    await getJSON("run", {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify({ids})});
+  } catch (e) { alert(e.message); return; }
+  await loadList();
+  if (!poll) poll = setInterval(refresh, 800);
+  refresh();
+}
+
+document.getElementById("runAll").onclick = () => run([]);
+document.getElementById("runFailed").onclick = () => {
+  const failed = (status && status.results || []).filter(r => r.status === "failed").map(r => {
+    for (const f of list.files) for (const t of f.tests) if (t.title === r.title && t.ids[r.project]) return t.ids[r.project];
+    return null;
+  }).filter(Boolean);
+  if (!failed.length) { alert("Nothing failed in the last run."); return; }
+  run(failed);
+};
+document.getElementById("reload").onclick = () => loadList().then(drawSummary);
+loadList().then(refresh);
+</script>
+</body>
+</html>

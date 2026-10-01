@@ -41,6 +41,13 @@ type Options struct {
 	OutputDir string
 	// Progress hears each result as it comes, for the list reporter.
 	Progress func(Result)
+	// Only, when set, is the tests to run by Result.ID — what the UI's
+	// "run this" and "re-run what failed" pick, exactly.
+	Only map[string]bool
+	// StepDone hears each step of a traced test as it ends, with the
+	// screen after it, for the UI's live view. The project and the test's
+	// title say which.
+	StepDone func(project, title string, attempt int, step TraceStep)
 	// Trace keeps a screenshot and the map after every step: "on", or
 	// "retain-on-failure", which keeps them only for a test that failed.
 	// Steps then run one at a time rather than as a batch. Without Evidence
@@ -246,6 +253,19 @@ func Run(cfg *Config, opts Options, call Caller) (*Summary, error) {
 	var only map[string]bool
 	if opts.LastFailed {
 		only = readLastFailed(opts.OutputDir)
+	}
+	if opts.Only != nil {
+		if only == nil {
+			only = opts.Only
+		} else {
+			both := map[string]bool{}
+			for id := range opts.Only {
+				if only[id] {
+					both[id] = true
+				}
+			}
+			only = both
+		}
 	}
 
 	// Which tests of each file this run covers, per project.
@@ -588,6 +608,9 @@ func runOnce(j job, t Test, opts Options, call Caller, attempt int) ([]*Failure,
 				}
 			}
 			trace = append(trace, ts)
+			if opts.StepDone != nil {
+				opts.StepDone(j.project.Name, j.file.Title(t), attempt, ts)
+			}
 		}
 	}
 	if opts.Debug != nil {

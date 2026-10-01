@@ -3308,12 +3308,15 @@
         "--last-failed",
         "--list",
         "--no-screenshots",
+        "--open",
         "--output",
         "--project",
         "--reporter",
         "--retries",
         "--timeout",
         "--trace",
+        "--ui",
+        "--ui-port",
         "--workers"
       ],
       "sends": [

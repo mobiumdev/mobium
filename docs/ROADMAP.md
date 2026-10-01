@@ -18,8 +18,12 @@ this is what is not.
   stays on emulators and simulators. Getting there found CHALLENGES
   170–172. On an iPhone a password still needs a keyboard with its letters
   up (159). Parameters since 2026-10-01: `"each"` runs a test once per case,
-  `${key}` filled in (decisions/0006, "Parameters"). Later: an interactive
-  mode. Recording a test from what a person does is
+  `${key}` filled in (decisions/0006, "Parameters"). An interactive mode
+  since 2026-10-01: `mobium test --ui` serves a page that lists the suite,
+  runs a test, a file or all of it on its projects, shows each step with
+  its screen as it happens, and re-runs what failed, the files read again
+  for every run ([decisions/0009](decisions/0009-a-test-ui.md),
+  `docs/checks/test-ui.sh`). Recording a test from what a person does is
   `mobium inspect`, since 2026-09-29 ([decisions/0007](decisions/0007-an-inspector.md)).
   [decisions/0006](decisions/0006-a-test-runner.md).
 - ~~**A second third-party app on iOS.**~~ Done 2026-10-01: NetNewsWire, an
