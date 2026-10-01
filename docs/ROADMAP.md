@@ -133,9 +133,20 @@ this is what is not.
   obstruction, autowait, dialogs, keyboard, login and wait-states held with
   it forced on. On the iPhone, tapping General in Settings went from 3.5 s
   to 2.2 s and tapping back from 4.6 s to 2.1 s, and obstruction and
-  autowait (forced) and ios-device.sh pass. Still to do: `map` and `text`,
-  which read in full, and what is left of a Settings tap, mostly
-  WebDriverAgent waiting out the page animation after the touch. Found on the
+  autowait (forced) and ios-device.sh pass. `map` and `text` still read in
+  full, and on 2026-09-30 that was measured to be the cheapest correct way
+  for them: WebDriverAgent has no cheaper way to ask about visibility.
+  Safari's hidden elements are not one hidden tab that a single check could
+  rule out but eleven small subtrees, one of them a hidden window with
+  visible children. On the iPhone, with Safari in front, the full read took
+  779 ms and the light one 160 ms, while a query for `visible == 0` took
+  7.7 s and one element's rectangle 0.5 s; the same query on Settings ran
+  past 60 s. A JSON source computes `isVisible` and costs what the XML does
+  (1.77 s to 1.83 s on Settings). So a `map` that patched a light read
+  would cost more than it saved on any screen with a hidden element, and
+  one that skipped the patch would hand out refs to things not shown.
+  Still to do: what is left of a Settings tap, mostly WebDriverAgent
+  waiting out the page animation after the touch. Found on the
   way: a locator's resolution (`pickOne`) does not consult visibility on a
   full read either, so a uniquely labeled element iOS calls hidden is
   acted on unless it is under a dialog or the keyboard, or has no bounds.
