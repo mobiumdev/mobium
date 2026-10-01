@@ -1766,6 +1766,17 @@ first read on a phone can still stall. `docs/checks/ios-device.sh` times every
 switch it makes and fails past 40s; with the hint disabled it failed on the
 second launch, at 64.8s, which is what makes it a check rather than a hope.
 
+**When the hint comes off matters as much as that it goes on** (2026-09-30).
+A launch confirmed by a read without `visible` took the hint off sooner than
+the full read had, and the next read hung for a minute once in eleven
+launches and once in fifty. Both were launches over another app, confirmed
+at 0.45s. Polling both apps' states through a switch on the iPhone 15 Plus
+showed why: from about 0.33s to 0.64-0.89s iOS reports both the app coming
+and the app being left as in front, and a read pinned to the new app sees
+it there. The hint now comes off only once the app being left no longer
+reads as in front — SpringBoard, which always does, is not waited for — and
+a hundred launches over fresh sessions had no hang, at a median of 0.89s.
+
 ### 72. `scroll-to` gave up on an off-screen row before its first swipe
 
 **Found by:** scrolling to Legal & Regulatory in Settings > General on the
