@@ -171,6 +171,12 @@ func toolSchema(name string) (map[string]interface{}, bool) {
 	return nil, false
 }
 
+// targetNeedsMore are the tools whose target is not enough alone: a swipe
+// on an element needs its direction too, so {"swipe": "@e5"} would be
+// refused only once it ran, and {"swipe": "up"} would look for an element
+// called "up". They have no shorthand, as before they took a target.
+var targetNeedsMore = map[string]bool{"app_swipe": true}
+
 // mainArgument is what a string in the shorthand fills: target when the tool
 // has one, else its one required string, else its only argument — read from
 // the schema, so a tool added later needs nothing here. A tool with no single
@@ -184,7 +190,7 @@ func mainArgument(tool string, schema map[string]interface{}) (string, error) {
 		}
 	}
 	sort.Strings(own)
-	if _, ok := props["target"]; ok {
+	if _, ok := props["target"]; ok && !targetNeedsMore[tool] {
 		return "target", nil
 	}
 	var strs []string

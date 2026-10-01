@@ -102,3 +102,19 @@ func TestAReflowIsOneLine(t *testing.T) {
 		t.Errorf("the rest: %q", lines[1])
 	}
 }
+
+// A segment chosen is a change, said both ways: NetNewsWire's search scope,
+// Here and All Articles, where a tap moves the selection from one to the
+// other and nothing else about either button changes.
+func TestDiffMapsSaysWhatWasSelected(t *testing.T) {
+	sel := func(e ElementView) ElementView { e.Selected = true; return e }
+	before := []ElementView{sel(el("@e1", "Here", "button", 100, 60)), el("@e2", "All Articles", "button", 300, 60)}
+	after := []ElementView{el("@e1", "Here", "button", 100, 60), sel(el("@e2", "All Articles", "button", 300, 60))}
+	text := diffText(diffMaps(before, after), len(after))
+	for _, want := range []string{"~ @e1 Here (button) — was selected",
+		"~ @e2 All Articles (button, selected) — was not selected"} {
+		if !strings.Contains(text, want) {
+			t.Errorf("the text has no %q:\n%s", want, text)
+		}
+	}
+}

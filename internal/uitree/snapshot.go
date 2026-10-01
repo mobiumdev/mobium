@@ -26,7 +26,14 @@ type Entry struct {
 	// toggle, so a caller that cannot see the state cannot reach one — it can
 	// only flip whatever is there. CHALLENGES 65.
 	Checked *bool `json:"checked,omitempty"`
-	Node    *Node `json:"-"`
+	// Selected is set when the platform reports the element chosen: the
+	// current tab, the chosen segment of a segmented control. Omitted
+	// otherwise — nothing reports "not selected" in a way that tells a
+	// selectable thing from any other. NetNewsWire's search scope gave no
+	// sign of which of Here and All Articles was chosen until it was read
+	// from iOS's traits.
+	Selected bool  `json:"selected,omitempty"`
+	Node     *Node `json:"-"`
 }
 
 // Line renders the entry the way the CLI prints it.
@@ -34,14 +41,18 @@ func (e Entry) Line() string {
 	if e.Role == "" {
 		return fmt.Sprintf("%s %s", e.Ref, e.Label)
 	}
+	states := []string{e.Role}
 	if e.Checked != nil {
 		state := "unchecked"
 		if *e.Checked {
 			state = "checked"
 		}
-		return fmt.Sprintf("%s %s (%s, %s)", e.Ref, e.Label, e.Role, state)
+		states = append(states, state)
 	}
-	return fmt.Sprintf("%s %s (%s)", e.Ref, e.Label, e.Role)
+	if e.Selected {
+		states = append(states, "selected")
+	}
+	return fmt.Sprintf("%s %s (%s)", e.Ref, e.Label, strings.Join(states, ", "))
 }
 
 // Actionable reports whether a node is worth putting in front of an agent.
@@ -225,6 +236,12 @@ func descendantText(n *Node, maxDepth int) string {
 			if total >= maxLabel {
 				return
 			}
+			// A leaf VoiceOver does not read is not part of the name: a
+			// disclosure arrow, a separator. A container that is not read
+			// can still hold text that is, so only leaves are skipped.
+			if c.NotAccessible && len(c.Children) == 0 {
+				continue
+			}
 			s := clean(c.Text)
 			if s == "" {
 				s = clean(c.Label)
@@ -293,12 +310,13 @@ func (t *Tree) Map() []Entry {
 	var out []Entry
 	for i, n := range collapseByBounds(actionable) {
 		e := Entry{
-			Ref:     fmt.Sprintf("@e%d", i+1),
-			Label:   n.label,
-			Role:    roleOf(n.node),
-			Locator: Derive(n.node, t),
-			Bounds:  n.node.Bounds,
-			Node:    n.node,
+			Ref:      fmt.Sprintf("@e%d", i+1),
+			Label:    n.label,
+			Role:     roleOf(n.node),
+			Locator:  Derive(n.node, t),
+			Bounds:   n.node.Bounds,
+			Selected: n.node.Selected,
+			Node:     n.node,
 		}
 		// Only for things that have a state to report. The platform says
 		// which: Android marks them `checkable`, and the iOS parser sets the

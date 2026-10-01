@@ -246,7 +246,11 @@ func iosNodeFrom(e xml.StartElement, parent *Node, sibling int) *Node {
 		// visible" so a whole screen is not filtered away, matching how the
 		// Android dump format is treated.
 		Displayed: attr(e, "visible") != "false",
-		Selected:  attr(e, "selected") == "true",
+		// WebDriverAgent reports selection in the accessibility traits —
+		// traits="Selected, Button" on a search scope that is chosen — and
+		// leaves `selected` out, so read both.
+		Selected:      attr(e, "selected") == "true" || hasTrait(attr(e, "traits"), "Selected"),
+		NotAccessible: attr(e, "accessible") == "false",
 	}
 	if parent.Parent == nil {
 		n.Depth = 0
@@ -265,6 +269,13 @@ func iosNodeFrom(e xml.StartElement, parent *Node, sibling int) *Node {
 	// mistake `role=link` was on Android; asking the platform is not.
 	accessible := attr(e, "accessible") == "true"
 	n.Clickable = accessible && n.Displayed && !iosContentTypes[class]
+	// A section header is accessible, so VoiceOver can land on it, and is
+	// typed Other, which says nothing — but its traits say Header, and it
+	// is a heading, not a control: NetNewsWire's Settings mapped "Accounts"
+	// and "Feeds" as buttons. Unless the app also gave it the Button trait.
+	if traits := attr(e, "traits"); hasTrait(traits, "Header") && !hasTrait(traits, "Button") {
+		n.Clickable = false
+	}
 	n.Checkable, n.Checked = checkedState(class, attr(e, "value"))
 	n.DeclaredRole = declaredRole(attr(e, "value"))
 	n.Scrollable = iosScrollableTypes[class]
@@ -405,4 +416,15 @@ func declaredRole(value string) string {
 		return "switch"
 	}
 	return ""
+}
+
+// hasTrait reports whether WebDriverAgent's traits attribute — a comma-
+// separated list such as "Selected, Button" — names trait.
+func hasTrait(traits, trait string) bool {
+	for _, t := range strings.Split(traits, ",") {
+		if strings.TrimSpace(t) == trait {
+			return true
+		}
+	}
+	return false
 }

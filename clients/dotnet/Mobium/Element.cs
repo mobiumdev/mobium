@@ -26,12 +26,15 @@ namespace Mobium
         /// <summary>A checkbox, radio or switch's state; null for anything with no such state.</summary>
         public bool? Checked { get; }
 
+        /// <summary>True for what the platform reports chosen: the current tab, a segment.</summary>
+        public bool Selected { get; }
+
         /// <summary>Builds an element record.</summary>
         public Element(string @ref, string label, string role, string locator, Bounds bounds, string context,
-            bool? @checked = null)
+            bool? @checked = null, bool selected = false)
         {
             Ref = @ref; Label = label; Role = role;
-            Locator = locator; Bounds = bounds; Context = context; Checked = @checked;
+            Locator = locator; Bounds = bounds; Context = context; Checked = @checked; Selected = selected;
         }
 
         internal static Element From(IDictionary<string, object?> m)
@@ -45,7 +48,8 @@ namespace Mobium
                 locator,
                 Bounds.From(Json.AsObject(m.TryGetValue("bounds", out var b) ? b : null)),
                 Json.Str(m, "context"),
-                m.TryGetValue("checked", out var c) && c is bool isChecked ? isChecked : (bool?)null);
+                m.TryGetValue("checked", out var c) && c is bool isChecked ? isChecked : (bool?)null,
+                m.TryGetValue("selected", out var s) && s is bool isSelected && isSelected);
         }
 
         /// <summary>The ref and label, with the role in brackets when there is one.</summary>

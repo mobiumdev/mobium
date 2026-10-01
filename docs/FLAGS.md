@@ -263,6 +263,7 @@ command mentions them.
 | `app_swipe` | `direction` | string | swipe |
 | `app_swipe` | `driver` | string | _global_ --driver |
 | `app_swipe` | `duration_ms` | integer | swipe |
+| `app_swipe` | `target` | string | swipe |
 | `app_swipe` | `x1` | integer | swipe |
 | `app_swipe` | `x2` | integer | swipe |
 | `app_swipe` | `y1` | integer | swipe |
@@ -397,7 +398,7 @@ arguments and the two global flags.
 | `status` | — | — | — |
 | `stop` | — | — | status |
 | `storage` | app_storage, app_storage, app_storage | --output | action, state |
-| `swipe` | app_swipe | --duration | direction, duration_ms, x1, x2, y1, y2 |
+| `swipe` | app_swipe | --duration | direction, duration_ms, target, x1, x2, y1, y2 |
 | `tap` | app_tap, app_tap | --fingers | fingers, target, x, y |
 | `terminate` | app_terminate | — | app |
 | `test` | — | --config --debug --grep --last-failed --list --no-screenshots --output --project --reporter --retries --timeout --trace --workers | list |

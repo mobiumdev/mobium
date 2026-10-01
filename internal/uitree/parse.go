@@ -66,6 +66,13 @@ type Node struct {
 	Enabled      bool
 	Selected     bool
 	Password     bool
+	// NotAccessible is iOS's accessible="false": not an element VoiceOver
+	// reads. Its text is kept out of a label composed from what a container
+	// holds — NetNewsWire's rows carried a disclosure arrow named "chevron"
+	// that VoiceOver never says, and map printed "On My iPhone chevron".
+	// Zero on Android, which has no such attribute, and on a Node built by
+	// hand.
+	NotAccessible bool
 	// Hint is the field's placeholder: Android's `hint`, iOS's
 	// `placeholderValue`. ShowingHint says the platform reported that the
 	// field is empty and its text is that placeholder — UiAutomator2's
@@ -386,7 +393,13 @@ func (t *Tree) All() []*Node {
 
 // ShortClass is the class name without its package ("android.widget.Button" ->
 // "Button"), which is what map output shows.
+//
+// On iOS the XCUITest prefix goes too: an unlabeled table printed as
+// "XCUIElementTypeTable (list)", where Android's prints "RecyclerView".
 func (n *Node) ShortClass() string {
+	if s, ok := strings.CutPrefix(n.Class, "XCUIElementType"); ok && s != "" {
+		return s
+	}
 	if i := strings.LastIndexByte(n.Class, '.'); i >= 0 {
 		return n.Class[i+1:]
 	}

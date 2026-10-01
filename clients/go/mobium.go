@@ -87,6 +87,9 @@ type Element struct {
 	// Checked is a checkbox, radio or switch's state; nil for anything with
 	// no such state, which is a different answer from unchecked.
 	Checked *bool `json:"checked,omitempty"`
+	// Selected is true for what the platform reports chosen: the current
+	// tab, the chosen segment of a segmented control.
+	Selected bool `json:"selected,omitempty"`
 }
 
 // DeviceInfo is one attached device or simulator.
@@ -310,7 +313,7 @@ type MapDiff struct {
 type MapChange struct {
 	Before Element `json:"before"`
 	After  Element `json:"after"`
-	// What names each difference: "label", "checked" or "moved".
+	// What names each difference: "label", "checked", "selected", "moved" or "resized".
 	What []string `json:"what"`
 }
 
@@ -577,6 +580,13 @@ func (d *Device) Fill(ctx context.Context, target, text string) error {
 // "left" or "right". The finger moves that way, so "up" scrolls a page down.
 func (d *Device) Swipe(ctx context.Context, direction string) error {
 	return d.act(ctx, "app_swipe", map[string]any{"direction": direction})
+}
+
+// SwipeOn swipes across an element in a direction, after the checks a tap
+// makes — part of the way, which reveals a list row's swipe actions without
+// performing the first. Map again and tap the action you mean.
+func (d *Device) SwipeOn(ctx context.Context, target, direction string) error {
+	return d.act(ctx, "app_swipe", map[string]any{"target": target, "direction": direction})
 }
 
 // SwipePoints drags between two points in device pixels.

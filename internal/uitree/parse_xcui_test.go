@@ -351,7 +351,9 @@ func TestIOSSelectedButtonIsNamedByItsLabel(t *testing.T) {
 	}
 	got := strings.Join(lines, "\n")
 	for _, want := range []string{
-		"Community-related content (button)",
+		// Its state is shown as one, from the Selected trait, since
+		// NetNewsWire's search scope.
+		"Community-related content (button, selected)",
 		"Personalized content (button)", // the positive control: no value, labeled
 	} {
 		if !strings.Contains(got, want) {

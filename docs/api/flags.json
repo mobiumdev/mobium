@@ -2018,6 +2018,14 @@
     },
     {
       "tool": "app_swipe",
+      "arg": "target",
+      "type": "string",
+      "setBy": [
+        "swipe"
+      ]
+    },
+    {
+      "tool": "app_swipe",
       "arg": "x1",
       "type": "integer",
       "setBy": [
@@ -3259,6 +3267,7 @@
       "sends": [
         "direction",
         "duration_ms",
+        "target",
         "x1",
         "x2",
         "y1",

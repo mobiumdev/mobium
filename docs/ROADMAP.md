@@ -21,6 +21,23 @@ this is what is not.
   mode, and parameters. Recording a test from what a person does is
   `mobium inspect`, since 2026-09-29 ([decisions/0007](decisions/0007-an-inspector.md)).
   [decisions/0006](decisions/0006-a-test-runner.md).
+- ~~**A second third-party app on iOS.**~~ Done 2026-10-01: NetNewsWire, an
+  RSS reader, built from its MIT source for a simulator and from the App
+  Store (7.1.4) on the iPhone 15 Plus, so the same app runs on both, as
+  Wikipedia cannot. Its first look found seven defects (CHALLENGES 191–197): a link
+  matched `role=button`, XCUITest type names and a disclosure arrow's name
+  in labels, section headers mapped as buttons, selection never shown, a
+  miss blamed on the keyboard, and a row behind iOS 26's toolbar tapped
+  through the toolbar. And one missing action: a list row's swipe actions
+  were reachable only by coordinates, so `app_swipe` takes a `target` now
+  (`mobium swipe @e5 left`), swiping part of the way across it to reveal
+  them; eight of eight swipes revealed and none performed. Held by
+  `docs/checks/netnewswire-ios.sh`, which passed on the simulator and,
+  from a fresh install and again after, on the iPhone. A row behind the
+  toolbar (197) is held on both by the lowest article row on screen: on
+  the iPhone its center was at y 2553 pixels, under the toolbar from 2538,
+  and `main` tapped it there and opened nothing, while this scrolls it out
+  and the article opens.
 - **Windows.** Everything that needs no device passes on a GitHub-hosted
   Windows runner, every run: both modules' tests, the named-pipe daemon
   transport's acceptance tests five times over, and the built `mobium.exe` —

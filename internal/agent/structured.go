@@ -23,6 +23,9 @@ type ElementView struct {
 	// with no such state. map's text had it and this did not, so no client
 	// could tell whether a box was ticked.
 	Checked *bool `json:"checked,omitempty"`
+	// Selected is true for what the platform reports chosen — the current
+	// tab, a segment — and absent otherwise.
+	Selected bool `json:"selected,omitempty"`
 }
 
 // LocatorView is how a ref resolves on a later screen.
@@ -131,8 +134,9 @@ func elementView(e uitree.Entry) ElementView {
 			Exact: e.Locator.Exact,
 			Role:  e.Locator.Role,
 		},
-		Bounds:  boundsView(e.Bounds),
-		Checked: e.Checked,
+		Bounds:   boundsView(e.Bounds),
+		Checked:  e.Checked,
+		Selected: e.Selected,
 	}
 }
 

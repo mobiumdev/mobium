@@ -152,8 +152,15 @@ func hasRole(n *Node, role string, clickableFallback bool) bool {
 // Cell around a Button of the same label, and calling both buttons made
 // `label=About,role=button` ambiguous — the Button inside answers it, as it
 // always did, and a tap on it lands in the row.
+//
+// Nor is an iOS link, which map prints as (link) before any other role:
+// calling it a button too made NetNewsWire's back button ambiguous with an
+// article's link of the same name.
 func fallbackRole(n *Node) string {
 	if n.Password || hasNamedRole(n, "input", false) {
+		return ""
+	}
+	if IsIOS(n) && hasNamedRole(n, "link", false) {
 		return ""
 	}
 	if n.Scrollable {

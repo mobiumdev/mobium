@@ -7,7 +7,7 @@ the source.
 
 The pattern across them is the reason the document exists: **almost nothing
 here was found by reading code or by a test written from imagination.** Of
-190 defects, 154 were found only by running against a real device. The other
+197 defects, 161 were found only by running against a real device. The other
 thirty-six — 4, 5, 6, 14, 23, 24, 32, 35, 36, 39, 44, 50, 53, 54, 57, 66, 89,
 99, 100, 121, 123, 129, 130, 133, 134, 139, 140, 141, 142, 144, 150, 158, 162,
 164, 165 and 172 — came from reading code, the compiler, a test, a linter,
@@ -4272,9 +4272,111 @@ as not visible, saying where it is, and nothing is touched; one inside a
 scroll view is brought into view as before. A unit test holds that, and
 fails with the refusal taken out.
 
+### 191. `role=button` found an iOS link, which `map` printed as `(link)`
+
+**Found by:** driving NetNewsWire, the second third-party app on iOS, on an
+iPhone 17 Pro simulator. An article's page carries a link named after its
+feed, "NetNewsWire Blog", and the back button above it has the same label.
+`map` printed one `(button)` and one `(link)`, and `label=NetNewsWire
+Blog,role=button` was refused as matching two. The touchable-means-button
+fallback from CHALLENGES 136 gave the link the button role too, though `map`
+names a link before anything else. CHALLENGES 136's rule is that a locator
+finds a node by the role `map` printed; it also has to not find it by a
+role `map` did not. An iOS link no longer takes the fallback. A test holds
+every mapped link on the captured article to it.
+
+### 192. An unlabeled list printed as `XCUIElementTypeTable`
+
+**Found by:** the same app. A container with no name falls back to its
+class, which on Android is `RecyclerView` and on iOS was XCUITest's whole
+type name, `XCUIElementTypeTable (list)`, on NetNewsWire's Settings and its
+article's scroll view, and on every captured system alert. The prefix is
+dropped from the short class name, which is all `map` and `formflux` use;
+a `class=` locator matches the full name as before, and now the short one
+too.
+
+### 193. Section headers mapped as buttons
+
+**Found by:** NetNewsWire's Settings, where "Accounts", "Feeds" and
+"Timeline" printed as `(button)`. A section header is accessible, so
+VoiceOver can land on it, and is typed Other, which says nothing; Mobium
+took accessible-and-not-content as a control. WebDriverAgent's `traits`
+said `Header`, and nothing read them. A node whose traits say Header, and
+not Button, is no longer clickable. Across every captured hierarchy that
+removed four entries, all of them headers.
+
+### 194. Rows named after a disclosure arrow: "On My iPhone chevron"
+
+**Found by:** the same Settings screen. A row with no label of its own is
+named from the text inside it, and NetNewsWire's rows carry their
+disclosure arrow as a disabled button labeled "chevron", with
+`accessible="false"`. VoiceOver never reads it; `map` did. A leaf iOS marks
+not accessible is now left out of a composed label. Only leaves: a link is
+not accessible and the text inside it is, as Wikipedia's are (CHALLENGES
+78). No other label in the captured hierarchies changed.
+
+### 195. Which tab or segment is chosen never reached `map`
+
+**Found by:** NetNewsWire's search, whose scope control offers Here and All
+Articles with no sign of which is chosen. `Node.Selected` existed, on the
+wire for external drivers too, and was never set on iOS: WebDriverAgent
+reports selection only in `traits` (`"Selected, Button"`) and the parser
+read the `selected` attribute, which it leaves out. Nor did `map` show it
+on either platform. It is read from the traits now, shown as `(button,
+selected)`, sent as `selected` in the JSON and every client's element, and
+`map --diff` reports a selection that moved. Wikipedia's onboarding
+(CHALLENGES 77) now shows its chosen option as selected, which is what that
+entry wanted shown.
+
+### 196. A miss under other words was blamed on the keyboard
+
+**Found by:** NetNewsWire's Add Feed sheet. Its URL field maps as `URL
+(input)`; that is its placeholder, which is the field's text, and the field
+has no label. `label=URL` found nothing and, with the keyboard up, the
+refusal said the keyboard "may be covering it" — of a field at the top of
+the screen. Hiding the keyboard could not help, and a remedy that cannot
+work is obeyed anyway. A `text=`, `label=` or `testid=` locator that finds
+nothing is now tried under the other two; when one finds exactly one
+element the refusal names it (`no element matches label=URL, but text=URL
+does`), and the miss is not scrolled for or put down to the keyboard.
+
+### 197. A row behind iOS 26's toolbar was tapped through the toolbar
+
+**Found by:** the NetNewsWire check failing on its second run. The feed
+list grew by a row, which put "NetNewsWire Blog" at y 781–832 points, and
+iOS 26 draws the toolbar over the list from 733 down: the list runs the
+full height of the screen behind its bars. `tap text=NetNewsWire Blog`
+answered "tapped … at (622, 2419)", which touched the toolbar between its
+buttons, and nothing happened. The row was inside its scroll container's
+bounds, so it counted as in view, and the cover rule leaves a full-width
+container that is not a control unreported, rightly, since both platforms
+lay transparent full-screen layers over everything. What was missing is
+that the part of a list in view is its bounds less the bars drawn over its
+edges. `uitree.Viewport` takes off any later node outside the list, as wide
+as it, at most a third of its height, across its top or bottom edge, with a
+control in it; every "is it in view" question now asks the viewport, and
+the measured nudge from CHALLENGES 114 measures against it, so the row is
+scrolled out from under the bar and then tapped. Across the captured
+hierarchies it found NetNewsWire's toolbar on two screens, iOS Settings'
+floating search field, a notification banner over SpringBoard and the
+Android launcher's dock, under which no icon lies. On the iPhone 15 Plus
+the same thing happened to an article row, its center at y 2553 pixels
+under a toolbar from 2538: the build before this answered "tapped … at
+(645, 2553)" and opened nothing, and this one scrolled the row out, tapped
+it at y 1669, and the article opened. The check taps the lowest article row
+on screen on both devices for that reason.
+
 ## Findings that were not defects
 
 Worth recording because each one closed off an approach that looked obvious.
+
+- **A button behind a sheet makes a locator ambiguous, safely.** On
+  NetNewsWire's Add Feed sheet `label=Add,role=button` matched two: the
+  sheet's Add, and the feed list's Add behind it, still in the tree as
+  `visible="false"`. The refusal is right — it touches nothing and its
+  remedy, a ref from `map`, works — and choosing the visible one would
+  make visibility decide resolution, which CHALLENGES 190's survey found
+  wrong for a pass-through target. Left as it is.
 
 - **A reinstall resets a phone app's permissions — an install over it does
   not.** A note from 2026-09-28 said the iPhone kept a notification denial

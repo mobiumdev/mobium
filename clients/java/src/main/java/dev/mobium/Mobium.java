@@ -558,6 +558,18 @@ public final class Mobium implements AutoCloseable {
     public void swipe(String direction) { act("app_swipe", args("direction", direction)); }
 
     /**
+     * Swipes across an element, after the checks a tap makes — part of the
+     * way, which reveals a list row's swipe actions without performing the
+     * first. Map again and tap the action you mean.
+     *
+     * @param target a ref from map() or a locator
+     * @param direction {@code "up"}, {@code "down"}, {@code "left"} or {@code "right"}: the way the finger moves
+     */
+    public void swipe(String target, String direction) {
+        act("app_swipe", args("target", target, "direction", direction));
+    }
+
+    /**
      * Drags between two points in device pixels.
      *
      * @param x1 where the finger lands, horizontally, in device pixels
