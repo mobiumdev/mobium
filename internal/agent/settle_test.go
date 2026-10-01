@@ -182,3 +182,72 @@ func TestAPersistentSnapshotFailureStillReportsItself(t *testing.T) {
 		t.Errorf("error %q lost what the device actually said", err)
 	}
 }
+
+// boundedSliding can read the button's rectangle without reading the screen,
+// as WebDriverAgent can by a test id. The button is where it is now: a
+// moving one is reported moved.
+type boundedSliding struct {
+	slidingDriver
+	bounds int
+}
+
+func (d *boundedSliding) Snapshot(ctx context.Context) (*uitree.Tree, error) {
+	d.calls++
+	if d.moves > 0 {
+		d.moves--
+		d.y += 100
+	}
+	xml := fmt.Sprintf(`<?xml version='1.0' encoding='UTF-8'?><hierarchy rotation="0">`+
+		`<node index="0" package="com.example" class="android.widget.FrameLayout" bounds="[0,0][1080,2400]">`+
+		`<node index="0" text="Continue" resource-id="com.example:id/go" class="android.widget.Button" `+
+		`clickable="true" enabled="true" bounds="[100,%d][300,%d]" />`+
+		`</node></hierarchy>`, d.y, d.y+80)
+	return uitree.ParseAndroid([]byte(xml))
+}
+
+func (d *boundedSliding) ElementBounds(ctx context.Context, n *uitree.Node) (uitree.Rect, bool, error) {
+	d.bounds++
+	y := d.y
+	if d.moves > 0 {
+		y += 100
+	}
+	return uitree.Rect{X1: 100, Y1: y, X2: 300, Y2: y + 80}, true, nil
+}
+
+func withBounded(t *testing.T, moves int) (*Handlers, *boundedSliding) {
+	t.Helper()
+	d := &boundedSliding{slidingDriver: slidingDriver{y: 200, moves: moves}}
+	h := NewHandlers()
+	h.implicitWait = 0
+	h.settleWindow = 10 * time.Millisecond
+	h.settleTimeout = 500 * time.Millisecond
+	h.sessions["fake"] = &session{dev: fakeDevice(), driver: d, backend: BackendDump}
+	return h, d
+}
+
+// A still element is confirmed by reading it alone: one read of the screen,
+// not two. On an iPhone the second was 167ms of every tap.
+func TestAStillElementIsConfirmedWithoutASecondRead(t *testing.T) {
+	h, d := withBounded(t, 0)
+	if _, err := tap(h, h.sessions["fake"], map[string]interface{}{"target": "testid=go"}); err != nil {
+		t.Fatalf("tap: %v", err)
+	}
+	if d.calls != 1 || d.bounds != 1 {
+		t.Errorf("read the screen %d times and the element %d, want once each", d.calls, d.bounds)
+	}
+	if d.tapped[0] != "200,240" {
+		t.Errorf("tapped %s", d.tapped[0])
+	}
+}
+
+// The element read only ever confirms: a moving element sends it back to
+// reading the screen until it holds still, and the tap lands where it rests.
+func TestAMovingElementStillWaitsWithTheElementRead(t *testing.T) {
+	h, d := withBounded(t, 3)
+	if _, err := tap(h, h.sessions["fake"], map[string]interface{}{"target": "testid=go"}); err != nil {
+		t.Fatalf("tap: %v", err)
+	}
+	if d.tapped[0] != "200,540" {
+		t.Errorf("tapped %s, want the button's resting place", d.tapped[0])
+	}
+}

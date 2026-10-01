@@ -96,14 +96,28 @@ this is what is not.
   simulator; a `--driver` that contradicts the device is still refused
   (CHALLENGES 88). Still to decide: a call that names no device, with only an
   iOS device connected, keeps Android's default.
-- **The cost of an action on iOS.** Every action reads the whole hierarchy
-  through WebDriverAgent, about 500 ms, and on 2026-09-30 a tap's median was
-  1.1 s on the simulator. Resolve `testid=` and `label=` with
-  WebDriverAgent's own element queries, read the full source only where a
-  check needs it (covered, keyboard, dialog), share one read across an
-  action's checks, and try `snapshotMaxDepth` and excluded attributes. Done
-  when the median tap is under 600 ms and every refusal in
-  `docs/checks/obstruction.sh` and `autowait.sh` is unchanged.
+- ~~**The cost of an action on iOS.**~~ Done 2026-09-30, by its measure: a
+  tap on the Layout Demo, timed from the CLI, went from a median of 600 ms
+  to 524 ms on a simulator and from 961 ms to 807 ms on the iPhone, and
+  every refusal in `obstruction.sh` and `autowait.sh` is unchanged on both
+  — on the iPhone with Reduce Motion off for the run, so the moving cases
+  ran. A tap was two full reads, a 100 ms window between them and the
+  touch. The window now counts the read that came before it, which on iOS
+  already spans it, and the second read is the one element's rectangle by
+  its test id when that id is unique on screen, taken only on an exact
+  match. The touch itself is about 400 ms on the phone whichever way it is
+  sent, and WebDriverAgent's idle settings barely move it.
+- **Reading an iOS screen without `visible`.** On the iPhone, Settings'
+  hierarchy took 1.81 s to read and 0.29 s without the `visible`
+  attribute: WebDriverAgent works it out for every element, and it is 85%
+  of a read. Leaving out the attributes Mobium does not parse changed
+  nothing. `visible` is what keeps a previous navigation screen, which iOS
+  keeps in the tree hidden, out of `map` and out of a locator's matches,
+  and the dialog refusals use it (CHALLENGES 105), so it cannot simply go.
+  The likely shape: read without it, and ask for it only for the nodes a
+  decision needs — the target, and anything a locator matched more than
+  once. Done when a tap in Settings on the iPhone is under a second and
+  every check that touches `map`, locators or dialogs is unchanged.
 - **Launching on a real iPhone.** `app_launch` had a median of 5.8 s on the
   iPhone 15 Plus against 2.3 s on the simulator (2026-09-30, 36 launches).
   Most of it was found and removed on 2026-09-30: a launch read the screen
@@ -120,8 +134,14 @@ this is what is not.
   sooner — but that read is also what takes the hint off, and left on, the
   hint hides a dialog the launch raised from the next `map` (CHALLENGES 76),
   while taking it off as soon as the state flips risks the 61 s stall (71).
-  Done when the median is under 2.5 s with the hint still off before the
-  launch returns.
+  On 2026-09-30 a launch's wait learned to read only which app is in front,
+  without `visible`: on a simulator Settings went from 2.3-2.5 s to 1.6 s
+  and Calendar from 2.6 s to 1.3 s. On the iPhone it gave a median of
+  0.81 s — and once in eleven Calendar launches the next full read hung
+  until it timed out, because the light read had taken the active-app hint
+  off sooner than the full one would. So a phone still confirms with a full
+  read. Done when the median is under 2.5 s with the hint still off before
+  the launch returns, and no read after it stalls in fifty launches.
 - ~~**A reset a phone can do.**~~ Done 2026-09-30. `app_clear_data` takes
   the app's own bundle on a real iPhone (`path`; `--bundle` on the CLI),
   checks it is that app, uninstalls it and installs it again, and reads the
