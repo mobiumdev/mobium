@@ -206,7 +206,7 @@ Mobium reaches. Each type has been driven on a device:
 | --- | --- | --- |
 | **Native** — Android SDK, Jetpack Compose, UIKit, SwiftUI | the platform's accessibility tree | Settings, Calculator, Clock, Wikipedia, F-Droid, Aegis, Seal (Compose), NetNewsWire |
 | **Hybrid** — a native shell around WebViews | the shell through the tree; each WebView as its own context, [below](#hybrid-apps-and-webviews) | Wikipedia's articles, MobiumApp's web screens |
-| **Mobile web and PWAs** — a page in a browser, or installed to the home screen | the browser's page as a context; on iOS, taps through the native tree | Safari, Chrome, Squoosh as a PWA |
+| **Mobile web and PWAs** — a page in a browser, or installed to the home screen | the browser's page as a context; on iOS, taps through the native tree | Safari, Chrome, Squoosh as a PWA — on Android a PWA's taps only while Chrome reports its WebView |
 | **Cross-platform, native once removed** — React Native | an ordinary native app: it renders real native views | MobiumApp, on both platforms and on real phones |
 | **Cross-platform that paints** — Flutter | not through the tree; a job for a [driver](#drivers-for-other-platforms) | not yet |
 

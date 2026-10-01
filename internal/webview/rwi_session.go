@@ -225,43 +225,85 @@ func (s *IOSSession) call(ctx context.Context, method string, params map[string]
 	}
 }
 
+// evalGroup is the object group Evaluate's handles are kept in, released
+// once each call has its value.
+const evalGroup = "mobium-eval"
+
+// iosEvalResult is a Runtime.evaluate, awaitPromise or callFunctionOn reply.
+type iosEvalResult struct {
+	Result struct {
+		Type        string          `json:"type"`
+		Value       json.RawMessage `json:"value"`
+		Description string          `json:"description"`
+		ObjectID    string          `json:"objectId"`
+		ClassName   string          `json:"className"`
+	} `json:"result"`
+	// WebKit reports a thrown exception inside a successful reply, the
+	// same trap CDP has: no error field is not evidence the script ran.
+	WasThrown bool `json:"wasThrown"`
+}
+
 // Evaluate runs an expression in the page and returns its value as a string.
+//
+// A promise is awaited, as it is over CDP. WebKit's Runtime.evaluate has no
+// awaitPromise parameter and ignores one sent, so it answered `{}` for every
+// async expression — the promise itself, by value. So the expression is
+// evaluated to a handle, a promise is awaited with Runtime.awaitPromise, and
+// any other object is read back by value. CHALLENGES 201.
 func (s *IOSSession) Evaluate(ctx context.Context, expression string) (string, error) {
-	raw, err := s.call(ctx, "Runtime.evaluate", map[string]any{
-		"expression":    expression,
-		"returnByValue": true,
-		"awaitPromise":  true,
+	r, err := s.evalCall(ctx, "Runtime.evaluate", map[string]any{
+		"expression":  expression,
+		"objectGroup": evalGroup,
 	})
 	if err != nil {
 		return "", err
 	}
-	var result struct {
-		Result struct {
-			Type        string          `json:"type"`
-			Value       json.RawMessage `json:"value"`
-			Description string          `json:"description"`
-		} `json:"result"`
-		// WebKit reports a thrown exception inside a successful reply, the
-		// same trap CDP has: no error field is not evidence the script ran.
-		WasThrown bool `json:"wasThrown"`
+	if id := r.Result.ObjectID; id != "" && !r.WasThrown {
+		defer func() {
+			_, _ = s.call(ctx, "Runtime.releaseObjectGroup", map[string]any{"objectGroup": evalGroup})
+		}()
+		if r.Result.ClassName == "Promise" {
+			r, err = s.evalCall(ctx, "Runtime.awaitPromise", map[string]any{
+				"promiseObjectId": id,
+				"returnByValue":   true,
+			})
+		} else {
+			r, err = s.evalCall(ctx, "Runtime.callFunctionOn", map[string]any{
+				"objectId":            id,
+				"functionDeclaration": "function() { return this; }",
+				"returnByValue":       true,
+			})
+		}
+		if err != nil {
+			return "", err
+		}
 	}
-	if err := json.Unmarshal(raw, &result); err != nil {
-		return "", err
-	}
-	if result.WasThrown {
-		msg := result.Result.Description
+	if r.WasThrown {
+		msg := r.Result.Description
 		if msg == "" {
-			msg = string(result.Result.Value)
+			msg = string(r.Result.Value)
 		}
 		return "", mobiumerr.New(mobiumerr.DeviceServer, "page script failed: %s", firstLine(msg))
 	}
-	if result.Result.Type == "string" {
+	if r.Result.Type == "string" {
 		var str string
-		if json.Unmarshal(result.Result.Value, &str) == nil {
+		if json.Unmarshal(r.Result.Value, &str) == nil {
 			return str, nil
 		}
 	}
-	return string(result.Result.Value), nil
+	return string(r.Result.Value), nil
+}
+
+func (s *IOSSession) evalCall(ctx context.Context, method string, params map[string]any) (*iosEvalResult, error) {
+	raw, err := s.call(ctx, method, params)
+	if err != nil {
+		return nil, err
+	}
+	var r iosEvalResult
+	if err := json.Unmarshal(raw, &r); err != nil {
+		return nil, err
+	}
+	return &r, nil
 }
 
 // LayoutMetrics reads the page's visual viewport.

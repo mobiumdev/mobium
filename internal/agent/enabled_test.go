@@ -227,3 +227,32 @@ func TestPageBehindOnAndroid(t *testing.T) {
 		t.Error("a page of no known app was called behind")
 	}
 }
+
+// Chrome's installed web app keeps its page in front and stops reporting
+// its WebView a few seconds after launch. The refusal must not send the
+// caller to NATIVE_APP as if the app had moved on: there, Chrome's tree is
+// empty too. CHALLENGES 200.
+func TestNoWebViewInFrontIsNotCalledNavigatedAway(t *testing.T) {
+	xml := `<?xml version='1.0' encoding='UTF-8'?><hierarchy rotation="0">` +
+		`<node index="0" package="com.android.chrome" class="android.widget.FrameLayout" bounds="[0,0][1080,2400]">` +
+		`<node index="0" package="com.android.chrome" class="android.widget.FrameLayout" content-desc="Web View" ` +
+		`bounds="[0,136][1080,2337]" /></node></hierarchy>`
+	tree, err := uitree.ParseAndroid([]byte(xml))
+	if err != nil {
+		t.Fatal(err)
+	}
+	h := NewHandlers()
+	s := &session{dev: fakeDevice(), driver: &fakeDriver{screens: []*uitree.Tree{tree}}, backend: BackendUIA2,
+		webApp: "com.android.chrome", webCtx: "WEBVIEW_com.android.chrome_3"}
+	_, err = h.webFrame(context.Background(), s)
+	e, ok := mobiumerr.As(err)
+	if !ok || e.Code != mobiumerr.NoSuchContext {
+		t.Fatalf("no WebView with the page's app in front: %v, want no_such_context", err)
+	}
+	if !strings.Contains(e.Message, "com.android.chrome is in front") || !strings.Contains(e.Message, "app_text") {
+		t.Errorf("the refusal does not say the app is in front and reading still works: %s", e.Message)
+	}
+	if !strings.Contains(e.Remedy, "if the app moved on") {
+		t.Errorf("the remedy is not conditional on the app having moved on: %q", e.Remedy)
+	}
+}

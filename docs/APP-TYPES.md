@@ -19,7 +19,7 @@ category reaches a different part of Mobium.
 | Hybrid | **yes** | native shell through the tree; web content through CDP or Remote Web Inspector |
 | Cross-platform | **depends, and not on the vendor's claim** | see below — the answer splits the category in half |
 | Mobile web | **not supported, and partly reachable** | a browser is [Vibium's](https://github.com/VibiumDev/vibium) job; what Mobium reaches anyway is below |
-| Progressive web app | **read on both, acted on in full only on Android** | the browser's web context; on iOS, taps go through the native tree |
+| Progressive web app | **read on both; tapped from the native tree on iOS, and on Android only while Chrome reports its WebView** | the browser's web context; on iOS, taps go through the native tree |
 
 ## What has been driven
 
@@ -31,8 +31,8 @@ it was driven once, with the result written down below, and nothing re-runs it.
 | --- | --- | --- |
 | Native | Android: Settings, Calculator, Clock, Wikipedia, F-Droid, Aegis, and Seal (Jetpack Compose). iOS: Settings, Wikipedia and NetNewsWire from the App Store | checked in — most of [checks/](checks/); `third-party-app.sh`, `compose-app.sh`, `netnewswire-ios.sh` for the apps nobody at Google or Apple wrote |
 | Hybrid | Wikipedia's articles, and MobiumApp's WebView screens, on both platforms and on real phones | checked in — `third-party-app.sh`, `mobium-app.sh`, `web-type.sh`, `web-actionability.sh`, `web-storage.sh` |
-| Mobile web | Safari on iOS; Chrome on Android | Safari checked in — `ios-webview.sh`, `orientation.sh`; Chrome's page as a context in `shake.sh`; `map`, `text`, `eval` and a tap in Chrome measured 2026-09-27 |
-| Progressive web app | Squoosh, installed to the home screen on both platforms | measured 2026-09-27; no check |
+| Mobile web | Safari on iOS; Chrome on Android | checked in — `chrome.sh` (read, a tap counted by the page, a link followed), `ios-webview.sh`, `orientation.sh`, `shake.sh` |
+| Progressive web app | Squoosh, installed to the home screen on both platforms | checked in — `pwa.sh`: installed if absent, launched from its icon, standalone, and a tap counted by the page or refused with the reason |
 | Cross-platform | React Native: MobiumApp, on both platforms and on real phones | checked in — `mobium-app.sh`, `login.sh`, `otp.sh`, `dialogs.sh` and every other MobiumApp check |
 | | Flutter, Xamarin/.NET MAUI | **never driven** — see below for why Flutter is expected to need a driver |
 | Hybrid frameworks | Cordova, Ionic | **never driven**; a WebView inside them is the hybrid case above |
@@ -78,7 +78,7 @@ What that line does *not* mean is that Mobium cannot see a browser, and until
 So "not supported" is a statement about scope — no browser management and
 no tabs — not a wall Mobium puts up. A browser's page is driven by checks all
 the same: Safari's in `ios-webview.sh` and `orientation.sh`, Chrome's in
-`shake.sh`. A web context's cookies (`app_cookies`) and the device's network
+`chrome.sh` and `shake.sh`. A web context's cookies (`app_cookies`) and the device's network
 conditions (`app_network`) are reachable, but they belong to the page and the
 device, not to managing a browser. What is reachable is reachable because a browser
 is, underneath, the hybrid case below.
@@ -96,11 +96,11 @@ on both devices above.
 | --- | --- | --- |
 | What runs it | Chrome's `WebappActivity`, in `com.android.chrome` | `com.apple.webapp`, with its own bundle id `com.apple.WebKit.PushBundle.<id>` |
 | Launched by id | no — use the home screen icon | no — FrontBoard does not know the bundle id; use the icon |
-| The page says | `display-mode: standalone`, a service worker in control | the same, and `navigator.standalone` |
+| The page says | `display-mode: standalone`, a service worker registered and active | the same, and `navigator.standalone` |
 | Its context | `WEBVIEW_com.android.chrome`, named for Chrome | `WEBVIEW_com.apple.SafariViewService`, named for neither the app nor Safari |
 | `map`, `text`, `eval` | work | work |
-| A tap in the web context | lands | refused: the host is 874 points and the viewport 812, the difference being the status bar |
-| A tap from `NATIVE_APP` | works | works — WebKit puts the page's controls in the accessibility tree |
+| A tap in the web context | lands while Chrome reports the WebView; opened while Chrome is already running, Chrome stops reporting it within about five seconds and the tap is refused ([CHALLENGES 200](CHALLENGES.md)) | refused: the host is 874 points and the viewport 812, the difference being the status bar |
+| A tap from `NATIVE_APP` | works while Chrome reports the page; once it stops, its tree is empty there too | works — WebKit puts the page's controls in the accessibility tree |
 
 Three things follow.
 
@@ -118,9 +118,19 @@ Three things follow.
   and `app_storage`, once the page is on an http or https origin; an app's
   inline HTML has none, and is refused as that.
 - **Installing one is not something Mobium does.** On Android it needs
-  Chrome's menu, on iOS the share sheet. On this emulator Chrome pinned a
-  legacy web-app shortcut rather than minting a WebAPK, which needs Play
-  services; a WebAPK — a real APK, with its own package — is unmeasured.
+  Chrome's menu, on iOS the share sheet; `checks/pwa.sh` drives both. On this
+  emulator Chrome pinned a legacy web-app shortcut rather than minting a
+  WebAPK, which needs Play services; a WebAPK — a real APK, with its own
+  package — is unmeasured. Those shortcuts are fragile: after a cold boot,
+  and once after force-stopping Chrome, the launcher showed none of them
+  while Chrome still listed six, and Chrome then offered only a plain
+  shortcut, which opens a tab.
+- **On Android, when the tap matters, launch the web app with Chrome not
+  running.** Opened from its icon while Chrome was running, Chrome stopped
+  reporting the app's WebView within about five seconds, three launches out
+  of three; opened after Chrome's process had ended, it kept reporting it,
+  two out of two. Mobium refuses the tap it can no longer place and says
+  why.
 
 ## Hybrid
 

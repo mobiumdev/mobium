@@ -7,7 +7,7 @@ the source.
 
 The pattern across them is the reason the document exists: **almost nothing
 here was found by reading code or by a test written from imagination.** Of
-199 defects, 163 were found only by running against a real device. The other
+201 defects, 165 were found only by running against a real device. The other
 thirty-six — 4, 5, 6, 14, 23, 24, 32, 35, 36, 39, 44, 50, 53, 54, 57, 66, 89,
 99, 100, 121, 123, 129, 130, 133, 134, 139, 140, 141, 142, 144, 150, 158, 162,
 164, 165 and 172 — came from reading code, the compiler, a test, a linter,
@@ -4415,6 +4415,59 @@ still open — ending its session and stopping its daemon — while the run's
 own path waits for that and does not exit first. Killed mid-run with SIGTERM,
 `--ui` left no daemon; interrupted mid-run three times, `mobium test` left
 none.
+
+### 200. A refused tap in Chrome's web app said the app had navigated away
+
+**Found by:** `docs/checks/pwa.sh`, written on 2026-10-01 to hold a
+progressive web app the way APP-TYPES described it, on its first runs on
+the Pixel 7 AVD. Squoosh, opened from its home-screen icon, mapped, read
+and evaluated, and a tap on a ref in its page was refused: "no WebView is
+visible in the native hierarchy — the app may have navigated away; switch
+back with `app_context NATIVE_APP`". The app had not moved: Squoosh was in
+front, in Chrome's `WebappActivity`. Chrome had stopped putting its
+`android.webkit.WebView` in the accessibility tree, leaving a
+`FrameLayout` described as "Web View" with no children, and nothing native
+said where the page was.
+
+Measured by reading the hierarchy every second or two after a launch from
+the icon: opened while Chrome was already running, the WebView was there
+for about five seconds and then gone for good, three launches out of three;
+opened after Chrome's process had ended, it stayed for the half minute
+sampled, two out of two. Once gone, Chrome's tabs lost theirs too, until
+Chrome was restarted. The "Web View" frame is not a stand-in: when the
+WebView is present the frame is not, and the one sample of it started 147
+pixels higher than the WebView had.
+
+The refusal itself was right — a tap with no host to measure from would
+land wherever the arithmetic put it. Its remedy was not: it sent the caller
+to `NATIVE_APP`, where Chrome's tree is just as empty, and a remedy that
+cannot work is obeyed anyway. Now it says the app is in front, names both
+causes, gives the remedy only for the one that has it, and says reading the
+page still works. `pwa.sh` launches the app with Chrome running, as an
+install leaves it, and holds Mobium to landing the tap or refusing it with
+that explanation, with the page counting nothing; `chrome.sh` starts Chrome
+fresh. What would let a tap be placed again is open (ROADMAP).
+
+### 201. On iOS an async expression came back as `{}`
+
+**Found by:** the same check, asking a home-screen web app's page whether a
+service worker was registered: `navigator.serviceWorker.getRegistrations()`
+is a promise, and on the iPhone 17 Pro simulator `app_eval` answered `{}`
+where the same expression on Android answered `true`. Any promise did:
+`Promise.resolve(42)` was `{}` too.
+
+Both transports send `awaitPromise: true` with `Runtime.evaluate`. CDP
+honors it. WebKit's `Runtime.evaluate` has no such parameter, ignores it,
+and with `returnByValue` serialized the pending promise itself. Nothing
+failed — the call succeeded with a value — so a script that awaited
+anything on iOS was answered before it ran. Now the expression is evaluated
+to a handle; a promise is awaited with WebKit's own `Runtime.awaitPromise`,
+anything else is read back by value, and the handles are released. The
+simulator test asks for a resolved promise, an async function, a delayed
+promise, an object and a rejection: against the old code the four promise
+cases failed, against the new one all pass, and `ios-webview.sh`,
+`pwa.sh`, `web-storage.sh`, `web-type.sh` and `web-actionability.sh` passed
+on the simulator after it.
 
 ## Findings that were not defects
 

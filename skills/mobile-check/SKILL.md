@@ -21,7 +21,7 @@ What the app is built with decides how to reach it:
 | Native (Android SDK, Jetpack Compose, UIKit, SwiftUI) | `map` and act — the default |
 | Cross-platform that renders native views (React Native) | the same as native: it renders real native views. Use the `@ref` from `map`, not a hand-written `label=` or `testid=`: one testID repeats across several views |
 | Hybrid (a WebView inside the app) | switch context into the WebView — [Hybrid apps](#hybrid-apps-webviews) |
-| A page in Chrome or Safari, or a PWA | the same contexts: the page is `WEBVIEW_…`. On iOS act from `NATIVE_APP` — taps in Safari's or a home-screen web app's page are refused |
+| A page in Chrome or Safari, or a PWA | the same contexts: the page is `WEBVIEW_…` — pick it by the URL `contexts` prints, not by its name. On iOS act from `NATIVE_APP` — taps in Safari's or a home-screen web app's page are refused. On Android, a refusal saying Chrome stopped reporting its WebView means no tap can be placed in that page: read it, and say so |
 | Cross-platform that paints (Flutter) | not reachable through `map`; it paints its own widgets. Say so rather than retrying |
 
 If you need to test a *website* — tabs, browser sessions, a desktop browser —
