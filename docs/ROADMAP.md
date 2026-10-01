@@ -60,8 +60,7 @@ this is what is not.
   and its edge swipes reach the platform's back on every one, and on iOS 26 a
   swipe from anywhere pops a navigation stack unless a row with swipe actions
   takes it. MobiumApp closed on every Android back; a `BackHandler` fixes it
-  on all three Android devices (branch `android-back` in mobium-app, not
-  merged). Left for Mobium: `press back` reporting what back did, a gesture
+  on all three Android devices (mobium-app #12). Left for Mobium: `press back` reporting what back did, a gesture
   back that refuses three-button navigation, the navigation mode in
   `devices`, a fuller iOS remedy, and a check that holds all of it.
 - **Windows.** Everything that needs no device passes on a GitHub-hosted

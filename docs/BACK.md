@@ -77,8 +77,8 @@ registered no listener.
 ### The fix, measured
 
 A `BackHandler` listener that goes where the screen's Back button goes and
-leaves home to the system — on branch `android-back` in
-`~/mobium-app-public`, not merged:
+leaves home to the system — merged as
+[mobium-app #12](https://github.com/mobiumdev/mobium-app/pull/12):
 
 ```tsx
 useEffect(() => {
@@ -146,9 +146,9 @@ Three things follow.
 
 ### In MobiumApp
 
-1. **Android back closes the app.** Fixed on branch `android-back`,
-   measured above; to merge, rebuild for both platforms and keep
-   `docs/checks/mobium-app.sh` passing.
+1. **Android back closed the app.** Fixed in mobium-app #12, measured
+   above. Rebuild MobiumApp for any device that still has the old build,
+   and keep `docs/checks/mobium-app.sh` passing.
 2. **No swipe back on iOS.** Needs native-stack navigation; unmeasured.
 3. **WebView screens.** Android back should go back in the page's history
    before leaving the screen, as a browser does. Unmeasured.
