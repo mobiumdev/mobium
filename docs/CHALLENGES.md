@@ -7,7 +7,7 @@ the source.
 
 The pattern across them is the reason the document exists: **almost nothing
 here was found by reading code or by a test written from imagination.** Of
-189 defects, 153 were found only by running against a real device. The other
+190 defects, 154 were found only by running against a real device. The other
 thirty-six — 4, 5, 6, 14, 23, 24, 32, 35, 36, 39, 44, 50, 53, 54, 57, 66, 89,
 99, 100, 121, 123, 129, 130, 133, 134, 139, 140, 141, 142, 144, 150, 158, 162,
 164, 165 and 172 — came from reading code, the compiler, a test, a linter,
@@ -4247,6 +4247,30 @@ the sweep listed it and removed it. A Mobium session then announced it
 missing and installed `MobiumWDA-Runner`, and the same sweep listed nothing
 under `WebDriverAgentRunner-Runner` and removed nothing, and `devicectl` read
 the runner back from the phone afterward.
+
+### 190. A tap on an element below the screen was reported done
+
+**Found by:** a survey, on the iPhone 15 Plus, of where a full read would act
+on an element iOS calls hidden — to see whether `pickOne`, which does not
+consult visibility, ever acted on one it should not. On seventeen real
+screens the hidden elements on screen were all covered ones, which the
+cover rule answers, and one of them, the Obstruction Demo's pass-through
+target, really is reached: refusing "hidden" outright would have refused a
+tap that works. The defect was elsewhere. Wikipedia's feed held 1,108
+hidden elements a locator resolved uniquely, every one with its center
+below the screen, and `tap label=computer printers` answered "tapped … at
+(615, 2833)" on a screen 2796 pixels tall. Nothing around the link scrolls
+in the tree, so the check that an element sits inside its scroll container
+had nothing to check it against. CHALLENGES 187 had fixed the same thing
+for a tap by coordinates.
+
+Scrolling for it was tried first and was wrong: the link was the hidden
+rest of an article extract its card clips, which no scroll brings into
+view, and swiping for it ran the call out of time. So an element whose
+center is off the screen, with nothing around it that scrolls, is refused
+as not visible, saying where it is, and nothing is touched; one inside a
+scroll view is brought into view as before. A unit test holds that, and
+fails with the refusal taken out.
 
 ## Findings that were not defects
 

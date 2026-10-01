@@ -139,9 +139,14 @@ this is what is not.
   way: a locator's resolution (`pickOne`) does not consult visibility on a
   full read either, so a uniquely labeled element iOS calls hidden is
   acted on unless it is under a dialog or the keyboard, or has no bounds.
-  The light path asks the element and refuses one, which is stricter;
-  whether the full read should too wants a screen that has such an element,
-  which none of the 20 captured did.
+  The light path asks the element and, when it is hidden, reads in full
+  rather than act on it. Whether the full read should refuse it was
+  answered on 2026-09-30 by a survey of seventeen screens on the iPhone: no.
+  The hidden elements on screen were all covered ones, the cover rule's to
+  answer, and one, the Obstruction Demo's pass-through target, is really
+  reached. What the survey found instead was elements below the screen with
+  nothing around them that scrolls, tapped there and reported done
+  (CHALLENGES 190), and those are now refused.
 - ~~**Launching on a real iPhone.**~~ Done 2026-09-30. `app_launch` had a
   median of 5.8 s on the iPhone 15 Plus against 2.3 s on the simulator. A
   launch read the screen before launching, usually the home screen at
