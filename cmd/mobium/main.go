@@ -57,7 +57,7 @@ func main() {
 			gridActive = len(gridNodes()) > 0
 			return nil
 		},
-		Long: "Mobium automates mobile apps — native, hybrid, React Native and pages in a\n" +
+		Long: "Mobium automates mobile apps — native, hybrid, cross-platform and pages in a\n" +
 			"mobile browser — on Android emulators and phones, iOS simulators\n" +
 			"and iPhones, using the same map/@ref workflow as vibium:\n\n" +
 			"  mobium map && mobium tap @e1 && mobium map",
