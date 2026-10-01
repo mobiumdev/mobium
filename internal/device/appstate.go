@@ -61,37 +61,63 @@ func (a *ADB) AppState(ctx context.Context, pkg string) (AppState, error) {
 	return AppState{State: AppBackground}, nil
 }
 
-// WebApkHost names the browser showing pkg's pages when pkg is a WebAPK in
-// front: an installed web app whose task is its own, with the browser's
-// web-app activity on top of it. Its windows belong to the browser, so the
-// hierarchy and every foreground read name the browser, never pkg — a
-// launch of one was reported as the browser being in front instead
-// (CHALLENGES 202). Only a top activity that is a browser's WebApkActivity
-// counts: a permission prompt is in the launching app's task too, and that
-// is something else in front.
-func (a *ADB) WebApkHost(ctx context.Context, pkg string) (string, bool) {
-	acts, err := a.Shell(ctx, "dumpsys", "activity", "activities")
-	if err != nil {
-		return "", false
-	}
-	return webApkHost(string(acts), pkg)
+// Hosted is an app whose screen a browser draws, in the app's own task: an
+// installed web app (a WebAPK) or a Trusted Web Activity, and any app that
+// opened a page in a browser's custom tab. The browser owns the windows, so
+// the hierarchy and every foreground read name it, never the app — a launch
+// of either was reported as the browser in front, and a back out of one as
+// leaving the browser (CHALLENGES 202, 205).
+type Hosted struct {
+	// Owner is the app the task belongs to; Host is the browser drawing it.
+	Owner, Host string
+	// Kind is "installed web app", "Trusted Web Activity" or "app in a
+	// custom tab", the last an ordinary app that opened a page in one.
+	Kind string
 }
 
-func webApkHost(dump, pkg string) (string, bool) {
+// HostedInFront reads whether the task in front is an app a browser draws.
+func (a *ADB) HostedInFront(ctx context.Context) (Hosted, bool) {
+	acts, err := a.Shell(ctx, "dumpsys", "activity", "activities")
+	if err != nil {
+		return Hosted{}, false
+	}
+	return hostedInFront(string(acts))
+}
+
+// hostedInFront is the reading. Only a browser's own activities count — a
+// WebApkActivity or a CustomTabActivity on top — because a permission prompt
+// is also another package over an app's task, and that is something else in
+// front. A Trusted Web Activity is a custom tab whose task is rooted in the
+// TWA library's launcher: Bubblewrap's, androidbrowserhelper.
+func hostedInFront(dump string) (Hosted, bool) {
 	m := topActivityRe.FindStringSubmatch(dump)
-	if m == nil || !strings.HasSuffix(m[2], "WebApkActivity") {
-		return "", false
+	if m == nil {
+		return Hosted{}, false
 	}
-	if _, root := taskInFront(dump); root != pkg || m[1] == pkg {
-		return "", false
+	top, class := m[1], m[2]
+	kind := ""
+	switch {
+	case strings.HasSuffix(class, "WebApkActivity"):
+		kind = "installed web app"
+	case strings.HasSuffix(class, "CustomTabActivity"):
+		kind = "app in a custom tab"
+	default:
+		return Hosted{}, false
 	}
-	return m[1], true
+	root, rootClass := taskRoot(dump)
+	if root == "" || root == top {
+		return Hosted{}, false
+	}
+	if kind == "app in a custom tab" && strings.Contains(rootClass, "androidbrowserhelper.trusted") {
+		kind = "Trusted Web Activity"
+	}
+	return Hosted{Owner: root, Host: top, Kind: kind}, true
 }
 
 var (
 	topActivityRe = regexp.MustCompile(`topResumedActivity=ActivityRecord\{\S+ u\d+ ([^/\s]+)/(\S+) t\d+`)
 	topResumedRe  = regexp.MustCompile(`topResumedActivity=ActivityRecord\{\S+ u\d+ ([^/\s]+)/\S+ t(\d+)`)
-	histRe        = regexp.MustCompile(`\* Hist\s+#\d+: ActivityRecord\{\S+ u\d+ ([^/\s]+)/\S+ t(\d+)`)
+	histRe        = regexp.MustCompile(`\* Hist\s+#\d+: ActivityRecord\{\S+ u\d+ ([^/\s]+)/(\S+) t(\d+)`)
 )
 
 // taskInFront reads `dumpsys activity activities`: the package of the
@@ -103,20 +129,31 @@ func taskInFront(dump string) (top, root string) {
 	if m == nil {
 		return "", ""
 	}
-	top, task := m[1], m[2]
+	root, _ = taskRoot(dump)
+	return m[1], root
+}
 
-	var lastPkg, lastTask string
+// taskRoot is the package and class of the activity at the root of the task
+// in front.
+func taskRoot(dump string) (pkg, class string) {
+	m := topResumedRe.FindStringSubmatch(dump)
+	if m == nil {
+		return "", ""
+	}
+	task := m[2]
+
+	var lastPkg, lastClass, lastTask string
 	sc := bufio.NewScanner(strings.NewReader(dump))
 	sc.Buffer(make([]byte, 0, 64*1024), 1<<20)
 	for sc.Scan() {
 		line := sc.Text()
 		if h := histRe.FindStringSubmatch(line); h != nil {
-			lastPkg, lastTask = h[1], h[2]
+			lastPkg, lastClass, lastTask = h[1], h[2], h[3]
 			continue
 		}
 		if strings.Contains(line, "rootOfTask=true") && lastTask == task {
-			return top, lastPkg
+			return lastPkg, lastClass
 		}
 	}
-	return top, ""
+	return "", ""
 }

@@ -32,7 +32,7 @@ it was driven once, with the result written down below, and nothing re-runs it.
 | Native | Android: Settings, Calculator, Clock, Wikipedia, F-Droid, Aegis, and Seal (Jetpack Compose). iOS: Settings, Wikipedia and NetNewsWire from the App Store | checked in — most of [checks/](checks/); `third-party-app.sh`, `compose-app.sh`, `netnewswire-ios.sh` for the apps nobody at Google or Apple wrote |
 | Hybrid | Wikipedia's articles, and MobiumApp's WebView screens, on both platforms and on real phones | checked in — `third-party-app.sh`, `mobium-app.sh`, `web-type.sh`, `web-actionability.sh`, `web-storage.sh` |
 | Mobile web | Safari on iOS; Chrome on Android, emulator and the Pixel 8 Pro | checked in — `chrome.sh` (read, a tap counted by the page, a link followed), `ios-webview.sh`, `orientation.sh`, `shake.sh` |
-| Progressive web app | Squoosh, installed to the home screen on both platforms, and as a WebAPK on the Pixel 8 Pro | checked in — `pwa.sh`: installed if absent, launched, standalone, and a tap counted by the page — or, on an emulator's shortcut, refused with the reason |
+| Progressive web app | Squoosh, installed to the home screen on both platforms, and as a WebAPK on the Pixel 8 Pro; OYO Lite, a Trusted Web Activity from the Play Store, on the Pixel 8 Pro | checked in — `pwa.sh`: installed if absent, launched, standalone, and a tap counted by the page — or, on an emulator's shortcut, refused with the reason; `twa.sh`: a Play Store PWA launched, tapped, and backed through |
 | Cross-platform | React Native: MobiumApp, on both platforms and on real phones | checked in — `mobium-app.sh`, `login.sh`, `otp.sh`, `dialogs.sh` and every other MobiumApp check |
 | | Flutter, Xamarin/.NET MAUI | **never driven** — see below for why Flutter is expected to need a driver |
 | Hybrid frameworks | Cordova, Ionic | **never driven**; a WebView inside them is the hybrid case above |
@@ -125,6 +125,18 @@ Three things follow.
   and once after force-stopping Chrome, the launcher showed none of them
   while Chrome still listed six, and Chrome then offered only a plain
   shortcut, which opens a tab.
+- **A PWA from the Play Store is a Trusted Web Activity** — a package of
+  its own that opens the site in Chrome, full screen, in a custom tab
+  (Bubblewrap and PWABuilder make them). OYO Lite, `com.oyo.consumerlite`,
+  measured on the Pixel 8 Pro on 2026-10-01: its task is rooted in Google's
+  `androidbrowserhelper.trusted.LauncherActivity` with Chrome's
+  `CustomTabActivity` on top, its page is a `WEBVIEW_com.android.chrome`
+  context with the site's URL, it runs standalone, and taps land. Like a
+  WebAPK, its windows are Chrome's, so `app_launch` and back name it by its
+  task ([CHALLENGES 205](CHALLENGES.md)). Back goes through the page's
+  history first, then leaves — but only through entries a user's gesture
+  made: a navigation run with `app_eval` is skipped by back, as Chrome skips
+  any made without one. Tap the link instead.
 - **On a phone with Play services, a PWA is a WebAPK — a real package.**
   On the Pixel 8 Pro, Chrome 154 offered "Install and create shortcut", then
   a choice of web app or shortcut, and minted
