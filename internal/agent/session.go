@@ -44,8 +44,7 @@ type SessionInfo struct {
 	Driver   string `json:"driver"`
 }
 
-// sessionTool is app_session: the explicit start and end of a device session, as
-// Appium's new session and quit are.
+// sessionTool is app_session: the explicit start and end of a device session.
 //
 // Every other tool opens a session on first use and nothing closed one short
 // of stopping the daemon, which ends every device's at once. start opens it
@@ -133,8 +132,7 @@ func (h *Handlers) sessionStart(ctx context.Context, args map[string]interface{}
 	}
 
 	if app := stringArg(args, "app"); app != "" {
-		// Stopped first, as Appium's UiAutomator2 driver stops the app before
-		// a session launches it, so the session begins at the app's first
+		// Stopped first, before the session launches it, so the session begins at the app's first
 		// screen rather than wherever it was left. Settings resumes on the
 		// last page it showed, and a quick start that tapped a row on the
 		// main screen found the page it had opened last time instead. Data is
@@ -174,8 +172,7 @@ func (h *Handlers) sessionEnd(args map[string]interface{}) (*ToolsCallResult, er
 	sort.Strings(keys)
 
 	if len(keys) == 0 {
-		// Idempotent, as Appium's quit on a session already gone: the state
-		// asked for is the state the device is in.
+		// Idempotent: the state asked for is the state the device is in.
 		where := "any device"
 		if want != "" {
 			where = want

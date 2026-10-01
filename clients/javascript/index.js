@@ -216,8 +216,7 @@ function toElements(data) {
 }
 
 /**
- * Connect and open the session on the device, as Appium's new session does:
- * the device-side server is started now and, given an app, it is launched and
+ * Connect and open the session on the device: the device-side server is started now and, given an app, it is launched and
  * in front when this resolves. End it with `quit()`.
  *
  * `platform` is "android" or "ios"; "ios" picks the wda driver, so none need
@@ -562,7 +561,7 @@ export class Device {
   }
 
   /**
-   * The raw hierarchy — what Appium calls the page source — for when map
+   * The raw hierarchy — the page source — for when map
    * leaves out the thing you need to see; map is what to act on. `source` is
    * the platform's XML, or in a WebView the page's markup; `format` is "xml"
    * or "html"; `units` is "px" on Android and "pt" on iOS, where map, taps and
@@ -1428,8 +1427,8 @@ export class Device {
   }
 
   /**
-   * Stop the trace and save it to `path`: a zip in the Playwright trace
-   * format, which trace.playwright.dev and player.vibium.dev open. A relative
+   * Stop the trace and save it to `path`: a zip in Vibium's record
+   * format, which player.vibium.dev opens. A relative
    * path is this process's.
    */
   async traceStop(path) {
@@ -1488,7 +1487,7 @@ export class Device {
   /**
    * The current WebView's cookies: the ones its page's URL is sent, HttpOnly
    * ones included. Needs a web context — context() first. Each has
-   * Playwright's and Vibium's keys: name, value, domain, path, expires
+   * Vibium's keys: name, value, domain, path, expires
    * (seconds since the epoch, absent for a session cookie), httpOnly, secure,
    * sameSite.
    */
@@ -1511,8 +1510,7 @@ export class Device {
   }
 
   /**
-   * The current page's storage state, in the shape Playwright and Vibium
-   * save: { cookies, origins: [{ origin, localStorage, sessionStorage }] }.
+   * The current page's storage state, in the shape Vibium saves: { cookies, origins: [{ origin, localStorage, sessionStorage }] }.
    */
   async storage() {
     const data = (await this.#data('app_storage', { action: 'get' })) || {}
@@ -1594,8 +1592,7 @@ export class Device {
   }
 
   /**
-   * Ends the session on the device, as Appium's quit does, and closes the
-   * connection. The teardown is the daemon's own: accessibility settings put
+   * Ends the session on the device and closes the connection. The teardown is the daemon's own: accessibility settings put
    * back, a recording or route stopped, WebViews detached, the device-side
    * server stopped, and the app start() launched, if any, stopped too.
    * Quitting a session that is not open succeeds, and a second quit does

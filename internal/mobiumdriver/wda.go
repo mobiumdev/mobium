@@ -19,8 +19,7 @@ import (
 // and the first launch on a cold simulator includes its own startup.
 const wdaReadyTimeout = 90 * time.Second
 
-// WDA drives an iOS simulator or a real iPhone through Appium's
-// WebDriverAgent.
+// WDA drives an iOS simulator or a real iPhone through WebDriverAgent.
 //
 // It shares the W3C client with the UiAutomator2 backend — the two servers
 // expose the same endpoints — so this file is only the parts that differ:

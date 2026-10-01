@@ -418,7 +418,7 @@ const (
 )
 
 // Source is a hierarchy as the device-side server sent it, before any
-// parsing: what Appium calls the page source. Units says what its geometry
+// parsing: the page source. Units says what its geometry
 // is in, since on iOS that is points and not the pixels map and taps use;
 // Scale is pixels per point there.
 type Source struct {

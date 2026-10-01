@@ -243,8 +243,7 @@ func (h *Handlers) waitOn(ctx context.Context, s *session, args map[string]inter
 			nodes = shown
 		}
 		// A declared rule answers a dialog in a wait's way as it does in an
-		// action's, as Playwright's locator handlers run for an assertion
-		// too: login.test.json's rule for "Save Password?" answered it in
+		// action's: login.test.json's rule for "Save Password?" answered it in
 		// front of a tap and not in front of the wait for the next screen,
 		// which timed out on a real iPhone. Not for a wait until the target
 		// is gone, which a dialog over it already satisfies. On Android the

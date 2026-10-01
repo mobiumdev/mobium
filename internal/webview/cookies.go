@@ -30,8 +30,8 @@ import (
 // it already expired — so every write is read back by the caller.
 
 // Cookie is one cookie, the same on both platforms. The JSON keys are
-// Playwright's and Vibium's rather than Mobium's usual snake_case, so a
-// storage state saved by one tool can be restored by another.
+// Vibium's rather than Mobium's usual snake_case, so a storage state saved
+// by one can be restored by the other.
 type Cookie struct {
 	Name   string `json:"name"`
 	Value  string `json:"value"`
@@ -296,8 +296,7 @@ type StorageItem struct {
 	Value string `json:"value"`
 }
 
-// OriginStorage is one origin's web storage, in the shape Playwright and
-// Vibium save it.
+// OriginStorage is one origin's web storage, in the shape Vibium saves it.
 type OriginStorage struct {
 	Origin         string        `json:"origin"`
 	LocalStorage   []StorageItem `json:"localStorage"`

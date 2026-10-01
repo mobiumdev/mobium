@@ -170,8 +170,8 @@ The same protocol, reached a different way. Verified on an iPhone 15 Plus on
 iOS 26.6.2: MobiumApp's WebViews, two at once, and Safari's pages, through
 [../checks/mobium-app.sh](../checks/mobium-app.sh).
 
-**The route is usbmuxd and lockdown** — the one Appium and
-ios_webkit_debug_proxy take, and the "remote debugger proxy" people mean when
+**The route is usbmuxd and lockdown** — the one ios_webkit_debug_proxy
+takes, and the "remote debugger proxy" people mean when
 they say Safari on a device needs one:
 
 | Step | What | Measured |
@@ -205,4 +205,4 @@ protocol — measured. But:
   not a transport.
 
 The lockdown route needs the phone connected by cable, which the tunnel route
-would not have. That is the price, and it is the same one Appium pays.
+would not have. That is the price.

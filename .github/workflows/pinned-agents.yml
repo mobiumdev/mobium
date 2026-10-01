@@ -2,7 +2,7 @@
 #
 # Deliberately NOT part of CI. These tests download UiAutomator2 and
 # WebDriverAgent from their upstream GitHub releases, so they fail when
-# GitHub, Appium or the WebDriverAgent project has a bad day — none of which
+# GitHub or either project has a bad day — none of which
 # is a reason to block a pull request. Failing here means "go look", not
 # "the change is wrong".
 #

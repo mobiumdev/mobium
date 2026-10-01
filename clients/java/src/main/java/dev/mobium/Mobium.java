@@ -156,8 +156,7 @@ public final class Mobium implements AutoCloseable {
         public Builder session(String name) { this.session = name; return this; }
 
         /**
-         * Connects and opens the session on the device, as Appium's new
-         * session does: the device-side server is started now and, given an
+         * Connects and opens the session on the device: the device-side server is started now and, given an
          * {@link #app}, it is launched and in front when this returns.
          *
          * <p>Nothing requires it -- every call opens a session on first use --
@@ -260,7 +259,7 @@ public final class Mobium implements AutoCloseable {
     }
 
     /**
-     * The raw hierarchy — what Appium calls the page source — for when
+     * The raw hierarchy — the page source — for when
      * {@link #map} leaves out the thing you need to see; map is what to act
      * on. {@code source} is the platform's XML, or in a WebView the page's
      * markup; {@code units} is "px" on Android and "pt" on iOS, where map, taps
@@ -1598,8 +1597,8 @@ public final class Mobium implements AutoCloseable {
     }
 
     /**
-     * Stops the trace and saves it as a zip in the Playwright trace format,
-     * which trace.playwright.dev and player.vibium.dev open. A relative path
+     * Stops the trace and saves it as a zip in Vibium's record format,
+     * which player.vibium.dev opens. A relative path
      * is this process's.
      *
      * @param path where to save the trace on this machine, a {@code .zip}
@@ -1685,7 +1684,7 @@ public final class Mobium implements AutoCloseable {
     /**
      * The current WebView's cookies: the ones its page's URL is sent, HttpOnly
      * ones included. Needs a web context -- {@link #context(String)} first.
-     * Each map has Playwright's and Vibium's keys: name, value, domain, path,
+     * Each map has Vibium's keys: name, value, domain, path,
      * expires (seconds since the epoch, absent for a session cookie),
      * httpOnly, secure and sameSite.
      *
@@ -1726,8 +1725,7 @@ public final class Mobium implements AutoCloseable {
     }
 
     /**
-     * The current page's storage state, in the shape Playwright and Vibium
-     * save: cookies, and origins, each with origin, localStorage and
+     * The current page's storage state, in the shape Vibium saves: cookies, and origins, each with origin, localStorage and
      * sessionStorage.
      *
      * @return the storage state
@@ -1874,8 +1872,7 @@ public final class Mobium implements AutoCloseable {
     public Session session() { return session; }
 
     /**
-     * Ends the session on the device, as Appium's quit does, and closes the
-     * connection. The teardown is the daemon's own: accessibility settings put
+     * Ends the session on the device and closes the connection. The teardown is the daemon's own: accessibility settings put
      * back, a recording or route stopped, WebViews detached, the device-side
      * server stopped, and the app {@code start()} launched, if any, stopped
      * too. Quitting a session that is not open succeeds, and a second quit --

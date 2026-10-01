@@ -96,21 +96,20 @@ this is what is not.
     on a phone, where Mobium could reach a probe only over the phone's
     network; it refuses, and `hit-test` there stays the debugger's.
 - ~~**Session recording and `diff map`.**~~ Done 2026-09-29. `mobium trace
-  start|stop` records a session as Vibium does: a zip in the Playwright
-  trace format, with every call a step, the screen after it and the map
-  drawn over it. trace.playwright.dev opens it (`docs/checks/trace.sh`,
-  measured with `MOBIUM_TRACE_VIEWER=1`). `mobium map --diff` answers what
+  start|stop` records a session as Vibium does: a zip in Vibium's record
+  format, with every call a step, the screen after it and the map drawn
+  over it (`docs/checks/trace.sh`). `mobium map --diff` answers what
   changed since the last map (`docs/checks/map-diff.sh`). Since
   2026-10-01 `mobium test --trace` writes the same zip for each test it
   keeps, beside the filmstrip, and the HTML report links it; the runner's
   own screenshots and maps are sent with MCP's `_meta` marking them
   untraced, so the zip holds the test's calls alone (`test-runner.sh`).
-  And since 2026-10-01 it plays in Vibium's player, player.vibium.dev, as
-  well as trace.playwright.dev, checked on a simulator and an emulator by
-  `trace.sh` with `MOBIUM_TRACE_VIEWER=1`. Getting there: the player names a
-  fill by Playwright's `selector` and `value`, which Mobium did not send, so
+  And since 2026-10-01 it plays in Vibium's player, player.vibium.dev,
+  checked on a simulator and an emulator by `trace.sh` with
+  `MOBIUM_TRACE_VIEWER=1`. Getting there: the player names a fill by the
+  record format's `selector` and `value`, which Mobium did not send, so
   it read `Type "" into field` — they are recorded now, the value masked a
-  dot a character; and both viewers show at each step the frame kept after
+  dot a character; and the player shows at each step the frame kept after
   the one before, which after a launch was blank — an action's frame is now
   taken once the screen has settled, as `mobium test` reads its own.
   Next, if wanted: a batch's steps as a group in it.
@@ -401,8 +400,8 @@ this is what is not.
   3. **iOS second, and harder.** Mobium builds WebDriverAgent from source and
      signs it with a team from the local keychain; a farm's host has neither,
      and re-signs uploaded apps with its own identity. The route to find out
-     is whether the host provides a signed WebDriverAgent — farms that run
-     Appium must — and whether Mobium can be pointed at a runner it did not
+     is whether the host provides a signed WebDriverAgent — farms that drive
+     iOS must — and whether Mobium can be pointed at a runner it did not
      build. Until that is answered, iOS on a farm is a question, not a step.
   4. **Budget.** A check takes two to five minutes of device time, so a trial
      of the size last seen covers a few hundred runs. Spend it on breadth — a

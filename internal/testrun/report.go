@@ -223,8 +223,8 @@ img{max-width:320px;width:100%;border:1px solid var(--line);border-radius:8px}
 			}
 		}
 		if r.TraceFile != "" {
-			fmt.Fprintf(&b, `<p class="muted">Playwright trace: <a href="%s">%s</a> — open it at `+
-				`<a href="https://trace.playwright.dev">trace.playwright.dev</a></p>`,
+			fmt.Fprintf(&b, `<p class="muted">Recording: <a href="%s">%s</a> — open it at `+
+				`<a href="https://player.vibium.dev">player.vibium.dev</a></p>`,
 				html.EscapeString(filepath.ToSlash(r.TraceFile)), html.EscapeString(filepath.Base(r.TraceFile)))
 		}
 		if len(r.Trace) > 0 {

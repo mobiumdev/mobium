@@ -158,7 +158,7 @@ else — a rule that had been copied without being understood.
 *session* being gone is invisible to it. The shared W3C client now recovers: a
 call failing with "invalid session id" reopens the session, rewrites the dead
 id out of the request path, and retries once. Without it, anything else
-attaching to the device — a second Mobium, or Appium — breaks every subsequent
+attaching to the device — a second Mobium, or another tool — breaks every subsequent
 command until the daemon restarts.
 
 ### 9. Stale sessions across emulator restarts
@@ -1360,7 +1360,7 @@ route does not exist. UiAutomator2's own endpoints do: a POST to
 It answers `""` whatever the clipboard holds. Since Android 10 only an app with
 focus may read the clipboard, and the UiAutomator2 server has no activity of
 its own; foregrounding a different app does not help, because the restriction
-is on the *reading* app. Appium works around it with a separate helper
+is on the *reading* app. Working around it takes a separate helper
 application. Mobium installs no such thing, which is the whole bet, so the read
 is genuinely unavailable here.
 
@@ -2216,7 +2216,7 @@ reading them as the server's problem rather than Mobium's.
 
 The server's own `/shutdown` does not exist in 10.6.6 (measured: unknown
 command). A force-stop of both its packages, before the host is cancelled,
-ends it with no record — Appium stops it the same way. Measured after the
+ends it with no record. Measured after the
 fix: three sessions, three stops, and a SIGTERM with a session live, the
 dropbox count unchanged at 12 and no server process left. Only a server
 this session started is stopped, as on iOS.
@@ -2815,7 +2815,7 @@ center is aimed around at the clear point nearest it, as a native target is
 (115). A check that fails is waited out within the implicit wait and then
 refused as "`@e7` failed check receivesEvents: covered by "full cover"".
 `aria-disabled` is refused although the page's handler would have run,
-because Playwright and Vibium refuse it and a page that honors the attribute
+because Vibium refuses it and a page that honors the attribute
 would not act. Unlike a native tree, a page hit-tests, so the plain div that
 a native screen can only report is refused here.
 
@@ -3510,7 +3510,7 @@ after verifying the source and before building, refuses to build if the line
 it attaches to is gone, and rebuilds a phone's runner built before the patch.
 After the rebuild both ports answered over the tunnel and both refused the
 Wi-Fi address, and `ios-device.sh` passed. The simulator's runner is
-Appium's prebuilt release, unpatched; there the Mac's firewall is the
+the prebuilt release, unpatched; there the Mac's firewall is the
 mitigation (152).
 
 A runner already running when a session starts is used rather than started
@@ -3541,7 +3541,7 @@ that is not a result for the same reason: nothing known to answer there was
 tried first.
 
 Unlike WebDriverAgent (153), the server has no setting that chooses an
-interface: it calls Netty's `bind(port)`, and Mobium installs Appium's
+interface: it calls Netty's `bind(port)`, and Mobium installs the
 prebuilt APK rather than building it. Binding it to `127.0.0.1` would lose
 nothing — `adb forward` reaches the server on the device's localhost — so
 the fix is upstream: a bind address the server reads, as WebDriverAgent
@@ -3863,7 +3863,7 @@ and on Android that test can never fail once any of the target is in: a
 child's bounds are clipped to its container, so a card 683 pixels wide of
 which 101 showed reported `[937,476][1038,896]`, inside the pager. It was
 reachable — a tap there presses it, which is all `mobium-app.sh` asked — but
-not shown, and Playwright's scroll-into-view brings the whole element in. Two
+not shown, and scrolling an element into view should bring the whole of it in. Two
 signs mark clipped bounds together: flush against the container's edge on
 the scroll axis, and shorter along it than a sibling of the same kind. A whole
 row can sit flush, the same height as its neighbors, so flush alone is not
@@ -3885,9 +3885,9 @@ A rule (`app_dialogs`) answered a dialog only when an action resolved its
 target and found the dialog over it. Sign-in is a tap, and iOS raises the
 sheet a moment after the tap has returned, so the next call to meet it was
 the wait, which reported it and timed out. On a simulator the sheet does not
-come, which is why the suite passed there. Playwright's locator handlers run
-before an auto-retrying assertion as well as an action, and a wait is
-Mobium's assertion. So `app_wait_for` now answers a rule for a dialog over
+come, which is why the suite passed there. A dialog rule should run before
+an auto-retrying assertion as well as an action, and a wait is Mobium's
+assertion. So `app_wait_for` now answers a rule for a dialog over
 its target, or, on Android, where the tree holds only the dialog's window,
 when its target is not there at all. It is bounded as an action is, and
 reported in `dialogs_handled` as an action is. A wait for the target to go
@@ -4218,7 +4218,7 @@ MobiumApp in front, attached.
 ### 189. Another tool removed Mobium's runner from the iPhone, and Mobium put it back in silence
 
 **Found by:** comparing another tool's session on the iPhone 15 Plus,
-2026-09-30. Before installing its own WebDriverAgent, appium-xcuitest-driver
+2026-09-30. Before installing its own WebDriverAgent, that tool
 uninstalls every user app whose `CFBundleName` is `WebDriverAgentRunner-Runner`
 except its own, whatever the bundle id. Mobium's runner is built from
 WebDriverAgent's source and carried that name, so it went, along with runners
@@ -4239,9 +4239,9 @@ between sessions, the next one said "Mobium's WebDriverAgent … is no longer
 installed on iPhone 15 Plus — something removed it since the last session" and
 started; and the session after that said nothing.
 
-The sweep was then run on the phone: appium-xcuitest-driver 12.13.3's own
-lookup and removal, called directly, without the install of Appium's runner
-that follows it. The phone held no runner but Mobium's. As a positive
+The sweep was then run on the phone: the other tool's own lookup and
+removal, called directly, without the install of its own runner that
+follows it. The phone held no runner but Mobium's. As a positive
 control, Mobium's runner was first built and installed under the old name;
 the sweep listed it and removed it. A Mobium session then announced it
 missing and installed `MobiumWDA-Runner`, and the same sweep listed nothing
@@ -4702,8 +4702,8 @@ Worth recording because each one closed off an approach that looked obvious.
 
 - **A WKWebView is unreachable unless the app opted in, and no amount of
   driving changes that.** On iOS 16.4+ WebKit only publishes a target for a
-  `WKWebView` whose owner set `isInspectable`. Measured on Appium's TheApp
-  v1.12.0 — a real React Native hybrid app, installed and running on iOS 26.5,
+  `WKWebView` whose owner set `isInspectable`. Measured on TheApp
+  v1.12.0, a third-party demo app — a real React Native hybrid app, installed and running on iOS 26.5,
   page loaded and rendering — which produces zero attachable contexts. Writing
   `WebKitDeveloperExtrasEnabledPreferenceKey` into the *app's own* defaults
   domain does nothing; that key is Safari's. So this is not something a better
@@ -4728,7 +4728,7 @@ Worth recording because each one closed off an approach that looked obvious.
   knowing before writing a rule tuned on Settings, where one label is one node.
 
 - **`map` labels an empty text input with its placeholder.** A URL field
-  containing nothing printed as `https://appiumpro.com (input)`, which reads
+  containing nothing printed as its placeholder URL followed by `(input)`, which reads
   exactly like a field already filled in. It cost two wrong turns here — a
   "Go" button was tapped twice against an empty field — before a screenshot
   showed the text was gray. Not wrong, since a placeholder is the best label an

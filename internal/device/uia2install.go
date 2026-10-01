@@ -16,12 +16,12 @@ import (
 	"github.com/mobiumdev/mobium/internal/paths"
 )
 
-// The UiAutomator2 server is Appium's, under Apache-2.0, downloaded from its
-// GitHub releases the same way vibium downloads Chrome on first use.
+// The UiAutomator2 server is under Apache-2.0, downloaded from its GitHub
+// releases the same way vibium downloads Chrome on first use.
 //
 // The version is pinned rather than tracking latest: a server that changes
-// under the user is exactly the version-drift tax that makes Appium painful,
-// and the checksums below only mean anything against a fixed release.
+// under the user is exactly the version-drift tax that makes a mobile setup
+// painful, and the checksums below only mean anything against a fixed release.
 const (
 	UIA2Version   = "10.6.6"
 	uia2Release   = "https://github.com/appium/appium-uiautomator2-server/releases/download/v" + UIA2Version

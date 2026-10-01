@@ -17,7 +17,6 @@ import (
 // for an app that ships more than one language, and only by hand — but an
 // app reads its languages from its defaults, and launch arguments are the
 // first place those are looked up: `-AppleLanguages (ja) -AppleLocale ja_JP`.
-// That is what Appium's language and locale capabilities do too.
 //
 // So the language lives in the session and goes with every launch Mobium
 // makes: it lasts until it is cleared or the session ends, and an app opened

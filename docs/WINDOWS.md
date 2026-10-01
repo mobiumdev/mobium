@@ -20,7 +20,7 @@ Said here rather than in a footnote, because it is the first question anyone
 asks and the answer is structural rather than a gap in the work.
 
 Mobium drives iOS through `xcrun simctl` — 41 call sites in `internal/device`
-alone — and through WebDriverAgent, which it installs as Appium's prebuilt
+alone — and through WebDriverAgent, which it installs as the prebuilt
 `WebDriverAgentRunner-Build-Sim-arm64.zip`. `simctl` ships inside Xcode and
 Xcode is macOS-only; the artifact is a *simulator* build for Apple Silicon,
 and a simulator is a macOS process. There is no configuration, no port and no

@@ -947,7 +947,7 @@ func matchedNothing(err error) bool {
 }
 
 // The checks an action makes before it touches anything, named as a
-// WebView's checks are and as Playwright and Vibium name them.
+// WebView's checks are and as Vibium names them.
 const (
 	checkVisible        = "visible"
 	checkEnabled        = "enabled"
@@ -1041,7 +1041,7 @@ func keyboardOver(loc uitree.Locator, covered bool) error {
 // nonEditableRoles are the roles that are certainly not a text field. Typing
 // into one was passed to the server, which answered UiAutomator2's "invalid
 // element state: Cannot set the element to 'hello'" — measured on a Pixel 8
-// Pro, typing into a button. Playwright and Vibium refuse before trying.
+// Pro, typing into a button. Vibium refuses before trying.
 var nonEditableRoles = []string{"button", "checkbox", "radio", "switch", "link", "image", "text", "tab"}
 
 // notEditable names the role that makes a node certainly not a text field, or
@@ -1408,8 +1408,8 @@ func (h *Handlers) resolveNodeOnce(ctx context.Context, s *session, target strin
 				return false, err
 			}
 		}
-		// Enabled is part of being actionable, as it is in Playwright and
-		// Vibium: a disabled control ignores a tap, which then reports
+		// Enabled is part of being actionable, as it is in Vibium: a
+		// disabled control ignores a tap, which then reports
 		// success for nothing. Waited for within the same budget, since a
 		// button the app is about to enable is the ordinary case.
 		if resolveErr == nil && !node.Enabled {
@@ -1504,7 +1504,7 @@ func (h *Handlers) resolveNodeOnce(ctx context.Context, s *session, target strin
 // is where it will be in a moment. A row sliding in, a sheet still animating
 // up, a list finishing a fling — all of them resolve cleanly and report
 // bounds that are already stale by the time the tap lands. This is the last
-// piece of what Playwright calls actionability, and the one Mobium was
+// piece of actionability, and the one Mobium was
 // missing.
 //
 // It costs one extra snapshot and one settleWindow per action: about 140ms on

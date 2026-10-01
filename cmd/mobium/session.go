@@ -10,14 +10,13 @@ func newSessionCmd() *cobra.Command {
 		// command, since it could mean one device's session, every device's,
 		// or one app. The three are suggested instead of one being guessed.
 		SuggestFor: []string{"stop"},
-		Long: "The explicit start and end of a device session, as Appium's new session\n" +
-			"and quit are. Never required: every other command opens a session on\n" +
+		Long: "The explicit start and end of a device session. Never required: every other command opens a session on\n" +
 			"first use.\n\n" +
 			"start opens it now, so the slow first start — installing UiAutomator2,\n" +
 			"building WebDriverAgent on an iPhone — happens here rather than inside\n" +
 			"your first tap. --platform ios picks wda; --app launches an\n" +
 			"app fresh once the session is up: stopped first if it was running,\n" +
-			"as Appium does, so the session begins at its first screen. Its data\n" +
+			"so the session begins at its first screen. Its data\n" +
 			"is kept.\n\n" +
 			"end closes one device's session with the daemon's own teardown:\n" +
 			"accessibility settings put back, a recording or route stopped, WebViews\n" +

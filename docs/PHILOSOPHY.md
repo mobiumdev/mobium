@@ -95,7 +95,6 @@ necessary changes made:
 | One locator vocabulary | every platform's element tree | compiled per platform, instead of a dialect per platform |
 | The built-in drivers | third-party drivers, as separate processes | only the platform layer; waiting, scrolling and refs come for free ([decision 0003](decisions/0003-drivers-are-processes-not-plugins.md)) |
 | The Go client's connection | the Python, JavaScript, Java and .NET clients | each language's idiom: a lock, a timeout, the same failure rules |
-| Appium's session | `start` and `quit` on every surface | the names; the idea — open it, work, end it — is Appium's |
 
 The rule's negative form is the one that catches mistakes: **a proposal that
 duplicates a layer is almost always the wrong one.** Before adding a second

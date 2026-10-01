@@ -15,8 +15,8 @@ import (
 // one feature. It does not need one: a script can buffer console output in the
 // page and a second script can read the buffer back, which is the same
 // evaluate-and-read shape as `Map` and `Text`. One implementation serves both
-// platforms, where Appium needs two mechanisms with two different data shapes
-// — chromedriver's `browser` log type on Android, a non-standard
+// platforms, where the platforms' own routes are two mechanisms with two
+// different data shapes — chromedriver's `browser` log type on Android, a non-standard
 // `safariConsole` on iOS whose entries are themselves JSON.
 
 // consoleBufferLimit bounds what the page holds. A chatty app can log

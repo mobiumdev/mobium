@@ -17,8 +17,8 @@ try (Mobium device = Mobium.builder().platform("android").app("com.example.shop"
 }   // try-with-resources quits: the session on the device ends here
 ```
 
-`start()` opens the session on the device and launches the app fresh, as
-Appium's new session does; `quit()` — or the end of try-with-resources — ends
+`start()` opens the session on the device and launches the app fresh;
+`quit()` — or the end of try-with-resources — ends
 it. `Mobium.connect()` opens a connection without touching the device, and
 its `close()` leaves the session open for whoever started it. The
 [quick start](../../docs/quickstart/java.md) walks through it on Android and

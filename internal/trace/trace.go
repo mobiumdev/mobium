@@ -1,6 +1,5 @@
-// Package trace records a session as Vibium records one: a zip in the
-// Playwright trace format, which trace.playwright.dev and player.vibium.dev
-// both open. Every tool call is a before/after pair, an action on an element
+// Package trace records a session as Vibium records one: a zip in Vibium's
+// record format, which player.vibium.dev opens. Every tool call is a before/after pair, an action on an element
 // adds the point it touched, and after each call the screen is kept twice —
 // as a screencast frame for the film strip, and as a frame snapshot, where
 // Vibium keeps the page's DOM and Mobium keeps the screenshot with the map's
@@ -96,8 +95,8 @@ func (r *Recorder) Input(id string, x, y int, box *Box) {
 	r.events = append(r.events, ev)
 }
 
-// After closes a call. A failure is recorded as Playwright records one, so
-// the viewers mark the step red and show why.
+// After closes a call. A failure is recorded as the record format records
+// one, so the player marks the step red and shows why.
 func (r *Recorder) After(id string, err error, result string) {
 	r.mu.Lock()
 	defer r.mu.Unlock()

@@ -14,8 +14,8 @@ device.Type("role=input", "someone@example.com");
 // the using block quits: the session on the device ends here
 ```
 
-`Start()` opens the session on the device and launches the app fresh, as
-Appium's new session does; `Quit()` — or the end of the `using` block — ends
+`Start()` opens the session on the device and launches the app fresh;
+`Quit()` — or the end of the `using` block — ends
 it. `Device.Connect()` opens a connection without touching the device, and
 disposing it leaves the session open for whoever started it. The
 [quick start](https://github.com/mobiumdev/mobium/blob/main/docs/quickstart/dotnet.md) walks through it on Android

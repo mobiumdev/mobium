@@ -135,8 +135,8 @@ type Result struct {
 	// Trace is every step of that attempt with the screen after it, when the
 	// run was traced.
 	Trace []TraceStep `json:"trace,omitempty"`
-	// TraceFile is that attempt as a Playwright trace — a zip that
-	// trace.playwright.dev opens, as `mobium trace` writes — relative to the
+	// TraceFile is that attempt as a recording in Vibium's record format —
+	// a zip that player.vibium.dev opens, as `mobium trace` writes — relative to the
 	// output directory.
 	TraceFile string `json:"trace_file,omitempty"`
 }
@@ -508,7 +508,7 @@ func traceDir(j job, t Test, attempt int) string {
 	return filepath.Join("artifacts", "trace", fmt.Sprintf("%s-%d", traceStem(j, t), attempt))
 }
 
-// traceZip is the Playwright trace in an attempt's trace directory.
+// traceZip is the recording in an attempt's trace directory.
 const traceZip = "trace.zip"
 
 // traced says whether a run keeps a trace of its tests.
@@ -582,7 +582,7 @@ func runOnce(j job, t Test, opts Options, call Caller, attempt int) ([]*Failure,
 	if traced(opts) {
 		h.single = true
 		dir := traceDir(j, t, attempt)
-		// The test as a Playwright trace too: every call it makes on the
+		// The test as a recording too: every call it makes on the
 		// device, the app's launch included, with the screen after each.
 		// The runner's own screenshots and maps are kept out of it. A trace
 		// already running on the device — the person's own — is left

@@ -78,8 +78,8 @@ func newStorageCmd() *cobra.Command {
 		Short: "Save, restore or clear the current WebView's cookies and web storage",
 		Long: "Vibium's storage command, on a WebView — `mobium context WEBVIEW_...` first.\n\n" +
 			"With no argument, prints the page's storage state — its cookies, and its\n" +
-			"origin's localStorage and sessionStorage — in the shape Playwright and\n" +
-			"Vibium save, so a state saved by one restores in another; -o writes it to a\n" +
+			"origin's localStorage and sessionStorage — in the shape Vibium saves, so a\n" +
+			"state saved by one restores in the other; -o writes it to a\n" +
 			"file. `restore` sets a saved state's cookies and writes each origin's\n" +
 			"storage only into a page on that origin. `clear` empties all three.",
 		Example: `  mobium storage -o state.json

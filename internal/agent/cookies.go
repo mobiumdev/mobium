@@ -12,8 +12,8 @@ import (
 )
 
 // app_cookies and app_storage: Vibium's cookies and storage commands, carried
-// onto a WebView. The command set and the saved-state shape are Vibium's and
-// Playwright's, so a state saved by one restores in another; underneath, it
+// onto a WebView. The command set and the saved-state shape are Vibium's, so a
+// state saved by one restores in the other; underneath, it
 // is each platform's own inspector protocol for cookies and the page itself
 // for web storage (internal/webview/cookies.go says why each).
 //
@@ -37,8 +37,8 @@ type CookiesView struct {
 	Device  string `json:"device"`
 }
 
-// StorageState is a page's cookies and web storage, in the shape Playwright
-// and Vibium save: {cookies, origins: [{origin, localStorage, sessionStorage}]}.
+// StorageState is a page's cookies and web storage, in the shape Vibium
+// saves: {cookies, origins: [{origin, localStorage, sessionStorage}]}.
 type StorageState struct {
 	Cookies []webview.Cookie        `json:"cookies"`
 	Origins []webview.OriginStorage `json:"origins"`

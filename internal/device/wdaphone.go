@@ -22,7 +22,7 @@ import (
 
 // A real iPhone cannot run the prebuilt simulator runner. WebDriverAgent has
 // to be built from source and code-signed with the user's own development
-// team, so on a phone Mobium does what an Appium setup does by hand — and does
+// team, so on a phone Mobium does what an iOS automation setup does by hand — and does
 // it from a pinned, checksummed source release rather than a git checkout, so
 // the runner on the phone is the same version the simulator uses.
 //
@@ -58,8 +58,8 @@ func PhoneWDABundleID(team string) string {
 //
 // Tools that install their own WebDriverAgent find the runners already on a
 // phone by that CFBundleName and uninstall every one but their own, whatever
-// its bundle id: on 2026-09-30 appium-xcuitest-driver's session removed
-// Mobium's runner from the iPhone 15 Plus that way (CHALLENGES 189). A name
+// its bundle id: on 2026-09-30 another tool's session removed Mobium's
+// runner from the iPhone 15 Plus that way (CHALLENGES 189). A name
 // of Mobium's own takes it out of that sweep. Only the runner target is
 // renamed — the build setting is looked up by target name, so
 // WebDriverAgentLib keeps its name and the runner still links it.

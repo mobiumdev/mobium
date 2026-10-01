@@ -141,7 +141,7 @@ the wrong string.
 | Files | `upload` and `download` between this machine and where the device keeps downloads — the Download folder on Android, an app's Documents on an iOS simulator |
 | Device state | permissions, appearance, accessibility settings for the session (reduce motion, bold text, contrast, text size and more; a simulator and Android), orientation, per-app language, hardware buttons, shake and biometrics (enroll, then a matching or a stranger's face or finger) on emulators and simulators, screen lock, simulated calls and messages, notifications, timezone and the device's clock, battery, clipboard, geolocation and routes |
 | Dialogs | `alert` reads, answers and types into a system or app dialog; `dialogs` declares answers for one that gets in an action's way |
-| Diagnostics | device logs, crash reports and ANRs, screen recording, a session `trace` for the Playwright trace viewer, `hit-test` — which view UIKit would really give a tap, below accessibility (iOS; before every tap with `launch --hit-test` on a simulator), `audit` — Apple's own accessibility audit of the screen (iOS), `doctor` |
+| Diagnostics | device logs, crash reports and ANRs, screen recording, a session `trace` in Vibium's record format, for player.vibium.dev, `hit-test` — which view UIKit would really give a tap, below accessibility (iOS; before every tap with `launch --hit-test` on a simulator), `audit` — Apple's own accessibility audit of the screen (iOS), `doctor` |
 | Batches | `batch` runs a known sequence of calls in one, each checked before the first runs, stopping at the first failure |
 
 [docs/API.md](docs/API.md) lists every tool and which front door reaches it,
@@ -172,13 +172,12 @@ happened rather than on an exit code.
 | two fingers, drag, double tap | yes | no | yes |
 | a screen that never stops moving | fine | cannot read it | fine |
 
-**Android** uses [Appium's UiAutomator2 server](https://github.com/appium/appium-uiautomator2-server)
-directly over HTTP — the same device-side server Appium uses, with no Node in
-between. Pick `--driver uiautomator` when you cannot install anything on the
+**Android** uses the [UiAutomator2 server](https://github.com/appium/appium-uiautomator2-server)
+directly over HTTP, with no Node in between. Pick `--driver uiautomator` when you cannot install anything on the
 device; it reads through `uiautomator dump`, which waits for the screen to go
 idle and so cannot read one that animates.
 
-**iOS simulators** use Appium's prebuilt
+**iOS simulators** use the prebuilt
 [WebDriverAgent](https://github.com/appium/WebDriverAgent) runner, installed
 with `simctl`. **A real iPhone** takes the same backend: turn on Developer
 Mode and Settings > Developer > Enable UI Automation, add an Apple ID to
@@ -299,8 +298,7 @@ err = dev.Tap(ctx, el.Ref)
 ```
 
 `start` opens the session on the device and launches the app fresh; `quit`
-ends it and puts back anything it changed for the session, as Appium's new
-session and quit do. On the command line they are `mobium session start` and
+ends it and puts back anything it changed for the session. On the command line they are `mobium session start` and
 `mobium session end`.
 
 Every client spawns `mobium pipe`, which forwards to the shared daemon: a

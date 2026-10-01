@@ -122,7 +122,7 @@ def start(
     call_timeout: float | None = None,
     session: str | None = None,
 ) -> "Device":
-    """Connect and open the session on the device, as Appium's new session does.
+    """Connect and open the session on the device.
 
     platform: "android" or "ios"; "ios" picks wda, so the driver
         need not be named.
@@ -174,8 +174,7 @@ class Device:
         self._conn.close()
 
     def quit(self) -> None:
-        """End the session on the device, as Appium's quit does, and close the
-        connection.
+        """End the session on the device and close the connection.
 
         The teardown is the daemon's own: accessibility settings put back, a
         recording or route stopped, WebViews detached, the device-side server
@@ -286,8 +285,7 @@ class Device:
         self._call("app_dialogs", {"clear": True})
 
     def source(self) -> dict:
-        """The raw hierarchy — what Appium calls the page source — for when
-        map leaves out the thing you need to see. map is what to act on.
+        """The raw hierarchy — the page source — for when map leaves out the thing you need to see. map is what to act on.
 
         ``source`` is the platform's XML, or in a WebView the page's markup;
         ``format`` is "xml" or "html"; ``units`` is "px" on Android and "pt"
@@ -1151,8 +1149,8 @@ class Device:
         return self._data("app_trace", args) or {}
 
     def trace_stop(self, path: str) -> dict:
-        """Stop the trace and save it to ``path``: a zip in the Playwright
-        trace format, which trace.playwright.dev and player.vibium.dev open.
+        """Stop the trace and save it to ``path``: a zip in Vibium's
+        record format, which player.vibium.dev opens.
         ``mobium pipe`` makes a relative path absolute. Returns ``calls``,
         ``path`` and ``bytes``.
         """
@@ -1214,7 +1212,7 @@ class Device:
         """The current WebView's cookies: the ones its page's URL is sent,
         HttpOnly ones included. Needs a web context -- ``context()`` first.
 
-        Each is a dict with Playwright's and Vibium's keys: ``name``,
+        Each is a dict with Vibium's keys: ``name``,
         ``value``, ``domain``, ``path``, ``expires`` (seconds since the epoch,
         absent for a session cookie), ``httpOnly``, ``secure``, ``sameSite``.
         """
@@ -1236,8 +1234,7 @@ class Device:
         self._data("app_cookies", args)
 
     def storage(self) -> dict:
-        """The current page's storage state, in the shape Playwright and
-        Vibium save: ``{"cookies": [...], "origins": [{"origin",
+        """The current page's storage state, in the shape Vibium saves: ``{"cookies": [...], "origins": [{"origin",
         "localStorage", "sessionStorage"}]}``."""
         data = self._data("app_storage", {"action": "get"}) or {}
         return data.get("state") or {"cookies": [], "origins": []}

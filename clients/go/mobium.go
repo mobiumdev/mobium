@@ -7,8 +7,8 @@
 //
 //	go install github.com/mobiumdev/mobium/cmd/mobium@latest
 //
-// Start opens a session on the device and launches the app fresh, as Appium's
-// new session does; Quit ends it:
+// Start opens a session on the device and launches the app fresh; Quit ends
+// it:
 //
 //	ctx := context.Background()
 //	dev, err := mobium.Start(ctx, mobium.WithPlatform("android"), mobium.WithApp("com.example.shop"))
@@ -164,8 +164,8 @@ type Session struct {
 	App string `json:"app"`
 }
 
-// Start connects and opens the session on the device, as Appium's new
-// session does: the device-side server is started now, and the app, if one
+// Start connects and opens the session on the device: the device-side
+// server is started now, and the app, if one
 // was named with WithApp, launched and in front. End it with Quit.
 //
 // Nothing requires it — every call opens a session on first use — but it puts
@@ -200,8 +200,7 @@ func Start(ctx context.Context, opts ...Option) (*Device, error) {
 // nil for a Device from Connect.
 func (d *Device) Session() *Session { return d.started }
 
-// Quit ends the session on the device, as Appium's quit does, and closes the
-// connection. The session's teardown is the daemon's own: accessibility
+// Quit ends the session on the device and closes the connection. The session's teardown is the daemon's own: accessibility
 // settings put back, a recording or route stopped, WebViews detached, the
 // device-side server stopped, and the app Start launched, if any, stopped
 // too. Quitting a session that is not open succeeds, and a second Quit — a
@@ -685,8 +684,8 @@ type PageSource struct {
 	Redacted int `json:"redacted"`
 }
 
-// Source returns the raw hierarchy — what Appium calls the page source — for
-// when Map leaves out the thing you need to see. Map is what to act on.
+// Source returns the raw hierarchy — the page source — for when Map leaves
+// out the thing you need to see. Map is what to act on.
 func (d *Device) Source(ctx context.Context) (PageSource, error) {
 	var out PageSource
 	err := d.data(ctx, "app_source", map[string]any{}, &out)
@@ -1758,9 +1757,8 @@ func (d *Device) TraceStart(ctx context.Context, opts *TraceOptions) (*Trace, er
 	return &out, nil
 }
 
-// TraceStop ends the trace and saves it to path as a zip in the Playwright
-// trace format, which trace.playwright.dev and player.vibium.dev open. A
-// relative path is this process's: `mobium pipe` resolves it before the
+// TraceStop ends the trace and saves it to path as a zip in Vibium's record
+// format, which player.vibium.dev opens. A relative path is this process's: `mobium pipe` resolves it before the
 // daemon sees it.
 func (d *Device) TraceStop(ctx context.Context, path string) (*Trace, error) {
 	if path == "" {
@@ -1886,8 +1884,8 @@ func (d *Device) Eval(ctx context.Context, expression string) (string, error) {
 	return out.Value, nil
 }
 
-// Cookie is one of a page's cookies. The JSON keys are Playwright's and
-// Vibium's, so a storage state saved by either restores here.
+// Cookie is one of a page's cookies. The JSON keys are Vibium's, so a
+// storage state Vibium saved restores here.
 type Cookie struct {
 	Name   string `json:"name"`
 	Value  string `json:"value"`
@@ -1914,8 +1912,8 @@ type OriginStorage struct {
 	SessionStorage []StorageItem `json:"sessionStorage"`
 }
 
-// StorageState is a page's cookies and web storage, in the shape Playwright
-// and Vibium save.
+// StorageState is a page's cookies and web storage, in the shape Vibium
+// saves.
 type StorageState struct {
 	Cookies []Cookie        `json:"cookies"`
 	Origins []OriginStorage `json:"origins"`

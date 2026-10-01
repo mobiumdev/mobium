@@ -71,7 +71,7 @@ func TestATraceKeepsNoTypedText(t *testing.T) {
 	if strings.Contains(out, "Sup3rSecret") {
 		t.Fatal("the typed text is in the trace")
 	}
-	// Playwright's names, which player.vibium.dev reads to say what a step
+	// The record format's names, which player.vibium.dev reads to say what a step
 	// typed into: the element, and the text as a dot a character.
 	for _, want := range []string{`"selector":"testid=password"`, `"value":"••••••••••••"`, `"selector":"@e3"`} {
 		if !strings.Contains(out, want) {

@@ -100,7 +100,7 @@ namespace Mobium
             Elements("app_find", Args("locator", locator));
 
         /// <summary>
-        /// The raw hierarchy — what Appium calls the page source — for when
+        /// The raw hierarchy — the page source — for when
         /// <see cref="Map"/> leaves out the thing you need to see; map is what
         /// to act on. <c>source</c> is the platform's XML, or in a WebView the
         /// page's markup; <c>units</c> is "px" on Android and "pt" on iOS, where
@@ -1009,8 +1009,8 @@ namespace Mobium
 
         /// <summary>
         /// Stops the trace and saves it at <paramref name="path"/>, a .zip on
-        /// this machine, in the Playwright trace format that
-        /// trace.playwright.dev and player.vibium.dev open. A relative path is
+        /// this machine, in Vibium's record format, which player.vibium.dev
+        /// opens. A relative path is
         /// this process's. Throws when no trace is running.
         /// </summary>
         /// <returns>
@@ -1072,7 +1072,7 @@ namespace Mobium
         /// <summary>
         /// The current WebView's cookies: the ones its page's URL is sent,
         /// HttpOnly ones included. Needs a web context — <c>Context</c> first.
-        /// Each has Playwright's and Vibium's keys: name, value, domain, path,
+        /// Each has Vibium's keys: name, value, domain, path,
         /// expires (seconds since the epoch, absent for a session cookie),
         /// httpOnly, secure and sameSite.
         /// </summary>
@@ -1097,8 +1097,8 @@ namespace Mobium
             Data("app_cookies", string.IsNullOrEmpty(name) ? Args("action", "clear") : Args("action", "clear", "name", name));
 
         /// <summary>
-        /// The current page's storage state, in the shape Playwright and
-        /// Vibium save: cookies, and origins with origin, localStorage and
+        /// The current page's storage state, in the shape Vibium saves:
+        /// cookies, and origins with origin, localStorage and
         /// sessionStorage.
         /// </summary>
         public IDictionary<string, object?> Storage()
@@ -1205,8 +1205,7 @@ namespace Mobium
         }
 
         /// <summary>
-        /// Ends the session on the device, as Appium's quit does, and closes
-        /// the connection. The teardown is the daemon's own: accessibility
+        /// Ends the session on the device and closes the connection. The teardown is the daemon's own: accessibility
         /// settings put back, a recording or route stopped, WebViews detached,
         /// the device-side server stopped, and the app Start launched, if any,
         /// stopped too. Quitting a session that is not open succeeds, and a
@@ -1381,8 +1380,7 @@ namespace Mobium
         public DeviceBuilder App(string id) { _app = id ?? ""; return this; }
 
         /// <summary>
-        /// Connects and opens the session on the device, as Appium's new
-        /// session does: the device-side server is started now and, given an
+        /// Connects and opens the session on the device: the device-side server is started now and, given an
         /// <see cref="App"/>, it is launched and in front when this returns.
         /// </summary>
         /// <remarks>

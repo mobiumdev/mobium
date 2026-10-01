@@ -17,7 +17,7 @@ binary, driven from a CLI, an MCP server, or five language clients.
 ## Tech Stack
 
 - Go: the `mobium` binary, no runtime dependencies
-- Appium's UiAutomator2 server (Android) and WebDriverAgent (iOS), driven directly over HTTP — no Appium, no Node
+- The UiAutomator2 server (Android) and WebDriverAgent (iOS), driven directly over HTTP — no Node
 - CDP (Android WebViews) and WebKit's Remote Web Inspector (iOS WebViews)
 - MCP server on stdio (`mobium mcp`)
 - Clients: Go, Python, JavaScript, Java, .NET — each spawns `mobium pipe`

@@ -11,12 +11,9 @@ the locator to write — acts on it, and keeps what was done as a test file.
 Every other surface asks the reader to already know the vocabulary: which
 locator names this button, whether `text=` or `label=` finds it on this
 platform, whether it is one element or three. The answer is on the device,
-and until now reaching it meant running `map` and reading coordinates. Of
-the tools in [landscape/mobilewright](../landscape/mobilewright.md), the
-inspector is the one feature marked "enormous for adoption: it is how
-someone learns the locator vocabulary without reading anything", and
-Appium's own Inspector is the reason many people first get anything
-working in Appium.
+and until now reaching it meant running `map` and reading coordinates. An
+inspector is how someone learns the locator vocabulary without reading
+anything, and often how they first get anything working at all.
 
 It is also the missing half of `mobium test`: decision 0006 left recording a
 test from what a person does as "later", and the daemon already sees every

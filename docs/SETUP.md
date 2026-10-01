@@ -524,8 +524,8 @@ MP4, and none has been tried.
 
 ### WebViews and Safari
 
-They work on a phone, reached through the same lockdown service Appium uses
-and speaking the same protocol as a simulator's
+They work on a phone, reached through the phone's lockdown service and
+speaking the same protocol as a simulator's
 ([decisions/0002](decisions/0002-ios-webviews-are-reachable.md)). It needs
 the phone connected by cable — usbmuxd, which carries it, is USB — and:
 
@@ -713,9 +713,9 @@ Nothing else, and nothing at all with `--driver uiautomator`.
 On an **iOS simulator**, `com.facebook.WebDriverAgentRunner.xctrunner`.
 
 On a **real iPhone**, `dev.mobium.wda.<team>.xctrunner`, signed for your team
-and named MobiumWDA-Runner. Appium's XCUITest driver removes every runner
-named WebDriverAgentRunner-Runner before installing its own, and leaves this
-one alone (measured, CHALLENGES 189). If it
+and named MobiumWDA-Runner. Another tool that installs its own WebDriverAgent
+removed every runner named WebDriverAgentRunner-Runner before installing its
+own, and left this one alone (measured, CHALLENGES 189). If it
 is removed anyway, the next session says so as it installs it again.
 Mobium stops it when the session ends; `mobium --device <udid> uninstall
 dev.mobium.wda.<team>.xctrunner` removes it. On the phone, also turn Enable UI

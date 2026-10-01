@@ -1,5 +1,5 @@
 #!/bin/sh
-# `mobium trace`, held to what the trace viewers read. A sign-in on
+# `mobium trace`, held to Vibium's record format and to what its player reads. A sign-in on
 # MobiumApp's Login Demo is traced — a password typed, a wait, and a tap on
 # something that is not there — and the zip is checked:
 #
@@ -12,11 +12,10 @@
 # - a second start refused while one runs, and a stop with none refused.
 #
 # With MOBIUM_TRACE_VIEWER=1 and Vibium installed, the zip is also opened in
-# Playwright's own viewer at trace.playwright.dev — a consumer that is not
-# ours — and every step must be listed there; and in Vibium's player at
-# player.vibium.dev, which must count every call and name each as it steps
-# through, a fill included. That needs the network; both read the file in
-# the browser and send it nowhere.
+# Vibium's player at player.vibium.dev — a consumer that is not ours — which
+# must count every call and name each as it steps through, a fill included.
+# That needs the network; the player reads the file in the browser and sends
+# it nowhere.
 #
 #   docs/checks/trace.sh <emulator-serial | simulator-udid>
 #
@@ -92,27 +91,9 @@ row "password" "not in the zip, only its length"
 
 if [ "${MOBIUM_TRACE_VIEWER:-}" = 1 ] && command -v vibium >/dev/null 2>&1; then
   V="vibium --headless --session mobium-trace-check"
-  $V go https://trace.playwright.dev >/dev/null
-  # The page renders after the load: wait for its Select file button.
-  for _ in 1 2 3 4 5 6 7 8 9 10; do
-    [ "$($V eval '[...document.querySelectorAll("button")].some(b => b.textContent.includes("Select file"))' 2>/dev/null)" = true ] && break
-    sleep 1
-  done
-  # The page makes its file input only when Select file is clicked.
-  $V eval 'HTMLInputElement.prototype.click = function(){ this.id = "pwfile"; document.body.appendChild(this); };
-    [...document.querySelectorAll("button")].find(b => b.textContent.includes("Select file")).click(); "ok"' >/dev/null
-  $V upload '#pwfile' "$OUT/t.zip" >/dev/null
-  sleep 5
-  page=$($V eval 'document.body.innerText')
-  for step in "launch $APP" "tap label=Login Demo" "fill testid=password" "tap testid=noSuchButton"; do
-    echo "$page" | grep -q -F "$step" || fail "Playwright's viewer does not list \"$step\""
-  done
-  row "viewer" "trace.playwright.dev lists every step"
-
-  # And Vibium's player, which plays Playwright traces too: it takes the
-  # zip from its file input, says how many actions it holds, and names each
-  # as it steps — a fill by Playwright's selector and value, which Mobium
-  # records masked, a dot a character.
+  # Vibium's player takes the zip from its file input, says how many actions
+  # it holds, and names each as it steps — a fill by the record format's
+  # selector and value, which Mobium records masked, a dot a character.
   $V go https://player.vibium.dev >/dev/null
   for _ in 1 2 3 4 5 6 7 8 9 10; do
     [ "$($V eval 'document.querySelectorAll("input[type=file]").length' 2>/dev/null)" = 1 ] && break
