@@ -57,6 +57,11 @@ xcrun simctl shutdown <udid>          # or `all`
 adb -s emulator-5554 emu kill
 ```
 
+`mobium shutdown <serial | avd | udid | simulator>` does this for one
+device in the same order — its session ended, then the device — and
+returns once the device is gone. Other daemons' sessions on it are theirs
+to end first: it ends only its own.
+
 A **headless** emulator (`-no-window`) is stopped exactly the same way, and
 this is where the check below earns its keep: there is no window whose absence
 tells you it worked, so "did it stop" has to be answered by asking rather than

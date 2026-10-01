@@ -217,6 +217,22 @@
       "global": true
     },
     {
+      "tool": "app_boot",
+      "arg": "name",
+      "type": "string",
+      "setBy": [
+        "boot"
+      ]
+    },
+    {
+      "tool": "app_boot",
+      "arg": "window",
+      "type": "boolean",
+      "setBy": [
+        "boot"
+      ]
+    },
+    {
       "tool": "app_call",
       "arg": "action",
       "type": "string",
@@ -1871,6 +1887,14 @@
       "global": true
     },
     {
+      "tool": "app_shutdown",
+      "arg": "name",
+      "type": "string",
+      "setBy": [
+        "shutdown"
+      ]
+    },
+    {
       "tool": "app_sms",
       "arg": "device",
       "type": "string",
@@ -2597,6 +2621,19 @@
       ]
     },
     {
+      "command": "boot",
+      "tools": [
+        "app_boot"
+      ],
+      "flags": [
+        "--window"
+      ],
+      "sends": [
+        "name",
+        "window"
+      ]
+    },
+    {
       "command": "call",
       "tools": [
         "app_call"
@@ -3190,6 +3227,15 @@
       "sends": [
         "darwin",
         "windows"
+      ]
+    },
+    {
+      "command": "shutdown",
+      "tools": [
+        "app_shutdown"
+      ],
+      "sends": [
+        "name"
       ]
     },
     {

@@ -58,6 +58,23 @@ namespace Mobium
 
         // -- reading --------------------------------------------------------
 
+        /// <summary>
+        /// Starts an Android emulator by its AVD's name, or an iOS simulator by
+        /// its name or UDID, and returns once it has booted: <c>device</c> (its
+        /// serial or UDID), <c>name</c>, <c>platform</c>, and <c>already</c>
+        /// when it was running. An emulator cold-boots headless unless
+        /// <paramref name="window"/>.
+        /// </summary>
+        public IDictionary<string, object?> Boot(string name, bool window = false) =>
+            window ? Data("app_boot", Args("name", name, "window", true)) : Data("app_boot", Args("name", name));
+
+        /// <summary>
+        /// Shuts down an emulator or a simulator — by serial, AVD name, UDID or
+        /// simulator name — after ending the daemon's session on it, and
+        /// returns once it is gone. A real phone is refused.
+        /// </summary>
+        public IDictionary<string, object?> Shutdown(string name) => Data("app_shutdown", Args("name", name));
+
         /// <summary>Every attached device and simulator.</summary>
         public IList<DeviceInfo> Devices()
         {

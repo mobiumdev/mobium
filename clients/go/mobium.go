@@ -280,6 +280,37 @@ func (d *Device) Devices(ctx context.Context) ([]DeviceInfo, error) {
 	return out.Devices, nil
 }
 
+// Booted is a virtual device Boot started, or found already running.
+type Booted struct {
+	// Device is its serial (an emulator) or UDID (a simulator).
+	Device   string `json:"device"`
+	Name     string `json:"name"`
+	Platform string `json:"platform"`
+	// Already says it was running before Boot was asked.
+	Already bool   `json:"already"`
+	Took    string `json:"took,omitempty"`
+}
+
+// Boot starts an Android emulator by its AVD's name, or an iOS simulator by
+// its name or UDID, and returns once it has booted. One already running is
+// returned as it is. An emulator cold-boots headless unless window is true.
+func (d *Device) Boot(ctx context.Context, name string, window bool) (Booted, error) {
+	var out Booted
+	args := map[string]any{"name": name}
+	if window {
+		args["window"] = true
+	}
+	err := d.data(ctx, "app_boot", args, &out)
+	return out, err
+}
+
+// Shutdown shuts down an emulator or a simulator — by serial, AVD name, UDID
+// or simulator name — after ending the daemon's session on it, and returns
+// once it is gone. A real phone is refused.
+func (d *Device) Shutdown(ctx context.Context, name string) error {
+	return d.act(ctx, "app_shutdown", map[string]any{"name": name})
+}
+
 // Map returns the actionable elements on the current screen.
 //
 // Refs are only valid for this screen; call Map again after anything that

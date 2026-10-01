@@ -487,6 +487,26 @@ export class Device {
     return dataOf(await this.conn.callTool(tool, args))
   }
 
+  /**
+   * Start an Android emulator by its AVD's name, or an iOS simulator by its
+   * name or UDID, and resolve once it has booted: { device, name, platform,
+   * already }. An emulator cold-boots headless unless `window`.
+   */
+  async boot(name, { window = false } = {}) {
+    const args = { name }
+    if (window) args.window = true
+    return (await this.#data('app_boot', args)) || {}
+  }
+
+  /**
+   * Shut down an emulator or a simulator — by serial, AVD name, UDID or
+   * simulator name — after ending the daemon's session on it, and resolve
+   * once it is gone. A real phone is refused.
+   */
+  async shutdown(name) {
+    return (await this.#data('app_shutdown', { name })) || {}
+  }
+
   /** Every attached device and simulator. */
   async devices() {
     const data = (await this.#data('app_devices')) || {}
