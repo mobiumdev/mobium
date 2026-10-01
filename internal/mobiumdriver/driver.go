@@ -479,6 +479,23 @@ type DataClearer interface {
 	ClearData(ctx context.Context, appID string) (device.ClearedData, error)
 }
 
+// ForegroundReader is implemented by backends that can say which app is in
+// front more cheaply than by reading the screen. Built in only, on the WDA
+// driver.
+type ForegroundReader interface {
+	ForegroundApp(ctx context.Context) (string, error)
+}
+
+// ElementBounder is implemented by backends that can read one element's
+// rectangle without reading the whole screen. Built in only, on the WDA
+// driver, where a full read is the slow part of every action.
+type ElementBounder interface {
+	// ElementBounds reads the rectangle, in device pixels, of the element a
+	// node names. ok is false when it cannot be read that way — the node has
+	// no test id — and the caller reads the screen instead.
+	ElementBounds(ctx context.Context, n *uitree.Node) (r uitree.Rect, ok bool, err error)
+}
+
 // BundleResetter is implemented by backends that reset an app by installing
 // it again from its bundle, where nothing can clear it in place — a real
 // iPhone.

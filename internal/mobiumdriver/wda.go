@@ -366,6 +366,75 @@ const setTextAttempts = 3
 // 60.
 var typingFrequencies = [setTextAttempts]int{0, 20, 6}
 
+// ForegroundApp says which app is in front from a read of the screen without
+// visible and accessible, which WebDriverAgent otherwise works out for every
+// element: Settings' read took 1.81s with them and 0.22s without, on an
+// iPhone 15 Plus, and visible alone was 1.5s of it. Only the root's bundle id
+// is wanted here. SpringBoard in front may be a notification banner over the
+// app (CHALLENGES 155), which the full read sees through, so that answer is
+// left to the full read.
+//
+// Not on a phone. There the read that confirms a switch is also what takes
+// the active-app hint off (CHALLENGES 76), and the light read took it off
+// sooner: once in eleven Calendar launches the next full read then hung
+// until it timed out — the stall the hint exists to prevent (CHALLENGES 71).
+// Launches confirmed this way had a median of 0.81s against 2.51s, which is
+// not worth an occasional minute-long hang, so a phone reads in full.
+func (w *WDA) ForegroundApp(ctx context.Context) (string, error) {
+	if w.phone != nil {
+		full, err := w.Snapshot(ctx)
+		if err != nil {
+			return "", err
+		}
+		return full.Package(), nil
+	}
+	xml, err := w.w3c.sourceWithout(ctx, "visible,accessible")
+	if err != nil {
+		return "", err
+	}
+	tree, err := uitree.ParseIOS([]byte(xml))
+	if err != nil {
+		return "", err
+	}
+	app := tree.Package()
+	if app == "" || app == springboardBundleID {
+		full, err := w.Snapshot(ctx)
+		if err != nil {
+			return "", err
+		}
+		return full.Package(), nil
+	}
+	return app, nil
+}
+
+// ElementBounds reads one element's rectangle by its test id — two small
+// requests, against a read of the whole screen. Measured on an iPhone 15
+// Plus: 148ms for MobiumApp's tiny target, against 167ms for MobiumApp's
+// whole screen and about 2s for Settings'. Converted to device pixels with
+// the tree's own rounding, so an element that has not moved compares equal.
+func (w *WDA) ElementBounds(ctx context.Context, n *uitree.Node) (uitree.Rect, bool, error) {
+	if n.TestID == "" {
+		return uitree.Rect{}, false, nil
+	}
+	id, err := w.w3c.findElement(ctx, "accessibility id", n.TestID)
+	if err != nil {
+		return uitree.Rect{}, true, err
+	}
+	var resp struct {
+		Value struct {
+			X, Y, Width, Height float64
+		} `json:"value"`
+	}
+	if err := w.w3c.do(ctx, http.MethodGet, w.w3c.sessionPath("/element/"+id+"/rect"), nil, &resp); err != nil {
+		return uitree.Rect{}, true, err
+	}
+	v := resp.Value
+	r := uitree.Rect{X1: int(v.X), Y1: int(v.Y), X2: int(v.X + v.Width), Y2: int(v.Y + v.Height)}
+	scaled := &uitree.Tree{Root: &uitree.Node{Bounds: r}}
+	scaled.Scale(w.scale)
+	return scaled.Root.Bounds, true, nil
+}
+
 // PointScale is how many device pixels a point is, as WebDriverAgent
 // reported when the session opened — 3 on an iPhone 15 Plus or 17 Pro. It is
 // the scale the tree was converted with, so a threshold in points times this

@@ -63,6 +63,21 @@ func (h *Handlers) awaitForeground(ctx context.Context, s *session, want, wasApp
 	// changed and changedAt track a new screen in the same app, which only
 	// counts once it has held still for sameAppSettle: see below.
 	changed, changedAt := "", time.Time{}
+	// Waiting for a named app needs only which app is in front, which an iOS
+	// driver reads at a fraction of a full read's cost.
+	if fr, ok := mobiumdriver.AsForegroundReader(s.driver); ok && want != "" {
+		_ = pollUntil(ctx, settleAfterStart, func(ctx context.Context) (bool, error) {
+			now, err := fr.ForegroundApp(ctx)
+			if err != nil {
+				return false, nil
+			}
+			if now != "" {
+				app = now
+			}
+			return now == want, nil
+		})
+		return app
+	}
 	_ = pollUntil(ctx, settleAfterStart, func(ctx context.Context) (bool, error) {
 		tree, err := s.driver.Snapshot(ctx)
 		if err != nil {

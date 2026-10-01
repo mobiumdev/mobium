@@ -1298,9 +1298,14 @@ func (h *Handlers) resolveNodeOnce(ctx context.Context, s *session, target strin
 	// resolveErr is the last reason the locator did not resolve, kept so a
 	// timeout reports it rather than a generic one.
 	var resolveErr error
+	// readTook is how long the last read of the screen took, which settle
+	// counts toward its window.
+	var readTook time.Duration
 
 	err = pollUntil(ctx, h.implicitWait, func(ctx context.Context) (bool, error) {
+		readAt := time.Now()
 		t, err := s.driver.Snapshot(ctx)
+		readTook = time.Since(readAt)
 		if err != nil {
 			// Not fatal. UiAutomator2 fails to read the hierarchy while the
 			// screen is animating — "Cannot set AccessibilityNodeInfo's field
@@ -1368,7 +1373,7 @@ func (h *Handlers) resolveNodeOnce(ctx context.Context, s *session, target strin
 		// many scrollables the screen has elsewhere.
 		container := scrollContainerOf(node)
 		if container == nil || encloses(container.Bounds, node.Bounds) {
-			return h.settle(ctx, s, loc, node, tree)
+			return h.settle(ctx, s, loc, node, tree, readTook)
 		}
 	}
 
@@ -1391,8 +1396,8 @@ func (h *Handlers) resolveNodeOnce(ctx context.Context, s *session, target strin
 		return nil, nil, serr
 	}
 	// A list that has just been scrolled is the most likely thing on any
-	// screen to still be moving.
-	return h.settle(ctx, s, loc, n, t)
+	// screen to still be moving, so it waits the whole window.
+	return h.settle(ctx, s, loc, n, t, 0)
 }
 
 // settle waits until the element's rectangle stops moving.
@@ -1409,8 +1414,17 @@ func (h *Handlers) resolveNodeOnce(ctx context.Context, s *session, target strin
 // backend, where a snapshot is 1.96s. That is the price of not tapping a
 // moving target, and h.settleWindow of zero turns it off for a caller who
 // would rather have the speed.
+//
+// The window is the time between two readings, and a reading that takes
+// longer than the window already spans it: an iPhone's read of even a small
+// screen took 167-194ms, so the two were 100ms further apart than asked, for
+// nothing. lastRead, how long the reading that found node took, is counted
+// toward the window, and only the rest is waited. And where the driver can
+// read the one element instead of the screen — WebDriverAgent, by a test id
+// unique on screen — the second reading is that, and only an exact match is
+// taken from it: anything else reads the screen as before.
 func (h *Handlers) settle(ctx context.Context, s *session, loc uitree.Locator,
-	node *uitree.Node, tree *uitree.Tree) (*uitree.Node, *uitree.Tree, error) {
+	node *uitree.Node, tree *uitree.Tree, lastRead time.Duration) (*uitree.Node, *uitree.Tree, error) {
 
 	if h.settleWindow <= 0 {
 		return node, tree, nil
@@ -1418,14 +1432,35 @@ func (h *Handlers) settle(ctx context.Context, s *session, loc uitree.Locator,
 	deadline := time.Now().Add(h.settleTimeout)
 	was := node.Bounds
 
-	for {
-		select {
-		case <-ctx.Done():
-			return nil, nil, ctx.Err()
-		case <-time.After(h.settleWindow):
+	wait := h.settleWindow - lastRead
+	if b, ok := mobiumdriver.AsElementBounder(s.driver); ok && node.TestID != "" && uniqueTestID(tree, node.TestID) {
+		if wait > 0 {
+			select {
+			case <-ctx.Done():
+				return nil, nil, ctx.Err()
+			case <-time.After(wait):
+			}
 		}
+		readAt := time.Now()
+		r, read, err := b.ElementBounds(ctx, node)
+		if err == nil && read && r == was {
+			return node, tree, nil
+		}
+		// Moved, or not readable that way: the screen decides, as before.
+		wait = h.settleWindow - time.Since(readAt)
+	}
 
+	for {
+		if wait > 0 {
+			select {
+			case <-ctx.Done():
+				return nil, nil, ctx.Err()
+			case <-time.After(wait):
+			}
+		}
+		readAt := time.Now()
 		t, err := s.driver.Snapshot(ctx)
+		wait = h.settleWindow - time.Since(readAt)
 		if err != nil {
 			// Same hiccup as in resolveNode, and settling is more exposed to
 			// it: this is the snapshot taken *because* something might be
@@ -1452,6 +1487,19 @@ func (h *Handlers) settle(ctx context.Context, s *session, loc uitree.Locator,
 		}
 		was = n.Bounds
 	}
+}
+
+// uniqueTestID says whether exactly one node on screen has this test id, so a
+// lookup by it can only find the node that was resolved.
+func uniqueTestID(t *uitree.Tree, id string) bool {
+	n := 0
+	t.Walk(func(node *uitree.Node) bool {
+		if node.TestID == id {
+			n++
+		}
+		return n < 2
+	})
+	return n == 1
 }
 
 // typeText puts text into a specific element: after what it holds for

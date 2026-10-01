@@ -125,6 +125,18 @@ func (c *w3cClient) closeSession(ctx context.Context) {
 	c.mu.Unlock()
 }
 
+// sourceWithout is the source without some of its attributes, which the
+// server then does not compute.
+func (c *w3cClient) sourceWithout(ctx context.Context, attrs string) (string, error) {
+	var resp struct {
+		Value string `json:"value"`
+	}
+	if err := c.do(ctx, http.MethodGet, c.sessionPath("/source?excluded_attributes="+attrs), nil, &resp); err != nil {
+		return "", err
+	}
+	return resp.Value, nil
+}
+
 // source fetches the UI hierarchy as XML.
 func (c *w3cClient) source(ctx context.Context) (string, error) {
 	var resp struct {

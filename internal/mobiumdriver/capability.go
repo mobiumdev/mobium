@@ -303,6 +303,18 @@ func AsPointScaler(d Driver) (PointScaler, bool) {
 	return p, ok
 }
 
+// AsForegroundReader returns the driver's cheap foreground read, if any.
+func AsForegroundReader(d Driver) (ForegroundReader, bool) {
+	f, ok := d.(ForegroundReader)
+	return f, ok
+}
+
+// AsElementBounder returns the driver's single-element read, if it has one.
+func AsElementBounder(d Driver) (ElementBounder, bool) {
+	b, ok := d.(ElementBounder)
+	return b, ok
+}
+
 // AsBundleResetter returns the driver's reset-by-reinstall, if it has one.
 // Built in only, on the WDA driver.
 func AsBundleResetter(d Driver) (BundleResetter, bool) {
