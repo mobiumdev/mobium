@@ -19,7 +19,7 @@ category reaches a different part of Mobium.
 | Hybrid | **yes** | native shell through the tree; web content through CDP or Remote Web Inspector |
 | Cross-platform | **depends, and not on the vendor's claim** | see below — the answer splits the category in half |
 | Mobile web | **not supported, and partly reachable** | a browser is [Vibium's](https://github.com/VibiumDev/vibium) job; what Mobium reaches anyway is below |
-| Progressive web app | **read on both; tapped from the native tree on iOS, and on Android only while Chrome reports its WebView** | the browser's web context; on iOS, taps go through the native tree |
+| Progressive web app | **read on both; tapped from the native tree on iOS, and in the page on Android — on an emulator only while Chrome reports its WebView** | the browser's web context; on iOS, taps go through the native tree |
 
 ## What has been driven
 
@@ -31,8 +31,8 @@ it was driven once, with the result written down below, and nothing re-runs it.
 | --- | --- | --- |
 | Native | Android: Settings, Calculator, Clock, Wikipedia, F-Droid, Aegis, and Seal (Jetpack Compose). iOS: Settings, Wikipedia and NetNewsWire from the App Store | checked in — most of [checks/](checks/); `third-party-app.sh`, `compose-app.sh`, `netnewswire-ios.sh` for the apps nobody at Google or Apple wrote |
 | Hybrid | Wikipedia's articles, and MobiumApp's WebView screens, on both platforms and on real phones | checked in — `third-party-app.sh`, `mobium-app.sh`, `web-type.sh`, `web-actionability.sh`, `web-storage.sh` |
-| Mobile web | Safari on iOS; Chrome on Android | checked in — `chrome.sh` (read, a tap counted by the page, a link followed), `ios-webview.sh`, `orientation.sh`, `shake.sh` |
-| Progressive web app | Squoosh, installed to the home screen on both platforms | checked in — `pwa.sh`: installed if absent, launched from its icon, standalone, and a tap counted by the page or refused with the reason |
+| Mobile web | Safari on iOS; Chrome on Android, emulator and the Pixel 8 Pro | checked in — `chrome.sh` (read, a tap counted by the page, a link followed), `ios-webview.sh`, `orientation.sh`, `shake.sh` |
+| Progressive web app | Squoosh, installed to the home screen on both platforms, and as a WebAPK on the Pixel 8 Pro | checked in — `pwa.sh`: installed if absent, launched, standalone, and a tap counted by the page — or, on an emulator's shortcut, refused with the reason |
 | Cross-platform | React Native: MobiumApp, on both platforms and on real phones | checked in — `mobium-app.sh`, `login.sh`, `otp.sh`, `dialogs.sh` and every other MobiumApp check |
 | | Flutter, Xamarin/.NET MAUI | **never driven** — see below for why Flutter is expected to need a driver |
 | Hybrid frameworks | Cordova, Ionic | **never driven**; a WebView inside them is the hybrid case above |
@@ -95,11 +95,11 @@ on both devices above.
 | | Android (Chrome) | iOS (Add to Home Screen, "Open as Web App") |
 | --- | --- | --- |
 | What runs it | Chrome's `WebappActivity`, in `com.android.chrome` | `com.apple.webapp`, with its own bundle id `com.apple.WebKit.PushBundle.<id>` |
-| Launched by id | no — use the home screen icon | no — FrontBoard does not know the bundle id; use the icon |
+| Launched by id | a WebAPK, yes: `app_launch org.chromium.webapk.<hash>`, which says it is a web app ([CHALLENGES 202](CHALLENGES.md)); a launcher shortcut, no — use its icon | no — FrontBoard does not know the bundle id; use the icon |
 | The page says | `display-mode: standalone`, a service worker registered and active | the same, and `navigator.standalone` |
 | Its context | `WEBVIEW_com.android.chrome`, named for Chrome | `WEBVIEW_com.apple.SafariViewService`, named for neither the app nor Safari |
 | `map`, `text`, `eval` | work | work |
-| A tap in the web context | lands while Chrome reports the WebView; opened while Chrome is already running, Chrome stops reporting it within about five seconds and the tap is refused ([CHALLENGES 200](CHALLENGES.md)) | refused: the host is 874 points and the viewport 812, the difference being the status bar |
+| A tap in the web context | lands — on a WebAPK on the Pixel 8 Pro, Chrome running or not. On an emulator's shortcut opened while Chrome is running, Chrome stops reporting the WebView within about five seconds and the tap is refused ([CHALLENGES 200](CHALLENGES.md)) | refused: the host is 874 points and the viewport 812, the difference being the status bar |
 | A tap from `NATIVE_APP` | works while Chrome reports the page; once it stops, its tree is empty there too | works — WebKit puts the page's controls in the accessibility tree |
 
 Three things follow.
@@ -125,12 +125,18 @@ Three things follow.
   and once after force-stopping Chrome, the launcher showed none of them
   while Chrome still listed six, and Chrome then offered only a plain
   shortcut, which opens a tab.
-- **On Android, when the tap matters, launch the web app with Chrome not
-  running.** Opened from its icon while Chrome was running, Chrome stopped
-  reporting the app's WebView within about five seconds, three launches out
-  of three; opened after Chrome's process had ended, it kept reporting it,
-  two out of two. Mobium refuses the tap it can no longer place and says
-  why.
+- **On a phone with Play services, a PWA is a WebAPK — a real package.**
+  On the Pixel 8 Pro, Chrome 154 offered "Install and create shortcut", then
+  a choice of web app or shortcut, and minted
+  `org.chromium.webapk.<hash>` in about twelve seconds. Its task is its own,
+  Chrome's `SameTaskWebApkActivity` shows its pages, and it uninstalls like
+  any app. Its WebView stayed in the tree and taps landed.
+- **On an emulator's shortcut, when the tap matters, launch the web app with
+  Chrome not running.** Opened from its icon while Chrome was running,
+  Chrome stopped reporting the app's WebView within about five seconds,
+  three launches out of three; opened after Chrome's process had ended, it
+  kept reporting it, two out of two. Mobium refuses the tap it can no longer
+  place and says why.
 
 ## Hybrid
 

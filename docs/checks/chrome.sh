@@ -2,7 +2,7 @@
 # Chrome on Android, end to end: a page in a mobile browser, reached as a web
 # context and held to what the page itself says.
 #
-#   docs/checks/chrome.sh <emulator-serial>
+#   docs/checks/chrome.sh <emulator-serial | android-serial>
 #
 # Needs the network: the page is https://example.com, opened in a new tab
 # with a query string of its own so that its context is found by URL — the
@@ -17,34 +17,54 @@
 # - A tap on the page's own link navigates: the page's host is then iana.org.
 #
 # Safari's page on iOS is ios-webview.sh, where a tap in the web context is
-# refused; this is the platform where it lands. A real phone is refused: the
-# check opens tabs in somebody's browser.
+# refused; this is the platform where it lands. On a phone the check closes
+# the tab it opened, prints no listing — a context list there is somebody's
+# tabs — and does not restart Chrome, which on an emulator it does first.
 set -e
 DEV="$1"
-if [ -z "$DEV" ]; then echo "usage: $0 <emulator-serial>" >&2; exit 2; fi
+if [ -z "$DEV" ]; then echo "usage: $0 <emulator-serial | android-serial>" >&2; exit 2; fi
+PHONE=""
 case "$DEV" in
   emulator-*) ;;
-  *) echo "$DEV is not an emulator: this check opens tabs in the device's browser, and a phone's is somebody's" >&2; exit 2 ;;
+  *-*-*-*-*|????????-????????????????) echo "$DEV is an iOS device: Safari's page is ios-webview.sh" >&2; exit 2 ;;
+  *) PHONE=1 ;;
 esac
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 M="$ROOT/bin/mobium --device $DEV"
-fail() { $M context NATIVE_APP >/dev/null 2>&1 || true; echo "FAIL: $*" >&2; exit 1; }
+# closeTabs closes the pages in the phone's Chrome whose URL matches $1, a
+# Python regular expression, through Chrome's own DevTools endpoint: Mobium has
+# no tool that closes a tab. Only this run's pages match, and nothing about the
+# others is read beyond their URL or printed.
+closeTabs() {
+  port=$(adb -s "$DEV" forward tcp:0 localabstract:chrome_devtools_remote) || return 0
+  curl -s "http://127.0.0.1:$port/json/list" | python3 -c '
+import json, re, sys
+pat = re.compile(sys.argv[1])
+for t in json.load(sys.stdin):
+    if t.get("type") == "page" and pat.search(t.get("url", "")):
+        print(t["id"])' "$1" | while read -r id; do
+    curl -s -X PUT "http://127.0.0.1:$port/json/close/$id" >/dev/null
+  done
+  adb -s "$DEV" forward --remove "tcp:$port" >/dev/null 2>&1 || true
+}
+fail() { $M context NATIVE_APP >/dev/null 2>&1 || true; [ -n "$PHONE" ] && closeTabs "chrome=$T|iana\\.org/help/example-domains"; echo "FAIL: $*" >&2; exit 1; }
 row() { printf '    %-12s %-58s ok\n' "$1" "$2"; }
 echo "--- $DEV"
-
 T=$(date +%s)
+
 URL="https://example.com/?chrome=$T"
 $M context NATIVE_APP >/dev/null 2>&1 || true
 # Chrome started fresh: once an installed web app has been opened while
 # Chrome was running, Chrome stops putting its WebView in the accessibility
 # tree — for its tabs too — and a tap has nowhere to be measured from.
-# CHALLENGES 200; pwa.sh holds that case.
-$M terminate com.android.chrome >/dev/null 2>&1 || true
+# CHALLENGES 200; pwa.sh holds that case. Seen only on an emulator, so a
+# phone's Chrome, which is somebody's, is left running.
+[ -n "$PHONE" ] || $M terminate com.android.chrome >/dev/null 2>&1 || true
 $M open "$URL" >/dev/null
 sleep 3
 [ "$($M current)" = com.android.chrome ] || fail "Chrome is not in front after opening $URL"
 CTX=$($M contexts | grep -F "$URL" | awk '{print $1}' | head -1)
-[ -n "$CTX" ] || fail "the page did not appear as a context (is the emulator online?): $($M contexts | head -3)"
+[ -n "$CTX" ] || fail "the page did not appear as a context (is the device online?)"
 $M contexts | grep -F "$URL" | grep -q "Example Domain" || fail "the listing does not carry the page's title"
 row "listed" "$CTX, with the page's title and URL"
 
@@ -77,4 +97,8 @@ case "$host" in *iana.org) ;; *) fail "the page's link did not navigate: the pag
 row "navigate" "a tap on the page's link took it to $host"
 
 $M context NATIVE_APP >/dev/null
+if [ -n "$PHONE" ]; then
+  closeTabs "chrome=$T|iana\\.org/help/example-domains"
+  row "closed" "the tab this check opened"
+fi
 echo PASS

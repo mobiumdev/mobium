@@ -245,6 +245,15 @@ func (h *Handlers) launchAppOn(ctx context.Context, s *session, args map[string]
 		// something else is on screen — a permission dialog, a chooser, or an
 		// app whose UI runs under a different package.
 		msg = fmt.Sprintf("launched %s, but %s is in the foreground", id, app)
+		// An installed web app is the one case of the last that Android
+		// says outright: its task is its own, the browser's web-app
+		// activity on top. CHALLENGES 202.
+		if adb, err := h.adbFor(ctx, s); err == nil {
+			if host, ok := adb.WebApkHost(ctx, id); ok && host == app {
+				msg = fmt.Sprintf("launched %s, an installed web app: its pages are shown by %s, in %s's own task, "+
+					"so %s is what reads as in front; its page is a WEBVIEW_%s context", id, app, id, app, app)
+			}
+		}
 	}
 	return Result(msg, AppView{App: id, Device: s.dev.Serial}), nil
 }

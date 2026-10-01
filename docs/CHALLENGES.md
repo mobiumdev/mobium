@@ -7,7 +7,7 @@ the source.
 
 The pattern across them is the reason the document exists: **almost nothing
 here was found by reading code or by a test written from imagination.** Of
-201 defects, 165 were found only by running against a real device. The other
+203 defects, 167 were found only by running against a real device. The other
 thirty-six — 4, 5, 6, 14, 23, 24, 32, 35, 36, 39, 44, 50, 53, 54, 57, 66, 89,
 99, 100, 121, 123, 129, 130, 133, 134, 139, 140, 141, 142, 144, 150, 158, 162,
 164, 165 and 172 — came from reading code, the compiler, a test, a linter,
@@ -4448,6 +4448,13 @@ install leaves it, and holds Mobium to landing the tap or refusing it with
 that explanation, with the page counting nothing; `chrome.sh` starts Chrome
 fresh. What would let a tap be placed again is open (ROADMAP).
 
+On the Pixel 8 Pro, Android 17, Chrome 154, it did not happen. With Play
+services Chrome installs a web app as a WebAPK, a package of its own, not a
+launcher shortcut; launched with Chrome running, its WebView stayed in the
+tree for the thirty seconds sampled and a tap in its page landed. So this is
+the emulator's legacy shortcut, Chrome's `WebappActivity`; `pwa.sh` accepts
+the refusal there and requires the tap to land on a phone.
+
 ### 201. On iOS an async expression came back as `{}`
 
 **Found by:** the same check, asking a home-screen web app's page whether a
@@ -4468,6 +4475,50 @@ promise, an object and a rejection: against the old code the four promise
 cases failed, against the new one all pass, and `ios-webview.sh`,
 `pwa.sh`, `web-storage.sh`, `web-type.sh` and `web-actionability.sh` passed
 on the simulator after it.
+
+### 202. Launching an installed web app reported the browser in front
+
+**Found by:** `docs/checks/pwa.sh` on the Pixel 8 Pro, the first run with
+Play services. Chrome installed Squoosh as a WebAPK,
+`org.chromium.webapk.<hash>`, and `app_launch` of that package opened the web
+app and answered "launched org.chromium.webapk…, but com.android.chrome is
+in the foreground" — after waiting out the whole foreground budget for a
+package that was never going to be the one in front. A WebAPK's pages are
+shown by the browser: the top activity is Chrome's `SameTaskWebApkActivity`,
+in a task whose root is the WebAPK's own splash activity, so the hierarchy,
+and every read of what is in front, names Chrome.
+
+The general answer — the launched app owns the task in front — would also
+call a permission prompt over a just-launched app "launched", and that
+warning exists for the prompt. So the rule is the narrow one Android states:
+the task in front is the launched package's and the activity on top of it is
+a browser's `WebApkActivity`. `app_launch` then says it launched an installed
+web app, shown by Chrome, whose page is a `WEBVIEW_com.android.chrome`
+context. The fixture is the five lines of that task, nothing else from the
+phone's activity list, and the permission-prompt capture is the negative
+control.
+
+### 203. A tab whose renderer had gone held a context switch for minutes
+
+**Found by:** first on the Pixel 7 AVD on 2026-10-01, switching into a
+long-backgrounded Chrome tab, which hung until the client gave up; not
+reproduced on the Pixel 8 Pro, where a tab twenty minutes in the background
+attached in 0.45s. Reproduced on the emulator by killing a background tab's
+renderer, which is what Android does to a tab it unloads: the tab stays in
+the DevTools listing, the debugger's connection is accepted, and nothing
+ever answers. `app_context` took six minutes and the client's read timed out.
+
+Each CDP round trip was meant to be bounded by thirty seconds, but only
+when the call had no deadline of its own, and every tool call has one —
+four minutes — so the bound never applied; WebKit's transport bounds every
+round trip regardless, and did not have this. And the switch ignored its
+console install failing, so it would have reported success over a page that
+answers nothing. Now each round trip is bounded either way, a timeout is
+reported as `timeout`, and a switch asks the page for `1` first, refusing
+within ten seconds with what happened and a remedy that works: choosing the
+tab in Chrome's tab switcher reloaded it, and the same switch then attached
+and read it. A unit test with a server that accepts and never answers held
+the old code for its whole one-minute deadline.
 
 ## Findings that were not defects
 

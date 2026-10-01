@@ -30,3 +30,27 @@ func TestTaskInFront(t *testing.T) {
 		t.Errorf("an empty dump gave %q, %q", top, root)
 	}
 }
+
+// A WebAPK's task is its own and its pages are the browser's web-app
+// activity on top of it; a permission prompt is also another package on top
+// of an app's task, and must not read as a web app. The WebAPK capture is the
+// five lines of its task, taken on the Pixel 8 Pro, Android 17.
+func TestWebApkHost(t *testing.T) {
+	read := func(f string) string {
+		raw, err := os.ReadFile("testdata/" + f)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return string(raw)
+	}
+	webapk := "org.chromium.webapk.a4110a3ad6380587f_v2"
+	if host, ok := webApkHost(read("activities-webapk-api37.txt"), webapk); !ok || host != "com.android.chrome" {
+		t.Errorf("a WebAPK in front: host %q, %v; want com.android.chrome", host, ok)
+	}
+	if _, ok := webApkHost(read("activities-webapk-api37.txt"), "com.example.other"); ok {
+		t.Error("a WebAPK's task was claimed for another package")
+	}
+	if _, ok := webApkHost(read("activities-permission-prompt-api35.txt"), "dev.mobium.mobiumapp"); ok {
+		t.Error("a permission prompt over an app's task was taken for a web app")
+	}
+}
