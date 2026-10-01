@@ -47,7 +47,7 @@ func (h *Handlers) localeOn(ctx context.Context, s *session, args map[string]int
 		if err != nil {
 			return nil, err
 		}
-		return Result(describeLocale(app, tags, device),
+		return Result(describeLocale(s, app, tags, device),
 			LocaleView{App: app, Locales: tags, Device: device, Serial: s.dev.Serial}), nil
 	}
 
@@ -68,6 +68,12 @@ func (h *Handlers) localeOn(ctx context.Context, s *session, args map[string]int
 		Previous: before, Serial: s.dev.Serial}
 	if len(want) == 0 {
 		return Result(fmt.Sprintf("%s now follows the device (%s)", app, device), view), nil
+	}
+	if s.backend == BackendWDA {
+		return Result(fmt.Sprintf("%s set to %s — iOS stores no per-app language that can be set from "+
+			"outside, so it is a launch argument: every launch from this session is in it, until it is "+
+			"cleared or the session ends, and the app was launched again now if it was running. Whether %s "+
+			"has that translation shows only on the screen", app, strings.Join(want, ","), app), view), nil
 	}
 	// Said plainly because the distinction matters and the platform will not
 	// make it: `zz-ZZ` is stored exactly as willingly as `ja-JP`, and an app
@@ -99,9 +105,13 @@ func parseLocaleArg(raw interface{}) []string {
 	return out
 }
 
-func describeLocale(app string, tags []string, device string) string {
+func describeLocale(s *session, app string, tags []string, device string) string {
 	if len(tags) == 0 {
 		return fmt.Sprintf("%s follows the device (%s)", app, device)
+	}
+	if s.backend == BackendWDA {
+		return fmt.Sprintf("%s is launched in %s by this session (the device is %s)",
+			app, strings.Join(tags, ","), device)
 	}
 	return fmt.Sprintf("%s is pinned to %s (the device is %s)",
 		app, strings.Join(tags, ","), device)
