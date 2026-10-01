@@ -170,11 +170,9 @@ this is what is not.
   keeps all three, which is what the 2026-09-28 note had seen. Permissions
   are reported as reset and not read back, since nothing outside the app can
   read them on a phone.
-- **The iOS settings still refused as not built:** timezone. Setting it
-  is a choice not yet made: a per-app `TZ` at launch, which is a different
-  meaning from Android's device-wide tool, or driving Settings, which on a
-  phone changes its owner's clock; reading it already works through the
-  device clock. Notifications are done on a simulator (2026-09-30),
+- ~~**The iOS settings still refused as not built.**~~ Done 2026-09-30:
+  notifications, the time zone, per-app locale and orientation.
+  Notifications are done on a simulator,
   through Notification Center read as SpringBoard: a post goes out with
   `simctl push` as the app in front and is confirmed by its banner, a read
   takes any banner and then Notification Center, opened for it and closed
@@ -183,7 +181,18 @@ this is what is not.
   collapsed, only its newest shows. A notification tapped in Notification
   Center did not open its app on the simulator, by tap or by element click,
   while Show less in the same view did respond. A real iPhone is refused:
-  its Notification Center is its owner's. Per-app locale is done (2026-09-30): iOS stores no per-app
+  its Notification Center is its owner's.
+  The time zone is the session's launch environment, as the language is:
+  iOS has no device time zone that can be set from outside, so
+  `app_timezone` keeps one for the session and every app Mobium launches
+  gets it as `TZ`; the app in front is launched again in it, and setting
+  the device's own zone ends it. Calendar, which marks the hour in
+  progress, marked Tokyo's hour once set to Asia/Tokyo, again on a later
+  launch, and the device's hour once set back, on a simulator and on the
+  iPhone (`docs/checks/timezone-ios.sh`; Calendar has to be in its day
+  view, and the check says it did not run when it is not). Driving
+  Settings, the other way, would have moved a phone owner's clock.
+  Per-app locale is done (2026-09-30): iOS stores no per-app
   language that can be set from outside, so `app_locale` keeps it for the
   session and every launch passes it as `-AppleLanguages (xx) -AppleLocale
   xx_YY`; a running app is launched again in it at once. Settings, pinned to
