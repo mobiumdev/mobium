@@ -560,6 +560,15 @@ this is what is not.
     - **The next row of tiles maps as `settings_card_view`**: five empty
       containers 44 pixels tall at the bottom edge, with nothing rendered
       in them yet, labeled by resource id.
+    - **`mobium test` says nothing when its trace cannot be saved.** It
+      discards the error from the `app_trace stop` it makes after a test,
+      so a test with `--trace on` can pass with no trace and no word
+      (CHALLENGES 212 was found that way). It should say so in the result.
+    - **`label=` against a TV tile's words answers "not on screen".** A
+      Settings tile's name is the text of its child, so `label=Network`
+      timed out with the tile on screen, where `text=Network` found it at
+      once. The near-miss that names the locator that would have worked
+      (CHALLENGES 196) did not fire here.
     - **`current` names the screensaver** (`com.amazon.ftv.screensaver`)
       while the launcher's activity is in front, since it reads the
       hierarchy — arguably right, as it is what is on screen.

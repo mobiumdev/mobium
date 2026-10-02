@@ -292,8 +292,7 @@ func (h *Handlers) resolveSession(ctx context.Context, args map[string]interface
 		if s.backend == backend && s.healthy(ctx) {
 			return s, nil
 		}
-		s.close()
-		delete(h.sessions, dev.Serial)
+		h.retire(dev.Serial, s)
 	}
 
 	s := &session{dev: dev, backend: backend}
@@ -321,7 +320,7 @@ func (h *Handlers) resolveSession(ctx context.Context, args map[string]interface
 		s.driver = d
 	}
 
-	h.sessions[dev.Serial] = s
+	h.adopt(dev.Serial, s)
 	return s, nil
 }
 
@@ -363,8 +362,7 @@ func (h *Handlers) externalSessionFor(ctx context.Context, backend Backend, ref 
 		if s.healthy(ctx) {
 			return s, nil
 		}
-		s.close()
-		delete(h.sessions, key)
+		h.retire(key, s)
 	}
 
 	d := mobiumdriver.NewExternal(string(backend), path, ref)
@@ -381,7 +379,7 @@ func (h *Handlers) externalSessionFor(ctx context.Context, backend Backend, ref 
 		driver:  d,
 		backend: backend,
 	}
-	h.sessions[key] = s
+	h.adopt(key, s)
 	return s, nil
 }
 
@@ -406,8 +404,7 @@ func (h *Handlers) iosSessionFor(ctx context.Context, ref string) (*session, err
 		if s.backend == BackendWDA && s.healthy(ctx) {
 			return s, nil
 		}
-		s.close()
-		delete(h.sessions, serial)
+		h.retire(serial, s)
 	}
 
 	var d *mobiumdriver.WDA
@@ -425,7 +422,7 @@ func (h *Handlers) iosSessionFor(ctx context.Context, ref string) (*session, err
 		driver:  d,
 		backend: BackendWDA,
 	}
-	h.sessions[serial] = s
+	h.adopt(serial, s)
 	return s, nil
 }
 
@@ -559,4 +556,29 @@ func uiAutomationHeld(ctx context.Context, adb *device.ADB, serial string, cause
 		"tool that started it: %w", serial, strings.Join(names, ", "), serial, holders[0].PID, cause).
 		WithRemedy(fmt.Sprintf("adb -s %s shell kill %d", serial, holders[0].PID)).
 		WithDetail("holder", holders[0].Args)
+}
+
+// retire replaces a session that is no longer usable — its device dropped
+// off the network, its server died, another backend was asked for — keeping
+// any trace it was recording for the session that replaces it. A trace is
+// the caller's, not the session's: on a Fire TV whose Wi-Fi link dropped
+// mid-recording, the trace went with the session and the stop that
+// followed found none (CHALLENGES 212).
+func (h *Handlers) retire(key string, s *session) {
+	if s.trace != nil {
+		h.heldTraces[key] = s.trace
+		s.trace = nil
+	}
+	s.close()
+	delete(h.sessions, key)
+}
+
+// adopt caches a new session, and carries on a trace a retired session on
+// the same device was recording.
+func (h *Handlers) adopt(key string, s *session) {
+	if t, ok := h.heldTraces[key]; ok {
+		s.trace = t
+		delete(h.heldTraces, key)
+	}
+	h.sessions[key] = s
 }
