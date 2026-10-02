@@ -4606,6 +4606,16 @@ got, found five things wrong.
 
 Worth recording because each one closed off an approach that looked obvious.
 
+- **Predictive back on Android 15 closes a React Native app.** MobiumApp
+  built with predictive back turned on went back to closing on every back
+  from a demo on the Android 15 AVD, `BackHandler` never called, while on
+  Android 17 — the AVD and the Pixel 8 Pro — it went back to its home
+  screen. React Native 0.86 registers the callback that replaces
+  `onBackPressed()` only on Android 16 and later, and with predictive back
+  on, Android 13 to 15 call neither. Not Mobium's: Mobium's `press back`
+  reported "it left dev.mobium.mobiumapp", which is the report CHALLENGES
+  204 added. MobiumApp stays opted out (docs/BACK.md).
+
 - **Back skips a page `app_eval` navigated to.** In OYO Lite, a link tapped
   and then back returned to the page before; `location.assign` run through
   `app_eval` and then back left the app. Chrome skips, on back, history

@@ -102,6 +102,29 @@ previous app, one edge swipe each. So the listener is reached on API 37
 with `targetSdk` 36 and predictive back opted out — the one combination
 that could have kept it from ever being called.
 
+### With predictive back turned on
+
+Apps targeting Android 16 and later are moving to predictive back, so on
+2026-10-02 MobiumApp was built once with Expo's
+`predictiveBackGestureEnabled: true` — `android:enableOnBackInvokedCallback="true"`
+in the manifest, everything else the same — and the probe and `back.sh` run
+against it:
+
+| Device | key, right edge, left edge from a demo | Back from home |
+| --- | --- | --- |
+| Pixel 8 Pro, Android 17 | demo → home, the app's handler called | — |
+| AVD, Android 17 | demo → home; `back.sh` passed | left the app, activity finished |
+| AVD, Android 15 | **left the app** — the handler never called | left the app |
+
+React Native 0.86 explains the split. With predictive back on, Android no
+longer calls `onBackPressed()`, and `ReactActivity` registers the callback
+that stands in for it only when `isAtLeastTargetSdk36` — the device on
+Android 16 or later *and* the app targeting 36. On Android 13 to 15 a React
+Native app that opts in to predictive back has neither, and every back
+closes it, `BackHandler` or not. Mobium said so as it happened: `press
+back` answered "it left dev.mobium.mobiumapp", which is what that answer is
+for. MobiumApp stays opted out; the build was not kept.
+
 ## iOS
 
 iOS has no system back. Going back is the app's: a navigation bar's back
@@ -152,10 +175,9 @@ Three things follow.
 2. **No swipe back on iOS.** Needs native-stack navigation; unmeasured.
 3. **WebView screens.** Android back should go back in the page's history
    before leaving the screen, as a browser does. Unmeasured.
-4. **Predictive back.** MobiumApp opts out
-   (`enableOnBackInvokedCallback="false"`); with it on, the listener's
-   behavior is unmeasured. Apps targeting Android 16 and later are moving
-   to it, so it is the configuration a real app will have.
+4. **Predictive back.** Measured 2026-10-02 [above](#with-predictive-back-turned-on):
+   with it on, React Native 0.86 loses `BackHandler` on Android 13 to 15,
+   and keeps it on 16 and later. MobiumApp stays opted out.
 
 ### In Mobium
 

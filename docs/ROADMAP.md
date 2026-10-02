@@ -64,8 +64,11 @@ this is what is not.
   `--gesture` swipes back and is refused with button navigation, `devices`
   names the mode, the iOS refusal names the gesture, and
   `docs/checks/back.sh` holds it on both phones, both AVDs and the simulator.
-  Left: MobiumApp's swipe back on iOS, back in its WebView screens, and
-  predictive back turned on.
+  Predictive back measured 2026-10-02: with it turned on, React Native 0.86
+  keeps `BackHandler` on Android 16 and later and loses it on 15 and
+  earlier, where every back closed MobiumApp — and Mobium's `press back`
+  said so. Left: MobiumApp's swipe back on iOS, and back in its WebView
+  screens.
 - **App Clips: a clip of our own on a real iPhone.** Measured 2026-10-01:
   on the simulator a clip installed alone launches, reads, takes taps and
   goes back like any native app; on the iPhone a published clip opened from
