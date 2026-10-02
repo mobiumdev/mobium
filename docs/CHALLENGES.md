@@ -7,7 +7,7 @@ the source.
 
 The pattern across them is the reason the document exists: **almost nothing
 here was found by reading code or by a test written from imagination.** Of
-207 defects, 171 were found only by running against a real device. The other
+208 defects, 172 were found only by running against a real device. The other
 thirty-six — 4, 5, 6, 14, 23, 24, 32, 35, 36, 39, 44, 50, 53, 54, 57, 66, 89,
 99, 100, 121, 123, 129, 130, 133, 134, 139, 140, 141, 142, 144, 150, 158, 162,
 164, 165 and 172 — came from reading code, the compiler, a test, a linter,
@@ -4622,6 +4622,39 @@ seconds instead of thirty, and after Don't send `app_list_apps` listed the
 app with no second install. Mobium does not answer the dialog itself: which
 answer to give is the phone owner's, and "Always send" changes a setting for
 every app.
+
+### 208. Every read silenced the device's screen reader
+
+**Found by:** reading Prime Video on a Fire TV, which publishes nothing but
+one surface to `map`, to see whether it publishes more while Amazon's screen
+reader, VoiceView, is on. Every read of the screen — `uiautomator dump` and
+the UiAutomator2 server alike — unbound VoiceView for as long as it ran:
+`dumpsys accessibility` listed it before the read and not during it, and
+touch exploration went off. Android's test-automation connection suppresses
+every other accessibility service unless it is opened with
+`FLAG_DONT_SUPPRESS_ACCESSIBILITY_SERVICES`, and neither opens it so: the dump
+command has no option for it, and the UiAutomator2 server accepted
+`disableSuppressAccessibilityService`, as a setting and as a capability, and
+went on unbinding VoiceView — the setting did not even read back. So anybody
+who relies on TalkBack or VoiceView lost it for each read, without a word,
+and an app that publishes its contents only to a screen reader stopped
+publishing them before the read could see them. The same held on a Pixel 8
+Pro with TalkBack.
+
+The dump backend now reads through a reader of Mobium's own when any
+accessibility service is enabled: a small dex, pinned by checksum, pushed into
+a folder of its own in `/data/local/tmp`, run with `app_process`, and deleted
+with the runtime's compiled copy of it after every read. It writes what
+`uiautomator dump` writes, over a connection opened with that flag. On the
+Fire TV (Android 9) VoiceView stayed bound through every read, and Prime Video
+gave 14 nodes, 3 of them labeled, where the dump gave 12 and none; on the
+Pixel 8 Pro (Android 17) `uiautomator dump` unbound TalkBack in both reads and
+the reader in neither, the same 13 nodes either way. The first build died on
+Android 17 within 150 ms: newer accessibility code builds a Handler on the
+main looper, which a bare `app_process` does not have, and Android 9 had never
+asked for one. With no service enabled, reads go through `uiautomator dump`
+as before. The default driver, UiAutomator2, still silences a screen reader
+(ROADMAP).
 
 ## Findings that were not defects
 

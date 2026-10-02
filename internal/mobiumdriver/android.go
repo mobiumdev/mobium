@@ -5,10 +5,12 @@ import (
 	"context"
 	"fmt"
 	"github.com/mobiumdev/mobium/internal/mobiumerr"
+	"os"
 	"strings"
 	"time"
 
 	"github.com/mobiumdev/mobium/internal/device"
+	"github.com/mobiumdev/mobium/internal/mobiumdriver/reader"
 	"github.com/mobiumdev/mobium/internal/uitree"
 )
 
@@ -76,6 +78,13 @@ func (a *Android) dump(ctx context.Context) ([]byte, error) {
 }
 
 func (a *Android) dumpOnce(ctx context.Context) ([]byte, error) {
+	use, err := a.useReader(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if use {
+		return a.readOnce(ctx)
+	}
 	out, diag, err := a.adb.ShellDiagnostics(ctx, "uiautomator", "dump", dumpPath)
 	if err != nil {
 		return nil, err
@@ -121,6 +130,80 @@ func (a *Android) dumpOnce(ctx context.Context) ([]byte, error) {
 		return nil, mobiumerr.New(mobiumerr.DeviceServer, "uiautomator dump wrote an empty hierarchy")
 	}
 	return xml, nil
+}
+
+// useReader says whether a read goes through Mobium's own reader rather than
+// `uiautomator dump`. uiautomator connects in a way that suppresses every
+// other accessibility service while it reads — a screen reader goes quiet,
+// and an app that publishes its contents only to one stops publishing — so
+// the reader is used whenever an accessibility service is enabled
+// (CHALLENGES 208).
+// MOBIUM_DUMP_READER=mobium or =uiautomator chooses one regardless.
+func (a *Android) useReader(ctx context.Context) (bool, error) {
+	switch v := os.Getenv("MOBIUM_DUMP_READER"); v {
+	case "mobium":
+		return true, nil
+	case "uiautomator":
+		return false, nil
+	case "":
+	default:
+		return false, mobiumerr.New(mobiumerr.InvalidArgument,
+			"MOBIUM_DUMP_READER is %q — it takes mobium or uiautomator, or unset to decide by the device", v)
+	}
+	out, err := a.adb.Shell(ctx, "settings get secure accessibility_enabled; settings get secure enabled_accessibility_services")
+	if err != nil {
+		return false, err
+	}
+	lines := strings.Split(strings.TrimSpace(string(out)), "\n")
+	if len(lines) < 2 {
+		return false, nil
+	}
+	services := strings.TrimSpace(lines[1])
+	return strings.TrimSpace(lines[0]) == "1" && services != "" && services != "null", nil
+}
+
+// readOnce reads the screen with Mobium's own reader: pushed into a folder of
+// its own, run with app_process, and the folder deleted after, with the
+// runtime's compiled copy of it inside — whether or not the read worked.
+func (a *Android) readOnce(ctx context.Context) ([]byte, error) {
+	dex, err := reader.Dex()
+	if err != nil {
+		return nil, err
+	}
+	f, err := os.CreateTemp("", "mobium-reader-*.dex")
+	if err != nil {
+		return nil, mobiumerr.New(mobiumerr.Internal, "stage the reader: %w", err)
+	}
+	defer os.Remove(f.Name())
+	if _, err := f.Write(dex); err != nil {
+		f.Close()
+		return nil, mobiumerr.New(mobiumerr.Internal, "stage the reader: %w", err)
+	}
+	if err := f.Close(); err != nil {
+		return nil, mobiumerr.New(mobiumerr.Internal, "stage the reader: %w", err)
+	}
+
+	defer func() {
+		cctx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 10*time.Second)
+		defer cancel()
+		_, _ = a.adb.Shell(cctx, "rm", "-rf", reader.Dir)
+	}()
+	if _, err := a.adb.Shell(ctx, "mkdir", "-p", reader.Dir); err != nil {
+		return nil, err
+	}
+	remote := reader.Dir + "/reader.dex"
+	if _, err := a.adb.Run(ctx, "push", f.Name(), remote); err != nil {
+		return nil, err
+	}
+	out, diag, err := a.adb.ShellDiagnostics(ctx, "CLASSPATH="+remote, "app_process", "/system/bin", reader.Class)
+	if err != nil {
+		return nil, err
+	}
+	xml, err := reader.Hierarchy(out)
+	if err != nil && len(bytes.TrimSpace(diag)) > 0 {
+		return nil, fmt.Errorf("%w (stderr: %s)", err, firstLine(strings.TrimSpace(string(diag))))
+	}
+	return xml, err
 }
 
 // Screenshot captures the framebuffer as PNG.

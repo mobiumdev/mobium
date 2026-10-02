@@ -317,6 +317,25 @@ One more, rarely: if debugging is on and still nothing appears, pull down the
 notification shade, tap the USB notification and change the mode from charging
 to **File transfer**. On Android 12+ this is usually unnecessary.
 
+### With a screen reader on
+
+Android's test-automation connection silences every other accessibility
+service while it is open, unless it is opened not to. So on a device with
+TalkBack — or VoiceView, on a Fire TV — on, a read of the screen takes the
+screen reader away for as long as it runs, and an app that publishes its
+contents only to a screen reader stops publishing them (CHALLENGES 208).
+
+`--driver uiautomator` reads through a reader of Mobium's own whenever an
+accessibility service is enabled, and that one leaves the screen reader
+running. The default driver, UiAutomator2, does not yet: with it, the screen
+reader is silent while a session is open and comes back when the session
+ends. Nothing in the device's settings changes either way.
+
+`MOBIUM_DUMP_READER=mobium` uses Mobium's reader for every read, and
+`=uiautomator` uses `uiautomator dump` for every read. **It is read by the
+daemon**, so it takes effect only if it is set when the daemon starts — set
+on a later command, it does nothing. Run `mobium daemon stop` first.
+
 ### Over Wi-Fi
 
 Android 11+. The phone and the Mac must be on the same network.
@@ -750,7 +769,9 @@ session — is [SHUTDOWN.md](SHUTDOWN.md).
 Nothing is left in the device's filesystem. The dump backend writes a
 hierarchy file to `/data/local/tmp` and deletes it after every read — that
 file is a serialization of whatever is on screen, so on a real phone it is
-your data, and it is not left behind. Verify with:
+your data, and it is not left behind. With a screen reader on, it pushes its
+own reader to `/data/local/tmp/mobium-reader` instead, and deletes the folder,
+with the copy Android compiles into it, after every read. Verify with:
 
 ```sh
 adb -s <serial> shell ls /data/local/tmp
