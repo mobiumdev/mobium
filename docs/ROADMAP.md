@@ -562,12 +562,19 @@ this is what is not.
     - **`current` names the screensaver** (`com.amazon.ftv.screensaver`)
       while the launcher's activity is in front, since it reads the
       hierarchy — arguably right, as it is what is on screen.
-    - **`press` has no D-pad keys**: back, home, recents and the volume
-      keys only.
+    - ~~**`press` has no D-pad keys.**~~ Done the same day: `dpad-up`,
+      `dpad-down`, `dpad-left`, `dpad-right` and `select`, and the media
+      keys `play-pause`, `stop`, `next`, `previous`, `rewind` and
+      `fast-forward`. A D-pad press reads focus back: on the TV it named
+      each tile as focus reached it, across a row that scrolled in tiles
+      not yet on screen, and said "focus did not move" at the top edge;
+      select on the Network tile opened it. Media keys are reported as
+      sent, as volume is. **The Settings row wraps** — right from its last
+      tile, Help, went to its first, Inputs — so a focus strategy has to
+      notice a cycle, not only a stop.
 
   What it takes, in order, after CHALLENGES 209 and 210: the screenshot
-  read from the PNG signature on; `press` taking the D-pad and select;
-  `map` showing focus; a tap on a TV read back — focus moved, or the screen
+  read from the PNG signature on; `map` showing focus; a tap on a TV read back — focus moved, or the screen
   changed — rather than reported as "tapped"; a way to open an activity by
   action, for Settings; then the focus strategy — D-pad presses until the
   target reports `focused`, then select, each step read back and refused

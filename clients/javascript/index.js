@@ -1360,7 +1360,10 @@ export class Device {
 
   /**
    * Presses a hardware button: 'back', 'home', 'recents', 'volume-up' or
-   * 'volume-down'.
+   * 'volume-down'; a remote's D-pad, 'dpad-up', 'dpad-down', 'dpad-left',
+   * 'dpad-right' and 'select'; or a media key, 'play-pause', 'stop', 'next',
+   * 'previous', 'rewind' or 'fast-forward'. A D-pad press reports where
+   * focus went.
    *
    * On Android back is primary navigation. iOS has no back button by design
    * and throws with what to do instead, rather than sending an edge swipe —

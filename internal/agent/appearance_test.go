@@ -386,6 +386,8 @@ type buttonDriver struct {
 	tree      *uitree.Tree
 	// afterBack, when set, is the screen once back has been pressed.
 	afterBack *uitree.Tree
+	// after is the screen once a button has been pressed, by button.
+	after map[string]*uitree.Tree
 }
 
 func (b *buttonDriver) Snapshot(ctx context.Context) (*uitree.Tree, error) { return b.tree, nil }
@@ -398,6 +400,9 @@ func (b *buttonDriver) Press(ctx context.Context, button string) error {
 			b.pressed = append(b.pressed, button)
 			if button == mobiumdriver.ButtonBack && b.afterBack != nil {
 				b.tree = b.afterBack
+			}
+			if t, ok := b.after[button]; ok {
+				b.tree = t
 			}
 			return nil
 		}
@@ -751,5 +756,79 @@ func TestALaunchOntoALockedDeviceIsRefused(t *testing.T) {
 	plain := &session{dev: fakeDevice(), driver: &fakeDriver{}, backend: BackendUIA2}
 	if err := h.lockedInstead(ctx, plain, "launched x"); err != nil {
 		t.Errorf("a driver with no lock state was refused: %v", err)
+	}
+}
+
+// tvRow is a row of tiles as a Fire TV's Settings draws them — a focusable
+// container whose child carries the words — with focus on one, or on none
+// when focused is "".
+func tvRow(t *testing.T, focused string) *uitree.Tree {
+	t.Helper()
+	xml := `<?xml version='1.0' encoding='UTF-8'?><hierarchy rotation="0">` +
+		`<node index="0" package="com.amazon.tv.launcher" class="android.widget.FrameLayout" bounds="[0,0][1920,1080]">`
+	for i, label := range []string{"Network", "Applications"} {
+		x := 100 + i*400
+		xml += fmt.Sprintf(`<node index="%d" package="com.amazon.tv.launcher" class="android.widget.LinearLayout" `+
+			`clickable="true" focusable="true" focused="%v" bounds="[%d,800][%d,1000]">`+
+			`<node index="0" package="com.amazon.tv.launcher" class="android.widget.TextView" text="%s" `+
+			`bounds="[%d,900][%d,960]" /></node>`, i, label == focused, x, x+300, label, x, x+300)
+	}
+	tree, err := uitree.ParseAndroid([]byte(xml + `</node></hierarchy>`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	return tree
+}
+
+// A D-pad press is read back by focus, the one thing a TV reports about where
+// the user is: moved is confirmed, staying put at the end of a row is said
+// to have not moved, and a screen where nothing reports focus — an app that
+// draws to one surface — is not passed off as a success.
+func TestDpadSaysWhereFocusWent(t *testing.T) {
+	h, s, d := withButtons(t, mobiumdriver.AllButtons()...)
+	d.tree = tvRow(t, "Network")
+	d.after = map[string]*uitree.Tree{mobiumdriver.ButtonDpadRight: tvRow(t, "Applications")}
+	res, err := callPress(h, s, mobiumdriver.ButtonDpadRight)
+	if err != nil {
+		t.Fatal(err)
+	}
+	view := res.StructuredContent.(PressView)
+	if !strings.Contains(textOf(res), "focus moved to Applications") || !view.Confirmed || view.Focus != "Applications" {
+		t.Errorf("focus moving was not reported: %q, %+v", textOf(res), view)
+	}
+
+	// At the end of the row the screen does not change.
+	res, err = callPress(h, s, mobiumdriver.ButtonDpadRight)
+	if err != nil {
+		t.Fatal(err)
+	}
+	view = res.StructuredContent.(PressView)
+	if !strings.Contains(textOf(res), "focus did not move from Applications") || view.Confirmed {
+		t.Errorf("focus staying put was reported as moving: %q, %+v", textOf(res), view)
+	}
+
+	d.tree, d.after = tvRow(t, ""), nil
+	res, err = callPress(h, s, mobiumdriver.ButtonDpadDown)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(textOf(res), "nothing on screen reports focus") || res.StructuredContent.(PressView).Confirmed {
+		t.Errorf("a screen without focus was reported as a move: %q", textOf(res))
+	}
+}
+
+// Select and the media keys have no platform-wide outcome, so they are
+// reported as sent and never claim a focus or a foreground.
+func TestSelectAndMediaKeysAreReportedAsSent(t *testing.T) {
+	h, s, d := withButtons(t, mobiumdriver.AllButtons()...)
+	d.tree = tvRow(t, "Network")
+	for _, b := range []string{mobiumdriver.ButtonSelect, mobiumdriver.ButtonPlayPause, mobiumdriver.ButtonFastForward} {
+		res, err := callPress(h, s, b)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if textOf(res) != "pressed "+b || res.StructuredContent.(PressView).Confirmed {
+			t.Errorf("%s: %q", b, textOf(res))
+		}
 	}
 }

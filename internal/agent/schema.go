@@ -1300,7 +1300,12 @@ func GetToolSchemas() []Tool {
 		{
 			Name: "app_press",
 			Description: "Press a hardware button. On Android: \"back\", \"home\", " +
-				"\"recents\", \"volume-up\", \"volume-down\". **back is primary " +
+				"\"recents\", \"volume-up\", \"volume-down\"; a remote's D-pad, " +
+				"\"dpad-up\", \"dpad-down\", \"dpad-left\", \"dpad-right\" and \"select\"; " +
+				"and its media keys, \"play-pause\", \"stop\", \"next\", \"previous\", " +
+				"\"rewind\", \"fast-forward\". **The D-pad is how a TV is driven**: a " +
+				"D-pad press says where focus went, or that it did not move, and select " +
+				"activates what has focus. iOS has none of them. **back is primary " +
 				"navigation on Android** — an app that opened a detail screen expects it, " +
 				"and no amount of tapping substitutes. iOS has no back button by design, " +
 				"and mobium refuses back there rather than sending an edge swipe in its " +
@@ -1320,7 +1325,9 @@ func GetToolSchemas() []Tool {
 					"button": map[string]interface{}{
 						"type":        "string",
 						"description": "Which button. Refused with the list of what this platform has.",
-						"enum":        []string{"back", "home", "recents", "volume-up", "volume-down"},
+						"enum": []string{"back", "home", "recents", "volume-up", "volume-down",
+							"dpad-up", "dpad-down", "dpad-left", "dpad-right", "select",
+							"play-pause", "stop", "next", "previous", "rewind", "fast-forward"},
 					},
 					"gesture": map[string]interface{}{
 						"type": "boolean",
