@@ -71,6 +71,20 @@ func (h *Handlers) pressOn(ctx context.Context, s *session, args map[string]inte
 		}
 	}
 
+	// A D-pad press moves focus, and focus is the one thing a TV reports
+	// about where the user is — measured on a Fire TV, where `focused`
+	// followed every press — so that is what it is read back by.
+	dpad := false
+	for _, b := range mobiumdriver.DpadButtons() {
+		dpad = dpad || b == button
+	}
+	var beforeFocus *uitree.Node
+	if dpad {
+		if tree, err := s.driver.Snapshot(ctx); err == nil {
+			beforeFocus = focusedNode(tree)
+		}
+	}
+
 	// On Android the app in front is named by the task, not the window,
 	// where a browser draws it: a back out of a Trusted Web Activity was
 	// reported as leaving Chrome. CHALLENGES 205.
@@ -114,6 +128,11 @@ func (h *Handlers) pressOn(ctx context.Context, s *session, args map[string]inte
 		}
 		return Result(msg, view), nil
 	}
+	if dpad {
+		msg, focus, ok := h.awaitFocus(ctx, s, button, beforeFocus)
+		view.Confirmed, view.Focus = ok, focus
+		return Result(msg, view), nil
+	}
 	if button == mobiumdriver.ButtonHome {
 		if after, ok := h.awaitLauncher(ctx, s, before); ok {
 			view.Confirmed, view.Foreground = true, after
@@ -142,13 +161,64 @@ func (h *Handlers) awaitLauncher(ctx context.Context, s *session, before string)
 	}
 }
 
+// focusedNode is the innermost node that has input focus, or nil.
+func focusedNode(t *uitree.Tree) *uitree.Node {
+	var f *uitree.Node
+	t.Walk(func(n *uitree.Node) bool {
+		if n.Focused {
+			f = n
+		}
+		return true
+	})
+	return f
+}
+
+// sameNode is whether two reads' nodes are the same element: where it is
+// and what it says, since a read hands out new nodes every time.
+func sameNode(a, b *uitree.Node) bool {
+	if a == nil || b == nil {
+		return a == b
+	}
+	return a.Bounds == b.Bounds && uitree.Describe(a) == uitree.Describe(b)
+}
+
+// awaitFocus reads where focus went after a D-pad press. Focus moving is
+// confirmed; focus that stays put — at the edge of a row, say — is reported
+// as not moving, and a screen where nothing reports focus (an app that
+// draws to one surface) as unreadable rather than as a success.
+func (h *Handlers) awaitFocus(ctx context.Context, s *session, button string, before *uitree.Node) (msg, focus string, ok bool) {
+	var now *uitree.Node
+	read := false
+	_ = pollUntil(ctx, 2*time.Second, func(ctx context.Context) (bool, error) {
+		tree, err := s.driver.Snapshot(ctx)
+		if err != nil {
+			return false, nil
+		}
+		now, read = focusedNode(tree), true
+		return now != nil && !sameNode(before, now), nil
+	})
+	switch {
+	case read && now != nil && !sameNode(before, now):
+		focus = uitree.Describe(now)
+		return fmt.Sprintf("pressed %s — focus moved to %s", button, focus), focus, true
+	case now != nil:
+		focus = uitree.Describe(now)
+		return fmt.Sprintf("pressed %s — focus did not move from %s", button, focus), focus, false
+	default:
+		return fmt.Sprintf("pressed %s — nothing on screen reports focus, so where it went "+
+			"cannot be read", button), "", false
+	}
+}
+
 // PressView is the result of app_press.
 type PressView struct {
 	Button string `json:"button"`
 	// Confirmed distinguishes a press whose effect was checked from one that
-	// was merely sent. Only home has a platform-wide outcome to check.
+	// was merely sent: home, back, and a D-pad press that moved focus.
 	Confirmed  bool   `json:"confirmed"`
 	Foreground string `json:"foreground,omitempty"`
+	// Focus is what has focus after a D-pad press, labeled as map labels it.
+	Focus string `json:"focus,omitempty"`
 	// Gesture is a back given as a swipe in from the edge, not the key.
 	Gesture bool `json:"gesture,omitempty"`
 	// Left is the app a back took the user out of. Empty when the app

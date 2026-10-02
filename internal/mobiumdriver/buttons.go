@@ -22,7 +22,31 @@ const (
 	ButtonRecents    = "recents"
 	ButtonVolumeUp   = "volume-up"
 	ButtonVolumeDown = "volume-down"
+
+	// The D-pad and its center, select: how a TV is driven, where a touch
+	// tap only moves focus on some views (measured on a Fire TV's launcher)
+	// and a remote is the input every app is built for. A phone takes them
+	// too, as keyboard navigation.
+	ButtonDpadUp    = "dpad-up"
+	ButtonDpadDown  = "dpad-down"
+	ButtonDpadLeft  = "dpad-left"
+	ButtonDpadRight = "dpad-right"
+	ButtonSelect    = "select"
+
+	// A remote's media keys, sent to whichever media session holds them.
+	ButtonPlayPause   = "play-pause"
+	ButtonStop        = "stop"
+	ButtonNext        = "next"
+	ButtonPrevious    = "previous"
+	ButtonRewind      = "rewind"
+	ButtonFastForward = "fast-forward"
 )
+
+// DpadButtons are the presses that move focus, which is what they are read
+// back by.
+func DpadButtons() []string {
+	return []string{ButtonDpadUp, ButtonDpadDown, ButtonDpadLeft, ButtonDpadRight}
+}
 
 // Buttons is implemented by backends that can press hardware buttons.
 //
@@ -57,6 +81,19 @@ var androidKeycodes = map[string]string{
 	ButtonRecents:    "KEYCODE_APP_SWITCH",
 	ButtonVolumeUp:   "KEYCODE_VOLUME_UP",
 	ButtonVolumeDown: "KEYCODE_VOLUME_DOWN",
+
+	ButtonDpadUp:    "KEYCODE_DPAD_UP",
+	ButtonDpadDown:  "KEYCODE_DPAD_DOWN",
+	ButtonDpadLeft:  "KEYCODE_DPAD_LEFT",
+	ButtonDpadRight: "KEYCODE_DPAD_RIGHT",
+	ButtonSelect:    "KEYCODE_DPAD_CENTER",
+
+	ButtonPlayPause:   "KEYCODE_MEDIA_PLAY_PAUSE",
+	ButtonStop:        "KEYCODE_MEDIA_STOP",
+	ButtonNext:        "KEYCODE_MEDIA_NEXT",
+	ButtonPrevious:    "KEYCODE_MEDIA_PREVIOUS",
+	ButtonRewind:      "KEYCODE_MEDIA_REWIND",
+	ButtonFastForward: "KEYCODE_MEDIA_FAST_FORWARD",
 }
 
 // ButtonNames lists the vocabulary, sorted, for error messages.
@@ -73,13 +110,14 @@ func ButtonNames(supported []string) string {
 // one platform has. The tool layer checks against this so a typo never reaches
 // a device; each driver checks against its own list so the refusal can say why
 // that platform lacks it, which is the part a caller can act on.
-func AllButtons() []string {
-	return []string{ButtonBack, ButtonHome, ButtonRecents, ButtonVolumeUp, ButtonVolumeDown}
-}
+func AllButtons() []string { return androidButtons() }
 
-// androidButtons is what both Android backends support.
+// androidButtons is what both Android backends support: every button in
+// the vocabulary, since `input keyevent` sends any of them.
 func androidButtons() []string {
-	return []string{ButtonBack, ButtonHome, ButtonRecents, ButtonVolumeUp, ButtonVolumeDown}
+	return []string{ButtonBack, ButtonHome, ButtonRecents, ButtonVolumeUp, ButtonVolumeDown,
+		ButtonDpadUp, ButtonDpadDown, ButtonDpadLeft, ButtonDpadRight, ButtonSelect,
+		ButtonPlayPause, ButtonStop, ButtonNext, ButtonPrevious, ButtonRewind, ButtonFastForward}
 }
 
 type keyPresser interface {
@@ -165,6 +203,11 @@ func (w *WDA) Press(ctx context.Context, button string) error {
 				WithRemedy("map the navigation bar's back button and tap it, or ask for the swipe by " +
 					"name: app_press back with gesture true, which starts in the navigation bar, " +
 					"where a list row's swipe actions cannot take it")
+		}
+		if button == ButtonSelect || strings.HasPrefix(button, "dpad-") {
+			return mobiumerr.New(mobiumerr.Unsupported, "an iPhone has no D-pad — that is the Apple TV "+
+				"remote, and Mobium does not drive tvOS. Tap the element instead; it has %s",
+				ButtonNames(iosButtons()))
 		}
 		return mobiumerr.New(mobiumerr.Unsupported, "iOS has no %q button — it has %s",
 			button, ButtonNames(iosButtons()))

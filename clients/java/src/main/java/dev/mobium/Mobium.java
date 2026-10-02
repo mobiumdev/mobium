@@ -1510,14 +1510,19 @@ public final class Mobium implements AutoCloseable {
 
     /**
      * Presses a hardware button: {@code "back"}, {@code "home"},
-     * {@code "recents"}, {@code "volume-up"} or {@code "volume-down"}.
+     * {@code "recents"}, {@code "volume-up"} or {@code "volume-down"}; a
+     * remote's D-pad, {@code "dpad-up"}, {@code "dpad-down"},
+     * {@code "dpad-left"}, {@code "dpad-right"} and {@code "select"}; or a
+     * media key, {@code "play-pause"}, {@code "stop"}, {@code "next"},
+     * {@code "previous"}, {@code "rewind"} or {@code "fast-forward"}. A D-pad
+     * press reports where focus went.
      *
      * <p>On Android back is primary navigation. iOS has no back button by
      * design and throws with what to do instead, rather than sending an edge
      * swipe — a different event an app can tell apart. Any press can move the
      * screen, so the refs from the last map are discarded.
      *
-     * @param button {@code "back"}, {@code "home"}, {@code "recents"}, {@code "volume-up"} or {@code "volume-down"}
+     * @param button a button name, as listed above
      */
     public void press(String button) { data("app_press", args("button", button)); }
 

@@ -1073,7 +1073,11 @@ class Device:
     def press(self, button: str) -> None:
         """Press a hardware button.
 
-        "back", "home", "recents", "volume-up" or "volume-down". On Android
+        "back", "home", "recents", "volume-up" or "volume-down"; a remote's
+        D-pad, "dpad-up", "dpad-down", "dpad-left", "dpad-right" and
+        "select"; or a media key, "play-pause", "stop", "next", "previous",
+        "rewind" or "fast-forward". A D-pad press reports where focus went.
+        On Android
         back is primary navigation. iOS has no back button by design and
         raises with what to do instead, rather than sending an edge swipe —
         a different event an app can tell apart. Any press can move the

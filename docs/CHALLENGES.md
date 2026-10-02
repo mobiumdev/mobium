@@ -7,7 +7,7 @@ the source.
 
 The pattern across them is the reason the document exists: **almost nothing
 here was found by reading code or by a test written from imagination.** Of
-209 defects, 173 were found only by running against a real device. The other
+210 defects, 174 were found only by running against a real device. The other
 thirty-six — 4, 5, 6, 14, 23, 24, 32, 35, 36, 39, 44, 50, 53, 54, 57, 66, 89,
 99, 100, 121, 123, 129, 130, 133, 134, 139, 140, 141, 142, 144, 150, 158, 162,
 164, 165 and 172 — came from reading code, the compiler, a test, a linter,
@@ -4682,6 +4682,31 @@ package and `com.amazon.pyrocore.IgnitionActivity` by `LEANBACK_LAUNCHER`;
 and `launch com.amazon.firebat`, refused by the old binary, put Prime Video
 in front, read back by `state` and by the dump's own line.
 The fixture is the structural lines of the TV's dump and no others.
+
+### 210. A dropped link was reported as a failed install, with advice that could not work
+
+**Found by:** running scenarios on a Fire TV over Wi-Fi, whose link drops
+every few minutes. A `map` called while it was down answered "installing
+UiAutomator2 server", then failed with `install server.apk: … adb: device
+offline` and advised `--driver uiautomator` — on a TV that had the pinned
+server installed, version 10.6.6, the whole time. Asking whether the server
+is installed treated a failed `dumpsys` or `pm list` as "not installed", so
+a dead link sent the session to reinstall; and the advice to switch driver
+was added to every failure to start, though the other driver needs the same
+link. It is the shape of CHALLENGES 182 with another cause.
+
+Now adb's own word that a device is gone — `device offline`, `device '…' not
+found`, `no devices/emulators found`, on adb's stderr and not anything a
+command on the device printed — is `device_not_ready`, its message naming
+`adb connect <serial>` for a network device; the installed-version check
+passes a failed read up rather than reading it as absence; and the driver
+advice is not given for a device that cannot be reached. A network serial
+that adb does not know at all now names `adb connect` too, where it named
+`mobium devices`, which cannot list a device adb was never connected to. The
+unit test uses adb's exact lines from the TV; against the old code it failed
+with the TV's own message. On the TV, with its link dropped on purpose, the
+lookup answered "no device with serial "10.0.0.77:5555" — `adb connect
+10.0.0.77:5555`, then retry".
 
 ## Findings that were not defects
 

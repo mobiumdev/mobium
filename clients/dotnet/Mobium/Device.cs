@@ -933,7 +933,12 @@ namespace Mobium
 
         /// <summary>
         /// Presses a hardware button: <c>"back"</c>, <c>"home"</c>,
-        /// <c>"recents"</c>, <c>"volume-up"</c> or <c>"volume-down"</c>. On
+        /// <c>"recents"</c>, <c>"volume-up"</c> or <c>"volume-down"</c>; a
+        /// remote's D-pad, <c>"dpad-up"</c>, <c>"dpad-down"</c>,
+        /// <c>"dpad-left"</c>, <c>"dpad-right"</c> and <c>"select"</c>; or a
+        /// media key, <c>"play-pause"</c>, <c>"stop"</c>, <c>"next"</c>,
+        /// <c>"previous"</c>, <c>"rewind"</c> or <c>"fast-forward"</c>. A
+        /// D-pad press reports where focus went. On
         /// Android back is primary navigation. iOS has no back button by
         /// design and throws with what to do instead, rather than sending an
         /// edge swipe — a different event an app can tell apart.

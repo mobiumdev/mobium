@@ -28,7 +28,11 @@ func TestAndroidButtonsMapToKeycodes(t *testing.T) {
 		}
 	}
 	want := []string{"KEYCODE_BACK", "KEYCODE_HOME", "KEYCODE_APP_SWITCH",
-		"KEYCODE_VOLUME_UP", "KEYCODE_VOLUME_DOWN"}
+		"KEYCODE_VOLUME_UP", "KEYCODE_VOLUME_DOWN",
+		"KEYCODE_DPAD_UP", "KEYCODE_DPAD_DOWN", "KEYCODE_DPAD_LEFT", "KEYCODE_DPAD_RIGHT",
+		"KEYCODE_DPAD_CENTER", "KEYCODE_MEDIA_PLAY_PAUSE", "KEYCODE_MEDIA_STOP",
+		"KEYCODE_MEDIA_NEXT", "KEYCODE_MEDIA_PREVIOUS", "KEYCODE_MEDIA_REWIND",
+		"KEYCODE_MEDIA_FAST_FORWARD"}
 	if strings.Join(f.sent, ",") != strings.Join(want, ",") {
 		t.Errorf("sent %v, want %v", f.sent, want)
 	}
@@ -62,6 +66,16 @@ func TestIOSRefusesBackWithTheReason(t *testing.T) {
 	err = w.Press(context.Background(), ButtonRecents)
 	if err == nil || !strings.Contains(err.Error(), `"home"`) {
 		t.Errorf("recents refusal = %v", err)
+	}
+
+	// A D-pad is the Apple TV's, which Mobium does not drive, and the
+	// refusal says what to do on a phone instead.
+	for _, b := range []string{ButtonDpadDown, ButtonSelect} {
+		err = w.Press(context.Background(), b)
+		if mobiumerr.CodeOf(err) != mobiumerr.Unsupported || !strings.Contains(err.Error(), "no D-pad") ||
+			!strings.Contains(err.Error(), "Tap the element") {
+			t.Errorf("%s refusal = %v", b, err)
+		}
 	}
 }
 
