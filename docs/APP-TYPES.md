@@ -36,6 +36,7 @@ it was driven once, with the result written down below, and nothing re-runs it.
 | Cross-platform | React Native: MobiumApp, on both platforms and on real phones | checked in — `mobium-app.sh`, `login.sh`, `otp.sh`, `dialogs.sh` and every other MobiumApp check |
 | | Flutter, Xamarin/.NET MAUI | **never driven** — see below for why Flutter is expected to need a driver |
 | Hybrid frameworks | Cordova, Ionic | **never driven**; a WebView inside them is the hybrid case above |
+| App Clip (iOS) | MobiumApp's clip demo, `dev.mobium.clipdemo.Clip`, installed alone on the iPhone 17 Pro simulator | measured 2026-10-01: launched, read, tapped and backed through like any native app. Opening one from a link, and the card the system shows first, **not reached** — [below](#try-before-you-install) |
 
 ## Native
 
@@ -149,6 +150,55 @@ Three things follow.
   three launches out of three; opened after Chrome's process had ended, it
   kept reporting it, two out of two. Mobium refuses the tap it can no longer
   place and says why.
+
+## Try before you install
+
+Both stores once let a user run part of an app without installing it. Only
+Apple's still does.
+
+- **Android: Google Play Instant**, "Try now" on a Play listing, ran a
+  slice of an app of up to 15 MB from a link. Google shut it down in
+  December 2025 for low use. Play's remaining "Try now" streams a premium
+  game for ten minutes from Google's servers; nothing runs on the phone, so
+  there is nothing on it to drive.
+- **iOS: App Clips.** A small native part of an app — UIKit or SwiftUI,
+  not web content — opened from an App Clip Code, an NFC tag, a QR code, a
+  link in Safari, Messages or Maps, or Apple's default link
+  `https://appclip.apple.com/id?p=<bundle-id>`. The system shows a card
+  first, then runs the clip full screen, and installing the full app
+  replaces it. Up to 15 MB from iOS 16, and 50 MB from iOS 17 for a clip
+  opened only from links.
+
+Measured on 2026-10-01, with a clip of our own: `appclip/` in MobiumApp's
+repository, a SwiftUI clip with a tap counter, a pushed screen and the URL
+that opened it, embedded in a minimal parent app.
+
+| On the iPhone 17 Pro simulator, iOS 26.5 | |
+| --- | --- |
+| The clip installed alone, as iOS delivers one | `simctl install` of the clip's `.app` |
+| `apps` | lists it, `dev.mobium.clipdemo.Clip` |
+| `launch`, `current` | starts it by bundle id; names the clip, not its parent |
+| `map`, `text`, a tap | read it; a tap took the counter from 0 to 1 |
+| Back through its navigation stack | the bar's button, and `press back --gesture`, which said the bar now reads "Clip Home" |
+| Opened from a link | **not reached**: the simulator's Settings > Developer has no Local Experiences, and `simctl launch` ignored Xcode's `_XCAppClipURL` — the clip said "Invoked by: none" |
+
+So **a clip, once running, is an ordinary native app to Mobium**, on the
+simulator. What is open is everything before that:
+
+- **The App Clip card** — whether WebDriverAgent sees the system's sheet,
+  what its buttons are called, and whether `alert` reads it.
+- **Opening a clip from a link or a code**, which is the only way a user
+  ever starts one. On a device, Settings > Developer > App Clips Testing >
+  Local Experiences registers a link for a clip; the simulator has no such
+  page.
+- **A real iPhone.** A free Apple ID's team cannot sign a clip: Xcode
+  refuses with "Personal development teams … do not support the App Clip
+  capability". A paid Apple Developer Program team, or a clip already
+  published in the App Store and opened from its link, is what it needs.
+  Opening `appclip.apple.com/id?p=com.apple.store.Jolly.Clip` on the iPhone
+  15 Plus brought no card up — that app may have no clip.
+
+`docs/probes/appclip-sim.sh` repeats the simulator measurement.
 
 ## Hybrid
 
