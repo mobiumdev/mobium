@@ -159,19 +159,20 @@ func download(ctx context.Context, a uia2Artifact, dest string) error {
 }
 
 // InstalledUIA2Version reports the server version installed on the device, or
-// "" when it is absent.
-func (a *ADB) InstalledUIA2Version(ctx context.Context) string {
+// "" when it is absent. A device that cannot be asked is an error, not an
+// absence: read as one, a dropped link sent a session to reinstall.
+func (a *ADB) InstalledUIA2Version(ctx context.Context) (string, error) {
 	out, err := a.Shell(ctx, "dumpsys", "package", uia2ServerPkg)
 	if err != nil {
-		return ""
+		return "", err
 	}
 	for _, line := range strings.Split(string(out), "\n") {
 		line = strings.TrimSpace(line)
 		if v, ok := strings.CutPrefix(line, "versionName="); ok {
-			return strings.TrimSpace(v)
+			return strings.TrimSpace(v), nil
 		}
 	}
-	return ""
+	return "", nil
 }
 
 // StopUIA2 ends the server's instrumentation cleanly, by force-stopping both
@@ -193,8 +194,18 @@ func (a *ADB) StopUIA2(ctx context.Context) {
 // EnsureUIA2Installed makes sure the right server version is on the device,
 // downloading and installing it if not.
 func (a *ADB) EnsureUIA2Installed(ctx context.Context, progress func(string)) error {
-	if a.InstalledUIA2Version(ctx) == UIA2Version && a.hasPackage(ctx, uia2TestPkg) {
-		return nil
+	version, err := a.InstalledUIA2Version(ctx)
+	if err != nil {
+		return err
+	}
+	if version == UIA2Version {
+		has, err := a.hasPackage(ctx, uia2TestPkg)
+		if err != nil {
+			return err
+		}
+		if has {
+			return nil
+		}
 	}
 
 	apks, err := EnsureUIA2APKs(ctx, progress)
@@ -220,10 +231,10 @@ func (a *ADB) EnsureUIA2Installed(ctx context.Context, progress func(string)) er
 	return nil
 }
 
-func (a *ADB) hasPackage(ctx context.Context, pkg string) bool {
+func (a *ADB) hasPackage(ctx context.Context, pkg string) (bool, error) {
 	out, err := a.Shell(ctx, "pm", "list", "packages", pkg)
 	if err != nil {
-		return false
+		return false, err
 	}
-	return strings.Contains(string(out), "package:"+pkg)
+	return strings.Contains(string(out), "package:"+pkg), nil
 }

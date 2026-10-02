@@ -500,10 +500,13 @@ this is what is not.
   - **`focused` follows the D-pad exactly; `selected` does not.** Every
     `DPAD_*` press moved `focused` to the node the screen highlighted, so
     focus is a state a tool can read back.
-  - **A touch tap only moves focus**, and Mobium still reports "tapped" —
-    the failure "report only what was checked" exists to prevent. Select
-    (`DPAD_CENTER`) is what activates. The launcher's top-menu icons are
-    tabs that open on focus alone, with no select at all.
+  - **What a touch tap does depends on the view.** On the launcher's top
+    menu it only moved focus, and Mobium still reported "tapped" — the
+    failure "report only what was checked" exists to prevent; those icons
+    are tabs that open on focus alone, with no select at all. On a Settings
+    tile, measured 2026-10-02, the same tap opened it: Network came forward.
+    So a tap cannot simply be refused on a TV; it has to be read back.
+    Select (`DPAD_CENTER`) is what activates everywhere.
   - **`mobium launch` refused TV apps** — they register only a
     `LEANBACK_LAUNCHER` activity — **and on Android 9 `state` read every app
     as in the background**, because nothing read Android 9's line for the
@@ -530,15 +533,46 @@ this is what is not.
     `device offline`), and on macOS an adb server started from a background
     process can be silently blocked by Local Network privacy — "No route to
     host" while ping works. `doctor` should name that, as it names the
-    other traps that report the wrong cause.
+    other traps that report the wrong cause. A drop under a session was
+    reported as a failed reinstall of a server that was there, with advice
+    to switch driver; now it is `device_not_ready` naming `adb connect`
+    (CHALLENGES 210).
+  - **Scenarios run on 2026-10-02**, with the default driver unless named.
+    Working: `devices` (by model), `doctor`, `current`; `lock` reads the
+    screensaver as locked and `lock unlock` wakes the TV; `find`, and `wait`
+    both found (in about a second) and timed out (exit 6); `press back`
+    reporting both leaving an app and staying in one, and `press home`;
+    `screenshot` through UiAutomator2, a 1920x1080 PNG; `terminate` of
+    Prime Video, read back as not running; and `mobium test`, a file of two
+    tests on the TV as a project, the real one passing and a must-fail
+    control failing. Not working, each a gap to close:
+    - **Settings cannot be opened.** On Fire OS it is not an app: it is
+      the launcher's `SettingsActivity`, reached by the
+      `android.settings.SETTINGS` action, and `launch` takes a package
+      while `open` takes a URL. Its screens belong to
+      `com.amazon.tv.settings.v2`, which has no launcher activity either.
+    - **`terminate` of a protected package** fails with Android's raw
+      `SecurityException` and stack trace — Fire OS will not force-stop
+      its own packages. A one-line refusal saying so is what it should be.
+    - **`map` does not say what has focus**, which on a TV is the state
+      that matters most; the hierarchy has it.
+    - **The next row of tiles maps as `settings_card_view`**: five empty
+      containers 44 pixels tall at the bottom edge, with nothing rendered
+      in them yet, labeled by resource id.
+    - **`current` names the screensaver** (`com.amazon.ftv.screensaver`)
+      while the launcher's activity is in front, since it reads the
+      hierarchy — arguably right, as it is what is on screen.
+    - **`press` has no D-pad keys**: back, home, recents and the volume
+      keys only.
 
-  What it takes, in order, after the two in CHALLENGES 209: the screenshot
-  read from the PNG signature on; a tap on a TV refused, or
-  reported as focus moved, rather than "tapped"; then the focus strategy —
-  D-pad presses until the target reports `focused`, then select, each step
-  read back and refused if focus stops moving or cycles — with swipes and
-  `scroll-to` as D-pad presses too, `press` already having back, home and
-  the media keys. That is the existing backend with a focus strategy, not a
+  What it takes, in order, after CHALLENGES 209 and 210: the screenshot
+  read from the PNG signature on; `press` taking the D-pad and select;
+  `map` showing focus; a tap on a TV read back — focus moved, or the screen
+  changed — rather than reported as "tapped"; a way to open an activity by
+  action, for Settings; then the focus strategy — D-pad presses until the
+  target reports `focused`, then select, each step read back and refused
+  if focus stops moving or cycles — with swipes and `scroll-to` as D-pad
+  presses too. That is the existing backend with a focus strategy, not a
   new driver. A check, `docs/checks/fire-tv.sh`, on a TV that is somebody's:
   it must leave VoiceView, ADB debugging's prompt and the home screen as it
   found them, and print nothing from a profile or a library.

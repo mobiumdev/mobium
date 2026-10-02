@@ -166,6 +166,9 @@ func (a *ADB) run(ctx context.Context, rest ...string) (stdout, stderr []byte, e
 		return nil, errBuf.Bytes(), mobiumerr.New(mobiumerr.Timeout, "adb %s timed out after %s",
 			strings.Join(rest, " "), defaultTimeout)
 	}
+	if e := unreachable(a.Serial, errBuf.String()); e != nil {
+		return outBuf.Bytes(), errBuf.Bytes(), e
+	}
 	if runErr != nil {
 		// The reason is on whichever stream adb felt like using. A failing
 		// `adb uninstall` exits 1 with "Failure [DELETE_FAILED_INTERNAL_ERROR]"
@@ -188,6 +191,35 @@ func (a *ADB) run(ctx context.Context, rest ...string) (stdout, stderr []byte, e
 			strings.Join(rest, " "), e)
 	}
 	return outBuf.Bytes(), errBuf.Bytes(), nil
+}
+
+// unreachableRe is adb saying the device itself cannot be reached, on its
+// own stderr — not anything a command on the device printed.
+var unreachableRe = regexp.MustCompile(`(?m)^(?:adb|error): (device offline|device '[^']*' not found|no devices/emulators found)`)
+
+// unreachable turns adb's "the device is gone" into device_not_ready with a
+// remedy that can work. Measured on a Fire TV over Wi-Fi, whose link drops
+// every few minutes: the failure surfaced as whatever was being attempted —
+// an install of a server that was already there, with the advice to switch
+// driver, which needs the same link.
+func unreachable(serial, stderr string) error {
+	m := unreachableRe.FindStringSubmatch(stderr)
+	if m == nil {
+		return nil
+	}
+	remedy := "reconnect it and check `adb devices`, then retry"
+	if networkSerial(serial) {
+		remedy = reconnect(serial)
+	}
+	return mobiumerr.New(mobiumerr.DeviceNotReady, "%s cannot be reached: %s — %s", serial, m[1], remedy).WithRemedy(remedy)
+}
+
+// networkSerial is whether a serial is a device reached by `adb connect`:
+// host:port. An emulator's is emulator-5554, a USB device's has no colon.
+func networkSerial(serial string) bool { return strings.Contains(serial, ":") }
+
+func reconnect(serial string) string {
+	return "its network link dropped: `adb connect " + serial + "`, then retry"
 }
 
 // Shell runs a command on the device via `adb shell`.
@@ -280,11 +312,22 @@ func Select(ctx context.Context, serial string) (*ADB, *Device, error) {
 		for i := range devices {
 			if devices[i].Serial == serial {
 				if !devices[i].Ready() {
+					if networkSerial(serial) {
+						r := reconnect(serial)
+						return nil, nil, mobiumerr.New(mobiumerr.DeviceNotReady, "device %s is %s, not ready — %s",
+							serial, devices[i].State, r).WithRemedy(r)
+					}
 					return nil, nil, mobiumerr.New(mobiumerr.DeviceNotReady, "device %s is %s, not ready", serial, devices[i].State)
 				}
 				a, err := New(serial)
 				return a, &devices[i], err
 			}
+		}
+		if networkSerial(serial) {
+			// `mobium devices` cannot list a device adb was never
+			// connected to, or has dropped.
+			r := "`adb connect " + serial + "`, then retry"
+			return nil, nil, mobiumerr.New(mobiumerr.NoDevice, "no device with serial %q — %s", serial, r).WithRemedy(r)
 		}
 		return nil, nil, mobiumerr.New(mobiumerr.NoDevice, "no device with serial %q (see `mobium devices`)", serial)
 	}
