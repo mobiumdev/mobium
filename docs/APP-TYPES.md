@@ -36,7 +36,7 @@ it was driven once, with the result written down below, and nothing re-runs it.
 | Cross-platform | React Native: MobiumApp, on both platforms and on real phones | checked in — `mobium-app.sh`, `login.sh`, `otp.sh`, `dialogs.sh` and every other MobiumApp check |
 | | Flutter, Xamarin/.NET MAUI | **never driven** — see below for why Flutter is expected to need a driver |
 | Hybrid frameworks | Cordova, Ionic | **never driven**; a WebView inside them is the hybrid case above |
-| App Clip (iOS) | MobiumApp's clip demo, `dev.mobium.clipdemo.Clip`, installed alone on the iPhone 17 Pro simulator | measured 2026-10-01: launched, read, tapped and backed through like any native app. Opening one from a link, and the card the system shows first, **not reached** — [below](#try-before-you-install) |
+| App Clip (iOS) | MobiumApp's clip demo on the iPhone 17 Pro simulator; AdvantageScope XR's published clip on the iPhone 15 Plus | measured 2026-10-01: opened from its link, its card read and its Open tapped, then driven like any native app — [below](#try-before-you-install) |
 
 ## Native
 
@@ -183,20 +183,39 @@ that opened it, embedded in a minimal parent app.
 | Opened from a link | **not reached**: the simulator's Settings > Developer has no Local Experiences, and `simctl launch` ignored Xcode's `_XCAppClipURL` — the clip said "Invoked by: none" |
 
 So **a clip, once running, is an ordinary native app to Mobium**, on the
-simulator. What is open is everything before that:
+simulator.
 
-- **The App Clip card** — whether WebDriverAgent sees the system's sheet,
-  what its buttons are called, and whether `alert` reads it.
-- **Opening a clip from a link or a code**, which is the only way a user
-  ever starts one. On a device, Settings > Developer > App Clips Testing >
-  Local Experiences registers a link for a clip; the simulator has no such
-  page.
-- **A real iPhone.** A free Apple ID's team cannot sign a clip: Xcode
-  refuses with "Personal development teams … do not support the App Clip
-  capability". A paid Apple Developer Program team, or a clip already
-  published in the App Store and opened from its link, is what it needs.
-  Opening `appclip.apple.com/id?p=com.apple.store.Jolly.Clip` on the iPhone
-  15 Plus brought no card up — that app may have no clip.
+On the iPhone 15 Plus, iOS 26.6.2, the same day, with clips already
+published in the App Store, opened by their default links — found in their
+own projects' public source:
+
+| | |
+| --- | --- |
+| `mobium open https://appclip.apple.com/id?p=org.littletonrobotics.advantagescopexr.Clip` | SpringBoard put up the App Clip card |
+| The card in WebDriverAgent's tree | an `Alert` holding `AppClipCard`: the clip's name and description, a hero image, `OpenButton` (labeled Open), `Close`, and "Powered by AdvantageScope XR, Age Rating 4+, View on the App Store" |
+| `mobium alert` | reads it: "AdvantageScope XR — Experience AdvantageScope in augmented reality" |
+| `tap testid=OpenButton` | the clip downloaded and opened; its camera prompt, SpringBoard's, came first and was declined |
+| `current`, `map`, `apps` | name the clip, `org.littletonrobotics.advantagescopexr.Clip`; read its controls; list it |
+| `press back --gesture` | no navigation bar, so it swiped high on the screen and said the clip stayed in front |
+| `uninstall` | removed it; `apps` no longer listed it |
+| Pillar Valley's clip, `com.evanbacon.pillarvalley.clip` | a card with only Close: "This app clip is not currently available in your country or region", read by `alert` |
+| `com.apple.store.Jolly.Clip` | no card at all: that app may have no clip |
+
+Two things to know when driving one:
+
+- **Open the clip from its card by `testid=OpenButton`.** The card is an
+  alert to `alert`, and which button `alert accept` would press on it has
+  not been measured — on iOS that choice is positional and has been wrong
+  before (CHALLENGES 106).
+- **Until the clip is up, SpringBoard is in front** — the card, the
+  download, and any permission prompt the clip raises are all its.
+
+Still open: **a clip of our own on a real iPhone**, which a free Apple ID's
+team cannot sign — Xcode refuses with "Personal development teams … do not
+support the App Clip capability" — and with it Settings > Developer > App
+Clips Testing > Local Experiences, which registers a link or a code for a
+clip still in development. The simulator has no such page, and `simctl
+launch` ignored Xcode's `_XCAppClipURL`.
 
 `docs/probes/appclip-sim.sh` repeats the simulator measurement.
 
