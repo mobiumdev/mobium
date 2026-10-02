@@ -34,7 +34,7 @@ it was driven once, with the result written down below, and nothing re-runs it.
 | Mobile web | Safari on iOS; Chrome on Android, emulator and the Pixel 8 Pro | checked in — `chrome.sh` (read, a tap counted by the page, a link followed), `ios-webview.sh`, `orientation.sh`, `shake.sh` |
 | Progressive web app | Squoosh, installed to the home screen on both platforms, and as a WebAPK on the Pixel 8 Pro; OYO Lite, a Trusted Web Activity from the Play Store, on the Pixel 8 Pro | checked in — `pwa.sh`: installed if absent, launched, standalone, and a tap counted by the page — or, on an emulator's shortcut, refused with the reason; `twa.sh`: a Play Store PWA launched, tapped, and backed through |
 | Cross-platform | React Native: MobiumApp, on both platforms and on real phones | checked in — `mobium-app.sh`, `login.sh`, `otp.sh`, `dialogs.sh` and every other MobiumApp check |
-| | Flutter: MobiumApp's `flutter/` demo, on the Pixel 7 AVD and the iPhone 17 Pro simulator | checked in — `flutter.sh`: driven through the semantics tree Flutter publishes, with no driver ([below](#cross-platform-or-native-once-removed)) |
+| | Flutter: MobiumApp's `flutter/` demo, on the Pixel 7 AVD, the iPhone 17 Pro simulator, the Pixel 8 Pro and the iPhone 15 Plus | checked in — `flutter.sh`: driven through the semantics tree Flutter publishes, with no driver ([below](#cross-platform-or-native-once-removed)) |
 | | Xamarin/.NET MAUI | **never driven** |
 | Hybrid frameworks | Cordova, Ionic | **never driven**; a WebView inside them is the hybrid case above |
 | App Clip (iOS) | MobiumApp's clip demo on the iPhone 17 Pro simulator; AdvantageScope XR's published clip on the iPhone 15 Plus | measured 2026-10-01: opened from its link, its card read and its Open tapped, then driven like any native app — [below](#try-before-you-install) |
@@ -302,7 +302,7 @@ printed; on iOS `testid=signIn` was refused as covered by its own button;
 on iOS typing a password reported a dropped keystroke and printed the
 password in the error; and on iOS `scroll-to` stopped at "the end of the
 list" after one swipe. All five are fixed, and `docs/checks/flutter.sh`
-holds them.
+holds them; it passed on both virtual devices and on both phones.
 
 What Flutter does not publish, Mobium cannot see: a widget drawn with
 `CustomPaint` and no `Semantics`, a game's canvas, an icon with no label —
