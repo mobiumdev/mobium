@@ -316,9 +316,11 @@ const (
 // server base64s the image through HTTP, while adb streams the bytes. The
 // server endpoint remains the fallback for a device where screencap fails.
 func (u *UIA2) Screenshot(ctx context.Context) ([]byte, error) {
-	png, err := u.adb.ExecOut(ctx, "screencap", "-p")
-	if err == nil && bytes.HasPrefix(png, pngMagic) {
-		return png, nil
+	out, err := u.adb.ExecOut(ctx, "screencap", "-p")
+	if err == nil {
+		if png, ok := pngIn(out); ok {
+			return png, nil
+		}
 	}
 	return u.screenshotViaServer(ctx)
 }

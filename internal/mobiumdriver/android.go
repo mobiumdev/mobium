@@ -208,14 +208,40 @@ func (a *Android) readOnce(ctx context.Context) ([]byte, error) {
 
 // Screenshot captures the framebuffer as PNG.
 func (a *Android) Screenshot(ctx context.Context) ([]byte, error) {
-	png, err := a.adb.ExecOut(ctx, "screencap", "-p")
+	out, err := a.adb.ExecOut(ctx, "screencap", "-p")
 	if err != nil {
 		return nil, err
 	}
-	if !bytes.HasPrefix(png, pngMagic) {
-		return nil, mobiumerr.New(mobiumerr.DeviceServer, "screencap returned %d bytes that are not a PNG", len(png))
+	png, ok := pngIn(out)
+	if !ok {
+		return nil, mobiumerr.New(mobiumerr.DeviceServer, "screencap returned %d bytes that are not a PNG", len(out))
 	}
 	return png, nil
+}
+
+// maxVendorPrefix bounds the text skipped ahead of a capture's PNG.
+const maxVendorPrefix = 4096
+
+// pngIn is the PNG in what screencap wrote, past any lines a vendor library
+// printed first: a Fire TV prints "Init wrapper sys mutex successful.
+// Pid:<n>" ahead of every capture, 45 bytes, and the capture was refused as
+// not a PNG on the dump backend and quietly sent to the server's slower
+// endpoint on UiAutomator2 (CHALLENGES 211). Only text is skipped — a prefix
+// that ends at a newline, short, with no NUL in it — so a corrupt capture is
+// still refused rather than searched for a signature in its middle.
+func pngIn(out []byte) ([]byte, bool) {
+	i := bytes.Index(out, pngMagic)
+	if i < 0 {
+		return nil, false
+	}
+	if i == 0 {
+		return out, true
+	}
+	prefix := out[:i]
+	if i > maxVendorPrefix || prefix[len(prefix)-1] != '\n' || bytes.IndexByte(prefix, 0) >= 0 {
+		return nil, false
+	}
+	return out[i:], true
 }
 
 // Tap touches a point in device pixels.

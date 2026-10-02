@@ -511,9 +511,10 @@ this is what is not.
     `LEANBACK_LAUNCHER` activity — **and on Android 9 `state` read every app
     as in the background**, because nothing read Android 9's line for the
     activity in front. Both fixed and checked on the TV (CHALLENGES 209).
-  - **`screencap` prints a vendor line ahead of the PNG**, which the dump
-    backend's screenshot refuses as "not a PNG", since it checks the
-    signature as a prefix rather than reading from it.
+  - ~~**`screencap` prints a vendor line ahead of the PNG.**~~ Fixed: the
+    dump backend refused it as "not a PNG", and UiAutomator2 silently fell
+    back to its server's slower endpoint; both now read from the signature
+    on (CHALLENGES 211).
   - **The two big apps draw to one surface.** Prime Video and YouTube (a
     Cobalt build) give `map` a single node. Prime publishes the focused
     item's name only while VoiceView runs — which is how CHALLENGES 208 was
@@ -573,9 +574,9 @@ this is what is not.
       tile, Help, went to its first, Inputs — so a focus strategy has to
       notice a cycle, not only a stop.
 
-  What it takes, in order, after CHALLENGES 209 and 210: the screenshot
-  read from the PNG signature on; `map` showing focus; a tap on a TV read back — focus moved, or the screen
-  changed — rather than reported as "tapped"; a way to open an activity by
+  What it takes, in order, after CHALLENGES 209 to 211 and the D-pad:
+  `map` showing focus; a tap on a TV read back — focus moved, or the
+  screen changed — rather than reported as "tapped"; a way to open an activity by
   action, for Settings; then the focus strategy — D-pad presses until the
   target reports `focused`, then select, each step read back and refused
   if focus stops moving or cycles — with swipes and `scroll-to` as D-pad
