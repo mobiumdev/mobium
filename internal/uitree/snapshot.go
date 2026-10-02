@@ -515,6 +515,9 @@ func (t *Tree) Dialog() *Node {
 	if w := t.floatingWindow(); w != nil {
 		return w
 	}
+	if s := t.autofillSave(); s != nil {
+		return s
+	}
 	var found *Node
 	t.Walk(func(n *Node) bool {
 		if found != nil {
@@ -536,6 +539,29 @@ func (t *Tree) Dialog() *Node {
 // "User guide", [120,474][960,1937] on a 1080x2400 screen — was not a dialog
 // to anything in Mobium (CHALLENGES 177). An app's own window fills the
 // screen, edge to edge or not; a dialog, a bottom sheet or a popup does not.
+
+// autofillSave is Android's own offer to save what was typed into a form —
+// "Save password to Google Password Manager", Never, Save and a close button —
+// which the autofill framework draws in a window of package `android` that
+// fills the screen, the sheet itself over its lower half. So it is not a
+// floating window, and the W3C alert endpoint does not know it either: on the
+// Pixel 8 Pro it came up over a login and `app_alert` said no dialog was on
+// screen (CHALLENGES 206, ROADMAP). Known by the platform's own resource id for
+// it, which no app chooses.
+func (t *Tree) autofillSave() *Node {
+	var found *Node
+	t.Walk(func(n *Node) bool {
+		if found != nil {
+			return false
+		}
+		if n.TestID == "android:id/autofill_save" && !n.Bounds.Empty() {
+			found = n
+			return false
+		}
+		return true
+	})
+	return found
+}
 
 func encloses(outer, inner Rect) bool {
 	return outer.X1 <= inner.X1 && outer.Y1 <= inner.Y1 && outer.X2 >= inner.X2 && outer.Y2 >= inner.Y2
