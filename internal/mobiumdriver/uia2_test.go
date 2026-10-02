@@ -200,9 +200,14 @@ func TestUIA2SetTextTargetsTheElement(t *testing.T) {
 	}
 
 	calls := f.calls()
-	lookup := calls[len(calls)-2]
+	lookup := calls[len(calls)-3]
 	if lookup.body["strategy"] != "id" || lookup.body["selector"] != "com.x:id/field" {
 		t.Errorf("looked up by %v=%v, want the resource-id", lookup.body["strategy"], lookup.body["selector"])
+	}
+	// An unfocused field is clicked first: Flutter takes text only into
+	// the field that has focus (CHALLENGES 206).
+	if click := calls[len(calls)-2]; click.path != "/session/S1/element/EL1/click" {
+		t.Errorf("before setting text, %q, want a click on the field", click.path)
 	}
 	set := calls[len(calls)-1]
 	if set.path != "/session/S1/element/EL1/value" {
@@ -212,6 +217,18 @@ func TestUIA2SetTextTargetsTheElement(t *testing.T) {
 	// reason this path exists.
 	if set.body["text"] != "hello & 'quoted'" {
 		t.Errorf("text = %q", set.body["text"])
+	}
+
+	// A field that already has focus is not clicked again.
+	field.Focused = true
+	before := len(f.calls())
+	if err := driverFor(f).SetText(context.Background(), field, "again"); err != nil {
+		t.Fatalf("SetText: %v", err)
+	}
+	for _, c := range f.calls()[before:] {
+		if strings.HasSuffix(c.path, "/click") {
+			t.Errorf("a focused field was clicked: %s", c.path)
+		}
 	}
 }
 

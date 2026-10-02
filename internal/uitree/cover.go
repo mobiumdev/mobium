@@ -95,7 +95,8 @@ func (t *Tree) DrawnOver(target *Node, x, y int) []*Node {
 			seen = true
 			return true
 		}
-		if !seen || n.Within(target) || target.Within(n) || !n.Displayed || n.Bounds.Empty() || isScrollIndicator(n) {
+		if !seen || n.Within(target) || target.Within(n) || !n.Displayed || n.Bounds.Empty() || isScrollIndicator(n) ||
+			namesTheSameControl(target, n) {
 			return true
 		}
 		for _, o := range over {
@@ -109,6 +110,17 @@ func (t *Tree) DrawnOver(target *Node, x, y int) []*Node {
 		return true
 	})
 	return over
+}
+
+// namesTheSameControl reports a sibling that is the control a target names
+// rather than something over it. Flutter on iOS turns Semantics(identifier:)
+// into an element of its own — an Other carrying the identifier — followed by
+// the button it wraps, in exactly the same frame; a tap on testid=signIn was
+// refused as covered by "Sign In", which is the control itself (CHALLENGES
+// 206). Only that shape: the target is no control, the sibling has its very
+// frame, and a tap at the center lands on the sibling either way.
+func namesTheSameControl(target, n *Node) bool {
+	return target.Parent != nil && n.Parent == target.Parent && n.Bounds == target.Bounds && !IsControl(target)
 }
 
 // Aim is where to touch a target, and what the tree says is over that point.

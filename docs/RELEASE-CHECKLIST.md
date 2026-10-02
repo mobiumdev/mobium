@@ -4,7 +4,7 @@
 [CI workflow](../.github/workflows/ci.yml) runs on every push — formatting,
 vet, both modules' tests, the four non-Go clients' own tests, and six
 cross-compile targets. This file is the rest, and the rest is where most
-serious defects in this project have come from: 169 of 205 were found only by
+serious defects in this project have come from: 170 of 206 were found only by
 running against a real device.
 
 Work through it before tagging a release, on three substrates: an Android
@@ -186,6 +186,8 @@ vouches for none of them. What each proves, and the devices it runs on, is in
 - [ ] Back: `back.sh <android-serial | simulator-udid | iphone-udid>`
 - [ ] A PWA from the Play Store: `twa.sh <android-serial>`, with OYO Lite
       installed from Play
+- [ ] Flutter: `flutter.sh <android-serial | simulator-udid | iphone-udid>`,
+      with MobiumApp's `flutter/` demo installed
 - [ ] A mobile browser and a PWA: `chrome.sh <emulator-serial | android-serial>`
       and `pwa.sh <emulator-serial | android-serial | simulator-udid>`, both
       with the network

@@ -567,6 +567,7 @@ func (w *WDA) SetText(ctx context.Context, n *uitree.Node, text string) error {
 	}
 
 	var got string
+	masked := -1
 	for attempt := 1; attempt <= setTextAttempts; attempt++ {
 		if err := w.w3c.setElementValueAt(ctx, elID, text, typingFrequencies[attempt-1]); err != nil {
 			return err
@@ -580,6 +581,19 @@ func (w *WDA) SetText(ctx context.Context, n *uitree.Node, text string) error {
 		}
 		if got == text {
 			return nil
+		}
+		// A field that reads back as nothing but bullets is a password field,
+		// whatever it was when it was resolved: Flutter's obscured field is a
+		// plain TextField until it holds something, and then a
+		// SecureTextField. Confirmed by length, as a password is, and marked
+		// on the node so the caller never echoes the text — the first run
+		// printed the password in this function's own error (CHALLENGES 206).
+		if isMasked(got) {
+			n.Password = true
+			masked = len([]rune(got))
+			if masked == len([]rune(text)) {
+				return nil
+			}
 		}
 		// The app may have moved focus on as the text arrived — a one-time
 		// code's boxes do — and then the rest is in the fields after this
@@ -601,9 +615,29 @@ func (w *WDA) SetText(ctx context.Context, n *uitree.Node, text string) error {
 			}
 		}
 	}
+	if masked >= 0 {
+		return mobiumerr.New(mobiumerr.NotConfirmed, "typed %d characters into what turned out to be a password "+
+			"field and it holds %d — the keystrokes did not all arrive, and retrying %d times, down to %d keys a "+
+			"second, did not recover them", len([]rune(text)), masked, setTextAttempts-1,
+			typingFrequencies[setTextAttempts-1])
+	}
 	return mobiumerr.New(mobiumerr.NotConfirmed, "typed %q and the field holds %q — iOS dropped a keystroke, and "+
 		"retrying %d times, down to %d keys a second, did not recover it", text, got, setTextAttempts-1,
 		typingFrequencies[setTextAttempts-1])
+}
+
+// isMasked reports a value that is nothing but the bullets a secure field
+// reads back as.
+func isMasked(v string) bool {
+	if v == "" {
+		return false
+	}
+	for _, r := range v {
+		if r != '•' && r != '●' {
+			return false
+		}
+	}
+	return true
 }
 
 // retypeSpread types text again one character to a box, after typing it

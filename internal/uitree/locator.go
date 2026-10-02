@@ -260,7 +260,7 @@ func (l Locator) Matches(n *Node) bool {
 	case KindText:
 		return match(n.Text, l.Value, l.Exact)
 	case KindLabel:
-		return match(n.Label, l.Value, l.Exact)
+		return match(n.Label, l.Value, l.Exact) || (namedByHint(n) && match(n.Hint, l.Value, l.Exact))
 	case KindTestID:
 		// "submit_btn" should match "com.example:id/submit_btn", so compare
 		// the short form too.
@@ -350,9 +350,17 @@ func (l Locator) Resolve(t *Tree) []*Node {
 func (l Locator) wholeMatch(n *Node) bool {
 	eq := func(s string) bool { return strings.EqualFold(strings.TrimSpace(s), strings.TrimSpace(l.Value)) }
 	if l.Kind == KindLabel {
-		return eq(n.Label)
+		return eq(n.Label) || (namedByHint(n) && eq(n.Hint))
 	}
 	return eq(n.Text) || (n.Text == "" && eq(n.Label))
+}
+
+// namedByHint reports an empty field that map names by its hint, which label=
+// then finds by it too: a name map prints is a name a locator takes. Flutter's
+// field reports no label and no text, only the hint (CHALLENGES 206); a
+// native Android field already carries its hint as its text.
+func namedByHint(n *Node) bool {
+	return n.Label == "" && n.Text == "" && n.Hint != ""
 }
 
 // sameAsAncestor reports whether one of nodes is an ancestor of n at exactly

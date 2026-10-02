@@ -154,6 +154,13 @@ func describe(n *Node) string {
 	if label != "" {
 		return truncate(label)
 	}
+	// An empty field is named by its hint. Native Android puts the hint in
+	// the text and says showing-hint, so it arrives above; Flutter reports
+	// the hint in its own attribute with no text, and the Username field of
+	// a Flutter form mapped as "EditText" (CHALLENGES 206).
+	if h := clean(n.Hint); h != "" {
+		return truncate(h)
+	}
 	// A scroll container's descendants are its contents, not its name —
 	// borrowing their text produces labels like "Continue Continue".
 	if !n.Scrollable {

@@ -581,7 +581,16 @@ type reading struct {
 }
 
 // read captures a container for later comparison.
+//
+// A container with no children is read through its parent. Flutter on iOS
+// reports its scroll view as an empty element with a frame, and the rows it
+// scrolls as siblings after it: reading the scroll view alone found nothing
+// that moved, and scroll-to gave up after one swipe at "the end of the list"
+// with thirty rows to go (CHALLENGES 206).
 func read(container *uitree.Node) reading {
+	if len(container.Children) == 0 && container.Parent != nil {
+		container = container.Parent
+	}
 	var r reading
 	var b strings.Builder
 	var visit func(*uitree.Node)
