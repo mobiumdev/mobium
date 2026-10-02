@@ -473,6 +473,15 @@ type FileTransfer interface {
 	ListFiles(ctx context.Context, appID string) ([]device.DeviceFile, error)
 }
 
+// PathTransfer is implemented by backends that move a file or a folder to and
+// from a path the caller names: on Android a shell path, or with an app a
+// path in that app's private data (a debuggable build); on iOS a path in an
+// app's data container.
+type PathTransfer interface {
+	PushPath(ctx context.Context, local, devicePath, appID string) (device.Transfer, error)
+	PullPath(ctx context.Context, devicePath, appID, local string) (device.Transfer, error)
+}
+
 // DataClearer is implemented by backends that can delete an app's data and
 // leave it installed — the state of a fresh install, without reinstalling.
 type DataClearer interface {

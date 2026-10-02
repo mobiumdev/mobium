@@ -184,6 +184,8 @@ vouches for none of them. What each proves, and the devices it runs on, is in
       `web-storage.sh`; and `ios-webview-probe.sh <simulator-udid>`, the
       platform assumption with no Mobium code
 - [ ] Back: `back.sh <android-serial | simulator-udid | iphone-udid>`
+- [ ] Files at a path: `device-paths.sh <android-serial | simulator-udid |
+      iphone-udid>`, with `MOBIUM_DEBUGGABLE_APP` on an emulator
 - [ ] A PWA from the Play Store: `twa.sh <android-serial>`, with OYO Lite
       installed from Play
 - [ ] Flutter: `flutter.sh <android-serial | simulator-udid | iphone-udid>`,

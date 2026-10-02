@@ -639,6 +639,40 @@ class Device:
             raise MobiumError("mobium returned no file")
         return base64.b64decode(data.get("data", ""))
 
+    def push_path(self, local: str, device_path: str, app: str | None = None) -> dict:
+        """Send a local file or folder to a path on the device, and read every
+        file's size back there.
+
+        On Android device_path is absolute (``/sdcard/...``,
+        ``/data/local/tmp/...``), or with app a path in that app's private
+        data, which needs a debuggable build. On iOS it is a path in an app's
+        data container — app, or the one in front.
+        """
+        args: dict[str, Any] = {"path": local, "device_path": device_path}
+        if app is not None:
+            args["app"] = app
+        return self._data("app_upload", args) or {}
+
+    def pull_path(self, device_path: str, path: str | None = None, app: str | None = None) -> bytes | dict:
+        """Bring back the file or folder at a path on the device — the paths
+        push_path takes.
+
+        With path, saves it there (a folder needs a path that does not exist
+        yet) and returns the transfer, with ``files`` and ``folder``; without
+        one, returns a file's bytes.
+        """
+        args: dict[str, Any] = {"device_path": device_path}
+        if path is not None:
+            args["path"] = path
+        if app is not None:
+            args["app"] = app
+        data = self._data("app_download", args) or {}
+        if path is not None:
+            return data
+        if "data" not in data and data.get("bytes"):
+            raise MobiumError("mobium returned no file")
+        return base64.b64decode(data.get("data", ""))
+
     def downloads(self, app: str | None = None) -> list[dict]:
         """What the downloads folder holds, each file with name, bytes and
         modified.

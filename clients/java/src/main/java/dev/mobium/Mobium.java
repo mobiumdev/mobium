@@ -779,6 +779,58 @@ public final class Mobium implements AutoCloseable {
     }
 
     /**
+     * Sends a local file or folder to a path on the device and reads every
+     * file's size back there. On Android the path is absolute
+     * ({@code /sdcard/...}, {@code /data/local/tmp/...}); on iOS it is a path in
+     * the data container of the app in front.
+     *
+     * @param local      the file or folder on this machine
+     * @param devicePath where it goes on the device
+     * @return the transfer, with {@code files} and {@code folder}
+     */
+    public Map<String, Object> pushPath(String local, String devicePath) {
+        return data("app_upload", args("path", local, "device_path", devicePath));
+    }
+
+    /**
+     * As {@link #pushPath(String, String)}, into an app: on Android a path in
+     * its private data, which needs a debuggable build; on iOS a path in its
+     * data container.
+     *
+     * @param local      the file or folder on this machine
+     * @param devicePath where it goes, inside the app
+     * @param app        the package or bundle id
+     * @return the transfer, with {@code files} and {@code folder}
+     */
+    public Map<String, Object> pushPath(String local, String devicePath, String app) {
+        return data("app_upload", args("path", local, "device_path", devicePath, "app", app));
+    }
+
+    /**
+     * Brings back the file or folder at a path on the device — the paths
+     * {@link #pushPath(String, String)} takes — and checks every file's size.
+     *
+     * @param devicePath the file or folder on the device
+     * @param path       where to save it; a folder needs one that does not exist yet
+     * @return the transfer, with {@code files} and {@code folder}
+     */
+    public Map<String, Object> pullPath(String devicePath, String path) {
+        return data("app_download", args("device_path", devicePath, "path", path));
+    }
+
+    /**
+     * As {@link #pullPath(String, String)}, from inside an app.
+     *
+     * @param devicePath the file or folder, inside the app
+     * @param path       where to save it on this machine
+     * @param app        the package or bundle id
+     * @return the transfer, with {@code files} and {@code folder}
+     */
+    public Map<String, Object> pullPath(String devicePath, String path, String app) {
+        return data("app_download", args("device_path", devicePath, "path", path, "app", app));
+    }
+
+    /**
      * Brings a file back from where the device keeps downloads and returns
      * its contents, which arrive in the answer as base64. See
      * {@link #download(String, String)}.

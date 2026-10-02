@@ -801,6 +801,46 @@ type Transfer struct {
 	Checked string `json:"checked"`
 	// Path is the file on this machine: what was sent, or where it was saved.
 	Path string `json:"path,omitempty"`
+	// Files and Folder are set by PushPath and PullPath: how many files
+	// moved, and whether they were a folder.
+	Files  int  `json:"files,omitempty"`
+	Folder bool `json:"folder,omitempty"`
+}
+
+// PushPath sends a local file or folder to a path on the device and reads
+// every file's size back there. On Android devicePath is absolute
+// (/sdcard/..., /data/local/tmp/...), or with app it is a path in that app's
+// private data, which needs a debuggable build. On iOS it is a path in an
+// app's data container — app, or the one in front when app is empty.
+func (d *Device) PushPath(ctx context.Context, local, devicePath, app string) (*Transfer, error) {
+	args := map[string]any{"path": local, "device_path": devicePath}
+	if app != "" {
+		args["app"] = app
+	}
+	var out Transfer
+	if err := d.data(ctx, "app_upload", args, &out); err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+// PullPath brings back the file or folder at a path on the device — the paths
+// PushPath takes — to local, which must not exist yet for a folder, and checks
+// every file's size against the device's.
+func (d *Device) PullPath(ctx context.Context, devicePath, local, app string) (*Transfer, error) {
+	if local == "" {
+		return nil, &Error{Tool: "app_download", Code: CodeInvalidArgument,
+			Reason: "PullPath needs where to save it on this machine"}
+	}
+	args := map[string]any{"device_path": devicePath, "path": local}
+	if app != "" {
+		args["app"] = app
+	}
+	var out Transfer
+	if err := d.data(ctx, "app_download", args, &out); err != nil {
+		return nil, err
+	}
+	return &out, nil
 }
 
 // DeviceFile is one file in the folder the device keeps downloads in.

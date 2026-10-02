@@ -316,6 +316,17 @@ this is what is not.
   end (`docs/checks/files.sh`). Since 2026-09-29 also a real iPhone,
   through CoreDevice's file service, which has no delete (CHALLENGES 173).
   The check passes on the iPhone 15 Plus and the Pixel 8 Pro.
+- ~~**Files at any path, and folders**~~ (asked for 2026-10-02) — done:
+  `upload` and `download --device-path` move a file or a whole folder to a
+  path you name — on Android a shell path, or with `--app` a path in that
+  app's private data through `run-as`, which Android allows for a debuggable
+  build and refuses with the reason for a release one; on iOS a path in the
+  app's data container, by simctl on a simulator and CoreDevice on a phone.
+  Every file's size is read back at the far end (`docs/checks/device-paths.sh`).
+  Measured on the way: `adb shell -T` carries bytes unchanged, and `adb
+  exec-out`, given several arguments, escapes each itself — quoting them too
+  made run-as look for a package named with its quotes, and its error came
+  back as the file's content, caught by the size check.
 - ~~**Booting and shutting down emulators and simulators**~~ (written down
   2026-09-28) — done 2026-10-01: `mobium boot <avd | simulator>`
   (`app_boot`) starts one and answers once it has booted and a window has

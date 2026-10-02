@@ -891,6 +891,36 @@ export class Device {
   }
 
   /**
+   * Send a local file or folder to a path on the device, and read every
+   * file's size back there. On Android `devicePath` is absolute
+   * (`/sdcard/...`, `/data/local/tmp/...`), or with `app` a path in that
+   * app's private data, which needs a debuggable build. On iOS it is a path in
+   * an app's data container — `app`, or the one in front. Resolves to the
+   * transfer, with `files` and `folder`.
+   */
+  async pushPath(local, devicePath, { app } = {}) {
+    const args = { path: local, device_path: devicePath }
+    if (app) args.app = app
+    return (await this.#data('app_upload', args)) || {}
+  }
+
+  /**
+   * Bring back the file or folder at a path on the device — the paths
+   * pushPath() takes. With `path`, saves it there (a folder needs a path that
+   * does not exist yet) and resolves to the transfer; without one, resolves
+   * to a file's bytes.
+   */
+  async pullPath(devicePath, { path, app } = {}) {
+    const args = { device_path: devicePath }
+    if (path) args.path = path
+    if (app) args.app = app
+    const data = (await this.#data('app_download', args)) || {}
+    if (path) return data
+    if (typeof data.data !== 'string' && data.bytes) throw new MobiumError(`mobium returned no contents for ${devicePath}`)
+    return Buffer.from(data.data || '', 'base64')
+  }
+
+  /**
    * What the downloads folder holds, each file with `name`, `bytes` and
    * `modified`: Android's shared Download folder, or an iOS simulator app's
    * Documents, the app in front unless `app` names one — on a real iPhone

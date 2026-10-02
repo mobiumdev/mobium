@@ -342,6 +342,13 @@ func AsFileTransfer(d Driver) (FileTransfer, bool) {
 	return f, ok && has(d, CapFiles)
 }
 
+// AsPathTransfer returns the driver's support for transfers at a named device
+// path, if any. Built-in backends only: the driver protocol has no such call.
+func AsPathTransfer(d Driver) (PathTransfer, bool) {
+	p, ok := d.(PathTransfer)
+	return p, ok && has(d, CapFiles)
+}
+
 // AsDataClearer returns the driver's support for clearing an app's data, if
 // any.
 func AsDataClearer(d Driver) (DataClearer, bool) {

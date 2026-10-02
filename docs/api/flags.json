@@ -579,6 +579,14 @@
     },
     {
       "tool": "app_download",
+      "arg": "device_path",
+      "type": "string",
+      "setBy": [
+        "download"
+      ]
+    },
+    {
+      "tool": "app_download",
       "arg": "driver",
       "type": "string",
       "setBy": [
@@ -2392,6 +2400,14 @@
     },
     {
       "tool": "app_upload",
+      "arg": "device_path",
+      "type": "string",
+      "setBy": [
+        "upload"
+      ]
+    },
+    {
+      "tool": "app_upload",
       "arg": "driver",
       "type": "string",
       "setBy": [
@@ -2790,14 +2806,17 @@
     {
       "command": "download",
       "tools": [
+        "app_download",
         "app_download"
       ],
       "flags": [
         "--app",
+        "--device-path",
         "--output"
       ],
       "sends": [
         "app",
+        "device_path",
         "name",
         "path"
       ]
@@ -3469,10 +3488,12 @@
       ],
       "flags": [
         "--app",
+        "--device-path",
         "--name"
       ],
       "sends": [
         "app",
+        "device_path",
         "name",
         "path"
       ]
