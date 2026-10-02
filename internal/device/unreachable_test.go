@@ -64,3 +64,49 @@ esac`)
 		t.Error("an install was attempted on a device that could not be reached")
 	}
 }
+
+// netADB is an adb that lists a network device as offline until it is
+// disconnected and connected again, as a Fire TV's was in a latency spike —
+// and, with stayDown, one whose connect never brings it back.
+func netADB(t *testing.T, stayDown bool) (string, string) {
+	t.Helper()
+	dir := t.TempDir()
+	state := filepath.Join(dir, "state")
+	connect := `echo "connected to 10.0.0.77:5555"; [ -f ` + fakecmd.Path(state) + `.cut ] && echo up > ` + fakecmd.Path(state)
+	if stayDown {
+		connect = `echo "failed to connect to 10.0.0.77:5555"`
+	}
+	bin := fakecmd.Script(t, dir, "adb", `case "$*" in
+  *"devices -l"*) echo "List of devices attached"; if [ -f `+fakecmd.Path(state)+` ]; then echo "10.0.0.77:5555 device product:x model:AFTHA001"; else echo "10.0.0.77:5555 offline"; fi ;;
+  *disconnect*) touch `+fakecmd.Path(state)+`.cut; echo "disconnected 10.0.0.77:5555" ;;
+  *connect*) `+connect+` ;;
+esac`)
+	t.Setenv("MOBIUM_ADB_PATH", bin)
+	return bin, state
+}
+
+func TestSelectConnectsANetworkDeviceAgain(t *testing.T) {
+	netADB(t, false)
+	_, d, err := Select(context.Background(), "10.0.0.77:5555")
+	if err != nil || d == nil || !d.Ready() {
+		t.Fatalf("got %v, %+v; want the device back after one reconnect", err, d)
+	}
+}
+
+// A device that does not come back is refused as before, now marked as a
+// call that never reached it — the mark the test runner waits on.
+func TestSelectMarksAnUnreachedDevice(t *testing.T) {
+	netADB(t, true)
+	_, _, err := Select(context.Background(), "10.0.0.77:5555")
+	if mobiumerr.CodeOf(err) != mobiumerr.DeviceNotReady || !Unreached(err) {
+		t.Fatalf("got %v; want device_not_ready marked as never reaching the device", err)
+	}
+	if e, _ := mobiumerr.As(err); !e.Retryable {
+		t.Error("an unreached call is not marked retryable")
+	}
+	// A failure from inside a call carries no mark: it may have reached
+	// the device.
+	if Unreached(unreachable("10.0.0.77:5555", "adb: device offline\n")) {
+		t.Error("an error from inside a call was marked as never reaching the device")
+	}
+}

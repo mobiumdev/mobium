@@ -183,6 +183,23 @@ $ mobium test tests/controls/flaky.test.json --retries 1
 Exit status 0. In JUnit, a flaky test is a pass with a `flaky` property, and
 in the HTML report it opens on the failure it had first.
 
+### A device that drops off and comes back
+
+A retry starts the test over. A device whose link drops for a few seconds —
+a TV or a phone over Wi-Fi — is waited out within the test instead: a step
+whose call **never reached the device** is made again once it is back, for
+up to 90 seconds and never past the test's own time. A device reached by
+`adb connect` is connected again for you. Only that failure is waited out,
+and an error says which it was (`details.reached` is `false`): the device
+lookup failed, or a session could not start, so nothing was sent. A failure
+from inside a call that may have reached the device — a press sent as the
+link went — fails the step as before, because making it again could press
+twice. A batch of steps goes on from the one that did not reach the device.
+
+Measured on a Fire TV whose link adb marked offline several times a minute:
+a 20-step test that failed every attempt before passed on its first, through
+two disconnects made on purpose during it, with its trace intact.
+
 ## 6. More than one device
 
 Add a project per device. An iOS simulator's id is one Mac's, and a phone's is

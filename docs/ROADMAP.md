@@ -560,6 +560,12 @@ this is what is not.
     - **The next row of tiles maps as `settings_card_view`**: five empty
       containers 44 pixels tall at the bottom edge, with nothing rendered
       in them yet, labeled by resource id.
+    - ~~**A dropped link failed the test.**~~ Done 2026-10-02: a call
+      that never reached the device is marked so (`details.reached`
+      false), a network device is connected again before Mobium says it is
+      missing or offline, and the runner waits out an unreached step. A
+      20-step traced test passed through two deliberate disconnects and
+      played in Vibium's player.
     - **`mobium test` says nothing when its trace cannot be saved.** It
       discards the error from the `app_trace stop` it makes after a test,
       so a test with `--trace on` can pass with no trace and no word

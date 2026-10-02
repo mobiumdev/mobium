@@ -303,7 +303,76 @@ func parseDevices(out string) []Device {
 // Select resolves the device a command should target. An explicit serial must
 // match exactly; otherwise exactly one ready device is required, so a run
 // never silently picks a different emulator than the one the user meant.
+//
+// A device reached by `adb connect` that is missing or offline is connected
+// again once before the answer: a Fire TV over Wi-Fi was marked offline by
+// adb several times a minute, in latency spikes of seven seconds with no
+// packet lost, and `adb connect` alone leaves an offline device offline —
+// it has to be disconnected first. A failure here is marked as one that
+// never reached the device (ReachedKey), which is what lets a caller try the
+// call again without repeating anything.
 func Select(ctx context.Context, serial string) (*ADB, *Device, error) {
+	a, d, err := selectOnce(ctx, serial)
+	if err != nil && networkSerial(serial) && unreachableCode(err) && reconnectNetwork(ctx, serial) {
+		a, d, err = selectOnce(ctx, serial)
+	}
+	if e, ok := mobiumerr.As(err); ok && unreachableCode(err) {
+		e = e.WithDetail(ReachedKey, false)
+		e.Retryable = true
+	}
+	return a, d, err
+}
+
+// ReachedKey is the detail on an error saying whether the call got as far as
+// the device. False means nothing was sent: a caller may make the same call
+// again and it will not do anything twice. Absent means it cannot be said.
+const ReachedKey = "reached"
+
+// Unreached is whether an error is one that never reached the device.
+func Unreached(err error) bool {
+	e, ok := mobiumerr.As(err)
+	if !ok {
+		return false
+	}
+	reached, ok := e.Details[ReachedKey].(bool)
+	return ok && !reached
+}
+
+func unreachableCode(err error) bool {
+	c := mobiumerr.CodeOf(err)
+	return c == mobiumerr.NoDevice || c == mobiumerr.DeviceNotReady
+}
+
+// reconnectNetwork connects a network device again, disconnecting it first,
+// and waits a moment for adb to call it ready. It reports whether adb did.
+func reconnectNetwork(ctx context.Context, serial string) bool {
+	a, err := New("")
+	if err != nil {
+		return false
+	}
+	_, _ = a.Run(ctx, "disconnect", serial)
+	out, err := a.Run(ctx, "connect", serial)
+	if err != nil || !strings.Contains(string(out), "connected to") {
+		return false
+	}
+	for end := time.Now().Add(5 * time.Second); time.Now().Before(end); {
+		if devices, err := Devices(ctx); err == nil {
+			for _, d := range devices {
+				if d.Serial == serial && d.Ready() {
+					return true
+				}
+			}
+		}
+		select {
+		case <-ctx.Done():
+			return false
+		case <-time.After(250 * time.Millisecond):
+		}
+	}
+	return false
+}
+
+func selectOnce(ctx context.Context, serial string) (*ADB, *Device, error) {
 	devices, err := Devices(ctx)
 	if err != nil {
 		return nil, nil, err

@@ -375,7 +375,12 @@ on the screen. Two things go wrong there, and neither says so:
   a Terminal window makes macOS ask; after that it works from anywhere until
   the server is killed again.
 - **The link drops** every few minutes on the Fire TV measured,
-  `error: closed` then `device offline`; reconnect and retry.
+  `error: closed` then `device offline`, in latency spikes of several
+  seconds with no packet lost. `adb connect` alone leaves an offline device
+  offline; `adb disconnect` first. Mobium does both by itself before it
+  answers that a network device is missing or offline, and `mobium test`
+  waits out a step that never reached the device
+  ([the test runner guide](guides/test-runner.md#a-device-that-drops-off-and-comes-back)).
 
 Stopping one cleanly, ADB debugging included, is
 [SHUTDOWN.md](SHUTDOWN.md#a-tv-or-anything-reached-by-adb-connect).

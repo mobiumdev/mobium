@@ -310,9 +310,12 @@ func (h *Handlers) resolveSession(ctx context.Context, args map[string]interface
 				return nil, uiAutomationHeld(ctx, adb, dev.Serial, err)
 			}
 			// Nor for a device that cannot be reached: the other backend
-			// needs the same link.
-			if mobiumerr.CodeOf(err) == mobiumerr.DeviceNotReady {
-				return nil, err
+			// needs the same link. A session that never started sent the
+			// call nothing, so it may be made again (device.ReachedKey).
+			if e, ok := mobiumerr.As(err); ok && e.Code == mobiumerr.DeviceNotReady {
+				e = e.WithDetail(device.ReachedKey, false)
+				e.Retryable = true
+				return nil, e
 			}
 			return nil, fmt.Errorf("%w\n\nTo run without the UiAutomator2 server, "+
 				"use --driver uiautomator (slower, and it cannot type).", err)

@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/mobiumdev/mobium/internal/agent"
+	"github.com/mobiumdev/mobium/internal/device"
 	"github.com/mobiumdev/mobium/internal/mobiumerr"
 )
 
@@ -588,9 +589,14 @@ func runOnce(j job, t Test, opts Options, call Caller, attempt int) ([]*Failure,
 		// already running on the device — the person's own — is left
 		// alone, and this attempt has no zip.
 		if zip, err := filepath.Abs(filepath.Join(opts.OutputDir, dir, traceZip)); err == nil && os.MkdirAll(filepath.Dir(zip), 0o755) == nil {
-			if _, err := call("app_trace", dev(map[string]interface{}{"action": "start", "name": j.file.Title(t),
-				"screenshots": opts.Evidence})); err == nil {
-				defer func() { _, _ = call("app_trace", dev(map[string]interface{}{"action": "stop", "path": zip})) }()
+			if _, err := callReaching(call, "app_trace", dev(map[string]interface{}{"action": "start", "name": j.file.Title(t),
+				"screenshots": opts.Evidence}), deadline); err == nil {
+				defer func() {
+					// Past the test's own time, which a slow link may have
+					// used up: the trace is what shows what happened.
+					_, _ = callReaching(call, "app_trace", dev(map[string]interface{}{"action": "stop", "path": zip}),
+						time.Now().Add(linkWait))
+				}()
 			}
 		}
 		h.after = func(step int, s *Step, err error, took time.Duration) {
@@ -635,7 +641,7 @@ func runOnce(j job, t Test, opts Options, call Caller, attempt int) ([]*Failure,
 
 	if app := j.file.App; app != "" {
 		_, _ = call("app_terminate", dev(map[string]interface{}{"app": app}))
-		if _, err := call("app_launch", dev(map[string]interface{}{"app": app})); err != nil {
+		if _, err := callReaching(call, "app_launch", dev(map[string]interface{}{"app": app}), deadline); err != nil {
 			return []*Failure{fail(0, nil, err)}, trace
 		}
 	}
@@ -707,6 +713,7 @@ func runSteps(steps []Step, base int, deadline time.Time, call Caller,
 		}
 		return i + 1
 	}
+	var dropped time.Time // when a batch first failed to reach the device
 	for i := 0; i < len(steps); {
 		if time.Now().After(deadline) {
 			return fail(number(i), &steps[i], mobiumerr.New(mobiumerr.Timeout, "the test ran out of its time "+
@@ -723,7 +730,7 @@ func runSteps(steps []Step, base int, deadline time.Time, call Caller,
 			if steps[i].Expect != nil {
 				err = expect(*steps[i].Expect, call, dev, deadline)
 			} else {
-				_, err = call(steps[i].Name, dev(steps[i].argumentsOrEmpty()))
+				_, err = callReaching(call, steps[i].Name, dev(steps[i].argumentsOrEmpty()), deadline)
 			}
 			if h.after != nil {
 				h.after(number(i), &steps[i], err, time.Since(start))
@@ -758,11 +765,51 @@ func runSteps(steps []Step, base int, deadline time.Time, call Caller,
 					k = i + n - 1
 				}
 			}
+			// A step that never reached the device did nothing: the batch
+			// goes on from it once the device is back, the steps before it
+			// not repeated.
+			if device.Unreached(err) {
+				if dropped.IsZero() {
+					dropped = time.Now()
+				}
+				if time.Since(dropped)+linkPause < linkWait && time.Now().Add(linkPause).Before(deadline) {
+					time.Sleep(linkPause)
+					i = k
+					continue
+				}
+			}
 			return fail(number(k), &steps[k], err)
 		}
+		dropped = time.Time{}
 		i = j
 	}
 	return nil
+}
+
+// How long a call waits out a device it cannot reach, and how often it
+// tries again. A Fire TV over Wi-Fi went offline to adb several times a
+// minute, for seconds at a time; a step failing on each would fail every
+// test longer than the gap between them.
+var linkWait, linkPause = 90 * time.Second, 2 * time.Second
+
+// callReaching makes a call, and makes it again while it fails without
+// having reached the device — the device lookup failed, or the session could
+// not start — until linkWait or the deadline. Only that failure is tried
+// again: one that may have reached the device (a press sent before the link
+// went) is answered as it is, since making it again could press twice.
+func callReaching(call Caller, tool string, args map[string]interface{}, deadline time.Time,
+	meta ...map[string]interface{}) (*agent.ToolsCallResult, error) {
+	end := time.Now().Add(linkWait)
+	if deadline.Before(end) {
+		end = deadline
+	}
+	for {
+		res, err := call(tool, args, meta...)
+		if err == nil || !device.Unreached(err) || time.Now().Add(linkPause).After(end) {
+			return res, err
+		}
+		time.Sleep(linkPause)
+	}
 }
 
 // expectPoll is the pause between an expect's reads, app_wait_for's own.
