@@ -486,23 +486,56 @@ this is what is not.
   4. **Budget.** A check takes two to five minutes of device time, so a trial
      of the size last seen covers a few hundred runs. Spend it on breadth — a
      handful of models neither of the phones here resembles — not on repeats.
-- **Fire TV** (written down 2026-09-28, nothing measured yet). Fire OS is
-  Android — 7 is Android 9, 8 is Android 11 — reached by `adb connect
-  <tv>:5555` once ADB debugging is on, so discovery, the hierarchy, locators,
-  text entry and app lifecycle should be the Android backend unchanged. What
-  changes is the action model: a TV is driven by focus, not touch, so a tap
-  becomes D-pad presses until the target reports `focused`, then select —
-  each step read back, refused if focus stops moving or cycles — and swipes
-  become D-pad presses too; `press` already has back, home and the media
-  keys. That makes it the existing backend with a focus strategy, not a new
-  driver. Amazon's newer Linux-based OS, Vega, is not Android, and would be
-  the case for a driver process ([the driver protocol](../examples/drivers/PROTOCOL.md)).
-  First, without code: does `mobium devices` list a TV after `adb connect`;
-  does `map` work with `--driver uiautomator`, and does Fire OS let the
-  UiAutomator2 server install; does the hierarchy report `focused` reliably
-  as `input keyevent DPAD_DOWN` moves focus; and does `input tap` do
-  anything in Amazon's launcher and one third-party app. DRM video will
-  likely screenshot black.
+- **Fire TV** (written down 2026-09-28; measured 2026-10-01 and 10-02 on a
+  Hisense TV with Fire OS 7.7.1.7, which is Android 9). Fire OS is Android —
+  7 is Android 9, 8 is Android 11 — reached by `adb connect <tv>:5555` once
+  ADB debugging is on, and Amazon's newer Linux-based OS, Vega, is not
+  Android and would be the case for a driver process
+  ([the driver protocol](../examples/drivers/PROTOCOL.md)). The questions
+  this entry asked, answered on the TV:
+  - **It is listed.** After `adb connect`, `mobium devices` and `mobium
+    doctor` both show it, and the UiAutomator2 server installs and runs.
+  - **`map` reads the launcher**, and fails with `null root node` on some of
+    Amazon's settings pages.
+  - **`focused` follows the D-pad exactly; `selected` does not.** Every
+    `DPAD_*` press moved `focused` to the node the screen highlighted, so
+    focus is a state a tool can read back.
+  - **A touch tap only moves focus**, and Mobium still reports "tapped" —
+    the failure "report only what was checked" exists to prevent. Select
+    (`DPAD_CENTER`) is what activates. The launcher's top-menu icons are
+    tabs that open on focus alone, with no select at all.
+  - **`mobium launch` refuses TV apps**: they register only a
+    `LEANBACK_LAUNCHER` activity, and the resolver asks for `LAUNCHER`.
+  - **Android 9 has no `topResumedActivity`**, the only line the foreground
+    check reads, so nothing that waits for an app to come forward can see it
+    arrive; and `screencap` prints a vendor line ahead of the PNG, which the
+    dump backend's screenshot refuses as "not a PNG", since it checks the
+    signature as a prefix rather than reading from it.
+  - **The two big apps draw to one surface.** Prime Video and YouTube (a
+    Cobalt build) give `map` a single node. Prime publishes the focused
+    item's name only while VoiceView runs — which is how CHALLENGES 208 was
+    found, and why the reader of Mobium's own keeps VoiceView running; YouTube
+    speaks through TTS directly and publishes nothing, so it is out of reach
+    of any accessibility-based tool. Prime's picture is black on capture;
+    its menus are not.
+  - **The link is Wi-Fi and drops** every few minutes (`error: closed`,
+    `device offline`), and on macOS an adb server started from a background
+    process can be silently blocked by Local Network privacy — "No route to
+    host" while ping works. `doctor` should name that, as it names the
+    other traps that report the wrong cause.
+
+  What it takes, in order: `launch` resolving a `LEANBACK_LAUNCHER`
+  activity when there is no `LAUNCHER` one; the foreground read on Android 9
+  (`mResumedActivity`, with a captured `dumpsys` from the TV as its
+  fixture); the screenshot read from the PNG signature on; a tap on a TV refused, or
+  reported as focus moved, rather than "tapped"; then the focus strategy —
+  D-pad presses until the target reports `focused`, then select, each step
+  read back and refused if focus stops moving or cycles — with swipes and
+  `scroll-to` as D-pad presses too, `press` already having back, home and
+  the media keys. That is the existing backend with a focus strategy, not a
+  new driver. A check, `docs/checks/fire-tv.sh`, on a TV that is somebody's:
+  it must leave VoiceView, ADB debugging's prompt and the home screen as it
+  found them, and print nothing from a profile or a library.
 
 ## Not planned
 
