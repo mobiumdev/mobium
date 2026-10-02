@@ -62,9 +62,10 @@ save_password() {
 # save_password_android answers an offer to save the password after a login
 # on Android, and says whether there was one: a tap on a field starts an
 # autofill session, and a phone with a password manager offers to save what
-# was typed (CHALLENGES 206). Two offers were met on the Pixel 8 Pro: Google Password Manager's sheet, Not now
-# or Save, and the system's own dialog, Never, Save or Close. Each is answered
-# with the button that changes nothing — Not now, or Close — never Save, which
+# was typed (CHALLENGES 206). On the Pixel 8 Pro it is one dialog with two
+# faces: the first offer for an app says Not now, Save or Close, every later
+# one Never, Save or Close. Each is answered with the button that changes
+# nothing — Not now, or Close — never Save, which
 # stores the password in somebody's account, nor Never, which remembers a
 # choice. Nothing of either is printed: they name the account.
 save_password_android() {

@@ -7,7 +7,7 @@ the source.
 
 The pattern across them is the reason the document exists: **almost nothing
 here was found by reading code or by a test written from imagination.** Of
-206 defects, 170 were found only by running against a real device. The other
+207 defects, 171 were found only by running against a real device. The other
 thirty-six — 4, 5, 6, 14, 23, 24, 32, 35, 36, 39, 44, 50, 53, 54, 57, 66, 89,
 99, 100, 121, 123, 129, 130, 133, 134, 139, 140, 141, 142, 144, 150, 158, 162,
 164, 165 and 172 — came from reading code, the compiler, a test, a linter,
@@ -4576,9 +4576,9 @@ got, found five things wrong.
   before typing, and a keyboard the click raised is put away again: left
   up, it covered the next button in `login.sh`. Real views are not clicked.
   The first version clicked every field, and on the Pixel 8 Pro each login
-  then ended in an offer to save the password — Google Password Manager's
-  sheet, or the system's own dialog, which `alert` does not see — because a
-  click starts an autofill session. Seal's Compose field took text with the
+  then ended in an offer to save the password — the system's own dialog,
+  which `alert` did not see, saying Not now the first time the phone met
+  the app and Never after — because a click starts an autofill session. Seal's Compose field took text with the
   click, on screen. The system's offer itself, `android:id/autofill_save`
   in a full-screen window of package `android`, was no dialog to `alert`
   until it was recognized by that id.
@@ -4601,6 +4601,27 @@ got, found five things wrong.
   an empty element and the rows it scrolls are its siblings, so reading the
   container found nothing that moved. A childless container is read through
   its parent.
+
+### 207. An install held by Play Protect was reported as a timeout
+
+**Found by:** installing a build of MobiumApp under a new package name on the
+Pixel 8 Pro, to bring up Google Password Manager's first-time offer to save
+a password. `app_install` answered "adb install -r -g … timed out after 30s",
+and nothing said why: Google Play Protect had put up "Send app for a security
+check?" for an APK it did not know, and `adb install` prints nothing while
+that dialog waits — still nothing past a minute. Answering it, even after
+the adb client had been killed, finished the install; installing the same
+APK again asked again once and let it through twice after.
+
+Now an install reads the activity in front once a second while it runs, and
+when it is Play Protect's dialog (`com.android.vending`, its
+`protectdialogs` activity) it stops waiting and refuses as
+`device_not_ready`, naming the dialog and how to answer it, with "Don't send"
+as the answer that sends nothing. On the Pixel the refusal came after two
+seconds instead of thirty, and after Don't send `app_list_apps` listed the
+app with no second install. Mobium does not answer the dialog itself: which
+answer to give is the phone owner's, and "Always send" changes a setting for
+every app.
 
 ## Findings that were not defects
 

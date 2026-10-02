@@ -541,7 +541,8 @@ func (t *Tree) Dialog() *Node {
 // screen, edge to edge or not; a dialog, a bottom sheet or a popup does not.
 
 // autofillSave is Android's own offer to save what was typed into a form —
-// "Save password to Google Password Manager", Never, Save and a close button —
+// "Save password to Google Password Manager", Never (Not now the first time
+// the phone sees an app), Save and a close button —
 // which the autofill framework draws in a window of package `android` that
 // fills the screen, the sheet itself over its lower half. So it is not a
 // floating window, and the W3C alert endpoint does not know it either: on the

@@ -84,8 +84,12 @@ this is what is not.
   known by the platform's own id for it. On the Pixel 8 Pro `alert` reads it,
   refuses accept and dismiss saying the endpoint cannot press its buttons, and
   a rule `--when "Save password" --press "Close"` closed it in the way of a
-  tap and the tap went on. Google Password Manager's own "Not now" sheet,
-  met once, is not yet checked.
+  tap and the tap went on. Google Password Manager's "Not now" sheet is the
+  same dialog: on 2026-10-02 MobiumApp under a package name the phone had
+  never seen got it on its first login, `android:id/autofill_save` with Not
+  now where the Never button is, and every later login of a package gets
+  Never (six of six). `alert` read it, refused accept and dismiss, and a rule
+  `--when "Save password" --press "Not now"` answered it in the way of a tap.
 - **Windows.** Everything that needs no device passes on a GitHub-hosted
   Windows runner, every run: both modules' tests, the named-pipe daemon
   transport's acceptance tests five times over, and the built `mobium.exe` —

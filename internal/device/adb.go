@@ -464,8 +464,31 @@ func (a *ADB) TerminateApp(ctx context.Context, pkg string) error {
 }
 
 // InstallApp installs an APK, replacing any existing copy.
+//
+// On a phone with Google Play, an APK Play Protect does not know is held at a
+// dialog asking whether to send it to Google for a security check, and `adb
+// install` prints nothing and waits for as long as nobody answers — measured
+// past a minute on the Pixel 8 Pro, where Mobium's 30s limit then reported
+// only that the install timed out. So while it runs, the activity in front is
+// read once a second, and the dialog is named as soon as it is up. What
+// finishes the install is an answer, which it waits for even after the adb
+// client has gone; installing the same APK again asked again once and not
+// twice after, so a retry is no remedy (CHALLENGES 207).
 func (a *ADB) InstallApp(ctx context.Context, path string) error {
-	out, err := a.Run(ctx, "install", "-r", "-g", path)
+	ictx, cancel := context.WithCancel(ctx)
+	defer cancel()
+	held := make(chan bool, 1)
+	go func() { held <- a.heldByPlayProtect(ictx, cancel) }()
+	out, err := a.Run(ictx, "install", "-r", "-g", path)
+	cancel()
+	if <-held {
+		remedy := "answer it on the device, or tap one of its buttons from app_map (\"Don't send\" sends nothing), " +
+			"and the install finishes then; installing again can ask again, and app_list_apps says whether it is installed"
+		return mobiumerr.New(mobiumerr.DeviceNotReady, "installing %s is waiting on the device: Google Play Protect "+
+			"is asking whether to send the app to Google for a security check — %s", filepath.Base(path), remedy).
+			WithRemedy(remedy).
+			WithDetail("dialog", "Google Play Protect")
+	}
 	if err != nil {
 		return err
 	}
@@ -473,6 +496,40 @@ func (a *ADB) InstallApp(ctx context.Context, path string) error {
 		return mobiumerr.New(mobiumerr.DeviceServer, "install %s: %s", filepath.Base(path), strings.TrimSpace(string(out)))
 	}
 	return nil
+}
+
+// installWatchEvery is how often a running install looks for Play Protect's
+// dialog. A variable so a test need not wait out a real second.
+var installWatchEvery = time.Second
+
+// playProtectRe is Play Protect's dialog in `dumpsys activity activities`:
+// on the Pixel 8 Pro, com.android.vending/com.google.android.finsky.
+// protectdialogs.activity.PlayProtectDialogsActivity, in front within two
+// seconds of the install starting.
+var playProtectRe = regexp.MustCompile(`(?i)protectdialogs|playprotect`)
+
+// heldByPlayProtect reads the activity in front until ctx ends, and reports
+// whether it was Play Protect's dialog — stopping the install, through stop,
+// the moment it is.
+func (a *ADB) heldByPlayProtect(ctx context.Context, stop context.CancelFunc) bool {
+	t := time.NewTicker(installWatchEvery)
+	defer t.Stop()
+	for {
+		select {
+		case <-ctx.Done():
+			return false
+		case <-t.C:
+		}
+		dump, err := a.Shell(ctx, "dumpsys", "activity", "activities")
+		if err != nil {
+			continue
+		}
+		if m := topActivityRe.FindStringSubmatch(string(dump)); m != nil &&
+			m[1] == "com.android.vending" && playProtectRe.MatchString(m[2]) {
+			stop()
+			return true
+		}
+	}
 }
 
 // OpenURL opens a URL or deep link.
