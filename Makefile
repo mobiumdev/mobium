@@ -1,7 +1,7 @@
 BIN := bin/mobium
 VERSION := $(shell cat VERSION 2>/dev/null || echo dev)
 
-.PHONY: all build dist mcpb test fmt fmt-check vet lint clients java crosscompile api api-check flags flags-check quickstart license-check docs-check ci clean
+.PHONY: all build dist mcpb test fmt fmt-check vet lint clients java crosscompile api api-check flags flags-check quickstart license-check docs-check ci clean reader
 
 all: build test
 
@@ -9,6 +9,22 @@ build:
 	@mkdir -p bin
 	go build -ldflags "-X main.version=$(VERSION)" -o $(BIN) ./cmd/mobium
 	@echo "built $(BIN)"
+
+# reader rebuilds internal/mobiumdriver/reader/reader.dex, the screen reader-
+# safe hierarchy reader, from Main.java. Only for changing the reader: the
+# dex is checked in and pinned by checksum, so a build of Mobium needs neither
+# a JDK nor the Android SDK. Needs javac, d8 (9.3.16 builds the pinned bytes)
+# and an android.jar, found under ANDROID_HOME.
+READER := internal/mobiumdriver/reader
+ANDROID_JAR ?= $(lastword $(sort $(wildcard $(ANDROID_HOME)/platforms/android-*/android.jar)))
+
+reader:
+	@test -n "$(ANDROID_JAR)" || { echo "no android.jar — set ANDROID_HOME or ANDROID_JAR"; exit 1; }
+	@tmp=$$(mktemp -d) && \
+	javac --release 8 -Xlint:-options -nowarn -cp "$(ANDROID_JAR)" -d $$tmp $(READER)/Main.java && \
+	d8 --release --min-api 24 --output $$tmp $$tmp/dev/mobium/reader/*.class && \
+	cp $$tmp/classes.dex $(READER)/reader.dex && rm -rf $$tmp && \
+	echo "built $(READER)/reader.dex — set reader.SHA256 to:" && shasum -a 256 $(READER)/reader.dex
 
 # The Go client is a separate module, so ./... does not reach it and it has to
 # be named. Forgetting that would mean it never runs in CI.
