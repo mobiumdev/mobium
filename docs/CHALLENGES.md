@@ -4678,7 +4678,9 @@ so the newer line wins — and the root is either marker. `launch` asks for
 declares both opens on its phone screen. On the TV, `state` said YouTube was
 in front where the old binary, asked the same question a minute earlier,
 said background; `resolve-activity` found nothing for Prime Video by its
-package and `com.amazon.pyrocore.IgnitionActivity` by `LEANBACK_LAUNCHER`.
+package and `com.amazon.pyrocore.IgnitionActivity` by `LEANBACK_LAUNCHER`;
+and `launch com.amazon.firebat`, refused by the old binary, put Prime Video
+in front, read back by `state` and by the dump's own line.
 The fixture is the structural lines of the TV's dump and no others.
 
 ## Findings that were not defects

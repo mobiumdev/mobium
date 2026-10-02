@@ -507,8 +507,7 @@ this is what is not.
   - **`mobium launch` refused TV apps** — they register only a
     `LEANBACK_LAUNCHER` activity — **and on Android 9 `state` read every app
     as in the background**, because nothing read Android 9's line for the
-    activity in front. Both fixed (CHALLENGES 209); the resolver was
-    measured on the TV, and the launch itself is still to be watched there.
+    activity in front. Both fixed and checked on the TV (CHALLENGES 209).
   - **`screencap` prints a vendor line ahead of the PNG**, which the dump
     backend's screenshot refuses as "not a PNG", since it checks the
     signature as a prefix rather than reading from it.
