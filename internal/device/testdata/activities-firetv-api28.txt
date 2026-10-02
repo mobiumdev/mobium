@@ -1,0 +1,27 @@
+ACTIVITY MANAGER ACTIVITIES (dumpsys activity activities)
+Display #0 (activities from top to bottom):
+  Stack #22: type=standard mode=fullscreen
+    * TaskRecord{4c36c3a #1660 A=10210:com.amazon.firetv.youtube U=0 StackId=22 sz=1}
+      realActivity=com.amazon.firetv.youtube/dev.cobalt.app.MainActivity
+      * Hist #0: ActivityRecord{41b2103 u0 com.amazon.firetv.youtube/dev.cobalt.app.MainActivity t1660}
+          frontOfTask=true task=TaskRecord{4c36c3a #1660 A=10210:com.amazon.firetv.youtube U=0 StackId=22 sz=1}
+          realActivity=com.amazon.firetv.youtube/dev.cobalt.app.MainActivity
+      TaskRecord{4c36c3a #1660 A=10210:com.amazon.firetv.youtube U=0 StackId=22 sz=1}
+  Stack #0: type=home mode=fullscreen
+    * TaskRecord{992f8ce #1639 A=10023:com.amazon.tv.launcher.home U=0 StackId=0 sz=1}
+      realActivity=com.amazon.tv.launcher/.ui.HomeActivity_vNext
+      * Hist #0: ActivityRecord{91d11d0 u0 com.amazon.tv.launcher/.ui.HomeActivity_vNext t1639}
+          frontOfTask=true task=TaskRecord{992f8ce #1639 A=10023:com.amazon.tv.launcher.home U=0 StackId=0 sz=1}
+          realActivity=com.amazon.tv.launcher/.ui.HomeActivity_vNext
+      TaskRecord{992f8ce #1639 A=10023:com.amazon.tv.launcher.home U=0 StackId=0 sz=1}
+  Stack #13: type=standard mode=fullscreen
+    * TaskRecord{81bc193 #1651 A=10126:com.amazon.ssmsys U=0 StackId=13 sz=2}
+      realActivity=com.amazon.ssmsys/.NSAActivity
+      * Hist #1: ActivityRecord{ecd5cc0 u0 com.amazon.ssmsys/.NsaAdvancedActivity t1651}
+          frontOfTask=false task=TaskRecord{81bc193 #1651 A=10126:com.amazon.ssmsys U=0 StackId=13 sz=2}
+          realActivity=com.amazon.ssmsys/.NsaAdvancedActivity
+      * Hist #0: ActivityRecord{1fe9fad u0 com.amazon.ssmsys/.NSAActivity t1651}
+          frontOfTask=true task=TaskRecord{81bc193 #1651 A=10126:com.amazon.ssmsys U=0 StackId=13 sz=2}
+          realActivity=com.amazon.ssmsys/.NSAActivity
+  ResumedActivity: ActivityRecord{41b2103 u0 com.amazon.firetv.youtube/dev.cobalt.app.MainActivity t1660}
+  mFocusedStack=ActivityStack{f6c1206 stackId=22 type=standard mode=fullscreen visible=true translucent=false, 1 tasks} mLastFocusedStack=ActivityStack{f6c1206 stackId=22 type=standard mode=fullscreen visible=true translucent=false, 1 tasks}

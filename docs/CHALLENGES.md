@@ -7,7 +7,7 @@ the source.
 
 The pattern across them is the reason the document exists: **almost nothing
 here was found by reading code or by a test written from imagination.** Of
-208 defects, 172 were found only by running against a real device. The other
+209 defects, 173 were found only by running against a real device. The other
 thirty-six — 4, 5, 6, 14, 23, 24, 32, 35, 36, 39, 44, 50, 53, 54, 57, 66, 89,
 99, 100, 121, 123, 129, 130, 133, 134, 139, 140, 141, 142, 144, 150, 158, 162,
 164, 165 and 172 — came from reading code, the compiler, a test, a linter,
@@ -4655,6 +4655,33 @@ main looper, which a bare `app_process` does not have, and Android 9 had never
 asked for one. With no service enabled, reads go through `uiautomator dump`
 as before. The default driver, UiAutomator2, still silences a screen reader
 (ROADMAP).
+
+### 209. On Android 9 every app read as in the background, and TV apps would not launch
+
+**Found by:** measuring a Fire TV, Fire OS 7.7.1.7, which is Android 9.
+With YouTube playing in front, `mobium state com.amazon.firetv.youtube`
+answered "running in the background". Every reading of the activity in front
+looked for `topResumedActivity=`, which Android 10 introduced: Android 9's
+`dumpsys activity activities` has only the supervisor's `ResumedActivity:`
+line, and marks a task's root `frontOfTask=true` where 10 says
+`rootOfTask=true`. So on Android 9 `state` never said "in front", and the
+browser-hosted app reading that launch and back use (CHALLENGES 202, 205)
+found nothing. `launch`, which reads the hierarchy instead, was unaffected
+by that — but it refused every TV app, Prime Video included, as having no
+launchable activity: `resolve-activity` with a bare package asks for the
+phone launcher's category, and a TV app declares only `LEANBACK_LAUNCHER`.
+
+Now the activity in front is read from `topResumedActivity=` when the dump has
+it and from `ResumedActivity:` when it does not — later releases print both,
+so the newer line wins — and the root is either marker. `launch` asks for
+`LEANBACK_LAUNCHER` when the phone launcher finds nothing, so an app that
+declares both opens on its phone screen. On the TV, `state` said YouTube was
+in front where the old binary, asked the same question a minute earlier,
+said background; `resolve-activity` found nothing for Prime Video by its
+package and `com.amazon.pyrocore.IgnitionActivity` by `LEANBACK_LAUNCHER`;
+and `launch com.amazon.firebat`, refused by the old binary, put Prime Video
+in front, read back by `state` and by the dump's own line.
+The fixture is the structural lines of the TV's dump and no others.
 
 ## Findings that were not defects
 

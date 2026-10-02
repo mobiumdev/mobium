@@ -90,7 +90,7 @@ func (a *ADB) HostedInFront(ctx context.Context) (Hosted, bool) {
 // front. A Trusted Web Activity is a custom tab whose task is rooted in the
 // TWA library's launcher: Bubblewrap's, androidbrowserhelper.
 func hostedInFront(dump string) (Hosted, bool) {
-	m := topActivityRe.FindStringSubmatch(dump)
+	m := resumedInFront(dump)
 	if m == nil {
 		return Hosted{}, false
 	}
@@ -115,17 +115,31 @@ func hostedInFront(dump string) (Hosted, bool) {
 }
 
 var (
-	topActivityRe = regexp.MustCompile(`topResumedActivity=ActivityRecord\{\S+ u\d+ ([^/\s]+)/(\S+) t\d+`)
-	topResumedRe  = regexp.MustCompile(`topResumedActivity=ActivityRecord\{\S+ u\d+ ([^/\s]+)/\S+ t(\d+)`)
-	histRe        = regexp.MustCompile(`\* Hist\s+#\d+: ActivityRecord\{\S+ u\d+ ([^/\s]+)/(\S+) t(\d+)`)
+	// The activity in front, as package, class and task: Android 10 and
+	// later name it topResumedActivity; Android 9 has only the
+	// supervisor's ResumedActivity line — measured on a Fire TV, Fire OS 7.
+	// Later releases print that line too, so it is the fallback, not the
+	// rule.
+	topResumedRe = regexp.MustCompile(`topResumedActivity=ActivityRecord\{\S+ u\d+ ([^/\s]+)/(\S+) t(\d+)`)
+	resumedRe    = regexp.MustCompile(`(?m)^\s*ResumedActivity: ActivityRecord\{\S+ u\d+ ([^/\s]+)/(\S+) t(\d+)`)
+	histRe       = regexp.MustCompile(`\* Hist\s+#\d+: ActivityRecord\{\S+ u\d+ ([^/\s]+)/(\S+) t(\d+)`)
 )
+
+// resumedInFront is the activity in front as [match, package, class, task],
+// or nil.
+func resumedInFront(dump string) []string {
+	if m := topResumedRe.FindStringSubmatch(dump); m != nil {
+		return m
+	}
+	return resumedRe.FindStringSubmatch(dump)
+}
 
 // taskInFront reads `dumpsys activity activities`: the package of the
 // activity in front, and of the activity at the root of its task — the app
 // the task belongs to. A task's affinity is not a package (Settings' is
 // com.android.settings.root), so the root activity is what names it.
 func taskInFront(dump string) (top, root string) {
-	m := topResumedRe.FindStringSubmatch(dump)
+	m := resumedInFront(dump)
 	if m == nil {
 		return "", ""
 	}
@@ -136,11 +150,11 @@ func taskInFront(dump string) (top, root string) {
 // taskRoot is the package and class of the activity at the root of the task
 // in front.
 func taskRoot(dump string) (pkg, class string) {
-	m := topResumedRe.FindStringSubmatch(dump)
+	m := resumedInFront(dump)
 	if m == nil {
 		return "", ""
 	}
-	task := m[2]
+	task := m[3]
 
 	var lastPkg, lastClass, lastTask string
 	sc := bufio.NewScanner(strings.NewReader(dump))
@@ -151,7 +165,8 @@ func taskRoot(dump string) (pkg, class string) {
 			lastPkg, lastClass, lastTask = h[1], h[2], h[3]
 			continue
 		}
-		if strings.Contains(line, "rootOfTask=true") && lastTask == task {
+		// Android 9 calls the root frontOfTask; 10 renamed it.
+		if (strings.Contains(line, "rootOfTask=true") || strings.Contains(line, "frontOfTask=true")) && lastTask == task {
 			return lastPkg, lastClass
 		}
 	}
