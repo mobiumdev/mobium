@@ -7,7 +7,7 @@ the source.
 
 The pattern across them is the reason the document exists: **almost nothing
 here was found by reading code or by a test written from imagination.** Of
-206 defects, 170 were found only by running against a real device. The other
+207 defects, 171 were found only by running against a real device. The other
 thirty-six — 4, 5, 6, 14, 23, 24, 32, 35, 36, 39, 44, 50, 53, 54, 57, 66, 89,
 99, 100, 121, 123, 129, 130, 133, 134, 139, 140, 141, 142, 144, 150, 158, 162,
 164, 165 and 172 — came from reading code, the compiler, a test, a linter,
@@ -4601,6 +4601,27 @@ got, found five things wrong.
   an empty element and the rows it scrolls are its siblings, so reading the
   container found nothing that moved. A childless container is read through
   its parent.
+
+### 207. An install held by Play Protect was reported as a timeout
+
+**Found by:** installing a build of MobiumApp under a new package name on the
+Pixel 8 Pro, to bring up Google Password Manager's first-time offer to save
+a password. `app_install` answered "adb install -r -g … timed out after 30s",
+and nothing said why: Google Play Protect had put up "Send app for a security
+check?" for an APK it did not know, and `adb install` prints nothing while
+that dialog waits — still nothing past a minute. Answering it, even after
+the adb client had been killed, finished the install; installing the same
+APK again asked again once and let it through twice after.
+
+Now an install reads the activity in front once a second while it runs, and
+when it is Play Protect's dialog (`com.android.vending`, its
+`protectdialogs` activity) it stops waiting and refuses as
+`device_not_ready`, naming the dialog and how to answer it, with "Don't send"
+as the answer that sends nothing. On the Pixel the refusal came after two
+seconds instead of thirty, and after Don't send `app_list_apps` listed the
+app with no second install. Mobium does not answer the dialog itself: which
+answer to give is the phone owner's, and "Always send" changes a setting for
+every app.
 
 ## Findings that were not defects
 
