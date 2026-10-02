@@ -545,6 +545,22 @@ func (u *UIA2) DownloadFile(ctx context.Context, name, _ string, local string) (
 	return u.adb.DownloadFile(ctx, name, local)
 }
 
+// PushPath copies to a shell path, or with an app into its private data.
+func (u *UIA2) PushPath(ctx context.Context, local, devicePath, appID string) (device.Transfer, error) {
+	if appID != "" {
+		return u.adb.PushAppPath(ctx, appID, local, devicePath)
+	}
+	return u.adb.PushPath(ctx, local, devicePath)
+}
+
+// PullPath copies from a shell path, or with an app from its private data.
+func (u *UIA2) PullPath(ctx context.Context, devicePath, appID, local string) (device.Transfer, error) {
+	if appID != "" {
+		return u.adb.PullAppPath(ctx, appID, devicePath, local)
+	}
+	return u.adb.PullPath(ctx, devicePath, local)
+}
+
 // ListFiles lists the Download folder.
 func (u *UIA2) ListFiles(ctx context.Context, _ string) ([]device.DeviceFile, error) {
 	return u.adb.ListFiles(ctx)

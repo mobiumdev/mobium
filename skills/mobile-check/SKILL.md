@@ -185,6 +185,25 @@ device from the grid for the run. `-g`, `--project`,
 `mobium show-report`. A failure keeps the step, its error code, a screenshot
 and the map. `tests/` in the repository is a worked example.
 
+### Files
+
+```sh
+mobium upload invoice.pdf                         # where a file picker looks
+mobium download report.csv                        # what the app saved there
+mobium upload ./seed --device-path /data/local/tmp/seed            # Android, any shell path
+mobium download --app com.example.shop --device-path databases/shop.db   # its private data
+mobium download --app com.example.Shop --device-path Library/Caches -o caches   # iOS container
+```
+
+- Without `--device-path` a file goes where the device keeps downloads, and on
+  Android it is indexed so a file picker finds it. With it, a file or a whole
+  folder goes to that exact path.
+- **An Android app's private data needs a debuggable build.** A release build is
+  refused, saying so — Android lets only the app, or `run-as` on a debuggable
+  build, read it. Do not retry; use shared storage or a debug build.
+- A folder downloads to a new folder, never into one that exists. Every file's
+  size is read back at the far end; trust the answer, not the exit code alone.
+
 ### Network
 
 - `mobium network` — what is in place: online or offline, and any shaping

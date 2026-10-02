@@ -124,6 +124,10 @@ func sendFilesAsContent(tool string, args map[string]interface{}) (func(*agent.T
 		if path == "" {
 			return same, nil
 		}
+		if info, err := os.Stat(path); err == nil && info.IsDir() {
+			return nil, mobiumerr.New(mobiumerr.Unsupported, "%s is a folder, and a folder cannot be sent to a "+
+				"daemon on another machine — only a file can", path)
+		}
 		raw, err := os.ReadFile(path)
 		if err != nil {
 			return nil, mobiumerr.New(mobiumerr.InvalidArgument, "no file at %s to upload", path)

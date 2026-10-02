@@ -272,6 +272,22 @@ func (a *Android) DownloadFile(ctx context.Context, name, _ string, local string
 	return a.adb.DownloadFile(ctx, name, local)
 }
 
+// PushPath copies to a shell path, or with an app into its private data.
+func (a *Android) PushPath(ctx context.Context, local, devicePath, appID string) (device.Transfer, error) {
+	if appID != "" {
+		return a.adb.PushAppPath(ctx, appID, local, devicePath)
+	}
+	return a.adb.PushPath(ctx, local, devicePath)
+}
+
+// PullPath copies from a shell path, or with an app from its private data.
+func (a *Android) PullPath(ctx context.Context, devicePath, appID, local string) (device.Transfer, error) {
+	if appID != "" {
+		return a.adb.PullAppPath(ctx, appID, devicePath, local)
+	}
+	return a.adb.PullPath(ctx, devicePath, local)
+}
+
 // ListFiles lists the Download folder.
 func (a *Android) ListFiles(ctx context.Context, _ string) ([]device.DeviceFile, error) {
 	return a.adb.ListFiles(ctx)

@@ -258,7 +258,7 @@
       "cli": "download",
       "clients": {
         "dotnet": "Download",
-        "go": "Download",
+        "go": "PullPath",
         "java": "download",
         "javascript": "download",
         "python": "download"
@@ -822,7 +822,7 @@
       "cli": "upload",
       "clients": {
         "dotnet": "Upload",
-        "go": "Upload",
+        "go": "PushPath",
         "java": "upload",
         "javascript": "upload",
         "python": "upload"

@@ -895,6 +895,23 @@ func (w *WDA) DownloadFile(ctx context.Context, name, appID, local string) (devi
 	return w.sim.DownloadFile(ctx, name, appID, local)
 }
 
+// PushPath copies into an app's data container: simctl's on a simulator,
+// CoreDevice's on a phone.
+func (w *WDA) PushPath(ctx context.Context, local, devicePath, appID string) (device.Transfer, error) {
+	if w.phone != nil {
+		return w.phone.PushPath(ctx, appID, local, devicePath)
+	}
+	return w.sim.PushPath(ctx, appID, local, devicePath)
+}
+
+// PullPath copies out of an app's data container.
+func (w *WDA) PullPath(ctx context.Context, devicePath, appID, local string) (device.Transfer, error) {
+	if w.phone != nil {
+		return w.phone.PullPath(ctx, appID, devicePath, local)
+	}
+	return w.sim.PullPath(ctx, appID, devicePath, local)
+}
+
 // ListFiles lists an app's Documents.
 func (w *WDA) ListFiles(ctx context.Context, appID string) ([]device.DeviceFile, error) {
 	if w.phone != nil {

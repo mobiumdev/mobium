@@ -1661,22 +1661,33 @@ func GetToolSchemas() []Tool {
 				"finds it: Android's shared Download folder, or on iOS an app's own Documents folder, which the " +
 				"Files app shows under On My iPhone. Android's picker reads MediaStore rather than the folder, so " +
 				"the file is indexed and read back there, and on a real iPhone its bytes are read back and " +
-				"compared; the answer says how it was confirmed. Upload a file for a test that picks one; download what an app saved.",
+				"compared; the answer says how it was confirmed. Upload a file for a test that picks one; download what an app saved. " +
+				"**With device_path**, a file or a whole folder goes to a path you name instead: on Android an " +
+				"absolute shell path (/sdcard/..., /data/local/tmp/...), or with app a path in that app's private " +
+				"data — a debuggable build only, as Android allows; on iOS a path in the app's data container " +
+				"(Documents/..., Library/..., tmp/...). Every file's size is read back at the far end.",
 			InputSchema: map[string]interface{}{
 				"type": "object",
 				"properties": withDevice(map[string]interface{}{
 					"path": map[string]interface{}{
 						"type":        "string",
-						"description": "The file on this machine to upload.",
+						"description": "The file on this machine to upload — or, with device_path, a folder.",
 					},
 					"name": map[string]interface{}{
 						"type":        "string",
 						"description": "The name to give it on the device — a name, not a path. Defaults to the file's own.",
 					},
+					"device_path": map[string]interface{}{
+						"type": "string",
+						"description": "Where on the device the file or folder goes, in full. Android: absolute, or " +
+							"with app relative to that app's data folder. iOS: relative to the app's data container.",
+					},
 					"app": map[string]interface{}{
 						"type": "string",
-						"description": "iOS: the bundle id whose Documents it goes to. Defaults to the app in front. " +
-							"Android has one Download folder for every app, and ignores it.",
+						"description": "iOS: the bundle id whose Documents — or, with device_path, whose data " +
+							"container — it goes to. Defaults to the app in front. Android: with device_path, the " +
+							"package whose private data the path is in; otherwise ignored, Android having one " +
+							"Download folder for every app.",
 					},
 					"content": map[string]interface{}{
 						"type": "string",
@@ -1692,7 +1703,9 @@ func GetToolSchemas() []Tool {
 			Description: "Bring back a file from where the device keeps downloads — Android's shared Download " +
 				"folder, or on iOS an app's own Documents — to check what an app saved. With no name, lists what " +
 				"the folder holds. With a path, saves it there; without one, the file comes back in the answer, " +
-				"base64. The copy's size is read back against the device's, a real iPhone's included.",
+				"base64. The copy's size is read back against the device's, a real iPhone's included. **With " +
+				"device_path**, a file or a whole folder comes back from a path you name instead — the same paths " +
+				"app_upload takes — and a folder comes back only to a path on this machine that does not exist yet.",
 			InputSchema: map[string]interface{}{
 				"type": "object",
 				"properties": withDevice(map[string]interface{}{
@@ -1700,14 +1713,22 @@ func GetToolSchemas() []Tool {
 						"type":        "string",
 						"description": "The file's name in the folder. Omit to list the folder.",
 					},
+					"device_path": map[string]interface{}{
+						"type": "string",
+						"description": "A file or folder on the device to bring back, in full — instead of name. " +
+							"Android: absolute, or with app relative to that app's data folder. iOS: relative to " +
+							"the app's data container.",
+					},
 					"path": map[string]interface{}{
-						"type":        "string",
-						"description": "Where to save it on this machine. Omit to have it in the answer, base64.",
+						"type": "string",
+						"description": "Where to save it on this machine. Omit to have a file in the answer, base64; " +
+							"a folder needs a path that does not exist yet.",
 					},
 					"app": map[string]interface{}{
 						"type": "string",
-						"description": "iOS: the bundle id whose Documents to read. Defaults to the app in front. " +
-							"Android has one Download folder for every app, and ignores it.",
+						"description": "iOS: the bundle id whose Documents — or, with device_path, whose data " +
+							"container — to read. Defaults to the app in front. Android: with device_path, the " +
+							"package whose private data the path is in; otherwise ignored.",
 					},
 				}),
 				"additionalProperties": false,

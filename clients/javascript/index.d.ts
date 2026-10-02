@@ -282,6 +282,11 @@ export class Device {
   download(name: string, options: { path: string; app?: string }): Promise<Data>
   /** Without a path: resolves to the file's bytes. */
   download(name: string, options?: { app?: string }): Promise<Uint8Array>
+  /** Send a local file or folder to a path on the device; every file's size is read back there. */
+  pushPath(local: string, devicePath: string, options?: { app?: string }): Promise<Data>
+  /** Bring back the file or folder at a device path: to `path`, or a file's bytes. */
+  pullPath(devicePath: string, options: { path: string; app?: string }): Promise<Data>
+  pullPath(devicePath: string, options?: { app?: string }): Promise<Uint8Array>
   /** What the downloads folder holds: name, bytes and modified for each file. */
   downloads(options?: { app?: string }): Promise<Data[]>
   /** Runs several tools in order in one call; stops at the first failure. */

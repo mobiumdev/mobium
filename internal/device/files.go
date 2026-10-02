@@ -47,6 +47,10 @@ type Transfer struct {
 	Bytes int64  `json:"bytes"`
 	// Checked says how the transfer was confirmed.
 	Checked string `json:"checked"`
+	// Files is how many files moved, and Folder says they were a folder:
+	// set by a transfer at a named device path.
+	Files  int  `json:"files,omitempty"`
+	Folder bool `json:"folder,omitempty"`
 }
 
 // androidDownloads is the shared Download folder.

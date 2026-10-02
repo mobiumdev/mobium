@@ -55,7 +55,7 @@ been wrong twice.
 | 19 | `app_devices` | `devices` | `Devices` | `devices` | `devices` | `devices` |
 | 20 | `app_dialogs` | `dialogs` | `AddDialogRule` | `add_dialog_rule` | `addDialogRule` | `addDialogRule` |
 | 21 | `app_doctor` | `doctor` | `Doctor` | `doctor` | `doctor` | `doctor` |
-| 22 | `app_download` | `download` | `Download` | `download` | `download` | `download` |
+| 22 | `app_download` | `download` | `PullPath` | `download` | `download` | `download` |
 | 23 | `app_drag` | `drag` | `Drag` | `drag` | `drag` | `drag` |
 | 24 | `app_eval` | `eval` | `Eval` | `eval` | `eval` | `eval` |
 | 25 | `app_fill` | `fill` | `Fill` | `fill` | `fill` | `fill` |
@@ -102,7 +102,7 @@ been wrong twice.
 | 66 | `app_trace` | `trace` | `TraceStart` | `trace_start` | `traceStart` | `traceStart` |
 | 67 | `app_type` | `type` | `Type` | `type` | `type` | `type` |
 | 68 | `app_uninstall` | `uninstall` | `Uninstall` | `uninstall` | `uninstall` | `uninstall` |
-| 69 | `app_upload` | `upload` | `Upload` | `upload` | `upload` | `upload` |
+| 69 | `app_upload` | `upload` | `PushPath` | `upload` | `upload` | `upload` |
 | 70 | `app_wait_for` | `wait` | `WaitFor` | `wait_for` | `waitFor` | `waitFor` |
 | 71 | `app_zoom` | `zoom` | `Zoom` | `zoom` | `zoom` | `zoom` |
 

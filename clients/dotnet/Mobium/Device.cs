@@ -440,6 +440,30 @@ namespace Mobium
             Data("app_download", Args("name", name, "path", path, "app", app));
 
         /// <summary>
+        /// Sends a local file or folder to a path on the device and reads every
+        /// file's size back there. On Android <paramref name="devicePath"/> is
+        /// absolute, or with <paramref name="app"/> a path in that app's private
+        /// data, which needs a debuggable build. On iOS it is a path in an app's
+        /// data container — the one named, or the one in front.
+        /// </summary>
+        /// <returns>The transfer, with <c>files</c> and <c>folder</c>.</returns>
+        public IDictionary<string, object?> PushPath(string local, string devicePath, string? app = null) =>
+            app == null
+                ? Data("app_upload", Args("path", local, "device_path", devicePath))
+                : Data("app_upload", Args("path", local, "device_path", devicePath, "app", app));
+
+        /// <summary>
+        /// Brings back the file or folder at a path on the device — the paths
+        /// <see cref="PushPath"/> takes — to <paramref name="path"/>, which must
+        /// not exist yet for a folder, and checks every file's size.
+        /// </summary>
+        /// <returns>The transfer, with <c>files</c> and <c>folder</c>.</returns>
+        public IDictionary<string, object?> PullPath(string devicePath, string path, string? app = null) =>
+            app == null
+                ? Data("app_download", Args("device_path", devicePath, "path", path))
+                : Data("app_download", Args("device_path", devicePath, "path", path, "app", app));
+
+        /// <summary>
         /// Brings back a file from where the device keeps downloads, as
         /// <see cref="Download(string, string)"/> does, and returns its bytes
         /// rather than saving it — for a caller whose disk is not the daemon's.
