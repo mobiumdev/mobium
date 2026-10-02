@@ -7,7 +7,7 @@ the source.
 
 The pattern across them is the reason the document exists: **almost nothing
 here was found by reading code or by a test written from imagination.** Of
-210 defects, 174 were found only by running against a real device. The other
+212 defects, 176 were found only by running against a real device. The other
 thirty-six — 4, 5, 6, 14, 23, 24, 32, 35, 36, 39, 44, 50, 53, 54, 57, 66, 89,
 99, 100, 121, 123, 129, 130, 133, 134, 139, 140, 141, 142, 144, 150, 158, 162,
 164, 165 and 172 — came from reading code, the compiler, a test, a linter,
@@ -4707,6 +4707,45 @@ unit test uses adb's exact lines from the TV; against the old code it failed
 with the TV's own message. On the TV, with its link dropped on purpose, the
 lookup answered "no device with serial "10.0.0.77:5555" — `adb connect
 10.0.0.77:5555`, then retry".
+
+### 211. A Fire TV's screenshot was refused on one backend and slow on the other
+
+**Found by:** taking a screenshot on a Fire TV, Fire OS 7.7.1.7. A vendor
+library prints `Init wrapper sys mutex successful. Pid:<n>` ahead of every
+capture `screencap` writes, 45 bytes, and both Android backends checked for
+the PNG signature as a prefix. The dump backend refused every capture as
+"not a PNG"; UiAutomator2, which tries `screencap` first, took the refusal
+as its cue to fall back to the server's own endpoint — so it worked, and
+nothing said that every capture was now two, the slower one base64 over
+HTTP: 4.8 to 7.8 seconds each on the TV.
+
+Now both read the capture from the signature on, past a prefix that is a
+line of text: short, ending at a newline, with no NUL in it, so a corrupt
+capture is still refused rather than searched for a signature in its middle.
+On the TV the dump backend saved a 1920x1080 PNG, and UiAutomator2 took 2.3
+to 2.7 seconds a capture against 2.55 for a bare `adb exec-out screencap`
+over the same link — the fallback no longer taken.
+
+### 212. A trace went with its session, and a passing test kept none
+
+**Found by:** recording a test on a Fire TV over Wi-Fi to play it in Vibium's
+player. The test passed with `--trace on` and its report had a screenshot for
+every step and no trace. The link had dropped and come back mid-run, so the
+next call found the session unhealthy and replaced it — and the running trace
+was a field of the session, closed with it. The runner's `app_trace stop`
+then found no trace, and the runner discards that call's error, so nothing
+said so. Recording by hand with `mobium trace start` and `stop` lost it the
+same way: "no trace is running".
+
+Now a session replaced for any reason — its device dropped, its server died,
+another backend asked for — hands its trace to the next session on the same
+device, held in between if the new one cannot start yet, and to no other
+device. One helper does it for Android, iOS and external drivers, where a
+session is retired and adopted. On the TV, a recording of twenty calls
+survived a dropped link: the call made while it was down is in the trace as
+the error it was, and the rest carried on into the new session and played
+in Vibium's player. The runner still says nothing when its stop fails; that
+is in ROADMAP.
 
 ## Findings that were not defects
 

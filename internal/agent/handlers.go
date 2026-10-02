@@ -69,6 +69,11 @@ type Handlers struct {
 	// sessions caches one driver per device so a UiAutomator2 server is
 	// started once rather than per command.
 	sessions map[string]*session
+	// heldTraces are traces whose session was replaced, by serial, until a
+	// session opens on that device again. A trace is the caller's: a Fire
+	// TV whose Wi-Fi link dropped mid-recording had its session replaced,
+	// and the trace went with it — the stop that followed found none.
+	heldTraces map[string]*sessionTrace
 
 	// defaultDevice pins every call to one serial when set from the command
 	// line, so a --device flag survives into the daemon for that call.
@@ -113,6 +118,7 @@ func NewHandlers() *Handlers {
 		refs:          map[string]*refTable{},
 		lastMaps:      map[string]*lastMap{},
 		sessions:      map[string]*session{},
+		heldTraces:    map[string]*sessionTrace{},
 		dialogRules:   map[string][]dialogRule{},
 		netBaseline:   map[string]networkBaseline{},
 		backend:       DefaultBackend,
