@@ -34,7 +34,8 @@ it was driven once, with the result written down below, and nothing re-runs it.
 | Mobile web | Safari on iOS; Chrome on Android, emulator and the Pixel 8 Pro | checked in — `chrome.sh` (read, a tap counted by the page, a link followed), `ios-webview.sh`, `orientation.sh`, `shake.sh` |
 | Progressive web app | Squoosh, installed to the home screen on both platforms, and as a WebAPK on the Pixel 8 Pro; OYO Lite, a Trusted Web Activity from the Play Store, on the Pixel 8 Pro | checked in — `pwa.sh`: installed if absent, launched, standalone, and a tap counted by the page — or, on an emulator's shortcut, refused with the reason; `twa.sh`: a Play Store PWA launched, tapped, and backed through |
 | Cross-platform | React Native: MobiumApp, on both platforms and on real phones | checked in — `mobium-app.sh`, `login.sh`, `otp.sh`, `dialogs.sh` and every other MobiumApp check |
-| | Flutter, Xamarin/.NET MAUI | **never driven** — see below for why Flutter is expected to need a driver |
+| | Flutter: MobiumApp's `flutter/` demo, on the Pixel 7 AVD, the iPhone 17 Pro simulator, the Pixel 8 Pro and the iPhone 15 Plus | checked in — `flutter.sh`: driven through the semantics tree Flutter publishes, with no driver ([below](#cross-platform-or-native-once-removed)) |
+| | Xamarin/.NET MAUI | **never driven** |
 | Hybrid frameworks | Cordova, Ionic | **never driven**; a WebView inside them is the hybrid case above |
 | App Clip (iOS) | MobiumApp's clip demo on the iPhone 17 Pro simulator; AdvantageScope XR's published clip on the iPhone 15 Plus | measured 2026-10-01: opened from its link, its card read and its Open tapped, then driven like any native app — [below](#try-before-you-install) |
 
@@ -273,30 +274,51 @@ special support — and the hierarchy it produces was different enough to find
 [defect 55](CHALLENGES.md) on the first run, because React Native reports a
 *bare* resource-id where every previous app reported a qualified one.
 
-**Flutter does not.** It renders its own widgets to a canvas through its own
-engine, so there are no per-widget native views; what reaches the accessibility
-tree is a *synthesized* semantics tree over a single surface. This is the same
-shape as the Chrome case above, which is why Flutter appears in
-[the driver protocol](../examples/drivers/PROTOCOL.md) as
-something a third party would add **as a driver process**, rather than as an
-app type that happens to work.
+**Flutter does not produce native views** — it renders its own widgets
+through its own engine — **but it publishes a semantics tree**, built for
+screen readers, and UiAutomator2 and XCUITest read it as they read any
+other. This section once said that made Flutter a job for a driver process;
+that was reasoned, not measured, and on 2026-10-01 it was measured and was
+wrong. MobiumApp's `flutter/` demo, Flutter 3.47, on the Pixel 7 AVD and the
+iPhone 17 Pro simulator, with no Flutter driver and nothing added to the
+app:
 
-**This claim is read, not measured.** No Flutter app has been driven here. It
-is stated because the distinction predicts something the vendor-facing
-description does not, and because "the end result is a completely native app"
-is the kind of true-in-marketing sentence that sends an automation engineer
-down a week of wrong diagnosis.
+| | Android | iOS |
+| --- | --- | --- |
+| `map` | every control: buttons by text or tooltip, the checkbox and switch with state, a field by its label | the same; Flutter's checkbox reads as a switch |
+| A `Semantics(identifier:)` | the resource-id of the control itself | an element of its own, followed by the control in the same frame |
+| Text on a widget | the label (content-desc), not the text | the label |
+| Typing | reaches the app — once the field has focus | reaches the app |
+| The password field | `password="true"` from the start | a plain TextField until it holds something, then a SecureTextField |
+| `check`, `uncheck`, a counted tap, back | work | work |
+| `scroll-to` the fortieth row | four swipes | four swipes; the scroll view is an empty element and the rows are its siblings |
+| An icon button with no tooltip | `Button` — nothing names it | `Button` |
+
+Five things were wrong on the first run, each found by checking what the
+app said it got rather than what Mobium reported (CHALLENGES 206): typing
+on Android reported success while the field stayed empty; an empty field
+mapped as "EditText" and `label=` could not find it by the name it
+printed; on iOS `testid=signIn` was refused as covered by its own button;
+on iOS typing a password reported a dropped keystroke and printed the
+password in the error; and on iOS `scroll-to` stopped at "the end of the
+list" after one swipe. All five are fixed, and `docs/checks/flutter.sh`
+holds them; it passed on both virtual devices and on both phones.
+
+What Flutter does not publish, Mobium cannot see: a widget drawn with
+`CustomPaint` and no `Semantics`, a game's canvas, an icon with no label —
+the last is in the demo and maps as a bare `Button`. Those are what a driver
+process would be for, and the app's own accessibility is the better fix.
 
 The practical form of the rule: **for automation, ask what is in the
-accessibility tree, not what the framework says it produces.** A framework that
-creates native views per widget is drivable by anything that reads the tree. A
-framework that paints is not, whatever it compiles to.
+accessibility tree, not what the framework says it produces.** A framework
+that creates native views per widget is drivable by anything that reads the
+tree, and so is one that paints but publishes semantics. One that paints and
+publishes nothing is not, whatever it compiles to.
 
 ## What this changes
 
-Nothing about the code. It names a distinction the roadmap already acted on
-without writing down: React Native was driven as an ordinary native app and
-immediately paid for itself in a defect, while Flutter has always been filed
-under the driver protocol rather than under supported platforms. Those two
-decisions look inconsistent if cross-platform is one category, and obvious once
-it is two.
+It named a distinction the roadmap had acted on without writing down: React
+Native was driven as an ordinary native app and paid for itself in a
+defect, while Flutter was filed under the driver protocol. Measuring Flutter
+moved it: it is driven through its semantics tree like any app, and its
+first run paid for itself in five defects, as React Native's did in one.

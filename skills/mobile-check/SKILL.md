@@ -22,7 +22,7 @@ What the app is built with decides how to reach it:
 | Cross-platform that renders native views (React Native) | the same as native: it renders real native views. Use the `@ref` from `map`, not a hand-written `label=` or `testid=`: one testID repeats across several views |
 | Hybrid (a WebView inside the app) | switch context into the WebView — [Hybrid apps](#hybrid-apps-webviews) |
 | A page in Chrome or Safari, or a PWA — including one from the Play Store (a Trusted Web Activity) | the same contexts: the page is `WEBVIEW_…` — pick it by the URL `contexts` prints, not by its name. `launch` of an installed PWA's package says what it is; Chrome draws it, so `current` names Chrome. On iOS act from `NATIVE_APP` — taps in Safari's or a home-screen web app's page are refused. On Android, a refusal saying Chrome stopped reporting its WebView means no tap can be placed in that page: read it, and say so |
-| Cross-platform that paints (Flutter) | not reachable through `map`; it paints its own widgets. Say so rather than retrying |
+| Cross-platform that paints (Flutter) | the same as native: Flutter publishes a semantics tree, and `map` reads it. Its text is the label, not the text — use `label=`; a `Semantics(identifier:)` is a `testid=`. A widget with no semantics (a custom painting, an icon with no tooltip) cannot be named: say so rather than retrying |
 
 If you need to test a *website* — tabs, browser sessions, a desktop browser —
 use vibium instead. Mobium reaches a page already open on the device; it does

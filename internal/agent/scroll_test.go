@@ -730,3 +730,33 @@ func TestAWholeRowFlushAgainstTheEdgeIsNotNudged(t *testing.T) {
 		t.Errorf("swiped %d times for a row already wholly in view", d.swipes)
 	}
 }
+
+// Flutter on iOS: the scroll view is an empty element and the rows it scrolls
+// are its siblings. Read through the parent, a scroll that brought new rows
+// is movement; read alone, it was "the end of the list" after one swipe.
+func TestAChildlessScrollViewIsReadThroughItsParent(t *testing.T) {
+	screen := func(first int) *uitree.Node {
+		var b strings.Builder
+		b.WriteString(`<?xml version="1.0" encoding="UTF-8"?><AppiumAUT><XCUIElementTypeApplication type="XCUIElementTypeApplication" name="F" enabled="true" visible="true" x="0" y="0" width="402" height="874">`)
+		b.WriteString(`<XCUIElementTypeScrollView type="XCUIElementTypeScrollView" enabled="true" visible="true" x="0" y="118" width="402" height="756"/>`)
+		for i := 0; i < 5; i++ {
+			fmt.Fprintf(&b, `<XCUIElementTypeStaticText type="XCUIElementTypeStaticText" name="Row %d" label="Row %d" enabled="true" visible="true" x="16" y="%d" width="370" height="57"/>`, first+i, first+i, 200+i*57)
+		}
+		b.WriteString(`</XCUIElementTypeApplication></AppiumAUT>`)
+		tree, err := uitree.ParseIOS([]byte(b.String()))
+		if err != nil {
+			t.Fatal(err)
+		}
+		return scrollContainer(tree)
+	}
+	before, after := screen(1), screen(20)
+	if before == nil || len(before.Children) != 0 {
+		t.Fatalf("the fixture's scroll view is not the childless one: %+v", before)
+	}
+	if !moved(read(before), read(after)) {
+		t.Error("new rows after a swipe did not count as movement")
+	}
+	if moved(read(before), read(screen(1))) {
+		t.Error("the same rows counted as movement")
+	}
+}

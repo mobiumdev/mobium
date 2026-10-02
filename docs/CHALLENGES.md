@@ -7,7 +7,7 @@ the source.
 
 The pattern across them is the reason the document exists: **almost nothing
 here was found by reading code or by a test written from imagination.** Of
-205 defects, 169 were found only by running against a real device. The other
+206 defects, 170 were found only by running against a real device. The other
 thirty-six — 4, 5, 6, 14, 23, 24, 32, 35, 36, 39, 44, 50, 53, 54, 57, 66, 89,
 99, 100, 121, 123, 129, 130, 133, 134, 139, 140, 141, 142, 144, 150, 158, 162,
 164, 165 and 172 — came from reading code, the compiler, a test, a linter,
@@ -4557,6 +4557,48 @@ Google's `androidbrowserhelper.trusted` launcher — or an app in a custom
 tab. Launch says which; back names the app it stayed in or left, while
 waiting on the window's package as before. The fixture is the five lines of
 OYO Lite's task. `docs/checks/twa.sh` holds it.
+
+### 206. A Flutter app, first look: five things wrong
+
+**Found by:** MobiumApp's `flutter/` demo, built on 2026-10-01 to test what
+APP-TYPES had only reasoned — that Flutter paints and needs a driver. It
+did not: UiAutomator2 and XCUITest read Flutter's semantics tree, and
+`map` listed every control. The first run, judged by what the app said it
+got, found five things wrong.
+
+- **Typing on Android went nowhere and was reported done.** `type` said
+  `typed "lana"`, the tree read the field back as holding it, and the app
+  said "Signed in as  with 0 characters". Flutter offers a field's set-text
+  action only while it has focus; UiAutomator2 sets text without focusing.
+  Now an unfocused *virtual* field — `drawing-order="0"`, made up by an
+  accessibility provider, as Flutter's and Compose's are; MobiumApp's real
+  React Native fields read 10 and 12 — is clicked first, as a person taps
+  before typing, and a keyboard the click raised is put away again: left
+  up, it covered the next button in `login.sh`. Real views are not clicked.
+  The first version clicked every field, and on the Pixel 8 Pro each login
+  then ended in an offer to save the password — Google Password Manager's
+  sheet, or the system's own dialog, which `alert` does not see — because a
+  click starts an autofill session. Seal's Compose field took text with the
+  click, on screen.
+- **An empty field mapped as "EditText".** Flutter reports a field's label
+  as its hint with no text, where a native field puts the hint in the text.
+  `map` names an empty field by its hint now, and `label=` finds it by the
+  same name — a name `map` prints that no locator takes is a dead end.
+- **On iOS `testid=signIn` was refused as covered by "Sign In".** Flutter
+  turns `Semantics(identifier:)` into an element of its own, followed by the
+  button in exactly its frame; the button is the control the identifier
+  names. A sibling in the target's very frame, over a target that is no
+  control, is no longer a cover.
+- **On iOS a password was reported dropped, and printed.** Flutter's
+  obscured field is a plain TextField until it holds something, so the field
+  was resolved as no password, the bullets it read back did not equal the
+  text, and the error said `typed "secret12" and the field holds
+  "••••••••"`. A read-back of nothing but bullets now marks the field a
+  password, confirmed by length and never echoed.
+- **On iOS `scroll-to` stopped after one swipe.** Flutter's scroll view is
+  an empty element and the rows it scrolls are its siblings, so reading the
+  container found nothing that moved. A childless container is read through
+  its parent.
 
 ## Findings that were not defects
 

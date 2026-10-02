@@ -360,12 +360,64 @@ func (u *UIA2) Swipe(ctx context.Context, x1, y1, x2, y2 int, d time.Duration) e
 // The node is located server-side by its resource-id, or by an XPath rebuilt
 // from its position in the snapshot it came from, so the value goes to the
 // element the caller resolved rather than to whatever currently holds focus.
+//
+// A virtual field — one an accessibility provider made up, as Flutter's
+// are — that does not have focus is clicked first, as a person taps a field
+// before typing. Flutter offers a field's set-text action only while it has
+// focus: unfocused, the value went nowhere, the tree still read it back, and
+// the app's own field stayed empty (CHALLENGES 206). A real EditText takes
+// text unfocused, and is not clicked: a click starts an autofill session,
+// and on a phone with a password manager every login then ended in an offer
+// to save the password.
+//
+// The click raises the soft keyboard where there was none, and on the next
+// tap the keyboard covered the button below the field, which no typing had
+// done before. So a keyboard the click brought up is put away again: the
+// screen is left as the caller had it, with the text in the field.
 func (u *UIA2) SetText(ctx context.Context, n *uitree.Node, text string) error {
 	elID, err := u.elementFor(ctx, n)
 	if err != nil {
 		return err
 	}
-	return u.w3c.setElementValue(ctx, elID, text)
+	if n.Focused || !n.Virtual {
+		return u.w3c.setElementValue(ctx, elID, text)
+	}
+	keyboardWasUp := true
+	if u.adb != nil {
+		keyboardWasUp, _ = u.adb.KeyboardShown(ctx)
+	}
+	if err := u.w3c.do(ctx, http.MethodPost, u.w3c.sessionPath("/element/"+elID+"/click"), map[string]interface{}{}, nil); err != nil {
+		return err
+	}
+	if err := u.w3c.setElementValue(ctx, elID, text); err != nil {
+		return err
+	}
+	if !keyboardWasUp {
+		u.putKeyboardAway(ctx)
+	}
+	return nil
+}
+
+// putKeyboardAway hides a keyboard that a focusing click raised, giving it
+// half a second to arrive; with a hardware keyboard it never does. Not being
+// able to hide it is not a failure to type, and the keyboard check before the
+// next tap still asks about it.
+func (u *UIA2) putKeyboardAway(ctx context.Context) {
+	deadline := time.Now().Add(500 * time.Millisecond)
+	for {
+		if up, err := u.adb.KeyboardShown(ctx); err == nil && up {
+			_ = u.HideKeyboard(ctx)
+			return
+		}
+		if time.Now().After(deadline) {
+			return
+		}
+		select {
+		case <-ctx.Done():
+			return
+		case <-time.After(100 * time.Millisecond):
+		}
+	}
 }
 
 // Clear empties a text field.

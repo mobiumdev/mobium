@@ -208,7 +208,7 @@ Mobium reaches. Each type has been driven on a device:
 | **Hybrid** — a native shell around WebViews | the shell through the tree; each WebView as its own context, [below](#hybrid-apps-and-webviews) | Wikipedia's articles, MobiumApp's web screens |
 | **Mobile web and PWAs** — a page in a browser, or installed to the home screen | the browser's page as a context; on iOS, taps through the native tree | Safari, Chrome, Squoosh as a PWA — on Android a PWA's taps only while Chrome reports its WebView |
 | **Cross-platform, native once removed** — React Native | an ordinary native app: it renders real native views | MobiumApp, on both platforms and on real phones |
-| **Cross-platform that paints** — Flutter | not through the tree; a job for a [driver](#drivers-for-other-platforms) | not yet |
+| **Cross-platform that paints** — Flutter | the semantics tree Flutter publishes for accessibility, like any app | MobiumApp's Flutter demo, on both platforms |
 
 A browser is reachable but not managed — no tabs, no browser sessions; testing
 a website is [Vibium](https://github.com/VibiumDev/vibium)'s job.
@@ -244,8 +244,8 @@ simulator and through usbmuxd and lockdown on a phone.
 A WebView is reachable only if the app opted in —
 `WebView.setWebContentsDebuggingEnabled(true)` on Android, `isInspectable` on
 iOS 16.4 and later. Neither can be forced from outside. Which kinds of app
-Mobium drives, and why React Native needs no special support while Flutter
-does, is in [docs/APP-TYPES.md](docs/APP-TYPES.md).
+Mobium drives, and what React Native and Flutter each put in the tree, is in
+[docs/APP-TYPES.md](docs/APP-TYPES.md).
 
 ## Front doors
 

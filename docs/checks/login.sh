@@ -35,7 +35,11 @@ says() {
     case "$out" in
       *"Save Password"*) save_password
         $M wait "testid=$1" --timeout 5s >/dev/null 2>&1 || fail "$1 never appeared, waiting for \"$2\"" ;;
-      *) fail "$1 never appeared, waiting for \"$2\": $out" ;;
+      *) if save_password_android; then
+           $M wait "testid=$1" --timeout 5s >/dev/null 2>&1 || fail "$1 never appeared, waiting for \"$2\""
+         else
+           fail "$1 never appeared, waiting for \"$2\": $out"
+         fi ;;
     esac
   fi
   if ! got=$($M text "testid=$1" 2>&1); then
@@ -54,6 +58,28 @@ save_password() {
   $M tap "label=Not Now" >/dev/null || fail "\"Save Password?\" is up and Not Now could not be pressed"
   $M alert 2>/dev/null | grep -q 'a dialog is on screen' && fail "\"Save Password?\" is still up after Not Now"
   row "save password" "iOS offered to save it; Not Now pressed, the sheet gone"
+}
+# save_password_android answers an offer to save the password after a login
+# on Android, and says whether there was one: a tap on a field starts an
+# autofill session, and a phone with a password manager offers to save what
+# was typed (CHALLENGES 206). Two offers were met on the Pixel 8 Pro: Google Password Manager's sheet, Not now
+# or Save, and the system's own dialog, Never, Save or Close. Each is answered
+# with the button that changes nothing — Not now, or Close — never Save, which
+# stores the password in somebody's account, nor Never, which remembers a
+# choice. Nothing of either is printed: they name the account.
+save_password_android() {
+  sleep 1   # either one slides in; it can be found before a tap reaches it
+  if $M find "text=Not now" >/dev/null 2>&1; then
+    $M tap "text=Not now" >/dev/null || fail "a save-password sheet is up and Not now could not be pressed"
+  elif $M find "label=Never,role=button" >/dev/null 2>&1 || $M find "text=Never" >/dev/null 2>&1; then
+    $M tap "label=Close,role=button" >/dev/null || fail "a save-password dialog is up and Close could not be pressed"
+  else
+    return 1
+  fi
+  sleep 1
+  { $M find "text=Not now" || $M find "label=Never,role=button" || $M find "text=Never"; } >/dev/null 2>&1 &&
+    fail "the save-password offer is still up after it was answered"
+  row "save password" "Android offered to save it; answered without saving, the offer gone"
 }
 # absent <testid>: it is not on screen.
 absent() {

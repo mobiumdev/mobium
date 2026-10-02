@@ -85,6 +85,12 @@ type Node struct {
 	// Focused is Android's `focused`: this node has input focus. It is how
 	// an action knows the keyboard may be up without asking the device.
 	Focused bool
+	// Virtual is Android's `drawing-order="0"`: a node an accessibility
+	// provider made up rather than a real View, which a real View's drawing
+	// order is never 0. Flutter's are; MobiumApp's React Native fields read 10
+	// and 12. A virtual field may take text only once it has focus
+	// (CHALLENGES 206).
+	Virtual bool
 
 	// Displayed is the platform's own visibility answer.
 	//
@@ -330,6 +336,7 @@ func nodeFrom(e xml.StartElement, parent *Node, sibling int) *Node {
 		Hint:          attr(e, "hint"),
 		ShowingHint:   boolAttr(e, "showing-hint"),
 		Focused:       boolAttr(e, "focused"),
+		Virtual:       attr(e, "drawing-order") == "0",
 		Depth:         parent.Depth + 1,
 		Index:         idx,
 		Parent:        parent,
