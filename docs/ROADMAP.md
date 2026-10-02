@@ -504,12 +504,13 @@ this is what is not.
     the failure "report only what was checked" exists to prevent. Select
     (`DPAD_CENTER`) is what activates. The launcher's top-menu icons are
     tabs that open on focus alone, with no select at all.
-  - **`mobium launch` refuses TV apps**: they register only a
-    `LEANBACK_LAUNCHER` activity, and the resolver asks for `LAUNCHER`.
-  - **Android 9 has no `topResumedActivity`**, the only line the foreground
-    check reads, so nothing that waits for an app to come forward can see it
-    arrive; and `screencap` prints a vendor line ahead of the PNG, which the
-    dump backend's screenshot refuses as "not a PNG", since it checks the
+  - **`mobium launch` refused TV apps** — they register only a
+    `LEANBACK_LAUNCHER` activity — **and on Android 9 `state` read every app
+    as in the background**, because nothing read Android 9's line for the
+    activity in front. Both fixed (CHALLENGES 209); the resolver was
+    measured on the TV, and the launch itself is still to be watched there.
+  - **`screencap` prints a vendor line ahead of the PNG**, which the dump
+    backend's screenshot refuses as "not a PNG", since it checks the
     signature as a prefix rather than reading from it.
   - **The two big apps draw to one surface.** Prime Video and YouTube (a
     Cobalt build) give `map` a single node. Prime publishes the focused
@@ -532,10 +533,8 @@ this is what is not.
     host" while ping works. `doctor` should name that, as it names the
     other traps that report the wrong cause.
 
-  What it takes, in order: `launch` resolving a `LEANBACK_LAUNCHER`
-  activity when there is no `LAUNCHER` one; the foreground read on Android 9
-  (`mResumedActivity`, with a captured `dumpsys` from the TV as its
-  fixture); the screenshot read from the PNG signature on; a tap on a TV refused, or
+  What it takes, in order, after the two in CHALLENGES 209: the screenshot
+  read from the PNG signature on; a tap on a TV refused, or
   reported as focus moved, rather than "tapped"; then the focus strategy —
   D-pad presses until the target reports `focused`, then select, each step
   read back and refused if focus stops moving or cycles — with swipes and

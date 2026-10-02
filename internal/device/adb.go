@@ -430,16 +430,25 @@ func (a *ADB) ForwardAbstract(ctx context.Context, socketName string) (int, erro
 // component, and only the package is known. `monkey` is the usual shortcut for
 // this but it synthesises input events and reports success even when it
 // launched nothing.
+//
+// A bare package resolves the phone launcher's category, LAUNCHER. A TV app
+// declares LEANBACK_LAUNCHER instead — measured on a Fire TV, where Prime
+// Video and YouTube declare only that, and launch refused both as having no
+// launchable activity — so that is asked second, and a phone app that
+// declares both still opens on its phone screen.
 func (a *ADB) LaunchApp(ctx context.Context, pkg string) error {
-	out, err := a.Shell(ctx, "cmd", "package", "resolve-activity", "--brief", pkg)
-	if err != nil {
-		return fmt.Errorf("resolve launcher activity for %s: %w", pkg, err)
-	}
 	component := ""
-	for _, line := range strings.Split(strings.TrimSpace(string(out)), "\n") {
-		line = strings.TrimSpace(line)
-		if strings.Contains(line, "/") && !strings.HasPrefix(line, "No ") {
-			component = line
+	for _, category := range []string{"", "android.intent.category.LEANBACK_LAUNCHER"} {
+		args := []string{"cmd", "package", "resolve-activity", "--brief"}
+		if category != "" {
+			args = append(args, "-a", "android.intent.action.MAIN", "-c", category)
+		}
+		out, err := a.Shell(ctx, append(args, pkg)...)
+		if err != nil {
+			return fmt.Errorf("resolve launcher activity for %s: %w", pkg, err)
+		}
+		if component = resolvedComponent(out); component != "" {
+			break
 		}
 	}
 	if component == "" {
@@ -455,6 +464,19 @@ func (a *ADB) LaunchApp(ctx context.Context, pkg string) error {
 		return mobiumerr.New(mobiumerr.DeviceServer, "launch %s: %s", pkg, strings.TrimSpace(firstLine(e)))
 	}
 	return nil
+}
+
+// resolvedComponent is the component `resolve-activity --brief` printed, or
+// "" for its "No activity found".
+func resolvedComponent(out []byte) string {
+	component := ""
+	for _, line := range strings.Split(strings.TrimSpace(string(out)), "\n") {
+		line = strings.TrimSpace(line)
+		if strings.Contains(line, "/") && !strings.HasPrefix(line, "No ") {
+			component = line
+		}
+	}
+	return component
 }
 
 // TerminateApp force-stops an app.
@@ -524,7 +546,7 @@ func (a *ADB) heldByPlayProtect(ctx context.Context, stop context.CancelFunc) bo
 		if err != nil {
 			continue
 		}
-		if m := topActivityRe.FindStringSubmatch(string(dump)); m != nil &&
+		if m := resumedInFront(string(dump)); m != nil &&
 			m[1] == "com.android.vending" && playProtectRe.MatchString(m[2]) {
 			stop()
 			return true

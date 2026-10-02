@@ -2,6 +2,7 @@ package device
 
 import (
 	"os"
+	"strings"
 	"testing"
 )
 
@@ -15,6 +16,10 @@ func TestTaskInFront(t *testing.T) {
 	}{
 		{"activities-permission-prompt-api35.txt", "com.google.android.permissioncontroller", "dev.mobium.mobiumapp"},
 		{"activities-home-api35.txt", "com.google.android.apps.nexuslauncher", "com.google.android.apps.nexuslauncher"},
+		// Android 9 has no topResumedActivity, and marks a task's root
+		// frontOfTask: the structural lines of a Fire TV's dump, Fire OS
+		// 7.7.1.7, with YouTube in front.
+		{"activities-firetv-api28.txt", "com.amazon.firetv.youtube", "com.amazon.firetv.youtube"},
 	}
 	for _, c := range cases {
 		raw, err := os.ReadFile("testdata/" + c.file)
@@ -59,5 +64,27 @@ func TestHostedInFront(t *testing.T) {
 		if ok != c.ok || got != c.want {
 			t.Errorf("%s: %+v, %v; want %+v, %v", c.file, got, ok, c.want, c.ok)
 		}
+	}
+}
+
+// On Android 9 the root of a task of two activities is the one marked
+// frontOfTask, below the one in front: the same Fire TV capture, with the
+// supervisor's ResumedActivity line moved to the top of a settings task.
+func TestTaskRootAndroid9(t *testing.T) {
+	raw, err := os.ReadFile("testdata/activities-firetv-api28.txt")
+	if err != nil {
+		t.Fatal(err)
+	}
+	dump := strings.Replace(string(raw),
+		"ResumedActivity: ActivityRecord{41b2103 u0 com.amazon.firetv.youtube/dev.cobalt.app.MainActivity t1660}",
+		"ResumedActivity: ActivityRecord{ecd5cc0 u0 com.amazon.ssmsys/.NsaAdvancedActivity t1651}", 1)
+	if dump == string(raw) {
+		t.Fatal("the capture's ResumedActivity line has changed; the test edits nothing")
+	}
+	if m := resumedInFront(dump); m == nil || m[2] != ".NsaAdvancedActivity" {
+		t.Fatalf("in front: %v, want .NsaAdvancedActivity", m)
+	}
+	if pkg, class := taskRoot(dump); pkg != "com.amazon.ssmsys" || class != ".NSAActivity" {
+		t.Errorf("root %s/%s, want com.amazon.ssmsys/.NSAActivity", pkg, class)
 	}
 }
