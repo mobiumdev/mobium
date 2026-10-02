@@ -2,22 +2,30 @@
 # Verify that nothing Mobium started is still running, and optionally stop it.
 #
 #   ./docs/checks/clean-stop.sh            report only
-#   ./docs/checks/clean-stop.sh --quit     stop the daemon and every virtual device first
+#   ./docs/checks/clean-stop.sh --quit     stop the daemon, a screen mirror and every
+#                                          virtual device first, and disconnect
+#                                          network devices
 #
 # Reporting is the default because emulators are expensive to boot and you may
 # well want to keep yours. Nothing here touches a physical device beyond
-# releasing the session: unplugging is yours to do.
+# releasing the session and ending an `adb connect` link: unplugging, and
+# turning a TV's network debugging off, are yours to do.
 #
 # Order matters and is not arbitrary — see ../SHUTDOWN.md.
 
 QUIT=""
 [ "$1" = "--quit" ] && QUIT=1
+network=""
 BIN="./bin/mobium"
 [ -x "$BIN" ] || BIN="mobium"
 fail=0
 
 note() { printf "  %-34s %s\n" "$1" "$2"; }
 bad()  { printf "  %-34s %s   <-- \n" "$1" "$2"; fail=1; }
+# left is for what is left on a device rather than running: --quit stops
+# processes and removes nothing, so its remedy is not --quit.
+left() { printf "  %-34s %s   <-- \n" "$1" "$2"; leftover=1; }
+leftover=0
 
 # Stopping processes on your machine is not the whole job — ../SHUTDOWN.md,
 # "On the device". These were a manual checklist until a hierarchy dump was
@@ -47,16 +55,25 @@ device_checks() {
     # session put there and did not take away. A hierarchy dump is a
     # serialization of whatever was on screen, which on a phone is somebody's
     # data — defect 34.
+    # mobium-reader is the folder the dump backend's own reader runs from
+    # when a screen reader is on (CHALLENGES 208), deleted after each read.
     left=$(adb -s "$d" shell ls /data/local/tmp 2>/dev/null \
              | tr -d '\r' | grep -v '^dalvik-cache$' | grep -v '^$' | tr '\n' ' ')
     if [ -z "$left" ]; then
       note "$d /data/local/tmp" "empty"
-    elif echo "$left" | grep -q "mobium-dump.xml"; then
-      bad "$d /data/local/tmp" "mobium left: $left"
+    elif echo "$left" | grep -qE "mobium-dump.xml|mobium-reader"; then
+      left "$d /data/local/tmp" "mobium left: $left"
     else
       # Named rather than failed: this is not necessarily ours, and crying
       # wolf on somebody else's file would get the whole check ignored.
       note "$d /data/local/tmp" "not empty: $left"
+    fi
+
+    # scrcpy mirrored the Fire TV while it was measured, and on Android 9
+    # each run leaves the runtime's compiled copy of its server here.
+    if adb -s "$d" shell ls /data/local/tmp/oat/arm /data/local/tmp/oat/arm64 2>/dev/null \
+         | grep -q scrcpy-server; then
+      left "$d scrcpy leftovers" "rm with: adb -s $d shell rm -r /data/local/tmp/oat"
     fi
 
     # /sdcard is where `uiautomator dump` writes when nobody says otherwise,
@@ -65,13 +82,16 @@ device_checks() {
     # than a list of names: a stock Android /sdcard root holds *only*
     # directories (Alarms, Android, DCIM, Download, ...), so any plain file
     # there was put there by somebody and left.
+    # Fire OS is the exception: Amazon's Photos app keeps two state files
+    # at the root, named with a hash, so they are left out rather than
+    # printed.
     stray=$(adb -s "$d" shell 'ls -p /sdcard/ 2>/dev/null | grep -v "/$"' 2>/dev/null \
-              | tr -d '\r' | grep -v '^$' | tr '\n' ' ')
+              | tr -d '\r' | grep -v '^$' | grep -v '^PrimePhotosApp.*State\.' | tr '\n' ' ')
     if [ -z "$stray" ]; then
       note "$d /sdcard" "no loose files"
     elif echo "$stray" | grep -q "\.xml"; then
       # A loose .xml here is a hierarchy dump in all but name.
-      bad "$d /sdcard" "hierarchy dumps left: $stray"
+      left "$d /sdcard" "hierarchy dumps left: $stray"
     else
       note "$d /sdcard" "loose files: $stray"
     fi
@@ -79,6 +99,41 @@ device_checks() {
     n=$(adb -s "$d" forward --list 2>/dev/null | grep -c "^$d")
     [ "$n" = "0" ] && note "$d port forwards" "none" \
       || bad "$d port forwards" "$n left open"
+
+    # A mirror streams the screen off the device for as long as its server
+    # runs, which on a TV is somebody's living room.
+    # Its server runs as app_process, so the name never says scrcpy; the
+    # command line does. The brackets keep grep from counting itself.
+    n=$(adb -s "$d" shell 'ps -A -o PID,ARGS' 2>/dev/null | grep -c "[s]crcpy")
+    [ "$n" = "0" ] && note "$d screen mirror" "none" \
+      || bad "$d screen mirror" "$n scrcpy server process(es) running"
+
+    # A screen reader on now may be the owner's, or one a measurement
+    # turned on and did not turn off (VoiceView, for CHALLENGES 208). Only
+    # the owner knows which, so it is named rather than judged.
+    sr=$(adb -s "$d" shell settings get secure enabled_accessibility_services 2>/dev/null \
+           | tr -d '\r')
+    case "$sr" in
+      ""|null) note "$d accessibility" "no services on" ;;
+      *) note "$d accessibility" "on: $(echo "$sr" | tr ':' '\n' | sed 's,/.*,,' | tr '\n' ' ')— leave them if they were on before" ;;
+    esac
+
+    # A TV, or anything reached by `adb connect`, is somebody's, and has
+    # debugging on over the network until somebody turns it off on the
+    # device itself. Disconnecting ends the link; it does not do that.
+    case "$d" in *:*)
+      if [ "$(adb -s "$d" shell pm has-feature android.software.leanback 2>/dev/null | tr -d '\r')" = "true" ]; then
+        kind="TV"
+      else
+        kind="device"
+      fi
+      where="Developer options"
+      [ "$(adb -s "$d" shell getprop ro.product.manufacturer 2>/dev/null | tr -d '\r')" = "Amazon" ] \
+        && where="Settings > Device & Software > Developer Options"
+      network="$network $d"
+      note "$d network" "a $kind over Wi-Fi: turn ADB debugging off in $where when done"
+      ;;
+    esac
   done
 }
 
@@ -88,6 +143,18 @@ if [ -n "$QUIT" ]; then
   # sessions, and killing a device out from under one leaves instrumentation
   # running against hardware that is about to vanish.
   $BIN daemon stop 2>/dev/null | sed 's/^/  /'
+  # A mirror next: its server on the device ends with it. scrcpy ignored
+  # SIGTERM three times in three on the Fire TV, so it gets five seconds.
+  if pgrep -x scrcpy >/dev/null 2>&1; then
+    echo "  stopping scrcpy"
+    pkill -x scrcpy
+    i=0
+    while pgrep -x scrcpy >/dev/null 2>&1 && [ $i -lt 5 ]; do
+      sleep 1; i=$((i + 1))
+    done
+    pkill -9 -x scrcpy 2>/dev/null
+    sleep 1
+  fi
   echo
   echo "on the device, after the daemon stopped and before the device goes:"
   device_checks
@@ -97,6 +164,13 @@ if [ -n "$QUIT" ]; then
   for s in $(xcrun simctl list devices booted 2>/dev/null | grep -oE '[0-9A-F-]{36}'); do
     echo "  shutting down simulator $s"
     xcrun simctl shutdown "$s" >/dev/null 2>&1
+  done
+
+  # A network device's link is ours to end; its debugging setting is not
+  # (above). `adb kill-server` would drop the link too, but say so.
+  for d in $network; do
+    echo "  disconnecting $d"
+    adb disconnect "$d" >/dev/null 2>&1
   done
 
   for d in $(adb devices 2>/dev/null | awk '/^emulator-/{print $1}'); do
@@ -156,6 +230,12 @@ n=$(pgrep -f "qemu-system.*-avd" 2>/dev/null | wc -l | tr -d ' ')
 n=$(pgrep -f "netsimd|emulator/crashpad_handler|qemu-img" 2>/dev/null | wc -l | tr -d ' ')
 [ "$n" = "0" ] && note "emulator helpers" "none" || bad "emulator helpers" "$n running (netsimd, crashpad)"
 
+# scrcpy ignored SIGTERM three times in three on the Fire TV, so a mirror
+# closed the ordinary way can still be running.
+n=$(pgrep -x scrcpy 2>/dev/null | wc -l | tr -d ' ')
+[ "$n" = "0" ] && note "screen mirror (scrcpy)" "none" \
+  || bad "screen mirror (scrcpy)" "$n running; kill -9 if SIGTERM did nothing"
+
 # Any adb server, on any port. A doctor test that set ANDROID_ADB_SERVER_PORT
 # left one behind on 5999 that the default-port check never saw.
 n=$(pgrep -x adb 2>/dev/null | wc -l | tr -d ' ')
@@ -177,9 +257,10 @@ if [ -d "$state/daemon" ]; then
 fi
 
 echo
-if [ "$fail" = "0" ]; then
+if [ "$fail" = "0" ] && [ "$leftover" = "0" ]; then
   echo "clean."
-else
-  echo "something is still running. ./docs/checks/clean-stop.sh --quit"
-  exit 1
+  exit 0
 fi
+[ "$fail" = "0" ] || echo "something is still running. ./docs/checks/clean-stop.sh --quit"
+[ "$leftover" = "0" ] || echo "something is left on a device: remove what is marked, with the device still up."
+exit 1
