@@ -4576,9 +4576,9 @@ got, found five things wrong.
   before typing, and a keyboard the click raised is put away again: left
   up, it covered the next button in `login.sh`. Real views are not clicked.
   The first version clicked every field, and on the Pixel 8 Pro each login
-  then ended in an offer to save the password — Google Password Manager's
-  sheet, or the system's own dialog, which `alert` does not see — because a
-  click starts an autofill session. Seal's Compose field took text with the
+  then ended in an offer to save the password — the system's own dialog,
+  which `alert` did not see, saying Not now the first time the phone met
+  the app and Never after — because a click starts an autofill session. Seal's Compose field took text with the
   click, on screen. The system's offer itself, `android:id/autofill_save`
   in a full-screen window of package `android`, was no dialog to `alert`
   until it was recognized by that id.
