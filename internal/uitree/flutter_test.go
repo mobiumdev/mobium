@@ -1,6 +1,7 @@
 package uitree
 
 import (
+	"os"
 	"strings"
 	"testing"
 )
@@ -81,5 +82,23 @@ func TestAFlutterFieldIsFoundByItsHintAsALabel(t *testing.T) {
 	loc, _ = ParseLocator("label=Nickname")
 	if got := loc.Resolve(tree); len(got) != 0 {
 		t.Error("label= found a field by the hint of a field that holds text")
+	}
+}
+
+// Android's autofill offer to save a password, captured on the Pixel 8 Pro
+// with the account's address replaced: a window that fills the screen, so not
+// a floating one, known by the platform's own id for the save sheet.
+func TestAndroidsAutofillSaveIsADialog(t *testing.T) {
+	raw, err := os.ReadFile("testdata/android-autofill-save-api37.xml")
+	if err != nil {
+		t.Fatal(err)
+	}
+	tree, err := ParseAndroid(raw)
+	if err != nil {
+		t.Fatal(err)
+	}
+	d := tree.Dialog()
+	if d == nil || d.TestID != "android:id/autofill_save" {
+		t.Fatalf("the autofill save sheet is not the dialog: %+v", d)
 	}
 }

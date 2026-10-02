@@ -74,12 +74,15 @@ this is what is not.
   before you install"](APP-TYPES.md#try-before-you-install)). Open: our own
   clip on a phone and Local Experiences, which need a paid Apple Developer
   Program team, and which button `alert accept` presses on the card.
-- **Android's autofill save dialog is not an alert.** On the Pixel 8 Pro,
-  after a login whose fields had been tapped, the system's own "save
-  password" dialog — Never, Save, Close, in a window of package `android` —
-  came up over the app, and `mobium alert` said no dialog was on screen;
-  `map` saw its buttons (CHALLENGES 206). `login.sh` answers it with Close.
-  `alert` should see it, as it sees iOS's Save Password sheet.
+- ~~**Android's autofill save dialog is not an alert.**~~ Done 2026-10-02:
+  the system's offer to save a password — `android:id/autofill_save`, a sheet
+  over the lower half of a window of package `android` that fills the screen,
+  so not a floating one — is a dialog to `app_alert` and `app_dialogs` now,
+  known by the platform's own id for it. On the Pixel 8 Pro `alert` reads it,
+  refuses accept and dismiss saying the endpoint cannot press its buttons, and
+  a rule `--when "Save password" --press "Close"` closed it in the way of a
+  tap and the tap went on. Google Password Manager's own "Not now" sheet,
+  met once, is not yet checked.
 - **Windows.** Everything that needs no device passes on a GitHub-hosted
   Windows runner, every run: both modules' tests, the named-pipe daemon
   transport's acceptance tests five times over, and the built `mobium.exe` —

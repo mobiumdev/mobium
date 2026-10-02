@@ -4579,7 +4579,9 @@ got, found five things wrong.
   then ended in an offer to save the password — Google Password Manager's
   sheet, or the system's own dialog, which `alert` does not see — because a
   click starts an autofill session. Seal's Compose field took text with the
-  click, on screen.
+  click, on screen. The system's offer itself, `android:id/autofill_save`
+  in a full-screen window of package `android`, was no dialog to `alert`
+  until it was recognized by that id.
 - **An empty field mapped as "EditText".** Flutter reports a field's label
   as its hint with no text, where a native field puts the hint in the text.
   `map` names an empty field by its hint now, and `label=` finds it by the

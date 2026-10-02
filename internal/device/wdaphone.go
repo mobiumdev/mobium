@@ -122,6 +122,14 @@ func keychainTeams(ctx context.Context) ([]string, error) {
 // teamsFrom pairs `security find-certificate -Z -p` output with the hashes of
 // valid identities and returns each distinct team, sorted.
 func teamsFrom(identities string, certs []byte, now time.Time) []string {
+	// The identities' hashes, whole: matched as a substring, a certificate
+	// listed with a short hash that happened to occur inside a real one's —
+	// the test's "FFFF" inside a random SHA-1, now and then in CI — was taken
+	// for an identity it is not.
+	have := map[string]bool{}
+	for _, f := range strings.Fields(identities) {
+		have[f] = true
+	}
 	seen := map[string]bool{}
 	var hash string
 	rest := certs
@@ -147,7 +155,7 @@ func teamsFrom(identities string, certs []byte, now time.Time) []string {
 			continue
 		}
 		rest = remaining
-		if hash == "" || !strings.Contains(identities, hash) {
+		if hash == "" || !have[hash] {
 			continue
 		}
 		cert, err := x509.ParseCertificate(block.Bytes)

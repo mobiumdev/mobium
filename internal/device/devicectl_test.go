@@ -171,7 +171,10 @@ func TestTeamsFrom(t *testing.T) {
 
 	certs := "SHA-256 hash: 00\nSHA-1 hash: " + validHash + "\n" + valid +
 		"SHA-256 hash: 11\nSHA-1 hash: " + expiredHash + "\n" + expired +
-		"SHA-256 hash: 22\nSHA-1 hash: FFFF\n" + nokey
+		// Its hash is the start of the valid one's: a substring of an
+		// identity's hash, which is not that identity. As "FFFF" it matched
+		// a random hash that contained it, now and then.
+		"SHA-256 hash: 22\nSHA-1 hash: " + validHash[:8] + "\n" + nokey
 	identities := fmt.Sprintf("  1) %s \"Apple Development: Someone (ABCDE12345)\"\n"+
 		"  2) %s \"Apple Development: Someone (ABCDE12345)\"\n", validHash, expiredHash)
 
