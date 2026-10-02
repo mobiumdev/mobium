@@ -361,11 +361,14 @@ func (u *UIA2) Swipe(ctx context.Context, x1, y1, x2, y2 int, d time.Duration) e
 // from its position in the snapshot it came from, so the value goes to the
 // element the caller resolved rather than to whatever currently holds focus.
 //
-// A field that does not have focus is clicked first, as a person taps a field
-// before typing. A native EditText takes text unfocused, but Flutter offers a
-// field's set-text action only while it has focus: unfocused, the value went
-// nowhere, the tree still read it back, and the app's own field stayed empty
-// (CHALLENGES 206).
+// A virtual field — one an accessibility provider made up, as Flutter's
+// are — that does not have focus is clicked first, as a person taps a field
+// before typing. Flutter offers a field's set-text action only while it has
+// focus: unfocused, the value went nowhere, the tree still read it back, and
+// the app's own field stayed empty (CHALLENGES 206). A real EditText takes
+// text unfocused, and is not clicked: a click starts an autofill session,
+// and on a phone with a password manager every login then ended in an offer
+// to save the password.
 //
 // The click raises the soft keyboard where there was none, and on the next
 // tap the keyboard covered the button below the field, which no typing had
@@ -376,7 +379,7 @@ func (u *UIA2) SetText(ctx context.Context, n *uitree.Node, text string) error {
 	if err != nil {
 		return err
 	}
-	if n.Focused {
+	if n.Focused || !n.Virtual {
 		return u.w3c.setElementValue(ctx, elID, text)
 	}
 	keyboardWasUp := true

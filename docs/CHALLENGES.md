@@ -4570,9 +4570,16 @@ got, found five things wrong.
   `typed "lana"`, the tree read the field back as holding it, and the app
   said "Signed in as  with 0 characters". Flutter offers a field's set-text
   action only while it has focus; UiAutomator2 sets text without focusing.
-  Now an unfocused field is clicked first — as a person taps before typing —
-  and a keyboard the click raised is put away again, since leaving it up
-  covered the next button in `login.sh`.
+  Now an unfocused *virtual* field — `drawing-order="0"`, made up by an
+  accessibility provider, as Flutter's and Compose's are; MobiumApp's real
+  React Native fields read 10 and 12 — is clicked first, as a person taps
+  before typing, and a keyboard the click raised is put away again: left
+  up, it covered the next button in `login.sh`. Real views are not clicked.
+  The first version clicked every field, and on the Pixel 8 Pro each login
+  then ended in an offer to save the password — Google Password Manager's
+  sheet, or the system's own dialog, which `alert` does not see — because a
+  click starts an autofill session. Seal's Compose field took text with the
+  click, on screen.
 - **An empty field mapped as "EditText".** Flutter reports a field's label
   as its hint with no text, where a native field puts the hint in the text.
   `map` names an empty field by its hint now, and `label=` finds it by the
