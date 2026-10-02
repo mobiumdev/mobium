@@ -1,0 +1,7 @@
+ACTIVITY MANAGER ACTIVITIES (dumpsys activity activities)
+Display #0 (activities from top to bottom):
+    topResumedActivity=ActivityRecord{37980020 u0 com.android.chrome/org.chromium.chrome.browser.customtabs.CustomTabActivity t1523}
+    * Hist  #1: ActivityRecord{37980020 u0 com.android.chrome/org.chromium.chrome.browser.customtabs.CustomTabActivity t1523}
+      rootOfTask=false task=Task{69066c2 #1523 type=standard A=10375:com.oyo.consumerlite}
+    * Hist  #0: ActivityRecord{78997396 u0 com.oyo.consumerlite/com.google.androidbrowserhelper.trusted.LauncherActivity t1523}
+      rootOfTask=true task=Task{69066c2 #1523 type=standard A=10375:com.oyo.consumerlite}

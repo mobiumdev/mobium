@@ -71,6 +71,14 @@ func (h *Handlers) pressOn(ctx context.Context, s *session, args map[string]inte
 		}
 	}
 
+	// On Android the app in front is named by the task, not the window,
+	// where a browser draws it: a back out of a Trusted Web Activity was
+	// reported as leaving Chrome. CHALLENGES 205.
+	beforeName := before
+	if button == mobiumdriver.ButtonBack {
+		beforeName = h.taskOwner(ctx, s, before)
+	}
+
 	how := "pressed " + button
 	if gesture {
 		from, err := h.gestureBack(ctx, s, beforeTree)
@@ -91,7 +99,7 @@ func (h *Handlers) pressOn(ctx context.Context, s *session, args map[string]inte
 		// rather than wait for a change that cannot be seen.
 		var after string
 		if beforeTree != nil {
-			after = h.awaitBack(ctx, s, before, beforeScreen)
+			after = h.taskOwner(ctx, s, h.awaitBack(ctx, s, before, beforeScreen))
 		}
 		var afterTitle string
 		if s.backend == BackendWDA {
@@ -99,10 +107,10 @@ func (h *Handlers) pressOn(ctx context.Context, s *session, args map[string]inte
 				afterTitle = navigationTitle(tree)
 			}
 		}
-		msg, ok := backOutcome(how, before, after, beforeTitle, afterTitle)
+		msg, ok := backOutcome(how, beforeName, after, beforeTitle, afterTitle)
 		view.Confirmed, view.Foreground, view.Title = ok, after, afterTitle
-		if ok && before != "" && after != before {
-			view.Left = before
+		if ok && beforeName != "" && after != beforeName {
+			view.Left = beforeName
 		}
 		return Result(msg, view), nil
 	}

@@ -161,15 +161,20 @@ namespace Mobium
         /// read. On macOS and Linux that throws InvalidOperationException; on
         /// Windows a COMException, "the handle is invalid" — measured in CI,
         /// where it escaped and ended the test run instead of letting the
-        /// waiting call fail as disposed.
+        /// waiting call fail as disposed — and, in a later CI run, a
+        /// NullReferenceException from inside Process.ExitCode, the handle
+        /// gone between HasExited's check and its read. So a disposed
+        /// connection does not ask at all, and the race that remains between
+        /// that check and the read is caught in any of its four forms.
         /// </remarks>
         private string ExitStatus()
         {
+            if (_disposed) return "";
             try
             {
                 if (_process.WaitForExit(2000)) return " (it exited with status " + _process.ExitCode + ")";
             }
-            catch (Exception e) when (IsGone(e))
+            catch (Exception e) when (IsGone(e) || e is NullReferenceException)
             {
                 // No status to report.
             }

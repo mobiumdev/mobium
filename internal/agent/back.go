@@ -110,6 +110,24 @@ func (h *Handlers) awaitBack(ctx context.Context, s *session, wasApp, wasScreen 
 	return app
 }
 
+// taskOwner names the app in front by its task where a browser draws it — an
+// installed web app, a Trusted Web Activity, an app's custom tab — and
+// otherwise returns the package it was given. Android only; elsewhere, and
+// when the activities cannot be read, the package stands.
+func (h *Handlers) taskOwner(ctx context.Context, s *session, pkg string) string {
+	if pkg == "" || s.backend == BackendWDA {
+		return pkg
+	}
+	adb, err := h.adbFor(ctx, s)
+	if err != nil {
+		return pkg
+	}
+	if hd, ok := adb.HostedInFront(ctx); ok && hd.Host == pkg {
+		return hd.Owner
+	}
+	return pkg
+}
+
 // navigationBar is the iOS navigation bar on screen — the visible one, since a
 // sheet leaves the bar beneath it in the tree, hidden.
 func navigationBar(tree *uitree.Tree) *uitree.Node {

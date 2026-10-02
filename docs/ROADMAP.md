@@ -66,6 +66,14 @@ this is what is not.
   `docs/checks/back.sh` holds it on both phones, both AVDs and the simulator.
   Left: MobiumApp's swipe back on iOS, back in its WebView screens, and
   predictive back turned on.
+- **App Clips: a clip of our own on a real iPhone.** Measured 2026-10-01:
+  on the simulator a clip installed alone launches, reads, takes taps and
+  goes back like any native app; on the iPhone a published clip opened from
+  its default link put up its App Clip card, which `alert` reads and whose
+  `OpenButton` opened the clip, then driven the same way ([APP-TYPES, "Try
+  before you install"](APP-TYPES.md#try-before-you-install)). Open: our own
+  clip on a phone and Local Experiences, which need a paid Apple Developer
+  Program team, and which button `alert accept` presses on the card.
 - **Windows.** Everything that needs no device passes on a GitHub-hosted
   Windows runner, every run: both modules' tests, the named-pipe daemon
   transport's acceptance tests five times over, and the built `mobium.exe` —

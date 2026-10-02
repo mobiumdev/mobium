@@ -32,10 +32,11 @@ it was driven once, with the result written down below, and nothing re-runs it.
 | Native | Android: Settings, Calculator, Clock, Wikipedia, F-Droid, Aegis, and Seal (Jetpack Compose). iOS: Settings, Wikipedia and NetNewsWire from the App Store | checked in — most of [checks/](checks/); `third-party-app.sh`, `compose-app.sh`, `netnewswire-ios.sh` for the apps nobody at Google or Apple wrote |
 | Hybrid | Wikipedia's articles, and MobiumApp's WebView screens, on both platforms and on real phones | checked in — `third-party-app.sh`, `mobium-app.sh`, `web-type.sh`, `web-actionability.sh`, `web-storage.sh` |
 | Mobile web | Safari on iOS; Chrome on Android, emulator and the Pixel 8 Pro | checked in — `chrome.sh` (read, a tap counted by the page, a link followed), `ios-webview.sh`, `orientation.sh`, `shake.sh` |
-| Progressive web app | Squoosh, installed to the home screen on both platforms, and as a WebAPK on the Pixel 8 Pro | checked in — `pwa.sh`: installed if absent, launched, standalone, and a tap counted by the page — or, on an emulator's shortcut, refused with the reason |
+| Progressive web app | Squoosh, installed to the home screen on both platforms, and as a WebAPK on the Pixel 8 Pro; OYO Lite, a Trusted Web Activity from the Play Store, on the Pixel 8 Pro | checked in — `pwa.sh`: installed if absent, launched, standalone, and a tap counted by the page — or, on an emulator's shortcut, refused with the reason; `twa.sh`: a Play Store PWA launched, tapped, and backed through |
 | Cross-platform | React Native: MobiumApp, on both platforms and on real phones | checked in — `mobium-app.sh`, `login.sh`, `otp.sh`, `dialogs.sh` and every other MobiumApp check |
 | | Flutter, Xamarin/.NET MAUI | **never driven** — see below for why Flutter is expected to need a driver |
 | Hybrid frameworks | Cordova, Ionic | **never driven**; a WebView inside them is the hybrid case above |
+| App Clip (iOS) | MobiumApp's clip demo on the iPhone 17 Pro simulator; AdvantageScope XR's published clip on the iPhone 15 Plus | measured 2026-10-01: opened from its link, its card read and its Open tapped, then driven like any native app — [below](#try-before-you-install) |
 
 ## Native
 
@@ -125,6 +126,18 @@ Three things follow.
   and once after force-stopping Chrome, the launcher showed none of them
   while Chrome still listed six, and Chrome then offered only a plain
   shortcut, which opens a tab.
+- **A PWA from the Play Store is a Trusted Web Activity** — a package of
+  its own that opens the site in Chrome, full screen, in a custom tab
+  (Bubblewrap and PWABuilder make them). OYO Lite, `com.oyo.consumerlite`,
+  measured on the Pixel 8 Pro on 2026-10-01: its task is rooted in Google's
+  `androidbrowserhelper.trusted.LauncherActivity` with Chrome's
+  `CustomTabActivity` on top, its page is a `WEBVIEW_com.android.chrome`
+  context with the site's URL, it runs standalone, and taps land. Like a
+  WebAPK, its windows are Chrome's, so `app_launch` and back name it by its
+  task ([CHALLENGES 205](CHALLENGES.md)). Back goes through the page's
+  history first, then leaves — but only through entries a user's gesture
+  made: a navigation run with `app_eval` is skipped by back, as Chrome skips
+  any made without one. Tap the link instead.
 - **On a phone with Play services, a PWA is a WebAPK — a real package.**
   On the Pixel 8 Pro, Chrome 154 offered "Install and create shortcut", then
   a choice of web app or shortcut, and minted
@@ -137,6 +150,74 @@ Three things follow.
   three launches out of three; opened after Chrome's process had ended, it
   kept reporting it, two out of two. Mobium refuses the tap it can no longer
   place and says why.
+
+## Try before you install
+
+Both stores once let a user run part of an app without installing it. Only
+Apple's still does.
+
+- **Android: Google Play Instant**, "Try now" on a Play listing, ran a
+  slice of an app of up to 15 MB from a link. Google shut it down in
+  December 2025 for low use. Play's remaining "Try now" streams a premium
+  game for ten minutes from Google's servers; nothing runs on the phone, so
+  there is nothing on it to drive.
+- **iOS: App Clips.** A small native part of an app — UIKit or SwiftUI,
+  not web content — opened from an App Clip Code, an NFC tag, a QR code, a
+  link in Safari, Messages or Maps, or Apple's default link
+  `https://appclip.apple.com/id?p=<bundle-id>`. The system shows a card
+  first, then runs the clip full screen, and installing the full app
+  replaces it. Up to 15 MB from iOS 16, and 50 MB from iOS 17 for a clip
+  opened only from links.
+
+Measured on 2026-10-01, with a clip of our own: `appclip/` in MobiumApp's
+repository, a SwiftUI clip with a tap counter, a pushed screen and the URL
+that opened it, embedded in a minimal parent app.
+
+| On the iPhone 17 Pro simulator, iOS 26.5 | |
+| --- | --- |
+| The clip installed alone, as iOS delivers one | `simctl install` of the clip's `.app` |
+| `apps` | lists it, `dev.mobium.clipdemo.Clip` |
+| `launch`, `current` | starts it by bundle id; names the clip, not its parent |
+| `map`, `text`, a tap | read it; a tap took the counter from 0 to 1 |
+| Back through its navigation stack | the bar's button, and `press back --gesture`, which said the bar now reads "Clip Home" |
+| Opened from a link | **not reached**: the simulator's Settings > Developer has no Local Experiences, and `simctl launch` ignored Xcode's `_XCAppClipURL` — the clip said "Invoked by: none" |
+
+So **a clip, once running, is an ordinary native app to Mobium**, on the
+simulator.
+
+On the iPhone 15 Plus, iOS 26.6.2, the same day, with clips already
+published in the App Store, opened by their default links — found in their
+own projects' public source:
+
+| | |
+| --- | --- |
+| `mobium open https://appclip.apple.com/id?p=org.littletonrobotics.advantagescopexr.Clip` | SpringBoard put up the App Clip card |
+| The card in WebDriverAgent's tree | an `Alert` holding `AppClipCard`: the clip's name and description, a hero image, `OpenButton` (labeled Open), `Close`, and "Powered by AdvantageScope XR, Age Rating 4+, View on the App Store" |
+| `mobium alert` | reads it: "AdvantageScope XR — Experience AdvantageScope in augmented reality" |
+| `tap testid=OpenButton` | the clip downloaded and opened; its camera prompt, SpringBoard's, came first and was declined |
+| `current`, `map`, `apps` | name the clip, `org.littletonrobotics.advantagescopexr.Clip`; read its controls; list it |
+| `press back --gesture` | no navigation bar, so it swiped high on the screen and said the clip stayed in front |
+| `uninstall` | removed it; `apps` no longer listed it |
+| Pillar Valley's clip, `com.evanbacon.pillarvalley.clip` | a card with only Close: "This app clip is not currently available in your country or region", read by `alert` |
+| `com.apple.store.Jolly.Clip` | no card at all: that app may have no clip |
+
+Two things to know when driving one:
+
+- **Open the clip from its card by `testid=OpenButton`.** The card is an
+  alert to `alert`, and which button `alert accept` would press on it has
+  not been measured — on iOS that choice is positional and has been wrong
+  before (CHALLENGES 106).
+- **Until the clip is up, SpringBoard is in front** — the card, the
+  download, and any permission prompt the clip raises are all its.
+
+Still open: **a clip of our own on a real iPhone**, which a free Apple ID's
+team cannot sign — Xcode refuses with "Personal development teams … do not
+support the App Clip capability" — and with it Settings > Developer > App
+Clips Testing > Local Experiences, which registers a link or a code for a
+clip still in development. The simulator has no such page, and `simctl
+launch` ignored Xcode's `_XCAppClipURL`.
+
+`docs/probes/appclip-sim.sh` repeats the simulator measurement.
 
 ## Hybrid
 

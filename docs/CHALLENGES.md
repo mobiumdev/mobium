@@ -7,7 +7,7 @@ the source.
 
 The pattern across them is the reason the document exists: **almost nothing
 here was found by reading code or by a test written from imagination.** Of
-204 defects, 168 were found only by running against a real device. The other
+205 defects, 169 were found only by running against a real device. The other
 thirty-six — 4, 5, 6, 14, 23, 24, 32, 35, 36, 39, 44, 50, 53, 54, 57, 66, 89,
 99, 100, 121, 123, 129, 130, 133, 134, 139, 140, 141, 142, 144, 150, 158, 162,
 164, 165 and 172 — came from reading code, the compiler, a test, a linter,
@@ -4538,9 +4538,37 @@ since the launch wait it first borrowed held every back inside an app for
 back there is — and refused where an edge swipe is not back. The check
 that holds it is `docs/checks/back.sh`.
 
+### 205. A PWA from the Play Store was reported as Chrome
+
+**Found by:** installing OYO Lite, a Trusted Web Activity from the Play
+Store, on the Pixel 8 Pro to see whether Mobium could drive a store-listed
+PWA. It could — the page attached, ran standalone and took taps — but
+`app_launch com.oyo.consumerlite` answered "but com.android.chrome is in the
+foreground", and a back out of it said "it left com.android.chrome", which
+reads as leaving the browser. A TWA's screen is Chrome's `CustomTabActivity`
+on top of the TWA's own task, so every read of the app in front names
+Chrome. 202 had recognized the same shape for a WebAPK, by
+`WebApkActivity`, and nothing else.
+
+Now one reading serves launch and back: a browser's `WebApkActivity` or
+`CustomTabActivity` on top of a task rooted in another package names that
+package, as an installed web app, a Trusted Web Activity — rooted in
+Google's `androidbrowserhelper.trusted` launcher — or an app in a custom
+tab. Launch says which; back names the app it stayed in or left, while
+waiting on the window's package as before. The fixture is the five lines of
+OYO Lite's task. `docs/checks/twa.sh` holds it.
+
 ## Findings that were not defects
 
 Worth recording because each one closed off an approach that looked obvious.
+
+- **Back skips a page `app_eval` navigated to.** In OYO Lite, a link tapped
+  and then back returned to the page before; `location.assign` run through
+  `app_eval` and then back left the app. Chrome skips, on back, history
+  entries made without a user's gesture, and a script run over the
+  debugging protocol has none. It is Chrome keeping a page from trapping
+  back, not Mobium; a test that wants back to return must reach the page
+  with a tap.
 
 - **A button behind a sheet makes a locator ambiguous, safely.** On
   NetNewsWire's Add Feed sheet `label=Add,role=button` matched two: the
