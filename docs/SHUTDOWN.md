@@ -119,6 +119,7 @@ Every item below has been left running by accident at least once here.
 | `pgrep -x adb` | **any** port, not just 5037 |
 | `xcrun simctl list devices booted` | |
 | `pgrep -f CoreSimulator/Profiles/Runtimes` | simulator runtime processes outlive a badly shut down simulator |
+| `pgrep -x scrcpy` | a screen mirror, used to watch a Fire TV while it was measured. It ignored SIGTERM three times in three, so `--quit` sends it and then `-9` |
 | `ls -A ${MOBIUM_HOME:-~/.mobium}/daemon` | a socket or PID file left behind means the daemon did not exit cleanly. Under `MOBIUM_HOME` if it is set: checking the default while the daemon used another reported "cleared" for files nobody looked at |
 
 ### A leak this actually caught
@@ -197,6 +198,46 @@ The hierarchy file the dump backend writes is deleted after every read, so
 actually caught came from a command typed by hand, not from mobium. It is a serialization of whatever was on
 screen, which on a real phone is somebody's data — defect 34.
 
+### A TV, or anything reached by `adb connect`
+
+A Fire TV is reached over Wi-Fi with `adb connect <tv>:5555`, after ADB
+debugging is turned on in its Developer Options. It is somebody's living-room
+TV, so the device checks above run on it as on a phone, and four more run on
+every device:
+
+- **A screen mirror's server.** scrcpy was how the TV was watched while it
+  was measured, and its server streams the screen off the device for as long
+  as it runs. On the device it is `app_process`, never named scrcpy, so the
+  check reads the command line (`ps -A -o PID,ARGS`); the first version
+  matched the name and reported none with one running. `--quit` stops the
+  mirror on this machine first, and the server goes with it.
+- **What a mirror leaves.** On Android 9 each scrcpy run leaves the
+  runtime's compiled copy of its server in `/data/local/tmp/oat`. Reported,
+  with the command that removes it; nothing is deleted for you.
+- **Accessibility services that are on**, by package. A measurement turned
+  VoiceView on (CHALLENGES 208), and one left on changes how the TV talks
+  to whoever uses it next — but one may equally be the owner's, so they are
+  named, not judged. The positive control was the emulator's Accessibility
+  Menu: Android drops a service from the setting when it is not installed,
+  so a made-up one reads back as none.
+- **The link itself.** A serial with a port in it is a network device.
+  `--quit` disconnects it, and says that **ADB debugging is still on** and
+  where to turn it off — on a Fire TV, Settings > Device & Software >
+  Developer Options. That setting is the owner's, and turning it off from here would
+  also cut the only way to check the result.
+
+Fire OS is the one device whose `/sdcard` root is not all folders: Amazon's
+Photos app keeps two state files there, named with a hash, and the check
+leaves them out rather than print them. And `dalvik-cache` in
+`/data/local/tmp`, which the TV grew with its first `uiautomator dump`, is
+the system's, as on a phone.
+
+Reconnecting after `--quit` has a trap of its own on a Mac: an adb server
+started by a background process is silently blocked from the local network
+by macOS, and `adb connect` says "No route to host" while ping works. Start
+it from a Terminal window (`adb kill-server && adb connect <tv>:5555`) and
+allow the prompt; [SETUP.md](SETUP.md#over-wi-fi) has the rest.
+
 To take the device-side agents off entirely — worth doing on a phone you
 actually use, unnecessary on an emulator you are about to delete:
 
@@ -217,6 +258,7 @@ They are reinstalled automatically next run.
   pinned, checksummed agents. Deleting them only costs the next run a
   download.
 - **A physical device.** Releasing the session is enough; unplugging is
-  yours. USB and wireless debugging stay on until you turn them off.
+  yours. USB and wireless debugging stay on until you turn them off — a
+  network device's link is ended by `--quit`, its debugging setting is not.
 - **Anything you did not start.** Check what a process actually is before
   killing it — see the Chrome case above.

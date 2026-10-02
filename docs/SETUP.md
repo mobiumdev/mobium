@@ -361,6 +361,25 @@ Android 11+. The phone and the Mac must be on the same network.
 `adb pair` may answer `protocol fault (couldn't read status message)` **and
 have succeeded anyway** — check `adb devices` before retrying.
 
+**A Fire TV, or anything older than Android 11**, has no pairing: Developer
+Options → ADB Debugging on (on a Fire TV, Developer Options appears under
+Settings > Device & Software after selecting the device name seven times
+in About; older Fire OS calls that menu My Fire TV),
+then `adb connect <tv>:5555` with the TV's IPv4 address, and accept the prompt
+on the screen. Two things go wrong there, and neither says so:
+
+- **"No route to host" while ping works is macOS, not the network.** An adb
+  server started by a background process — Mobium's daemon, or an agent's
+  shell — is blocked from the local network by macOS's Local Network
+  privacy without a prompt. `adb kill-server && adb connect <tv>:5555` from
+  a Terminal window makes macOS ask; after that it works from anywhere until
+  the server is killed again.
+- **The link drops** every few minutes on the Fire TV measured,
+  `error: closed` then `device offline`; reconnect and retry.
+
+Stopping one cleanly, ADB debugging included, is
+[SHUTDOWN.md](SHUTDOWN.md#a-tv-or-anything-reached-by-adb-connect).
+
 ### Expect it to be slower
 
 Measured on a Pixel 8 Pro against a Pixel 7 AVD, same Android 17:
