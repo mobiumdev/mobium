@@ -518,6 +518,14 @@ this is what is not.
     speaks through TTS directly and publishes nothing, so it is out of reach
     of any accessibility-based tool. Prime's picture is black on capture;
     its menus are not.
+  - **The screen was watched through [scrcpy](https://github.com/Genymobile/scrcpy)**
+    4.1, over the same Wi-Fi adb link, to see what the TV showed while
+    Mobium read it. It mirrored the launcher and the apps' menus; Prime
+    Video's picture was black there too, and Android 9 gives it no audio.
+    It ignored SIGTERM three times out of three and had to be killed, and
+    each run leaves `/data/local/tmp/oat/arm/scrcpy-server.{odex,vdex}` on
+    the TV, which has to be removed afterward — the same runtime-compiled
+    copy Mobium's own reader deletes after every read.
   - **The link is Wi-Fi and drops** every few minutes (`error: closed`,
     `device offline`), and on macOS an adb server started from a background
     process can be silently blocked by Local Network privacy — "No route to
