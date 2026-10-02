@@ -326,7 +326,10 @@ this is what is not.
   Measured on the way: `adb shell -T` carries bytes unchanged, and `adb
   exec-out`, given several arguments, escapes each itself — quoting them too
   made run-as look for a package named with its quotes, and its error came
-  back as the file's content, caught by the size check.
+  back as the file's content, caught by the size check. And on a phone
+  CoreDevice will not copy an empty folder — "no such file" for one its own
+  listing showed — so an empty folder is made, not copied. Passed on all
+  four devices.
 - ~~**Booting and shutting down emulators and simulators**~~ (written down
   2026-09-28) — done 2026-10-01: `mobium boot <avd | simulator>`
   (`app_boot`) starts one and answers once it has booted and a window has

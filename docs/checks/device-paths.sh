@@ -95,12 +95,18 @@ if [ -z "$PHONE" ]; then
   [ -e "$C/tmp/mobium-check-$$" ] && fail "tmp/mobium-check-$$ is still in the container"
   row "removed" "tmp/mobium-check-$$, and read back as gone"
 else
-  # CoreDevice has no delete; a folder copied over with its existing content
-  # removed empties it, and iOS clears an app's tmp/ itself.
-  mkdir -p "$W/empty"
+  # CoreDevice has no delete, and will not copy an empty folder. A folder
+  # holding one empty marker, copied over with its existing content removed,
+  # leaves only the marker — in the app's tmp/, which iOS clears itself.
+  mkdir -p "$W/marker"; : > "$W/marker/.mobium-emptied"
   xcrun devicectl device copy to --device "$DEV" --domain-type appDataContainer --domain-identifier "$A" \
-    --source "$W/empty" --destination "tmp/mobium-check-$$" --remove-existing-content true >/dev/null 2>&1 ||
+    --source "$W/marker" --destination "tmp/mobium-check-$$" --remove-existing-content true >/dev/null 2>&1 ||
     fail "could not empty tmp/mobium-check-$$ on the phone"
-  row "emptied" "tmp/mobium-check-$$, which iOS clears with the app's tmp/"
+  left=$(xcrun devicectl device info files --device "$DEV" --domain-type appDataContainer --domain-identifier "$A" \
+    --subdirectory "tmp/mobium-check-$$" --json-output - 2>/dev/null | python3 -c '
+import json, sys
+print(" ".join(f["relativePath"] for f in json.load(sys.stdin)["result"]["files"]))')
+  [ "$left" = ".mobium-emptied" ] || fail "tmp/mobium-check-$$ still holds: $left"
+  row "emptied" "tmp/mobium-check-$$ down to an empty marker, which iOS clears"
 fi
 echo PASS

@@ -704,6 +704,16 @@ func (d *Devicectl) PullPath(ctx context.Context, bundleID, p, local string) (Tr
 	if err := freshLocal(local, dir); err != nil {
 		return Transfer{}, err
 	}
+	// An empty folder is made here, not copied: CoreDevice will not copy one,
+	// and says "no such file" (Cocoa error 260) for a folder its own listing
+	// just showed — MobiumApp's Library/Preferences, on the iPhone 15 Plus.
+	if dir && len(want) == 0 {
+		if err := os.MkdirAll(local, 0o755); err != nil {
+			return Transfer{}, err
+		}
+		return Transfer{Name: path.Base(p), Where: bundleID + " data/" + p, Folder: true,
+			Checked: "the phone listing it as an empty folder"}, nil
+	}
 	args := append([]string{"device", "copy", "from"}, d.container(bundleID)...)
 	if _, err := d.run(ctx, append(args, "--source", p, "--destination", local)...); err != nil {
 		return Transfer{}, err
