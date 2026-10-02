@@ -79,8 +79,7 @@ this is what is not.
   password" dialog — Never, Save, Close, in a window of package `android` —
   came up over the app, and `mobium alert` said no dialog was on screen;
   `map` saw its buttons (CHALLENGES 206). `login.sh` answers it with Close.
-  `alert` should see it, as it sees Google Password Manager's sheet's
-  equivalent on iOS.
+  `alert` should see it, as it sees iOS's Save Password sheet.
 - **Windows.** Everything that needs no device passes on a GitHub-hosted
   Windows runner, every run: both modules' tests, the named-pipe daemon
   transport's acceptance tests five times over, and the built `mobium.exe` —
