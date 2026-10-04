@@ -90,6 +90,9 @@ type Element struct {
 	// Selected is true for what the platform reports chosen: the current
 	// tab, the chosen segment of a segmented control.
 	Selected bool `json:"selected,omitempty"`
+	// Value is what a slider reads, as the app states it ("80%", "1.2");
+	// empty for everything else. Fill a slider with a position from 0 to 1.
+	Value string `json:"value,omitempty"`
 }
 
 // DeviceInfo is one attached device or simulator.
@@ -343,7 +346,8 @@ type MapDiff struct {
 type MapChange struct {
 	Before Element `json:"before"`
 	After  Element `json:"after"`
-	// What names each difference: "label", "checked", "selected", "moved" or "resized".
+	// What names each difference: "label", "checked", "selected", "value",
+	// "moved" or "resized".
 	What []string `json:"what"`
 }
 

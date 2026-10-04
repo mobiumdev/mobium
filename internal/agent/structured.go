@@ -26,6 +26,9 @@ type ElementView struct {
 	// Selected is true for what the platform reports chosen — the current
 	// tab, a segment — and absent otherwise.
 	Selected bool `json:"selected,omitempty"`
+	// Value is what a slider reads, as the app states it, and absent for
+	// everything else.
+	Value string `json:"value,omitempty"`
 }
 
 // LocatorView is how a ref resolves on a later screen.
@@ -93,6 +96,8 @@ type ActionView struct {
 	// Cover is what the app had drawn over the target, when anything was:
 	// a control the touch was aimed around, or a view that may take it.
 	Cover *CoverView `json:"cover,omitempty"`
+	// Value is what a slider reads after app_fill moved it.
+	Value string `json:"value,omitempty"`
 }
 
 // ScreenshotView is the result of app_screenshot when written to disk.
@@ -140,6 +145,7 @@ func elementView(e uitree.Entry) ElementView {
 		Bounds:   boundsView(e.Bounds),
 		Checked:  e.Checked,
 		Selected: e.Selected,
+		Value:    e.Value,
 	}
 }
 

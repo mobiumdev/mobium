@@ -844,3 +844,29 @@ func TestAPickerMenuShowsItsChoice(t *testing.T) {
 		}
 	}
 }
+
+// A slider maps as one, with its value as its state: Ice Cubes' Font
+// Scaling and Line Spacing sliders printed as `100% (button)` and `1.2
+// (button)`, labeled by their values as a switch once was by its 0 or 1
+// (CHALLENGES 65, 219). role=slider finds them.
+func TestASliderMapsWithItsValueAsState(t *testing.T) {
+	tree := loadIOS(t, "ios26-icecubes-display-settings.xml")
+	lines := map[string]bool{}
+	for _, e := range tree.Map() {
+		lines[strings.TrimPrefix(e.Line(), e.Ref+" ")] = true
+	}
+	for _, want := range []string{"Slider (slider, 100%)", "Slider (slider, 1.2)"} {
+		if !lines[want] {
+			t.Errorf("Display Settings does not map %q", want)
+		}
+	}
+	for _, wrong := range []string{"100% (button)", "1.2 (button)"} {
+		if lines[wrong] {
+			t.Errorf("a slider still maps as %q", wrong)
+		}
+	}
+	loc, _ := ParseLocator("role=slider")
+	if got := loc.Resolve(tree); len(got) != 2 {
+		t.Errorf("role=slider found %d, want the two sliders", len(got))
+	}
+}

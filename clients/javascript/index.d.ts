@@ -35,6 +35,8 @@ export interface Element {
   checked: boolean | null
   /** True for what the platform reports chosen: the current tab, a segment. */
   selected: boolean
+  /** What a slider reads, as the app states it (`"80%"`, `"1.2"`); empty for anything else. */
+  value: string
 }
 
 /** One element that is on both maps and differs between them, from `mapDiff()`. */
@@ -43,7 +45,7 @@ export interface MapChange {
   before: Element
   /** As it is now; its ref is the new map's. */
   after: Element
-  /** What differs: `"label"`, `"checked"`, `"selected"`, `"moved"` or `"resized"`. */
+  /** What differs: `"label"`, `"checked"`, `"selected"`, `"value"`, `"moved"` or `"resized"`. */
   what: string[]
 }
 
