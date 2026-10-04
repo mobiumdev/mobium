@@ -384,10 +384,13 @@ this is what is not.
   post menus (CHALLENGES 220, 221): `long-press` opens a context menu,
   `map` lists the menu alone with its items by name, items work by label
   or ref, a submenu opens and maps, and a tap behind the menu is refused
-  with a point outside it that closes it. Still to come: `map` saying an
-  item opens a submenu (Share and Mute show a chevron, and nothing in the
-  tree says so), and the long press's preview, which iOS reports with no
-  label and nothing inside it, so it maps as `Other (button)`.
+  with a point outside it that closes it. Declined: `map` saying an item
+  opens a submenu. Share and Mute show a chevron, and the only sign of it in
+  the tree is an image named `chevron.forward` — no trait or role — which
+  the same apps also draw on rows that open a page; a state inferred from an
+  icon's name would read as a promise the platform never made. Open: the
+  long press's preview, which iOS reports with no label and nothing inside
+  it, so it maps as `Other (button)`.
 - **Sliders.** Done on iOS 2026-10-04 (CHALLENGES 219): a slider maps as
   `Slider (slider, 100%)`, its value as its state and as `value` on every
   client's element, `map --diff` reports a value that moved, and
@@ -426,13 +429,12 @@ this is what is not.
   that `screen --inspect` holds. Android refuses: its audits run inside the
   app. Running it as a side effect would cost those seconds on every
   action, so it stays a call.
-- **The iPad's home screen, sometimes.** On the iPad mini simulator,
-  WebDriverAgent reported the Dock's folder service as the app in front on
-  the home screen, with nothing to map; on the iPad Pro 13-inch, freshly
-  booted, it reported SpringBoard as an iPhone does. So it depends on the
-  home screen's state, not on iPads, and anything that confirms Home by
-  SpringBoard coming forward could misread it. What state causes it is not
-  yet known (CHALLENGES 147); a real iPad not tried.
+- ~~**The iPad's home screen, sometimes.**~~ Done 2026-10-04 (CHALLENGES
+  224): once an app has been used, WebDriverAgent names the Dock's
+  recent-apps service as the app in front of an iPad's home screen, with
+  nothing in it; such a read is taken again with SpringBoard named.
+  Measured on the iPad mini and iPad Pro 13-inch simulators; a real iPad
+  not tried.
 - **Fold posture as device state** (written down 2026-09-28), as rotation
   is: read with `cmd device_state state`, set by its override, and each
   change read back. Measured on a Pixel 9 Pro Fold emulator, where all four

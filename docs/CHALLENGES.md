@@ -7,7 +7,7 @@ the source.
 
 The pattern across them is the reason the document exists: **almost nothing
 here was found by reading code or by a test written from imagination.** Of
-223 defects, 186 were found only by running against a real device. The other
+224 defects, 187 were found only by running against a real device. The other
 thirty-seven — 4, 5, 6, 14, 23, 24, 32, 35, 36, 39, 44, 50, 53, 54, 57, 66, 89,
 99, 100, 121, 123, 129, 130, 133, 134, 139, 140, 141, 142, 144, 150, 158, 162,
 164, 165, 172 and 222 — came from reading code, the compiler, a test, a linter,
@@ -4959,6 +4959,28 @@ end was tried first, on the guess that the spinner came late, and taken
 out when six runs without it passed: the spinner had been there all along,
 out of view. Row 55 is now reached after nine scrolls, and Row 70, past the
 feed's true end, is still "the end of the list", at once.
+
+### 224. An iPad's home screen read as the Dock, with nothing to map
+
+**Found by:** going back to CHALLENGES 147, which left it open: on the
+iPad mini simulator WebDriverAgent named
+`com.apple.DocumentManager.DockFolderViewService` as the app in front of
+the home screen, and `map` found nothing. It was put down to the home
+screen's state. Measured on the iPad mini and the iPad Pro 13-inch
+simulators, iPadOS 26.5, the state is having used an app: the freshly
+booted iPad Pro read SpringBoard, and after Settings was launched and Home
+pressed, Home was confirmed with SpringBoard in front and the very next
+read was the Dock's service — the process that draws the Dock's recent
+apps — with nothing in it, while the screen showed the home screen.
+
+Naming SpringBoard as the app to read gave the home screen: 72 icons where
+the service's read had none. So a read that comes back as that service is
+read again with SpringBoard named, once, and the choice is handed back as
+it was — to WebDriverAgent, or on a phone to the app a switch expects
+(CHALLENGES 71). The service is named exactly rather than by its
+"ViewService" ending, because some view services are the screen, as
+Safari's is inside an app. Both iPads then mapped their home screens, 28
+and 29 entries, and Settings opened from each by its ref.
 
 ## Findings that were not defects
 
