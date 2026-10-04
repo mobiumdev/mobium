@@ -44,7 +44,10 @@ fail() { echo "FAIL: $*" >&2; exit 1; }
 row() { printf '    %-12s %-58s ok\n' "$1" "$2"; }
 
 echo "--- $DEV"
-APP=$($M apps | awk '/NetNewsWire/ { print $1; exit }')
+# Listed first, so a device that is not ready says so, rather than reading
+# as an app that is not installed.
+APPS=$($M apps) || fail "could not list the apps on $DEV — see the error above"
+APP=$(echo "$APPS" | awk '/NetNewsWire/ { print $1; exit }')
 [ -n "$APP" ] || fail "NetNewsWire is not installed — see the top of this file"
 row "install" "$APP present, confirmed by listing"
 

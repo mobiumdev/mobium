@@ -53,7 +53,10 @@ signed_out() {
 }
 
 echo "--- $DEV"
-APP=$($M apps | awk '/Ice Cubes/ { print $1; exit }')
+# Listed first, so a device that is not ready says so, rather than reading
+# as an app that is not installed.
+APPS=$($M apps) || fail "could not list the apps on $DEV — see the error above"
+APP=$(echo "$APPS" | awk '/Ice Cubes/ { print $1; exit }')
 [ -n "$APP" ] || fail "Ice Cubes is not installed — see the top of this file"
 row "install" "$APP present, confirmed by listing"
 

@@ -4840,7 +4840,8 @@ be reported not visible itself. A target that meets both is refused as
 `app_map` named for the screen in front's close control, and `app_wait_for`
 treats it as not on screen, as it does what a dialog covers. On the
 simulator the tab behind the viewer and behind the sheet were both refused,
-and with the sheet closed the same tap went through.
+and with the sheet closed the same tap went through; on the iPhone 15 Plus,
+with Ice Cubes from the App Store, both were refused too.
 
 ## Findings that were not defects
 
