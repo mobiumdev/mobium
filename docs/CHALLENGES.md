@@ -7,10 +7,10 @@ the source.
 
 The pattern across them is the reason the document exists: **almost nothing
 here was found by reading code or by a test written from imagination.** Of
-221 defects, 185 were found only by running against a real device. The other
-thirty-six — 4, 5, 6, 14, 23, 24, 32, 35, 36, 39, 44, 50, 53, 54, 57, 66, 89,
+223 defects, 186 were found only by running against a real device. The other
+thirty-seven — 4, 5, 6, 14, 23, 24, 32, 35, 36, 39, 44, 50, 53, 54, 57, 66, 89,
 99, 100, 121, 123, 129, 130, 133, 134, 139, 140, 141, 142, 144, 150, 158, 162,
-164, 165 and 172 — came from reading code, the compiler, a test, a linter,
+164, 165, 172 and 222 — came from reading code, the compiler, a test, a linter,
 cross-checking a computed number against a screenshot, using the tooling on
 itself, typing a negative number at a command line, and driving the clients
 against a stand-in daemon, CI on Windows, following the quick start from
@@ -4923,6 +4923,42 @@ simulator, the point offered beside each menu closed it, and nothing else.
 And a guessed point did not: closing the long press's menu at a point that
 had been outside the "…" menu pressed Translate, which is why the point is
 worked out from the screen in front rather than remembered.
+
+### 222. `wait role=progressbar --for hidden` waited for nothing
+
+**Found by:** looking for a role to tell the scroll loop a list was still
+loading. There was none: progressbar was in the examples — `mobium wait
+--help`, the .NET and Java clients' docs, the agent skill — as the way to
+wait for a spinner to go, and no table named it. A locator with a role
+nothing has matches nothing, and a wait for nothing to be hidden is over at
+once: "role=progressbar is hidden after 826ms", and the same for
+`role=nosuchrole`. The example could not fail, so it never said so.
+`progressbar` is a role now — iOS's ActivityIndicator and
+ProgressIndicator, Android's ProgressBar, not its SeekBar subclass — and a
+role nothing has is refused, naming the ones there are.
+
+### 223. A list loading its next page was taken for the end of the list
+
+**Found by:** MobiumApp's Feed Demo, a list that loads twenty more rows 2.5
+seconds after its end is reached, built for this because Ice Cubes'
+timeline never showed it: 60 swipes over four minutes, and its pages always
+arrived before the next swipe. iOS cannot slow a network from outside. On
+the Feed Demo, `scroll-to label=Row 55` answered "the end of the list (3
+scrolls)" and the app then held 40 rows. The loop's one test for the end
+was a swipe that moved nothing, and the swipe that reaches a page's end
+moves nothing because the next rows are not there yet.
+
+A busy indicator inside the list now means it is loading, and the loop
+waits for it to go — up to ten seconds — and goes on. Inside the list, so a
+spinner always on screen elsewhere cannot hold up every scroll; and shown
+or not, because it sits below the last row, and when the list stops with
+that row at its edge iOS reports it not visible: asking for a visible one,
+the loop still stopped at "the end (7 scrolls)" in two runs of four, both
+of which went on to load the page. A one-second grace before believing an
+end was tried first, on the guess that the spinner came late, and taken
+out when six runs without it passed: the spinner had been there all along,
+out of view. Row 55 is now reached after nine scrolls, and Row 70, past the
+feed's true end, is still "the end of the list", at once.
 
 ## Findings that were not defects
 
