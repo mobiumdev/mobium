@@ -317,6 +317,13 @@ func (w *WDA) Snapshot(ctx context.Context) (*uitree.Tree, error) {
 	if err != nil {
 		return nil, err
 	}
+	if tree.Package() == dockFolderService {
+		if home, err := w.springBoardSource(ctx); err == nil {
+			if t, err := uitree.ParseIOS([]byte(home)); err == nil {
+				tree = t
+			}
+		}
+	}
 	if w.phone != nil {
 		w.settleExpected(ctx, tree.Package())
 	}
@@ -331,6 +338,36 @@ func (w *WDA) Snapshot(ctx context.Context) (*uitree.Tree, error) {
 	// which is also what screenshots are in.
 	tree.Scale(w.scale)
 	return tree, nil
+}
+
+// dockFolderService is what WebDriverAgent names as the app in front of an
+// iPad's home screen once an app has been used: the process that draws the
+// Dock's recent apps. On the iPad mini and the iPad Pro 13-inch simulators,
+// iPadOS 26.5, Home was confirmed with SpringBoard in front and the next read
+// was this, with nothing in it to map, while the screen showed the home
+// screen; a freshly booted iPad, whose Dock had nothing recent, read
+// SpringBoard. CHALLENGES 147 left it open; 224 is this. Named exactly,
+// not by its "ViewService" ending: some view services are the screen, as
+// Safari's is inside an app.
+const dockFolderService = "com.apple.DocumentManager.DockFolderViewService"
+
+// springBoardSource reads SpringBoard's hierarchy, by naming it the app to
+// read for one read and then handing the choice back as it was: to the app
+// a switch on a phone expects (CHALLENGES 71), or to WebDriverAgent. With
+// it named, the iPad mini's home screen read 72 icons where the Dock's
+// service read none.
+func (w *WDA) springBoardSource(ctx context.Context) (string, error) {
+	w.hintMu.Lock()
+	back := w.expecting
+	w.hintMu.Unlock()
+	if back == "" {
+		back = "auto"
+	}
+	if err := w.setActiveAppHint(ctx, springboardBundleID); err != nil {
+		return "", err
+	}
+	defer func() { _ = w.setActiveAppHint(ctx, back) }()
+	return w.w3c.source(ctx)
 }
 
 // Source is the hierarchy as WebDriverAgent sent it — in points, not the
@@ -430,7 +467,7 @@ func (w *WDA) ForegroundApp(ctx context.Context) (string, error) {
 		return "", err
 	}
 	app := tree.Package()
-	if app == "" || app == springboardBundleID {
+	if app == "" || app == springboardBundleID || app == dockFolderService {
 		full, err := w.Snapshot(ctx)
 		if err != nil {
 			return "", err
