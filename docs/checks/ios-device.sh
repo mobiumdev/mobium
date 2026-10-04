@@ -120,7 +120,14 @@ $M launch com.apple.Preferences >/dev/null
 $M orientation | grep -q '^portrait ' || fail "Settings did not read as portrait: $($M orientation 2>&1)"
 out=$($M orientation landscape 2>&1) && fail "Settings, which is portrait only, was reported turned: $out"
 echo "$out" | grep -q "still portrait" || fail "the refusal did not say where it stayed: $out"
-echo "    orientation    portrait, and a turn Settings does not support refused  ok"
+# And the refusal leaves nothing behind. WebDriverAgent sets the device's
+# orientation whether or not the app turns, and before the request was
+# taken back the next app opened in landscape — Wikipedia, after this very
+# check. Calculator turns, and shows nothing of the phone's owner.
+$M launch com.apple.calculator >/dev/null
+$M orientation | grep -q '^portrait ' || fail "the refused turn turned the next app: $($M orientation 2>&1)"
+$M launch com.apple.Preferences >/dev/null
+echo "    orientation    a turn Settings refuses is refused, and taken back      ok"
 
 # Recording is not refused: a phone records from WebDriverAgent's screen
 # stream (record.sh has the whole check). Two seconds are about twenty frames.

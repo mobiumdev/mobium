@@ -158,25 +158,27 @@ func markIntrinsicTargets(n *Node) {
 	for _, c := range n.Children {
 		markIntrinsicTargets(c)
 	}
-	if n.Clickable || !n.Displayed || n.Bounds.Empty() {
+	if n.shaped || n.Bounds.Empty() {
 		return
 	}
+	// What follows decides the node's shape; it is a target only if shown.
+	defer func() { n.Clickable = n.shaped && n.Displayed }()
 	switch n.Class {
 	case "XCUIElementTypeLink":
 		if clean(n.Label) != "" || descendantText(n, 3) != "" {
-			n.Clickable = true
+			n.shaped = true
 		}
 	case "XCUIElementTypeCell":
 		// A row that carries a switch is operated by the switch: tapping the
 		// cell's center, beside it, changed nothing (Settings > Motion).
 		if !hasDescendantClass(n, "XCUIElementTypeCell") && !hasDescendantClass(n, "XCUIElementTypeSwitch") &&
 			descendantText(n, 3) != "" {
-			n.Clickable = true
+			n.shaped = true
 		}
 	case "XCUIElementTypeButton":
 		if n.NotAccessible && n.Enabled && clean(n.Label) != "" &&
 			targetAncestor(n) && !hasClickableDescendant(n) {
-			n.Clickable = true
+			n.shaped = true
 		}
 	}
 }
@@ -191,13 +193,16 @@ func markIntrinsicTargets(n *Node) {
 // on the words changes nothing (see foldSwitchRows).
 func targetAncestor(n *Node) bool {
 	for p := n.Parent; p != nil; p = p.Parent {
-		if p.Clickable && !p.NotAccessible {
+		if p.shaped && !p.NotAccessible {
 			return p.Class != "XCUIElementTypeSwitch" && !p.Scrollable && !nearlyTheSameRect(p.Bounds, n.Bounds)
 		}
 	}
 	return false
 }
 
+// hasClickableDescendant asks what is shown, not what is shaped: a hidden
+// button inside one on screen — the ALT badge in an Ice Cubes image, until
+// the image is opened — does not make the one on screen less of a target.
 func hasClickableDescendant(n *Node) bool {
 	for _, c := range n.Children {
 		if c.Clickable || hasClickableDescendant(c) {
@@ -234,6 +239,7 @@ func foldSwitchRows(n *Node) {
 	}
 	n.Bounds = toggle.Bounds
 	toggle.Clickable = false
+	toggle.shaped = false
 	toggle.Checkable = false
 }
 
@@ -310,7 +316,7 @@ func iosNodeFrom(e xml.StartElement, parent *Node, sibling int) *Node {
 	// and that type was not on the list. Enumerating what counts is the same
 	// mistake `role=link` was on Android; asking the platform is not.
 	accessible := attr(e, "accessible") == "true"
-	n.Clickable = accessible && n.Displayed && !iosContentTypes[class]
+	n.shaped = accessible && !iosContentTypes[class]
 	// A section header is accessible, so VoiceOver can land on it, and is
 	// typed Other, which says nothing — but its traits say Header, and it
 	// is a heading, not a control: NetNewsWire's Settings mapped "Accounts"
@@ -319,8 +325,9 @@ func iosNodeFrom(e xml.StartElement, parent *Node, sibling int) *Node {
 	// PopUpButton titled "Trending" with traits="Header" alone, and this
 	// rule took it out of map while a tap by label opened it.
 	if traits := attr(e, "traits"); class == "XCUIElementTypeOther" && hasTrait(traits, "Header") && !hasTrait(traits, "Button") {
-		n.Clickable = false
+		n.shaped = false
 	}
+	n.Clickable = n.shaped && n.Displayed
 	n.Checkable, n.Checked = checkedState(class, attr(e, "value"))
 	n.DeclaredRole = declaredRole(attr(e, "value"))
 	n.Scrollable = iosScrollableTypes[class]

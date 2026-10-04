@@ -416,11 +416,11 @@ func (l Locator) labelOnly(n *Node) bool {
 // wrapsTarget reports whether n is not a target itself and holds one of
 // nodes that is.
 func wrapsTarget(n *Node, nodes []*Node) bool {
-	if Actionable(n) {
+	if targetShaped(n) {
 		return false
 	}
 	for _, m := range nodes {
-		if m != n && Actionable(m) && isAncestor(n, m) {
+		if m != n && targetShaped(m) && isAncestor(n, m) {
 			return true
 		}
 	}
@@ -430,15 +430,29 @@ func wrapsTarget(n *Node, nodes []*Node) bool {
 // contentOfTarget reports whether n is an image or a text inside one of
 // nodes that is a target: the icon or the title of the button it names.
 func contentOfTarget(n *Node, nodes []*Node) bool {
-	if n.Class != "XCUIElementTypeImage" && n.Class != "XCUIElementTypeStaticText" || Actionable(n) {
+	if n.Class != "XCUIElementTypeImage" && n.Class != "XCUIElementTypeStaticText" || targetShaped(n) {
 		return false
 	}
 	for _, m := range nodes {
-		if m != n && Actionable(m) && isAncestor(m, n) {
+		if m != n && targetShaped(m) && isAncestor(m, n) {
 			return true
 		}
 	}
 	return false
+}
+
+// targetShaped reports whether n would be a target if it were shown. Being
+// a control's wrapper, icon or title is a matter of the tree's shape, not of
+// what is on screen, and asking Actionable instead made the answer depend on
+// `visible`: a read without it, which takes everything as shown, dropped a
+// hidden row's title as part of the row while a full read kept it, and
+// label=System on Ice Cubes' font menu found one element on the one and six
+// on the other. A light read must only ever add matches (lightread_test.go).
+func targetShaped(n *Node) bool {
+	shown := *n
+	shown.Displayed = true
+	shown.Clickable = n.Clickable || n.shaped
+	return Actionable(&shown)
 }
 
 func containsAny(n *Node, nodes []*Node) bool {

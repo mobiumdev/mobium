@@ -7,7 +7,7 @@ the source.
 
 The pattern across them is the reason the document exists: **almost nothing
 here was found by reading code or by a test written from imagination.** Of
-217 defects, 181 were found only by running against a real device. The other
+218 defects, 182 were found only by running against a real device. The other
 thirty-six — 4, 5, 6, 14, 23, 24, 32, 35, 36, 39, 44, 50, 53, 54, 57, 66, 89,
 99, 100, 121, 123, 129, 130, 133, 134, 139, 140, 141, 142, 144, 150, 158, 162,
 164, 165 and 172 — came from reading code, the compiler, a test, a linter,
@@ -4801,7 +4801,12 @@ is not a target and holds one is dropped, and under `label=` an image or a
 text inside a target is. Asked of what the earlier rules kept, not of every
 match: the viewer's Info button sits in a container with its very frame,
 the earlier rule keeps the container in its place, and the first version
-removed both, so `wait label=Info` timed out on a button in plain view. `map`
+removed both, so `wait label=Info` timed out on a button in plain view. And
+whether a node is a control's part is asked of the tree's shape, not of
+what is shown: asked of `visible`, a read without it — which takes every
+element as shown — dropped a hidden row's title that a full read kept, so
+`label=System` on Ice Cubes' font menu found one element on the one and six
+on the other, and a light read must only ever add matches. `map`
 now derives the plain label for 23 entries in the captured hierarchies that
 needed `,role=button` or a path before.
 
@@ -4842,6 +4847,22 @@ treats it as not on screen, as it does what a dialog covers. On the
 simulator the tab behind the viewer and behind the sheet were both refused,
 and with the sheet closed the same tap went through; on the iPhone 15 Plus,
 with Ice Cubes from the App Store, both were refused too.
+
+### 218. A refused turn turned the next app
+
+**Found by:** rerunning the iPhone's checks in a row after #107.
+`ios-device.sh` asks Settings, which is portrait only, for landscape and
+expects the refusal; it got one, "still portrait". Wikipedia's check, run
+next, failed with "only 4 elements on the feed", and NetNewsWire's after
+it could not find its feed list: both had opened in landscape, in their
+wide layouts, and the phone stayed there until turned by hand.
+WebDriverAgent's rotation sets the device's orientation whether or not
+the app in front turns, so the refusal was true of Settings and left the
+request behind for everything else. A turn the app does not take is now
+taken back, to where the app stayed, before it is refused, and the
+refusal says so. `ios-device.sh` opens Calculator, which turns and shows
+nothing of the phone's owner, after the refusal and asserts it is
+upright; with the fix the three checks passed in that order.
 
 ## Findings that were not defects
 

@@ -828,3 +828,19 @@ func TestCoveredByScreen(t *testing.T) {
 		t.Fatal("no hidden targets on the ordinary screens: the negative control cannot fail")
 	}
 }
+
+// A picker's menu says which option is chosen, as a search scope does
+// (CHALLENGES 195): Ice Cubes' Timeline Font menu draws a checkmark beside
+// System and reports traits="Selected, Button". Its timeline menu draws no
+// checkmark at all, and reports none — which is the app, not map.
+func TestAPickerMenuShowsItsChoice(t *testing.T) {
+	lines := map[string]bool{}
+	for _, e := range loadIOS(t, "ios26-icecubes-font-picker.xml").Map() {
+		lines[strings.TrimPrefix(e.Line(), e.Ref+" ")] = true
+	}
+	for _, want := range []string{"System (button, selected)", "Open Dyslexic (button)", "SF Rounded (button)"} {
+		if !lines[want] {
+			t.Errorf("the font menu does not map %q", want)
+		}
+	}
+}

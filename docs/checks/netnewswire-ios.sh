@@ -66,17 +66,15 @@ for _ in 1 2 3; do
 done
 $M wait "label=Settings" >/dev/null || fail "the feed list did not come up"
 
-# Settings: types, chevrons and headers.
+# Settings: types, chevrons and headers. A failure names what was looked
+# for and does not quote the screen, which on a phone lists its accounts.
 $M tap label=Settings >/dev/null
 $M wait "label=Done" >/dev/null
 settings=$($M map)
-echo "$settings" | grep -q "XCUIElementType" && fail "a label is an XCUITest type name:
-$settings"
-echo "$settings" | grep -q "chevron" && fail "a row borrows the disclosure arrow's name:
-$settings"
+echo "$settings" | grep -q "XCUIElementType" && fail "a label is an XCUITest type name"
+echo "$settings" | grep -q "chevron" && fail "a row borrows the disclosure arrow's name"
 echo "$settings" | grep -q "^@e[0-9]* Accounts (button)" && fail "the Accounts header maps as a button"
-echo "$settings" | grep -q "^@e[0-9]* On My iPhone (button)" || fail "the On My iPhone row is not mapped by its name:
-$settings"
+echo "$settings" | grep -q "^@e[0-9]* On My iPhone (button)" || fail "the On My iPhone row is not mapped by its name"
 row "settings" "no type names, no chevrons, headers not buttons"
 $M tap label=Done >/dev/null
 
