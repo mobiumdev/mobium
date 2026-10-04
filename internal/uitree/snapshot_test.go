@@ -870,3 +870,36 @@ func TestASliderMapsWithItsValueAsState(t *testing.T) {
 		t.Errorf("role=slider found %d, want the two sliders", len(got))
 	}
 }
+
+// A menu has no close control and closes when touched outside it, so a
+// refusal behind one offers a point outside it — and only where one
+// exists. The point must be on the backdrop: not on the menu, not on a
+// long press's preview of the post. Ice Cubes' image viewer fills the
+// screen and has a Close button, and no point is offered.
+func TestOutsidePointIsOnTheBackdrop(t *testing.T) {
+	for _, f := range []string{"ios26-icecubes-post-menu.xml", "ios26-icecubes-long-press-menu.xml"} {
+		tree := loadIOS(t, f)
+		x, y, ok := tree.OutsidePoint()
+		if !ok {
+			t.Errorf("%s: no point outside the menu", f)
+			continue
+		}
+		tree.Walk(func(n *Node) bool {
+			if n.Displayed && !n.Bounds.Empty() && contains(n.Bounds, x, y) &&
+				(n.Bounds.Width() < tree.Root.Bounds.Width() || n.Clickable) && n.Class != "XCUIElementTypeApplication" {
+				if n.Bounds.Height() < tree.Root.Bounds.Height() {
+					t.Errorf("%s: (%d, %d) is on %s %q %v", f, x, y, n.Class, n.Label, n.Bounds)
+				}
+			}
+			return true
+		})
+	}
+	// A viewer and a sheet close by their own controls, and a touch inside
+	// one, between its rows, closes nothing: none is offered.
+	for _, f := range []string{"ios26-icecubes-image-viewer.xml", "ios26-icecubes-add-account.xml",
+		"ios26-netnewswire-add-feed.xml", "ios26-share-sheet-half.xml"} {
+		if x, y, ok := loadIOS(t, f).OutsidePoint(); ok {
+			t.Errorf("%s was offered (%d, %d) as outside what is in front", f, x, y)
+		}
+	}
+}

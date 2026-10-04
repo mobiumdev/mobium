@@ -7,7 +7,7 @@ the source.
 
 The pattern across them is the reason the document exists: **almost nothing
 here was found by reading code or by a test written from imagination.** Of
-219 defects, 183 were found only by running against a real device. The other
+221 defects, 185 were found only by running against a real device. The other
 thirty-six — 4, 5, 6, 14, 23, 24, 32, 35, 36, 39, 44, 50, 53, 54, 57, 66, 89,
 99, 100, 121, 123, 129, 130, 133, 134, 139, 140, 141, 142, 144, 150, 158, 162,
 164, 165 and 172 — came from reading code, the compiler, a test, a linter,
@@ -4892,6 +4892,37 @@ start, reporting success: a position that is not a number from 0 to 1 is
 refused before anything moves. Measured on the simulator and on the iPhone
 15 Plus, where the check found the owner's Font Scaling at 1.5 and put it
 back there.
+
+### 220. A menu item below the screen's edge was "on screen already"
+
+**Found by:** Ice Cubes' long-press menu on a post, taller than the screen:
+its list runs from y 487 to 1362 points on an 874-point screen, and Mute,
+Message, Block and Report Post are below the edge, reported not visible,
+and absent from `map`. `scroll-to label=Message` answered "on screen
+already". Whether a target is in view was judged against its scroll
+container's viewport, which CHALLENGES 197 trimmed for bars and nothing
+trimmed for the screen. A viewport is now also clipped to the screen; the
+same `scroll-to` swiped once inside the menu and the four items came into
+`map`.
+
+### 221. Behind a menu, the refusal named a close control it does not have
+
+**Found by:** the same menus, the "…" button's and a long press's. A tap
+on the title behind one was refused, as CHALLENGES 217 refuses anything
+behind a screen the app put in front — with a remedy to tap the screen in
+front's close or cancel control. A menu has none: it closes when touched
+outside it, and nothing in the tree is that outside, so the remedy could
+not be followed. The refusal now offers a point outside the menu when one
+exists on this screen: one where every visible node is the app, a window
+or a plain view the size of the screen. Every one, not the innermost:
+iOS lays a transparent full-screen window over everything, and asked that
+way, a point on a row of a sheet read as outside the sheet. Across the
+captures, both menus are offered a point and no sheet or viewer is — they
+close by their own controls, and a touch inside one closes nothing. On the
+simulator, the point offered beside each menu closed it, and nothing else.
+And a guessed point did not: closing the long press's menu at a point that
+had been outside the "…" menu pressed Translate, which is why the point is
+worked out from the screen in front rather than remembered.
 
 ## Findings that were not defects
 

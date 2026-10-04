@@ -671,6 +671,65 @@ func (t *Tree) CoveredByScreen(n *Node) bool {
 	return false
 }
 
+// OutsidePoint finds a point on the screen in front where nothing is drawn
+// but the full-screen layer behind what it shows: the backdrop of a menu.
+// A menu has no close control — Ice Cubes' post menus, both the "…" one
+// and a long press's — and closes when touched outside it, which is how a
+// person closes one; but nothing in the tree is that outside, so a
+// refusal that said "tap its close control" named something that is not
+// there. ok is false when no such point exists: a full-screen viewer, whose
+// content is the whole screen.
+//
+// The screen behind is reported not visible, so the visible nodes are the
+// front screen's. A point is outside when every visible node over it is the
+// app, a window or a plain view the size of the screen — not the innermost
+// one alone: iOS lays a transparent full-screen window over everything,
+// and asked that way a point on a sheet's row read as outside the sheet.
+// Inside a sheet a list or a row is always over the point, so a sheet,
+// which closes by its own control, is offered none. Searched from the
+// bottom up,
+// clear of the top and bottom edges, where the status bar and the home
+// indicator are.
+func (t *Tree) OutsidePoint() (x, y int, ok bool) {
+	var screen Rect
+	t.Walk(func(m *Node) bool {
+		if !m.Bounds.Empty() {
+			screen = m.Bounds
+			return false
+		}
+		return true
+	})
+	if screen.Empty() {
+		return 0, 0, false
+	}
+	backdrop := func(n *Node) bool {
+		switch n.Class {
+		case "XCUIElementTypeApplication", "XCUIElementTypeWindow":
+			return true
+		}
+		return n.Class == "XCUIElementTypeOther" && !n.Scrollable &&
+			n.Bounds.Width() >= screen.Width() && n.Bounds.Height() >= screen.Height()
+	}
+	const cols, rows = 7, 20
+	for r := rows - 2; r >= 2; r-- {
+		for c := 0; c < cols; c++ {
+			px := screen.X1 + (2*c+1)*screen.Width()/(2*cols)
+			py := screen.Y1 + (2*r+1)*screen.Height()/(2*rows)
+			clear := true
+			t.Walk(func(n *Node) bool {
+				if clear && n.Displayed && !n.Bounds.Empty() && contains(n.Bounds, px, py) && !backdrop(n) {
+					clear = false
+				}
+				return clear
+			})
+			if clear {
+				return px, py, true
+			}
+		}
+	}
+	return 0, 0, false
+}
+
 // Covers reports whether r sits over the center of n.
 func (r Rect) Covers(n *Node) bool {
 	x, y := n.Bounds.Center()
