@@ -903,3 +903,17 @@ func TestOutsidePointIsOnTheBackdrop(t *testing.T) {
 		}
 	}
 }
+
+// A busy indicator is a role: MobiumApp's Feed Demo, captured while its
+// next page loads, shows an XCUIElementTypeActivityIndicator below its last
+// row, which role=progressbar finds. Before, progressbar was no role, and
+// `wait role=progressbar --for hidden` was over at once (CHALLENGES 222).
+func TestABusyIndicatorIsAProgressbar(t *testing.T) {
+	loc, err := ParseLocator("role=progressbar")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := loc.Resolve(loadIOS(t, "ios26-mobiumapp-feed-loading.xml")); len(got) != 1 {
+		t.Errorf("role=progressbar found %d on the loading feed, want its spinner", len(got))
+	}
+}

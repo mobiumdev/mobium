@@ -50,7 +50,21 @@ func ParseLocator(s string) (Locator, error) {
 	}
 	k, v, ok := strings.Cut(main, "=")
 	if !ok {
-		return Locator{Kind: KindText, Value: main, Role: role}, nil
+		k, v = string(KindText), main
+	}
+	// A role nothing has matches nothing, and a wait for nothing to be
+	// hidden is over at once: `mobium wait role=progressbar --for hidden`,
+	// the help's own example, answered "hidden" in 0.8s before progressbar
+	// was a role, and so did role=nosuchrole (CHALLENGES 222).
+	roles := []string{role}
+	if Kind(k) == KindRole {
+		roles = append(roles, v)
+	}
+	for _, r := range roles {
+		if r != "" && !knownRole(r) {
+			return Locator{}, mobiumerr.New(mobiumerr.InvalidArgument, "unknown role %q (want one of %s)",
+				r, strings.Join(Roles(), ", "))
+		}
 	}
 	switch Kind(k) {
 	case KindText, KindLabel, KindTestID, KindRole, KindClass, KindPath:
@@ -58,6 +72,16 @@ func ParseLocator(s string) (Locator, error) {
 	default:
 		return Locator{}, mobiumerr.New(mobiumerr.InvalidArgument, "unknown locator kind %q (want text, label, testid, role, class or path)", k)
 	}
+}
+
+func knownRole(r string) bool {
+	r = strings.ToLower(r)
+	for _, k := range Roles() {
+		if k == r {
+			return true
+		}
+	}
+	return false
 }
 
 // roleClasses maps a neutral role onto the Android widget classes that satisfy
@@ -70,15 +94,18 @@ var roleClasses = map[string][]string{
 	"switch":   {"Switch", "SwitchCompat", "ToggleButton"},
 	"radio":    {"RadioButton"},
 	"slider":   {"SeekBar", "Slider"},
-	"image":    {"ImageView", "ImageButton"},
-	"text":     {"TextView"},
-	"list":     {"RecyclerView", "ListView", "ScrollView", "NestedScrollView", "ViewPager"},
-	"tab":      {"TabView", "TabItem"},
+	// A busy indicator. Not a SeekBar, though Android derives it from
+	// ProgressBar: matching is on the class's own name.
+	"progressbar": {"ProgressBar"},
+	"image":       {"ImageView", "ImageButton"},
+	"text":        {"TextView"},
+	"list":        {"RecyclerView", "ListView", "ScrollView", "NestedScrollView", "ViewPager"},
+	"tab":         {"TabView", "TabItem"},
 }
 
 // Roles lists the accepted role values, for error messages and help text.
 func Roles() []string {
-	seen := map[string]bool{"link": true}
+	seen := map[string]bool{"link": true, "password": true}
 	for r := range roleClasses {
 		seen[r] = true
 	}
@@ -106,17 +133,18 @@ var iosRoleTypes = map[string][]string{
 	// believes prose is an input will try to type into it. A genuinely
 	// editable TextView is missed by role=input as a result; it is still
 	// mapped and tappable, and a testid or label reaches it.
-	"input":    {"TextField", "SecureTextField", "SearchField"},
-	"checkbox": {"CheckBox"},
-	"switch":   {"Switch", "Toggle"},
-	"radio":    {"RadioButton"},
-	"slider":   {"Slider"},
-	"image":    {"Image"},
-	"text":     {"StaticText"},
-	"link":     {"Link"},
-	"list":     {"ScrollView", "Table", "CollectionView"},
-	"tab":      {"Tab", "TabBar"},
-	"cell":     {"Cell"},
+	"input":       {"TextField", "SecureTextField", "SearchField"},
+	"checkbox":    {"CheckBox"},
+	"switch":      {"Switch", "Toggle"},
+	"radio":       {"RadioButton"},
+	"slider":      {"Slider"},
+	"progressbar": {"ActivityIndicator", "ProgressIndicator"},
+	"image":       {"Image"},
+	"text":        {"StaticText"},
+	"link":        {"Link"},
+	"list":        {"ScrollView", "Table", "CollectionView"},
+	"tab":         {"Tab", "TabBar"},
+	"cell":        {"Cell"},
 }
 
 // IsIOS reports whether a node came from a WebDriverAgent hierarchy.

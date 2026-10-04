@@ -400,8 +400,15 @@ this is what is not.
   slider back to what it read. Still to come: Android's seek bars, which
   map as sliders and are refused by `app_fill` until measured; range
   sliders; and the phone's text size, which is a slider in Settings.
-- **Infinite scrolling** — a scroll loop that knows a list can grow as it is
-  scrolled.
+- ~~**Infinite scrolling**~~ — done on iOS 2026-10-04 (CHALLENGES 223): a
+  swipe that moves nothing while a busy indicator is inside the list waits
+  for it to go, up to ten seconds, and goes on scrolling, so `scroll-to`
+  reaches a row two pages down; a real end, with no indicator, is still the
+  end at once. Measured on MobiumApp's Feed Demo, built for it, on the
+  simulator and the iPhone, and held by `docs/checks/feed.sh`. Still to
+  come: Android, where the Feed Demo's spinner is a ProgressBar and the
+  check is ready to run; and a list that loads with no indicator at all,
+  which nothing here can tell from an end.
 - **Switching between apps** and more than one window.
 - **Seeding a device** with photos, files and other data before a flow.
 - **Uploads and downloads** through the system file pickers. Copying a file

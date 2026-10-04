@@ -51,7 +51,50 @@ const (
 
 	// settleAfterScroll lets the list stop before it is read.
 	settleAfterScroll = 150 * time.Millisecond
+
+	// loadWait bounds how long a list showing a busy indicator is given to
+	// load what follows before the loop calls it the end.
+	loadWait = 10 * time.Second
 )
+
+// busyIn reports a busy indicator inside the list: a page loading below its
+// last row. Only inside it, so a spinner that is always on screen elsewhere
+// cannot hold up every scroll. Shown or not: it sits below the last row, so
+// when the list stops with that row at its bottom edge it is just out of
+// view, and iOS reports it not visible — asking for a visible one, scroll-to
+// still found "the end (7 scrolls)" in two runs of four, both of which went
+// on to load the page. A stopped indicator hides itself and leaves the tree.
+func busyIn(tree *uitree.Tree, container *uitree.Node) bool {
+	busy := false
+	tree.Walk(func(n *uitree.Node) bool {
+		if !n.Bounds.Empty() && n.Within(container) && uitree.HasClassRole(n, "progressbar") {
+			busy = true
+		}
+		return !busy
+	})
+	return busy
+}
+
+// waitNotBusy reads the screen until the list's busy indicator has gone, or
+// loadWait has passed, and returns the last reading.
+func (h *Handlers) waitNotBusy(ctx context.Context, s *session) (*uitree.Tree, error) {
+	deadline := time.Now().Add(loadWait)
+	for {
+		select {
+		case <-ctx.Done():
+			return nil, ctx.Err()
+		case <-time.After(250 * time.Millisecond):
+		}
+		tree, err := s.driver.Snapshot(ctx)
+		if err != nil {
+			return nil, err
+		}
+		c := scrollContainer(tree)
+		if c == nil || !busyIn(tree, c) || time.Now().After(deadline) {
+			return tree, nil
+		}
+	}
+}
 
 // scrollTo is app_scroll_to.
 func (h *Handlers) scrollTo(ctx context.Context, args map[string]interface{}) (*ToolsCallResult, error) {
@@ -257,6 +300,33 @@ func (h *Handlers) scrollIntoView(ctx context.Context, s *session, loc uitree.Lo
 
 		now := read(container)
 		if !moved(prev, now) {
+			// Not the end while the list is still loading what follows. A
+			// feed fetches its next page when its end is reached, and the
+			// swipe that reached it moves nothing because the rows are not
+			// there yet: on MobiumApp's Feed Demo this loop answered "the end
+			// of the list (3 scrolls)" for Row 55 while the second page was a
+			// second from arriving (CHALLENGES 223). A busy indicator inside
+			// the list says so, and it is waited out.
+			if busyIn(tree, container) {
+				waited, err := h.waitNotBusy(ctx, s)
+				if err != nil {
+					return nil, nil, i, err
+				}
+				tree = waited
+				if container = scrollContainer(tree); container == nil {
+					return nil, nil, i, mobiumerr.New(mobiumerr.ElementNotReachable, "the scrollable area went away "+
+						"while it loaded, scrolling %s for %s", dir, loc)
+				}
+				if n, err := resolvedAndVisible(loc, tree, container); err == nil {
+					return n, tree, i, nil
+				}
+				if busyIn(tree, container) {
+					return nil, nil, i, mobiumerr.New(mobiumerr.Timeout, "%s — scrolled %s to where the list "+
+						"loads more, and it was still loading after %s", whyNot(loc, resolveErr), dir, loadWait)
+				}
+				prev = read(container)
+				continue
+			}
 			return nil, nil, i, mobiumerr.New(mobiumerr.NoSuchElement, "%s — scrolled %s to the end of the list "+
 				"(%d scroll%s) without bringing it into view", whyNot(loc, resolveErr), dir, i, plural(i))
 		}

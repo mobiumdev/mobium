@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<XCUIElementTypeApplication type="XCUIElementTypeApplication" name="MobiumApp" label="MobiumApp" enabled="true" visible="true" accessible="false" x="0" y="0" width="402" height="874" index="0" traits="" processId="81438" bundleId="dev.mobium.mobiumapp">
+  <XCUIElementTypeWindow type="XCUIElementTypeWindow" enabled="true" visible="true" accessible="false" x="0" y="0" width="402" height="874" index="0" traits="">
+    <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="0" y="0" width="402" height="874" index="0" traits="">
+      <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="0" y="0" width="402" height="874" index="0" traits="">
+        <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="0" y="0" width="402" height="874" index="0" traits="">
+          <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="0" y="0" width="402" height="874" index="0" traits="">
+            <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="0" y="0" width="402" height="874" index="0" traits="">
+              <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="0" y="0" width="402" height="874" index="0" traits="">
+                <XCUIElementTypeButton type="XCUIElementTypeButton" name="backBtn" label="Back" enabled="true" visible="true" accessible="true" x="16" y="78" width="370" height="48" index="0" traits="Button"/>
+                <XCUIElementTypeStaticText type="XCUIElementTypeStaticText" value="Feed" name="Feed" label="Feed" enabled="true" visible="true" accessible="false" x="16" y="135" width="370" height="27" index="1" traits="StaticText">
+                  <XCUIElementTypeStaticText type="XCUIElementTypeStaticText" value="Feed" name="Feed" label="Feed" enabled="true" visible="true" accessible="true" x="16" y="135" width="370" height="27" index="0" traits="StaticText"/>
+                </XCUIElementTypeStaticText>
+                <XCUIElementTypeButton type="XCUIElementTypeButton" name="feedFast" label="Load in 0.3s" enabled="true" visible="true" accessible="true" x="16" y="177" width="116" height="48" index="2" traits="Button"/>
+                <XCUIElementTypeButton type="XCUIElementTypeButton" name="feedSlow" label="Load in 2.5s" enabled="true" visible="true" accessible="true" x="131" y="177" width="116" height="48" index="3" traits="Button"/>
+                <XCUIElementTypeStaticText type="XCUIElementTypeStaticText" value="rows: 20, loading, delay: 2500ms" name="feedState" label="rows: 20, loading, delay: 2500ms" enabled="true" visible="true" accessible="false" x="16" y="245" width="370" height="20" index="4" traits="StaticText">
+                  <XCUIElementTypeStaticText type="XCUIElementTypeStaticText" value="rows: 20, loading, delay: 2500ms" name="rows: 20, loading, delay: 2500ms" label="rows: 20, loading, delay: 2500ms" enabled="true" visible="true" accessible="true" x="16" y="245" width="370" height="20" index="0" traits="StaticText"/>
+                </XCUIElementTypeStaticText>
+                <XCUIElementTypeOther type="XCUIElementTypeOther" name="feed" enabled="true" visible="true" accessible="false" x="16" y="280" width="370" height="544" index="5" traits="">
+                  <XCUIElementTypeScrollView type="XCUIElementTypeScrollView" enabled="true" visible="true" accessible="false" x="16" y="280" width="370" height="545" index="0" traits="">
+                    <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="16" y="-655" width="370" height="1480" index="0" traits="">
+                      <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="16" y="-655" width="370" height="1480" index="0" traits="">
+                        <XCUIElementTypeButton type="XCUIElementTypeButton" name="feedRow1" label="Row 1" enabled="true" visible="false" accessible="true" x="16" y="-655" width="370" height="65" index="0" traits="Button"/>
+                        <XCUIElementTypeButton type="XCUIElementTypeButton" name="feedRow2" label="Row 2" enabled="true" visible="false" accessible="true" x="16" y="-583" width="370" height="65" index="1" traits="Button"/>
+                        <XCUIElementTypeButton type="XCUIElementTypeButton" name="feedRow3" label="Row 3" enabled="true" visible="false" accessible="true" x="16" y="-511" width="370" height="65" index="2" traits="Button"/>
+                        <XCUIElementTypeButton type="XCUIElementTypeButton" name="feedRow4" label="Row 4" enabled="true" visible="false" accessible="true" x="16" y="-439" width="370" height="64" index="3" traits="Button"/>
+                        <XCUIElementTypeButton type="XCUIElementTypeButton" name="feedRow5" label="Row 5" enabled="true" visible="false" accessible="true" x="16" y="-367" width="370" height="65" index="4" traits="Button"/>
+                        <XCUIElementTypeButton type="XCUIElementTypeButton" name="feedRow6" label="Row 6" enabled="true" visible="false" accessible="true" x="16" y="-295" width="370" height="65" index="5" traits="Button"/>
+                        <XCUIElementTypeButton type="XCUIElementTypeButton" name="feedRow7" label="Row 7" enabled="true" visible="false" accessible="true" x="16" y="-223" width="370" height="65" index="6" traits="Button"/>
+                        <XCUIElementTypeButton type="XCUIElementTypeButton" name="feedRow8" label="Row 8" enabled="true" visible="false" accessible="true" x="16" y="-151" width="370" height="65" index="7" traits="Button"/>
+                        <XCUIElementTypeButton type="XCUIElementTypeButton" name="feedRow9" label="Row 9" enabled="true" visible="false" accessible="true" x="16" y="-79" width="370" height="65" index="8" traits="Button"/>
+                        <XCUIElementTypeButton type="XCUIElementTypeButton" name="feedRow10" label="Row 10" enabled="true" visible="false" accessible="true" x="16" y="-7" width="370" height="65" index="9" traits="Button"/>
+                        <XCUIElementTypeButton type="XCUIElementTypeButton" name="feedRow11" label="Row 11" enabled="true" visible="false" accessible="true" x="16" y="65" width="370" height="65" index="10" traits="Button"/>
+                        <XCUIElementTypeButton type="XCUIElementTypeButton" name="feedRow12" label="Row 12" enabled="true" visible="false" accessible="true" x="16" y="137" width="370" height="65" index="11" traits="Button"/>
+                        <XCUIElementTypeButton type="XCUIElementTypeButton" name="feedRow13" label="Row 13" enabled="true" visible="false" accessible="true" x="16" y="209" width="370" height="65" index="12" traits="Button"/>
+                        <XCUIElementTypeButton type="XCUIElementTypeButton" name="feedRow14" label="Row 14" enabled="true" visible="true" accessible="true" x="16" y="281" width="370" height="65" index="13" traits="Button"/>
+                        <XCUIElementTypeButton type="XCUIElementTypeButton" name="feedRow15" label="Row 15" enabled="true" visible="true" accessible="true" x="16" y="353" width="370" height="65" index="14" traits="Button"/>
+                        <XCUIElementTypeButton type="XCUIElementTypeButton" name="feedRow16" label="Row 16" enabled="true" visible="true" accessible="true" x="16" y="425" width="370" height="65" index="15" traits="Button"/>
+                        <XCUIElementTypeButton type="XCUIElementTypeButton" name="feedRow17" label="Row 17" enabled="true" visible="true" accessible="true" x="16" y="497" width="370" height="65" index="16" traits="Button"/>
+                        <XCUIElementTypeButton type="XCUIElementTypeButton" name="feedRow18" label="Row 18" enabled="true" visible="true" accessible="true" x="16" y="569" width="370" height="65" index="17" traits="Button"/>
+                        <XCUIElementTypeButton type="XCUIElementTypeButton" name="feedRow19" label="Row 19" enabled="true" visible="true" accessible="true" x="16" y="641" width="370" height="65" index="18" traits="Button"/>
+                        <XCUIElementTypeButton type="XCUIElementTypeButton" name="feedRow20" label="Row 20" enabled="true" visible="true" accessible="true" x="16" y="713" width="370" height="65" index="19" traits="Button"/>
+                        <XCUIElementTypeOther type="XCUIElementTypeOther" name="feedLoading" label="Loading more" enabled="true" visible="true" accessible="false" x="16" y="789" width="20" height="21" index="20" traits="">
+                          <XCUIElementTypeActivityIndicator type="XCUIElementTypeActivityIndicator" value="1" name="In progress" label="In progress" enabled="true" visible="true" accessible="true" x="16" y="789" width="20" height="21" index="0" traits=""/>
+                        </XCUIElementTypeOther>
+                        <XCUIElementTypeStaticText type="XCUIElementTypeStaticText" value=" Loading more…" name=" Loading more…" label=" Loading more…" enabled="true" visible="true" accessible="false" x="36" y="797" width="103" height="18" index="21" traits="StaticText">
+                          <XCUIElementTypeStaticText type="XCUIElementTypeStaticText" value=" Loading more…" name=" Loading more…" label=" Loading more…" enabled="true" visible="true" accessible="true" x="36" y="797" width="103" height="18" index="0" traits="StaticText"/>
+                        </XCUIElementTypeStaticText>
+                      </XCUIElementTypeOther>
+                    </XCUIElementTypeOther>
+                    <XCUIElementTypeOther type="XCUIElementTypeOther" value="100%" name="Vertical scroll bar, 3 pages" label="Vertical scroll bar, 3 pages" enabled="true" visible="true" accessible="false" x="353" y="280" width="30" height="533" index="1" traits="Adjustable">
+                      <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="380" y="615" width="3" height="194" index="0" traits=""/>
+                    </XCUIElementTypeOther>
+                    <XCUIElementTypeOther type="XCUIElementTypeOther" value="0%" name="Horizontal scroll bar, 1 page" label="Horizontal scroll bar, 1 page" enabled="true" visible="true" accessible="false" x="28" y="791" width="346" height="31" index="2" traits="Adjustable">
+                      <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="30" y="818" width="341" height="4" index="0" traits=""/>
+                    </XCUIElementTypeOther>
+                    <XCUIElementTypeOther type="XCUIElementTypeOther" value="100%" name="Vertical scroll bar, 3 pages" label="Vertical scroll bar, 3 pages" enabled="true" visible="true" accessible="false" x="353" y="280" width="30" height="533" index="3" traits="Adjustable">
+                      <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="380" y="615" width="3" height="194" index="0" traits=""/>
+                    </XCUIElementTypeOther>
+                    <XCUIElementTypeOther type="XCUIElementTypeOther" value="0%" name="Horizontal scroll bar, 1 page" label="Horizontal scroll bar, 1 page" enabled="true" visible="true" accessible="false" x="28" y="791" width="346" height="31" index="4" traits="Adjustable">
+                      <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="30" y="818" width="341" height="4" index="0" traits=""/>
+                    </XCUIElementTypeOther>
+                  </XCUIElementTypeScrollView>
+                </XCUIElementTypeOther>
+              </XCUIElementTypeOther>
+            </XCUIElementTypeOther>
+          </XCUIElementTypeOther>
+        </XCUIElementTypeOther>
+      </XCUIElementTypeOther>
+    </XCUIElementTypeOther>
+  </XCUIElementTypeWindow>
+</XCUIElementTypeApplication>
+
