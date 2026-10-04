@@ -7,7 +7,7 @@
 #
 # Wikipedia and NetNewsWire are UIKit. SwiftUI builds its hierarchy its own
 # way, as Jetpack Compose did on Android, and its first look found five
-# things wrong (CHALLENGES 213–217, and 219). This check holds each of them to the
+# things wrong (CHALLENGES 213–217, and 219–221). This check holds each of them to the
 # app, signed out, on a server's public timeline:
 #
 #   - the timeline picker, a PopUpButton with the Header trait, is in map
@@ -21,7 +21,10 @@
 #   - a tab behind the image viewer, and behind the Add Account sheet, is
 #     refused rather than reported tapped (217);
 #   - Display Settings' Font Scaling slider maps as a slider with its value,
-#     is filled by position, and is put back to what it read (219).
+#     is filled by position, and is put back to what it read (219);
+#   - a post's menus: a tap behind one is refused naming a point outside
+#     it, which closes it, and a menu taller than the screen is scrolled
+#     inside (220, 221).
 #
 # The timeline is live, so nothing here asserts what a post says, and
 # nothing a post says is printed. Nothing is posted, favorited or boosted:
@@ -85,6 +88,29 @@ for b in Reply Boost Favorite "Share post link"; do
   echo "$posts" | grep -q "^@e[0-9]* $b (button)" || fail "no post's $b button is in map"
 done
 row "post" "Reply, Boost, Favorite and Share are in map"
+
+# A post's menus, the "…" one and a long press's (220, 221). Nothing in
+# them is pressed. A tap behind one is refused, and the refusal names a
+# point outside it, since a menu has no close control; that point closes
+# it. The long press's menu runs past the bottom of the screen, and
+# scroll-to brings its last item into view rather than calling it there.
+closes_by_refusal() {
+  out=$($M tap label=Trending 2>&1) && fail "a tap behind the $1 went through: $out"
+  echo "$out" | grep -q "another screen" || fail "the tap behind the $1 was refused for another reason: $out"
+  XY=$(echo "$out" | sed -n 's/.*app_tap at x \([0-9]*\), y \([0-9]*\).*/\1 \2/p')
+  [ -n "$XY" ] || fail "the refusal behind the $1 offered no point outside it: $out"
+  $M tap $XY >/dev/null
+  $M wait "label=Copy Link" --for hidden >/dev/null 2>&1 || fail "the point the refusal offered did not close the $1"
+}
+$M tap "$(ref "status.action.context-menu \(button\)")" >/dev/null
+$M wait "label=Copy Link" >/dev/null || fail "the post's … button opened no menu"
+closes_by_refusal "… menu"
+$M long-press "$(ref ".*, [0-9]+[smhd] .*\(button\)$")" >/dev/null
+$M wait "label=Copy Link" >/dev/null || fail "a long press on a post opened no menu"
+$M scroll-to "label=Report Post" >/dev/null || fail "the long press's menu could not be scrolled to its last item"
+$M map | grep -q "^@e[0-9]* Report Post (button)" || fail "scroll-to called Report Post in view, and map does not list it"
+closes_by_refusal "long press's menu"
+row "menus" "both opened; behind refused, closed at the point it named"
 $M tap "$(ref "Share post link \(button\)")" >/dev/null
 $M wait "label=Copy" >/dev/null || fail "Share did not open the share sheet"
 # The share sheet has no Close button; a tap above it closes it.

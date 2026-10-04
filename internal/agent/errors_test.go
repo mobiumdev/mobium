@@ -145,6 +145,35 @@ func TestATargetBehindAnotherScreenIsRefused(t *testing.T) {
 	}
 }
 
+// Behind a menu, which has no close control, the refusal names a point
+// outside it; behind the image viewer, which has one, it names none.
+// CHALLENGES 221.
+func TestARefusalBehindAMenuNamesAPointOutsideIt(t *testing.T) {
+	for _, c := range []struct {
+		file  string
+		point bool
+	}{{"ios26-icecubes-post-menu.xml", true}, {"ios26-icecubes-long-press-menu.xml", true},
+		{"ios26-icecubes-image-viewer.xml", false}} {
+		raw, err := os.ReadFile("../uitree/testdata/" + c.file)
+		if err != nil {
+			t.Fatal(err)
+		}
+		tree, err := uitree.ParseIOS(raw)
+		if err != nil {
+			t.Fatal(err)
+		}
+		behind, _ := uitree.ParseLocator("label=Trending")
+		_, err = pickOne(behind, tree)
+		if mobiumerr.CodeOf(err) != mobiumerr.DeviceNotReady {
+			t.Errorf("%s: the title behind was %v", c.file, err)
+			continue
+		}
+		if got := strings.Contains(err.Error(), "app_tap at x"); got != c.point {
+			t.Errorf("%s: offers a point outside: %v, want %v — %v", c.file, got, c.point, err)
+		}
+	}
+}
+
 // The keyboard refusal names both ways to hide it, and both must exist: an
 // iPhone's keyboard has no hide key, so enter is named too. A remedy that
 // names an argument the tool does not take is obeyed and fails.

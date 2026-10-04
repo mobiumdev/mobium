@@ -1,7 +1,8 @@
 package uitree
 
 // Viewport is the part of a scroll container a person can see and touch:
-// its bounds, less any bar drawn over its top or bottom edge.
+// its bounds, less any bar drawn over its top or bottom edge, and less what
+// runs past the edge of the screen.
 //
 // iOS 26 runs a list the full height of the screen, under its navigation
 // bar and toolbar, which are drawn over it. A row behind the toolbar is
@@ -43,9 +44,35 @@ func (t *Tree) Viewport(c *Node) Rect {
 		return true
 	})
 	if v.Y2 <= v.Y1 {
-		return c.Bounds
+		v = c.Bounds
 	}
-	return v
+	return t.onScreen(v)
+}
+
+// onScreen is r less whatever of it runs past the screen. A container can
+// be taller than the screen it is on: the menu a long press on an Ice Cubes
+// post opens is a list from y 487 to 1362 points on an 874-point screen,
+// and the rows past the bottom edge were taken as in view — scroll-to
+// answered "on screen already" for an item nobody could see or touch, and
+// map, which asks the platform, did not list it. Unclipped when the two do
+// not meet, so a container wholly off screen keeps its own bounds.
+func (t *Tree) onScreen(r Rect) Rect {
+	var screen Rect
+	t.Walk(func(n *Node) bool {
+		if !n.Bounds.Empty() {
+			screen = n.Bounds
+			return false
+		}
+		return true
+	})
+	if screen.Empty() {
+		return r
+	}
+	c := Rect{X1: max(r.X1, screen.X1), Y1: max(r.Y1, screen.Y1), X2: min(r.X2, screen.X2), Y2: min(r.Y2, screen.Y2)}
+	if c.Empty() {
+		return r
+	}
+	return c
 }
 
 // isBar reports a node laid across the top or bottom edge of c, as wide as

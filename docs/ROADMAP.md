@@ -380,6 +380,14 @@ this is what is not.
   which has no shell, can start a device now (`docs/checks/boot.sh`).
 - **Seeing an app's outgoing intents** on Android, so a test can assert that
   "share" asked for the chooser with the right text, without stubbing it.
+- **Menus and long press on iOS.** Measured 2026-10-04 on Ice Cubes'
+  post menus (CHALLENGES 220, 221): `long-press` opens a context menu,
+  `map` lists the menu alone with its items by name, items work by label
+  or ref, a submenu opens and maps, and a tap behind the menu is refused
+  with a point outside it that closes it. Still to come: `map` saying an
+  item opens a submenu (Share and Mute show a chevron, and nothing in the
+  tree says so), and the long press's preview, which iOS reports with no
+  label and nothing inside it, so it maps as `Other (button)`.
 - **Sliders.** Done on iOS 2026-10-04 (CHALLENGES 219): a slider maps as
   `Slider (slider, 100%)`, its value as its state and as `value` on every
   client's element, `map --diff` reports a value that moved, and
