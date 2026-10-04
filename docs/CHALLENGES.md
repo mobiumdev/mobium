@@ -7,7 +7,7 @@ the source.
 
 The pattern across them is the reason the document exists: **almost nothing
 here was found by reading code or by a test written from imagination.** Of
-212 defects, 176 were found only by running against a real device. The other
+217 defects, 181 were found only by running against a real device. The other
 thirty-six — 4, 5, 6, 14, 23, 24, 32, 35, 36, 39, 44, 50, 53, 54, 57, 66, 89,
 99, 100, 121, 123, 129, 130, 133, 134, 139, 140, 141, 142, 144, 150, 158, 162,
 164, 165 and 172 — came from reading code, the compiler, a test, a linter,
@@ -4746,6 +4746,101 @@ survived a dropped link: the call made while it was down is in the trace as
 the error it was, and the rest carried on into the new session and played
 in Vibium's player. The runner still says nothing when its stop fails; that
 is in ROADMAP.
+
+### 213. A timeline picker with the Header trait was left out of `map`
+
+**Found by:** Ice Cubes, a Mastodon client and the first SwiftUI app driven
+on iOS, built from its source for an iPhone 17 Pro simulator and browsed
+signed out. Its navigation bar's title, "Trending", is a menu that switches
+timelines: an `XCUIElementTypePopUpButton`, accessible, with
+`traits="Header"` and nothing else. CHALLENGES 193 took a node whose traits
+say Header and not Button out of `map`, written for NetNewsWire's section
+headers, which are typed `Other`, a type that says nothing. A PopUpButton's
+type does say what it is, and `tap label=Trending` opened the menu while
+`map` offered no ref for it. The Header rule now applies only to an
+`Other`; across every captured hierarchy that put back the picker and
+nothing else.
+
+### 214. A SwiftUI post's buttons were not in `map`
+
+**Found by:** the same timeline. Each post is one accessible button, the way
+SwiftUI makes a row read as one thing to VoiceOver, and inside it Reply,
+Boost, Favorite, Share, the author's name and the image are real buttons
+with real frames, on screen and taking taps, each marked
+`accessible="false"`. `map` printed the post and none of its controls, so
+favoriting one post meant coordinates: `label=Favorite` matched every post
+on screen, and the refusal said to "use a ref from app_map", which had
+none. A visible, enabled, labeled button inside an accessible target is now
+a target too, unless a button inside it already is — SwiftUI wraps the
+author's name, a button, in another that adds the time. It must be a part,
+smaller than the whole: a notification banner holds a button with the
+banner's own frame, and promoting it moved where the banner was tapped.
+Not inside a list, which holds things rather than combining them, and not
+inside a switch: Settings' switch rows hold their words as a button, and a
+tap on the words changes nothing. Across the captured hierarchies it also
+found the Clear text button in NetNewsWire's search field and the Dictate
+button in Settings' — real controls `map` never showed. Settings reports
+Dictate twice, identical siblings, and the cover rule read the second as a
+control over the whole of the first, which would have refused the tap; a
+control reported twice is now one. On the simulator the post's Share
+opened the share sheet by its ref, and its image opened the viewer.
+
+### 215. `label=` found a control's wrapper, icon and title as well as the control
+
+**Found by:** the same app. `tap label=Close` in the image viewer was
+refused as matching two, while `map` printed one Close: SwiftUI on iOS 26
+puts each toolbar button in a container with the same label and a frame a
+few points wider, so the rule that one node at another's bounds is the same
+thing (CHALLENGES 166) did not apply. And SwiftUI labels a button's parts:
+the Settings tab holds a gear image labeled "settings", which matches
+`label=Settings` regardless of case, and a Settings row holds its title as
+a text of the row's name, so `label=Display Settings` matched two. The
+remedy, `,role=button`, would have worked, but on a screen where `map`
+prints one element a locator copied from it should find one. A match that
+is not a target and holds one is dropped, and under `label=` an image or a
+text inside a target is. Asked of what the earlier rules kept, not of every
+match: the viewer's Info button sits in a container with its very frame,
+the earlier rule keeps the container in its place, and the first version
+removed both, so `wait label=Info` timed out on a button in plain view. `map`
+now derives the plain label for 23 entries in the captured hierarchies that
+needed `,role=button` or a path before.
+
+### 216. The selected tab was reported as covered
+
+**Found by:** the same app. A tap on the selected tab came back with
+`"cover": {"label": "Other"}`. iOS 26 draws the selected tab's pill as an
+unlabeled `Other` with exactly the tab's frame, after the tab and outside
+it, so the cover rule (CHALLENGES 115) took it for something drawn over the
+target. It is the target's own highlight: from a page inside Ice Cubes'
+Settings, a tap on the selected Settings tab, reported as covered, went
+through and returned to Settings. An unlabeled non-control with a target's
+exact frame is no longer a cover. The obstruction screens still show theirs.
+
+### 217. A tap behind an app's own full-screen view was reported done
+
+**Found by:** the same app. With its image viewer open, `tap label=Timeline`
+answered "tapped" on the tab bar underneath, and nothing happened; with its
+Add Account sheet up, the same. CHALLENGES 105 refuses a target under an
+`XCUIElementTypeAlert` or `Sheet`, and what an app presents itself is
+neither. The tab was in the tree, reported `visible="false"`, but that
+flag cannot be the rule by itself: a target under a pass-through view is
+reported not visible too, and a tap does reach it (CHALLENGES 115).
+
+Measured across every captured iOS hierarchy and three new ones, what tells
+them apart is the screen behind. Every target behind a presented screen —
+Ice Cubes' viewer and sheet, NetNewsWire's Add Feed and Settings sheets,
+the share sheet, the system alerts — sits inside a plain `Other` the size
+of the screen that is itself reported not visible. None on the obstruction
+screens does, and none on an ordinary screen. It takes both: on Settings'
+root and NetNewsWire's feed list a full-screen list reports itself not
+visible with nothing in front of it, so it must be an `Other`; and in the
+share sheet visible buttons sit inside such an `Other`, so the target must
+be reported not visible itself. A target that meets both is refused as
+`device_not_ready`, "another screen of the app is in front of it", with
+`app_map` named for the screen in front's close control, and `app_wait_for`
+treats it as not on screen, as it does what a dialog covers. On the
+simulator the tab behind the viewer and behind the sheet were both refused,
+and with the sheet closed the same tap went through.
 
 ## Findings that were not defects
 

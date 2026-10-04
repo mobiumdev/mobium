@@ -245,9 +245,10 @@ func TestTheRoleMapPrintsIsOneALocatorFinds(t *testing.T) {
 			}
 		}
 	}
-	// And the row that exposed it gets a locator a person could write.
+	// And the row that exposed it gets a locator a person could write — the
+	// plain label, since the title inside it no longer competes with it.
 	for _, e := range loadIOS(t, "ios26-share-sheet-expanded.xml").Map() {
-		if e.Label == "Add to Home Screen" && e.Locator.String() != "label=Add to Home Screen,role=button" {
+		if e.Label == "Add to Home Screen" && e.Locator.String() != "label=Add to Home Screen" {
 			t.Errorf("Add to Home Screen's locator is %s", e.Locator)
 		}
 	}

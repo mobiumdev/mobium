@@ -119,8 +119,24 @@ func (t *Tree) DrawnOver(target *Node, x, y int) []*Node {
 // refused as covered by "Sign In", which is the control itself (CHALLENGES
 // 206). Only that shape: the target is no control, the sibling has its very
 // frame, and a tap at the center lands on the sibling either way.
+//
+// And a control reported twice. iOS Settings' search field holds two
+// Dictate buttons, siblings with one label and one frame; map prints one,
+// and the second read as a control over the whole of the first, so a tap on
+// it would have been refused as blocked by itself.
+//
+// And a target's own highlight. iOS 26 draws the selected tab's pill as an
+// unlabeled Other with exactly the tab's frame, after it and outside it; a
+// tap on Ice Cubes' selected Settings tab, noted as under "Other", went
+// through it and took a page inside the tab back to the tab's root.
 func namesTheSameControl(target, n *Node) bool {
-	return target.Parent != nil && n.Parent == target.Parent && n.Bounds == target.Bounds && !IsControl(target)
+	if n.Bounds == target.Bounds && !IsControl(n) && n.Label == "" && n.Text == "" && isIOSClass(n.Class) {
+		return true
+	}
+	if target.Parent == nil || n.Parent != target.Parent || n.Bounds != target.Bounds {
+		return false
+	}
+	return !IsControl(target) || n.Class == target.Class && n.Label != "" && n.Label == target.Label
 }
 
 // Aim is where to touch a target, and what the tree says is over that point.

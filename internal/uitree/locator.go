@@ -320,9 +320,25 @@ func (l Locator) Resolve(t *Tree) []*Node {
 	// inside a button, same label, same frame, and label=Cancel found two,
 	// with a remedy — ",role=button" — that could not tell them apart. A
 	// test ID is a name the app gave, so two nodes carrying one stay two.
-	kept := make([]*Node, 0, len(out))
+	first := make([]*Node, 0, len(out))
 	for _, n := range out {
 		if byLabel[n] && containsAny(n, out) || sameAsAncestor(n, out) {
+			continue
+		}
+		first = append(first, n)
+	}
+	// Nor is a node that is not a target, around or inside one that is.
+	// SwiftUI on iOS 26 puts each toolbar button in a container with its
+	// label and a frame a few points wider, so label=Close on Ice Cubes'
+	// image viewer found two while map printed one; and it labels a button's
+	// icon and title too, so label=Settings found the tab and the gear in
+	// it, and label=Display Settings the row and its title. Asked of what
+	// is left, not of every match: the viewer's Info button sits in a
+	// container with its very frame, which the rule above already keeps in
+	// its place, and asking of both removed both.
+	kept := make([]*Node, 0, len(first))
+	for _, n := range first {
+		if wrapsTarget(n, first) || l.Kind == KindLabel && contentOfTarget(n, first) {
 			continue
 		}
 		kept = append(kept, n)
@@ -397,6 +413,34 @@ func (l Locator) labelOnly(n *Node) bool {
 }
 
 // containsAny reports whether any of nodes is a descendant of n.
+// wrapsTarget reports whether n is not a target itself and holds one of
+// nodes that is.
+func wrapsTarget(n *Node, nodes []*Node) bool {
+	if Actionable(n) {
+		return false
+	}
+	for _, m := range nodes {
+		if m != n && Actionable(m) && isAncestor(n, m) {
+			return true
+		}
+	}
+	return false
+}
+
+// contentOfTarget reports whether n is an image or a text inside one of
+// nodes that is a target: the icon or the title of the button it names.
+func contentOfTarget(n *Node, nodes []*Node) bool {
+	if n.Class != "XCUIElementTypeImage" && n.Class != "XCUIElementTypeStaticText" || Actionable(n) {
+		return false
+	}
+	for _, m := range nodes {
+		if m != n && Actionable(m) && isAncestor(m, n) {
+			return true
+		}
+	}
+	return false
+}
+
 func containsAny(n *Node, nodes []*Node) bool {
 	for _, m := range nodes {
 		for p := m.Parent; p != nil; p = p.Parent {

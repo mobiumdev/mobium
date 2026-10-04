@@ -139,6 +139,13 @@ $M wait "label=Mark All as Read" >/dev/null
 $M tap "label=Feeds,role=button" >/dev/null
 $M tap label=Add >/dev/null
 $M tap "label=Add Feed" >/dev/null
+# Add Feed reads the clipboard, so iOS asks first whenever it holds
+# something another app put there — after mobium-app.sh's clipboard check,
+# every time. Declined, as for notifications.
+for _ in 1 2 3; do
+  $M map | grep -q "^@e[0-9]* Don’t Allow Paste (button)" || break
+  $M tap "label=Don’t Allow Paste" >/dev/null
+done
 $M wait "text=URL" >/dev/null
 out=$($M fill label=URL x 2>&1) && fail "label=URL was accepted: $out"
 echo "$out" | grep -q "but text=URL does" || fail "the refusal does not name the locator that works: $out"

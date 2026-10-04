@@ -143,6 +143,17 @@ func shiftSubtree(n *Node, dx, dy int) {
 // `map`. On a phone, where a WebView cannot be attached (yet), those native
 // links are the only way to follow one, and a link has no purpose but to be
 // tapped.
+//
+// And a button inside a combined element. SwiftUI's way to make a row read
+// as one thing to VoiceOver marks the row accessible and every control in
+// it not, and offers the controls as the row's custom actions. Ice Cubes'
+// posts do this: Reply, Boost, Favorite and Share are real buttons with
+// real frames, on screen and taking taps, and none was in `map` — so the
+// only way to favorite one post among four was by coordinates, while
+// `label=Favorite` matched all four and the refusal said to use a ref from
+// a map that had none. A visible, enabled, labeled button whose ancestor is
+// itself a target is one, unless a button inside it already is: SwiftUI
+// wraps an author's name, itself a button, in another that adds the time.
 func markIntrinsicTargets(n *Node) {
 	for _, c := range n.Children {
 		markIntrinsicTargets(c)
@@ -162,7 +173,38 @@ func markIntrinsicTargets(n *Node) {
 			descendantText(n, 3) != "" {
 			n.Clickable = true
 		}
+	case "XCUIElementTypeButton":
+		if n.NotAccessible && n.Enabled && clean(n.Label) != "" &&
+			targetAncestor(n) && !hasClickableDescendant(n) {
+			n.Clickable = true
+		}
 	}
+}
+
+// targetAncestor reports whether a node is a part of one the platform marked
+// a target: an accessible element that combines what it holds.
+//
+// A part, so smaller than the whole: a notification banner holds a button
+// with the banner's own frame, which is the banner, not a control in it.
+// Not a list, which holds things rather than combining them. And not a
+// switch: a Settings switch row holds its own words as a button, and a tap
+// on the words changes nothing (see foldSwitchRows).
+func targetAncestor(n *Node) bool {
+	for p := n.Parent; p != nil; p = p.Parent {
+		if p.Clickable && !p.NotAccessible {
+			return p.Class != "XCUIElementTypeSwitch" && !p.Scrollable && !nearlyTheSameRect(p.Bounds, n.Bounds)
+		}
+	}
+	return false
+}
+
+func hasClickableDescendant(n *Node) bool {
+	for _, c := range n.Children {
+		if c.Clickable || hasClickableDescendant(c) {
+			return true
+		}
+	}
+	return false
 }
 
 // foldSwitchRows makes a switch row one control, aimed at its toggle.
@@ -272,8 +314,11 @@ func iosNodeFrom(e xml.StartElement, parent *Node, sibling int) *Node {
 	// A section header is accessible, so VoiceOver can land on it, and is
 	// typed Other, which says nothing — but its traits say Header, and it
 	// is a heading, not a control: NetNewsWire's Settings mapped "Accounts"
-	// and "Feeds" as buttons. Unless the app also gave it the Button trait.
-	if traits := attr(e, "traits"); hasTrait(traits, "Header") && !hasTrait(traits, "Button") {
+	// and "Feeds" as buttons. Unless the app also gave it the Button trait,
+	// or its type already says control: Ice Cubes' timeline picker is a
+	// PopUpButton titled "Trending" with traits="Header" alone, and this
+	// rule took it out of map while a tap by label opened it.
+	if traits := attr(e, "traits"); class == "XCUIElementTypeOther" && hasTrait(traits, "Header") && !hasTrait(traits, "Button") {
 		n.Clickable = false
 	}
 	n.Checkable, n.Checked = checkedState(class, attr(e, "value"))

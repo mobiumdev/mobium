@@ -115,6 +115,36 @@ func TestATargetUnderADialogIsRefused(t *testing.T) {
 	}
 }
 
+// So is a target behind a screen the app put in front itself, which is no
+// Alert or Sheet: Ice Cubes' Timeline tab, behind its image viewer, took a
+// tap that landed on the viewer and was reported done. The viewer's own
+// Close still resolves. CHALLENGES 217.
+func TestATargetBehindAnotherScreenIsRefused(t *testing.T) {
+	raw, err := os.ReadFile("../uitree/testdata/ios26-icecubes-image-viewer.xml")
+	if err != nil {
+		t.Fatal(err)
+	}
+	tree, err := uitree.ParseIOS(raw)
+	if err != nil {
+		t.Fatal(err)
+	}
+	behind, _ := uitree.ParseLocator("label=Timeline")
+	_, err = pickOne(behind, tree)
+	if mobiumerr.CodeOf(err) != mobiumerr.DeviceNotReady || !strings.Contains(err.Error(), "another screen") {
+		t.Errorf("the tab behind the viewer: %v", err)
+	}
+	if e, _ := mobiumerr.As(err); e == nil || !strings.Contains(e.Remedy, "app_map") {
+		t.Errorf("the remedy does not say where the close control is: %v", err)
+	}
+	if matchedNothing(err) {
+		t.Error("a covered target reads as a miss, and would be scrolled for")
+	}
+	front, _ := uitree.ParseLocator("label=Close")
+	if n, err := pickOne(front, tree); err != nil || n.Label != "Close" {
+		t.Errorf("the viewer's own Close: %v", err)
+	}
+}
+
 // The keyboard refusal names both ways to hide it, and both must exist: an
 // iPhone's keyboard has no hide key, so enter is named too. A remedy that
 // names an argument the tool does not take is obeyed and fails.

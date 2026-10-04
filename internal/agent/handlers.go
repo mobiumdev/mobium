@@ -1019,6 +1019,16 @@ func dialogOver(dialog string, loc uitree.Locator, covered bool) error {
 		WithDetail("dialog", dialog)
 }
 
+// screenOver refuses a target on a screen of the app that another screen is
+// in front of. There is no dialog to answer, so the remedy is what closes
+// the screen in front: one of its own controls, which map lists.
+func screenOver(loc uitree.Locator) error {
+	return failedCheck(mobiumerr.DeviceNotReady, loc, checkReceivesEvents,
+		"another screen of the app is in front of it", "close the screen in front first").
+		WithRemedy("app_map for the screen in front, and tap its close or cancel control").
+		WithDetail("locator", loc.String())
+}
+
 // appDialogOver is dialogOver for a dialog the platform's alert endpoint does
 // not know, an app's own. app_alert's accept and dismiss press the buttons
 // the platform picks, and this dialog has none it picks, so the remedy names
@@ -1160,6 +1170,11 @@ func pickOne(loc uitree.Locator, tree *uitree.Tree) (*uitree.Node, error) {
 		// the tree, so this is the only way a locator finds out.
 		if d := tree.Dialog(); d != nil && !matches[0].Within(d) {
 			return nil, dialogOver(d.Label, loc, true)
+		}
+		// And under a screen the app put in front itself — a full-screen
+		// viewer, a sheet — which is no Alert or Sheet to Dialog.
+		if tree.CoveredByScreen(matches[0]) {
+			return nil, screenOver(loc)
 		}
 		// The keyboard is the same case one layer over: on iOS what it covers
 		// stays in the tree, marked not visible, and a locator resolved it —

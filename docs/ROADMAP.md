@@ -43,6 +43,24 @@ this is what is not.
   the iPhone its center was at y 2553 pixels, under the toolbar from 2538,
   and `main` tapped it there and opened nothing, while this scrolls it out
   and the article opens.
+- **A third third-party app on iOS, the first in SwiftUI.** Ice Cubes, a
+  Mastodon client (AGPL), browsed signed out on a server's public
+  timeline, so it needs no account. Done on the simulator 2026-10-04,
+  built from its source at `9efcb16~1` (its main branch needs the iOS 27
+  SDK); the iPhone, from the App Store, is still to run. Its first look
+  found five defects (CHALLENGES 213–217): a timeline picker left out of
+  `map` by the section-header rule, a post's Reply, Boost, Favorite and
+  Share buttons left out because SwiftUI combines a row for VoiceOver,
+  `label=` finding a control's wrapper, icon or title as well as the
+  control, iOS 26's selected-tab pill reported as a cover, and a tap
+  behind the app's own image viewer or sheet reported done. Held by
+  `docs/checks/icecubes-ios.sh`, which presses nothing that posts: Share
+  and the image viewer are opened and closed.
+- ~~**A tap under an app's own full-screen view is reported done.**~~ Done
+  2026-10-04 (CHALLENGES 217): a target reported not visible, inside a
+  screen-sized plain view reported not visible, is behind another screen of
+  the app and is refused; measured against every captured hierarchy, with
+  the obstruction screens as the control. Held by `icecubes-ios.sh`.
 - **A tap in an emulator's Chrome web app after Chrome stops reporting its
   WebView.** Without Play services Chrome installs a web app as a launcher
   shortcut, and opened while Chrome is running its WebView leaves the
