@@ -73,6 +73,12 @@ type Node struct {
 	// Zero on Android, which has no such attribute, and on a Node built by
 	// hand.
 	NotAccessible bool
+	// shaped is iOS's Clickable before visibility is consulted: what the
+	// node would be if it were shown. A locator asks it when deciding that a
+	// node is a control's wrapper, icon or title, which is a matter of the
+	// tree's shape, so a read without `visible` decides it as a full read
+	// does. Unset on Android, which reports no hidden node.
+	shaped bool
 	// Hint is the field's placeholder: Android's `hint`, iOS's
 	// `placeholderValue`. ShowingHint says the platform reported that the
 	// field is empty and its text is that placeholder — UiAutomator2's

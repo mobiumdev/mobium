@@ -56,6 +56,8 @@ var coveredCaptures = map[string]string{
 	"ios26-notification-center-group.xml": "an expanded group in Notification Center stacks its oldest " +
 		"notifications under each other, and Clear sits over Show less: a tap of Show less was aimed at a " +
 		"clear point of it, and collapsed the group",
+	"ios26-icecubes-timeline.xml": "the second post runs down behind iOS 26's tab bar, which is drawn over " +
+		"its center",
 }
 
 func TestTheCoverRuleLeavesOrdinaryScreensAlone(t *testing.T) {

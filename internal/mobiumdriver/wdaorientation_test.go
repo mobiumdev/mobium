@@ -91,3 +91,41 @@ func TestWDASetOrientationRefusesAnAppThatDoesNotTurn(t *testing.T) {
 		t.Errorf("auto, which iOS has no way to do from outside, was %v", err)
 	}
 }
+
+// A refused turn takes its request back. WebDriverAgent sets the device's
+// orientation whether or not the app in front turns, so on the iPhone a
+// landscape refused by Settings turned Wikipedia, launched next. The fake
+// keeps the app upright and records every rotation asked for: the last one
+// must be where the app stayed.
+func TestWDARefusedTurnIsTakenBack(t *testing.T) {
+	var mu sync.Mutex
+	var asked []int
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		mu.Lock()
+		defer mu.Unlock()
+		w.Header().Set("Content-Type", "application/json")
+		if r.Method == http.MethodPost {
+			var body struct{ Z int }
+			json.NewDecoder(r.Body).Decode(&body)
+			asked = append(asked, body.Z)
+			w.Write([]byte(`{"value":null}`)) // accepted, as on the phone
+			return
+		}
+		w.Write([]byte(`{"value":{"x":0,"y":0,"z":0}}`)) // the app stays upright
+	}))
+	t.Cleanup(srv.Close)
+	c := newW3CClient(5 * time.Second)
+	c.setBase(srv.URL)
+	c.sessionID = "S1"
+	d := &WDA{w3c: c, scale: 1}
+
+	err := d.SetOrientation(context.Background(), OrientationLandscape)
+	if mobiumerr.CodeOf(err) != mobiumerr.NotConfirmed || !strings.Contains(err.Error(), "taken back") {
+		t.Fatalf("a turn the app did not take was reported as %v", err)
+	}
+	mu.Lock()
+	defer mu.Unlock()
+	if len(asked) != 2 || asked[0] != 270 || asked[1] != 0 {
+		t.Errorf("rotations asked for: %v, want landscape and then portrait again", asked)
+	}
+}

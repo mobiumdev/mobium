@@ -44,7 +44,10 @@ fail() { echo "FAIL: $*" >&2; exit 1; }
 row() { printf '    %-12s %-58s ok\n' "$1" "$2"; }
 
 echo "--- $DEV"
-APP=$($M apps | awk '/NetNewsWire/ { print $1; exit }')
+# Listed first, so a device that is not ready says so, rather than reading
+# as an app that is not installed.
+APPS=$($M apps) || fail "could not list the apps on $DEV — see the error above"
+APP=$(echo "$APPS" | awk '/NetNewsWire/ { print $1; exit }')
 [ -n "$APP" ] || fail "NetNewsWire is not installed — see the top of this file"
 row "install" "$APP present, confirmed by listing"
 
@@ -63,17 +66,15 @@ for _ in 1 2 3; do
 done
 $M wait "label=Settings" >/dev/null || fail "the feed list did not come up"
 
-# Settings: types, chevrons and headers.
+# Settings: types, chevrons and headers. A failure names what was looked
+# for and does not quote the screen, which on a phone lists its accounts.
 $M tap label=Settings >/dev/null
 $M wait "label=Done" >/dev/null
 settings=$($M map)
-echo "$settings" | grep -q "XCUIElementType" && fail "a label is an XCUITest type name:
-$settings"
-echo "$settings" | grep -q "chevron" && fail "a row borrows the disclosure arrow's name:
-$settings"
+echo "$settings" | grep -q "XCUIElementType" && fail "a label is an XCUITest type name"
+echo "$settings" | grep -q "chevron" && fail "a row borrows the disclosure arrow's name"
 echo "$settings" | grep -q "^@e[0-9]* Accounts (button)" && fail "the Accounts header maps as a button"
-echo "$settings" | grep -q "^@e[0-9]* On My iPhone (button)" || fail "the On My iPhone row is not mapped by its name:
-$settings"
+echo "$settings" | grep -q "^@e[0-9]* On My iPhone (button)" || fail "the On My iPhone row is not mapped by its name"
 row "settings" "no type names, no chevrons, headers not buttons"
 $M tap label=Done >/dev/null
 
@@ -139,6 +140,13 @@ $M wait "label=Mark All as Read" >/dev/null
 $M tap "label=Feeds,role=button" >/dev/null
 $M tap label=Add >/dev/null
 $M tap "label=Add Feed" >/dev/null
+# Add Feed reads the clipboard, so iOS asks first whenever it holds
+# something another app put there — after mobium-app.sh's clipboard check,
+# every time. Declined, as for notifications.
+for _ in 1 2 3; do
+  $M map | grep -q "^@e[0-9]* Don’t Allow Paste (button)" || break
+  $M tap "label=Don’t Allow Paste" >/dev/null
+done
 $M wait "text=URL" >/dev/null
 out=$($M fill label=URL x 2>&1) && fail "label=URL was accepted: $out"
 echo "$out" | grep -q "but text=URL does" || fail "the refusal does not name the locator that works: $out"

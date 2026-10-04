@@ -622,6 +622,45 @@ func (t *Tree) Keyboard() *Node {
 	return found
 }
 
+// CoveredByScreen reports whether n is on a screen of the app that another
+// screen has been put in front of: a full-screen view, a sheet the app
+// presents itself. iOS keeps the screen behind in the tree, and a tap on a
+// target there lands on what is in front while reporting success — Ice
+// Cubes' Timeline tab, with its image viewer and again its Add Account
+// sheet up. Neither is an XCUIElementTypeAlert or Sheet, so Dialog does
+// not find them.
+//
+// Two things together, because neither alone is enough. The target is
+// reported not visible — but so is a target under a pass-through view,
+// which a tap does reach (MobiumApp's Obstruction Demo). And it is inside
+// a plain view the size of the screen, itself reported not visible: the
+// screen behind. Not a list, which reports itself not visible on Settings'
+// root with nothing in front of it, and not by the view alone: a share
+// sheet's own buttons sit, visible, inside one. Across the captured
+// hierarchies the two together hold for every target behind a presented
+// screen or a system dialog, and for none on the obstruction screens or an
+// ordinary one. Only iOS reports hidden nodes; Android leaves them out.
+func (t *Tree) CoveredByScreen(n *Node) bool {
+	if n == nil || n.Displayed || !isIOSClass(n.Class) {
+		return false
+	}
+	var screen Rect
+	t.Walk(func(m *Node) bool {
+		if !m.Bounds.Empty() {
+			screen = m.Bounds
+			return false
+		}
+		return true
+	})
+	for p := n.Parent; p != nil; p = p.Parent {
+		if p.Class == "XCUIElementTypeOther" && !p.Displayed && p.Bounds.Width() >= screen.Width() &&
+			p.Bounds.Height() >= screen.Height() {
+			return true
+		}
+	}
+	return false
+}
+
 // Covers reports whether r sits over the center of n.
 func (r Rect) Covers(n *Node) bool {
 	x, y := n.Bounds.Center()

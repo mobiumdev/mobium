@@ -242,6 +242,18 @@ func (h *Handlers) waitOn(ctx context.Context, s *session, args map[string]inter
 			}
 			nodes = shown
 		}
+		// So is what a screen of the app's own is in front of, as pickOne
+		// refuses it.
+		var shown []*uitree.Node
+		for _, n := range nodes {
+			if !t.CoveredByScreen(n) {
+				shown = append(shown, n)
+			}
+		}
+		if len(nodes) > 0 && len(shown) == 0 {
+			notOnScreen = "it is behind another screen of the app — close that one first"
+		}
+		nodes = shown
 		// A declared rule answers a dialog in a wait's way as it does in an
 		// action's: login.test.json's rule for "Save Password?" answered it in
 		// front of a tap and not in front of the wait for the next screen,

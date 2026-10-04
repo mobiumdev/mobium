@@ -698,3 +698,149 @@ func TestNetNewsWireReadsTraits(t *testing.T) {
 		t.Errorf("the search scope maps as %q and %q", scope["Here"], scope["All Articles"])
 	}
 }
+
+// Ice Cubes, the third third-party app driven on iOS and the first written
+// in SwiftUI. Its timeline's posts are each one accessible button holding
+// the controls a person uses — Reply, Boost, Favorite, Share — marked not
+// accessible, and none was in map; its timeline picker is a PopUpButton with
+// the Header trait, which the section-header rule took out of map. Post
+// content in the fixtures is replaced: authors are "Author One" and "Author
+// Two".
+func TestIceCubesMapsWhatSwiftUICombines(t *testing.T) {
+	lines := map[string]int{}
+	for _, e := range loadIOS(t, "ios26-icecubes-timeline.xml").Map() {
+		lines[strings.TrimPrefix(e.Line(), e.Ref+" ")]++
+	}
+	for _, want := range []string{"Trending (button)", "Author One 🧿 (button)", "Reply (button)", "Boost (button)",
+		"Favorite (button)", "Share post link (button)", "Image alt text: A four-panel comic. (button)", "#books (link)",
+		"Timeline (button, selected)"} {
+		if lines[want] != 1 {
+			t.Errorf("the timeline maps %q %d times, want once", want, lines[want])
+		}
+	}
+	// The author's name is a button inside one that adds the time; the
+	// inner one is the target, not both.
+	for line := range lines {
+		if strings.HasPrefix(line, "Author One 🧿, 2h (") {
+			t.Errorf("the wrapper %q maps as well as the name inside it", line)
+		}
+	}
+}
+
+// And a label= locator finds the control, not the parts SwiftUI labels
+// around and inside it: the image viewer's Close button sits in a wider
+// container of the same name, a Settings row holds its title as a text of
+// the same name, and the Settings tab holds a gear image labeled
+// "settings". (label=Settings itself still finds the screen's title and
+// "Display Settings" as well, which are other things.)
+func TestIceCubesLabelFindsTheControl(t *testing.T) {
+	settings, err := ParseLocator("label=Settings")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, n := range settings.Resolve(loadIOS(t, "ios26-icecubes-settings.xml")) {
+		if n.Class == "XCUIElementTypeImage" {
+			t.Errorf("label=Settings found the tab's icon as well as the tab")
+		}
+	}
+	for _, c := range []struct{ file, loc string }{
+		{"ios26-icecubes-image-viewer.xml", "label=Close"},
+		{"ios26-icecubes-image-viewer.xml", "label=Info"},
+		{"ios26-icecubes-settings.xml", "label=Display Settings"},
+	} {
+		tree := loadIOS(t, c.file)
+		loc, err := ParseLocator(c.loc)
+		if err != nil {
+			t.Fatal(err)
+		}
+		// One, and where the button is: Info's container has its very frame,
+		// and the first version of the rule found neither.
+		got := loc.Resolve(tree)
+		if len(got) != 1 || got[0].Bounds != byLabelClass(tree, got[0].Label, "XCUIElementTypeButton") {
+			t.Errorf("%s: %s found %d, want the one button", c.file, c.loc, len(got))
+		}
+	}
+}
+
+// byLabelClass is the bounds of the node with this label and class.
+func byLabelClass(tree *Tree, label, class string) Rect {
+	var r Rect
+	tree.Walk(func(n *Node) bool {
+		if n.Label == label && n.Class == class {
+			r = n.Bounds
+			return false
+		}
+		return true
+	})
+	return r
+}
+
+// A screen the app puts in front of another is no Alert or Sheet, and iOS
+// keeps the screen behind in the tree: with Ice Cubes' image viewer and its
+// Add Account sheet up, a tap on the Timeline tab behind was reported done
+// and did nothing. The negative control is the Obstruction Demo, whose
+// targets under a pass-through view are reported not visible too and do
+// take a tap; and no hidden target on an ordinary screen is covered.
+func TestCoveredByScreen(t *testing.T) {
+	timeline := func(tree *Tree) *Node {
+		var tab *Node
+		tree.Walk(func(n *Node) bool {
+			if n.Class == "XCUIElementTypeButton" && n.Label == "Timeline" {
+				tab = n
+				return false
+			}
+			return true
+		})
+		return tab
+	}
+	for _, f := range []string{"ios26-icecubes-image-viewer.xml", "ios26-icecubes-add-account.xml"} {
+		tree := loadIOS(t, f)
+		if tab := timeline(tree); tab == nil || !tree.CoveredByScreen(tab) {
+			t.Errorf("%s: the Timeline tab behind is not covered", f)
+		}
+		for _, e := range tree.Map() {
+			if tree.CoveredByScreen(e.Node) {
+				t.Errorf("%s: %s, on the screen in front, reads as covered", f, e.Line())
+			}
+		}
+	}
+	if tab := timeline(loadIOS(t, "ios26-icecubes-timeline.xml")); tab == nil || loadIOS(t, "ios26-icecubes-timeline.xml").CoveredByScreen(tab) {
+		t.Error("the Timeline tab with nothing in front of it reads as covered")
+	}
+
+	ordinary := []string{"obstruction-ios.xml", "ios26-mobiumapp-home.xml", "ios26-settings-root.xml",
+		"ios26-netnewswire-feeds-toolbar.xml", "ios26-icecubes-timeline.xml", "ios26-icecubes-settings.xml",
+		"ios-keyboard-over-button.xml", "ios-keyboard-over-scrolled-form.xml"}
+	hidden := 0
+	for _, f := range ordinary {
+		tree := loadIOS(t, f)
+		tree.Walk(func(n *Node) bool {
+			if !n.Displayed && n.Clickable == false && !n.Bounds.Empty() && iosControlTypes[n.Class] {
+				hidden++
+				if tree.CoveredByScreen(n) {
+					t.Errorf("%s: %s %q, with nothing in front of it, reads as covered", f, n.Class, n.Label)
+				}
+			}
+			return true
+		})
+	}
+	if hidden == 0 {
+		t.Fatal("no hidden targets on the ordinary screens: the negative control cannot fail")
+	}
+}
+
+// A picker's menu says which option is chosen, as a search scope does
+// (CHALLENGES 195): Ice Cubes' Timeline Font menu draws a checkmark beside
+// System and reports traits="Selected, Button". Its timeline menu draws no
+// checkmark at all, and reports none — which is the app, not map.
+func TestAPickerMenuShowsItsChoice(t *testing.T) {
+	lines := map[string]bool{}
+	for _, e := range loadIOS(t, "ios26-icecubes-font-picker.xml").Map() {
+		lines[strings.TrimPrefix(e.Line(), e.Ref+" ")] = true
+	}
+	for _, want := range []string{"System (button, selected)", "Open Dyslexic (button)", "SF Rounded (button)"} {
+		if !lines[want] {
+			t.Errorf("the font menu does not map %q", want)
+		}
+	}
+}

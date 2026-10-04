@@ -83,10 +83,21 @@ func (w *WDA) SetOrientation(ctx context.Context, mode string) error {
 		return mobiumerr.New(mobiumerr.NotConfirmed, "asked for %s and could not read the orientation back: %w",
 			mode, readErr)
 	}
+	// The app did not turn, but the request did not go away: WebDriverAgent
+	// sets the device's orientation, and the next app opened in it. Settings,
+	// portrait only, refused landscape on the iPhone 15 Plus and stayed
+	// upright; Wikipedia, launched next, came up in landscape, and so did
+	// everything after it until the phone was turned by hand. So the request
+	// is taken back, to where the app stayed, before the refusal.
+	if back, ok := iosRotationZ[got]; ok {
+		_ = w.w3c.do(ctx, http.MethodPost, w.w3c.sessionPath("/rotation"),
+			map[string]interface{}{"x": 0, "y": 0, "z": back}, nil)
+	}
 	cause := "an app that supports only some orientations, which cannot be turned from outside"
 	if mode == OrientationPortraitReverse {
 		cause = "that a Face ID iPhone never turns upside down, in any app"
 	}
-	return mobiumerr.New(mobiumerr.NotConfirmed, "asked for %s and the app in front is still %s. The usual cause "+
-		"is %s", mode, got, cause).WithDetail("orientation", got)
+	return mobiumerr.New(mobiumerr.NotConfirmed, "asked for %s and the app in front is still %s, and the request "+
+		"was taken back so the next app is not turned. The usual cause is %s", mode, got, cause).
+		WithDetail("orientation", got)
 }
