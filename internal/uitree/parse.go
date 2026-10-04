@@ -73,6 +73,10 @@ type Node struct {
 	// Zero on Android, which has no such attribute, and on a Node built by
 	// hand.
 	NotAccessible bool
+	// Value is a slider's position as the platform states it — on iOS
+	// whatever the app made of it, "80%" or "1.2". Not its text: a slider
+	// labeled by its value printed as `100% (button)` (CHALLENGES 219).
+	Value string
 	// shaped is iOS's Clickable before visibility is consulted: what the
 	// node would be if it were shown. A locator asks it when deciding that a
 	// node is a control's wrapper, icon or title, which is a matter of the

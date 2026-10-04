@@ -39,8 +39,8 @@ type MapDiffView struct {
 type ChangeView struct {
 	Before ElementView `json:"before"`
 	After  ElementView `json:"after"`
-	// What names each difference: "label", "checked", "selected", "moved"
-	// — the same size somewhere else — or "resized".
+	// What names each difference: "label", "checked", "selected", "value"
+	// (a slider's), "moved" — the same size somewhere else — or "resized".
 	What []string `json:"what"`
 }
 
@@ -95,6 +95,9 @@ func diffMaps(before, after []ElementView) MapDiffView {
 		}
 		if b.Selected != a.Selected {
 			what = append(what, "selected")
+		}
+		if b.Value != a.Value {
+			what = append(what, "value")
 		}
 		// A row that grows moves its center too; that is a resize, and only
 		// an element the same size somewhere else has moved. Measured on
@@ -170,6 +173,9 @@ func elementLine(e ElementView, withRef bool) string {
 	}
 	if e.Selected {
 		tags = append(tags, "selected")
+	}
+	if e.Value != "" {
+		tags = append(tags, e.Value)
 	}
 	s := e.Label
 	if len(tags) > 0 {
@@ -247,6 +253,8 @@ func diffText(d MapDiffView, total int) string {
 				} else {
 					was = append(was, "was not selected")
 				}
+			case "value":
+				was = append(was, fmt.Sprintf("was %q", c.Before.Value))
 			case "moved":
 				x, y := center(c.Before.Bounds)
 				was = append(was, fmt.Sprintf("moved from (%d, %d)", x, y))

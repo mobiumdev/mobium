@@ -380,6 +380,17 @@ type Keyboard interface {
 	HideKeyboard(ctx context.Context) error
 }
 
+// Slider moves a slider to a position on its track, 0 its start and 1 its
+// end. A position, because that is what the platform offers: XCUITest's
+// adjust(toNormalizedSliderPosition:). The value the app shows for it is
+// the app's own, so a caller reads it back from the hierarchy rather than
+// being told it here — and it is not exact: the thumb is moved as a finger
+// would move it, and 0.5 read "110%" from one start and "100%" from
+// another on the same slider (CHALLENGES 219).
+type Slider interface {
+	SetSliderPosition(ctx context.Context, n *uitree.Node, position float64) error
+}
+
 // KeyboardRegioner is implemented by backends that can say where the
 // keyboard takes touches when it is not in the hierarchy they read — Android,
 // where it is another window. iOS puts the keyboard in the app's own tree, so

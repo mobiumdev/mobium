@@ -7,7 +7,7 @@
 #
 # Wikipedia and NetNewsWire are UIKit. SwiftUI builds its hierarchy its own
 # way, as Jetpack Compose did on Android, and its first look found five
-# things wrong (CHALLENGES 213–217). This check holds each of them to the
+# things wrong (CHALLENGES 213–217, and 219). This check holds each of them to the
 # app, signed out, on a server's public timeline:
 #
 #   - the timeline picker, a PopUpButton with the Header trait, is in map
@@ -19,7 +19,9 @@
 #   - a tap on the selected tab is not reported as covered, and goes
 #     through: from a page inside Settings it returns to Settings (216);
 #   - a tab behind the image viewer, and behind the Add Account sheet, is
-#     refused rather than reported tapped (217).
+#     refused rather than reported tapped (217);
+#   - Display Settings' Font Scaling slider maps as a slider with its value,
+#     is filled by position, and is put back to what it read (219).
 #
 # The timeline is live, so nothing here asserts what a post says, and
 # nothing a post says is printed. Nothing is posted, favorited or boosted:
@@ -110,6 +112,58 @@ $M tap label=Settings,role=button >/dev/null
 $M wait "label=Display Settings" >/dev/null || fail "the Settings tab did not open"
 out=$($M tap "label=Display Settings" 2>&1) || fail "label=Display Settings: $out"
 $M wait "label=Match System" >/dev/null || fail "Display Settings did not open"
+
+# A slider (219): mapped as one, with its value as its state, and filled
+# with a position from 0 to 1. Font Scaling is the app's own setting; it is
+# put back to what it read, stepping from the start of the track, where a
+# move lands exactly.
+# Followed by the locator map gives it, not its ref: every map renumbers,
+# and on the iPhone the screen shifted between two, so a ref taken from one
+# named a button in the next.
+slider() { $M map --json | python3 -c '
+import json, sys
+for e in json.load(sys.stdin)["elements"]:
+    if e["role"] == "slider":
+        l = e["locator"]; print(l["kind"] + "=" + l["value"]); break'; }
+reads() { $M map --json | python3 -c '
+import json, sys
+for e in json.load(sys.stdin)["elements"]:
+    l = e.get("locator") or {}
+    if l.get("kind", "") + "=" + l.get("value", "") == sys.argv[1]:
+        print(e.get("value", "")); break' "$1"; }
+labeled_by_value() { $M map --json | python3 -c '
+import json, sys
+print(any(e["role"] == "slider" and e["value"] and e["label"] == e["value"]
+          for e in json.load(sys.stdin)["elements"]))'; }
+$M scroll-to "label=Font Scaling" >/dev/null || fail "Display Settings has no Font Scaling to scroll to"
+SL=$(slider)
+[ -n "$SL" ] || fail "no slider on Display Settings maps as one"
+WAS=$(reads "$SL")
+[ -n "$WAS" ] || fail "the slider maps with no value"
+[ "$(labeled_by_value)" = False ] || fail "a slider is labeled by its value"
+out=$($M fill "$SL" abc 2>&1) && fail "fill abc on a slider was accepted: $out"
+[ "$(reads "$SL")" = "$WAS" ] || fail "a refused fill moved the slider"
+$M fill "$SL" 1 >/dev/null
+TOP=$(reads "$SL")
+$M fill "$SL" 0 >/dev/null
+BOTTOM=$(reads "$SL")
+[ "$TOP" != "$BOTTOM" ] || fail "the slider read $TOP at both ends of its track"
+# Where it was, worked out from the two ends when all three read as
+# numbers ("50%", "150%"), is tried first: a fill on a phone takes seconds,
+# and stepping up from the start took ten minutes on the iPhone.
+guess=$(python3 -c '
+import re, sys
+n = [float(re.sub(r"[^0-9.\-]", "", v) or "nan") for v in sys.argv[1:]]
+was, lo, hi = n
+print(round((was - lo) / (hi - lo), 3) if hi != lo and was == was else "")' "$WAS" "$BOTTOM" "$TOP" 2>/dev/null)
+back=""
+for p in $guess 0 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1; do
+  $M fill "$SL" 0 >/dev/null
+  $M fill "$SL" "$p" >/dev/null
+  [ "$(reads "$SL")" = "$WAS" ] && { back=$p; break; }
+done
+[ -n "$back" ] || fail "the slider could not be put back to $WAS"
+row "slider" "$BOTTOM to $TOP by position; back to $WAS at $back"
 TAB=$($M map | awk '/^@e[0-9]+ Settings \(button, selected\)$/ { print $1; exit }')
 [ -n "$TAB" ] || fail "the Settings tab does not read as selected"
 said=$($M tap "$TAB" --json)

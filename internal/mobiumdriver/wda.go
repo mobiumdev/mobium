@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/mobiumdev/mobium/internal/mobiumerr"
 	"net/http"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -508,6 +509,22 @@ func (w *WDA) ElementBounds(ctx context.Context, n *uitree.Node, t *uitree.Tree)
 // the scale the tree was converted with, so a threshold in points times this
 // is in the tree's own units even if the read failed and it stayed 1.
 func (w *WDA) PointScale() float64 { return w.scale }
+
+// SetSliderPosition moves a slider through WebDriverAgent's set-value, which
+// for a slider is XCUITest's adjust(toNormalizedSliderPosition:). The
+// position is formatted here and never taken from a caller's text:
+// WebDriverAgent reads a value it cannot parse as 0 and moved the slider to
+// the start of its track, reporting success for "abc".
+func (w *WDA) SetSliderPosition(ctx context.Context, n *uitree.Node, position float64) error {
+	if position < 0 || position > 1 {
+		return mobiumerr.New(mobiumerr.InvalidArgument, "a slider position is from 0 to 1, not %g", position)
+	}
+	elID, err := w.elementFor(ctx, n)
+	if err != nil {
+		return err
+	}
+	return w.w3c.setElementValue(ctx, elID, strconv.FormatFloat(position, 'f', -1, 64))
+}
 
 // SetText types into the element a node names, and confirms what landed.
 //

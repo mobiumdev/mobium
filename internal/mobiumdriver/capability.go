@@ -66,6 +66,7 @@ const (
 	CapBiometric        = "biometric"
 	CapHitTest          = "hitTest"
 	CapAudit            = "audit"
+	CapSlider           = "slider"
 )
 
 // KnownCapabilities is every capability Mobium understands, for diagnostics
@@ -78,7 +79,7 @@ var KnownCapabilities = []string{
 	CapClipboard, CapClipboardRead, CapAlerts, CapPinch,
 	CapDoubleTap, CapDrag, CapMultiTouch, CapDeviceLogs, CapCrashes, CapKeyboard, CapRecording,
 	CapClearData, CapSource, CapAccessibility, CapAppState, CapBattery, CapDeviceClock, CapShake,
-	CapNetwork, CapFiles, CapBiometric, CapHitTest, CapAudit,
+	CapNetwork, CapFiles, CapBiometric, CapHitTest, CapAudit, CapSlider,
 }
 
 // has reports whether d claims the capability. A driver that does not report
@@ -289,6 +290,12 @@ func AsCrashReports(d Driver) (CrashReports, bool) {
 func AsKeyboard(d Driver) (Keyboard, bool) {
 	k, ok := d.(Keyboard)
 	return k, ok && has(d, CapKeyboard)
+}
+
+// AsSlider returns the driver's slider support, if it has any.
+func AsSlider(d Driver) (Slider, bool) {
+	s, ok := d.(Slider)
+	return s, ok && has(d, CapSlider)
 }
 
 // PointScaler is implemented by backends whose device measures in points and

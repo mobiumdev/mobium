@@ -1756,6 +1756,15 @@ func (h *Handlers) typeTextOn(ctx context.Context, s *session, args map[string]i
 	if err != nil {
 		return nil, err
 	}
+	// A slider is filled with a position, and not typed into.
+	if uitree.HasClassRole(node, "slider") {
+		if !replace {
+			return nil, failedCheck(mobiumerr.InvalidArgument, target, checkEditable, "it is a slider, not a text field",
+				"app_fill moves a slider to a position from 0 to 1").
+				WithRemedy("app_fill with a position from 0 (the start of its track) to 1 (the end)")
+		}
+		return h.setSlider(ctx, s, target, node, text)
+	}
 	if role := notEditable(node); role != "" {
 		return nil, failedCheck(mobiumerr.InvalidArgument, target, checkEditable,
 			fmt.Sprintf("it is a %s, not a text field", role), "app_type types into a field; to press it, use app_tap").

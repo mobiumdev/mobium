@@ -118,3 +118,14 @@ func TestDiffMapsSaysWhatWasSelected(t *testing.T) {
 		}
 	}
 }
+
+// A slider moved is a change, said with what it read before.
+func TestDiffMapsSaysWhatASliderRead(t *testing.T) {
+	val := func(e ElementView, v string) ElementView { e.Value = v; return e }
+	before := []ElementView{val(el("@e1", "Slider", "slider", 200, 600), "100%")}
+	after := []ElementView{val(el("@e1", "Slider", "slider", 200, 600), "70%")}
+	text := diffText(diffMaps(before, after), len(after))
+	if want := `~ @e1 Slider (slider, 70%) — was "100%"`; !strings.Contains(text, want) {
+		t.Errorf("the text has no %q:\n%s", want, text)
+	}
+}
