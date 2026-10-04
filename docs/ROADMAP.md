@@ -380,7 +380,18 @@ this is what is not.
   which has no shell, can start a device now (`docs/checks/boot.sh`).
 - **Seeing an app's outgoing intents** on Android, so a test can assert that
   "share" asked for the chooser with the right text, without stubbing it.
-- **Sliders**, and range sliders, as a first-class action.
+- **Sliders.** Done on iOS 2026-10-04 (CHALLENGES 219): a slider maps as
+  `Slider (slider, 100%)`, its value as its state and as `value` on every
+  client's element, `map --diff` reports a value that moved, and
+  `app_fill` takes its position from 0 to 1 and reports what the app then
+  reads. WebDriverAgent moves the thumb as a finger would: from either end
+  it lands exactly, from partway it lands a step past, so landing exactly
+  means filling 0 or 1 first, which is the caller's choice — the app sees
+  the end it passes through. Measured on Ice Cubes' Font Scaling on the
+  simulator and the iPhone, held by `icecubes-ios.sh`, which puts the
+  slider back to what it read. Still to come: Android's seek bars, which
+  map as sliders and are refused by `app_fill` until measured; range
+  sliders; and the phone's text size, which is a slider in Settings.
 - **Infinite scrolling** — a scroll loop that knows a list can grow as it is
   scrolled.
 - **Switching between apps** and more than one window.

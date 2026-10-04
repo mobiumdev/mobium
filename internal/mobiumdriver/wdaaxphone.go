@@ -46,8 +46,8 @@ var phoneAXLacks = map[string]string{
 		"Text Size",
 	device.AXGrayscale: "grayscale is a Color Filters choice on a real iPhone, a page of its own, and not built " +
 		"yet — choose it in Settings > Accessibility > Display & Text Size > Color Filters",
-	device.AXTextSize: "text size is a slider on a real iPhone, and nothing here moves a slider yet — set it in " +
-		"Settings > Accessibility > Display & Text Size > Larger Text",
+	device.AXTextSize: "text size is a slider on a real iPhone, and moving it through Settings is not built yet — " +
+		"set it in Settings > Accessibility > Display & Text Size > Larger Text",
 	device.AXTextScale: "iOS sizes text by a category, not a scale — and on a real iPhone not from here yet",
 }
 

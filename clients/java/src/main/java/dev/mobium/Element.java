@@ -15,10 +15,12 @@ import java.util.Map;
  *                no such state, which is a different answer from unchecked
  * @param selected true for what the platform reports chosen: the current tab,
  *                 the chosen segment of a segmented control
+ * @param value    what a slider reads, as the app states it ("80%", "1.2");
+ *                 empty for anything else
  */
 public record Element(String ref, String label, String role,
                       String locator, Bounds bounds, String context, Boolean checked,
-                      boolean selected) {
+                      boolean selected, String value) {
 
     static Element from(Map<String, Object> m) {
         Map<String, Object> loc = Json.asObject(m.get("locator"));
@@ -31,7 +33,8 @@ public record Element(String ref, String label, String role,
                 Bounds.from(Json.asObject(m.get("bounds"))),
                 Json.str(m, "context"),
                 m.get("checked") instanceof Boolean c ? c : null,
-                Boolean.TRUE.equals(m.get("selected")));
+                Boolean.TRUE.equals(m.get("selected")),
+                Json.str(m, "value"));
     }
 
     @Override public String toString() {

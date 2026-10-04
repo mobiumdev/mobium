@@ -32,8 +32,12 @@ type Entry struct {
 	// selectable thing from any other. NetNewsWire's search scope gave no
 	// sign of which of Here and All Articles was chosen until it was read
 	// from iOS's traits.
-	Selected bool  `json:"selected,omitempty"`
-	Node     *Node `json:"-"`
+	Selected bool `json:"selected,omitempty"`
+	// Value is a slider's value as the platform states it, and empty for
+	// everything else. A string because it is the app's: iOS reports
+	// "80%" or "1.2", whatever the app made of the position.
+	Value string `json:"value,omitempty"`
+	Node  *Node  `json:"-"`
 }
 
 // Line renders the entry the way the CLI prints it.
@@ -51,6 +55,9 @@ func (e Entry) Line() string {
 	}
 	if e.Selected {
 		states = append(states, "selected")
+	}
+	if e.Value != "" {
+		states = append(states, e.Value)
 	}
 	return fmt.Sprintf("%s %s (%s)", e.Ref, e.Label, strings.Join(states, ", "))
 }
@@ -289,7 +296,7 @@ func roleOf(n *Node) string {
 	if IsIOS(n) && HasRole(n, "link") {
 		return "link"
 	}
-	for _, r := range []string{"input", "checkbox", "switch", "radio", "button", "image", "list", "tab"} {
+	for _, r := range []string{"input", "checkbox", "switch", "radio", "slider", "button", "image", "list", "tab"} {
 		if HasRole(n, r) {
 			return r
 		}
@@ -324,6 +331,9 @@ func (t *Tree) Map() []Entry {
 			Bounds:   n.node.Bounds,
 			Selected: n.node.Selected,
 			Node:     n.node,
+		}
+		if e.Role == "slider" {
+			e.Value = n.node.Value
 		}
 		// Only for things that have a state to report. The platform says
 		// which: Android marks them `checkable`, and the iOS parser sets the

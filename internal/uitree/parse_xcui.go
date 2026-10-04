@@ -329,6 +329,9 @@ func iosNodeFrom(e xml.StartElement, parent *Node, sibling int) *Node {
 	}
 	n.Clickable = n.shaped && n.Displayed
 	n.Checkable, n.Checked = checkedState(class, attr(e, "value"))
+	if class == "XCUIElementTypeSlider" {
+		n.Value = attr(e, "value")
+	}
 	n.DeclaredRole = declaredRole(attr(e, "value"))
 	n.Scrollable = iosScrollableTypes[class]
 	n.Focusable = iosInputTypes[class]
@@ -422,7 +425,7 @@ var stateValue = regexp.MustCompile(`^(?i)(checkbox|radio button|radio|switch|to
 // In each case the element carries a perfectly good `label`, which is what
 // `describe` falls back to once this returns empty. CHALLENGES 65, 77.
 func textValue(class, value, label string) string {
-	if class == "XCUIElementTypeSwitch" || stateValue.MatchString(value) {
+	if class == "XCUIElementTypeSwitch" || class == "XCUIElementTypeSlider" || stateValue.MatchString(value) {
 		return ""
 	}
 	if (value == "0" || value == "1") && label != "" && !iosInputTypes[class] {

@@ -58,6 +58,8 @@ var coveredCaptures = map[string]string{
 		"clear point of it, and collapsed the group",
 	"ios26-icecubes-timeline.xml": "the second post runs down behind iOS 26's tab bar, which is drawn over " +
 		"its center",
+	"ios26-icecubes-display-settings.xml": "Ice Cubes pins a sample post at the top of Display Settings and " +
+		"scrolls the settings under it: Tint Color is wholly behind the post's button, and Theme's center is",
 }
 
 func TestTheCoverRuleLeavesOrdinaryScreensAlone(t *testing.T) {

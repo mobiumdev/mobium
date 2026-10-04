@@ -45,6 +45,8 @@ class Element:
     """A checkbox, radio or switch's state; None for anything with no such state."""
     selected: bool = False
     """True for what the platform reports chosen: the current tab, a segment."""
+    value: str = ""
+    """What a slider reads, as the app states it ("80%", "1.2"); empty for anything else."""
 
     def __str__(self) -> str:
         return f"{self.ref} {self.label} ({self.role})" if self.role else f"{self.ref} {self.label}"
@@ -254,13 +256,13 @@ class Device:
 
     def map_diff(self) -> dict[str, Any]:
         """What the screen did since the last map of this device: the elements
-        that appeared, went away, or changed their label, checked or selected state or
-        place. Map, act, then map_diff() says what the action just did.
+        that appeared, went away, or changed their label, checked or selected state,
+        value or place. Map, act, then map_diff() says what the action just did.
 
         Returns a dict with ``added`` and ``removed`` as lists of the same
         Elements map() returns, ``changed`` as a list of dicts with ``before``
         and ``after`` Elements and ``what`` changed (``label``, ``checked``,
-        ``moved``), ``since`` as the time of the map compared with, and
+        ``selected``, ``value``, ``moved`` or ``resized``), ``since`` as the time of the map compared with, and
         ``first`` true when there was no earlier map to compare with — then the
         whole screen is in ``added``. Refs are the new map's, so an added or
         changed element can be acted on at once; a removed element's ref is
@@ -1396,6 +1398,7 @@ def _element(e: dict[str, Any]) -> Element:
         context=e.get("context", ""),
         checked=e.get("checked"),
         selected=bool(e.get("selected")),
+        value=e.get("value", ""),
     )
 
 

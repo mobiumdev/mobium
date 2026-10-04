@@ -7,7 +7,7 @@ the source.
 
 The pattern across them is the reason the document exists: **almost nothing
 here was found by reading code or by a test written from imagination.** Of
-218 defects, 182 were found only by running against a real device. The other
+219 defects, 183 were found only by running against a real device. The other
 thirty-six — 4, 5, 6, 14, 23, 24, 32, 35, 36, 39, 44, 50, 53, 54, 57, 66, 89,
 99, 100, 121, 123, 129, 130, 133, 134, 139, 140, 141, 142, 144, 150, 158, 162,
 164, 165 and 172 — came from reading code, the compiler, a test, a linter,
@@ -4863,6 +4863,35 @@ taken back, to where the app stayed, before it is refused, and the
 refusal says so. `ios-device.sh` opens Calculator, which turns and shows
 nothing of the phone's owner, after the refusal and asserts it is
 upright; with the fix the three checks passed in that order.
+
+### 219. A slider printed as `100% (button)`, and nothing could move one
+
+**Found by:** Ice Cubes' Display Settings, looking for a slider to measure.
+Its Font Scaling and Line Spacing sliders mapped as `100% (button)` and
+`1.2 (button)`: no role named a slider, and a slider has no label of its
+own, so its value was taken for its text, as a switch's 0 or 1 was before
+CHALLENGES 65. And no tool moved one; the phone's text size was refused for
+that reason. A slider now maps as `Slider (slider, 100%)`, its value kept
+as its state and sent as `value` on every client's element, and `map
+--diff` says when it moved. `app_fill` on a slider takes a position from 0
+(the start of its track) to 1 (the end) and reports what the app then
+reads; `app_type` on one is refused naming `app_fill`.
+
+What WebDriverAgent does with a slider decided the shape. It sets a
+position — XCUITest's `adjust(toNormalizedSliderPosition:)` — and the value
+is the app's: 0 read "50%", 1 read "150%", and the caption beside it said
+"Font Scaling: 1.0" at 0.5. It moves the thumb as a finger would, so from
+either end a fill landed exactly, and from partway it landed a step past in
+the direction of travel: 0.5 read "110%" from "80%" and "90%" from "110%",
+and filled again it went on alternating. Nothing in the tree says where the
+thumb is, so Mobium cannot correct it, and going by an end on the caller's
+behalf would make the app pass through its extremes — a volume slider at
+zero for a moment — so the tool says how to land exactly and leaves it to
+the caller. And WebDriverAgent read "abc" as 0 and moved the slider to the
+start, reporting success: a position that is not a number from 0 to 1 is
+refused before anything moves. Measured on the simulator and on the iPhone
+15 Plus, where the check found the owner's Font Scaling at 1.5 and put it
+back there.
 
 ## Findings that were not defects
 
