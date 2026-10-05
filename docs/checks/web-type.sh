@@ -94,4 +94,20 @@ echo "$SAID" | grep -q "not echoed" || fail "the result does not say the passwor
 [ "$($M eval "passwordIs('$SECRET')")" = "true" ] || fail "the password field does not hold what was typed"
 row "password" "confirmed by the page, not echoed"
 
+# --- with the keyboard up --------------------------------------------------
+# A tap on a field raises the keyboard, which shrinks the page's viewport and
+# not the WebView; every action after it was refused as "the page does not
+# fill its host", the check written for mobile Safari (CHALLENGES 230). Each
+# tap here must land on its field, as the page's focus says.
+focused() { $M eval "(() => { const a = document.activeElement; return a ? (a.getAttribute('data-testid') || a.id || a.name || a.tagName) : '' })()" | tr -d '"'; }
+$M tap "$(ref "email input")" >/dev/null
+$M tap "$(ref "text input")" >/dev/null || fail "a tap with the keyboard up was refused"
+T=$(focused)
+$M tap "$(ref "email input")" >/dev/null || fail "a second tap with the keyboard up was refused"
+E=$(focused)
+[ -n "$T" ] && [ -n "$E" ] && [ "$T" != "$E" ] || fail "taps with the keyboard up did not move focus between the fields: $T, $E"
+$M fill "$(ref "email input")" "k@up.io" >/dev/null || fail "filling with the keyboard up was refused"
+[ "$(field email)" = "k@up.io" ] || fail "the email field holds \"$(field email)\" after filling with the keyboard up"
+row "keyboard up" "taps land on their fields, a fill goes in ($T, $E)"
+
 echo PASS

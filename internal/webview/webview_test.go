@@ -226,3 +226,25 @@ func TestFrameStillWorksWithoutAReportedHeight(t *testing.T) {
 		t.Errorf("scale = %v, want 3", f.Scale)
 	}
 }
+
+// With the iOS keyboard up over an app's WebView the page's viewport shrinks
+// and the WebView does not, so the frame is the WebView's, by its width, and
+// is not refused as NewFrame refuses mobile Safari's: MobiumApp's Web form
+// reported 571 CSS pixels in a 584-pixel WebView. CHALLENGES 230.
+func TestAFrameUnderTheKeyboardIsTheWebViews(t *testing.T) {
+	host := uitree.Rect{X1: 0, Y1: 768, X2: 1206, Y2: 2520}
+	m := &Metrics{CSSWidth: 402, CSSHeight: 571}
+	if _, err := NewFrame(host, m); err == nil {
+		t.Fatal("NewFrame took the shrunken viewport, so this test cannot tell the two apart")
+	}
+	f, err := NewFrameUnderKeyboard(host, m)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if r := f.ToDevice(16, 164, 370, 38); r.X1 != 48 || r.Y1 != 768+492 {
+		t.Errorf("the email field maps to %v, want its top-left at (48, 1260)", r)
+	}
+	if _, err := NewFrameUnderKeyboard(uitree.Rect{}, m); err == nil {
+		t.Error("a WebView with no area was given a frame")
+	}
+}
