@@ -58,7 +58,7 @@ func (h *Handlers) accessibilityOn(ctx context.Context, s *session, args map[str
 				return nil, err
 			}
 			view.Settings[n] = v
-			lines = append(lines, fmt.Sprintf("%-28s %s%s", n, v, changedMark(s, n)))
+			lines = append(lines, fmt.Sprintf("%-28s %s%s", n, v, changedMark(s, n, v)))
 		}
 		return Result(strings.Join(lines, "\n"), view), nil
 	}
@@ -68,7 +68,7 @@ func (h *Handlers) accessibilityOn(ctx context.Context, s *session, args map[str
 		if err != nil {
 			return nil, err
 		}
-		return Result(fmt.Sprintf("%s %s%s", name, v, changedMark(s, name)),
+		return Result(fmt.Sprintf("%s %s%s", name, v, changedMark(s, name, v)),
 			AccessibilityView{Device: s.dev.Serial, Setting: name, Value: v}), nil
 	}
 
@@ -83,8 +83,10 @@ func (h *Handlers) accessibilityOn(ctx context.Context, s *session, args map[str
 		if _, kept := s.axUndo[name]; !kept {
 			if s.axUndo == nil {
 				s.axUndo = map[string]device.AXUndo{}
+				s.axFound = map[string]string{}
 			}
 			s.axUndo[name] = undo
+			s.axFound[name] = before
 		}
 	}
 	if err != nil {
@@ -98,7 +100,11 @@ func (h *Handlers) accessibilityOn(ctx context.Context, s *session, args map[str
 	// different contrast — and on Android a text-size change recreates the
 	// running app's activity. Refs from before belong to another screen.
 	delete(h.refs, s.dev.Serial)
-	return Result(fmt.Sprintf("%s %s (was %s) — put back when the session ends", name, after, before),
+	tail := "put back when the session ends"
+	if after == s.axFound[name] {
+		tail = "as the session found it"
+	}
+	return Result(fmt.Sprintf("%s %s (was %s) — %s", name, after, before, tail),
 		AccessibilityView{Device: s.dev.Serial, Setting: name, Value: after, Previous: before, Restored: true}), nil
 }
 
@@ -111,9 +117,11 @@ func knownAXSetting(name string) bool {
 	return false
 }
 
-// changedMark flags a setting this session changed, since it will go back.
-func changedMark(s *session, name string) string {
-	if _, ok := s.axUndo[name]; ok {
+// changedMark marks a setting this session changed and has not set back.
+// One set back by hand still has its undo — it restores the platform's own
+// value, which may be unset rather than off — but is not reported as changed.
+func changedMark(s *session, name, value string) string {
+	if found, ok := s.axFound[name]; ok && value != found {
 		return "   (changed by this session; put back when it ends)"
 	}
 	return ""

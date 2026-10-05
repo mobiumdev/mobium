@@ -146,6 +146,9 @@ type session struct {
 	// axUndo puts back each accessibility setting this session changed, as
 	// it was found; run when the session ends (app_accessibility).
 	axUndo map[string]device.AXUndo
+	// axFound is each of those settings as the first change found it, so a
+	// read can tell a setting still changed from one set back by hand.
+	axFound map[string]string
 
 	// recording is a screen recording in progress, or nil. One per device.
 	recording device.Recording
