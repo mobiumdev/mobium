@@ -333,6 +333,21 @@ this is what is not.
   whole into the first box that loses a character as focus moves is typed
   again one character to a box and confirmed (CHALLENGES 156): 30 of 30 on
   a simulator, five of them recovered, and 10 of 10 on the iPhone.
+- **A phone restore once left a setting the opposite of what it found — an
+  open lead, not reproduced.** On 2026-10-04 a `mobium test` run on the
+  iPhone 15 Plus switched Reduce Motion off, then on, through Settings; it
+  had been on, and after the run's session ended it read off — from a fresh
+  session, and on the Settings switch itself. Two runs after it, one with a
+  screen recorder attached exactly as before, put it back on. The session
+  records a setting's value from its first change and the restore sets the
+  switch to it, reading first and confirming after, so a restore that ends
+  on the opposite value fits one thing: that first read returned the wrong
+  value. Nothing shows that it did. Next time: log each read the session
+  makes and what the first change recorded, so a recurrence says which.
+  Until then, a run on somebody's phone reads its settings before and after
+  — the talk's recording harness does — and puts back a difference on the
+  Settings switch, never through `app_accessibility`, whose own undo would
+  replay when its session ends (CHALLENGES 160).
 
 ## Under consideration
 
