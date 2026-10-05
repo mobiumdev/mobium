@@ -422,6 +422,20 @@ func (h *Handlers) iosSessionFor(ctx context.Context, ref string) (*session, err
 	if err := d.Start(ctx, h.progress); err != nil {
 		return nil, err
 	}
+	// Starting WebDriverAgent on a simulator launches its runner, which takes
+	// the foreground and then leaves it, and iOS goes to the home screen, not
+	// back to the app that was in front: after a daemon stop or a rebuild,
+	// the next read was of SpringBoard, silently. Nothing on a simulator says
+	// which app was in front before the runner came, so it cannot be put back;
+	// the caller is told, when the home screen is what is in front now.
+	// CHALLENGES 250.
+	if target.Phone == nil && h.progress != nil {
+		if front, err := d.ForegroundApp(ctx); err == nil && front == springboardBundleID {
+			h.progress("the simulator is on its home screen: a new session starts WebDriverAgent, whose runner " +
+				"takes the foreground and leaves it to the home screen, not to the app that was in front — " +
+				"app_launch brings an app back")
+		}
+	}
 
 	s := &session{
 		dev:     &device.Device{Serial: serial, Model: target.Model()},
@@ -588,3 +602,6 @@ func (h *Handlers) adopt(key string, s *session) {
 	}
 	h.sessions[key] = s
 }
+
+// springboardBundleID is iOS's home screen.
+const springboardBundleID = "com.apple.springboard"
