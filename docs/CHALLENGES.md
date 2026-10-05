@@ -7,7 +7,7 @@ the source.
 
 The pattern across them is the reason the document exists: **almost nothing
 here was found by reading code or by a test written from imagination.** Of
-229 defects, 192 were found only by running against a real device. The other
+230 defects, 193 were found only by running against a real device. The other
 thirty-seven — 4, 5, 6, 14, 23, 24, 32, 35, 36, 39, 44, 50, 53, 54, 57, 66, 89,
 99, 100, 121, 123, 129, 130, 133, 134, 139, 140, 141, 142, 144, 150, 158, 162,
 164, 165, 172 and 222 — came from reading code, the compiler, a test, a linter,
@@ -5083,6 +5083,28 @@ cross-origin frame's button was tapped from the WebView context and its
 card-number field filled and added to, the frame telling the page "4242
 4242" and then "4242 4242 99". A frame that cannot be paired with a context
 is still said to be there.
+### 230. With the iOS keyboard up, every action in a WebView was refused
+
+**Found by:** typing into MobiumApp's cross-origin frame field on the iPhone
+simulator (CHALLENGES 229), and then on its Web form, which has no frames:
+once a tap on a web field raised the keyboard, a `type` or a `tap` in the
+same WebView was refused — "the WebView element is 584 CSS pixels tall but
+the page's viewport is 571, so the page does not fill its host". That check
+was written for mobile Safari, whose chrome sits over a full-screen WebView
+(CHALLENGES 47). The keyboard changes the page's viewport and not the
+WebView: 571 against 584 on the Web form, 255 against 401 on the Frames
+page, with the page scrolling the field into view. A fill by script raised
+no keyboard by itself — WebKit shows it only for a focus that follows a
+touch — which is why the checks that fill had never met it.
+
+Measured first, by touching: with the keyboard up and the page scrolled by
+62, a touch at the WebView's top plus the text field's rectangle focused
+the text field, and again unscrolled — so the page still starts at the
+WebView's top, and only the refusal was wrong. With the keyboard over an
+app's WebView, the frame is now the WebView's, by its width, without the
+height comparison; in Safari the comparison stands, keyboard or not.
+`web-type.sh` taps two fields with the keyboard up, reads the page's focus
+moving between them, and fills one.
 
 ## Findings that were not defects
 

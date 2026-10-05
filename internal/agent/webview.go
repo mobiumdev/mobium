@@ -251,8 +251,18 @@ func (h *Handlers) webFrame(ctx context.Context, s *session) (*webview.Frame, er
 	if err != nil {
 		return nil, err
 	}
+	// The iOS keyboard over an app's WebView changes the page's viewport and
+	// not the WebView, so the two heights no longer say where the page sits
+	// (CHALLENGES 230). Not in Safari, whose chrome is what the comparison
+	// is for, keyboard or not.
+	if k := tree.Keyboard(); k != nil && k.Bounds.Y1 < host.Bounds.Y2 && tree.Package() != safariBundleID {
+		return webview.NewFrameUnderKeyboard(host.Bounds, metrics)
+	}
 	return webview.NewFrame(host.Bounds, metrics)
 }
+
+// safariBundleID is mobile Safari, whose WebView is under its own chrome.
+const safariBundleID = "com.apple.mobilesafari"
 
 func area(r uitree.Rect) int { return r.Width() * r.Height() }
 

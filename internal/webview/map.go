@@ -287,6 +287,26 @@ func NewFrame(host uitree.Rect, m *Metrics) (*Frame, error) {
 	return &Frame{OriginX: host.X1, OriginY: host.Y1, Scale: scale}, nil
 }
 
+// NewFrameUnderKeyboard is NewFrame for an app's own WebView with the iOS
+// keyboard up over it, which leaves the WebView where it was and shrinks the
+// page's viewport — 571 CSS pixels against a 584-pixel WebView on
+// MobiumApp's Web form, 255 against 401 on its Frames page, while the page
+// scrolled the field into view — so NewFrame's comparison of the two,
+// written for mobile Safari's chrome, refused every action. The page still
+// starts at the WebView's top: on the iPhone 17 Pro simulator, with the
+// keyboard up and the page scrolled by 62, a touch at the WebView's top plus
+// a field's rectangle focused that field, and again unscrolled. So the frame
+// is the WebView's, by its width. CHALLENGES 230.
+func NewFrameUnderKeyboard(host uitree.Rect, m *Metrics) (*Frame, error) {
+	if host.Width() <= 0 || host.Height() <= 0 {
+		return nil, mobiumerr.New(mobiumerr.ElementNotReachable, "the webview has no on-screen area to map into")
+	}
+	if m == nil || m.CSSWidth <= 0 {
+		return nil, mobiumerr.New(mobiumerr.DeviceServer, "the page reported no viewport size")
+	}
+	return &Frame{OriginX: host.X1, OriginY: host.Y1, Scale: float64(host.Width()) / m.CSSWidth}, nil
+}
+
 // ToDevice converts a CSS-pixel rectangle to device pixels on screen.
 func (f *Frame) ToDevice(x, y, w, h float64) uitree.Rect {
 	x1 := f.OriginX + int(x*f.Scale)
