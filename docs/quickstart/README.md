@@ -12,8 +12,11 @@ quits — in the language you use. Contributors want
 
 Pick your client once the steps below are done:
 
-| [Command line](cli.md) | [Python](python.md) | [JavaScript](javascript.md) | [Go](go.md) | [Java](java.md) | [.NET](dotnet.md) |
-| --- | --- | --- | --- | --- | --- |
+| [Command line](cli.md) | [MCP](mcp.md) | [Python](python.md) | [JavaScript](javascript.md) | [Go](go.md) | [Java](java.md) | [.NET](dotnet.md) |
+| --- | --- | --- | --- | --- | --- | --- |
+
+For an agent, MCP: register `mobium mcp` and the agent drives the device
+with Mobium's tools itself.
 
 Every page runs the same program, and every one was run, unchanged, on an
 Android 15 emulator and an iOS 26.5 simulator; the output shown on each is
@@ -122,6 +125,7 @@ Every client does the same three things:
 | | Start a session | Quit it |
 | --- | --- | --- |
 | Command line | `mobium session start --platform android --app com.android.settings` | `mobium session end` |
+| MCP | `app_session` `{"action": "start", "platform": "android", "app": "com.android.settings"}` | `app_session` `{"action": "end"}` |
 | Python | `start(platform="android", app="com.android.settings")` | `device.quit()` |
 | JavaScript | `await start({ platform: 'android', app: 'com.android.settings' })` | `await device.quit()` |
 | Go | `mobium.Start(ctx, mobium.WithPlatform("android"), mobium.WithApp("com.android.settings"))` | `device.Quit(ctx)` |
@@ -134,7 +138,7 @@ Every client does the same three things:
   kept. `platform: "ios"` picks the iOS driver, so you never name one.
 - **Everything between** uses that session: `map` lists what is on screen,
   each element with a ref such as `@e5`, and `tap`, `type`, `wait` and the rest
-  act on refs or on locators such as `text=Internet`.
+  act on refs or on locators such as `text=Airplane mode`.
 - **Quit** ends the session on the device and puts back anything it changed
   for the session, such as accessibility settings. Python's `with`, Java's
   try-with-resources and .NET's `using` quit for you when the block ends, even

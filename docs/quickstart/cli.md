@@ -25,7 +25,7 @@ PLATFORM="${MOBIUM_PLATFORM:-android}"
 if [ "$PLATFORM" = ios ]; then
   APP=com.apple.Preferences ROW=General NEXT="label=About,role=button"
 else
-  APP=com.android.settings ROW="Network & internet" NEXT="text=Internet"
+  APP=com.android.settings ROW="Network & internet" NEXT="text=Airplane mode"
 fi
 # With one device running, no --device is needed; MOBIUM_DEVICE picks one of several.
 if [ -n "$MOBIUM_DEVICE" ]; then set -- --device "$MOBIUM_DEVICE"; else set --; fi
@@ -71,9 +71,9 @@ session started on emulator-5554 (android, uiautomator2); com.android.settings w
 @e4 main_content_scrollable_container (list)
 @e5 Network & internet Mobile, Wi‑Fi, hotspot (button)
 tapped @e5 at (540, 893)
-text=Internet is visible after 789ms — @e3 Internet AndroidWifi (button)
-saved ./quickstart-android.png (150382 bytes)
-session ended on emulator-5554; anything it changed for the session is put back
+text=Airplane mode is visible after 711ms — @e5 Airplane mode (switch, unchecked)
+saved /tmp/quickstart/quickstart-android.png (151524 bytes)
+session ended on emulator-5554; anything it changed for the session is put back; com.android.settings, which the session launched, was stopped
 ```
 
 | After start | After the tap |
@@ -97,9 +97,9 @@ session started on 457C7DC2-C706-45D9-8D68-1D26953E28B1 (ios, wda); com.apple.Pr
 @e4 Action Button (button)
 @e5 Apple Intelligence & Siri (button)
 tapped @e2 at (603, 958)
-label=About,role=button is visible after 408ms — @e4 About (button)
-saved ./quickstart-ios.png (332702 bytes)
-session ended on 457C7DC2-C706-45D9-8D68-1D26953E28B1; anything it changed for the session is put back
+label=About,role=button is visible after 413ms — @e5 About (button)
+saved /tmp/quickstart/quickstart-ios.png (333954 bytes)
+session ended on 457C7DC2-C706-45D9-8D68-1D26953E28B1; anything it changed for the session is put back; com.apple.Preferences, which the session launched, was stopped
 ```
 
 | After start | After the tap |

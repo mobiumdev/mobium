@@ -8,7 +8,7 @@ PLATFORM="${MOBIUM_PLATFORM:-android}"
 if [ "$PLATFORM" = ios ]; then
   APP=com.apple.Preferences ROW=General NEXT="label=About,role=button"
 else
-  APP=com.android.settings ROW="Network & internet" NEXT="text=Internet"
+  APP=com.android.settings ROW="Network & internet" NEXT="text=Airplane mode"
 fi
 # With one device running, no --device is needed; MOBIUM_DEVICE picks one of several.
 if [ -n "$MOBIUM_DEVICE" ]; then set -- --device "$MOBIUM_DEVICE"; else set --; fi

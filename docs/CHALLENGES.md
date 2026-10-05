@@ -7,7 +7,7 @@ the source.
 
 The pattern across them is the reason the document exists: **almost nothing
 here was found by reading code or by a test written from imagination.** Of
-232 defects, 193 were found only by running against a real device. The other
+233 defects, 194 were found only by running against a real device. The other
 thirty-nine — 4, 5, 6, 14, 23, 24, 32, 35, 36, 39, 44, 50, 53, 54, 57, 66, 89,
 99, 100, 121, 123, 129, 130, 133, 134, 139, 140, 141, 142, 144, 150, 158, 162,
 164, 165, 172, 222, 231 and 232 — came from reading code, the compiler, a test, a linter,
@@ -5146,6 +5146,23 @@ schema on an iPhone was told not to use the tools that would work. What is
 refused is one driver: Android's `uiautomator` dump driver, which declines
 text entry rather than enter it wrong. The descriptions and the help now
 say that, and `fill`'s help shows a slider.
+
+### 233. Every quick start waited for a screen it had not reached
+
+**Found by:** running the new MCP quick start on an Android 15 emulator and
+looking at its screenshot, which was the Settings home screen with the
+tapped row still pressed. Every quick start, in all six front doors, taps
+"Network & internet" and then waits for `text=Internet` — and `text=`
+matches part of a text, so "Network & internet", on the screen being left,
+satisfies it at once. The wait answered in 215 ms naming the row it had
+just tapped, and the screenshot was taken before the next screen arrived.
+The published runs passed by timing: the command line's output named the
+next screen's Internet row, and the clients print only "opened Network &
+internet", so nothing on any page could show the race. The wait is now
+`text=Airplane mode`, which only the next screen has, and every page was
+run again on both platforms. A wait after a tap has to name something the
+screen being left does not have; iOS's `label=About,role=button` always
+did.
 
 ## Findings that were not defects
 

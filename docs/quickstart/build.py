@@ -35,6 +35,41 @@ CLIENTS = [
         ],
     },
     {
+        "slug": "mcp", "name": "MCP", "file": "mcp/quickstart.py", "lang": "python",
+        "from": "an MCP client",
+        "needs": "An agent that speaks MCP — Claude Code, or any MCP client — to drive "
+                 "devices with Mobium's tools. The program on this page plays the "
+                 "client's part by hand, to show exactly what goes over the wire; it "
+                 "needs Python 3.9 or later and nothing beyond its standard library.",
+        "install_heading": "Connect an agent",
+        "install_note": "`mobium mcp` is an MCP server on stdio, so there is nothing to "
+                        "install beyond `mobium` itself. Register it with your agent — in "
+                        "Claude Code:",
+        "install": "claude mcp add mobium -- mobium mcp",
+        "install_after": "Other clients take the same command in their `mcpServers` "
+                         "configuration; [the MCP guide](../guides/mcp.md#1-connect-it) "
+                         "has the JSON. From then on, ask the agent for what you want "
+                         "done on the device, and it calls the tools below itself.",
+        "save_where": "",
+        "code_intro": "The calls an agent makes, made by a script instead: start the "
+                      "server, open with the handshake, then one `tools/call` per step. "
+                      "Every tool is an `app_` name with JSON arguments, and every answer "
+                      "has text to read and, for most, `structuredContent` to use as data.",
+        "run": {"dir": "", "cmd": "MOBIUM_PLATFORM={p} python3 quickstart.py"},
+        "start": '`app_session` with `{"action": "start", "platform": ..., "app": ...}`',
+        "quit": '`app_session` with `{"action": "end"}`, or the client closing the server\'s stdin',
+        "notes": [
+            "The server holds one session per device for as long as it runs. An agent's "
+            "client ends it by closing the server's stdin when the agent exits, which "
+            "also puts back anything the session changed.",
+            "A tool that fails answers with `isError` and a code in "
+            "`structuredContent`, never a JSON-RPC error: the agent reads the "
+            "explanation and decides what to do. [The MCP guide](../guides/mcp.md) "
+            "shows an agent at work, the handshake, every kind of answer, and sharing "
+            "a device with the command line.",
+        ],
+    },
+    {
         "slug": "python", "name": "Python", "file": "python/quickstart.py", "lang": "python",
         "needs": "Python 3.9 or later.",
         "install_note": "Not on PyPI yet — pip installs it straight from GitHub, which needs "
@@ -156,7 +191,7 @@ def page(c):
         "Edit those, then run `make quickstart`. -->",
         "",
         f"Start a session on a device, launch Settings, tap a row, take a "
-        f"screenshot, and quit — from {c['name'] if c['slug'] != 'cli' else 'the command line'}. "
+        f"screenshot, and quit — from {c.get('from', c['name'] if c['slug'] != 'cli' else 'the command line')}. "
         f"Starts with {c['start']}; ends with {c['quit']}.",
         "",
         "Before this page: [install mobium and prepare a device](README.md).",
@@ -168,7 +203,7 @@ def page(c):
     ]
     if c["install"]:
         lines += [
-            "## 2. Install the client",
+            f"## 2. {c.get('install_heading', 'Install the client')}",
             "",
             c["install_note"],
             "",
@@ -177,6 +212,8 @@ def page(c):
             "```",
             "",
         ]
+        if c.get("install_after"):
+            lines += [c["install_after"], ""]
         n = 3
     else:
         n = 2
@@ -184,10 +221,14 @@ def page(c):
         f"## {n}. The code",
         "",
         f"Save this as `{fname}`"
-        + (" in the project folder" if c["install"] else "")
+        + c.get("save_where", " in the project folder" if c["install"] else "")
         + c.get("save_note", "")
         + f" — it is [examples/{c['file']}](examples/{c['file']}).",
         "",
+    ]
+    if c.get("code_intro"):
+        lines += [c["code_intro"], ""]
+    lines += [
         f"```{c['lang']}",
         code.rstrip(),
         "```",
