@@ -984,3 +984,23 @@ func TestAPopoverIsNotADialog(t *testing.T) {
 		t.Error("a popover was found once the tip had gone")
 	}
 }
+
+// A control's own checkmark is not a target of its own. Pocket Casts'
+// "Receive Notifications" row is a button the app labeled whole, holding one
+// inaccessible button that draws its checkmark, and map listed it as
+// `discover_tick (button)`, its image's name; a tap on the row turned the
+// checkmark off. The row stays, and Ice Cubes' posts — unlabeled, holding
+// several buttons that are actions of their own — keep theirs (above).
+// CHALLENGES 236.
+func TestAControlsOwnCheckmarkIsNotATarget(t *testing.T) {
+	lines := map[string]bool{}
+	for _, e := range loadIOS(t, "ios26-pocketcasts-notifications.xml").Map() {
+		lines[strings.TrimPrefix(e.Line(), e.Ref+" ")] = true
+	}
+	if lines["discover_tick (button)"] {
+		t.Error("the row's checkmark is still a target of its own")
+	}
+	if !lines["Receive Notifications, Receive news, podcast suggestions and more (button)"] {
+		t.Errorf("the row itself left map: %v", lines)
+	}
+}
