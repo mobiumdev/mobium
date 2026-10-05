@@ -22,7 +22,8 @@
 #     own `wait role=progressbar --for hidden` was over at once before
 #     progressbar was a role (CHALLENGES 222).
 #
-# Android is listed for when it is run; it has not been yet.
+# Passed on the simulator, the iPhone 15 Plus and the Pixel 8 Pro, where the
+# spinner is an android.widget.ProgressBar.
 set -e
 DEV="$1"
 if [ -z "$DEV" ]; then echo "usage: $0 <serial|udid>" >&2; exit 2; fi

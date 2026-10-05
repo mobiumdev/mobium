@@ -174,6 +174,49 @@ func TestARefusalBehindAMenuNamesAPointOutsideIt(t *testing.T) {
 	}
 }
 
+// Behind an Android popup menu — a window of its own, as a dialog is — the
+// refusal names back, which closes a menu or a dialog that can be canceled;
+// its items are actions, and tapping one is not closing it. iOS has no
+// back, and its refusal does not name one. CHALLENGES 225.
+func TestARefusalBehindAnAndroidMenuNamesBack(t *testing.T) {
+	loc, _ := uitree.ParseLocator("label=Stopwatch")
+	err := appDialogOver("an untitled dialog", loc, true)
+	e, _ := mobiumerr.As(err)
+	if e == nil || !strings.Contains(err.Error(), "app_press back") || !strings.Contains(e.Remedy, "app_press back") {
+		t.Errorf("Android: %v (remedy %q) does not name back", err, e.Remedy)
+	}
+	err = appDialogOver("Discard changes?", loc, false)
+	if strings.Contains(err.Error(), "back") {
+		t.Errorf("iOS, which has no back, named it: %v", err)
+	}
+}
+
+// A near miss is the same words, whole, under another kind — not a longer
+// text that contains them. MobiumApp's Pager shows "Card 8 starts off screen
+// to the right." while Card 8 itself is off screen; label=Card 8 named that
+// note as the locator that works, and scroll-to stopped instead of swiping
+// to the card. CHALLENGES 226.
+func TestANearMissIsTheWholeWords(t *testing.T) {
+	xml := `<?xml version='1.0' encoding='UTF-8'?><hierarchy rotation="0">` +
+		`<node index="0" class="android.widget.FrameLayout" bounds="[0,0][1008,2077]" enabled="true">` +
+		`<node index="0" class="android.widget.TextView" text="Card 8 starts off screen to the right." ` +
+		`enabled="true" bounds="[36,810][972,853]" />` +
+		`<node index="1" class="android.widget.TextView" text="URL" enabled="true" bounds="[36,900][972,950]" />` +
+		`</node></hierarchy>`
+	tree, err := uitree.ParseAndroid([]byte(xml))
+	if err != nil {
+		t.Fatal(err)
+	}
+	card, _ := uitree.ParseLocator("label=Card 8")
+	if alt := nearMiss(card, tree); alt != nil {
+		t.Errorf("label=Card 8 was offered %s, a note that only contains the words", alt)
+	}
+	url, _ := uitree.ParseLocator("label=URL")
+	if alt := nearMiss(url, tree); alt == nil || alt.Kind != uitree.KindText {
+		t.Errorf("label=URL, whose words are a field's whole text, was offered %v", alt)
+	}
+}
+
 // The keyboard refusal names both ways to hide it, and both must exist: an
 // iPhone's keyboard has no hide key, so enter is named too. A remedy that
 // names an argument the tool does not take is obeyed and fails.

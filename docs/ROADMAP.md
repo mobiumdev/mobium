@@ -384,7 +384,9 @@ this is what is not.
   post menus (CHALLENGES 220, 221): `long-press` opens a context menu,
   `map` lists the menu alone with its items by name, items work by label
   or ref, a submenu opens and maps, and a tap behind the menu is refused
-  with a point outside it that closes it. Declined: `map` saying an item
+  with a point outside it that closes it. On Android a popup menu is a
+  window of its own, refused behind as a dialog is, and the refusal names
+  back, which closes it (CHALLENGES 225; the Pixel 8 Pro's Clock). Declined: `map` saying an item
   opens a submenu. Share and Mute show a chevron, and the only sign of it in
   the tree is an image named `chevron.forward` — no trait or role — which
   the same apps also draw on rows that open a page; a state inferred from an
@@ -400,18 +402,26 @@ this is what is not.
   means filling 0 or 1 first, which is the caller's choice — the app sees
   the end it passes through. Measured on Ice Cubes' Font Scaling on the
   simulator and the iPhone, held by `icecubes-ios.sh`, which puts the
-  slider back to what it read. Still to come: Android's seek bars, which
-  map as sliders and are refused by `app_fill` until measured; range
-  sliders; and the phone's text size, which is a slider in Settings.
+  slider back to what it read. On Android since the same day (CHALLENGES
+  227): a seek bar is in `map` with its progress as its value, and
+  `app_fill` touches its track at the position, which lands exactly —
+  measured on MobiumApp's Slider Demo on the Pixel 8 Pro and held by
+  `docs/checks/slider.sh`. Still to come: the Slider Demo on iOS, whose
+  `@react-native-community/slider` reports a plain view with no Adjustable
+  trait and no value, so nothing outside the app can call it a slider and
+  WebDriverAgent will not move it; range sliders; and the phone's text
+  size, which is a slider in Settings.
 - ~~**Infinite scrolling**~~ — done on iOS 2026-10-04 (CHALLENGES 223): a
   swipe that moves nothing while a busy indicator is inside the list waits
   for it to go, up to ten seconds, and goes on scrolling, so `scroll-to`
   reaches a row two pages down; a real end, with no indicator, is still the
   end at once. Measured on MobiumApp's Feed Demo, built for it, on the
-  simulator and the iPhone, and held by `docs/checks/feed.sh`. Still to
-  come: Android, where the Feed Demo's spinner is a ProgressBar and the
-  check is ready to run; and a list that loads with no indicator at all,
-  which nothing here can tell from an end.
+  simulator and the iPhone, and held by `docs/checks/feed.sh`. On Android
+  since the same day: the Feed Demo's spinner is a ProgressBar, and the
+  check passed three runs of three on the Pixel 8 Pro, where the loop before
+  the fix stopped at "the end of the list (3 scrolls)" as it had on iOS.
+  Still to come: a list that loads with no indicator at all, which nothing
+  here can tell from an end.
 - **Switching between apps** and more than one window.
 - **Seeding a device** with photos, files and other data before a flow.
 - **Uploads and downloads** through the system file pickers. Copying a file

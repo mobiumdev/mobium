@@ -7,7 +7,7 @@ the source.
 
 The pattern across them is the reason the document exists: **almost nothing
 here was found by reading code or by a test written from imagination.** Of
-224 defects, 187 were found only by running against a real device. The other
+227 defects, 190 were found only by running against a real device. The other
 thirty-seven — 4, 5, 6, 14, 23, 24, 32, 35, 36, 39, 44, 50, 53, 54, 57, 66, 89,
 99, 100, 121, 123, 129, 130, 133, 134, 139, 140, 141, 142, 144, 150, 158, 162,
 164, 165, 172 and 222 — came from reading code, the compiler, a test, a linter,
@@ -4981,6 +4981,56 @@ it was — to WebDriverAgent, or on a phone to the app a switch expects
 "ViewService" ending, because some view services are the screen, as
 Safari's is inside an app. Both iPads then mapped their home screens, 28
 and 29 entries, and Settings opened from each by its ref.
+
+### 225. Behind an Android menu, the refusal named everything but back
+
+**Found by:** the Pixel 8 Pro, carrying CHALLENGES 221 over to Android. An
+Android popup menu — the Clock's overflow menu — is a window of its own, as
+a dialog is, so a tap behind it is refused as "a dialog is over the app",
+which is right. Its remedy said to tap one of the dialog's buttons or
+declare an answer with `app_dialogs`, and `app_alert dismiss` refused, there
+being no button for it to press. A menu's items are actions: tapping one is
+not closing the menu. Back closes it, and closes a dialog that can be
+canceled; on the Pixel it closed the menu and left the Clock where it was.
+On Android the refusal now names `app_press back`; iOS, which has no back,
+does not.
+
+### 226. A near miss named a note that only contained the words
+
+**Found by:** `mobium-app.sh` on the Pixel 8 Pro, its first run there since
+CHALLENGES 196. The Pager Demo's Card 8 starts off screen, and the check
+scrolls right for `label=Card 8`. It was refused at once — "no element
+matches label=Card 8, but text=Card 8 does: those words are its text" —
+naming the screen's note, "Card 8 starts off screen to the right." A near
+miss tried the same words under `text=`, which matches part of a text, so
+a note that contained them read as the card itself, and the scroll that
+would have reached the card never happened. "Those words are its text" is
+true only of an element whose text is those words: a near miss now asks
+for the whole of them. NetNewsWire's field, whose text is exactly "URL",
+is still named; the Pager scrolled to Card 8.
+
+### 227. A seek bar was missing from `map`, and nothing could move one
+
+**Found by:** MobiumApp's new Slider Demo on the Pixel 8 Pro, built
+because nothing installed had a slider that belonged to no one. `map`
+listed only Back. Android marks a seek bar neither clickable nor
+scrollable, so it was not a target; and its text is its progress in its
+own units — "5.0" for a Volume the app held at 50 — which would have been
+its label. A slider is now a target on Android too, and its text is its
+value: `Volume (slider, 5.0)`.
+
+Moving one was measured three ways. UiAutomator2's set-value sets the
+progress, exactly, but in the bar's units: "8" was Volume 80 and "0.8" was
+0, and nothing in the tree or among the server's attributes gives the
+bar's maximum, short of moving it to its end. A touch on the track is what
+a person does, and a seek bar jumps to where it is touched: 0.2, 0.5 and
+0.8 of the bar read 20, 50 and 80. The track is inset from the bar's edges
+by 16dp, Android's own padding — without it the continuous Balance read
+0.23 for 0.25 and 0.77 for 0.75 — and the bar's last pixel takes no touch.
+`app_fill` on Android now touches the track there; Volume landed on 30, 70,
+0 and 100 and Balance on 0.25 and 0.75, exactly. On iOS the same demo's
+sliders are not sliders at all: `@react-native-community/slider` reports a
+plain view with no Adjustable trait and no value.
 
 ## Findings that were not defects
 

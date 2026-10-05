@@ -6,8 +6,11 @@ import (
 	"encoding/base64"
 	"fmt"
 	"github.com/mobiumdev/mobium/internal/mobiumerr"
+	"math"
 	"net/http"
 	"os/exec"
+	"regexp"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -356,6 +359,57 @@ func (u *UIA2) LongPress(ctx context.Context, x, y int, d time.Duration) error {
 func (u *UIA2) Swipe(ctx context.Context, x1, y1, x2, y2 int, d time.Duration) error {
 	return u.w3c.pointerSequence(ctx, dragActions(x1, y1, x2, y2, d))
 }
+
+// SetSliderPosition moves a seek bar by touching its track at the position,
+// as a person does: a seek bar jumps to where it is touched. Not through
+// UiAutomator2's set-value, which sets progress in the bar's own units —
+// "8" was Volume 80 and "0.8" was 0 on the Pixel 8 Pro — with no way to
+// learn the bar's maximum short of moving it to its end. Touched, 0.2, 0.5
+// and 0.8 of the Volume bar read 20, 50 and 80. The track is inset from the
+// bar by 16dp at each end, Android's own padding: without it, the
+// continuous Balance read 0.23 for 0.25 and 0.77 for 0.75. CHALLENGES 227.
+func (u *UIA2) SetSliderPosition(ctx context.Context, n *uitree.Node, position float64) error {
+	if position < 0 || position > 1 {
+		return mobiumerr.New(mobiumerr.InvalidArgument, "a slider position is from 0 to 1, not %g", position)
+	}
+	x, y := sliderTouch(n.Bounds, u.dp(ctx, 16), position)
+	return u.Tap(ctx, x, y)
+}
+
+// sliderTouch is the point on a seek bar's track at position, the track
+// being the bar less inset at each end — no more than a quarter of the bar
+// — and never the bar's last pixel, which takes no touch: a tap there left
+// Volume where it was.
+func sliderTouch(b uitree.Rect, inset int, position float64) (int, int) {
+	if 4*inset > b.Width() {
+		inset = b.Width() / 4
+	}
+	x := b.X1 + inset + int(math.Round(position*float64(b.Width()-2*inset)))
+	x = max(b.X1+1, min(x, b.X2-2))
+	_, y := b.Center()
+	return x, y
+}
+
+// dp is n density-independent pixels in this device's pixels, from `wm
+// density` (the override when there is one), or n itself if it cannot be read.
+func (u *UIA2) dp(ctx context.Context, n int) int {
+	out, err := u.adb.Shell(ctx, "wm", "density")
+	if err != nil {
+		return n
+	}
+	dpi := 0
+	for _, m := range densityLine.FindAllStringSubmatch(string(out), -1) {
+		if v, err := strconv.Atoi(m[1]); err == nil {
+			dpi = v // the override comes after the physical density
+		}
+	}
+	if dpi <= 0 {
+		return n
+	}
+	return int(math.Round(float64(n) * float64(dpi) / 160))
+}
+
+var densityLine = regexp.MustCompile(`density:\s*(\d+)`)
 
 // SetText types into the element a node names.
 //

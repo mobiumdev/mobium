@@ -358,6 +358,12 @@ func nodeFrom(e xml.StartElement, parent *Node, sibling int) *Node {
 	// UiAutomator2 reports real visibility; the dump format has no such
 	// attribute, so absent means "assume displayed" rather than "hidden".
 	n.Displayed = attr(e, "displayed") != "false"
+	// A seek bar's text is its progress in its own units — MobiumApp's
+	// Volume, 50 to the app, read "5.0" on the Pixel 8 Pro — which is its
+	// state, not its name: kept as its value, as iOS's is (CHALLENGES 227).
+	if HasClassRole(n, "slider") {
+		n.Value, n.Text = n.Text, ""
+	}
 	return n
 }
 

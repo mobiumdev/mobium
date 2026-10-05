@@ -97,8 +97,11 @@ func Actionable(n *Node) bool {
 		return false
 	}
 	if !n.Clickable && !n.LongClickable && !n.Checkable && !n.Scrollable {
-		// Text inputs are frequently focusable-only until touched.
-		if !(n.Focusable && HasRole(n, "input")) {
+		// Text inputs are frequently focusable-only until touched. And a
+		// slider: Android marks a seek bar neither clickable nor scrollable,
+		// so MobiumApp's two sliders were missing from map on the Pixel 8
+		// Pro (CHALLENGES 227).
+		if !(n.Focusable && HasRole(n, "input")) && !HasClassRole(n, "slider") {
 			return false
 		}
 	}
