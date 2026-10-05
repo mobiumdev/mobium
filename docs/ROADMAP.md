@@ -97,9 +97,9 @@ this is what is not.
   mapped twice and named twice, a tap on a disabled button reported done
   through its wrapper, and every tap into the page refused because the
   WebView runs under the bars — fixed by anchoring the page on text both
-  sides report, which makes Safari's page tappable too. Still to do: a
-  check, the App Store build on the iPhone as the control whose WebView is
-  closed, and Safari's anchored taps on a phone.
+  sides report, which makes Safari's page tappable too, on a simulator and
+  on the iPhone. Still to do: a check, and the App Store build on the
+  iPhone as the control whose WebView is closed.
 - **A tap in an emulator's Chrome web app after Chrome stops reporting its
   WebView.** Without Play services Chrome installs a web app as a launcher
   shortcut, and opened while Chrome is running its WebView leaves the

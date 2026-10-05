@@ -78,7 +78,7 @@ What that line does *not* mean is that Mobium cannot see a browser, and until
   ([CHALLENGES 47](CHALLENGES.md)), so where the page starts is read from
   text the page and the WebView both report, two runs of it agreeing, and a
   tap is refused only when they do not (CHALLENGES 248). Measured on a
-  simulator; not yet on a phone.
+  simulator and on an iPhone 15 Plus.
 
 So "not supported" is a statement about scope — no browser management and
 no tabs — not a wall Mobium puts up. A browser's page is driven by checks all
