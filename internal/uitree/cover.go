@@ -220,7 +220,18 @@ func (t *Tree) aimAtPoint(target *Node, x, y int) (Aim, bool) {
 	// screen after the first rule was a container over a container.
 	// And a scroll container is not reported on: what lies over its center is
 	// its own content, and tapping a list's middle is rarely the point.
+	// Nor is anything that spans the whole screen, whatever the target's
+	// size: the size rule let one through over a target more than half the
+	// screen high — Pocket Casts' podcast header, under the layer that holds
+	// iOS 26's floating tab bar.
+	screen := t.Screen
+	if screen.Empty() && t.Root != nil {
+		screen = t.Root.Bounds
+	}
 	for i := len(over) - 1; i >= 0 && !target.Scrollable; i-- {
+		if !screen.Empty() && enclosesRect(over[i].Bounds, screen) {
+			continue
+		}
 		if target.Parent != nil && enclosesRect(target.Parent.Bounds, over[i].Bounds) &&
 			area(over[i].Bounds) <= 2*area(target.Bounds) {
 			a.Over = over[i]

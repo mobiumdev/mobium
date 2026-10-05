@@ -708,7 +708,8 @@ func TestNetNewsWireReadsTraits(t *testing.T) {
 // Two".
 func TestIceCubesMapsWhatSwiftUICombines(t *testing.T) {
 	lines := map[string]int{}
-	for _, e := range loadIOS(t, "ios26-icecubes-timeline.xml").Map() {
+	entries := loadIOS(t, "ios26-icecubes-timeline.xml").Map()
+	for _, e := range entries {
 		lines[strings.TrimPrefix(e.Line(), e.Ref+" ")]++
 	}
 	for _, want := range []string{"Trending (button)", "Author One 🧿 (button)", "Reply (button)", "Boost (button)",
@@ -719,10 +720,19 @@ func TestIceCubesMapsWhatSwiftUICombines(t *testing.T) {
 		}
 	}
 	// The author's name is a button inside one that adds the time; the
-	// inner one is the target, not both.
+	// inner one is the target, not both. Found by its own label, not the
+	// printed one: the first post says nothing but holds the wrapper, an
+	// image and its controls, so it is named "Author One 🧿, 2h" from the
+	// wrapper's words once the controls are left out (CHALLENGES 237).
+	for _, e := range entries {
+		if e.Node != nil && e.Node.Label == "Author One 🧿, 2h" {
+			t.Errorf("the wrapper %q maps as well as the name inside it", e.Line())
+		}
+	}
+	// And a post is named by what it says, never by the controls it holds.
 	for line := range lines {
-		if strings.HasPrefix(line, "Author One 🧿, 2h (") {
-			t.Errorf("the wrapper %q maps as well as the name inside it", line)
+		if strings.HasPrefix(line, "Author ") && strings.Contains(line, "Reply") {
+			t.Errorf("a post is named by its controls: %q", line)
 		}
 	}
 }
@@ -1002,5 +1012,35 @@ func TestAControlsOwnCheckmarkIsNotATarget(t *testing.T) {
 	}
 	if !lines["Receive Notifications, Receive news, podcast suggestions and more (button)"] {
 		t.Errorf("the row itself left map: %v", lines)
+	}
+}
+
+// A row is named by its words, not by the controls it holds or by its
+// images' asset names: Pocket Casts' Discover rows read "Machine Gods NPR
+// Follow" beside Follow's own entry, and a podcast's header "Technology ·
+// NPR Machine Gods chevron-small-down star-full star-half 4.9 (172) Follow
+// Funding NPR npr.org", every button in it mapped again on its own.
+// CHALLENGES 237.
+func TestARowIsNamedByItsWordsNotItsControls(t *testing.T) {
+	for _, tc := range []struct{ file, want string }{
+		{"ios26-pocketcasts-discover.xml", "Machine Gods NPR (button)"},
+		{"ios26-pocketcasts-podcast.xml", "Technology · NPR Machine Gods 4.9 (172) NPR (button)"},
+	} {
+		lines := map[string]bool{}
+		for _, e := range loadIOS(t, tc.file).Map() {
+			line := strings.TrimPrefix(e.Line(), e.Ref+" ")
+			lines[line] = true
+			for _, part := range []string{" Follow (", "Funding", "star-full", "chevron-small-down"} {
+				if strings.Contains(line, part) && line != "Follow (button)" && line != "Funding (button)" {
+					t.Errorf("%s: %q is named with %q", tc.file, line, strings.TrimSpace(part))
+				}
+			}
+		}
+		if !lines[tc.want] {
+			t.Errorf("%s does not map %q", tc.file, tc.want)
+		}
+		if !lines["Follow (button)"] {
+			t.Errorf("%s: Follow lost its own entry", tc.file)
+		}
 	}
 }
