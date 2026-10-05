@@ -7,14 +7,14 @@ the source.
 
 The pattern across them is the reason the document exists: **almost nothing
 here was found by reading code or by a test written from imagination.** Of
-230 defects, 193 were found only by running against a real device. The other
-thirty-seven — 4, 5, 6, 14, 23, 24, 32, 35, 36, 39, 44, 50, 53, 54, 57, 66, 89,
+231 defects, 193 were found only by running against a real device. The other
+thirty-eight — 4, 5, 6, 14, 23, 24, 32, 35, 36, 39, 44, 50, 53, 54, 57, 66, 89,
 99, 100, 121, 123, 129, 130, 133, 134, 139, 140, 141, 142, 144, 150, 158, 162,
-164, 165, 172 and 222 — came from reading code, the compiler, a test, a linter,
+164, 165, 172, 222 and 231 — came from reading code, the compiler, a test, a linter,
 cross-checking a computed number against a screenshot, using the tooling on
 itself, typing a negative number at a command line, and driving the clients
 against a stand-in daemon, CI on Windows, following the quick start from
-a fresh clone, and type-checking the documentation site's examples.
+a fresh clone, and type-checking — or writing — the documentation site's examples.
 
 Read it before writing a test that asserts platform behavior.
 
@@ -5105,6 +5105,22 @@ app's WebView, the frame is now the WebView's, by its width, without the
 height comparison; in Safari the comparison stands, keyboard or not.
 `web-type.sh` taps two fields with the keyboard up, reads the page's focus
 moving between them, and fills one.
+
+### 231. The JavaScript client's types refused buttons the tool accepted
+
+**Found by:** writing the docs site's examples for the TV remote. `press`
+gained the D-pad, `select` and the media keys for the Fire TV (#103–#106),
+and the tool's schema, the CLI and four clients said so; `index.d.ts` still
+declared `press(button: 'back' | 'home' | 'recents' | 'volume-up' |
+'volume-down')`, so a TypeScript caller writing `press('dpad-down')` got a
+type error for a value the tool takes. The code passed any string through,
+and the client's type test compares names, not values, so nothing noticed.
+
+The declaration now lists every button, and `apisurface` holds the
+declarations to the schemas: a string-literal union in `index.d.ts` that
+shares two or more values with a tool's enum must list exactly that enum.
+It found this one and no other, and a stale copy of the old union is
+reported by a test of its own.
 
 ## Findings that were not defects
 
