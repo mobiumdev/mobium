@@ -144,6 +144,12 @@ func aimNote(aim uitree.Aim) (string, *CoverView) {
 		if aim.CenterCover != nil {
 			c = uitree.Describe(aim.CenterCover)
 		}
+		if aim.CenterCover != nil && !uitree.IsControl(aim.CenterCover) {
+			// Not known to take a touch, and avoided rather than guessed at
+			// (CHALLENGES 238).
+			return fmt.Sprintf("; its center is under %q, so it was touched where nothing is", c),
+				&CoverView{Label: c, Control: false}
+		}
 		return fmt.Sprintf("; its center is covered by %q, so it was touched at a clear point", c), &CoverView{Label: c, Control: true}
 	case aim.Over != nil:
 		c := uitree.Describe(aim.Over)

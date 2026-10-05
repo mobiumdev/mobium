@@ -154,6 +154,12 @@ func shiftSubtree(n *Node, dx, dy int) {
 // a map that had none. A visible, enabled, labeled button whose ancestor is
 // itself a target is one, unless a button inside it already is: SwiftUI
 // wraps an author's name, itself a button, in another that adds the time.
+//
+// Unless it is a control's own part (partOfNamedControl): Pocket Casts'
+// "Receive Notifications" row is a button the app named whole, holding one
+// inaccessible button that draws its checkmark, and map listed that as a
+// target of its own under its image's name, `discover_tick`. A tap on the
+// row turned the checkmark off. CHALLENGES 236.
 func markIntrinsicTargets(n *Node) {
 	for _, c := range n.Children {
 		markIntrinsicTargets(c)
@@ -177,10 +183,44 @@ func markIntrinsicTargets(n *Node) {
 		}
 	case "XCUIElementTypeButton":
 		if n.NotAccessible && n.Enabled && clean(n.Label) != "" &&
-			targetAncestor(n) && !hasClickableDescendant(n) {
+			targetAncestor(n) && !hasClickableDescendant(n) && !partOfNamedControl(n) {
 			n.shaped = true
 		}
 	}
+}
+
+// partOfNamedControl reports whether an inaccessible button is the one
+// button inside a button the app labeled itself — its checkmark or icon,
+// which a tap on the control already reaches.
+//
+// Both halves matter. Ice Cubes' posts are buttons too, but unlabeled, so
+// VoiceOver reads each from what it holds, and they hold four or more
+// buttons that are actions of their own: Reply, Boost, Favorite, Share. A
+// labeled control holding several buttons is not decided here either way
+// — nothing captured has one — and keeps them.
+func partOfNamedControl(n *Node) bool {
+	var control *Node
+	for p := n.Parent; p != nil; p = p.Parent {
+		if p.shaped && !p.NotAccessible {
+			control = p
+			break
+		}
+	}
+	if control == nil || control.Class != "XCUIElementTypeButton" || clean(control.Label) == "" {
+		return false
+	}
+	buttons := 0
+	var count func(m *Node)
+	count = func(m *Node) {
+		for _, c := range m.Children {
+			if c.Class == "XCUIElementTypeButton" && c.NotAccessible {
+				buttons++
+			}
+			count(c)
+		}
+	}
+	count(control)
+	return buttons == 1
 }
 
 // targetAncestor reports whether a node is a part of one the platform marked

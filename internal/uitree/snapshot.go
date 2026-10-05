@@ -259,6 +259,18 @@ func descendantText(n *Node, maxDepth int) string {
 			if c.NotAccessible && len(c.Children) == 0 {
 				continue
 			}
+			// Nor is a control inside it, which map lists under its own
+			// name: Pocket Casts' Discover rows read "Machine Gods NPR
+			// Follow" beside the Follow button's own entry, and Ice Cubes'
+			// posts ended "Reply Boost Favorite status.action.context-menu".
+			// Shown or not — a post running behind the tab bar has its
+			// buttons reported hidden, and they are no more its words.
+			// Nor an iOS image: the name WebDriverAgent reports for one is
+			// its asset's when the app gave it none, and a podcast's header
+			// read "chevron-small-down star-full star-half 4.9". CHALLENGES 237.
+			if Actionable(c) || c.shaped || c.Class == "XCUIElementTypeImage" {
+				continue
+			}
 			s := clean(c.Text)
 			if s == "" {
 				s = clean(c.Label)

@@ -57,7 +57,9 @@ var coveredCaptures = map[string]string{
 		"notifications under each other, and Clear sits over Show less: a tap of Show less was aimed at a " +
 		"clear point of it, and collapsed the group",
 	"ios26-icecubes-timeline.xml": "the second post runs down behind iOS 26's tab bar, which is drawn over " +
-		"its center",
+		"its center: it is touched above the tab bar, on screen (CHALLENGES 238)",
+	"ios26-pocketcasts-episode-sheet.xml": "a two-point divider runs across the row of buttons through Play's " +
+		"center, and Play is touched just above it (CHALLENGES 238)",
 	"ios26-icecubes-display-settings.xml": "Ice Cubes pins a sample post at the top of Display Settings and " +
 		"scrolls the settings under it: Tint Color is wholly behind the post's button, and Theme's center is",
 }
@@ -174,5 +176,45 @@ func TestObstructionDemoIOS(t *testing.T) {
 		// target under it still reads visible. The tap lands on the overlay.
 		{target: "hiddenTarget"},
 		{target: "scrimTarget", blocker: "scrim"},
+	})
+}
+
+// Something that is not a control over a target's center is avoided where
+// the rest of the target is clear of it, rather than noted as possibly
+// taking the touch: Pocket Casts' episode sheet draws a two-point divider
+// through Play's center, and every tap on Play said the divider "may take
+// the touch" while it played the episode. And a clear point is on the
+// screen: below its bottom edge nothing is drawn, so every point there
+// looked clear, and an Ice Cubes post running behind the tab bar was aimed
+// 81 points below the screen. CHALLENGES 238.
+func TestANonControlOverTheCenterIsAvoided(t *testing.T) {
+	sheet := loadTree(t, "ios26-pocketcasts-episode-sheet.xml")
+	var play *Node
+	sheet.Walk(func(n *Node) bool {
+		if n.Label == "Play" && Actionable(n) {
+			play = n
+		}
+		return play == nil
+	})
+	if play == nil {
+		t.Fatal("Play is not in the sheet")
+	}
+	a := sheet.AimAt(play)
+	if a.Over != nil || !a.Moved || a.CenterCover == nil || IsControl(a.CenterCover) {
+		t.Errorf("Play: %+v, want moved off the divider with nothing over the point", a)
+	}
+	if len(sheet.DrawnOver(play, a.X, a.Y)) != 0 || !contains(play.Bounds, a.X, a.Y) {
+		t.Errorf("Play is touched at %d,%d, which is not a clear point of it", a.X, a.Y)
+	}
+
+	timeline := loadTree(t, "ios26-icecubes-timeline.xml")
+	screen := timeline.Root.Bounds
+	timeline.Walk(func(n *Node) bool {
+		if Actionable(n) && !n.Bounds.Empty() {
+			if a := timeline.AimAt(n); a.Moved && !contains(screen, a.X, a.Y) {
+				t.Errorf("%q is touched at %d,%d, off the screen %v", describe(n), a.X, a.Y, screen)
+			}
+		}
+		return true
 	})
 }

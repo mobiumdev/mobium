@@ -7,7 +7,7 @@ the source.
 
 The pattern across them is the reason the document exists: **almost nothing
 here was found by reading code or by a test written from imagination.** Of
-235 defects, 196 were found only by running against a real device. The other
+238 defects, 199 were found only by running against a real device. The other
 thirty-nine — 4, 5, 6, 14, 23, 24, 32, 35, 36, 39, 44, 50, 53, 54, 57, 66, 89,
 99, 100, 121, 123, 129, 130, 133, 134, 139, 140, 141, 142, 144, 150, 158, 162,
 164, 165, 172, 222, 231 and 232 — came from reading code, the compiler, a test, a linter,
@@ -5204,6 +5204,62 @@ popover too, with no outside to touch and its controls already in `map`,
 and is left as it was. Measured on the simulator and on an iPhone 15 Plus
 running the App Store build: following the point the note gives closed
 the tip, and the player mapped 17 controls on both.
+
+### 236. A checkmark mapped as a target of its own, under its image's name
+
+**Found by:** Pocket Casts' onboarding, on the simulator and the iPhone.
+Its "Receive Notifications" row is a button the app labeled whole, and
+inside it one button iOS calls not accessible draws the checkmark. `map`
+listed both, the checkmark as `discover_tick (button)` — the name of the
+image it draws, since the app gave it none — because the rule that put Ice
+Cubes' Reply, Boost, Favorite and Share in `map` (214) takes any labeled
+inaccessible button inside an accessible one. A tap on the row turned the
+checkmark off and a second turned it on, so the row is the control. The
+one button inside a button the app labeled itself is now left to it. Ice
+Cubes' posts keep theirs: they are unlabeled, so VoiceOver reads each from
+what it holds, and each holds four or more buttons that are actions of
+their own. A labeled control holding several buttons is not decided either
+way, and keeps them; nothing captured has one. Across every captured
+hierarchy, this is the only `map` line that changes.
+
+### 237. A row named after the buttons and images inside it
+
+**Found by:** Pocket Casts' Discover and podcast pages. A row with no label
+of its own is named from what it holds (78), and that took in the controls
+inside it, which `map` also lists under their own names, and on iOS the
+names of its images, which are their asset names when the app gives them
+none. Discover's rows read `Machine Gods NPR Follow` beside Follow's own
+entry; a podcast's header read `Technology · NPR Machine Gods
+chevron-small-down star-full star-half 4.9 (172) Follow Funding NPR
+npr.org`; and Ice Cubes' posts had ended in `Reply Boost Favorite
+status.action.context-menu` since they were first mapped. A target — shown
+or not, since a post running behind the tab bar has its buttons reported
+hidden — and an iOS image are now left out of a composed name: `Technology
+· NPR Machine Gods 4.9 (172) NPR`. Across every captured hierarchy,
+Android's included, fourteen labels change and no entry is added or
+removed; one test that told Ice Cubes' wrapper button by its printed label
+now asks for its own.
+
+### 238. A divider through Play's center, noted as possibly taking the touch
+
+**Found by:** Pocket Casts' episode sheet, on the simulator and the iPhone.
+Every tap on Play said an `Other` was drawn over that point and "may take
+the touch", while the tap played the episode. The `Other` is a two-point
+divider across the sheet's row of buttons, through Play's center. A
+control over the center was already aimed around (115); something that is
+not a control was only noted, since nothing says whether it takes a touch.
+Where the target has a point with nothing over it, that question need not
+be answered: it is touched there, and the result says the center was under
+the divider and it was touched where nothing is. The note stays for a cover
+with no clear point around it. A clear point now also has to be on the
+screen — below its edge nothing is drawn, so every point there looked
+clear, and an Ice Cubes post running behind the tab bar was aimed 81 points
+below the screen before this was added; it is touched just above the tab
+bar instead of under it with a note. And a layer spanning the whole screen
+is never a local cover: the rule's size guard let the one that holds iOS
+26's floating tab bar through over Pocket Casts' podcast header, which is
+more than half the screen high. Across every captured hierarchy, these
+three are the only aims that change.
 
 ## Findings that were not defects
 

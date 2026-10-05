@@ -165,3 +165,18 @@ func errorsAs(err error, target **mobiumerr.Error) bool {
 	}
 	return false
 }
+
+// A moved aim says what it moved from, and says it plainly when that was
+// not a control: no claim that it is one, and no warning that it may take
+// the touch, since the point touched has nothing over it. CHALLENGES 238.
+func TestAMovedAimNamesWhatItAvoided(t *testing.T) {
+	divider := &uitree.Node{Class: "XCUIElementTypeOther"}
+	note, view := aimNote(uitree.Aim{Moved: true, CenterCover: divider})
+	if !strings.Contains(note, "touched where nothing is") || strings.Contains(note, "may take") || view.Control {
+		t.Errorf("note %q, view %+v", note, view)
+	}
+	button := &uitree.Node{Class: "XCUIElementTypeButton", Label: "Close"}
+	if note, view := aimNote(uitree.Aim{Moved: true, CenterCover: button}); !strings.Contains(note, "covered by") || !view.Control {
+		t.Errorf("a control over the center: note %q, view %+v", note, view)
+	}
+}
