@@ -142,9 +142,10 @@ func namesTheSameControl(target, n *Node) bool {
 // Aim is where to touch a target, and what the tree says is over that point.
 type Aim struct {
 	X, Y int
-	// Moved is set when the target's center was under a control and the
+	// Moved is set when the target's center was under something and the
 	// point was moved to a clear part of the target instead; CenterCover is
-	// that control.
+	// what was over the center — a control, or, where the rest of the
+	// target is clear of it, something that is not (CHALLENGES 238).
 	Moved       bool
 	CenterCover *Node
 	// Blocker is a control drawn over the whole of the target, so there is no
@@ -173,29 +174,60 @@ func (t *Tree) AimAt(target *Node) Aim {
 		return Aim{X: cx, Y: cy}
 	}
 	if a, ok := t.aimAtPoint(target, cx, cy); ok {
+		// Something that is not a control over the center may take the
+		// touch or not, and the tree cannot say — but where the rest of the
+		// target is clear, there is no need to find out: Pocket Casts' episode
+		// sheet draws a two-point divider across its row of buttons, through
+		// Play's center, and every tap on Play carried a note that the
+		// divider "may take the touch" while it played the episode. Touched
+		// a little off center, nothing is over the point, and the result
+		// says only that it moved. The note is kept for a cover with no
+		// clear point around it. CHALLENGES 238.
+		if a.Over != nil {
+			if clear, found := t.clearestPoint(target, cx, cy, func(a Aim) bool { return a.Over == nil }); found {
+				clear.Moved, clear.CenterCover = true, a.Over
+				return clear
+			}
+		}
 		return a
 	}
 	centerCover := firstControl(t.DrawnOver(target, cx, cy))
+	if a, found := t.clearestPoint(target, cx, cy, func(Aim) bool { return true }); found {
+		a.Moved, a.CenterCover = true, centerCover
+		return a
+	}
+	return Aim{X: cx, Y: cy, Blocker: centerCover}
+}
+
+// clearestPoint is the point of the grid over target nearest (cx, cy) that is
+// on the screen, has no control drawn over it, and ok accepts. On the screen:
+// below its bottom edge nothing is drawn, so every point there is clear — an
+// Ice Cubes post running behind the tab bar was aimed 81 points below the
+// screen.
+func (t *Tree) clearestPoint(target *Node, cx, cy int, ok func(Aim) bool) (Aim, bool) {
+	screen := t.Screen
+	if screen.Empty() && t.Root != nil {
+		screen = t.Root.Bounds
+	}
 	b := target.Bounds
 	best, bestDist := Aim{}, -1
 	for r := 0; r < aimRows; r++ {
 		for c := 0; c < aimCols; c++ {
 			x := b.X1 + (2*c+1)*b.Width()/(2*aimCols)
 			y := b.Y1 + (2*r+1)*b.Height()/(2*aimRows)
-			a, ok := t.aimAtPoint(target, x, y)
-			if !ok {
+			if !screen.Empty() && !contains(screen, x, y) {
+				continue
+			}
+			a, free := t.aimAtPoint(target, x, y)
+			if !free || !ok(a) {
 				continue
 			}
 			if d := (x-cx)*(x-cx) + (y-cy)*(y-cy); bestDist < 0 || d < bestDist {
-				a.Moved, a.CenterCover = true, centerCover
 				best, bestDist = a, d
 			}
 		}
 	}
-	if bestDist >= 0 {
-		return best
-	}
-	return Aim{X: cx, Y: cy, Blocker: centerCover}
+	return best, bestDist >= 0
 }
 
 // aimAtPoint reports whether (x, y) is free of any control drawn over it, and
