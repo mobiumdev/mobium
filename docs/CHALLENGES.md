@@ -7,10 +7,10 @@ the source.
 
 The pattern across them is the reason the document exists: **almost nothing
 here was found by reading code or by a test written from imagination.** Of
-242 defects, 203 were found only by running against a real device. The other
-thirty-nine — 4, 5, 6, 14, 23, 24, 32, 35, 36, 39, 44, 50, 53, 54, 57, 66, 89,
+243 defects, 203 were found only by running against a real device. The other
+forty — 4, 5, 6, 14, 23, 24, 32, 35, 36, 39, 44, 50, 53, 54, 57, 66, 89,
 99, 100, 121, 123, 129, 130, 133, 134, 139, 140, 141, 142, 144, 150, 158, 162,
-164, 165, 172, 222, 231 and 232 — came from reading code, the compiler, a test, a linter,
+164, 165, 172, 222, 231, 232 and 243 — came from reading code, the compiler, a test, a linter,
 cross-checking a computed number against a screenshot, using the tooling on
 itself, typing a negative number at a command line, and driving the clients
 against a stand-in daemon, CI on Windows, following the quick start from
@@ -5314,6 +5314,24 @@ only where the matches differ by role, naming them (`",role=" and one of
 button, link`), and where some matches are hidden and some shown the
 refusal says so, since `map` lists only the one shown and its ref is the
 way in.
+
+### 243. A restore that put back what a cache remembered, not what was there
+
+**Found by:** reading the code behind ROADMAP's open lead (#118): on
+2026-10-04 a `mobium test` run on the iPhone found Reduce Motion on and
+left it off. Before a change on a phone, Mobium records the setting's value
+to restore, and it read it as any read is answered — from the last visit to
+Settings, for ten seconds after it, a cache only a change through Mobium
+forgets. A switch flipped any other way inside those ten seconds, by a
+test's own tap in Settings or by a person, was recorded as it had been, and
+the restore put back the opposite of what was there — the lead's symptom.
+**Not reproduced**: reaching the switch by tap took sixteen seconds on the
+iPhone, longer than the window, so a script cannot recreate the race a
+person could. The value to restore is now read from the switch itself, and
+every read, the value recorded, every change and every restore go to
+`accessibility.log` in mobium's state directory, so a recurrence says which
+read it followed. On the iPhone a change, the session's end and a fresh read
+logged and left Reduce Motion as found.
 
 ## Findings that were not defects
 
