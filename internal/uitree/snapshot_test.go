@@ -917,3 +917,21 @@ func TestABusyIndicatorIsAProgressbar(t *testing.T) {
 		t.Errorf("role=progressbar found %d on the loading feed, want its spinner", len(got))
 	}
 }
+
+// An Android seek bar is in map, as a slider with its progress as its
+// value: on the Pixel 8 Pro neither of MobiumApp's sliders was in map —
+// Android marks a seek bar neither clickable nor scrollable — and each one's
+// text was its progress, "5.0" for a Volume the app held at 50.
+// CHALLENGES 227.
+func TestAnAndroidSeekBarMapsAsASlider(t *testing.T) {
+	tree := loadTree(t, "mobiumapp-slider-uia2.xml")
+	lines := map[string]bool{}
+	for _, e := range tree.Map() {
+		lines[strings.TrimPrefix(e.Line(), e.Ref+" ")] = true
+	}
+	for _, want := range []string{"Volume (slider, 5.0)", "Balance (slider, 64.0)"} {
+		if !lines[want] {
+			t.Errorf("the Slider Demo does not map %q: %v", want, lines)
+		}
+	}
+}

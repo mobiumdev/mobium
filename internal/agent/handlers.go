@@ -1138,12 +1138,18 @@ func nearMiss(loc uitree.Locator, tree *uitree.Tree) *uitree.Locator {
 	if !slices.Contains(kinds, loc.Kind) || loc.Value == "" {
 		return nil
 	}
+	// Whole words only: "those words are its text" is true of an element whose
+	// text is those words, not of one that contains them. MobiumApp's Pager
+	// says "Card 8 starts off screen to the right.", and a scroll-to for
+	// label=Card 8 — the card itself, off screen — was refused naming that
+	// note instead of being scrolled for, on the Pixel 8 Pro (CHALLENGES 226).
 	for _, k := range kinds {
 		if k == loc.Kind {
 			continue
 		}
 		alt := loc
 		alt.Kind = k
+		alt.Exact = true
 		if len(alt.Resolve(tree)) == 1 {
 			return &alt
 		}

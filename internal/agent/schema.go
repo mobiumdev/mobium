@@ -266,9 +266,10 @@ func GetToolSchemas() []Tool {
 				"held — Vibium's fill; app_type adds to it instead. Located, checked and " +
 				"typed as app_type is. Requires the uiautomator2 driver. On a slider, text is " +
 				"a position from 0 (the start of its track) to 1 (the end), and the result is " +
-				"the value the app then reports, as map shows it; iOS only. The thumb is moved " +
+				"the value the slider then reports, as map shows it. On Android the track is " +
+				"touched at the position and the slider lands there; on iOS the thumb is moved " +
 				"as a finger would move it: from either end it lands exactly, from partway it " +
-				"can land a step past, so to land exactly, fill 0 or 1 first.",
+				"can land a step past, so to land exactly there, fill 0 or 1 first.",
 			InputSchema: map[string]interface{}{
 				"type": "object",
 				"properties": withDevice(map[string]interface{}{

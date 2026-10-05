@@ -402,9 +402,15 @@ this is what is not.
   means filling 0 or 1 first, which is the caller's choice — the app sees
   the end it passes through. Measured on Ice Cubes' Font Scaling on the
   simulator and the iPhone, held by `icecubes-ios.sh`, which puts the
-  slider back to what it read. Still to come: Android's seek bars, which
-  map as sliders and are refused by `app_fill` until measured; range
-  sliders; and the phone's text size, which is a slider in Settings.
+  slider back to what it read. On Android since the same day (CHALLENGES
+  227): a seek bar is in `map` with its progress as its value, and
+  `app_fill` touches its track at the position, which lands exactly —
+  measured on MobiumApp's Slider Demo on the Pixel 8 Pro and held by
+  `docs/checks/slider.sh`. Still to come: the Slider Demo on iOS, whose
+  `@react-native-community/slider` reports a plain view with no Adjustable
+  trait and no value, so nothing outside the app can call it a slider and
+  WebDriverAgent will not move it; range sliders; and the phone's text
+  size, which is a slider in Settings.
 - ~~**Infinite scrolling**~~ — done on iOS 2026-10-04 (CHALLENGES 223): a
   swipe that moves nothing while a busy indicator is inside the list waits
   for it to go, up to ten seconds, and goes on scrolling, so `scroll-to`
