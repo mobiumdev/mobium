@@ -171,7 +171,11 @@ func markIntrinsicTargets(n *Node) {
 	defer func() { n.Clickable = n.shaped && n.Displayed }()
 	switch n.Class {
 	case "XCUIElementTypeLink":
-		if clean(n.Label) != "" || descendantText(n, 3) != "" {
+		// Not a link inside a link: HTML cannot nest them, and what WebKit
+		// reports that way is the outer link's own text. Kiwix's main page
+		// draws each article as a link holding its picture and its title,
+		// and map listed the title again as a link of its own. CHALLENGES 246.
+		if (clean(n.Label) != "" || descendantText(n, 3) != "") && !insideLabeledLink(n) {
 			n.shaped = true
 		}
 	case "XCUIElementTypeCell":
@@ -195,9 +199,15 @@ func markIntrinsicTargets(n *Node) {
 //
 // Both halves matter. Ice Cubes' posts are buttons too, but unlabeled, so
 // VoiceOver reads each from what it holds, and they hold four or more
-// buttons that are actions of their own: Reply, Boost, Favorite, Share. A
-// labeled control holding several buttons is not decided here either way
-// — nothing captured has one — and keeps them.
+// buttons that are actions of their own: Reply, Boost, Favorite, Share.
+//
+// A labeled control holding several is decided by its label. SwiftUI
+// combining a card into one element labels it with its children's words
+// joined by commas, and reports each child as a Button: every Kiwix catalog
+// card — "Astronomy by Wikipedia, A selection of Wikipedia articles on
+// astronomy, 1.77 GB, maxi, 153K pages, 66K media" — mapped as seven
+// buttons, "1.77 GB" and "maxi" among them. A child whose label is one of
+// those parts is the card's own words. CHALLENGES 244.
 func partOfNamedControl(n *Node) bool {
 	var control *Node
 	for p := n.Parent; p != nil; p = p.Parent {
@@ -220,7 +230,28 @@ func partOfNamedControl(n *Node) bool {
 		}
 	}
 	count(control)
-	return buttons == 1
+	if buttons == 1 {
+		return true
+	}
+	label := clean(n.Label)
+	for _, part := range strings.Split(clean(control.Label), ", ") {
+		if part == label {
+			return true
+		}
+	}
+	return false
+}
+
+// insideLabeledLink reports whether n sits inside a link that has words of
+// its own, at other bounds: one at its very bounds is the same link reported
+// twice, which map already prints once.
+func insideLabeledLink(n *Node) bool {
+	for p := n.Parent; p != nil; p = p.Parent {
+		if p.Class == "XCUIElementTypeLink" && p.Bounds != n.Bounds && clean(p.Label) != "" {
+			return true
+		}
+	}
+	return false
 }
 
 // targetAncestor reports whether a node is a part of one the platform marked

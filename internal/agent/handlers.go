@@ -1256,6 +1256,14 @@ func ambiguous(loc uitree.Locator, matches []*uitree.Node) error {
 		}
 	}
 	hint := "use a ref from app_map"
+	// A ref is only for what map lists, which is what is shown. With none
+	// of the matches on screen — label=Ray Charles on Kiwix's catalog
+	// matched three cards further down, the very case app_scroll_to is for —
+	// map has no ref to give, and the advice could only loop. CHALLENGES 245.
+	if hidden == len(matches) {
+		hint = "make it name only one — more of its words, or the whole of them — since none of them is on screen " +
+			"for app_map to give a ref"
+	}
 	if loc.Kind != uitree.KindRole && loc.Role == "" && len(roles) > 1 {
 		names := make([]string, 0, len(roles))
 		for r := range roles {
