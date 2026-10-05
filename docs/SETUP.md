@@ -598,8 +598,9 @@ the phone connected by cable — usbmuxd, which carries it, is USB — and:
 Tapping inside Safari's page was refused on a phone as on a simulator: the
 page cannot say where it sits under Safari's own chrome (CHALLENGES 47).
 Since CHALLENGES 248 that is read from text the page and the WebView both
-report, which on a simulator places a tap exactly; on a phone it has not
-been measured yet. Reading, mapping and `eval` work either way.
+report, which places a tap exactly on a phone as on a simulator: on the
+iPhone 15 Plus a tap on example.com's "Learn more" opened the page it links
+to. Reading, mapping and `eval` work either way.
 
 ### Slower, and one stall to know about
 

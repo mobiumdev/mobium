@@ -5401,7 +5401,8 @@ pixels below where the WebView's own top would have put it — and in Safari,
 refused since 47, a tap on example.com's "Learn more" opened the page it
 links to. `ios-webview.sh` asserted Safari's refusal, and through a plain
 locator that is refused inside a WebView anyway; it now taps by ref and
-holds the tap to the page it opens. Safari on a phone is not yet measured.
+holds the tap to the page it opens. On the iPhone 15 Plus too, the same
+day: `map` raised no refusal and the tap on "Learn more" opened its page.
 
 ## Findings that were not defects
 
