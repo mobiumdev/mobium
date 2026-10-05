@@ -115,8 +115,8 @@ Start the emulator, then `mobium daemon stop` so nothing serves a stale build.
 - [ ] `mobium apps` lists WebDriverAgentRunner; uninstalling it works and the
       next command reinstalls it unaided
 - [ ] `./docs/checks/ios-webview.sh` passes — WKWebViews over Remote Web
-      Inspector, including that Safari's coordinates are *refused* rather than
-      guessed. Stop the daemon first: a page's inspector target belongs to one
+      Inspector, including that a tap in Safari's page, placed from text both
+      sides report (CHALLENGES 248), opens the page its link points to. Stop the daemon first: a page's inspector target belongs to one
       debugger at a time, so a session left switched into a page blocks it
 - [ ] Switch into a WebView, leave, and switch back in **on the same daemon
       session**. This is the one that breaks silently — a page's target is

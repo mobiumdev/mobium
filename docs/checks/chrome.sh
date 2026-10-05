@@ -17,7 +17,7 @@
 # - A tap on the page's own link navigates: the page's host is then iana.org.
 #
 # Safari's page on iOS is ios-webview.sh, where a tap in the web context is
-# refused; this is the platform where it lands. On a phone the check closes
+# placed from text both sides report (CHALLENGES 248). On a phone the check closes
 # the tab it opened, prints no listing — a context list there is somebody's
 # tabs — and does not restart Chrome, which on an emulator it does first.
 set -e

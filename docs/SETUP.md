@@ -595,9 +595,11 @@ the phone connected by cable — usbmuxd, which carries it, is USB — and:
   Automation, on the same page, is Apple's switch for WebDriver automation
   of Safari, which Mobium does not use.
 
-Tapping inside Safari's page is refused for the reason it is on a simulator:
-the page cannot say where it sits under Safari's own chrome (CHALLENGES 47).
-Reading, mapping and `eval` work.
+Tapping inside Safari's page was refused on a phone as on a simulator: the
+page cannot say where it sits under Safari's own chrome (CHALLENGES 47).
+Since CHALLENGES 248 that is read from text the page and the WebView both
+report, which on a simulator places a tap exactly; on a phone it has not
+been measured yet. Reading, mapping and `eval` work either way.
 
 ### Slower, and one stall to know about
 
