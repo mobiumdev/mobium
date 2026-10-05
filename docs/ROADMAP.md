@@ -79,9 +79,10 @@ this is what is not.
   filter chip scrolled for because it is taller than its row (241). A mini
   player docked over every list is tapped around, as CHALLENGES 115 does.
   Held by `docs/checks/pocketcasts-ios.sh`, which passes on the iPhone 17
-  Pro simulator and an iPad Air simulator, where it found an ambiguous
-  locator's remedy naming a role both matches shared (242).
-  Still to do: the check on the iPhone, and this build's search, which
+  Pro simulator, an iPad Air simulator, where it found an ambiguous
+  locator's remedy naming a role both matches shared (242), and the iPhone
+  15 Plus, where onboarding and the first-run tip are skipped unless the
+  app is freshly installed. Still to do: this build's search, which
   answers any query with the same unrelated podcasts — probably its empty
   credentials, unmeasured.
 - **A tap in an emulator's Chrome web app after Chrome stops reporting its

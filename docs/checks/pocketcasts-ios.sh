@@ -48,9 +48,18 @@ row() { printf '    %-12s %-58s ok\n' "$1" "$2"; }
 skip() { printf '    %-12s %-58s skipped: %s\n' "$1" "$2" "$3"; }
 # ref <pattern>: the first map entry whose line matches, by ref only.
 ref() { $M map | grep -E "^@e[0-9]+ $1" | awk '{ print $1; exit }'; }
+# tapref <label>: tap the first entry map lists by that label. By ref,
+# because on an install that has been used the same label is also on
+# hidden elements behind the screen in front, and a locator rightly
+# refuses to choose (CHALLENGES 242).
+tapref() {
+  r=$(ref "$1 \\(")
+  [ -n "$r" ] || fail "$1 is not in map"
+  $M tap "$r"
+}
 # pause: stop playback if anything is playing.
 pause() {
-  if $M map | grep -qE '^@e[0-9]+ Pause \('; then $M tap label=Pause >/dev/null; fi
+  if $M map | grep -qE '^@e[0-9]+ Pause \('; then tapref Pause >/dev/null; fi
 }
 
 echo "--- $DEV"
@@ -92,6 +101,21 @@ else
   skip 236 "onboarding" "not a fresh install"
 fi
 
+# Anywhere else the app was left — the player open, a podcast's page — is
+# put back to Discover's root: the player closed, then the Discover tab,
+# the last entry by that name (a podcast page's back button is another).
+if $M map | grep -qE '^@e[0-9]+ Close player \('; then
+  pause
+  tapref "Close player" >/dev/null
+fi
+# Only when Discover's root is not already up: a tap on the selected tab
+# there opens its search instead.
+if ! $M map | grep -qE '^@e[0-9]+ Search podcasts or add RSS URL \(input\)'; then
+  tab=$($M map | grep -E '^@e[0-9]+ Discover \(button' | tail -1 | awk '{ print $1 }')
+  [ -n "$tab" ] || fail "the Discover tab is not in map"
+  $M tap "$tab" >/dev/null
+fi
+
 echo "  a podcast"
 # Discover is live, and this build's search does not find a podcast by
 # name, so the check takes the first podcast Discover ranks, whatever it is,
@@ -123,8 +147,8 @@ $M swipe up >/dev/null
 episode=$($M map | grep -E '^@e[0-9]+ ([A-Z]+ , )?([A-Z]{3,} [0-9]{1,2}|TODAY|YESTERDAY)\. ' | awk '{ print $1; exit }')
 [ -n "$episode" ] || fail "no episode row is in map"
 $M tap "$episode" >/dev/null
-$M wait "label=Play" >/dev/null || fail "the episode sheet did not come up"
-out=$($M tap label=Play)
+$M wait "label=Download" >/dev/null || fail "the episode sheet did not come up"
+out=$(tapref Play)
 pause
 case "$out" in
   *"may take the touch"*) fail "Play was noted as possibly covered: $out" ;;
@@ -134,7 +158,7 @@ esac
 row 238 "Play is touched clear of the divider"
 
 echo "  the player"
-$M tap label=Player >/dev/null
+tapref Player >/dev/null
 note=$($M map | grep 'a popover is in front' || true)
 if [ -n "$note" ]; then
   $M alert | grep -q 'no dialog is on screen, but a popover is in front' ||
@@ -157,6 +181,6 @@ rm -f /tmp/pocketcasts-fill.$$
 row 234 "the scrubber is adjustable, and fill names a drag"
 
 pause
-$M tap "label=Close player" >/dev/null
+tapref "Close player" >/dev/null
 $M press home >/dev/null
 echo "  pass"
