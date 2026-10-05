@@ -45,11 +45,21 @@ func (w *WDA) SetAccessibilitySetting(ctx context.Context, name, value string) (
 	if w.phone == nil {
 		return w.sim.SetAccessibilitySetting(ctx, name, value)
 	}
+	// What the change will be undone to is read from the switch itself, never
+	// from what the last visit to Settings saw: a read answers from that
+	// visit for ten seconds, and only a change through Mobium forgets it, so
+	// a switch flipped any other way — a test's own tap in Settings, a
+	// person — was recorded as it had been, and the restore put back the
+	// opposite of what was there. A phone left with Reduce Motion off after
+	// a run that found it on fits exactly this (ROADMAP's open lead, #118).
+	// CHALLENGES 243.
+	w.axSeen.forget()
 	was, err := w.phoneAX(ctx, name, "")
 	if err != nil {
 		return nil, err
 	}
 	w.axPend.note(name, was)
+	axLog(w.phone, "record %s was %s, before setting it %s", name, was, value)
 	// Every setting's undo puts back all of them: the first to run does the
 	// work, in one visit per Settings page, and the rest find it done.
 	undo := w.restoreAX

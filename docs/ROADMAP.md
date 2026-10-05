@@ -109,8 +109,12 @@ this is what is not.
   Predictive back measured 2026-10-02: with it turned on, React Native 0.86
   keeps `BackHandler` on Android 16 and later and loses it on 15 and
   earlier, where every back closed MobiumApp — and Mobium's `press back`
-  said so. Left: MobiumApp's swipe back on iOS, and back in its WebView
-  screens.
+  said so. Measured on the iPhone on 2026-10-05, the two left open:
+  MobiumApp has no navigation stack on iOS, so the edge swipe moves nothing
+  and Mobium says the app is still in front — a feature the app lacks, not a
+  gap in Mobium — and its WebView screens load their pages as HTML into a
+  blank page, with no history to go back through: the swipe changed nothing
+  and said so, and the app's own Back button returns.
 - **App Clips: a clip of our own on a real iPhone.** Measured 2026-10-01:
   on the simulator a clip installed alone launches, reads, takes taps and
   goes back like any native app; on the iPhone a published clip opened from
@@ -118,7 +122,10 @@ this is what is not.
   `OpenButton` opened the clip, then driven the same way ([APP-TYPES, "Try
   before you install"](APP-TYPES.md#try-before-you-install)). Open: our own
   clip on a phone and Local Experiences, which need a paid Apple Developer
-  Program team, and which button `alert accept` presses on the card.
+  Program team. Measured on 2026-10-05: on the card `alert accept` presses
+  its last button, "View on the App Store", and opens the clip's App Store
+  page, and `alert dismiss` presses Close — neither opens the clip, which
+  only a tap of `OpenButton` does.
 - ~~**Android's autofill save dialog is not an alert.**~~ Done 2026-10-02:
   the system's offer to save a password — `android:id/autofill_save`, a sheet
   over the lower half of a window of package `android` that fills the screen,
@@ -356,21 +363,14 @@ this is what is not.
   whole into the first box that loses a character as focus moves is typed
   again one character to a box and confirmed (CHALLENGES 156): 30 of 30 on
   a simulator, five of them recovered, and 10 of 10 on the iPhone.
-- **A phone restore once left a setting the opposite of what it found — an
-  open lead, not reproduced.** On 2026-10-04 a `mobium test` run on the
-  iPhone 15 Plus switched Reduce Motion off, then on, through Settings; it
-  had been on, and after the run's session ended it read off — from a fresh
-  session, and on the Settings switch itself. Two runs after it, one with a
-  screen recorder attached exactly as before, put it back on. The session
-  records a setting's value from its first change and the restore sets the
-  switch to it, reading first and confirming after, so a restore that ends
-  on the opposite value fits one thing: that first read returned the wrong
-  value. Nothing shows that it did. Next time: log each read the session
-  makes and what the first change recorded, so a recurrence says which.
-  Until then, a run on somebody's phone reads its settings before and after
-  — the talk's recording harness does — and puts back a difference on the
-  Settings switch, never through `app_accessibility`, whose own undo would
-  replay when its session ends (CHALLENGES 160).
+- ~~**A phone restore once left a setting the opposite of what it found.**~~
+  A cause found by reading the code on 2026-10-05 (CHALLENGES 243): the value
+  a change is undone to was read from a ten-second cache of the last visit
+  to Settings, which a switch flipped outside Mobium leaves stale. It is read
+  from the switch itself now, and every read, record, change and restore is
+  kept in `accessibility.log` in mobium's state directory. Not reproduced —
+  a script cannot reach the switch inside the window — so if it recurs, the
+  log says which read the restore followed.
 
 ## Under consideration
 
@@ -475,15 +475,18 @@ this is what is not.
   and an emulator, held by `docs/checks/frames.sh`. Cross-origin frames too,
   the same day (CHALLENGES 229): each is mapped, tapped and filled through
   its own execution context, on both platforms; `NATIVE_APP` reaches them as
-  well. Not reached: a cross-origin frame inside a cross-origin frame, which
-  `map` would not know is there.
+  well. On the iPhone 15 Plus too, on 2026-10-05, where a WebView is
+  reached through usbmuxd and lockdown rather than the simulator's socket:
+  `frames.sh` passed on its first run. Not reached: a cross-origin frame
+  inside a cross-origin frame, which `map` would not know is there.
 - ~~**A WebView with the iOS keyboard up refuses every action.**~~ Done
   2026-10-04 (CHALLENGES 230): with the keyboard over an app's WebView the
   frame is the WebView's, by its width, without the comparison written for
   mobile Safari, which still applies in Safari. Measured by touch first —
   the page still starts at the WebView's top with the keyboard up and the
   page scrolled — and held by `web-type.sh`, which taps two fields with the
-  keyboard up and fills one, on the simulator and an emulator.
+  keyboard up and fills one, on the simulator and an emulator, and since
+  2026-10-05 on the iPhone 15 Plus.
 - **Accessibility checks** as a side effect of the actions already being taken.
   An explicit one exists since 2026-09-30: `mobium audit` (`app_audit`)
   runs Apple's own audit on the screen in front, on a simulator and on the

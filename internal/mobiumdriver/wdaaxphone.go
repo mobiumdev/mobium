@@ -79,6 +79,7 @@ func (w *WDA) phoneAX(ctx context.Context, name, want string) (string, error) {
 	// Any change forgets it.
 	if want == "" {
 		if v, ok := w.axSeen.get(name); ok {
+			axLog(w.phone, "read %s %s (from the last visit to Settings)", name, v)
 			return v, nil
 		}
 	} else {
@@ -93,6 +94,11 @@ func (w *WDA) phoneAX(ctx context.Context, name, want string) (string, error) {
 	now, err := w.setSwitch(ctx, name, route.toggle, want)
 	if err == nil && want == "" {
 		w.axSeen.remember(name, now, w.readPage(ctx, route))
+	}
+	if want == "" {
+		axLog(w.phone, "read %s %s (from Settings)%s", name, now, errNote(err))
+	} else {
+		axLog(w.phone, "set %s %s: reads %s%s", name, want, now, errNote(err))
 	}
 	return now, err
 }
@@ -212,7 +218,9 @@ func (w *WDA) restoreAX(ctx context.Context) error {
 			continue
 		}
 		for _, name := range names {
-			if _, err := w.setSwitch(ctx, name, phoneAXRoutes[name].toggle, w.axPend.was[name]); err != nil {
+			got, err := w.setSwitch(ctx, name, phoneAXRoutes[name].toggle, w.axPend.was[name])
+			axLog(w.phone, "restore %s to %s: reads %s%s", name, w.axPend.was[name], got, errNote(err))
+			if err != nil {
 				if first == nil {
 					first = err
 				}

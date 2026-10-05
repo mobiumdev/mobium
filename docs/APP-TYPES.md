@@ -198,6 +198,8 @@ own projects' public source:
 | `tap testid=OpenButton` | the clip downloaded and opened; its camera prompt, SpringBoard's, came first and was declined |
 | `current`, `map`, `apps` | name the clip, `org.littletonrobotics.advantagescopexr.Clip`; read its controls; list it |
 | `press back --gesture` | no navigation bar, so it swiped high on the screen and said the clip stayed in front |
+| `alert accept` on the card (2026-10-05) | pressed its last button, "View on the App Store": the clip's App Store page opened, not the clip |
+| `alert dismiss` on the card | pressed Close, and the card went |
 | `uninstall` | removed it; `apps` no longer listed it |
 | Pillar Valley's clip, `com.evanbacon.pillarvalley.clip` | a card with only Close: "This app clip is not currently available in your country or region", read by `alert` |
 | `com.apple.store.Jolly.Clip` | no card at all: that app may have no clip |
@@ -205,9 +207,10 @@ own projects' public source:
 Two things to know when driving one:
 
 - **Open the clip from its card by `testid=OpenButton`.** The card is an
-  alert to `alert`, and which button `alert accept` would press on it has
-  not been measured — on iOS that choice is positional and has been wrong
-  before (CHALLENGES 106).
+  alert to `alert`, and `alert accept` presses its last button, "View on
+  the App Store", which opens the clip's store page rather than the clip;
+  `alert dismiss` presses Close. Measured on 2026-10-05 — on iOS the choice
+  is positional, as CHALLENGES 106 found on other alerts.
 - **Until the clip is up, SpringBoard is in front** — the card, the
   download, and any permission prompt the clip raises are all its.
 
