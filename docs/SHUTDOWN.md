@@ -20,6 +20,11 @@ The daemon owns the device-side sessions: a UiAutomator2 server running as
 instrumentation on Android, a WebDriverAgent process on an iOS simulator.
 Stopping it tells both to shut down.
 
+On an iOS simulator the next session starts on the home screen, whatever app
+was in front: WebDriverAgent's runner takes the foreground as it launches
+and leaves it to the home screen. The first command says so and names
+`app_launch` to bring the app back (CHALLENGES 250).
+
 Kill the *device* first and neither gets that message. On Android you leave
 instrumentation running against hardware that is about to disappear; when an
 emulator with the same serial comes back — and emulator serials are

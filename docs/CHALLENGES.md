@@ -7,7 +7,7 @@ the source.
 
 The pattern across them is the reason the document exists: **almost nothing
 here was found by reading code or by a test written from imagination.** Of
-249 defects, 209 were found only by running against a real device. The other
+250 defects, 210 were found only by running against a real device. The other
 forty — 4, 5, 6, 14, 23, 24, 32, 35, 36, 39, 44, 50, 53, 54, 57, 66, 89,
 99, 100, 121, 123, 129, 130, 133, 134, 139, 140, 141, 142, 144, 150, 158, 162,
 164, 165, 172, 222, 231, 232 and 243 — came from reading code, the compiler, a test, a linter,
@@ -5417,6 +5417,21 @@ error's details, and the upload decides by them: an `unsupported` that says
 an App Store app's container is closed to it, and names what works — the
 app's own download or document picker. The App Store Kiwix's own download
 put the same ZIM on the phone.
+
+### 250. A new simulator session read the home screen, silently
+
+**Found by:** restarting the daemon on the simulator through the day — after
+every rebuild, as SHUTDOWN says to — and reading SpringBoard each time where
+an app had been in front. Starting WebDriverAgent launches its runner, which
+takes the foreground and then leaves it, and iOS goes to the home screen,
+not back to the app the runner displaced: Settings in front, `daemon stop`,
+then `current` answered `com.apple.springboard`. The app cannot be put
+back: the simulator keeps a dozen apps alive in the background, and nothing
+asked of it says which was in front before the runner came. So it is said:
+when a new simulator session finds the home screen in front, the first
+command reports that the start put it there and names `app_launch`, through
+the same progress lines that report the start itself. Verified on the
+simulator; no unit test, the start being WebDriverAgent's.
 
 ## Findings that were not defects
 
