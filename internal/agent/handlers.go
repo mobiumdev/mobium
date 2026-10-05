@@ -1220,7 +1220,7 @@ func pickOne(loc uitree.Locator, tree *uitree.Tree) (*uitree.Node, error) {
 		// of the keyboard's way relies on — MobiumApp's Log In, below a
 		// scroll view shrunk above the keyboard, was refused until this.
 		if k := tree.Keyboard(); k != nil && !matches[0].Within(k) && k.Bounds.Covers(matches[0]) {
-			if c, v := viewOf(tree, matches[0]); c == nil || encloses(v, matches[0].Bounds) {
+			if c, v := viewOf(tree, matches[0]); c == nil || inView(v, matches[0].Bounds) {
 				return nil, keyboardOver(loc, true)
 			}
 		}
@@ -1542,7 +1542,7 @@ func (h *Handlers) resolveNodeOnce(ctx context.Context, s *session, target strin
 				WithRemedy("app_scroll_to with a direction, or app_swipe, then act on it").
 				WithDetail("locator", loc.String())
 		}
-		if container == nil || encloses(tree.Viewport(container), node.Bounds) {
+		if container == nil || inView(tree.Viewport(container), node.Bounds) {
 			return h.settle(ctx, s, loc, node, tree, readTook)
 		}
 	}
@@ -1692,7 +1692,7 @@ func (h *Handlers) lightResolve(ctx context.Context, s *session, loc uitree.Loca
 	if err != nil || !n.Enabled || h.staleRef(s.dev.Serial, target, n) != nil {
 		return nil, nil, 0, false
 	}
-	if c, v := viewOf(t, n); c != nil && !encloses(v, n.Bounds) {
+	if c, v := viewOf(t, n); c != nil && !inView(v, n.Bounds) {
 		return nil, nil, 0, false
 	}
 	if on, _ := centerOnScreen(t, n); !on {

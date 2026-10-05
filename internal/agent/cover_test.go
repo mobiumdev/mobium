@@ -180,3 +180,42 @@ func TestAMovedAimNamesWhatItAvoided(t *testing.T) {
 		t.Errorf("a control over the center: note %q, view %+v", note, view)
 	}
 }
+
+// A target bigger than its container on an axis is as far in view as
+// scrolling can bring it. Pocket Casts' search filter chips are 36 points
+// high in a 34-point horizontal scroll view, and a tap on the Podcasts chip
+// swiped the results fifteen times and gave up with the chip in plain
+// sight. A chip that is really cut off at the container's edge is still not
+// in view. CHALLENGES 241.
+func TestATargetBiggerThanItsContainerIsInView(t *testing.T) {
+	raw, err := os.ReadFile("../uitree/testdata/ios26-pocketcasts-search.xml")
+	if err != nil {
+		t.Fatal(err)
+	}
+	tree, err := uitree.ParseIOS(raw)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var chip *uitree.Node
+	tree.Walk(func(n *uitree.Node) bool {
+		if n.TestID == "Podcasts" && n.Class == "XCUIElementTypeButton" && n.Bounds.Y1 < 300 {
+			chip = n
+		}
+		return chip == nil
+	})
+	if chip == nil {
+		t.Fatal("the Podcasts chip is not in the capture")
+	}
+	c, v := viewOf(tree, chip)
+	if c == nil {
+		t.Fatal("the chip has no scroll container")
+	}
+	if !inView(v, chip.Bounds) {
+		t.Errorf("the chip %v is not in view in %v", chip.Bounds, v)
+	}
+	cut := chip.Bounds
+	cut.X1, cut.X2 = v.X2-20, v.X2+80
+	if inView(v, cut) {
+		t.Errorf("a chip cut off at the edge, %v, is in view in %v", cut, v)
+	}
+}
