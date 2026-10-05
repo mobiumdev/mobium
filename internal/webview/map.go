@@ -141,9 +141,16 @@ type Element struct {
 	// for the page itself.
 	Frame string  `json:"frame,omitempty"`
 	X     float64 `json:"x"`
-	Y     float64 `json:"y"`
-	W     float64 `json:"w"`
-	H     float64 `json:"h"`
+	// Where it lives, for acting on it: the execution context of the
+	// cross-origin frame it is in (0 for the page and the frames the page
+	// can see into), its index among that context's candidates, and the
+	// path of that frame's element in the page.
+	context int
+	local   int
+	box     string
+	Y       float64 `json:"y"`
+	W       float64 `json:"w"`
+	H       float64 `json:"h"`
 }
 
 // evaluator is the one thing a page has to be able to do. Everything else
@@ -213,8 +220,11 @@ func pageText(ctx context.Context, e evaluator) (string, error) {
 	return e.Evaluate(ctx, `document.body ? document.body.innerText : ""`)
 }
 
-// Map returns the page's actionable elements.
-func (s *Session) Map(ctx context.Context) ([]Element, error) { return mapPage(ctx, s) }
+// Map returns the page's actionable elements, its cross-origin frames' too.
+func (s *Session) Map(ctx context.Context) ([]Element, error) {
+	els, _, err := mapAll(ctx, s)
+	return els, err
+}
 
 // Text returns the page's visible text.
 func (s *Session) Text(ctx context.Context) (string, error) { return pageText(ctx, s) }

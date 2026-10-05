@@ -258,7 +258,7 @@ func area(r uitree.Rect) int { return r.Width() * r.Height() }
 
 // mapWeb maps the current WebView and records its refs.
 func (h *Handlers) mapWeb(ctx context.Context, s *session) (*ToolsCallResult, error) {
-	els, err := s.web.Map(ctx)
+	els, unreached, err := webview.MapAll(ctx, s.web)
 	if err != nil {
 		return nil, err
 	}
@@ -305,16 +305,18 @@ func (h *Handlers) mapWeb(ctx context.Context, s *session) (*ToolsCallResult, er
 	}
 	h.refs[s.dev.Serial] = table
 
-	// A cross-origin frame is closed to the page's scripts, so nothing in it
-	// is above; said, rather than left to read as an empty frame. The
-	// platform's accessibility reaches into it: on iOS, MobiumApp's
+	// A cross-origin frame is closed to the page's scripts and mapped through
+	// its own execution context (CHALLENGES 229); one that could not be
+	// paired with a context is said, rather than left to read as an empty
+	// frame. The platform's accessibility reaches into it: MobiumApp's
 	// cross-origin frame's button is in NATIVE_APP's map (CHALLENGES 228).
-	if n, err := webview.ClosedFrames(ctx, s.web); err == nil && n > 0 {
-		note := "1 frame on this page is cross-origin, closed to the page, and its elements are not listed here; " +
-			"app_context NATIVE_APP maps what the platform's accessibility reaches inside it"
+	if n := unreached; n > 0 {
+		note := "1 cross-origin frame on this page could not be reached through its own context, and its " +
+			"elements are not listed here; app_context NATIVE_APP maps what the platform's accessibility reaches inside it"
 		if n > 1 {
-			note = fmt.Sprintf("%d frames on this page are cross-origin, closed to the page, and their elements are "+
-				"not listed here; app_context NATIVE_APP maps what the platform's accessibility reaches inside them", n)
+			note = fmt.Sprintf("%d cross-origin frames on this page could not be reached through their own contexts, "+
+				"and their elements are not listed here; app_context NATIVE_APP maps what the platform's "+
+				"accessibility reaches inside them", n)
 		}
 		lines = append(lines, "", note)
 	}
@@ -352,10 +354,10 @@ func (h *Handlers) resolveWeb(ctx context.Context, s *session, target string) (u
 // findWeb resolves a web ref to its element: the rectangle on screen, the
 // element's index among the page's map candidates, and the frame that
 // converts page pixels to device pixels.
-func (h *Handlers) findWeb(ctx context.Context, s *session, target string) (uitree.Rect, int, *webview.Frame, error) {
+func (h *Handlers) findWeb(ctx context.Context, s *session, target string) (uitree.Rect, webview.Element, *webview.Frame, error) {
 	table, ok := h.refs[s.dev.Serial]
 	if !ok || table.web == nil {
-		return uitree.Rect{}, 0, nil, mobiumerr.New(mobiumerr.InvalidArgument, "no map for %s yet — run app_map first", s.webCtx)
+		return uitree.Rect{}, webview.Element{}, nil, mobiumerr.New(mobiumerr.InvalidArgument, "no map for %s yet — run app_map first", s.webCtx)
 	}
 	ref, ok := table.web[target]
 	if !ok {
@@ -366,22 +368,22 @@ func (h *Handlers) findWeb(ctx context.Context, s *session, target string) (uitr
 		// `tap text=Charles Babbage` reported "unknown ref" and reading it
 		// literally sent you back to app_map forever.
 		if !strings.HasPrefix(target, "@") {
-			return uitree.Rect{}, 0, nil, mobiumerr.New(mobiumerr.InvalidArgument,
+			return uitree.Rect{}, webview.Element{}, nil, mobiumerr.New(mobiumerr.InvalidArgument,
 				"%q is a locator, and locators do not work inside a WebView — "+
 					"use a @ref from app_map (you are in %s; `app_context NATIVE_APP` "+
 					"switches back to the app shell, where locators do work)",
 				target, s.webCtx)
 		}
-		return uitree.Rect{}, 0, nil, mobiumerr.New(mobiumerr.InvalidArgument, "unknown ref %s in %s — run app_map again", target, s.webCtx)
+		return uitree.Rect{}, webview.Element{}, nil, mobiumerr.New(mobiumerr.InvalidArgument, "unknown ref %s in %s — run app_map again", target, s.webCtx)
 	}
 
 	frame, err := h.webFrame(ctx, s)
 	if err != nil {
-		return uitree.Rect{}, 0, nil, err
+		return uitree.Rect{}, webview.Element{}, nil, err
 	}
 	els, err := s.web.Map(ctx)
 	if err != nil {
-		return uitree.Rect{}, 0, nil, err
+		return uitree.Rect{}, webview.Element{}, nil, err
 	}
 
 	match := -1
@@ -399,19 +401,19 @@ func (h *Handlers) findWeb(ctx context.Context, s *session, target string) (uitr
 		// Fall back to position only when the page still has an element
 		// there, and say so rather than silently tapping the wrong one.
 		if ref.Index < len(els) {
-			return uitree.Rect{}, 0, nil, mobiumerr.New(mobiumerr.NoSuchElement,
+			return uitree.Rect{}, webview.Element{}, nil, mobiumerr.New(mobiumerr.NoSuchElement,
 				"%s (%q) is no longer on the page — the content changed, run app_map again",
 				target, ref.Label)
 		}
-		return uitree.Rect{}, 0, nil, mobiumerr.New(mobiumerr.NoSuchElement, "%s (%q) is no longer on the page", target, ref.Label)
+		return uitree.Rect{}, webview.Element{}, nil, mobiumerr.New(mobiumerr.NoSuchElement, "%s (%q) is no longer on the page", target, ref.Label)
 	}
 
 	e := els[match]
 	rect := frame.ToDevice(e.X, e.Y, e.W, e.H)
 	if rect.Empty() {
-		return uitree.Rect{}, 0, nil, mobiumerr.New(mobiumerr.ElementNotReachable, "%s has no on-screen area", target)
+		return uitree.Rect{}, webview.Element{}, nil, mobiumerr.New(mobiumerr.ElementNotReachable, "%s has no on-screen area", target)
 	}
-	return rect, match, frame, nil
+	return rect, e, frame, nil
 }
 
 // adbFor recovers the adb handle for a session's device. Only the Android
@@ -610,17 +612,17 @@ func (h *Handlers) aimWeb(ctx context.Context, s *session, target string) (int, 
 	deadline := time.Now().Add(h.implicitWait)
 	var last *webview.Actionability
 	for {
-		_, index, frame, err := h.findWeb(ctx, s, target)
+		_, el, frame, err := h.findWeb(ctx, s, target)
 		if err != nil {
 			return 0, 0, nil, err
 		}
-		a, err := webview.CheckActionable(ctx, s.web, index)
+		a, err := webview.CheckActionable(ctx, s.web, el)
 		if err != nil {
 			return 0, 0, nil, err
 		}
 		if a.Status == "ok" {
 			time.Sleep(webStableGap)
-			b, err := webview.CheckActionable(ctx, s.web, index)
+			b, err := webview.CheckActionable(ctx, s.web, el)
 			if err != nil {
 				return 0, 0, nil, err
 			}
@@ -680,11 +682,11 @@ func (h *Handlers) webType(ctx context.Context, s *session, target, text string,
 	appendText := !replace && text != ""
 	deadline := time.Now().Add(h.implicitWait)
 	for {
-		_, index, _, err := h.findWeb(ctx, s, target)
+		_, el, _, err := h.findWeb(ctx, s, target)
 		if err != nil {
 			return nil, err
 		}
-		f, err := webview.Fill(ctx, s.web, index, text, appendText)
+		f, err := webview.Fill(ctx, s.web, el, text, appendText)
 		if err != nil {
 			return nil, err
 		}

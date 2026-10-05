@@ -431,11 +431,22 @@ this is what is not.
 - ~~**Frames and iframes** inside a WebView.~~ Done 2026-10-04 (CHALLENGES
   228) for every frame the page can see into, nested ones included: mapped
   with the frame they are in, tapped, checked and filled, on the simulator
-  and an emulator, held by `docs/checks/frames.sh`. A cross-origin frame is
-  closed to the page's scripts; `map` says it is there, and `NATIVE_APP`
-  reaches its elements through the platform's accessibility. Still to come:
-  cross-origin frames inside the WebView context itself, through each
-  protocol's per-frame execution contexts.
+  and an emulator, held by `docs/checks/frames.sh`. Cross-origin frames too,
+  the same day (CHALLENGES 229): each is mapped, tapped and filled through
+  its own execution context, on both platforms; `NATIVE_APP` reaches them as
+  well. Not reached: a cross-origin frame inside a cross-origin frame, which
+  `map` would not know is there.
+- **A WebView with the iOS keyboard up refuses every action.** Found
+  2026-10-04 on MobiumApp's Web form on the iPhone simulator: once a tap on
+  a web field raises the keyboard, a `type` or a `tap` in the same WebView is
+  refused as "the page does not fill its host", the check written for mobile
+  Safari (CHALLENGES 47). The keyboard shrinks the page's viewport — 571 CSS
+  pixels against a 584-pixel WebView there, 255 against 401 on the Frames
+  page, with `visualViewport.offsetTop` at 374 as the page scrolled the
+  field into view — and nothing tells the two apart yet. A fill by script
+  raises no keyboard on its own: WebKit shows it only for a focus that
+  follows a touch. To do: measure where a touch lands with the keyboard up,
+  and take the keyboard's top as the host's bottom when it is.
 - **Accessibility checks** as a side effect of the actions already being taken.
   An explicit one exists since 2026-09-30: `mobium audit` (`app_audit`)
   runs Apple's own audit on the screen in front, on a simulator and on the

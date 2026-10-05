@@ -7,7 +7,7 @@ the source.
 
 The pattern across them is the reason the document exists: **almost nothing
 here was found by reading code or by a test written from imagination.** Of
-228 defects, 191 were found only by running against a real device. The other
+229 defects, 192 were found only by running against a real device. The other
 thirty-seven — 4, 5, 6, 14, 23, 24, 32, 35, 36, 39, 44, 50, 53, 54, 57, 66, 89,
 99, 100, 121, 123, 129, 130, 133, 134, 139, 140, 141, 142, 144, 150, 158, 162,
 164, 165, 172 and 222 — came from reading code, the compiler, a test, a linter,
@@ -5056,6 +5056,33 @@ frame is closed to the page's scripts, so `map` says how many there are and
 that `NATIVE_APP` reaches inside them, which it does: a native tap on the
 cross-origin button reached it on both platforms. Taps on the same-origin
 and nested buttons reached them, as the page said.
+
+### 229. A cross-origin frame was out of the WebView context's reach
+
+**Found by:** finishing CHALLENGES 228, which mapped every frame a page can
+see into and could only say a cross-origin one was there. A frame closed to
+the page's scripts still has an execution context of its own, and both
+protocols run a script in one. Measured on MobiumApp's Frames page: Chrome's
+DevTools protocol announces a context per frame — the `data:` frame
+included — as `Runtime.enable`'s events, each with its `frameId`; WebKit's
+Remote Web Inspector announced nothing on `Runtime.enable` until `Page` was
+enabled, and then one context per frame. It also refuses a second
+`Page.enable` ("Page domain already enabled"), which the first version sent
+on every map, so every map after the first lost the frame.
+
+Each cross-origin frame is now paired with its context through the frame
+tree — by the element's name where both sides have one, since WebKit names
+a frame by its element's id when it has no name, and in order otherwise,
+since Chrome names a frame only by its name attribute — mapped by the same
+script in that context, and placed in the page by where the frame's content
+starts. Its elements remember their context and their index there, so the
+actionability check and the fill run in the frame; and since the frame's
+script cannot see what the page draws over the frame, the page confirms the
+point lands on the frame. On the simulator and an emulator, the
+cross-origin frame's button was tapped from the WebView context and its
+card-number field filled and added to, the frame telling the page "4242
+4242" and then "4242 4242 99". A frame that cannot be paired with a context
+is still said to be there.
 
 ## Findings that were not defects
 
