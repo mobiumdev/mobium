@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/mobiumdev/mobium/internal/mobiumerr"
+	"strings"
 
 	"github.com/mobiumdev/mobium/internal/uitree"
 )
@@ -18,24 +19,91 @@ import (
 // order it lists them. Shared with the actionability check, which picks its
 // element by the same index, so the two can never disagree about which
 // element a ref means.
+//
+// The candidates include those inside every frame the page can see into — a
+// same-origin iframe, and frames nested in it — after the page's own, so a
+// page with no frames numbers its elements as it always did. A cross-origin
+// frame's document is closed to the page and is skipped. out.paths says
+// which frame each one is in, "" for the page itself. MobiumApp's Frames
+// page mapped its own button and none of its frames' (CHALLENGES 228).
+//
+// __mobiumRect is an element's rectangle in the top page's viewport: a
+// frame's elements report theirs in the frame's, so each enclosing frame's
+// position and border is added.
+//
+// __mobiumTopAt is what is on top at a point of the top page, descending
+// through shadow roots, as Vibium does, and through frames the page can see
+// into; a cross-origin frame is itself the answer.
 const candidatesJS = `function __mobiumCandidates() {
   const sel = 'a,button,input,select,textarea,summary,[role=button],[role=link],[role=checkbox],[role=tab],[onclick],[contenteditable=true]';
   const out = [];
-  document.querySelectorAll(sel).forEach(e => {
-    const r = e.getBoundingClientRect();
-    if (r.width <= 0 || r.height <= 0) return;
-    const st = getComputedStyle(e);
-    if (st.visibility === 'hidden' || st.display === 'none' || st.opacity === '0') return;
-    out.push(e);
-  });
+  out.paths = [];
+  const visit = (doc, path) => {
+    doc.querySelectorAll(sel).forEach(e => {
+      const r = e.getBoundingClientRect();
+      if (r.width <= 0 || r.height <= 0) return;
+      const st = doc.defaultView.getComputedStyle(e);
+      if (st.visibility === 'hidden' || st.display === 'none' || st.opacity === '0') return;
+      out.push(e);
+      out.paths.push(path);
+    });
+  };
+  const frames = (doc, path) => {
+    doc.querySelectorAll('iframe,frame').forEach((f, i) => {
+      let d = null;
+      try { d = f.contentDocument; } catch (_) {}
+      if (!d || !d.documentElement) return;
+      const r = f.getBoundingClientRect();
+      if (r.width <= 0 || r.height <= 0) return;
+      const p = (path ? path + ' >> ' : '') + (f.id ? f.tagName.toLowerCase() + '#' + f.id : f.tagName.toLowerCase() + '[' + i + ']');
+      visit(d, p);
+      frames(d, p);
+    });
+  };
+  visit(document, '');
+  frames(document, '');
   return out;
+}
+function __mobiumRect(el) {
+  const r = el.getBoundingClientRect();
+  let x = r.x, y = r.y, w = el.ownerDocument.defaultView;
+  while (w && w !== window && w.frameElement) {
+    const f = w.frameElement, fr = f.getBoundingClientRect();
+    x += fr.x + f.clientLeft;
+    y += fr.y + f.clientTop;
+    w = w.parent;
+  }
+  return {x: x, y: y, width: r.width, height: r.height, left: x, top: y, right: x + r.width, bottom: y + r.height};
+}
+function __mobiumTopAt(x, y) {
+  let doc = document, ox = 0, oy = 0;
+  let hit = doc.elementFromPoint(x, y);
+  for (;;) {
+    while (hit && hit.shadowRoot) {
+      const inner = hit.shadowRoot.elementFromPoint(x - ox, y - oy);
+      if (!inner || inner === hit) break;
+      hit = inner;
+    }
+    if (!hit || (hit.tagName !== 'IFRAME' && hit.tagName !== 'FRAME')) return hit;
+    let d = null;
+    try { d = hit.contentDocument; } catch (_) {}
+    if (!d) return hit;
+    const fr = hit.getBoundingClientRect();
+    ox += fr.x + hit.clientLeft;
+    oy += fr.y + hit.clientTop;
+    doc = d;
+    const inner = d.elementFromPoint(x - ox, y - oy);
+    if (!inner) return hit;
+    hit = inner;
+  }
 }`
 
 const mapScript = `(() => {
   ` + candidatesJS + `
   const out = [];
-  __mobiumCandidates().forEach(e => {
-    const r = e.getBoundingClientRect();
+  const cands = __mobiumCandidates();
+  cands.forEach((e, i) => {
+    const r = __mobiumRect(e);
     // A checkbox or radio's value is usually "on", which is not a name; the
     // label a person reads is. Only for those two: every other field keeps
     // what it shows.
@@ -52,6 +120,7 @@ const mapScript = `(() => {
       testid: e.getAttribute('data-testid') || '',
       label: label,
       disabled: !!e.disabled,
+      frame: cands.paths[i],
       x: r.x, y: r.y, w: r.width, h: r.height
     });
   });
@@ -60,17 +129,21 @@ const mapScript = `(() => {
 
 // Element is one actionable element of a page, in CSS pixels.
 type Element struct {
-	Tag      string  `json:"tag"`
-	Type     string  `json:"type"`
-	Role     string  `json:"role"`
-	ID       string  `json:"id"`
-	TestID   string  `json:"testid"`
-	Label    string  `json:"label"`
-	Disabled bool    `json:"disabled"`
-	X        float64 `json:"x"`
-	Y        float64 `json:"y"`
-	W        float64 `json:"w"`
-	H        float64 `json:"h"`
+	Tag      string `json:"tag"`
+	Type     string `json:"type"`
+	Role     string `json:"role"`
+	ID       string `json:"id"`
+	TestID   string `json:"testid"`
+	Label    string `json:"label"`
+	Disabled bool   `json:"disabled"`
+	// Frame is the frame the element is in, as a path of frame selectors
+	// from the top page — "iframe#sameFrame >> iframe#nestedFrame" — or ""
+	// for the page itself.
+	Frame string  `json:"frame,omitempty"`
+	X     float64 `json:"x"`
+	Y     float64 `json:"y"`
+	W     float64 `json:"w"`
+	H     float64 `json:"h"`
 }
 
 // evaluator is the one thing a page has to be able to do. Everything else
@@ -103,6 +176,37 @@ func mapPage(ctx context.Context, e evaluator) ([]Element, error) {
 		return nil, fmt.Errorf("parse page map: %w", err)
 	}
 	return els, nil
+}
+
+// closedFramesScript counts the frames on a page, at any depth, whose
+// document the page cannot see into: cross-origin ones. Their elements are
+// not among the candidates, and a map that left them out without a word
+// would read as a frame with nothing in it.
+const closedFramesScript = `(() => {
+  let n = 0;
+  const walk = (doc) => doc.querySelectorAll('iframe,frame').forEach(f => {
+    const r = f.getBoundingClientRect();
+    if (r.width <= 0 || r.height <= 0) return;
+    let d = null;
+    try { d = f.contentDocument; } catch (_) {}
+    if (!d || !d.documentElement) { n++; return; }
+    walk(d);
+  });
+  walk(document);
+  return String(n);
+})()`
+
+// ClosedFrames is how many frames on the page are closed to it.
+func ClosedFrames(ctx context.Context, p evaluator) (int, error) {
+	raw, err := p.Evaluate(ctx, closedFramesScript)
+	if err != nil {
+		return 0, err
+	}
+	var n int
+	if _, err := fmt.Sscanf(strings.Trim(raw, `"`), "%d", &n); err != nil {
+		return 0, fmt.Errorf("parse closed frames %q: %w", raw, err)
+	}
+	return n, nil
 }
 
 func pageText(ctx context.Context, e evaluator) (string, error) {
@@ -220,15 +324,24 @@ func (e Element) NeutralRole() string {
 
 // Selector is the most durable CSS selector for this element, used as its
 // locator so a ref survives a re-map.
+//
+// Inside a frame it is the frame's path, then " >> ", then the selector in
+// the frame's document: CSS does not cross a frame, and the same id can be
+// in a frame and on the page.
 func (e Element) Selector() string {
+	var sel string
 	switch {
 	case e.TestID != "":
-		return fmt.Sprintf("[data-testid=%q]", e.TestID)
+		sel = fmt.Sprintf("[data-testid=%q]", e.TestID)
 	case e.ID != "":
-		return "#" + e.ID
+		sel = "#" + e.ID
 	default:
 		return ""
 	}
+	if e.Frame != "" {
+		return e.Frame + " >> " + sel
+	}
+	return sel
 }
 
 // Both transports must satisfy the same contract, or the tool layer would have

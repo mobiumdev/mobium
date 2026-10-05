@@ -428,7 +428,14 @@ this is what is not.
   to and from the device is done (`upload` and `download`, above, verified
   on a real iPhone on 2026-09-29); choosing it in the picker an app opens
   is not.
-- **Frames and iframes** inside a WebView.
+- ~~**Frames and iframes** inside a WebView.~~ Done 2026-10-04 (CHALLENGES
+  228) for every frame the page can see into, nested ones included: mapped
+  with the frame they are in, tapped, checked and filled, on the simulator
+  and an emulator, held by `docs/checks/frames.sh`. A cross-origin frame is
+  closed to the page's scripts; `map` says it is there, and `NATIVE_APP`
+  reaches its elements through the platform's accessibility. Still to come:
+  cross-origin frames inside the WebView context itself, through each
+  protocol's per-frame execution contexts.
 - **Accessibility checks** as a side effect of the actions already being taken.
   An explicit one exists since 2026-09-30: `mobium audit` (`app_audit`)
   runs Apple's own audit on the screen in front, on a simulator and on the
