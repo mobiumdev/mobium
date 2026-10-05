@@ -4653,8 +4653,21 @@ the reader in neither, the same 13 nodes either way. The first build died on
 Android 17 within 150 ms: newer accessibility code builds a Handler on the
 main looper, which a bare `app_process` does not have, and Android 9 had never
 asked for one. With no service enabled, reads go through `uiautomator dump`
-as before. The default driver, UiAutomator2, still silences a screen reader
-(ROADMAP).
+as before.
+
+The default driver, UiAutomator2, went on silencing it for as long as a
+session was open, and asking it not to looked like it worked: the server
+accepted a `disableSuppressAccessibilityService` setting and kept unbinding.
+In the pinned server the flag is read only from an instrumentation argument,
+`DISABLE_SUPPRESS_ACCESSIBILITY_SERVICES`, when the server starts, and Mobium
+now starts it with that. `docs/checks/screen-reader.sh` turns TalkBack on and
+holds a session to it: on the Android 17 emulator and the Pixel 8 Pro every
+service stayed bound and touch exploration stayed on, while a tap, a scroll
+and a fill landed as MobiumApp reports them. Against the build before, the
+same check found nothing bound once the session opened. It runs on a phone
+only with `ALLOW_PHONE=1`, and puts the accessibility settings back as it
+found them — including an empty value, which `adb shell` drops unless it is
+quoted.
 
 ### 209. On Android 9 every app read as in the background, and TV apps would not launch
 
