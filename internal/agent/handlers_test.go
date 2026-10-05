@@ -103,17 +103,41 @@ func TestPickOne(t *testing.T) {
 	}
 }
 
-func TestPickOneSuggestsRoleForPlainLocators(t *testing.T) {
-	tree := loadLauncher(t)
-	// The launcher shows "Gmail" twice: the app icon, and the predicted-app
-	// slot whose text is also "Gmail".
+// A role is offered to narrow an ambiguous locator only where the matches
+// differ by role, and named. The launcher shows "Gmail" twice, the app icon
+// and the predicted-app slot, both buttons: "append ,role=button" was
+// offered there and left text=Gmail,role=button matching both. Where one
+// match is shown and another iOS reports hidden — Pocket Casts' onboarding
+// sheet over Discover, on an iPad — that is the difference, and it is said.
+// CHALLENGES 242.
+func TestPickOneSuggestsRoleOnlyWhereItNarrows(t *testing.T) {
 	loc := uitree.Locator{Kind: uitree.KindText, Value: "Gmail"}
-	_, err := pickOne(loc, tree)
+	_, err := pickOne(loc, loadLauncher(t))
 	if err == nil {
 		t.Fatal("precondition: text=Gmail should be ambiguous on the launcher")
 	}
-	if !strings.Contains(err.Error(), `appending ",role=`) {
-		t.Errorf("plain ambiguous locator not offered the role hint: %v", err)
+	if strings.Contains(err.Error(), `,role=`) || !strings.Contains(err.Error(), "use a ref from app_map") {
+		t.Errorf("two buttons were told to narrow by role: %v", err)
+	}
+
+	const ios = `<?xml version="1.0" encoding="UTF-8"?><XCUIElementTypeApplication type="XCUIElementTypeApplication" name="App" x="0" y="0" width="402" height="874" visible="true" enabled="true">` +
+		`<XCUIElementTypeButton type="XCUIElementTypeButton" name="More" label="More" x="10" y="100" width="100" height="44" visible="true" enabled="true" accessible="true"/>` +
+		`<XCUIElementTypeLink type="XCUIElementTypeLink" name="More" label="More" x="10" y="200" width="100" height="44" visible="true" enabled="true" accessible="true"/>` +
+		`<XCUIElementTypeButton type="XCUIElementTypeButton" name="Technology" label="Technology" x="682" y="135" width="127" height="37" visible="false" enabled="true" accessible="true"/>` +
+		`<XCUIElementTypeButton type="XCUIElementTypeButton" name="Technology" label="Technology" x="347" y="522" width="137" height="24" visible="true" enabled="true" accessible="true"/>` +
+		`</XCUIElementTypeApplication>`
+	tree, err := uitree.ParseIOS([]byte(ios))
+	if err != nil {
+		t.Fatal(err)
+	}
+	loc, _ = uitree.ParseLocator("label=More")
+	if _, err := pickOne(loc, tree); err == nil || !strings.Contains(err.Error(), `",role=" and one of button, link`) {
+		t.Errorf("a button and a link were not told to narrow by one of their roles: %v", err)
+	}
+	loc, _ = uitree.ParseLocator("label=Technology")
+	_, err = pickOne(loc, tree)
+	if err == nil || strings.Contains(err.Error(), `,role=`) || !strings.Contains(err.Error(), "1 of them iOS reports hidden") {
+		t.Errorf("a shown and a hidden button were not told apart: %v", err)
 	}
 }
 

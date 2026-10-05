@@ -1232,15 +1232,47 @@ func pickOne(loc uitree.Locator, tree *uitree.Tree) (*uitree.Node, error) {
 		}
 		return matches[0], nil
 	default:
-		hint := "use a ref from app_map"
-		if loc.Kind != uitree.KindRole && loc.Role == "" {
-			hint = `narrow it by appending ",role=button" (or whichever role), or ` + hint
-		}
-		return nil, mobiumerr.New(mobiumerr.AmbiguousLocator, "%s matches %d elements — %s", loc, len(matches), hint).
-			WithRemedy(hint).
-			WithDetail("locator", loc.String()).
-			WithDetail("matches", len(matches))
+		return nil, ambiguous(loc, matches)
 	}
+}
+
+// ambiguous is the refusal for a locator that matches several elements,
+// with a remedy that can work. A role narrows it only where the matches
+// differ by role: on an iPad, Pocket Casts' onboarding is a sheet over
+// Discover, and label=Technology matched the topic's button and Discover's
+// category button behind the sheet, both buttons — so "append ,role=button"
+// was advice that changed nothing. What differs there is that iOS reports
+// one of them hidden, and map lists only the one shown, so its ref is the
+// way in. CHALLENGES 242.
+func ambiguous(loc uitree.Locator, matches []*uitree.Node) error {
+	roles := map[string]bool{}
+	hidden := 0
+	for _, m := range matches {
+		if r := uitree.RoleOf(m); r != "" {
+			roles[r] = true
+		}
+		if !m.Displayed {
+			hidden++
+		}
+	}
+	hint := "use a ref from app_map"
+	if loc.Kind != uitree.KindRole && loc.Role == "" && len(roles) > 1 {
+		names := make([]string, 0, len(roles))
+		for r := range roles {
+			names = append(names, r)
+		}
+		sort.Strings(names)
+		hint = fmt.Sprintf(`narrow it by appending ",role=" and one of %s, or `, strings.Join(names, ", ")) + hint
+	}
+	why := ""
+	if hidden > 0 && hidden < len(matches) {
+		why = fmt.Sprintf(" (%d of them iOS reports hidden — behind a sheet or another screen, or off screen — and app_map "+
+			"lists only what is shown)", hidden)
+	}
+	return mobiumerr.New(mobiumerr.AmbiguousLocator, "%s matches %d elements%s — %s", loc, len(matches), why, hint).
+		WithRemedy(hint).
+		WithDetail("locator", loc.String()).
+		WithDetail("matches", len(matches))
 }
 
 // pickToRead resolves a locator to exactly one node for reading it. What a
