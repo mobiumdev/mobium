@@ -1,0 +1,17 @@
+waiting for WebDriverAgent to start...
+71 tools, among them app_session, app_map, app_tap
+→ app_session {"action": "start", "platform": "ios", "app": "com.apple.Preferences"}
+  session started on 457C7DC2-C706-45D9-8D68-1D26953E28B1 (ios, wda); com.apple.Preferences was launched fresh and is in the foreground
+→ app_map {}
+  @e1 Apple Account, Sign in to access your iCloud data, the App Store, Apple services, and more. (button)
+  @e2 General (button)
+  @e3 Accessibility (button)
+  @e4 Action Button (button)
+  @e5 Apple Intelligence & Siri (button)
+→ app_tap {"target": "@e2"}
+→ app_wait_for {"target": "label=About,role=button"}
+  label=About,role=button is visible after 410ms — @e5 About (button)
+→ app_screenshot {"path": "quickstart-ios.png"}
+  saved quickstart-ios.png
+→ app_session {"action": "end"}
+  session ended on 457C7DC2-C706-45D9-8D68-1D26953E28B1; anything it changed for the session is put back; com.apple.Preferences, which the session launched, was stopped

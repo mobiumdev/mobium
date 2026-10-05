@@ -5,7 +5,7 @@ import { start } from 'mobium'
 
 // Settings is on every emulator, simulator and phone, with nothing to install.
 const PLATFORMS = {
-  android: { app: 'com.android.settings', row: 'Network & internet', next: 'text=Internet' },
+  android: { app: 'com.android.settings', row: 'Network & internet', next: 'text=Airplane mode' },
   ios: { app: 'com.apple.Preferences', row: 'General', next: 'label=About,role=button' },
 }
 const platform = process.env.MOBIUM_PLATFORM || 'android'

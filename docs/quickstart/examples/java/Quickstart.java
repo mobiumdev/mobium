@@ -17,7 +17,7 @@ public class Quickstart {
     record Target(String app, String row, String next) {}
 
     static final Map<String, Target> PLATFORMS = Map.of(
-            "android", new Target("com.android.settings", "Network & internet", "text=Internet"),
+            "android", new Target("com.android.settings", "Network & internet", "text=Airplane mode"),
             "ios", new Target("com.apple.Preferences", "General", "label=About,role=button"));
 
     public static void main(String[] args) {

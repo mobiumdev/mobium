@@ -1,0 +1,17 @@
+waiting for the UiAutomator2 server to start...
+71 tools, among them app_session, app_map, app_tap
+→ app_session {"action": "start", "platform": "android", "app": "com.android.settings"}
+  session started on emulator-5554 (android, uiautomator2); com.android.settings was launched fresh and is in the foreground
+→ app_map {}
+  @e1 settings_homepage_container (list)
+  @e2 Profile picture, double tap to open Google Account (button)
+  @e3 Search settings (button)
+  @e4 main_content_scrollable_container (list)
+  @e5 Network & internet Mobile, Wi‑Fi, hotspot (button)
+→ app_tap {"target": "@e5"}
+→ app_wait_for {"target": "text=Airplane mode"}
+  text=Airplane mode is visible after 1.301s — @e5 Airplane mode (switch, unchecked)
+→ app_screenshot {"path": "quickstart-android.png"}
+  saved quickstart-android.png
+→ app_session {"action": "end"}
+  session ended on emulator-5554; anything it changed for the session is put back; com.android.settings, which the session launched, was stopped

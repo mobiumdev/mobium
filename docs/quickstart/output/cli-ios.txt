@@ -6,6 +6,6 @@ session started on 457C7DC2-C706-45D9-8D68-1D26953E28B1 (ios, wda); com.apple.Pr
 @e4 Action Button (button)
 @e5 Apple Intelligence & Siri (button)
 tapped @e2 at (603, 958)
-label=About,role=button is visible after 408ms — @e4 About (button)
-saved ./quickstart-ios.png (332702 bytes)
-session ended on 457C7DC2-C706-45D9-8D68-1D26953E28B1; anything it changed for the session is put back
+label=About,role=button is visible after 413ms — @e5 About (button)
+saved /tmp/quickstart/quickstart-ios.png (333954 bytes)
+session ended on 457C7DC2-C706-45D9-8D68-1D26953E28B1; anything it changed for the session is put back; com.apple.Preferences, which the session launched, was stopped

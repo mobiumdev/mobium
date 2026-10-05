@@ -9,7 +9,7 @@ using Mobium;
 // Settings is on every emulator, simulator and phone, with nothing to install.
 var platforms = new Dictionary<string, (string App, string Row, string Next)>
 {
-    ["android"] = ("com.android.settings", "Network & internet", "text=Internet"),
+    ["android"] = ("com.android.settings", "Network & internet", "text=Airplane mode"),
     ["ios"] = ("com.apple.Preferences", "General", "label=About,role=button"),
 };
 var platform = Environment.GetEnvironmentVariable("MOBIUM_PLATFORM") ?? "android";

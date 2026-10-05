@@ -16,7 +16,7 @@ import (
 
 // Settings is on every emulator, simulator and phone, with nothing to install.
 var platforms = map[string]struct{ app, row, next string }{
-	"android": {"com.android.settings", "Network & internet", "text=Internet"},
+	"android": {"com.android.settings", "Network & internet", "text=Airplane mode"},
 	"ios":     {"com.apple.Preferences", "General", "label=About,role=button"},
 }
 

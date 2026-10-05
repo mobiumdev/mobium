@@ -8,7 +8,7 @@ from mobium import start
 
 # Settings is on every emulator, simulator and phone, with nothing to install.
 PLATFORMS = {
-    "android": {"app": "com.android.settings", "row": "Network & internet", "next": "text=Internet"},
+    "android": {"app": "com.android.settings", "row": "Network & internet", "next": "text=Airplane mode"},
     "ios": {"app": "com.apple.Preferences", "row": "General", "next": "label=About,role=button"},
 }
 platform = os.environ.get("MOBIUM_PLATFORM", "android")
