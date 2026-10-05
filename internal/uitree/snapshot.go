@@ -33,6 +33,12 @@ type Entry struct {
 	// sign of which of Here and All Articles was chosen until it was read
 	// from iOS's traits.
 	Selected bool `json:"selected,omitempty"`
+	// Disabled is set when the platform reports the element not enabled. An
+	// action waits for such a target to be enabled and refuses it if it
+	// stays disabled, so map says so first: Pocket Casts' onboarding button
+	// "Select at least 3" printed as a plain `(button)` while the device
+	// reported it NotEnabled. CHALLENGES 239.
+	Disabled bool `json:"disabled,omitempty"`
 	// Value is a slider's value as the platform states it, and empty for
 	// everything else. A string because it is the app's: iOS reports
 	// "80%" or "1.2", whatever the app made of the position.
@@ -55,6 +61,9 @@ func (e Entry) Line() string {
 	}
 	if e.Selected {
 		states = append(states, "selected")
+	}
+	if e.Disabled {
+		states = append(states, "disabled")
 	}
 	if e.Value != "" {
 		states = append(states, e.Value)
@@ -345,6 +354,7 @@ func (t *Tree) Map() []Entry {
 			Locator:  Derive(n.node, t),
 			Bounds:   n.node.Bounds,
 			Selected: n.node.Selected,
+			Disabled: !n.node.Enabled,
 			Node:     n.node,
 		}
 		if e.Role == "slider" || e.Role == "adjustable" {

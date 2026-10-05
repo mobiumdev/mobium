@@ -32,13 +32,16 @@ namespace Mobium
         /// <summary>What a slider reads, as the app states it ("80%", "1.2"); empty for anything else.</summary>
         public string Value { get; }
 
+        /// <summary>True for what the platform reports not enabled: an action on it waits, then is refused.</summary>
+        public bool Disabled { get; }
+
         /// <summary>Builds an element record.</summary>
         public Element(string @ref, string label, string role, string locator, Bounds bounds, string context,
-            bool? @checked = null, bool selected = false, string value = "")
+            bool? @checked = null, bool selected = false, string value = "", bool disabled = false)
         {
             Ref = @ref; Label = label; Role = role;
             Locator = locator; Bounds = bounds; Context = context; Checked = @checked; Selected = selected;
-            Value = value;
+            Value = value; Disabled = disabled;
         }
 
         internal static Element From(IDictionary<string, object?> m)
@@ -54,7 +57,8 @@ namespace Mobium
                 Json.Str(m, "context"),
                 m.TryGetValue("checked", out var c) && c is bool isChecked ? isChecked : (bool?)null,
                 m.TryGetValue("selected", out var s) && s is bool isSelected && isSelected,
-                Json.Str(m, "value"));
+                Json.Str(m, "value"),
+                m.TryGetValue("disabled", out var d) && d is bool isDisabled && isDisabled);
         }
 
         /// <summary>The ref and label, with the role in brackets when there is one.</summary>

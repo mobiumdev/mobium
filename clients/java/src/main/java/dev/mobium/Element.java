@@ -17,10 +17,13 @@ import java.util.Map;
  *                 the chosen segment of a segmented control
  * @param value    what a slider reads, as the app states it ("80%", "1.2");
  *                 empty for anything else
+ * @param disabled true for what the platform reports not enabled: an action
+ *                 on it waits for it to be enabled, and is refused if it stays
+ *                 disabled
  */
 public record Element(String ref, String label, String role,
                       String locator, Bounds bounds, String context, Boolean checked,
-                      boolean selected, String value) {
+                      boolean selected, String value, boolean disabled) {
 
     static Element from(Map<String, Object> m) {
         Map<String, Object> loc = Json.asObject(m.get("locator"));
@@ -34,7 +37,8 @@ public record Element(String ref, String label, String role,
                 Json.str(m, "context"),
                 m.get("checked") instanceof Boolean c ? c : null,
                 Boolean.TRUE.equals(m.get("selected")),
-                Json.str(m, "value"));
+                Json.str(m, "value"),
+                Boolean.TRUE.equals(m.get("disabled")));
     }
 
     @Override public String toString() {

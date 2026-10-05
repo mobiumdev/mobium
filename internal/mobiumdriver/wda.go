@@ -803,8 +803,8 @@ func (w *WDA) Clear(ctx context.Context, n *uitree.Node) error {
 // app's tree had just shown was "no such element" (CHALLENGES 155).
 func (w *WDA) elementFor(ctx context.Context, n *uitree.Node) (string, error) {
 	find := func() (string, error) {
-		if n.TestID != "" {
-			return w.w3c.findElement(ctx, "accessibility id", n.TestID)
+		if p, ok := namePredicate(n); ok && countNamed(n) == 1 {
+			return w.w3c.findElement(ctx, "predicate string", p)
 		}
 		return w.w3c.findElement(ctx, "xpath", iosXPathFor(n))
 	}
@@ -821,6 +821,44 @@ func (w *WDA) elementFor(ctx context.Context, n *uitree.Node) (string, error) {
 		return id, err
 	}
 	return again, nil
+}
+
+// namePredicate finds a node by its name and its type together. A name alone
+// is not one element: WebDriverAgent's "accessibility id" matches it against
+// every element, and Pocket Casts' search field is named "Search", as is the
+// keyboard's Search key once the field has focus — so typing into the field
+// found the key, and failed with "the previously found element "Search"
+// Button is not present" once the results replaced the keyboard, after the
+// text had gone into the field. CHALLENGES 240.
+func namePredicate(n *uitree.Node) (string, bool) {
+	if n.TestID == "" || n.Class == "" || strings.ContainsAny(n.TestID+n.Class, `"\`) {
+		return "", false
+	}
+	return fmt.Sprintf(`name == "%s" AND type == "%s"`, n.TestID, n.Class), true
+}
+
+// countNamed is how many nodes of the tree n came from share its name and
+// type, n among them. More than one, and the name finds whichever
+// WebDriverAgent meets first — React Native repeats one identifier across
+// the native views of a component (CHALLENGES 55) — so the node's own path
+// is used instead.
+func countNamed(n *uitree.Node) int {
+	root := n
+	for root.Parent != nil {
+		root = root.Parent
+	}
+	count := 0
+	var walk func(m *uitree.Node)
+	walk = func(m *uitree.Node) {
+		if m.TestID == n.TestID && m.Class == n.Class {
+			count++
+		}
+		for _, c := range m.Children {
+			walk(c)
+		}
+	}
+	walk(root)
+	return count
 }
 
 // iosXPathFor rebuilds an absolute XPath from a node's sibling path. WDA's

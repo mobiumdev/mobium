@@ -7,7 +7,7 @@ the source.
 
 The pattern across them is the reason the document exists: **almost nothing
 here was found by reading code or by a test written from imagination.** Of
-238 defects, 199 were found only by running against a real device. The other
+242 defects, 203 were found only by running against a real device. The other
 thirty-nine — 4, 5, 6, 14, 23, 24, 32, 35, 36, 39, 44, 50, 53, 54, 57, 66, 89,
 99, 100, 121, 123, 129, 130, 133, 134, 139, 140, 141, 142, 144, 150, 158, 162,
 164, 165, 172, 222, 231 and 232 — came from reading code, the compiler, a test, a linter,
@@ -5260,6 +5260,60 @@ is never a local cover: the rule's size guard let the one that holds iOS
 26's floating tab bar through over Pocket Casts' podcast header, which is
 more than half the screen high. Across every captured hierarchy, these
 three are the only aims that change.
+
+### 239. A disabled control mapped as an ordinary one
+
+**Found by:** Pocket Casts' onboarding. Its topic picker's button reads
+"Select at least 3" until three topics are chosen, and iOS reports it
+NotEnabled; `map` printed it as a plain `(button)`, on every platform,
+since nothing ever carried the state there. An action already waited for a
+disabled target and refused it if it stayed disabled, so a caller learned
+it by trying. `map` now shows `(button, disabled)`, `disabled` is on every
+client's element, and `map --diff` names the change — choosing three topics
+reads `~ @e17 Continue (button) — was "Select at least 3", was disabled`.
+Of 727 entries across the captures before this, five were disabled:
+NetNewsWire's Add before a URL is typed, and Ice Cubes' four tint swatches
+while a preset theme is chosen, all of them really so.
+
+### 240. Typing into a search field named "Search" found the keyboard's key
+
+**Found by:** the Pocket Casts check, typing into Discover's search field.
+The text arrived and the call failed: "the previously found element
+"Search" Button is not present in the current view anymore". The field is
+named "Search", and an element with a name was found by WebDriverAgent's
+"accessibility id", which matches that name against every element — and
+once the field has focus, the keyboard's Search key is one. The key was
+found, the keystrokes went to the field because it had focus, and the key
+was gone by the time the call looked again. A named element is now found by
+its name and its type together, and only when no other node in the tree
+has both; otherwise by its path, as an unnamed one always was. React
+Native, which repeats one identifier across a component's views (55), now
+takes the path too.
+
+### 241. A chip taller than its row was scrolled for fifteen times
+
+**Found by:** the same search. A tap on the Podcasts filter chip swiped
+the results down fifteen times and gave up — "on the screen but never
+scrolled fully into view" — with the chip in plain sight throughout, and
+the swipes left the results scrolled over it. The chips are 36 points high
+in a horizontal scroll view 34 points high, a point over each edge, and a
+target had to fit inside its container's view to count as in it. One that
+runs past both edges of an axis is now in view on that axis, since no
+swipe along it shows more; one cut off at one edge is not.
+
+### 242. An ambiguous locator told to narrow by a role both matches share
+
+**Found by:** the Pocket Casts check on an iPad Air simulator. There the
+onboarding topic picker is a sheet over Discover, and `label=Technology`
+matched the topic's button and Discover's category button behind the
+sheet, which iOS reports hidden. Refusing was right — a strict locator
+counts what it cannot see — but the remedy said to append `,role=button`,
+and both were buttons, so following it changed nothing. The launcher's two
+"Gmail" buttons had the same advice, held by a test. A role is now offered
+only where the matches differ by role, naming them (`",role=" and one of
+button, link`), and where some matches are hidden and some shown the
+refusal says so, since `map` lists only the one shown and its ref is the
+way in.
 
 ## Findings that were not defects
 

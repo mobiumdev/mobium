@@ -90,6 +90,9 @@ type Element struct {
 	// Selected is true for what the platform reports chosen: the current
 	// tab, the chosen segment of a segmented control.
 	Selected bool `json:"selected,omitempty"`
+	// Disabled is true for what the platform reports not enabled: an action
+	// on it waits for it to be enabled, and is refused if it stays disabled.
+	Disabled bool `json:"disabled,omitempty"`
 	// Value is what a slider reads, as the app states it ("80%", "1.2");
 	// empty for everything else. Fill a slider with a position from 0 to 1.
 	Value string `json:"value,omitempty"`
@@ -346,7 +349,7 @@ type MapDiff struct {
 type MapChange struct {
 	Before Element `json:"before"`
 	After  Element `json:"after"`
-	// What names each difference: "label", "checked", "selected", "value",
+	// What names each difference: "label", "checked", "selected", "disabled", "value",
 	// "moved" or "resized".
 	What []string `json:"what"`
 }

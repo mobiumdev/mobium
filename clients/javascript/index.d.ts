@@ -35,6 +35,8 @@ export interface Element {
   checked: boolean | null
   /** True for what the platform reports chosen: the current tab, a segment. */
   selected: boolean
+  /** True for what the platform reports not enabled; an action on it waits, then is refused. */
+  disabled: boolean
   /** What a slider reads, as the app states it (`"80%"`, `"1.2"`); empty for anything else. */
   value: string
 }
@@ -45,7 +47,7 @@ export interface MapChange {
   before: Element
   /** As it is now; its ref is the new map's. */
   after: Element
-  /** What differs: `"label"`, `"checked"`, `"selected"`, `"value"`, `"moved"` or `"resized"`. */
+  /** What differs: `"label"`, `"checked"`, `"selected"`, `"disabled"`, `"value"`, `"moved"` or `"resized"`. */
   what: string[]
 }
 

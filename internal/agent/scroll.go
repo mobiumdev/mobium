@@ -467,7 +467,7 @@ func resolvedAndVisible(loc uitree.Locator, tree *uitree.Tree, container *uitree
 	}
 	// Judge it against the container that would move it, not whichever
 	// scrollable happens to be biggest.
-	if own, v := viewOf(tree, n); own != nil && !encloses(v, n.Bounds) {
+	if own, v := viewOf(tree, n); own != nil && !inView(v, n.Bounds) {
 		return nil, errOffScreen
 	}
 	return n, nil
@@ -482,7 +482,7 @@ func offScreenTarget(loc uitree.Locator, tree *uitree.Tree) (*uitree.Node, *uitr
 		return nil, nil
 	}
 	own, v := viewOf(tree, n)
-	if own == nil || encloses(v, n.Bounds) {
+	if own == nil || inView(v, n.Bounds) {
 		return nil, nil
 	}
 	// What the nudge measures against is the part of the list in view, not
@@ -537,9 +537,18 @@ func nudgeInto(ctx context.Context, gest mobiumdriver.Gesturer, c, n *uitree.Nod
 // of the list you can see — which is the one case scrolling can fix.
 var errOffScreen = mobiumerr.New(mobiumerr.ElementNotReachable, "the element is not in view")
 
-func encloses(outer, inner uitree.Rect) bool {
-	return inner.X1 >= outer.X1 && inner.Y1 >= outer.Y1 &&
-		inner.X2 <= outer.X2 && inner.Y2 <= outer.Y2
+// inView reports whether a target's bounds are as far into a viewport as
+// scrolling can bring them: on each axis, inside it, or past both its edges.
+// A target bigger than its container on an axis can never fit, and no swipe
+// along that axis shows more of it: Pocket Casts' search filter chips are 36
+// points high in a 34-point horizontal scroll view, a point over each edge,
+// and a tap on the Podcasts chip swiped the results down fifteen times and
+// gave up, the chip in plain sight the whole time. CHALLENGES 241.
+func inView(view, b uitree.Rect) bool {
+	within := func(lo, hi, vlo, vhi int) bool {
+		return (lo >= vlo && hi <= vhi) || (lo < vlo && hi > vhi)
+	}
+	return within(b.X1, b.X2, view.X1, view.X2) && within(b.Y1, b.Y2, view.Y1, view.Y2)
 }
 
 // viewOf is n's scroll container and the part of it in view: its bounds

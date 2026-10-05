@@ -1044,3 +1044,27 @@ func TestARowIsNamedByItsWordsNotItsControls(t *testing.T) {
 		}
 	}
 }
+
+// A control the platform reports not enabled says so in map, as an action
+// would find out by waiting and being refused: Pocket Casts' "Select at
+// least 3" printed as a plain `(button)` while iOS reported it NotEnabled,
+// and NetNewsWire's Add is disabled until the field holds a URL. Of 727
+// entries across the captures before these, five were disabled, all of
+// them really so. CHALLENGES 239.
+func TestADisabledControlSaysSo(t *testing.T) {
+	for _, tc := range []struct{ file, want, enabled string }{
+		{"ios26-pocketcasts-topics.xml", "Select at least 3 (button, disabled)", "Technology (button)"},
+		{"ios26-netnewswire-add-feed.xml", "Add (button, disabled)", "Cancel (button)"},
+	} {
+		lines := map[string]bool{}
+		for _, e := range loadIOS(t, tc.file).Map() {
+			lines[strings.TrimPrefix(e.Line(), e.Ref+" ")] = true
+		}
+		if !lines[tc.want] {
+			t.Errorf("%s does not map %q", tc.file, tc.want)
+		}
+		if !lines[tc.enabled] {
+			t.Errorf("%s does not map %q as enabled", tc.file, tc.enabled)
+		}
+	}
+}

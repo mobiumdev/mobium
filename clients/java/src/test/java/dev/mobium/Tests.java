@@ -142,6 +142,9 @@ public final class Tests {
         eq("a checkbox carries its state", Boolean.TRUE, box.checked());
         Element off = Element.from(Json.asObject(Json.parse("{\"ref\":\"@e5\",\"role\":\"switch\",\"checked\":false}")));
         eq("an unchecked switch is false, not null", Boolean.FALSE, off.checked());
+        Element add = Element.from(Json.asObject(Json.parse("{\"ref\":\"@e6\",\"role\":\"button\",\"disabled\":true}")));
+        yes("a disabled button says so", add.disabled());
+        yes("anything else is not disabled", !e.disabled());
     }
 
     static void boundsComputeTheirCenter() {
