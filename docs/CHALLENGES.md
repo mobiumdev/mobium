@@ -7,10 +7,10 @@ the source.
 
 The pattern across them is the reason the document exists: **almost nothing
 here was found by reading code or by a test written from imagination.** Of
-231 defects, 193 were found only by running against a real device. The other
-thirty-eight — 4, 5, 6, 14, 23, 24, 32, 35, 36, 39, 44, 50, 53, 54, 57, 66, 89,
+232 defects, 193 were found only by running against a real device. The other
+thirty-nine — 4, 5, 6, 14, 23, 24, 32, 35, 36, 39, 44, 50, 53, 54, 57, 66, 89,
 99, 100, 121, 123, 129, 130, 133, 134, 139, 140, 141, 142, 144, 150, 158, 162,
-164, 165, 172, 222 and 231 — came from reading code, the compiler, a test, a linter,
+164, 165, 172, 222, 231 and 232 — came from reading code, the compiler, a test, a linter,
 cross-checking a computed number against a screenshot, using the tooling on
 itself, typing a negative number at a command line, and driving the clients
 against a stand-in daemon, CI on Windows, following the quick start from
@@ -5121,6 +5121,18 @@ declarations to the schemas: a string-literal union in `index.d.ts` that
 shares two or more values with a tool's enum must list exactly that enum.
 It found this one and no other, and a stale copy of the old union is
 reported by a test of its own.
+
+### 232. type and fill told an agent they needed Android's driver
+
+**Found by:** reading the tool descriptions while writing the docs site's
+slider example. `app_type` and `app_fill` said "Requires the uiautomator2
+driver", and the CLI's `type` and `fill` help "Needs the uiautomator2
+backend". Both have worked on iOS through WebDriverAgent since the iOS
+backend arrived — text, and since #112 sliders — so an agent reading the
+schema on an iPhone was told not to use the tools that would work. What is
+refused is one driver: Android's `uiautomator` dump driver, which declines
+text entry rather than enter it wrong. The descriptions and the help now
+say that, and `fill`'s help shows a slider.
 
 ## Findings that were not defects
 

@@ -243,7 +243,8 @@ func GetToolSchemas() []Tool {
 				"app_fill replaces it instead. The element is located on the " +
 				"device, so the text goes where you aimed it rather than wherever focus " +
 				"happens to be, and quotes, spaces and non-ASCII survive intact. Pass an " +
-				"empty string to clear the field. Requires the uiautomator2 driver.",
+				"empty string to clear the field. Not on Android's uiautomator dump driver, " +
+				"which declines text entry rather than enter it wrong.",
 			InputSchema: map[string]interface{}{
 				"type": "object",
 				"properties": withDevice(map[string]interface{}{
@@ -264,7 +265,7 @@ func GetToolSchemas() []Tool {
 			Name: "app_fill",
 			Description: "Clear a specific element and type text into it, replacing what it " +
 				"held — Vibium's fill; app_type adds to it instead. Located, checked and " +
-				"typed as app_type is. Requires the uiautomator2 driver. On a slider, text is " +
+				"typed as app_type is; not on Android's uiautomator dump driver. On a slider, text is " +
 				"a position from 0 (the start of its track) to 1 (the end), and the result is " +
 				"the value the slider then reports, as map shows it. On Android the track is " +
 				"touched at the position and the slider lands there; on iOS the thumb is moved " +
