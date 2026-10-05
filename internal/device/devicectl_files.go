@@ -75,6 +75,15 @@ func (d *Devicectl) UploadFile(ctx context.Context, local, name, bundleID string
 		}
 		args := append([]string{"device", "copy", "to"}, d.container(bundleID)...)
 		if _, err := d.run(ctx, append(args, "--source", fresh, "--destination", remote)...); err != nil {
+			if containerClosed(err) {
+				return Transfer{}, mobiumerr.New(mobiumerr.Unsupported, "the iPhone would not take a copy into %s's "+
+					"Documents (CoreDevice error 7000, \"could not be transferred\"). devicectl writes only into apps "+
+					"installed for development: on the iPhone 15 Plus MobiumApp took the same file while Kiwix and "+
+					"Pocket Casts from the App Store refused it", bundleID).
+					WithRemedy("put the file there through the app itself — its own download, or its document picker "+
+						"from a folder it can reach — or upload to a build of the app installed for development").
+					WithDetail("app", bundleID)
+			}
 			return Transfer{}, err
 		}
 		_ = os.Remove(back)
@@ -94,6 +103,16 @@ func (d *Devicectl) UploadFile(ctx context.Context, local, name, bundleID string
 	}
 	return Transfer{Name: name, Where: bundleID + " Documents/" + name, Bytes: int64(len(want)),
 		Checked: "its bytes read back from the phone and compared"}, nil
+}
+
+// containerClosed reports CoreDevice's refusal to copy into an app's
+// container, error 7000. Measured on the iPhone 15 Plus (iOS 26.6.2): the
+// App Store's Kiwix and Pocket Casts refused a file MobiumApp, installed for
+// development, took. Passed through, it said only "The specified file could
+// not be transferred." CHALLENGES 249.
+func containerClosed(err error) bool {
+	e, ok := mobiumerr.As(err)
+	return ok && e.Details["devicectl_domain"] == "com.apple.dt.CoreDeviceError" && e.Details["devicectl_code"] == 7000
 }
 
 // DownloadFile copies a file from an app's Documents on the phone to a local

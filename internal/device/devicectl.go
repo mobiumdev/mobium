@@ -145,7 +145,13 @@ func runDevicectl(ctx context.Context, xcrun string, args ...string) (json.RawMe
 		if msg == "" {
 			msg = lastLine(strings.TrimSpace(stderr.String()))
 		}
-		return nil, mobiumerr.New(mobiumerr.DeviceServer, "%s: %s", what, msg)
+		e := mobiumerr.New(mobiumerr.DeviceServer, "%s: %s", what, msg)
+		// The domain and code are kept, as a device server's W3C code is,
+		// so a caller decides by them and never by the wording.
+		if res.Error != nil {
+			e = e.WithDetail("devicectl_domain", res.Error.Domain).WithDetail("devicectl_code", res.Error.Code)
+		}
+		return nil, e
 	}
 	return res.Result, nil
 }
