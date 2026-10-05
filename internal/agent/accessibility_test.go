@@ -79,6 +79,48 @@ func TestAnAccessibilityChangeIsPutBackWhenTheSessionEnds(t *testing.T) {
 	}
 }
 
+// A setting set back by hand reads as it is: not "changed by this session"
+// once it matches what the session found, while still changed before that.
+// Its undo is kept, and still runs when the session ends.
+func TestASettingSetBackIsNotReportedAsChanged(t *testing.T) {
+	h, s, f := withAX(t)
+	ctx := context.Background()
+	read := func() string {
+		res, err := h.accessibilityOn(ctx, s, map[string]interface{}{"setting": "reduce_motion"})
+		if err != nil {
+			t.Fatal(err)
+		}
+		return res.Content[0].Text
+	}
+	if _, err := h.accessibilityOn(ctx, s, map[string]interface{}{"setting": "reduce_motion", "value": "on"}); err != nil {
+		t.Fatal(err)
+	}
+	if got := read(); !strings.Contains(got, "changed by this session") {
+		t.Errorf("read while changed = %q, want it marked", got)
+	}
+	res, err := h.accessibilityOn(ctx, s, map[string]interface{}{"setting": "reduce_motion", "value": "off"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := res.Content[0].Text; got != "reduce_motion off (was on) — as the session found it" {
+		t.Errorf("set back = %q", got)
+	}
+	if got := read(); got != "reduce_motion off" {
+		t.Errorf("read once set back = %q, want no mark", got)
+	}
+	all, err := h.accessibilityOn(ctx, s, map[string]interface{}{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(all.Content[0].Text, "changed by this session") {
+		t.Errorf("read of everything = %q, want no mark", all.Content[0].Text)
+	}
+	s.close()
+	if len(f.undone) != 1 || f.values[device.AXReduceMotion] != device.AXOff {
+		t.Errorf("undone %v, reduce_motion %q: the undo should still run once", f.undone, f.values[device.AXReduceMotion])
+	}
+}
+
 // A read of everything lists what the device has, and names why it lacks
 // the rest.
 func TestReadingEveryAccessibilitySetting(t *testing.T) {
