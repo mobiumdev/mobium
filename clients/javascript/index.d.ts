@@ -342,7 +342,11 @@ export class Device {
   clearLocation(): Promise<Data>
   followRoute(waypoints: [number, number][], speed?: number): Promise<Data>
   followGpx(path: string, speed?: number): Promise<Data>
-  press(button: 'back' | 'home' | 'recents' | 'volume-up' | 'volume-down'): Promise<void>
+  /** Press a hardware button: the device's own, a TV remote's D-pad and select, or a media key. */
+  press(button:
+    | 'back' | 'home' | 'recents' | 'volume-up' | 'volume-down'
+    | 'dpad-up' | 'dpad-down' | 'dpad-left' | 'dpad-right' | 'select'
+    | 'play-pause' | 'stop' | 'next' | 'previous' | 'rewind' | 'fast-forward'): Promise<void>
   /** Go back and say where it went; `gesture` swipes in from the left edge instead of the key. */
   back(options?: { gesture?: boolean }): Promise<{ foreground?: string; left?: string; title?: string; confirmed: boolean }>
   screenLocked(): Promise<boolean>
