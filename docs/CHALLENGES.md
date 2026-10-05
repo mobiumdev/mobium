@@ -7,7 +7,7 @@ the source.
 
 The pattern across them is the reason the document exists: **almost nothing
 here was found by reading code or by a test written from imagination.** Of
-241 defects, 202 were found only by running against a real device. The other
+242 defects, 203 were found only by running against a real device. The other
 thirty-nine — 4, 5, 6, 14, 23, 24, 32, 35, 36, 39, 44, 50, 53, 54, 57, 66, 89,
 99, 100, 121, 123, 129, 130, 133, 134, 139, 140, 141, 142, 144, 150, 158, 162,
 164, 165, 172, 222, 231 and 232 — came from reading code, the compiler, a test, a linter,
@@ -5300,6 +5300,20 @@ in a horizontal scroll view 34 points high, a point over each edge, and a
 target had to fit inside its container's view to count as in it. One that
 runs past both edges of an axis is now in view on that axis, since no
 swipe along it shows more; one cut off at one edge is not.
+
+### 242. An ambiguous locator told to narrow by a role both matches share
+
+**Found by:** the Pocket Casts check on an iPad Air simulator. There the
+onboarding topic picker is a sheet over Discover, and `label=Technology`
+matched the topic's button and Discover's category button behind the
+sheet, which iOS reports hidden. Refusing was right — a strict locator
+counts what it cannot see — but the remedy said to append `,role=button`,
+and both were buttons, so following it changed nothing. The launcher's two
+"Gmail" buttons had the same advice, held by a test. A role is now offered
+only where the matches differ by role, naming them (`",role=" and one of
+button, link`), and where some matches are hidden and some shown the
+refusal says so, since `map` lists only the one shown and its ref is the
+way in.
 
 ## Findings that were not defects
 

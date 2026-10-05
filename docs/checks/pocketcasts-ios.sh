@@ -68,12 +68,14 @@ if $M map | grep -qE '^@e[0-9]+ Get Started \('; then
   $M map | grep -qE '^@e[0-9]+ Select at least 3 \(button, disabled\)$' ||
     fail "the topic picker's button is not mapped as disabled"
   row 239 "Select at least 3 is mapped disabled"
+  # By ref: on an iPad the picker is a sheet over Discover, whose category
+  # buttons of the same names are behind it, reported hidden (CHALLENGES 242).
   $M map >/dev/null
-  for topic in Technology News Comedy; do $M tap "label=$topic" >/dev/null; done
+  for topic in Technology News Comedy; do $M tap "$(ref "$topic \\(button")" >/dev/null; done
   $M map --diff | grep -qE '^~ @e[0-9]+ Continue \(button\) — was "Select at least 3", was disabled$' ||
     fail "map --diff did not say the button was enabled"
   row 239 "map --diff says it was enabled"
-  for topic in Technology News Comedy; do $M tap "label=$topic" >/dev/null; done
+  for topic in Technology News Comedy; do $M tap "$(ref "$topic \\(button")" >/dev/null; done
   $M tap "label=Not Now" >/dev/null
   $M tap "label=Continue" >/dev/null
   $M tap "label=Not Now" >/dev/null

@@ -78,7 +78,9 @@ this is what is not.
   search field typed into through the keyboard's Search key (240) and a
   filter chip scrolled for because it is taller than its row (241). A mini
   player docked over every list is tapped around, as CHALLENGES 115 does.
-  Held by `docs/checks/pocketcasts-ios.sh`, which passes on the simulator.
+  Held by `docs/checks/pocketcasts-ios.sh`, which passes on the iPhone 17
+  Pro simulator and an iPad Air simulator, where it found an ambiguous
+  locator's remedy naming a role both matches shared (242).
   Still to do: the check on the iPhone, and this build's search, which
   answers any query with the same unrelated podcasts — probably its empty
   credentials, unmeasured.
