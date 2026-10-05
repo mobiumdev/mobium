@@ -232,9 +232,10 @@ TAG=$($M eval "document.querySelector('a#link').tagName" 2>/dev/null | tr -d '"'
 [ "$TAG" = "A" ] || fail "the Learn more element is a <$TAG>, so it is not a link"
 echo "    link target    an <a> to https://github.com/mobiumdev          ok"
 
-# The assertion this whole app exists for. In Safari this refuses, correctly,
-# because the host element is not the content. Here the WebView's frame equals
-# its content, so NewFrame must produce a scale instead.
+# The assertion this whole app exists for. In Safari the host element is not
+# the content, and the frame is anchored by the page's text (CHALLENGES
+# 248). Here the WebView's frame equals its content, so NewFrame must
+# produce a scale directly.
 LINK=$($M map --json 2>/dev/null | python3 -c "
 import json,sys
 for e in json.load(sys.stdin)['elements']:

@@ -76,14 +76,31 @@ echo "    read           the page's text came back                       ok"
 $M map | grep -q "Learn more" || fail "the page's link is not in the map"
 echo "    map            found the page's link                           ok"
 
-# Safari's WebView covers its chrome, so mobium must refuse to tap rather than
-# land somewhere else. On an app's own WKWebView this branch does not trigger.
-if $M tap 'Learn more' >/dev/null 2>&1; then
-  fail "tapped inside Safari, where the page's position in its host is unknowable"
+# Safari's WebView covers its chrome, so its height says nothing of where the
+# page starts. The page's text and the WebView's static texts do: they are
+# matched, two must agree (CHALLENGES 248), and the tap lands on the link —
+# the page it opens is the proof, not the tap's own report. By ref: a
+# locator is refused inside a WebView whatever the geometry.
+if $M map 2>&1 | grep -q "cannot be tapped"; then
+  fail "the map says Safari's page cannot be tapped: $($M map 2>&1 | grep 'cannot be tapped')"
 fi
-$M map 2>&1 | grep -q "cannot be tapped" \
-  || fail "the map did not say why these elements cannot be tapped"
-echo "    geometry       refused to tap, and said why                    ok"
+LEARN=$($M map | grep -E '^@e[0-9]+ Learn more' | awk '{ print $1; exit }')
+[ -n "$LEARN" ] || fail "no ref for the page's link"
+$M tap "$LEARN" >/dev/null || fail "the tap on Learn more was refused"
+$M context NATIVE_APP >/dev/null
+landed=""
+for _ in 1 2 3 4 5 6 7 8 9 10; do
+  $M contexts | grep -q "iana.org" && { landed=1; break; }
+  sleep 1
+done
+[ -n "$landed" ] || fail "the tap did not open the page the link points to: $($M contexts | grep WEBVIEW)"
+echo "    geometry       anchored by the page's text; the link opened its page ok"
+# Back to the page the rest of the check reads.
+$M open https://example.com >/dev/null
+$M wait "text=Example Domain" >/dev/null 2>&1 || true
+ctx=$($M contexts | awk '/WEBVIEW/ && /example.com/ { print $1; exit }')
+[ -n "$ctx" ] || fail "example.com did not come back"
+$M context "$ctx" >/dev/null
 
 # Detach and re-attach on the same held connection. This failed until Close
 # started sending _rpc_forwardDidClose:, because WebKit announces a page's

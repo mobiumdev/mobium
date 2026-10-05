@@ -258,7 +258,15 @@ func (h *Handlers) webFrame(ctx context.Context, s *session) (*webview.Frame, er
 	if k := tree.Keyboard(); k != nil && k.Bounds.Y1 < host.Bounds.Y2 && tree.Package() != safariBundleID {
 		return webview.NewFrameUnderKeyboard(host.Bounds, metrics)
 	}
-	return webview.NewFrame(host.Bounds, metrics)
+	frame, err := webview.NewFrame(host.Bounds, metrics)
+	if err != nil && host.Bounds.Width() > 0 && metrics != nil && metrics.CSSWidth > 0 {
+		// A WebView taller than its page: where the page starts is read from
+		// text both trees can see, or the refusal stands (CHALLENGES 248).
+		if anchored, aerr := webview.AnchorFrame(ctx, s.web, host, metrics); aerr == nil {
+			return anchored, nil
+		}
+	}
+	return frame, err
 }
 
 // safariBundleID is mobile Safari, whose WebView is under its own chrome.

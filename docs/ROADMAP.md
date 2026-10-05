@@ -85,6 +85,21 @@ this is what is not.
   app is freshly installed. Still to do: this build's search, which
   answers any query with the same unrelated podcasts — probably its empty
   credentials, unmeasured.
+- **A fifth third-party app on iOS, the first whose WebView opens: Kiwix.**
+  Begun 2026-10-05: the offline Wikipedia reader (GPL-3.0), SwiftUI around
+  a WKWebView that a build from its source makes inspectable (a production
+  build does not). Built for a simulator from its main branch with Xcode
+  26.6 and its prebuilt libkiwix; a ZIM — Wikipedia's Ray Charles, 761 KB —
+  uploaded to its Documents and opened through the system document picker,
+  since its in-app download failed with "unknown error". Its first look
+  found five defects (CHALLENGES 244–248): combined cards mapped as seven
+  buttons each, an off-screen ambiguity sent to `map` for a ref, a web tile
+  mapped twice and named twice, a tap on a disabled button reported done
+  through its wrapper, and every tap into the page refused because the
+  WebView runs under the bars — fixed by anchoring the page on text both
+  sides report, which makes Safari's page tappable too. Still to do: a
+  check, the App Store build on the iPhone as the control whose WebView is
+  closed, and Safari's anchored taps on a phone.
 - **A tap in an emulator's Chrome web app after Chrome stops reporting its
   WebView.** Without Play services Chrome installs a web app as a launcher
   shortcut, and opened while Chrome is running its WebView leaves the

@@ -250,11 +250,12 @@ type Frame struct {
 // zero. Trusting the host's origin there puts every tap 186 device pixels too
 // high, which is enough to hit a different link and not enough to look wrong.
 //
-// An embedded WKWebView or Android WebView — the case this is actually for —
-// has a frame equal to its content, so the two agree and nothing changes. When
-// they do not, there is no way to recover the origin from the hierarchy, so
-// this refuses rather than approximating. Reading the page still works; only
-// coordinates are affected.
+// An embedded WKWebView or Android WebView usually has a frame equal to its
+// content, so the two agree and nothing changes. When they do not — Safari,
+// and an app whose WebView runs under iOS 26's bars, as Kiwix's does — this
+// refuses, and the caller looks for the origin in text both trees can see
+// (AnchorFrame); only if that fails too does the refusal reach the caller.
+// Reading the page still works; only coordinates are affected.
 func NewFrame(host uitree.Rect, m *Metrics) (*Frame, error) {
 	if host.Width() <= 0 || host.Height() <= 0 {
 		return nil, mobiumerr.New(mobiumerr.ElementNotReachable, "the webview has no on-screen area to map into")
@@ -276,9 +277,9 @@ func NewFrame(host uitree.Rect, m *Metrics) (*Frame, error) {
 				"the WebView element is %.0f CSS pixels tall but the page's viewport is %.0f, "+
 					"so the page does not fill its host and where it sits inside it cannot be "+
 					"determined — the page reports no offset of its own. Taps are refused rather "+
-					"than landing somewhere up to %.0f device pixels away. This is what mobile "+
-					"Safari looks like, since it composes its chrome over a full-screen WebView; "+
-					"an app's own WKWebView has a frame equal to its content and is unaffected. "+
+					"than landing somewhere up to %.0f device pixels away; the page's text, which "+
+					"would say, could not be matched to the WebView's on screen. Mobile Safari, "+
+					"and an app whose WebView runs under its bars, look like this. "+
 					"Reading still works — app_text and app_map are unaffected.",
 				hostCSSHeight, m.CSSHeight, (hostCSSHeight-m.CSSHeight)*scale)
 		}

@@ -7,7 +7,7 @@ the source.
 
 The pattern across them is the reason the document exists: **almost nothing
 here was found by reading code or by a test written from imagination.** Of
-243 defects, 203 were found only by running against a real device. The other
+248 defects, 208 were found only by running against a real device. The other
 forty — 4, 5, 6, 14, 23, 24, 32, 35, 36, 39, 44, 50, 53, 54, 57, 66, 89,
 99, 100, 121, 123, 129, 130, 133, 134, 139, 140, 141, 142, 144, 150, 158, 162,
 164, 165, 172, 222, 231, 232 and 243 — came from reading code, the compiler, a test, a linter,
@@ -5332,6 +5332,76 @@ every read, the value recorded, every change and every restore go to
 `accessibility.log` in mobium's state directory, so a recurrence says which
 read it followed. On the iPhone a change, the session's end and a fresh read
 logged and left Reduce Motion as found.
+
+### 244. A card's own words mapped as seven buttons
+
+**Found by:** Kiwix, the fifth third-party app on iOS and the first whose
+WebView opens to Mobium, built from its source for a simulator. SwiftUI
+combining a catalog card into one element labels it with its children's
+words joined by commas — "Astronomy by Wikipedia, A selection of Wikipedia
+articles on astronomy, 1.77 GB, maxi, 153K pages, 66K media" — and reports
+each child as a Button inside it, not accessible, traits `StaticText,
+Button`. The rule that put Ice Cubes' Reply and Boost in `map` (214) took
+every one: seven entries a card, "1.77 GB (button)" and "maxi (button)"
+among them, and `label=Ray Charles` found each card's title and
+description as well as the card. Traits could not tell them apart: Ice
+Cubes' author name is `StaticText, Button` and a control of its own. The
+card's label could. A child whose label is one of the parts of the card's
+label is the card's own words, to `map` and to a locator, and the Ice Cubes
+posts, whose own label is empty, keep their buttons. Across the captures
+only Kiwix's catalog lost entries; Settings' switch rows now take a
+`label=` locator, since their words are no longer a second match.
+
+### 245. Off-screen matches sent to app_map for a ref
+
+**Found by:** the same catalog. `scroll-to label=Ray Charles` matched three
+cards further down and was told to "use a ref from app_map" — which lists
+only what is shown, so it had none to give, for the very case scroll-to is
+for. With no match on screen the refusal now says to make the locator name
+only one, by more of its words; the whole first part of a card's label did,
+and the scroll and the tap went through.
+
+### 246. A web tile mapped twice, once with its name twice
+
+**Found by:** Kiwix's main page, a ZIM's article tiles. WebKit reports each
+tile as a link holding its picture, whose alt text is the title, and the
+title as a link inside the link, and names the tile from both: `map` read
+"America the Beautiful America the Beautiful (link)" and then "America the
+Beautiful (link)". HTML cannot nest links; the inner one is the tile's own
+text, and is no target now. And a label that is one phrase said twice is
+printed once; a locator still matches the whole. Twelve entries became six,
+and no other capture changed.
+
+### 247. A tap on a disabled button reported done, through its wrapper
+
+**Found by:** checking that every locator on Kiwix's main page resolved to
+its own entry. Its toolbar's List button is disabled and sits in a plain
+view of its frame and label, which reports itself enabled; when two matches
+share a frame the locator kept the outer one (a rule written for React
+Native's text inside text), so `tap @e12` resolved to the wrapper, passed
+the enabled check and was reported "tapped" on a button that cannot take a
+tap. The target is kept over a wrapper that is not one, and the tap is
+refused as disabled, live on the simulator.
+
+### 248. A WebView taller than its page refused every tap — Kiwix's, and Safari's
+
+**Found by:** the first tap inside Kiwix's WebView: "the WebView element is
+874 CSS pixels tall but the page's viewport is 758 … Taps are refused".
+That refusal was written for mobile Safari (47), whose chrome sits over a
+full-screen WebView, and it said an app's own WKWebView was unaffected;
+Kiwix's runs the full height of the screen under iOS 26's bars, its page
+starting below the navigation bar, so no tap into a ZIM page was possible.
+The native tree knew where the page was all along: WebKit publishes each run
+of the page's text as a static text with its screen frame. A run that occurs
+once among the WebView's texts and once in the page anchors it, its frame
+against the page's own rectangle for the same text giving the origin, and
+two anchors must agree within a couple of CSS pixels or the refusal stands.
+A tap on Kiwix's Hank Crawford tile then opened Hank Crawford — 348 device
+pixels below where the WebView's own top would have put it — and in Safari,
+refused since 47, a tap on example.com's "Learn more" opened the page it
+links to. `ios-webview.sh` asserted Safari's refusal, and through a plain
+locator that is refused inside a WebView anyway; it now taps by ref and
+holds the tap to the page it opens. Safari on a phone is not yet measured.
 
 ## Findings that were not defects
 

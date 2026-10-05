@@ -139,6 +139,23 @@ func TestPickOneSuggestsRoleOnlyWhereItNarrows(t *testing.T) {
 	if err == nil || strings.Contains(err.Error(), `,role=`) || !strings.Contains(err.Error(), "1 of them iOS reports hidden") {
 		t.Errorf("a shown and a hidden button were not told apart: %v", err)
 	}
+
+	// None of them shown — cards further down a list, what app_scroll_to
+	// is for — and map has no ref to give: the remedy is to name one.
+	// CHALLENGES 245.
+	const below = `<?xml version="1.0" encoding="UTF-8"?><XCUIElementTypeApplication type="XCUIElementTypeApplication" name="App" x="0" y="0" width="402" height="874" visible="true" enabled="true">` +
+		`<XCUIElementTypeButton type="XCUIElementTypeButton" name="Ray Charles" label="Ray Charles, 2.2 MB, maxi" x="20" y="1170" width="362" height="138" visible="false" enabled="true" accessible="true"/>` +
+		`<XCUIElementTypeButton type="XCUIElementTypeButton" name="Ray Charles" label="Ray Charles, 760 KB, mini" x="20" y="1319" width="362" height="138" visible="false" enabled="true" accessible="true"/>` +
+		`</XCUIElementTypeApplication>`
+	off, err := uitree.ParseIOS([]byte(below))
+	if err != nil {
+		t.Fatal(err)
+	}
+	loc, _ = uitree.ParseLocator("label=Ray Charles")
+	_, err = pickOne(loc, off)
+	if err == nil || strings.Contains(err.Error(), "use a ref from app_map") || !strings.Contains(err.Error(), "make it name only one") {
+		t.Errorf("matches none of which is shown were sent to app_map for a ref: %v", err)
+	}
 }
 
 func TestIntArgAcceptsJSONAndNativeNumbers(t *testing.T) {

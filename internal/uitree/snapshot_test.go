@@ -1068,3 +1068,55 @@ func TestADisabledControlSaysSo(t *testing.T) {
 		}
 	}
 }
+
+// A card SwiftUI combined into one element is one entry: Kiwix's catalog
+// labels each card with its children's words joined by commas and reports
+// each child as a Button, and map listed seven per card — "1.77 GB" and
+// "maxi" among them. Ice Cubes' posts, unlabeled, keep their buttons
+// (TestIceCubesMapsWhatSwiftUICombines). CHALLENGES 244.
+func TestACombinedCardIsOneEntry(t *testing.T) {
+	cards := 0
+	for _, e := range loadIOS(t, "ios26-kiwix-catalog.xml").Map() {
+		line := strings.TrimPrefix(e.Line(), e.Ref+" ")
+		for _, part := range []string{"1.77 GB (button)", "maxi (button)", "153K pages (button)", "Astronomy by Wikipedia (button)"} {
+			if line == part {
+				t.Errorf("a card's own words are a target: %q", line)
+			}
+		}
+		if strings.HasPrefix(line, "Astronomy by Wikipedia, A selection of Wikipedia articles on astronomy, ") {
+			cards++
+		}
+	}
+	if cards != 2 {
+		t.Errorf("%d Astronomy cards in map, want the two", cards)
+	}
+}
+
+// An article tile in a WebView is one link, named once: Kiwix's main page
+// draws each article as a link holding its picture, whose alt text is the
+// title, and the title, which WebKit reports as a link inside the link.
+// map listed "America the Beautiful America the Beautiful (link)" and then
+// "America the Beautiful (link)". CHALLENGES 246.
+func TestAWebArticleTileIsOneLinkNamedOnce(t *testing.T) {
+	tree := loadIOS(t, "ios26-kiwix-main-page.xml")
+	count := map[string]int{}
+	for _, e := range tree.Map() {
+		count[strings.TrimPrefix(e.Line(), e.Ref+" ")]++
+		// One node, and one an action would treat as the entry: its frame and
+		// its state. WebKit reports each tile's link twice at one frame, and
+		// either is the link; Kiwix's disabled List button sits in an enabled
+		// wrapper of its frame, and the wrapper is not the button
+		// (CHALLENGES 247).
+		got := e.Locator.Resolve(tree)
+		if len(got) != 1 || got[0].Bounds != e.Node.Bounds || got[0].Enabled != e.Node.Enabled {
+			t.Errorf("%s derived %s resolving to %d nodes, or to one unlike it", e.Ref, e.Locator, len(got))
+		}
+		if e.Label == "List" && (len(got) != 1 || got[0] != e.Node || got[0].Enabled) {
+			t.Errorf("List's locator %s does not resolve to the disabled button itself", e.Locator)
+		}
+	}
+	if count["America the Beautiful (link)"] != 1 || count["America the Beautiful America the Beautiful (link)"] != 0 {
+		t.Errorf("the tile maps as %d once-named and %d doubled entries, want 1 and 0",
+			count["America the Beautiful (link)"], count["America the Beautiful America the Beautiful (link)"])
+	}
+}

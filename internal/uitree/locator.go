@@ -413,13 +413,19 @@ func namedByHint(n *Node) bool {
 
 // sameAsAncestor reports whether one of nodes is an ancestor of n at exactly
 // n's bounds.
+//
+// Not where n is a target and that ancestor is not: the one kept must be the
+// control. Kiwix's toolbar wraps its disabled List button in an Other of the
+// same frame and label, and this kept the wrapper — which reports itself
+// enabled — so a tap by the button's own ref was reported done on a button
+// that could not take it. CHALLENGES 247.
 func sameAsAncestor(n *Node, nodes []*Node) bool {
 	for p := n.Parent; p != nil; p = p.Parent {
 		if p.Bounds != n.Bounds {
 			continue
 		}
 		for _, m := range nodes {
-			if m == p {
+			if m == p && !(targetShaped(n) && !targetShaped(p)) {
 				return true
 			}
 		}
@@ -461,8 +467,13 @@ func wrapsTarget(n *Node, nodes []*Node) bool {
 
 // contentOfTarget reports whether n is an image or a text inside one of
 // nodes that is a target: the icon or the title of the button it names.
+//
+// A Button too, where it is no target: SwiftUI reports a combined card's
+// words as Buttons inside it, and label=Ray Charles on Kiwix's catalog found
+// each card's title and description as well as the card (CHALLENGES 244).
 func contentOfTarget(n *Node, nodes []*Node) bool {
-	if n.Class != "XCUIElementTypeImage" && n.Class != "XCUIElementTypeStaticText" || targetShaped(n) {
+	if n.Class != "XCUIElementTypeImage" && n.Class != "XCUIElementTypeStaticText" &&
+		n.Class != "XCUIElementTypeButton" || targetShaped(n) {
 		return false
 	}
 	for _, m := range nodes {

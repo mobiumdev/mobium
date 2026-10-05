@@ -158,8 +158,8 @@ func describe(n *Node) string {
 		return "password field"
 	}
 
-	text := clean(n.Text)
-	label := clean(n.Label)
+	text := onceIfTwice(clean(n.Text))
+	label := onceIfTwice(clean(n.Label))
 
 	// Android's idiom is a short visible text plus a fuller content-desc
 	// ("Continue" / "Continue with Google"). Two buttons reading "Continue"
@@ -191,6 +191,19 @@ func describe(n *Node) string {
 		return s
 	}
 	return n.ShortClass()
+}
+
+// onceIfTwice is a label that is one phrase said twice, said once. WebKit
+// names a link from everything in it, and Kiwix's article tiles hold a
+// picture whose alt text is the article's title, then the title: "America
+// the Beautiful America the Beautiful". Only an exact repeat, split at the
+// middle space; the printed label only — a locator still matches the whole.
+// CHALLENGES 246.
+func onceIfTwice(s string) string {
+	if half := len(s) / 2; len(s)%2 == 1 && s[half] == ' ' && s[:half] == s[half+1:] {
+		return s[:half]
+	}
+	return s
 }
 
 // tagPattern matches an HTML/XML tag. Deliberately narrow: the name must start

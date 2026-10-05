@@ -1,0 +1,236 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<XCUIElementTypeApplication type="XCUIElementTypeApplication" name="Kiwix" label="Kiwix" enabled="true" visible="true" accessible="false" x="0" y="0" width="402" height="874" index="0" traits="" processId="58717" bundleId="self.Kiwix">
+  <XCUIElementTypeWindow type="XCUIElementTypeWindow" enabled="true" visible="true" accessible="false" x="0" y="0" width="402" height="874" index="0" traits="">
+    <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="0" y="0" width="402" height="874" index="0" traits="">
+      <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="0" y="0" width="402" height="874" index="0" traits="">
+        <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="0" y="0" width="402" height="874" index="0" traits="">
+          <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="0" y="0" width="402" height="874" index="0" traits="">
+            <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="0" y="0" width="402" height="874" index="0" traits="">
+              <XCUIElementTypeNavigationBar type="XCUIElementTypeNavigationBar" name="_TtGC7SwiftUI32NavigationStackHosting" enabled="true" visible="true" accessible="false" x="0" y="62" width="402" height="54" index="0" traits="">
+                <XCUIElementTypeButton type="XCUIElementTypeButton" name="Search in page" label="Search in page" enabled="true" visible="true" accessible="true" x="286" y="66" width="39" height="36" index="0" traits="Button"/>
+                <XCUIElementTypeButton type="XCUIElementTypeButton" name="Settings" label="Settings" enabled="true" visible="true" accessible="true" x="340" y="66" width="42" height="36" index="1" traits="Button"/>
+              </XCUIElementTypeNavigationBar>
+              <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="0" y="0" width="402" height="874" index="1" traits="">
+                <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="0" y="0" width="402" height="874" index="0" traits="">
+                  <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="0" y="0" width="402" height="874" index="0" traits="">
+                    <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="0" y="0" width="402" height="874" index="0" traits="">
+                      <XCUIElementTypeImage type="XCUIElementTypeImage" name="welcomeLogo" label="welcomeLogo" enabled="true" visible="false" accessible="false" x="100" y="305" width="202" height="148" index="0" traits="Image"/>
+                      <XCUIElementTypeStaticText type="XCUIElementTypeStaticText" value="Loading Data..." name="Loading Data..." label="Loading Data..." enabled="true" visible="false" accessible="false" x="143" y="500" width="116" height="21" index="1" traits="StaticText"/>
+                      <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="0" y="0" width="402" height="874" index="2" traits="">
+                        <XCUIElementTypeWebView type="XCUIElementTypeWebView" enabled="true" visible="true" accessible="false" x="0" y="0" width="402" height="874" index="0" traits="">
+                          <XCUIElementTypeWebView type="XCUIElementTypeWebView" enabled="true" visible="true" accessible="false" x="0" y="0" width="402" height="874" index="0" traits="">
+                            <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="false" accessible="false" x="0" y="0" width="402" height="874" index="0" traits=""/>
+                            <XCUIElementTypeWebView type="XCUIElementTypeWebView" enabled="true" visible="true" accessible="false" x="0" y="0" width="402" height="874" index="1" traits="">
+                              <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="0" y="0" width="402" height="874" index="0" traits="">
+                                <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="0" y="0" width="402" height="874" index="0" traits="">
+                                  <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="0" y="116" width="402" height="874" index="0" traits="">
+                                    <XCUIElementTypeOther type="XCUIElementTypeOther" name="Wikipedia" label="Wikipedia" enabled="true" visible="true" accessible="false" x="0" y="116" width="402" height="874" index="0" traits="">
+                                      <XCUIElementTypeLink type="XCUIElementTypeLink" name="America the Beautiful America the Beautiful" label="America the Beautiful America the Beautiful" enabled="true" visible="true" accessible="false" x="0" y="116" width="201" height="305" index="0" traits="Link">
+                                        <XCUIElementTypeLink type="XCUIElementTypeLink" name="America the Beautiful America the Beautiful" label="America the Beautiful America the Beautiful" enabled="true" visible="true" accessible="false" x="0" y="116" width="201" height="305" index="0" traits="Link">
+                                          <XCUIElementTypeImage type="XCUIElementTypeImage" name="America the Beautiful" label="America the Beautiful" enabled="true" visible="true" accessible="true" x="0" y="116" width="201" height="305" index="0" traits="Link, Image"/>
+                                          <XCUIElementTypeLink type="XCUIElementTypeLink" enabled="true" visible="true" accessible="false" x="11" y="357" width="112" height="51" index="1" traits="Link">
+                                            <XCUIElementTypeStaticText type="XCUIElementTypeStaticText" value="America the Beautiful" name="America the Beautiful" label="America the Beautiful" enabled="true" visible="true" accessible="true" x="11" y="357" width="112" height="51" index="0" traits="Link, StaticText"/>
+                                          </XCUIElementTypeLink>
+                                        </XCUIElementTypeLink>
+                                      </XCUIElementTypeLink>
+                                      <XCUIElementTypeLink type="XCUIElementTypeLink" name="Georgia on My Mind Georgia on My Mind" label="Georgia on My Mind Georgia on My Mind" enabled="true" visible="true" accessible="false" x="201" y="116" width="201" height="203" index="1" traits="Link">
+                                        <XCUIElementTypeLink type="XCUIElementTypeLink" name="Georgia on My Mind Georgia on My Mind" label="Georgia on My Mind Georgia on My Mind" enabled="true" visible="true" accessible="false" x="201" y="116" width="201" height="203" index="0" traits="Link">
+                                          <XCUIElementTypeImage type="XCUIElementTypeImage" name="Georgia on My Mind" label="Georgia on My Mind" enabled="true" visible="true" accessible="true" x="201" y="116" width="201" height="203" index="0" traits="Link, Image"/>
+                                          <XCUIElementTypeLink type="XCUIElementTypeLink" enabled="true" visible="true" accessible="false" x="212" y="256" width="134" height="51" index="1" traits="Link">
+                                            <XCUIElementTypeStaticText type="XCUIElementTypeStaticText" value="Georgia on My Mind" name="Georgia on My Mind" label="Georgia on My Mind" enabled="true" visible="true" accessible="true" x="212" y="256" width="134" height="51" index="0" traits="Link, StaticText"/>
+                                          </XCUIElementTypeLink>
+                                        </XCUIElementTypeLink>
+                                      </XCUIElementTypeLink>
+                                      <XCUIElementTypeLink type="XCUIElementTypeLink" name="Hank Crawford Hank Crawford" label="Hank Crawford Hank Crawford" enabled="true" visible="true" accessible="false" x="201" y="318" width="201" height="266" index="2" traits="Link">
+                                        <XCUIElementTypeLink type="XCUIElementTypeLink" name="Hank Crawford Hank Crawford" label="Hank Crawford Hank Crawford" enabled="true" visible="true" accessible="false" x="201" y="318" width="201" height="266" index="0" traits="Link">
+                                          <XCUIElementTypeImage type="XCUIElementTypeImage" name="Hank Crawford" label="Hank Crawford" enabled="true" visible="true" accessible="true" x="201" y="318" width="201" height="266" index="0" traits="Link, Image"/>
+                                          <XCUIElementTypeLink type="XCUIElementTypeLink" enabled="true" visible="true" accessible="false" x="212" y="547" width="139" height="25" index="1" traits="Link">
+                                            <XCUIElementTypeStaticText type="XCUIElementTypeStaticText" value="Hank Crawford" name="Hank Crawford" label="Hank Crawford" enabled="true" visible="true" accessible="true" x="212" y="547" width="139" height="25" index="0" traits="Link, StaticText"/>
+                                          </XCUIElementTypeLink>
+                                        </XCUIElementTypeLink>
+                                      </XCUIElementTypeLink>
+                                      <XCUIElementTypeLink type="XCUIElementTypeLink" name="Hard Hearted Hannah (The Vamp of Savannah) Hard Hearted Hannah (The Vamp of Savannah)" label="Hard Hearted Hannah (The Vamp of Savannah) Hard Hearted Hannah (The Vamp of Savannah)" enabled="true" visible="true" accessible="false" x="0" y="420" width="201" height="266" index="3" traits="Link">
+                                        <XCUIElementTypeLink type="XCUIElementTypeLink" name="Hard Hearted Hannah (The Vamp of Savannah) Hard Hearted Hannah (The Vamp of Savannah)" label="Hard Hearted Hannah (The Vamp of Savannah) Hard Hearted Hannah (The Vamp of Savannah)" enabled="true" visible="true" accessible="false" x="0" y="420" width="201" height="266" index="0" traits="Link">
+                                          <XCUIElementTypeImage type="XCUIElementTypeImage" name="Hard Hearted Hannah (The Vamp of Savannah)" label="Hard Hearted Hannah (The Vamp of Savannah)" enabled="true" visible="true" accessible="true" x="0" y="420" width="201" height="266" index="0" traits="Link, Image"/>
+                                          <XCUIElementTypeLink type="XCUIElementTypeLink" enabled="true" visible="true" accessible="false" x="11" y="597" width="173" height="77" index="1" traits="Link">
+                                            <XCUIElementTypeStaticText type="XCUIElementTypeStaticText" value="Hard Hearted Hannah (The Vamp of Savannah)" name="Hard Hearted Hannah (The Vamp of Savannah)" label="Hard Hearted Hannah (The Vamp of Savannah)" enabled="true" visible="true" accessible="true" x="11" y="597" width="173" height="77" index="0" traits="Link, StaticText"/>
+                                          </XCUIElementTypeLink>
+                                        </XCUIElementTypeLink>
+                                      </XCUIElementTypeLink>
+                                      <XCUIElementTypeLink type="XCUIElementTypeLink" name="Here We Go Again (Ray Charles song) Here We Go Again (Ray Charles song)" label="Here We Go Again (Ray Charles song) Here We Go Again (Ray Charles song)" enabled="true" visible="true" accessible="false" x="201" y="583" width="201" height="204" index="4" traits="Link">
+                                        <XCUIElementTypeLink type="XCUIElementTypeLink" name="Here We Go Again (Ray Charles song) Here We Go Again (Ray Charles song)" label="Here We Go Again (Ray Charles song) Here We Go Again (Ray Charles song)" enabled="true" visible="true" accessible="false" x="201" y="583" width="201" height="204" index="0" traits="Link">
+                                          <XCUIElementTypeImage type="XCUIElementTypeImage" name="Here We Go Again (Ray Charles song)" label="Here We Go Again (Ray Charles song)" enabled="true" visible="true" accessible="true" x="201" y="583" width="201" height="204" index="0" traits="Link, Image"/>
+                                          <XCUIElementTypeLink type="XCUIElementTypeLink" enabled="true" visible="true" accessible="false" x="212" y="724" width="173" height="51" index="1" traits="Link">
+                                            <XCUIElementTypeStaticText type="XCUIElementTypeStaticText" value="Here We Go Again (Ray Charles song)" name="Here We Go Again (Ray Charles song)" label="Here We Go Again (Ray Charles song)" enabled="true" visible="true" accessible="true" x="212" y="724" width="173" height="51" index="0" traits="Link, StaticText"/>
+                                          </XCUIElementTypeLink>
+                                        </XCUIElementTypeLink>
+                                      </XCUIElementTypeLink>
+                                      <XCUIElementTypeLink type="XCUIElementTypeLink" name="List of accolades received by Ray (film) List of accolades received by Ray (film)" label="List of accolades received by Ray (film) List of accolades received by Ray (film)" enabled="true" visible="true" accessible="false" x="0" y="685" width="201" height="216" index="5" traits="Link">
+                                        <XCUIElementTypeLink type="XCUIElementTypeLink" name="List of accolades received by Ray (film) List of accolades received by Ray (film)" label="List of accolades received by Ray (film) List of accolades received by Ray (film)" enabled="true" visible="true" accessible="false" x="0" y="685" width="201" height="216" index="0" traits="Link">
+                                          <XCUIElementTypeImage type="XCUIElementTypeImage" name="List of accolades received by Ray (film)" label="List of accolades received by Ray (film)" enabled="true" visible="true" accessible="true" x="0" y="685" width="201" height="216" index="0" traits="Link, Image"/>
+                                          <XCUIElementTypeLink type="XCUIElementTypeLink" enabled="true" visible="true" accessible="false" x="11" y="811" width="157" height="77" index="1" traits="Link">
+                                            <XCUIElementTypeStaticText type="XCUIElementTypeStaticText" value="List of accolades received by Ray (film)" name="List of accolades received by Ray (film)" label="List of accolades received by Ray (film)" enabled="true" visible="true" accessible="true" x="11" y="811" width="157" height="77" index="0" traits="Link, StaticText"/>
+                                          </XCUIElementTypeLink>
+                                        </XCUIElementTypeLink>
+                                      </XCUIElementTypeLink>
+                                      <XCUIElementTypeLink type="XCUIElementTypeLink" name="Moonlight in Vermont (song) Moonlight in Vermont (song)" label="Moonlight in Vermont (song) Moonlight in Vermont (song)" enabled="true" visible="false" accessible="false" x="201" y="786" width="201" height="203" index="6" traits="Link">
+                                        <XCUIElementTypeLink type="XCUIElementTypeLink" name="Moonlight in Vermont (song) Moonlight in Vermont (song)" label="Moonlight in Vermont (song) Moonlight in Vermont (song)" enabled="true" visible="false" accessible="false" x="201" y="786" width="201" height="203" index="0" traits="Link">
+                                          <XCUIElementTypeImage type="XCUIElementTypeImage" name="Moonlight in Vermont (song)" label="Moonlight in Vermont (song)" enabled="true" visible="false" accessible="true" x="201" y="786" width="201" height="203" index="0" traits="Link, Image"/>
+                                          <XCUIElementTypeLink type="XCUIElementTypeLink" enabled="true" visible="false" accessible="false" x="212" y="926" width="140" height="51" index="1" traits="Link">
+                                            <XCUIElementTypeStaticText type="XCUIElementTypeStaticText" value="Moonlight in Vermont (song)" name="Moonlight in Vermont (song)" label="Moonlight in Vermont (song)" enabled="true" visible="false" accessible="true" x="212" y="926" width="140" height="51" index="0" traits="Link, StaticText"/>
+                                          </XCUIElementTypeLink>
+                                        </XCUIElementTypeLink>
+                                      </XCUIElementTypeLink>
+                                      <XCUIElementTypeLink type="XCUIElementTypeLink" name="Nancy (with the Laughing Face) Nancy (with the Laughing Face)" label="Nancy (with the Laughing Face) Nancy (with the Laughing Face)" enabled="true" visible="false" accessible="false" x="0" y="900" width="201" height="204" index="7" traits="Link">
+                                        <XCUIElementTypeLink type="XCUIElementTypeLink" name="Nancy (with the Laughing Face) Nancy (with the Laughing Face)" label="Nancy (with the Laughing Face) Nancy (with the Laughing Face)" enabled="true" visible="false" accessible="false" x="0" y="900" width="201" height="204" index="0" traits="Link">
+                                          <XCUIElementTypeImage type="XCUIElementTypeImage" name="Nancy (with the Laughing Face)" label="Nancy (with the Laughing Face)" enabled="true" visible="false" accessible="true" x="0" y="900" width="201" height="204" index="0" traits="Link, Image"/>
+                                          <XCUIElementTypeLink type="XCUIElementTypeLink" enabled="true" visible="false" accessible="false" x="11" y="1041" width="143" height="51" index="1" traits="Link">
+                                            <XCUIElementTypeStaticText type="XCUIElementTypeStaticText" value="Nancy (with the Laughing Face)" name="Nancy (with the Laughing Face)" label="Nancy (with the Laughing Face)" enabled="true" visible="false" accessible="true" x="11" y="1041" width="143" height="51" index="0" traits="Link, StaticText"/>
+                                          </XCUIElementTypeLink>
+                                        </XCUIElementTypeLink>
+                                      </XCUIElementTypeLink>
+                                      <XCUIElementTypeLink type="XCUIElementTypeLink" name="Ray Charles Ray Charles" label="Ray Charles Ray Charles" enabled="true" visible="false" accessible="false" x="201" y="988" width="201" height="238" index="8" traits="Link">
+                                        <XCUIElementTypeLink type="XCUIElementTypeLink" name="Ray Charles Ray Charles" label="Ray Charles Ray Charles" enabled="true" visible="false" accessible="false" x="201" y="988" width="201" height="238" index="0" traits="Link">
+                                          <XCUIElementTypeImage type="XCUIElementTypeImage" name="Ray Charles" label="Ray Charles" enabled="true" visible="false" accessible="true" x="201" y="988" width="201" height="238" index="0" traits="Link, Image"/>
+                                          <XCUIElementTypeLink type="XCUIElementTypeLink" enabled="true" visible="false" accessible="false" x="212" y="1188" width="112" height="25" index="1" traits="Link">
+                                            <XCUIElementTypeStaticText type="XCUIElementTypeStaticText" value="Ray Charles" name="Ray Charles" label="Ray Charles" enabled="true" visible="false" accessible="true" x="212" y="1188" width="112" height="25" index="0" traits="Link, StaticText"/>
+                                          </XCUIElementTypeLink>
+                                        </XCUIElementTypeLink>
+                                      </XCUIElementTypeLink>
+                                      <XCUIElementTypeLink type="XCUIElementTypeLink" name="Ray Charles discography Ray Charles discography" label="Ray Charles discography Ray Charles discography" enabled="true" visible="false" accessible="false" x="201" y="988" width="201" height="238" index="9" traits="Link">
+                                        <XCUIElementTypeLink type="XCUIElementTypeLink" name="Ray Charles discography Ray Charles discography" label="Ray Charles discography Ray Charles discography" enabled="true" visible="false" accessible="false" x="201" y="988" width="201" height="238" index="0" traits="Link">
+                                          <XCUIElementTypeImage type="XCUIElementTypeImage" name="Ray Charles discography" label="Ray Charles discography" enabled="true" visible="false" accessible="true" x="201" y="988" width="201" height="238" index="0" traits="Link, Image"/>
+                                          <XCUIElementTypeLink type="XCUIElementTypeLink" enabled="true" visible="false" accessible="false" x="212" y="1162" width="114" height="51" index="1" traits="Link">
+                                            <XCUIElementTypeStaticText type="XCUIElementTypeStaticText" value="Ray Charles discography" name="Ray Charles discography" label="Ray Charles discography" enabled="true" visible="false" accessible="true" x="212" y="1162" width="114" height="51" index="0" traits="Link, StaticText"/>
+                                          </XCUIElementTypeLink>
+                                        </XCUIElementTypeLink>
+                                      </XCUIElementTypeLink>
+                                      <XCUIElementTypeLink type="XCUIElementTypeLink" name="Side by Side (1927 song) Side by Side (1927 song)" label="Side by Side (1927 song) Side by Side (1927 song)" enabled="true" visible="false" accessible="false" x="201" y="988" width="201" height="286" index="10" traits="Link">
+                                        <XCUIElementTypeLink type="XCUIElementTypeLink" name="Side by Side (1927 song) Side by Side (1927 song)" label="Side by Side (1927 song) Side by Side (1927 song)" enabled="true" visible="false" accessible="false" x="201" y="988" width="201" height="286" index="0" traits="Link">
+                                          <XCUIElementTypeImage type="XCUIElementTypeImage" name="Side by Side (1927 song)" label="Side by Side (1927 song)" enabled="true" visible="false" accessible="true" x="201" y="988" width="201" height="286" index="0" traits="Link, Image"/>
+                                          <XCUIElementTypeLink type="XCUIElementTypeLink" enabled="true" visible="false" accessible="false" x="212" y="1211" width="167" height="51" index="1" traits="Link">
+                                            <XCUIElementTypeStaticText type="XCUIElementTypeStaticText" value="Side by Side (1927 song)" name="Side by Side (1927 song)" label="Side by Side (1927 song)" enabled="true" visible="false" accessible="true" x="212" y="1211" width="167" height="51" index="0" traits="Link, StaticText"/>
+                                          </XCUIElementTypeLink>
+                                        </XCUIElementTypeLink>
+                                      </XCUIElementTypeLink>
+                                      <XCUIElementTypeLink type="XCUIElementTypeLink" name="Ray Charles Ray Charles" label="Ray Charles Ray Charles" enabled="true" visible="false" accessible="false" x="0" y="1104" width="201" height="237" index="11" traits="Link">
+                                        <XCUIElementTypeLink type="XCUIElementTypeLink" name="Ray Charles Ray Charles" label="Ray Charles Ray Charles" enabled="true" visible="false" accessible="false" x="0" y="1104" width="201" height="237" index="0" traits="Link">
+                                          <XCUIElementTypeImage type="XCUIElementTypeImage" name="Ray Charles" label="Ray Charles" enabled="true" visible="false" accessible="true" x="0" y="1104" width="201" height="237" index="0" traits="Link, Image"/>
+                                          <XCUIElementTypeLink type="XCUIElementTypeLink" enabled="true" visible="false" accessible="false" x="11" y="1304" width="112" height="25" index="1" traits="Link">
+                                            <XCUIElementTypeStaticText type="XCUIElementTypeStaticText" value="Ray Charles" name="Ray Charles" label="Ray Charles" enabled="true" visible="false" accessible="true" x="11" y="1304" width="112" height="25" index="0" traits="Link, StaticText"/>
+                                          </XCUIElementTypeLink>
+                                        </XCUIElementTypeLink>
+                                      </XCUIElementTypeLink>
+                                      <XCUIElementTypeLink type="XCUIElementTypeLink" name="Tribute to Uncle Ray Tribute to Uncle Ray" label="Tribute to Uncle Ray Tribute to Uncle Ray" enabled="true" visible="false" accessible="false" x="201" y="1273" width="201" height="202" index="12" traits="Link">
+                                        <XCUIElementTypeLink type="XCUIElementTypeLink" name="Tribute to Uncle Ray Tribute to Uncle Ray" label="Tribute to Uncle Ray Tribute to Uncle Ray" enabled="true" visible="false" accessible="false" x="201" y="1273" width="201" height="202" index="0" traits="Link">
+                                          <XCUIElementTypeImage type="XCUIElementTypeImage" name="Tribute to Uncle Ray" label="Tribute to Uncle Ray" enabled="true" visible="false" accessible="true" x="201" y="1273" width="201" height="202" index="0" traits="Link, Image"/>
+                                          <XCUIElementTypeLink type="XCUIElementTypeLink" enabled="true" visible="false" accessible="false" x="212" y="1412" width="146" height="51" index="1" traits="Link">
+                                            <XCUIElementTypeStaticText type="XCUIElementTypeStaticText" value="Tribute to Uncle Ray" name="Tribute to Uncle Ray" label="Tribute to Uncle Ray" enabled="true" visible="false" accessible="true" x="212" y="1412" width="146" height="51" index="0" traits="Link, StaticText"/>
+                                          </XCUIElementTypeLink>
+                                        </XCUIElementTypeLink>
+                                      </XCUIElementTypeLink>
+                                    </XCUIElementTypeOther>
+                                  </XCUIElementTypeOther>
+                                </XCUIElementTypeOther>
+                              </XCUIElementTypeOther>
+                            </XCUIElementTypeWebView>
+                            <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="0" y="0" width="402" height="874" index="2" traits="">
+                              <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="0" y="733" width="402" height="141" index="0" traits="">
+                                <XCUIElementTypeImage type="XCUIElementTypeImage" name="AdditionalDimmingOverlay" enabled="true" visible="true" accessible="false" x="-120" y="738" width="642" height="272" index="0" traits="Image"/>
+                                <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="0" y="733" width="402" height="141" index="1" traits="">
+                                  <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="0" y="733" width="402" height="141" index="0" traits=""/>
+                                </XCUIElementTypeOther>
+                                <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="0" y="733" width="402" height="141" index="2" traits="">
+                                  <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="0" y="733" width="402" height="141" index="0" traits=""/>
+                                  <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="0" y="733" width="402" height="141" index="1" traits=""/>
+                                </XCUIElementTypeOther>
+                              </XCUIElementTypeOther>
+                            </XCUIElementTypeOther>
+                            <XCUIElementTypeOther type="XCUIElementTypeOther" value="0%" name="Vertical scroll bar, 2 pages" label="Vertical scroll bar, 2 pages" enabled="true" visible="true" accessible="false" x="369" y="116" width="30" height="672" index="3" traits="Adjustable">
+                              <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="396" y="119" width="3" height="541" index="0" traits=""/>
+                            </XCUIElementTypeOther>
+                            <XCUIElementTypeOther type="XCUIElementTypeOther" value="0%" name="Horizontal scroll bar, 1 page" label="Horizontal scroll bar, 1 page" enabled="true" visible="true" accessible="false" x="62" y="755" width="278" height="30" index="4" traits="Adjustable">
+                              <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="65" y="782" width="272" height="3" index="0" traits=""/>
+                            </XCUIElementTypeOther>
+                            <XCUIElementTypeOther type="XCUIElementTypeOther" value="0%" name="Vertical scroll bar, 2 pages" label="Vertical scroll bar, 2 pages" enabled="true" visible="true" accessible="false" x="369" y="116" width="30" height="672" index="5" traits="Adjustable">
+                              <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="396" y="119" width="3" height="541" index="0" traits=""/>
+                            </XCUIElementTypeOther>
+                            <XCUIElementTypeOther type="XCUIElementTypeOther" value="0%" name="Horizontal scroll bar, 1 page" label="Horizontal scroll bar, 1 page" enabled="true" visible="true" accessible="false" x="62" y="755" width="278" height="30" index="6" traits="Adjustable">
+                              <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="65" y="782" width="272" height="3" index="0" traits=""/>
+                            </XCUIElementTypeOther>
+                          </XCUIElementTypeWebView>
+                        </XCUIElementTypeWebView>
+                      </XCUIElementTypeOther>
+                    </XCUIElementTypeOther>
+                  </XCUIElementTypeOther>
+                </XCUIElementTypeOther>
+              </XCUIElementTypeOther>
+              <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="0" y="0" width="402" height="874" index="2" traits="">
+                <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="0" y="0" width="402" height="874" index="0" traits="">
+                  <XCUIElementTypeToolbar type="XCUIElementTypeToolbar" name="Toolbar" label="Toolbar" enabled="true" visible="true" accessible="false" x="0" y="788" width="402" height="86" index="0" traits="">
+                    <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="28" y="798" width="346" height="48" index="0" traits="">
+                      <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="28" y="798" width="346" height="48" index="0" traits="">
+                        <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="false" accessible="false" x="28" y="798" width="0" height="0" index="0" traits="">
+                          <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="63" y="798" width="276" height="48" index="0" traits="">
+                            <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="63" y="798" width="49" height="48" index="0" traits="">
+                              <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="69" y="803" width="38" height="38" index="0" traits="">
+                                <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="69" y="803" width="38" height="38" index="0" traits="">
+                                  <XCUIElementTypeButton type="XCUIElementTypeButton" name="Go Back" label="Go Back" enabled="false" visible="true" accessible="true" x="69" y="803" width="38" height="38" index="0" traits="NotEnabled, Button"/>
+                                </XCUIElementTypeOther>
+                              </XCUIElementTypeOther>
+                            </XCUIElementTypeOther>
+                            <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="116" y="798" width="51" height="48" index="1" traits="">
+                              <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="121" y="803" width="41" height="38" index="0" traits="">
+                                <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="121" y="803" width="41" height="38" index="0" traits="">
+                                  <XCUIElementTypeButton type="XCUIElementTypeButton" name="Tabs Manager" label="Tabs Manager" enabled="true" visible="true" accessible="true" x="121" y="803" width="41" height="38" index="0" traits="Button"/>
+                                </XCUIElementTypeOther>
+                              </XCUIElementTypeOther>
+                            </XCUIElementTypeOther>
+                            <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="170" y="798" width="57" height="48" index="2" traits="">
+                              <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="175" y="803" width="47" height="38" index="0" traits="">
+                                <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="175" y="803" width="47" height="38" index="0" traits="">
+                                  <XCUIElementTypeButton type="XCUIElementTypeButton" name="Library" label="Library" enabled="true" visible="true" accessible="true" x="175" y="803" width="47" height="38" index="0" traits="Button"/>
+                                </XCUIElementTypeOther>
+                              </XCUIElementTypeOther>
+                            </XCUIElementTypeOther>
+                            <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="230" y="798" width="54" height="48" index="3" traits="">
+                              <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="235" y="804" width="44" height="36" index="0" traits="">
+                                <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="235" y="804" width="44" height="36" index="0" traits="">
+                                  <XCUIElementTypeOther type="XCUIElementTypeOther" name="list.bullet" label="List" enabled="true" visible="true" accessible="false" x="235" y="804" width="44" height="36" index="0" traits="">
+                                    <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="235" y="804" width="44" height="36" index="0" traits="">
+                                      <XCUIElementTypeButton type="XCUIElementTypeButton" name="list.bullet" label="List" enabled="false" visible="true" accessible="true" x="235" y="804" width="44" height="36" index="0" traits="NotEnabled, Button"/>
+                                    </XCUIElementTypeOther>
+                                  </XCUIElementTypeOther>
+                                </XCUIElementTypeOther>
+                              </XCUIElementTypeOther>
+                            </XCUIElementTypeOther>
+                            <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="288" y="798" width="51" height="48" index="4" traits="">
+                              <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="293" y="804" width="41" height="36" index="0" traits="">
+                                <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="293" y="804" width="41" height="36" index="0" traits="">
+                                  <XCUIElementTypeOther type="XCUIElementTypeOther" name="More" label="More" enabled="true" visible="true" accessible="false" x="293" y="804" width="41" height="36" index="0" traits="">
+                                    <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="293" y="804" width="41" height="36" index="0" traits="">
+                                      <XCUIElementTypeButton type="XCUIElementTypeButton" name="More" label="More" enabled="true" visible="true" accessible="true" x="293" y="804" width="41" height="36" index="0" traits="Button">
+                                        <XCUIElementTypeButton type="XCUIElementTypeButton" enabled="true" visible="true" accessible="false" x="293" y="804" width="41" height="36" index="0" traits="Button">
+                                          <XCUIElementTypeImage type="XCUIElementTypeImage" name="ellipsis" label="More" enabled="true" visible="true" accessible="false" x="303" y="820" width="21" height="5" index="0" traits="Image"/>
+                                        </XCUIElementTypeButton>
+                                      </XCUIElementTypeButton>
+                                    </XCUIElementTypeOther>
+                                  </XCUIElementTypeOther>
+                                </XCUIElementTypeOther>
+                              </XCUIElementTypeOther>
+                            </XCUIElementTypeOther>
+                          </XCUIElementTypeOther>
+                        </XCUIElementTypeOther>
+                      </XCUIElementTypeOther>
+                    </XCUIElementTypeOther>
+                  </XCUIElementTypeToolbar>
+                </XCUIElementTypeOther>
+              </XCUIElementTypeOther>
+            </XCUIElementTypeOther>
+          </XCUIElementTypeOther>
+        </XCUIElementTypeOther>
+      </XCUIElementTypeOther>
+    </XCUIElementTypeOther>
+  </XCUIElementTypeWindow>
+</XCUIElementTypeApplication>
+
