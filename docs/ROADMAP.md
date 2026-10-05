@@ -70,14 +70,12 @@ this is what is not.
   empty credentials. Its first look found a popover
   that hid the whole player from `map` and `app_alert` (CHALLENGES 235) and
   a scrubber that printed as its own position and that `app_fill` would
-  have typed into (234), both fixed. A mini player docked over every list
-  is tapped around, as CHALLENGES 115 does. Still to do: a row's label
-  composed from the names of the buttons inside it and of its images
-  (`chevron-small-down star-full star-half … Follow Funding`), an icon
-  inside a button mapped as a target of its own under its asset's name
-  (`discover_tick`), `map` never marking a disabled control, a tap on Play
-  in the episode sheet warned of an `Other` drawn over it while the tap
-  played the episode, on both devices, and a check.
+  have typed into (234), a checkmark mapped as a target of its own under
+  its image's name, `discover_tick` (236), rows named after the buttons
+  and images inside them (237), and a divider through Play's center noted
+  as possibly taking the touch (238), all fixed. A mini player docked over
+  every list is tapped around, as CHALLENGES 115 does. Still to do: `map`
+  never marks a disabled control, and a check.
 - **A tap in an emulator's Chrome web app after Chrome stops reporting its
   WebView.** Without Play services Chrome installs a web app as a launcher
   shortcut, and opened while Chrome is running its WebView leaves the

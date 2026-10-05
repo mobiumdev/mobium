@@ -255,7 +255,7 @@ func (t *Tree) aimAtPoint(target *Node, x, y int) (Aim, bool) {
 	// Nor is anything that spans the whole screen, whatever the target's
 	// size: the size rule let one through over a target more than half the
 	// screen high — Pocket Casts' podcast header, under the layer that holds
-	// iOS 26's floating tab bar.
+	// iOS 26's floating tab bar. CHALLENGES 238.
 	screen := t.Screen
 	if screen.Empty() && t.Root != nil {
 		screen = t.Root.Bounds
