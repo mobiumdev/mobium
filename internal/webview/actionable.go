@@ -47,15 +47,15 @@ const actionableScript = `(() => {
   if (!el) return JSON.stringify({status:'not_found'});
   const fail = (check, reason) => JSON.stringify({status:'failed', check, reason});
 
-  let rect = el.getBoundingClientRect();
+  let rect = __mobiumRect(el);
   const vw = window.innerWidth, vh = window.innerHeight;
   if (rect.top < 0 || rect.left < 0 || rect.bottom > vh || rect.right > vw) {
     el.scrollIntoView({block: 'center', inline: 'center', behavior: 'instant'});
-    rect = el.getBoundingClientRect();
+    rect = __mobiumRect(el);
   }
 
   if (rect.width === 0 || rect.height === 0) return fail('visible', 'zero size');
-  const style = getComputedStyle(el);
+  const style = el.ownerDocument.defaultView.getComputedStyle(el);
   if (style.visibility === 'hidden') return fail('visible', 'visibility: hidden');
   if (style.display === 'none') return fail('visible', 'display: none');
 
@@ -72,17 +72,8 @@ const actionableScript = `(() => {
   const ir = Math.min(vw, rect.x + rect.width), ib = Math.min(vh, rect.y + rect.height);
   if (ir <= il || ib <= it) return fail('visible', 'outside the viewport');
 
-  // What is on top at a point, descending through shadow roots as Vibium
-  // does: elementFromPoint stops at a shadow host.
-  const topAt = (x, y) => {
-    let hit = document.elementFromPoint(x, y);
-    while (hit && hit.shadowRoot) {
-      const inner = hit.shadowRoot.elementFromPoint(x, y);
-      if (!inner || inner === hit) break;
-      hit = inner;
-    }
-    return hit;
-  };
+  // What is on top at a point, through shadow roots and frames.
+  const topAt = __mobiumTopAt;
   const reaches = (x, y) => { const h = topAt(x, y); return !!h && (h === el || el.contains(h)); };
   const name = (n) => ((n.innerText || n.getAttribute('aria-label') || '').trim().replace(/\s+/g, ' ').slice(0, 40)) ||
     n.tagName.toLowerCase();
@@ -143,13 +134,14 @@ const fillScript = `(() => {
   const append = %t;
   if (!el) return JSON.stringify({status:'not_found'});
   const fail = (check, reason) => JSON.stringify({status:'failed', check, reason});
-  let rect = el.getBoundingClientRect();
+  let rect = __mobiumRect(el);
   if (rect.top < 0 || rect.left < 0 || rect.bottom > window.innerHeight || rect.right > window.innerWidth) {
     el.scrollIntoView({block: 'center', inline: 'center', behavior: 'instant'});
-    rect = el.getBoundingClientRect();
+    rect = __mobiumRect(el);
   }
   if (rect.width === 0 || rect.height === 0) return fail('visible', 'zero size');
-  const style = getComputedStyle(el);
+  const win = el.ownerDocument.defaultView;
+  const style = win.getComputedStyle(el);
   if (style.visibility === 'hidden' || style.display === 'none') return fail('visible', 'hidden');
   if (el.disabled === true) return fail('enabled', 'disabled attribute');
   if (el.getAttribute('aria-disabled') === 'true') return fail('enabled', 'aria-disabled');
@@ -168,7 +160,9 @@ const fillScript = `(() => {
   if (editable) {
     el.textContent = value;
   } else {
-    const proto = el instanceof HTMLTextAreaElement ? HTMLTextAreaElement.prototype : HTMLInputElement.prototype;
+    // The element's own window: a frame's elements are not instances of the
+    // top page's HTMLTextAreaElement, and its setter would not apply.
+    const proto = el instanceof win.HTMLTextAreaElement ? win.HTMLTextAreaElement.prototype : win.HTMLInputElement.prototype;
     const setter = Object.getOwnPropertyDescriptor(proto, 'value').set;
     setter.call(el, value);
   }

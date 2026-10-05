@@ -284,7 +284,13 @@ func (h *Handlers) mapWeb(ctx context.Context, s *session) (*ToolsCallResult, er
 		if label == "" {
 			label = e.Tag
 		}
-		lines = append(lines, fmt.Sprintf("%s %s (%s)", ref, label, role))
+		line := fmt.Sprintf("%s %s (%s)", ref, label, role)
+		if e.Frame != "" {
+			// Which frame it is in: MobiumApp's three frames each hold a
+			// "Tap me", and without this the three lines read the same.
+			line += " in " + e.Frame
+		}
+		lines = append(lines, line)
 
 		// Bounds are reported in device pixels, like everything else, so a
 		// web element and a native one are directly comparable.
@@ -299,8 +305,22 @@ func (h *Handlers) mapWeb(ctx context.Context, s *session) (*ToolsCallResult, er
 	}
 	h.refs[s.dev.Serial] = table
 
-	if len(lines) == 0 {
-		return Result("No actionable elements found in "+s.webCtx, view), nil
+	// A cross-origin frame is closed to the page's scripts, so nothing in it
+	// is above; said, rather than left to read as an empty frame. The
+	// platform's accessibility reaches into it: on iOS, MobiumApp's
+	// cross-origin frame's button is in NATIVE_APP's map (CHALLENGES 228).
+	if n, err := webview.ClosedFrames(ctx, s.web); err == nil && n > 0 {
+		note := "1 frame on this page is cross-origin, closed to the page, and its elements are not listed here; " +
+			"app_context NATIVE_APP maps what the platform's accessibility reaches inside it"
+		if n > 1 {
+			note = fmt.Sprintf("%d frames on this page are cross-origin, closed to the page, and their elements are "+
+				"not listed here; app_context NATIVE_APP maps what the platform's accessibility reaches inside them", n)
+		}
+		lines = append(lines, "", note)
+	}
+
+	if len(view.Elements) == 0 {
+		return Result(strings.Join(append([]string{"No actionable elements found in " + s.webCtx}, lines...), "\n"), view), nil
 	}
 	if frameErr != nil {
 		lines = append(lines, "",

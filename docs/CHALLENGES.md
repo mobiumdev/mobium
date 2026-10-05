@@ -7,7 +7,7 @@ the source.
 
 The pattern across them is the reason the document exists: **almost nothing
 here was found by reading code or by a test written from imagination.** Of
-227 defects, 190 were found only by running against a real device. The other
+228 defects, 191 were found only by running against a real device. The other
 thirty-seven — 4, 5, 6, 14, 23, 24, 32, 35, 36, 39, 44, 50, 53, 54, 57, 66, 89,
 99, 100, 121, 123, 129, 130, 133, 134, 139, 140, 141, 142, 144, 150, 158, 162,
 164, 165, 172 and 222 — came from reading code, the compiler, a test, a linter,
@@ -5031,6 +5031,31 @@ by 16dp, Android's own padding — without it the continuous Balance read
 0 and 100 and Balance on 0.25 and 0.75, exactly. On iOS the same demo's
 sliders are not sliders at all: `@react-native-community/slider` reports a
 plain view with no Adjustable trait and no value.
+
+### 228. A WebView's map stopped at the edge of every frame
+
+**Found by:** taking ROADMAP's "Frames and iframes inside a WebView" to
+MobiumApp's Frames page, built for it: a same-origin frame, a frame nested
+inside it and a cross-origin one, each of whose buttons tells the page it
+was tapped. In the WebView's context `map` listed the page's own button and
+nothing in any frame, on the simulator and an emulator alike: the scripts
+that find elements, check them and fill them read the top document alone.
+Natively all three buttons were there, through the platform's
+accessibility.
+
+The candidates now include every frame the page can see into, after the
+page's own, so a page without frames numbers its elements as before. An
+element's rectangle is reported in the top page's coordinates, each
+enclosing frame's position and border added. The check that a tap will land
+descends into a frame at the point. A fill sets the value through the
+element's own window, since a frame's input is no instance of the top
+page's. Each element knows its frame — `map` prints `Tap me (button) in
+iframe#sameFrame >> iframe#nestedFrame` — and its selector carries the
+frame, so the same id in a frame and on the page stay two. A cross-origin
+frame is closed to the page's scripts, so `map` says how many there are and
+that `NATIVE_APP` reaches inside them, which it does: a native tap on the
+cross-origin button reached it on both platforms. Taps on the same-origin
+and nested buttons reached them, as the page said.
 
 ## Findings that were not defects
 
