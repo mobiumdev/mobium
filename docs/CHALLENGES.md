@@ -7,7 +7,7 @@ the source.
 
 The pattern across them is the reason the document exists: **almost nothing
 here was found by reading code or by a test written from imagination.** Of
-248 defects, 208 were found only by running against a real device. The other
+249 defects, 209 were found only by running against a real device. The other
 forty — 4, 5, 6, 14, 23, 24, 32, 35, 36, 39, 44, 50, 53, 54, 57, 66, 89,
 99, 100, 121, 123, 129, 130, 133, 134, 139, 140, 141, 142, 144, 150, 158, 162,
 164, 165, 172, 222, 231, 232 and 243 — came from reading code, the compiler, a test, a linter,
@@ -5403,6 +5403,20 @@ links to. `ios-webview.sh` asserted Safari's refusal, and through a plain
 locator that is refused inside a WebView anyway; it now taps by ref and
 holds the tap to the page it opens. On the iPhone 15 Plus too, the same
 day: `map` raised no refusal and the tap on "Learn more" opened its page.
+
+### 249. An upload a phone refused said only "could not be transferred"
+
+**Found by:** uploading the Kiwix check's ZIM into the App Store Kiwix on
+the iPhone 15 Plus. `app_upload --app` copies into an app's Documents
+through CoreDevice, and it failed with `devicectl`'s own words, "The
+specified file could not be transferred." — no cause, no remedy. Measured:
+CoreDevice error 7000 for Kiwix and for Pocket Casts, both from the App
+Store, while MobiumApp, installed for development, took the same file and
+gave its bytes back. `devicectl`'s error domain and code are now kept in the
+error's details, and the upload decides by them: an `unsupported` that says
+an App Store app's container is closed to it, and names what works — the
+app's own download or document picker. The App Store Kiwix's own download
+put the same ZIM on the phone.
 
 ## Findings that were not defects
 

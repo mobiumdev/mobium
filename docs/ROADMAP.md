@@ -98,8 +98,13 @@ this is what is not.
   through its wrapper, and every tap into the page refused because the
   WebView runs under the bars — fixed by anchoring the page on text both
   sides report, which makes Safari's page tappable too, on a simulator and
-  on the iPhone. Still to do: a check, and the App Store build on the
-  iPhone as the control whose WebView is closed.
+  on the iPhone. Held by `docs/checks/kiwix-ios.sh` on the simulator. The
+  App Store build on the iPhone, meant as the control whose WebView is
+  closed, was not one: its page is published, mapped and tapped like the
+  simulator's — a tap on Hank Crawford opened Hank Crawford — so a
+  production build of Kiwix is reachable as shipped. Its ZIM came through
+  its own download: the phone refuses an upload into an App Store app's
+  container, which now says so (CHALLENGES 249).
 - **A tap in an emulator's Chrome web app after Chrome stops reporting its
   WebView.** Without Play services Chrome installs a web app as a launcher
   shortcut, and opened while Chrome is running its WebView leaves the
