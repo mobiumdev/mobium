@@ -70,7 +70,7 @@ func TestWDASharesTheW3CActionShape(t *testing.T) {
 	}
 }
 
-func TestWDAUsesAccessibilityIDWhenPresent(t *testing.T) {
+func TestWDAFindsANamedElementByNameAndType(t *testing.T) {
 	f := newFakeServer(t)
 	f.source = miniIOSSource
 	d := wdaFor(f)
@@ -108,8 +108,10 @@ func TestWDAUsesAccessibilityIDWhenPresent(t *testing.T) {
 	if lookup == nil || typed == nil {
 		t.Fatalf("expected a lookup and a type among %d calls", len(calls))
 	}
-	// iOS names this strategy differently from Android's "id".
-	if lookup.body["using"] != "accessibility id" || lookup.body["value"] != "field" {
+	// By its name and its type together, never the name alone, which
+	// WebDriverAgent matches against labels too (CHALLENGES 240).
+	if lookup.body["using"] != "predicate string" ||
+		lookup.body["value"] != `name == "field" AND type == "`+field.Class+`"` {
 		t.Errorf("looked up by %v=%v", lookup.body["using"], lookup.body["value"])
 	}
 	if got := typed.body["text"]; got != "a@b.com" {
@@ -642,6 +644,55 @@ func TestAPhoneNamesItsResetWhenItCannotClear(t *testing.T) {
 	for _, want := range []string{"path in app_clear_data", "--bundle on the CLI", "uninstalled and installed again"} {
 		if err == nil || !strings.Contains(err.Error(), want) {
 			t.Errorf("the refusal lacks %q: %v", want, err)
+		}
+	}
+}
+
+// A name is one element only with its type, and only when no other node has
+// both: Pocket Casts' search field and the keyboard's Search key are both
+// named "Search", and typing into the field by name found the key. Where two
+// nodes share name and type — React Native repeats an identifier across a
+// component's views (CHALLENGES 55) — the node's own path finds it.
+// CHALLENGES 240.
+func TestANamedElementIsFoundAsItselfOrByItsPath(t *testing.T) {
+	const source = `<?xml version="1.0" encoding="UTF-8"?><XCUIElementTypeApplication type="XCUIElementTypeApplication" name="Pocket Casts" bundleId="au.com.shiftyjelly.podcasts" x="0" y="0" width="402" height="874" visible="true" enabled="true">` +
+		`<XCUIElementTypeTextField type="XCUIElementTypeTextField" name="Search" value="Search podcasts or add RSS URL" x="52" y="122" width="308" height="20" visible="true" enabled="true" accessible="true"/>` +
+		`<XCUIElementTypeOther type="XCUIElementTypeOther" x="0" y="400" width="402" height="400" visible="true" enabled="true">` +
+		`<XCUIElementTypeTextField type="XCUIElementTypeTextField" name="note" x="16" y="420" width="370" height="40" visible="true" enabled="true" accessible="true"/>` +
+		`<XCUIElementTypeTextField type="XCUIElementTypeTextField" name="note" x="16" y="480" width="370" height="40" visible="true" enabled="true" accessible="true"/>` +
+		`</XCUIElementTypeOther>` +
+		`<XCUIElementTypeKeyboard type="XCUIElementTypeKeyboard" x="0" y="560" width="402" height="314" visible="true" enabled="true">` +
+		`<XCUIElementTypeButton type="XCUIElementTypeButton" name="Search" label="Search" x="300" y="820" width="100" height="44" visible="true" enabled="true" accessible="true"/>` +
+		`</XCUIElementTypeKeyboard></XCUIElementTypeApplication>`
+	for _, tc := range []struct {
+		name        string
+		index       int // which node of that name, in document order
+		using, want string
+	}{
+		{"Search", 0, "predicate string", `name == "Search" AND type == "XCUIElementTypeTextField"`},
+		{"note", 1, "xpath", "/*[1]/*[2]/*[2]"},
+	} {
+		f := newFakeServer(t)
+		f.source = source
+		d := wdaFor(f)
+		tree, _ := d.Snapshot(context.Background())
+		var named []*uitree.Node
+		for _, n := range tree.All() {
+			if n.TestID == tc.name && n.Class == "XCUIElementTypeTextField" {
+				named = append(named, n)
+			}
+		}
+		if _, err := d.elementFor(context.Background(), named[tc.index]); err != nil {
+			t.Fatalf("%s: %v", tc.name, err)
+		}
+		var lookup *recorded
+		for i, c := range f.calls() {
+			if strings.HasSuffix(c.path, "/element") && c.method == http.MethodPost {
+				lookup = &f.calls()[i]
+			}
+		}
+		if lookup == nil || lookup.body["using"] != tc.using || lookup.body["value"] != tc.want {
+			t.Errorf("%s: looked up by %v", tc.name, lookup)
 		}
 	}
 }

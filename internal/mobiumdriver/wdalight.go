@@ -82,7 +82,14 @@ func (w *WDA) findUnique(ctx context.Context, n *uitree.Node, t *uitree.Tree) (s
 	var strategy, selector string
 	switch {
 	case n.TestID != "" && countNodes(t, func(m *uitree.Node) bool { return m.TestID == n.TestID }) == 1:
-		strategy, selector = "accessibility id", n.TestID
+		// By name and type together: "accessibility id" also matches labels,
+		// so a name no other node has can still find another element
+		// (CHALLENGES 240).
+		p, ok := namePredicate(n)
+		if !ok {
+			return "", false, nil
+		}
+		strategy, selector = "predicate string", p
 	case n.Label != "" && !strings.ContainsAny(n.Label, `"\\`) &&
 		countNodes(t, func(m *uitree.Node) bool { return m.Label == n.Label }) == 1:
 		strategy, selector = "predicate string", `label == "`+n.Label+`"`

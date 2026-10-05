@@ -104,7 +104,14 @@ func (f *fakeBoxes) serve(w http.ResponseWriter, r *http.Request) {
 	case strings.HasSuffix(path, "/element") && r.Method == http.MethodPost:
 		var body struct{ Value string }
 		json.NewDecoder(r.Body).Decode(&body)
-		id := "EL" + strings.TrimPrefix(body.Value, "otpBox")
+		// A lookup names a box by its name — `name == "otpBox3" AND type ==
+		// ...` — and the box's number is its element id.
+		name := body.Value
+		if i := strings.Index(name, `name == "`); i >= 0 {
+			name = name[i+len(`name == "`):]
+			name = name[:strings.Index(name, `"`)]
+		}
+		id := "EL" + strings.TrimPrefix(name, "otpBox")
 		fmt.Fprintf(w, `{"value":{"element-6066-11e4-a52e-4f735466cecf":%q,"ELEMENT":%q}}`, id, id)
 	case strings.HasSuffix(path, "/value") && r.Method == http.MethodPost:
 		var body struct{ Text string }
