@@ -62,6 +62,22 @@ this is what is not.
   screen-sized plain view reported not visible, is behind another screen of
   the app and is refused; measured against every captured hierarchy, with
   the obstruction screens as the control. Held by `icecubes-ios.sh`.
+- **A fourth third-party app on iOS: Pocket Casts.** Begun 2026-10-05: a
+  podcast player (MPL-2.0), built from its source at `72b785001~1` for a
+  simulator — its main branch needs Xcode 27, and its scheme the watchOS
+  simulator runtime, for the Watch app it embeds — and from the App Store
+  on the iPhone 15 Plus, browsed signed out on both, Discover loading with
+  empty credentials. Its first look found a popover
+  that hid the whole player from `map` and `app_alert` (CHALLENGES 235) and
+  a scrubber that printed as its own position and that `app_fill` would
+  have typed into (234), both fixed. A mini player docked over every list
+  is tapped around, as CHALLENGES 115 does. Still to do: a row's label
+  composed from the names of the buttons inside it and of its images
+  (`chevron-small-down star-full star-half … Follow Funding`), an icon
+  inside a button mapped as a target of its own under its asset's name
+  (`discover_tick`), `map` never marking a disabled control, a tap on Play
+  in the episode sheet warned of an `Other` drawn over it while the tap
+  played the episode, on both devices, and a check.
 - **A tap in an emulator's Chrome web app after Chrome stops reporting its
   WebView.** Without Play services Chrome installs a web app as a launcher
   shortcut, and opened while Chrome is running its WebView leaves the
@@ -425,7 +441,10 @@ this is what is not.
   `@react-native-community/slider` reports a plain view with no Adjustable
   trait and no value, so nothing outside the app can call it a slider and
   WebDriverAgent will not move it; range sliders; and the phone's text
-  size, which is a slider in Settings.
+  size, which is a slider in Settings. A custom control that does carry the
+  Adjustable trait — Pocket Casts' scrubber — maps as `adjustable` with its
+  value since 2026-10-05 (CHALLENGES 234), and `app_fill` refuses it,
+  naming a drag: WebDriverAgent cannot move it to a position.
 - ~~**Infinite scrolling**~~ — done on iOS 2026-10-04 (CHALLENGES 223): a
   swipe that moves nothing while a busy indicator is inside the list waits
   for it to go, up to ten seconds, and goes on scrolling, so `scroll-to`

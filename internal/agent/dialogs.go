@@ -188,6 +188,17 @@ func appDialogText(t *uitree.Tree) string {
 	if d == nil {
 		return ""
 	}
+	if words := dialogWords(d); words != "" {
+		return words
+	}
+	// Only buttons: still a dialog in the way, with nothing to quote.
+	return "an untitled dialog"
+}
+
+// dialogWords is what a dialog or popover says — its texts in order, title
+// first, one to a line — leaving out its buttons' captions, or "" when it
+// has only buttons.
+func dialogWords(d *uitree.Node) string {
 	var parts []string
 	var walk func(n *uitree.Node)
 	walk = func(n *uitree.Node) {
@@ -211,11 +222,36 @@ func appDialogText(t *uitree.Tree) string {
 		}
 	}
 	walk(d)
-	if len(parts) == 0 {
-		// Only buttons: still a dialog in the way, with nothing to quote.
-		return "an untitled dialog"
-	}
 	return strings.Join(parts, "\n")
+}
+
+// popoverNote says that a popover is in front, what it says, and how it
+// closes, or "" when none is. A popover is no dialog: the platform's alert
+// endpoint does not know it, and Pocket Casts' first-run tip, "Add
+// bookmark", has no button to answer it with. But while one is up iOS
+// reports everything behind it hidden, so map listed nothing at all on the
+// player and app_alert said no dialog was on screen — while the tip was the
+// one thing on it. It closes when touched outside it, at a point found as
+// the refusal behind it finds one (screenOver). CHALLENGES 235.
+//
+// Only where there is such a point. Safari's share sheet is a popover too,
+// with nothing outside it to touch and its own controls in map; saying it
+// closes when touched outside would be a claim with nothing to try.
+func popoverNote(t *uitree.Tree) string {
+	p := t.Popover()
+	if p == nil {
+		return ""
+	}
+	x, y, ok := t.OutsidePoint()
+	if !ok {
+		return ""
+	}
+	note := "a popover is in front"
+	if words := strings.ReplaceAll(dialogWords(p), "\n", " — "); words != "" {
+		note += fmt.Sprintf(": %q", words)
+	}
+	return note + fmt.Sprintf(" — iOS reports what is behind it hidden until it closes, and it closes when "+
+		"touched outside it: app_tap at x %d, y %d is outside it", x, y)
 }
 
 // buttonByCaption finds the dialog's button captioned caption, and failing

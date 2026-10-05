@@ -3,6 +3,7 @@ package agent
 import (
 	"context"
 	"fmt"
+	"os"
 	"strings"
 	"testing"
 	"time"
@@ -254,5 +255,35 @@ func TestNoWebViewInFrontIsNotCalledNavigatedAway(t *testing.T) {
 	}
 	if !strings.Contains(e.Remedy, "if the app moved on") {
 		t.Errorf("the remedy is not conditional on the app having moved on: %q", e.Remedy)
+	}
+}
+
+// An adjustable element is neither typed into nor filled: WebDriverAgent's
+// set-value adjusts only its Slider type and types into anything else, so
+// app_fill "0.5" on Pocket Casts' scrubber would have sent keystrokes to it.
+// Refused naming the drag that moved it on the simulator. CHALLENGES 234.
+func TestAnAdjustableElementIsNotTypedInto(t *testing.T) {
+	raw, err := os.ReadFile("../uitree/testdata/ios26-pocketcasts-player.xml")
+	if err != nil {
+		t.Fatal(err)
+	}
+	tree, err := uitree.ParseIOS(raw)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, replace := range []bool{false, true} {
+		d := &recordingTyper{fakeDriver: fakeDriver{screens: []*uitree.Tree{tree}}}
+		h := NewHandlers()
+		h.implicitWait, h.settleWindow = 0, 0
+		s := &session{dev: fakeDevice(), driver: d, backend: BackendWDA}
+		_, err := h.typeTextOn(context.Background(), s,
+			map[string]interface{}{"target": "label=Episode Playback", "text": "0.5"}, replace)
+		if mobiumerr.CodeOf(err) != mobiumerr.InvalidArgument || !strings.Contains(err.Error(), "adjustable") ||
+			!strings.Contains(err.Error(), "app_swipe") {
+			t.Errorf("replace=%v: want a refusal naming the drag, got %v", replace, err)
+		}
+		if len(d.set) != 0 || d.cleared != 0 {
+			t.Errorf("replace=%v: the scrubber was typed into: set %q, cleared %d", replace, d.set, d.cleared)
+		}
 	}
 }

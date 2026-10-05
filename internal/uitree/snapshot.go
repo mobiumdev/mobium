@@ -299,7 +299,7 @@ func roleOf(n *Node) string {
 	if IsIOS(n) && HasRole(n, "link") {
 		return "link"
 	}
-	for _, r := range []string{"input", "checkbox", "switch", "radio", "slider", "button", "image", "list", "tab"} {
+	for _, r := range []string{"input", "checkbox", "switch", "radio", "slider", "adjustable", "button", "image", "list", "tab"} {
 		if HasRole(n, r) {
 			return r
 		}
@@ -335,7 +335,7 @@ func (t *Tree) Map() []Entry {
 			Selected: n.node.Selected,
 			Node:     n.node,
 		}
-		if e.Role == "slider" {
+		if e.Role == "slider" || e.Role == "adjustable" {
 			e.Value = n.node.Value
 		}
 		// Only for things that have a state to report. The platform says
@@ -537,6 +537,26 @@ func (t *Tree) Dialog() *Node {
 			return false
 		}
 		if n.Displayed && (n.Class == "XCUIElementTypeAlert" || n.Class == "XCUIElementTypeSheet") {
+			found = n
+			return false
+		}
+		return true
+	})
+	return found
+}
+
+// Popover returns a popover in front of an iOS app, or nil. It is not a
+// Dialog: nothing answers it, and a tip such as Pocket Casts' "Add bookmark"
+// has no button at all — it closes when touched outside it. But iOS reports
+// everything behind one hidden, so a screen with a popover up maps as only
+// what is on it. CHALLENGES 235.
+func (t *Tree) Popover() *Node {
+	var found *Node
+	t.Walk(func(n *Node) bool {
+		if found != nil {
+			return false
+		}
+		if n.Displayed && n.Class == "XCUIElementTypePopover" {
 			found = n
 			return false
 		}

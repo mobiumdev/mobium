@@ -299,7 +299,7 @@ func TestIOSValueIsNotAlwaysText(t *testing.T) {
 		{"XCUIElementTypeStaticText", "tick the checkbox, then continue", "tick the checkbox, then continue", false, false, ""},
 	}
 	for _, tc := range cases {
-		if got := textValue(tc.class, tc.value, ""); got != tc.wantText {
+		if got := textValue(tc.class, tc.value, "", false); got != tc.wantText {
 			t.Errorf("textValue(%s, %q) = %q, want %q", tc.class, tc.value, got, tc.wantText)
 		}
 		checkable, checked := checkedState(tc.class, tc.value)
@@ -364,7 +364,7 @@ func TestIOSSelectedButtonIsNamedByItsLabel(t *testing.T) {
 		t.Errorf("a selected button is named by its value:\n%s", got)
 	}
 	// A text field's "1" is its contents, and stays so.
-	if textValue("XCUIElementTypeTextField", "1", "Quantity") != "1" {
+	if textValue("XCUIElementTypeTextField", "1", "Quantity", false) != "1" {
 		t.Error("a text field holding 1 lost its text")
 	}
 }
