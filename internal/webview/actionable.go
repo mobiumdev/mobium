@@ -98,9 +98,49 @@ const actionableScript = `(() => {
   return JSON.stringify({status: 'ok', x: rect.x, y: rect.y, w: rect.width, h: rect.height, px, py, moved, cover});
 })()`
 
-// CheckActionable runs the checks against the index-th element of the map.
-func CheckActionable(ctx context.Context, p Page, index int) (*Actionability, error) {
-	raw, err := p.Evaluate(ctx, fmt.Sprintf(actionableScript, index))
+// CheckActionable runs the checks against an element of the map.
+//
+// One in a cross-origin frame is checked in its frame's own context, after
+// the page has brought the frame into view, and its rectangle and point come
+// back in the frame's viewport, so the frame's place in the page is added.
+// The frame's script cannot see what the page draws over the frame, so the
+// page is asked too: the point must land on the frame. CHALLENGES 229.
+func CheckActionable(ctx context.Context, p Page, e Element) (*Actionability, error) {
+	if e.context == 0 {
+		return checkIn(ctx, p, e.local)
+	}
+	c, ok := p.(contextual)
+	if !ok {
+		return &Actionability{Status: "not_found"}, nil
+	}
+	if _, err := frameBox(ctx, p, e.box, true); err != nil {
+		return nil, err
+	}
+	a, err := checkIn(ctx, evalIn{c, e.context}, e.local)
+	if err != nil || a.Status != "ok" {
+		return a, err
+	}
+	off, err := frameBox(ctx, p, e.box, false)
+	if err != nil {
+		return nil, err
+	}
+	if off == nil {
+		return &Actionability{Status: "not_found"}, nil
+	}
+	a.X, a.Y, a.PX, a.PY = a.X+off.X, a.Y+off.Y, a.PX+off.X, a.PY+off.Y
+	over, err := p.Evaluate(ctx, fmt.Sprintf(frameHitScript, jsString(e.box), a.PX, a.PY))
+	if err != nil {
+		return nil, err
+	}
+	if over != "frame" {
+		return &Actionability{Status: "failed", Check: "receivesEvents",
+			Reason: "the page draws " + over + " over the frame it is in, at that point"}, nil
+	}
+	return a, nil
+}
+
+func checkIn(ctx context.Context, e evaluator, index int) (*Actionability, error) {
+	raw, err := e.Evaluate(ctx, fmt.Sprintf(actionableScript, index))
 	if err != nil {
 		return nil, err
 	}
@@ -109,6 +149,64 @@ func CheckActionable(ctx context.Context, p Page, index int) (*Actionability, er
 		return nil, mobiumerr.New(mobiumerr.DeviceServer, "could not read the page's actionability answer %q: %w", raw, err)
 	}
 	return &a, nil
+}
+
+// evalIn is an evaluator bound to one frame's context.
+type evalIn struct {
+	c  contextual
+	id int
+}
+
+func (e evalIn) Evaluate(ctx context.Context, expression string) (string, error) {
+	return e.c.evaluateIn(ctx, e.id, expression)
+}
+
+// frameBoxScript is the top-left of a frame's content in the page's
+// viewport, after scrolling the frame into view when asked to.
+const frameBoxScript = `(() => {
+  ` + candidatesJS + `
+  ` + frameAtJS + `
+  const f = __mobiumFrameAt(%s);
+  if (!f) return 'null';
+  let r = __mobiumRect(f);
+  if (%t && (r.top < 0 || r.left < 0 || r.bottom > innerHeight || r.right > innerWidth)) {
+    f.scrollIntoView({block: 'center', inline: 'center', behavior: 'instant'});
+    r = __mobiumRect(f);
+  }
+  return JSON.stringify({x: r.x + f.clientLeft, y: r.y + f.clientTop});
+})()`
+
+type offset struct{ X, Y float64 }
+
+func frameBox(ctx context.Context, p evaluator, path string, scroll bool) (*offset, error) {
+	raw, err := p.Evaluate(ctx, fmt.Sprintf(frameBoxScript, jsString(path), scroll))
+	if err != nil || raw == "null" {
+		return nil, err
+	}
+	var o offset
+	if err := json.Unmarshal([]byte(raw), &o); err != nil {
+		return nil, fmt.Errorf("parse frame position %q: %w", raw, err)
+	}
+	return &o, nil
+}
+
+// frameHitScript says whether a point of the page lands on a frame — the
+// frame itself, which is what the page's hit test reaches for a frame it
+// cannot see into — or names what is there instead.
+const frameHitScript = `(() => {
+  ` + candidatesJS + `
+  ` + frameAtJS + `
+  const f = __mobiumFrameAt(%s);
+  const h = __mobiumTopAt(%f, %f);
+  if (h && h === f) return 'frame';
+  if (!h) return 'nothing';
+  return '"' + ((h.innerText || h.getAttribute('aria-label') || '').trim().replace(/\s+/g, ' ').slice(0, 40) ||
+    h.tagName.toLowerCase()) + '"';
+})()`
+
+func jsString(s string) string {
+	b, _ := json.Marshal(s)
+	return string(b)
 }
 
 // Filled is what a page says after text was put into one of its fields.
@@ -182,12 +280,22 @@ const fillableInputTypesJS = `['text','password','email','number','search','tel'
 // can take it, and reports whether it now holds exactly that — the text alone,
 // or with appendText what it held followed by the text, which is app_type's
 // meaning where Fill without it is app_fill's.
-func Fill(ctx context.Context, p Page, index int, value string, appendText bool) (*Filled, error) {
+//
+// An element in a cross-origin frame is filled in its frame's context.
+func Fill(ctx context.Context, p Page, el Element, value string, appendText bool) (*Filled, error) {
 	quoted, err := json.Marshal(value)
 	if err != nil {
 		return nil, err
 	}
-	raw, err := p.Evaluate(ctx, fmt.Sprintf(fillScript, index, quoted, appendText))
+	var in evaluator = p
+	if el.context != 0 {
+		c, ok := p.(contextual)
+		if !ok {
+			return &Filled{Status: "not_found"}, nil
+		}
+		in = evalIn{c, el.context}
+	}
+	raw, err := in.Evaluate(ctx, fmt.Sprintf(fillScript, el.local, quoted, appendText))
 	if err != nil {
 		return nil, err
 	}

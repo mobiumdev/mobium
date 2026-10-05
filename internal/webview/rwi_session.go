@@ -24,6 +24,9 @@ type IOSSession struct {
 	mu       sync.Mutex
 	nextID   int
 	targetID string
+	// pageOn is set once Page is enabled: WebKit refuses a second
+	// Page.enable, "Page domain already enabled".
+	pageOn bool
 }
 
 // AttachIOS opens a page for evaluation.
@@ -251,10 +254,19 @@ type iosEvalResult struct {
 // evaluated to a handle, a promise is awaited with Runtime.awaitPromise, and
 // any other object is read back by value. CHALLENGES 201.
 func (s *IOSSession) Evaluate(ctx context.Context, expression string) (string, error) {
-	r, err := s.evalCall(ctx, "Runtime.evaluate", map[string]any{
+	return s.evaluateIn(ctx, 0, expression)
+}
+
+// evaluateIn is Evaluate in one frame's execution context; 0 is the page's.
+func (s *IOSSession) evaluateIn(ctx context.Context, contextID int, expression string) (string, error) {
+	params := map[string]any{
 		"expression":  expression,
 		"objectGroup": evalGroup,
-	})
+	}
+	if contextID != 0 {
+		params["contextId"] = contextID
+	}
+	r, err := s.evalCall(ctx, "Runtime.evaluate", params)
 	if err != nil {
 		return "", err
 	}
@@ -328,7 +340,10 @@ func (s *IOSSession) LayoutMetrics(ctx context.Context) (*Metrics, error) {
 }
 
 // Map returns the page's actionable elements.
-func (s *IOSSession) Map(ctx context.Context) ([]Element, error) { return mapPage(ctx, s) }
+func (s *IOSSession) Map(ctx context.Context) ([]Element, error) {
+	els, _, err := mapAll(ctx, s)
+	return els, err
+}
 
 // Text returns the page's visible text.
 func (s *IOSSession) Text(ctx context.Context) (string, error) { return pageText(ctx, s) }

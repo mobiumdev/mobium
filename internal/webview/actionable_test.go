@@ -30,7 +30,7 @@ func (f *cannedPage) Close() error                                        { retu
 // ref and the element checked for it can never disagree.
 func TestTheActionabilityCheckUsesMapsCandidates(t *testing.T) {
 	f := &cannedPage{answer: `{"status":"ok","x":1,"y":2,"w":3,"h":4,"px":2.5,"py":4,"moved":true,"cover":"half cover"}`}
-	a, err := CheckActionable(context.Background(), f, 7)
+	a, err := CheckActionable(context.Background(), f, Element{local: 7})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -48,7 +48,7 @@ func TestTheActionabilityCheckUsesMapsCandidates(t *testing.T) {
 // A page answer that is not JSON is a device-server error, named, not a panic
 // or a silent success.
 func TestAnUnreadableActionabilityAnswerIsAnError(t *testing.T) {
-	if _, err := CheckActionable(context.Background(), &cannedPage{answer: "undefined"}, 0); err == nil {
+	if _, err := CheckActionable(context.Background(), &cannedPage{answer: "undefined"}, Element{}); err == nil {
 		t.Error("an unreadable answer was accepted")
 	}
 }
@@ -58,7 +58,7 @@ func TestAnUnreadableActionabilityAnswerIsAnError(t *testing.T) {
 // holding it in a result.
 func TestAFillNeverSendsTheValueBack(t *testing.T) {
 	f := &cannedPage{answer: `{"status":"ok","matches":true,"password":true}`}
-	got, err := Fill(context.Background(), f, 3, `it's "quoted" & café`, false)
+	got, err := Fill(context.Background(), f, Element{local: 3}, `it's "quoted" & café`, false)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -81,7 +81,7 @@ func TestAFillNeverSendsTheValueBack(t *testing.T) {
 		t.Error("a fill did not reach the page as a replacement")
 	}
 	// app_type's fill keeps what the field held: the flag is what says so.
-	if _, err := Fill(context.Background(), f, 3, "more", true); err != nil || !strings.Contains(f.got, "const append = true;") {
+	if _, err := Fill(context.Background(), f, Element{local: 3}, "more", true); err != nil || !strings.Contains(f.got, "const append = true;") {
 		t.Errorf("an append did not reach the page as one (%v)", err)
 	}
 }

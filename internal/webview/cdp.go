@@ -84,6 +84,14 @@ func (s *Session) Healthy(ctx context.Context) bool {
 // call sends one CDP command and waits for the matching reply, skipping the
 // events that arrive on the same socket.
 func (s *Session) call(ctx context.Context, method string, params map[string]interface{}) (json.RawMessage, error) {
+	return s.callCollect(ctx, method, params, "", nil)
+}
+
+// callCollect is call, handing every event named event that arrives before
+// the reply to collect: Runtime.enable announces each frame's context as an
+// event ahead of its own reply.
+func (s *Session) callCollect(ctx context.Context, method string, params map[string]interface{},
+	event string, collect func(json.RawMessage)) (json.RawMessage, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	if s.conn == nil {
@@ -122,12 +130,18 @@ func (s *Session) call(ctx context.Context, method string, params map[string]int
 		}
 		var resp struct {
 			ID     int             `json:"id"`
+			Method string          `json:"method"`
+			Params json.RawMessage `json:"params"`
 			Result json.RawMessage `json:"result"`
 			Error  *struct {
 				Message string `json:"message"`
 			} `json:"error"`
 		}
 		if json.Unmarshal(data, &resp) != nil {
+			continue
+		}
+		if collect != nil && resp.ID == 0 && resp.Method == event {
+			collect(resp.Params)
 			continue
 		}
 		// id 0 means an event (Page.loadEventFired and friends), not our reply.
@@ -153,11 +167,20 @@ func cdpErr(method string, err error) error {
 
 // Evaluate runs an expression in the page and returns its value as a string.
 func (s *Session) Evaluate(ctx context.Context, expression string) (string, error) {
-	raw, err := s.call(ctx, "Runtime.evaluate", map[string]interface{}{
+	return s.evaluateIn(ctx, 0, expression)
+}
+
+// evaluateIn is Evaluate in one frame's execution context; 0 is the page's.
+func (s *Session) evaluateIn(ctx context.Context, contextID int, expression string) (string, error) {
+	params := map[string]interface{}{
 		"expression":    expression,
 		"returnByValue": true,
 		"awaitPromise":  true,
-	})
+	}
+	if contextID != 0 {
+		params["contextId"] = contextID
+	}
+	raw, err := s.call(ctx, "Runtime.evaluate", params)
 	if err != nil {
 		return "", err
 	}
