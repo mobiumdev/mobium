@@ -58,6 +58,8 @@ var coveredCaptures = map[string]string{
 		"clear point of it, and collapsed the group",
 	"ios26-icecubes-timeline.xml": "the second post runs down behind iOS 26's tab bar, which is drawn over " +
 		"its center: it is touched above the tab bar, on screen (CHALLENGES 238)",
+	"ios26-pocketcasts-search.xml": "each search result is an unlabeled full-width button with a labeled one, " +
+		"the podcast's name, laid over its middle: the unlabeled one is aimed at its clear edge",
 	"ios26-pocketcasts-episode-sheet.xml": "a two-point divider runs across the row of buttons through Play's " +
 		"center, and Play is touched just above it (CHALLENGES 238)",
 	"ios26-icecubes-display-settings.xml": "Ice Cubes pins a sample post at the top of Display Settings and " +
