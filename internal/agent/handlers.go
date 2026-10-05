@@ -1043,12 +1043,24 @@ func screenOver(loc uitree.Locator, tree *uitree.Tree) error {
 // not know, an app's own. app_alert's accept and dismiss press the buttons
 // the platform picks, and this dialog has none it picks, so the remedy names
 // only what works: its buttons, by ref or by a rule.
-func appDialogOver(dialog string, loc uitree.Locator) error {
+//
+// On Android it may be a popup menu, which is a window of its own as a
+// dialog is and has no answer to give: its items are actions, and tapping
+// one is not closing it. Back closes it, and closes a dialog that can be
+// canceled; on the Pixel 8 Pro the Clock's overflow menu was refused this
+// way with only its items and app_dialogs named, while back closed it and
+// left the Clock where it was (CHALLENGES 225). iOS has no back.
+func appDialogOver(dialog string, loc uitree.Locator, android bool) error {
 	dialog = strings.TrimSpace(strings.SplitN(dialog, "\n", 2)[0])
 	msg := "a dialog is over the app — %q — and nothing on it matches %s; if the target is behind it, " +
 		"answer the dialog first, and if it is one of the dialog's buttons, take its ref from app_map"
+	remedy := "tap one of the dialog's buttons from app_map, or declare an answer with app_dialogs"
+	if android {
+		msg += "; if it is a menu, app_press back closes it"
+		remedy = "app_press back closes a menu, or a dialog that can be canceled; otherwise " + remedy
+	}
 	return mobiumerr.New(mobiumerr.DeviceNotReady, msg, dialog, loc).
-		WithRemedy("tap one of the dialog's buttons from app_map, or declare an answer with app_dialogs").
+		WithRemedy(remedy).
 		WithDetail("locator", loc.String()).
 		WithDetail("dialog", dialog)
 }
@@ -1489,7 +1501,7 @@ func (h *Handlers) resolveNodeOnce(ctx context.Context, s *session, target strin
 		// know: a Jetpack Compose dialog is a window of its own that the
 		// hierarchy holds alone (CHALLENGES 177).
 		if text := appDialogText(tree); text != "" {
-			return nil, nil, appDialogOver(text, loc)
+			return nil, nil, appDialogOver(text, loc, tree.Root != nil && !uitree.IsIOS(tree.Root))
 		}
 
 	default:

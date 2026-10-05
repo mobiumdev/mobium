@@ -174,6 +174,23 @@ func TestARefusalBehindAMenuNamesAPointOutsideIt(t *testing.T) {
 	}
 }
 
+// Behind an Android popup menu — a window of its own, as a dialog is — the
+// refusal names back, which closes a menu or a dialog that can be canceled;
+// its items are actions, and tapping one is not closing it. iOS has no
+// back, and its refusal does not name one. CHALLENGES 225.
+func TestARefusalBehindAnAndroidMenuNamesBack(t *testing.T) {
+	loc, _ := uitree.ParseLocator("label=Stopwatch")
+	err := appDialogOver("an untitled dialog", loc, true)
+	e, _ := mobiumerr.As(err)
+	if e == nil || !strings.Contains(err.Error(), "app_press back") || !strings.Contains(e.Remedy, "app_press back") {
+		t.Errorf("Android: %v (remedy %q) does not name back", err, e.Remedy)
+	}
+	err = appDialogOver("Discard changes?", loc, false)
+	if strings.Contains(err.Error(), "back") {
+		t.Errorf("iOS, which has no back, named it: %v", err)
+	}
+}
+
 // The keyboard refusal names both ways to hide it, and both must exist: an
 // iPhone's keyboard has no hide key, so enter is named too. A remedy that
 // names an argument the tool does not take is obeyed and fails.

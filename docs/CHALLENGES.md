@@ -7,7 +7,7 @@ the source.
 
 The pattern across them is the reason the document exists: **almost nothing
 here was found by reading code or by a test written from imagination.** Of
-224 defects, 187 were found only by running against a real device. The other
+225 defects, 188 were found only by running against a real device. The other
 thirty-seven — 4, 5, 6, 14, 23, 24, 32, 35, 36, 39, 44, 50, 53, 54, 57, 66, 89,
 99, 100, 121, 123, 129, 130, 133, 134, 139, 140, 141, 142, 144, 150, 158, 162,
 164, 165, 172 and 222 — came from reading code, the compiler, a test, a linter,
@@ -4981,6 +4981,19 @@ it was — to WebDriverAgent, or on a phone to the app a switch expects
 "ViewService" ending, because some view services are the screen, as
 Safari's is inside an app. Both iPads then mapped their home screens, 28
 and 29 entries, and Settings opened from each by its ref.
+
+### 225. Behind an Android menu, the refusal named everything but back
+
+**Found by:** the Pixel 8 Pro, carrying CHALLENGES 221 over to Android. An
+Android popup menu — the Clock's overflow menu — is a window of its own, as
+a dialog is, so a tap behind it is refused as "a dialog is over the app",
+which is right. Its remedy said to tap one of the dialog's buttons or
+declare an answer with `app_dialogs`, and `app_alert dismiss` refused, there
+being no button for it to press. A menu's items are actions: tapping one is
+not closing the menu. Back closes it, and closes a dialog that can be
+canceled; on the Pixel it closed the menu and left the Clock where it was.
+On Android the refusal now names `app_press back`; iOS, which has no back,
+does not.
 
 ## Findings that were not defects
 
