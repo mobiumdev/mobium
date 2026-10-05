@@ -325,11 +325,12 @@ TalkBack — or VoiceView, on a Fire TV — on, a read of the screen takes the
 screen reader away for as long as it runs, and an app that publishes its
 contents only to a screen reader stops publishing them (CHALLENGES 208).
 
-`--driver uiautomator` reads through a reader of Mobium's own whenever an
-accessibility service is enabled, and that one leaves the screen reader
-running. The default driver, UiAutomator2, does not yet: with it, the screen
-reader is silent while a session is open and comes back when the session
-ends. Nothing in the device's settings changes either way.
+Both drivers leave the screen reader running. The default, UiAutomator2,
+opens its connection that way; `--driver uiautomator` reads through a reader
+of Mobium's own whenever an accessibility service is enabled. With TalkBack
+on, taps, scrolls and typing still land: Mobium's touches are injected, not
+explored. Nothing in the device's settings changes either way.
+`docs/checks/screen-reader.sh` checks it on an emulator.
 
 `MOBIUM_DUMP_READER=mobium` uses Mobium's reader for every read, and
 `=uiautomator` uses `uiautomator dump` for every read. **It is read by the

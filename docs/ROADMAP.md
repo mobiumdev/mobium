@@ -109,15 +109,15 @@ this is what is not.
   now where the Never button is, and every later login of a package gets
   Never (six of six). `alert` read it, refused accept and dismiss, and a rule
   `--when "Save password" --press "Not now"` answered it in the way of a tap.
-- **Reading without silencing a screen reader, on UiAutomator2 too.** The
-  dump backend reads through a reader of Mobium's own whenever an
-  accessibility service is enabled, and TalkBack and VoiceView stay running
-  through it, measured on a Pixel 8 Pro and a Fire TV (CHALLENGES 208). The
-  UiAutomator2 server, the default driver, still unbinds them for as long as
-  a session is open: it accepted `disableSuppressAccessibilityService` and
-  went on unbinding. Left: the same for UiAutomator2 — its connection opened
-  with the flag, or its reads done by Mobium's reader — and saying so when a
-  session opens on a device with a screen reader on, until then.
+- ~~**Reading without silencing a screen reader, on UiAutomator2 too.**~~
+  Done 2026-10-05: the dump backend reads through a reader of Mobium's own,
+  and the UiAutomator2 server is now started with
+  `DISABLE_SUPPRESS_ACCESSIBILITY_SERVICES` — an instrumentation argument,
+  where the setting of almost the same name was accepted and ignored. TalkBack
+  stays bound with touch exploration on through a session, and taps, scrolls
+  and typing land, on the Android 17 emulator and a Pixel 8 Pro
+  (`docs/checks/screen-reader.sh`, CHALLENGES 208). VoiceView on the Fire TV
+  is measured for the dump backend only.
 - **Windows.** Everything that needs no device passes on a GitHub-hosted
   Windows runner, every run: both modules' tests, the named-pipe daemon
   transport's acceptance tests five times over, and the built `mobium.exe` —

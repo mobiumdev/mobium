@@ -179,7 +179,7 @@ vouches for none of them. What each proves, and the devices it runs on, is in
 - [ ] MobiumApp's demos: `login.sh`, `keyboard.sh`, `otp.sh`, `dialogs.sh`,
       `autowait.sh`, `obstruction.sh`, `hit-test.sh`, `wait-states.sh`,
       `map-diff.sh`, `source.sh`, `clear-data.sh`, `files.sh`, `battery.sh`,
-      `biometric.sh` and `accessibility.sh`
+      `biometric.sh`, `accessibility.sh` and, on Android, `screen-reader.sh`
 - [ ] Inside a WebView: `web-actionability.sh`, `web-type.sh` and
       `web-storage.sh`; and `ios-webview-probe.sh <simulator-udid>`, the
       platform assumption with no Mobium code

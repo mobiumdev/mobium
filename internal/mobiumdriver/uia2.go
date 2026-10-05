@@ -83,8 +83,16 @@ func (u *UIA2) Start(ctx context.Context, progress func(string)) error {
 	// The instrumentation must outlive this call, so it gets its own context
 	// rather than the per-command one.
 	runCtx, cancel := context.WithCancel(context.Background())
+	// DISABLE_SUPPRESS_ACCESSIBILITY_SERVICES opens the server's UiAutomation
+	// connection without silencing every other accessibility service, so
+	// TalkBack keeps running through a session. It is an instrumentation
+	// argument, read once when the server starts: the server accepts a
+	// disableSuppressAccessibilityService setting and goes on unbinding them.
+	// CHALLENGES 208.
 	cmd, log, err := u.adb.Start(runCtx, "shell", "am", "instrument", "-w",
-		"-e", "disableAnalytics", "true", instrumentTarget)
+		"-e", "disableAnalytics", "true",
+		"-e", "DISABLE_SUPPRESS_ACCESSIBILITY_SERVICES", "true",
+		instrumentTarget)
 	if err != nil {
 		cancel()
 		return err
