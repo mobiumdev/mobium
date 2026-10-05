@@ -277,8 +277,17 @@ func iosNodeFrom(e xml.StartElement, parent *Node, sibling int) *Node {
 		class = e.Name.Local
 	}
 
+	// An element with the Adjustable trait is one VoiceOver changes by a
+	// swipe up or down, and its value is what it is set to, never its name:
+	// Pocket Casts' scrubber, an Other labeled "Episode Playback", printed
+	// as `six seconds of one minute, nineteen seconds (button)`, and
+	// SpringBoard's Search pill as `Page 2 of 2`. Only an accessible one is a
+	// control — every scroll view carries an inaccessible adjustable scroll
+	// bar. CHALLENGES 234.
+	adjustable := attr(e, "accessible") == "true" && hasTrait(attr(e, "traits"), "Adjustable")
+
 	n := &Node{
-		Text:    textValue(class, attr(e, "value"), attr(e, "label")),
+		Text:    textValue(class, attr(e, "value"), attr(e, "label"), adjustable),
 		Hint:    attr(e, "placeholderValue"),
 		Package: attr(e, "bundleId"),
 		Label:   attr(e, "label"),
@@ -329,10 +338,18 @@ func iosNodeFrom(e xml.StartElement, parent *Node, sibling int) *Node {
 	}
 	n.Clickable = n.shaped && n.Displayed
 	n.Checkable, n.Checked = checkedState(class, attr(e, "value"))
-	if class == "XCUIElementTypeSlider" {
+	if class == "XCUIElementTypeSlider" || adjustable {
 		n.Value = attr(e, "value")
 	}
 	n.DeclaredRole = declaredRole(attr(e, "value"))
+	// Adjustable is not slider: a page indicator is adjustable too, and
+	// slider is what app_fill moves to a position, which WebDriverAgent can
+	// do only for its Slider type. So an adjustable element that is not a
+	// Slider says so in iOS's own word, and nothing guesses which it is from
+	// what its value says — that is in the app's language.
+	if adjustable && class != "XCUIElementTypeSlider" && n.DeclaredRole == "" {
+		n.DeclaredRole = "adjustable"
+	}
 	n.Scrollable = iosScrollableTypes[class]
 	n.Focusable = iosInputTypes[class]
 	n.Password = class == "XCUIElementTypeSecureTextField"
@@ -422,10 +439,13 @@ var stateValue = regexp.MustCompile(`^(?i)(checkbox|radio button|radio|switch|to
 //     label, is a state rather than a name. A text field is exempt: "1" is
 //     exactly what a quantity field holds.
 //
+//   - An adjustable element's value is its setting: a scrubber's position,
+//     a page indicator's page (CHALLENGES 234).
+//
 // In each case the element carries a perfectly good `label`, which is what
 // `describe` falls back to once this returns empty. CHALLENGES 65, 77.
-func textValue(class, value, label string) string {
-	if class == "XCUIElementTypeSwitch" || class == "XCUIElementTypeSlider" || stateValue.MatchString(value) {
+func textValue(class, value, label string, adjustable bool) string {
+	if adjustable || class == "XCUIElementTypeSwitch" || class == "XCUIElementTypeSlider" || stateValue.MatchString(value) {
 		return ""
 	}
 	if (value == "0" || value == "1") && label != "" && !iosInputTypes[class] {

@@ -871,6 +871,40 @@ func TestASliderMapsWithItsValueAsState(t *testing.T) {
 	}
 }
 
+// An adjustable element is named by its label and shows its value as a
+// state, as a slider does, and is not called a slider: Pocket Casts'
+// scrubber printed as `six seconds of one minute, nineteen seconds (button)`
+// and SpringBoard's Search pill as `Page 2 of 2 (button)`. Only an accessible
+// one counts — the player also holds six adjustable scroll bars, none of them
+// accessible. CHALLENGES 234.
+func TestAnAdjustableElementMapsByItsLabelWithItsValue(t *testing.T) {
+	for _, tc := range []struct{ file, want, wrong string }{
+		{"ios26-pocketcasts-player.xml", "Episode Playback (adjustable, six seconds of one minute, nineteen seconds)",
+			"six seconds of one minute, nineteen seconds (button)"},
+		{"ios-springboard.xml", "Search (adjustable, Page 2 of 2)", "Page 2 of 2 (button)"},
+	} {
+		tree := loadIOS(t, tc.file)
+		lines := map[string]bool{}
+		for _, e := range tree.Map() {
+			lines[strings.TrimPrefix(e.Line(), e.Ref+" ")] = true
+		}
+		if !lines[tc.want] {
+			t.Errorf("%s does not map %q", tc.file, tc.want)
+		}
+		if lines[tc.wrong] {
+			t.Errorf("%s still maps %q", tc.file, tc.wrong)
+		}
+		loc, _ := ParseLocator("role=adjustable")
+		if got := loc.Resolve(tree); len(got) != 1 {
+			t.Errorf("%s: role=adjustable found %d, want the one accessible adjustable element", tc.file, len(got))
+		}
+		loc, _ = ParseLocator("role=slider")
+		if got := loc.Resolve(tree); len(got) != 0 {
+			t.Errorf("%s: role=slider found %d; an adjustable element is not one app_fill can move", tc.file, len(got))
+		}
+	}
+}
+
 // A menu has no close control and closes when touched outside it, so a
 // refusal behind one offers a point outside it — and only where one
 // exists. The point must be on the backdrop: not on the menu, not on a
@@ -933,5 +967,20 @@ func TestAnAndroidSeekBarMapsAsASlider(t *testing.T) {
 		if !lines[want] {
 			t.Errorf("the Slider Demo does not map %q: %v", want, lines)
 		}
+	}
+}
+
+// A popover is found, and is not a Dialog: a dialog's refusal says to answer
+// it, and Pocket Casts' tip has nothing to answer it with. CHALLENGES 235.
+func TestAPopoverIsNotADialog(t *testing.T) {
+	tree := loadIOS(t, "ios26-pocketcasts-player-popover.xml")
+	if tree.Popover() == nil {
+		t.Error("the tip's popover was not found")
+	}
+	if d := tree.Dialog(); d != nil {
+		t.Errorf("the popover was taken for a dialog: %s", d.Class)
+	}
+	if loadIOS(t, "ios26-pocketcasts-player.xml").Popover() != nil {
+		t.Error("a popover was found once the tip had gone")
 	}
 }

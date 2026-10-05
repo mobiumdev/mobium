@@ -71,6 +71,13 @@ func (h *Handlers) alertOn(ctx context.Context, s *session, args map[string]inte
 					WithRemedy("tap one of its buttons from app_map, or declare an answer with app_dialogs").
 					WithDetail("dialog", title)
 			}
+			if note := popoverNote(tree); note != "" {
+				if action == "" || action == "read" {
+					return Result("no dialog is on screen, but "+note, AlertView{Serial: s.dev.Serial}), nil
+				}
+				return nil, mobiumerr.New(mobiumerr.NoSuchAlert, "there is no dialog to %s, but %s", action, note).
+					WithRemedy("app_tap outside the popover to close it")
+			}
 		}
 		// Not a failure. Nothing asking the user anything is a perfectly good
 		// state, and reporting it as an error would make "the screen is calm"

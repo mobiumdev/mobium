@@ -7,7 +7,7 @@ the source.
 
 The pattern across them is the reason the document exists: **almost nothing
 here was found by reading code or by a test written from imagination.** Of
-233 defects, 194 were found only by running against a real device. The other
+235 defects, 196 were found only by running against a real device. The other
 thirty-nine — 4, 5, 6, 14, 23, 24, 32, 35, 36, 39, 44, 50, 53, 54, 57, 66, 89,
 99, 100, 121, 123, 129, 130, 133, 134, 139, 140, 141, 142, 144, 150, 158, 162,
 164, 165, 172, 222, 231 and 232 — came from reading code, the compiler, a test, a linter,
@@ -5163,6 +5163,47 @@ internet", so nothing on any page could show the race. The wait is now
 run again on both platforms. A wait after a tap has to name something the
 screen being left does not have; iOS's `label=About,role=button` always
 did.
+
+### 234. A scrubber printed as its own position, and fill would type into it
+
+**Found by:** Pocket Casts' full player on an iPhone 17 Pro simulator, the
+fourth third-party app on iOS. Its scrubber is an `Other` with the
+Adjustable trait, labeled "Episode Playback" and valued "six seconds of one
+minute, nineteen seconds", and `map` printed `six seconds of one minute,
+nineteen seconds (button)`: the value taken for its name, as a switch's 0
+or 1 once was (65), and the label lost. SpringBoard's Search pill, which is
+also the home screen's page indicator, had printed as `Page 2 of 2
+(button)` the whole time. Worse, `app_fill` would have sent it keystrokes:
+WebDriverAgent's set-value adjusts only its Slider type and types into
+anything else, and a test against the captured player recorded "0.5" typed
+into the scrubber. An accessible element with the Adjustable trait now maps
+by its label with its value as its state — `Episode Playback (adjustable,
+thirty-nine seconds of one minute, nineteen seconds)`, `Search (adjustable,
+Page 2 of 2)` — and `role=adjustable` finds it. It is not called a slider,
+because a page indicator is adjustable too and `slider` is what `app_fill`
+moves to a position; telling the two apart by what the value says would
+depend on the app's language. `app_fill` and `app_type` refuse it, naming a
+drag from the thumb, which moved the scrubber from six seconds to
+thirty-nine on the simulator, and from zero to forty on an iPhone 15 Plus
+running the App Store build, which maps it the same. Only accessible elements: every scroll view carries an
+adjustable scroll bar, none of them accessible.
+
+### 235. A popover hid the whole screen, and nothing said so
+
+**Found by:** the same player. Opened for the first time, Pocket Casts
+shows a tip, "Add bookmark", as a popover, and while it is up iOS reports
+everything behind it not visible — so `map` answered "No actionable
+elements found" and `app_alert` "no dialog is on screen", on a screen
+showing a whole player and the tip. Only a tap was right: refused behind
+it with a point outside it to touch (217, 221), which closed the tip and
+nothing else. A popover is not made a dialog, whose refusal says to answer
+it — the tip has nothing to answer it with — but `map`, `map --diff` and
+`app_alert` now say one is in front, what it says, and the same point
+outside it. Only where such a point exists: Safari's share sheet is a
+popover too, with no outside to touch and its controls already in `map`,
+and is left as it was. Measured on the simulator and on an iPhone 15 Plus
+running the App Store build: following the point the note gives closed
+the tip, and the player mapped 17 controls on both.
 
 ## Findings that were not defects
 

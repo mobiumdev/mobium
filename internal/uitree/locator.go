@@ -105,7 +105,9 @@ var roleClasses = map[string][]string{
 
 // Roles lists the accepted role values, for error messages and help text.
 func Roles() []string {
-	seen := map[string]bool{"link": true, "password": true}
+	// adjustable is declared by an iOS element itself (its Adjustable trait),
+	// so no class table holds it.
+	seen := map[string]bool{"link": true, "password": true, "adjustable": true}
 	for r := range roleClasses {
 		seen[r] = true
 	}

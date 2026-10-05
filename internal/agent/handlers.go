@@ -528,6 +528,14 @@ func (h *Handlers) mapScreen(ctx context.Context, args map[string]interface{}) (
 	prev := h.lastMaps[dev.Serial]
 	h.lastMaps[dev.Serial] = &lastMap{elements: view.Elements, taken: table.taken}
 
+	// A popover hides everything behind it, so a map with one up is short or
+	// empty for a reason the caller cannot see from the list alone.
+	withNote := func(text string) string {
+		if note := popoverNote(tree); note != "" {
+			return text + "\n" + note
+		}
+		return text
+	}
 	if diff {
 		if prev == nil {
 			// Compared with nothing, everything appeared: a client reading
@@ -538,17 +546,17 @@ func (h *Handlers) mapScreen(ctx context.Context, args map[string]interface{}) (
 			if whole == "" {
 				whole = "No actionable elements found"
 			}
-			return Result("no earlier map of this device to compare with, so here is all of it:\n"+whole, view), nil
+			return Result(withNote("no earlier map of this device to compare with, so here is all of it:\n"+whole), view), nil
 		}
 		d := diffMaps(prev.elements, view.Elements)
 		d.Since = prev.taken
 		view.Diff = &d
-		return Result(diffText(d, len(view.Elements)), view), nil
+		return Result(withNote(diffText(d, len(view.Elements))), view), nil
 	}
 	if len(table.lines) == 0 {
-		return Result("No actionable elements found", view), nil
+		return Result(withNote("No actionable elements found"), view), nil
 	}
-	return Result(strings.Join(table.lines, "\n"), view), nil
+	return Result(withNote(strings.Join(table.lines, "\n")), view), nil
 }
 
 func (h *Handlers) tap(ctx context.Context, args map[string]interface{}) (*ToolsCallResult, error) {
@@ -1727,7 +1735,7 @@ func hasDialogOrKeyboard(t *uitree.Tree) bool {
 	found := false
 	t.Walk(func(n *uitree.Node) bool {
 		switch n.Class {
-		case "XCUIElementTypeAlert", "XCUIElementTypeSheet", "XCUIElementTypeKeyboard":
+		case "XCUIElementTypeAlert", "XCUIElementTypeSheet", "XCUIElementTypeKeyboard", "XCUIElementTypePopover":
 			found = true
 		}
 		return !found
@@ -1792,6 +1800,17 @@ func (h *Handlers) typeTextOn(ctx context.Context, s *session, args map[string]i
 				WithRemedy("app_fill with a position from 0 (the start of its track) to 1 (the end)")
 		}
 		return h.setSlider(ctx, s, target, node, text)
+	}
+	// An adjustable element is not a slider WebDriverAgent can move: its
+	// set-value adjusts only its Slider type, and types into anything else.
+	// A drag from the thumb moves one as a finger does — Pocket Casts'
+	// scrubber went from six seconds to thirty-nine — and the value it then
+	// reports is in map. CHALLENGES 234.
+	if uitree.HasClassRole(node, "adjustable") {
+		return nil, failedCheck(mobiumerr.InvalidArgument, target, checkEditable,
+			"it is an adjustable control, not a text field, and not a slider app_fill can move to a position",
+			"drag it from its thumb with app_swipe and exact coordinates, as a finger would; app_map then shows the value it reports").
+			WithRemedy("app_swipe from its thumb along its track, with x1, y1, x2, y2; then app_map to read its value")
 	}
 	if role := notEditable(node); role != "" {
 		return nil, failedCheck(mobiumerr.InvalidArgument, target, checkEditable,
