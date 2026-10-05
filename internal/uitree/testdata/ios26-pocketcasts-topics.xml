@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<XCUIElementTypeApplication type="XCUIElementTypeApplication" name="Pocket Casts" label="Pocket Casts" enabled="true" visible="true" accessible="false" x="0" y="0" width="402" height="874" index="0" traits="" processId="28017" bundleId="au.com.shiftyjelly.podcasts">
+  <XCUIElementTypeWindow type="XCUIElementTypeWindow" enabled="true" visible="true" accessible="false" x="0" y="0" width="402" height="874" index="0" traits="">
+    <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="false" accessible="false" x="0" y="0" width="402" height="874" index="0" traits="">
+      <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="false" accessible="false" x="0" y="0" width="402" height="874" index="0" traits=""/>
+    </XCUIElementTypeOther>
+    <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="0" y="0" width="402" height="874" index="1" traits="">
+      <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="0" y="0" width="402" height="874" index="0" traits="">
+        <XCUIElementTypeNavigationBar type="XCUIElementTypeNavigationBar" name="_TtGC8podcasts31OnboardingHostingView" enabled="true" visible="true" accessible="false" x="0" y="62" width="402" height="54" index="0" traits="">
+          <XCUIElementTypeButton type="XCUIElementTypeButton" name="BackButton" label="Back" enabled="true" visible="true" accessible="true" x="16" y="62" width="44" height="44" index="0" traits="Button"/>
+          <XCUIElementTypeOther type="XCUIElementTypeOther" name="Not Now" label="Not Now" enabled="true" visible="true" accessible="false" x="291" y="66" width="91" height="36" index="1" traits="">
+            <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="291" y="66" width="91" height="36" index="0" traits="">
+              <XCUIElementTypeButton type="XCUIElementTypeButton" name="Not Now" label="Not Now" enabled="true" visible="true" accessible="true" x="291" y="66" width="91" height="36" index="0" traits="Button"/>
+            </XCUIElementTypeOther>
+          </XCUIElementTypeOther>
+        </XCUIElementTypeNavigationBar>
+        <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="0" y="0" width="402" height="874" index="1" traits="">
+          <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="0" y="0" width="402" height="874" index="0" traits="">
+            <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="0" y="0" width="402" height="874" index="0" traits="">
+              <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="0" y="0" width="402" height="874" index="0" traits="">
+                <XCUIElementTypeScrollView type="XCUIElementTypeScrollView" enabled="true" visible="true" accessible="false" x="16" y="0" width="370" height="778" index="0" traits="">
+                  <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="16" y="0" width="370" height="778" index="0" traits="">
+                    <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="16" y="0" width="370" height="171" index="0" traits=""/>
+                  </XCUIElementTypeOther>
+                  <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="16" y="0" width="370" height="778" index="1" traits=""/>
+                  <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="16" y="116" width="370" height="615" index="2" traits="">
+                    <XCUIElementTypeStaticText type="XCUIElementTypeStaticText" value="Tell us about your favorite topics" name="Tell us about your favorite topics" label="Tell us about your favorite topics" enabled="true" visible="true" accessible="true" x="84" y="136" width="234" height="68" index="0" traits="StaticText"/>
+                    <XCUIElementTypeStaticText type="XCUIElementTypeStaticText" value="Great podcasts, handpicked by real people, are coming your way!" name="Great podcasts, handpicked by real people, are coming your way!" label="Great podcasts, handpicked by real people, are coming your way!" enabled="true" visible="true" accessible="true" x="33" y="219" width="336" height="43" index="1" traits="StaticText"/>
+                    <XCUIElementTypeButton type="XCUIElementTypeButton" name="True Crime" label="True Crime" enabled="true" visible="true" accessible="true" x="62" y="314" width="131" height="24" index="2" traits="Button"/>
+                    <XCUIElementTypeButton type="XCUIElementTypeButton" name="Comedy" label="Comedy" enabled="true" visible="true" accessible="true" x="232" y="314" width="109" height="24" index="3" traits="Button"/>
+                    <XCUIElementTypeButton type="XCUIElementTypeButton" name="Society &amp; Culture" label="Society &amp; Culture" enabled="true" visible="true" accessible="true" x="40" y="370" width="189" height="24" index="4" traits="Button"/>
+                    <XCUIElementTypeButton type="XCUIElementTypeButton" name="Fiction" label="Fiction" enabled="true" visible="true" accessible="true" x="269" y="370" width="93" height="24" index="5" traits="Button"/>
+                    <XCUIElementTypeButton type="XCUIElementTypeButton" name="Technology" label="Technology" enabled="true" visible="true" accessible="true" x="71" y="426" width="137" height="24" index="6" traits="Button"/>
+                    <XCUIElementTypeButton type="XCUIElementTypeButton" name="News" label="News" enabled="true" visible="true" accessible="true" x="248" y="426" width="83" height="24" index="7" traits="Button"/>
+                    <XCUIElementTypeButton type="XCUIElementTypeButton" name="Health &amp; Fitness" label="Health &amp; Fitness" enabled="true" visible="true" accessible="true" x="35" y="482" width="179" height="24" index="8" traits="Button"/>
+                    <XCUIElementTypeButton type="XCUIElementTypeButton" name="Business" label="Business" enabled="true" visible="true" accessible="true" x="254" y="482" width="113" height="24" index="9" traits="Button"/>
+                    <XCUIElementTypeButton type="XCUIElementTypeButton" name="Arts" label="Arts" enabled="true" visible="true" accessible="true" x="85" y="538" width="70" height="24" index="10" traits="Button"/>
+                    <XCUIElementTypeButton type="XCUIElementTypeButton" name="Education" label="Education" enabled="true" visible="true" accessible="true" x="195" y="538" width="122" height="24" index="11" traits="Button"/>
+                    <XCUIElementTypeButton type="XCUIElementTypeButton" name="Sports" label="Sports" enabled="true" visible="true" accessible="true" x="76" y="594" width="92" height="24" index="12" traits="Button"/>
+                    <XCUIElementTypeButton type="XCUIElementTypeButton" name="TV &amp; Film" label="TV &amp; Film" enabled="true" visible="true" accessible="true" x="208" y="594" width="118" height="24" index="13" traits="Button"/>
+                    <XCUIElementTypeButton type="XCUIElementTypeButton" name="Show more categories" label="Show more categories" enabled="true" visible="true" accessible="true" x="114" y="670" width="175" height="21" index="14" traits="Button"/>
+                  </XCUIElementTypeOther>
+                  <XCUIElementTypeOther type="XCUIElementTypeOther" value="0%" name="Vertical scroll bar, 1 page" label="Vertical scroll bar, 1 page" enabled="true" visible="true" accessible="false" x="353" y="116" width="30" height="662" index="3" traits="Adjustable">
+                    <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="380" y="166" width="3" height="609" index="0" traits=""/>
+                  </XCUIElementTypeOther>
+                  <XCUIElementTypeOther type="XCUIElementTypeOther" value="0%" name="Vertical scroll bar, 1 page" label="Vertical scroll bar, 1 page" enabled="true" visible="true" accessible="false" x="353" y="116" width="30" height="662" index="4" traits="Adjustable">
+                    <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="380" y="166" width="3" height="609" index="0" traits=""/>
+                  </XCUIElementTypeOther>
+                </XCUIElementTypeScrollView>
+                <XCUIElementTypeButton type="XCUIElementTypeButton" name="Select at least 3" label="Select at least 3" enabled="false" visible="true" accessible="true" x="16" y="780" width="370" height="44" index="1" traits="NotEnabled, Button"/>
+              </XCUIElementTypeOther>
+            </XCUIElementTypeOther>
+          </XCUIElementTypeOther>
+        </XCUIElementTypeOther>
+        <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="false" accessible="false" x="0" y="0" width="402" height="874" index="2" traits="">
+          <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="false" accessible="false" x="0" y="0" width="402" height="874" index="0" traits=""/>
+        </XCUIElementTypeOther>
+      </XCUIElementTypeOther>
+    </XCUIElementTypeOther>
+  </XCUIElementTypeWindow>
+</XCUIElementTypeApplication>
+

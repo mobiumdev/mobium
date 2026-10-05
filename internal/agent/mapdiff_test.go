@@ -129,3 +129,20 @@ func TestDiffMapsSaysWhatASliderRead(t *testing.T) {
 		t.Errorf("the text has no %q:\n%s", want, text)
 	}
 }
+
+// A control enabled is a change, said both ways: Pocket Casts' "Select at
+// least 3" becomes Continue once three topics are chosen, and was diffed on
+// the simulator as `~ @e17 Continue (button) — was "Select at least 3", was
+// disabled`. CHALLENGES 239.
+func TestDiffMapsSaysWhatWasEnabled(t *testing.T) {
+	off := func(e ElementView) ElementView { e.Disabled = true; return e }
+	before := []ElementView{off(el("@e17", "Select at least 3", "button", 600, 2400)), el("@e1", "Back", "button", 50, 60)}
+	after := []ElementView{el("@e17", "Continue", "button", 600, 2400), off(el("@e1", "Back", "button", 50, 60))}
+	text := diffText(diffMaps(before, after), len(after))
+	for _, want := range []string{`~ @e17 Continue (button) — was "Select at least 3", was disabled`,
+		"~ @e1 Back (button, disabled) — was enabled"} {
+		if !strings.Contains(text, want) {
+			t.Errorf("the text has no %q:\n%s", want, text)
+		}
+	}
+}

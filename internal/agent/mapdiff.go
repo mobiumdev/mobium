@@ -39,7 +39,7 @@ type MapDiffView struct {
 type ChangeView struct {
 	Before ElementView `json:"before"`
 	After  ElementView `json:"after"`
-	// What names each difference: "label", "checked", "selected", "value"
+	// What names each difference: "label", "checked", "selected", "disabled", "value"
 	// (a slider's), "moved" — the same size somewhere else — or "resized".
 	What []string `json:"what"`
 }
@@ -95,6 +95,9 @@ func diffMaps(before, after []ElementView) MapDiffView {
 		}
 		if b.Selected != a.Selected {
 			what = append(what, "selected")
+		}
+		if b.Disabled != a.Disabled {
+			what = append(what, "disabled")
 		}
 		if b.Value != a.Value {
 			what = append(what, "value")
@@ -174,6 +177,9 @@ func elementLine(e ElementView, withRef bool) string {
 	if e.Selected {
 		tags = append(tags, "selected")
 	}
+	if e.Disabled {
+		tags = append(tags, "disabled")
+	}
 	if e.Value != "" {
 		tags = append(tags, e.Value)
 	}
@@ -252,6 +258,12 @@ func diffText(d MapDiffView, total int) string {
 					was = append(was, "was selected")
 				} else {
 					was = append(was, "was not selected")
+				}
+			case "disabled":
+				if c.Before.Disabled {
+					was = append(was, "was disabled")
+				} else {
+					was = append(was, "was enabled")
 				}
 			case "value":
 				was = append(was, fmt.Sprintf("was %q", c.Before.Value))

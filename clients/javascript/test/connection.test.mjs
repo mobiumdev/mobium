@@ -53,9 +53,10 @@ const within = (p, ms) => Promise.race([settle(p), new Promise((r) => setTimeout
 // -- an element carries its checked state ---------------------------------
 {
   const d = await fake('ok')
-  const [box, sw, button] = await d.map()
+  const [box, sw, button, add] = await d.map()
   check(box.checked === true && sw.checked === false, `checked states lost: ${box.checked} ${sw.checked}`)
   check(button.checked === null, 'a button reported a checked state; null means it has none')
+  check(add.disabled === true && button.disabled === false, `disabled states: ${add.disabled} ${button.disabled}`)
   await d.close()
 }
 

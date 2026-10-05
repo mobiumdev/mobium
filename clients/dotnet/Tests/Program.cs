@@ -201,6 +201,9 @@ namespace Mobium.Tests
             Eq("a checkbox carries its state", true, box.Checked);
             var off = Element.From(Json.AsObject(Json.Parse("{\"ref\":\"@e5\",\"role\":\"switch\",\"checked\":false}")));
             Eq("an unchecked switch is false, not null", false, off.Checked);
+            var add = Element.From(Json.AsObject(Json.Parse("{\"ref\":\"@e6\",\"role\":\"button\",\"disabled\":true}")));
+            Eq("a disabled button says so", true, add.Disabled);
+            Eq("anything else is not disabled", false, e.Disabled);
         }
 
         private static void BoundsComputeTheirCenter()

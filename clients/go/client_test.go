@@ -343,6 +343,19 @@ func TestAnElementCarriesItsCheckedState(t *testing.T) {
 	}
 }
 
+// A control the platform reports not enabled says so, and anything else does
+// not: absent on the wire means enabled. CHALLENGES 239.
+func TestAnElementCarriesItsDisabledState(t *testing.T) {
+	var els []Element
+	if err := json.Unmarshal([]byte(`[{"ref":"@e1","role":"button","disabled":true},{"ref":"@e2","role":"button"}]`),
+		&els); err != nil {
+		t.Fatal(err)
+	}
+	if !els[0].Disabled || els[1].Disabled {
+		t.Errorf("disabled states: %v %v, want true false", els[0].Disabled, els[1].Disabled)
+	}
+}
+
 func TestMapDecodesElements(t *testing.T) {
 	dev := connectFake(t, "")
 	els, err := dev.Map(context.Background())

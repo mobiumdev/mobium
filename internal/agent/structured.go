@@ -26,6 +26,9 @@ type ElementView struct {
 	// Selected is true for what the platform reports chosen — the current
 	// tab, a segment — and absent otherwise.
 	Selected bool `json:"selected,omitempty"`
+	// Disabled is true for what the platform reports not enabled, which an
+	// action would wait for and then refuse, and absent otherwise.
+	Disabled bool `json:"disabled,omitempty"`
 	// Value is what a slider reads, as the app states it, and absent for
 	// everything else.
 	Value string `json:"value,omitempty"`
@@ -145,6 +148,7 @@ func elementView(e uitree.Entry) ElementView {
 		Bounds:   boundsView(e.Bounds),
 		Checked:  e.Checked,
 		Selected: e.Selected,
+		Disabled: e.Disabled,
 		Value:    e.Value,
 	}
 }

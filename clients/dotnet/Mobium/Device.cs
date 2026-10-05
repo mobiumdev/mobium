@@ -97,7 +97,7 @@ namespace Mobium
         /// appeared, <c>removed</c> what went away, and <c>changed</c> what
         /// changed its label, its checked state, a slider's value or its place,
         /// each as <c>before</c>, <c>after</c> and <c>what</c> — "label", "checked",
-        /// "selected", "value", "moved" or "resized". Taken right after an action, it is what that action
+        /// "selected", "disabled", "value", "moved" or "resized". Taken right after an action, it is what that action
         /// just did, without the rest of the screen that stayed put.
         /// <c>since</c> is when the map compared with was taken. <c>first</c>
         /// is true when there was no earlier map to compare with, and then

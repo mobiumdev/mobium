@@ -106,6 +106,12 @@ check(len(ch) == 1 and ch[0]["before"].checked is False and ch[0]["after"].check
       and ch[0]["what"] == ["checked"], f"changed was not parsed into before, after and what: {ch}")
 d.close()
 
+# -- a disabled control says so, and anything else does not ----------------
+from mobium._device import _element  # noqa: E402
+
+check(_element({"ref": "@e6", "role": "button", "disabled": True}).disabled is True
+      and _element({"ref": "@e7", "role": "button"}).disabled is False, "the disabled state was not read")
+
 # -- NaN is refused, not sent bare ----------------------------------------
 d = connect(binary=FAKE)
 e = raises(InvalidArgumentError, lambda: d.set_location(float("nan"), 0))

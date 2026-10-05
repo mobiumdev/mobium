@@ -64,6 +64,7 @@ async function handle(msg) {
       { ref: '@e1', label: 'Accept terms', role: 'checkbox', checked: true },
       { ref: '@e2', label: 'Dark mode', role: 'switch', checked: false },
       { ref: '@e3', label: 'Go', role: 'button' },
+      { ref: '@e4', label: 'Add', role: 'button', disabled: true },
     ] } } })
     return
   }
