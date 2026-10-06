@@ -127,6 +127,29 @@ func (p *PhoneLog) capture(conn net.Conn) {
 	if p.stopped == nil {
 		p.stopped = mobiumerr.New(mobiumerr.DeviceServer, "the phone closed the log stream")
 	}
+	if p.gray != nil {
+		p.gray.Deaf(fmt.Sprintf("the phone's log stream stopped (%v)", p.stopped))
+	}
+}
+
+// Resume restarts a capture that stopped, and says whether it is running.
+// A gray-box wait calls it, so a phone that dropped its log stream is heard
+// again without waiting for a log read; lines from the gap are lost, as
+// they are for a read.
+func (p *PhoneLog) Resume(ctx context.Context) bool {
+	p.mu.Lock()
+	stopped, gray := p.stopped, p.gray
+	p.mu.Unlock()
+	if stopped == nil {
+		return true
+	}
+	if err := p.connect(ctx); err != nil {
+		return false
+	}
+	if gray != nil {
+		gray.Hearing()
+	}
+	return true
 }
 
 func (p *PhoneLog) add(e phoneLogEntry) {

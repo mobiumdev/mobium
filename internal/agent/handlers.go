@@ -111,10 +111,10 @@ type Handlers struct {
 	netBaseline map[string]networkBaseline
 	handled     []HandledDialog
 	// idled is what the gray box waited for during the current call, and
-	// lastCallEnd when the previous call returned, which a gray-box wait
-	// counts its grace from (graybox.go).
-	idled       []device.IdleWait
-	lastCallEnd time.Time
+	// prevCall the call before it, which a gray-box wait counts its grace
+	// from (graybox.go).
+	idled    []device.IdleWait
+	prevCall device.Previous
 }
 
 // NewHandlers creates the tool layer.
@@ -227,7 +227,10 @@ func (h *Handlers) CallMeta(name string, args, meta map[string]interface{}) (*To
 
 	h.handled = nil
 	h.idled = nil
-	defer func() { h.lastCallEnd = time.Now() }()
+	callStart := time.Now()
+	defer func() {
+		h.prevCall = device.Previous{Start: callStart, End: time.Now(), Acted: !IsReadCall(name, args)}
+	}()
 	// While a device has a trace running, each call on it is recorded, and
 	// the screen after it (app_trace).
 	if untraced, _ := meta[MetaUntraced].(bool); name != "app_trace" && !untraced {
@@ -649,6 +652,11 @@ func (h *Handlers) tapOn(ctx context.Context, s *session, args map[string]interf
 	}
 
 	if hasX {
+		// A point is waited for as a target is: the gray box does not care
+		// how the caller names where the finger goes.
+		if err := h.awaitAppIdle(ctx, s, fmt.Sprintf("(%d, %d)", x, y)); err != nil {
+			return nil, err
+		}
 		// A point off the screen touches nothing, and an iPhone simulator
 		// answered a tap at (50000, 50000) as done (CHALLENGES 187).
 		if tree, err := driver.Snapshot(ctx); err == nil && tree.Root != nil {
@@ -672,6 +680,9 @@ func (h *Handlers) tapOn(ctx context.Context, s *session, args map[string]interf
 		// Only once the page says it can be touched: visible and in view,
 		// enabled, still, and not covered — and aimed around a cover over its
 		// center (webview.CheckActionable).
+		if err := h.awaitAppIdle(ctx, s, target); err != nil {
+			return nil, err
+		}
 		wx, wy, cover, err := h.aimWeb(ctx, s, target)
 		if err != nil {
 			return nil, err
@@ -1959,6 +1970,9 @@ func (h *Handlers) swipe(ctx context.Context, args map[string]interface{}) (*Too
 	x2, has3 := intArg(args, "x2")
 	y2, has4 := intArg(args, "y2")
 	if has1 && has2 && has3 && has4 {
+		if err := h.awaitAppIdle(ctx, s, fmt.Sprintf("(%d,%d) to (%d,%d)", x1, y1, x2, y2)); err != nil {
+			return nil, err
+		}
 		if err := gest.Swipe(ctx, x1, y1, x2, y2, duration); err != nil {
 			return nil, err
 		}
@@ -1977,6 +1991,9 @@ func (h *Handlers) swipe(ctx context.Context, args map[string]interface{}) (*Too
 		return h.swipeOn(ctx, s, gest, target, dir, duration)
 	}
 
+	if err := h.awaitAppIdle(ctx, s, "a swipe "+dir); err != nil {
+		return nil, err
+	}
 	// Swipe within the screen the device actually reports, not an assumed size.
 	tree, err := s.driver.Snapshot(ctx)
 	if err != nil {
@@ -2055,6 +2072,9 @@ func (h *Handlers) longPress(ctx context.Context, args map[string]interface{}) (
 		y, hasY := intArg(args, "y")
 		if !hasX || !hasY {
 			return nil, mobiumerr.New(mobiumerr.InvalidArgument, "app_long_press needs a target or both x and y")
+		}
+		if err := h.awaitAppIdle(ctx, s, fmt.Sprintf("(%d, %d)", x, y)); err != nil {
+			return nil, err
 		}
 		if err := gest.LongPress(ctx, x, y, duration); err != nil {
 			return nil, err

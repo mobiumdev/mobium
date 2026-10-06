@@ -139,7 +139,8 @@ func newRecordCmd() *cobra.Command {
 			"its own header — frames and duration — so a recording that could not be\n" +
 			"finished is reported rather than saved as if it had been.\n\n" +
 			"Android records a frame only when the screen changes: a still screen is\n" +
-			"one frame, which is not a failure. A real iPhone refuses for now.",
+			"one frame, which is not a failure. A real iPhone records WebDriverAgent's\n" +
+			"screen stream: about ten frames a second, at full size.",
 		Example: `  mobium record start
   mobium record stop -o login-flow.mp4
   mobium record`,

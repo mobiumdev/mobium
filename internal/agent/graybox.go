@@ -40,7 +40,7 @@ func (h *Handlers) awaitAppIdle(ctx context.Context, s *session, target string) 
 	if g == nil || !g.On() {
 		return nil
 	}
-	w, err := g.AwaitIdle(ctx, h.lastCallEnd, grayBoxIdleLimit)
+	w, err := g.AwaitIdle(ctx, h.prevCall, grayBoxIdleLimit)
 	if err != nil {
 		if ctx.Err() != nil {
 			return err
@@ -63,14 +63,20 @@ func (h *Handlers) reportIdle(res *ToolsCallResult, err error) (*ToolsCallResult
 	}
 	var total time.Duration
 	busy := map[string]bool{}
+	unwaited := ""
 	for _, w := range h.idled {
 		total += w.Waited
 		for _, b := range w.Busy {
 			busy[b] = true
 		}
+		if w.Unwaited != "" {
+			unwaited = w.Unwaited
+		}
 	}
 	line := "gray box: the app was idle"
-	if total >= time.Millisecond {
+	if unwaited != "" {
+		line = "gray box: not waited — " + unwaited
+	} else if total >= time.Millisecond {
 		line = fmt.Sprintf("gray box: waited %d ms for the app to go idle", total.Milliseconds())
 		if len(busy) > 0 {
 			var names []string

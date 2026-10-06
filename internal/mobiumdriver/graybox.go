@@ -3,6 +3,7 @@ package mobiumdriver
 import (
 	"context"
 	"sync"
+	"time"
 
 	"github.com/mobiumdev/mobium/internal/device"
 	"github.com/mobiumdev/mobium/internal/mobiumerr"
@@ -41,6 +42,14 @@ type grayBox struct {
 func (g *grayBox) use(app string, listen func(*device.GrayBox) (func(), error)) error {
 	g.mu.Lock()
 	defer g.mu.Unlock()
+	if g.box != nil && g.box.IsDeaf() {
+		// A stream that ended (the simulator's cannot be resumed) is
+		// started again by the next gray-box launch.
+		if g.stop != nil {
+			g.stop()
+		}
+		g.box, g.stop = nil, nil
+	}
 	if g.box == nil {
 		box := device.NewGrayBox()
 		stop, err := listen(box)
@@ -111,8 +120,17 @@ func (w *WDA) LaunchGrayBox(ctx context.Context, app string) error {
 	return w.launchWith(ctx, app, w.pinnedLocale(app), w.sessionZone())
 }
 
-// GrayBox is what the gray-box app has said.
-func (w *WDA) GrayBox() *device.GrayBox { return w.gray.current() }
+// GrayBox is what the gray-box app has said. On a phone whose log stream
+// dropped, it starts the capture again first.
+func (w *WDA) GrayBox() *device.GrayBox {
+	g := w.gray.current()
+	if g != nil && w.phone != nil && w.plog != nil {
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		w.plog.Resume(ctx)
+	}
+	return g
+}
 
 // LaunchGrayBox starts app afresh with the gray-box extra, and listens
 // through logcat.
