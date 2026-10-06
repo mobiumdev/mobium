@@ -21,11 +21,13 @@
 #             the stream stopped; on a simulator at the next gray-box launch.
 #
 # away and crash leave the app and tap the status bar — a point on the home
-# screen can be an app's icon, and on the simulator one opened another app —
-# so they run on emulators and simulators only: on a phone the screen is
-# somebody's. deaf kills a
-# process on this Mac, so it runs where the stream is one: an emulator or a
-# simulator.
+# screen can be an app's icon, and on the simulator one opened another app.
+# They change no setting and record nothing outside MobiumApp, but the screen
+# they leave the app for is the phone's owner's: on a phone they run only
+# with ALLOW_PHONE=1. deaf kills the gray box's log stream, which is a
+# process on this Mac on Android (adb logcat) and on a simulator (log
+# stream); on a real iPhone it is a connection inside Mobium's daemon, with
+# nothing outside to stop, so there it is skipped and said so.
 set -e
 DEV="$1"
 if [ -z "$DEV" ]; then echo "usage: $0 <serial|udid>" >&2; exit 2; fi
@@ -38,6 +40,13 @@ case "$DEV" in
   emulator-*) VIRTUAL=android ;;
   *-*-*-*-*) VIRTUAL=ios ;;
   *) VIRTUAL= ;;
+esac
+# Which platform the log stream belongs to, for deaf: a real iPhone's UDID
+# is 8 and 16 hex digits; anything else that is not a simulator is Android.
+case "$DEV" in
+  *-*-*-*-*) STREAM=ios-sim ;;
+  ????????-????????????????) STREAM= ;;
+  *) STREAM=android ;;
 esac
 echo "--- $DEV"
 
@@ -84,7 +93,7 @@ echo "$out" | grep -q "failed check idle: the app says it is still busy after 10
 [ "$took" -ge 9 ] || fail "refused after ${took}s: the lease ran out though the app kept saying it was busy"
 row "poll" "refused after ${took}s as check idle, naming poll"
 
-if [ -n "$VIRTUAL" ]; then
+if [ -n "$VIRTUAL" ] || [ -n "${ALLOW_PHONE:-}" ]; then
   demo
   sleep 2
   $M tap testid=busyPoll >/dev/null
@@ -108,17 +117,21 @@ if [ -n "$VIRTUAL" ]; then
   echo "$said" | grep -qE "not waited — (the app stopped saying it is busy .* \(it was busy with doomed\)|the app said it is in the background)" ||
     fail "crash: $said"
   row "crash" "the dead app's work held nothing up"
+else
+  echo "    (a phone: away and crash leave the app — ALLOW_PHONE=1 runs them)"
+fi
 
+if [ -n "$STREAM" ]; then
   demo
-  case "$VIRTUAL" in
+  case "$STREAM" in
     android) pkill -f "logcat -v epoch -T" || fail "no gray-box logcat to stop" ;;
-    ios) pkill -f "log stream --style ndjson --level default --predicate subsystem == \"dev.mobium.graybox\"" ||
+    ios-sim) pkill -f "log stream --style ndjson --level default --predicate subsystem == \"dev.mobium.graybox\"" ||
            pkill -f "dev.mobium.graybox" || fail "no gray-box log stream to stop" ;;
   esac
   sleep 0.5
   said=$($M tap testid=busyRowC)
   echo "$said" | grep -q "not waited — not hearing the app" || fail "deaf: a tap with the stream stopped said $said"
-  if [ "$VIRTUAL" = ios ]; then demo; else sleep 2; fi
+  if [ "$STREAM" = ios-sim ]; then demo; else sleep 2; fi
   sleep 2
   $M tap testid=busyQuiet >/dev/null
   said=$($M tap testid=busyRowB)
@@ -126,7 +139,7 @@ if [ -n "$VIRTUAL" ]; then
   echo "$said" | grep -q "waited [0-9]* ms for the app to go idle (busy: quiet)" || fail "not heard again: $said"
   row "deaf" "said it could not hear the app, then heard it again"
 else
-  echo "    (a phone: away, crash and deaf run on an emulator or a simulator)"
+  echo "    (a real iPhone: its log stream is a connection inside Mobium's daemon, with no process here to stop — deaf runs on Android and a simulator)"
 fi
 $M terminate "$APP" >/dev/null 2>&1 || true
 echo "graybox-edges.sh: ok"
