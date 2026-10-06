@@ -59,7 +59,14 @@ var coveredCaptures = map[string]string{
 	"ios26-icecubes-timeline.xml": "the second post runs down behind iOS 26's tab bar, which is drawn over " +
 		"its center: it is touched above the tab bar, on screen (CHALLENGES 238)",
 	"ios26-pocketcasts-search.xml": "each search result is an unlabeled full-width button with a labeled one, " +
-		"the podcast's name, laid over its middle: the unlabeled one is aimed at its clear edge",
+		"the podcast's name, laid over its middle: the unlabeled one is aimed at its clear edge; and the " +
+		"results' filter chips sit over Discover's category chips (CHALLENGES 257)",
+	"ios26-pocketcasts-search-over-discover.xml": "the same on the iPhone: Comedy's center is under the " +
+		"Podcasts filter chip, and Fiction is under Episodes from edge to edge (CHALLENGES 257)",
+	"ios26-pocketcasts-search-failed.xml": "Search Failed's Try Again button lies over the first row of " +
+		"Discover behind it (CHALLENGES 257)",
+	"ios26-kiwix-catalog.xml": "the last card runs under the Library's tab bar, and its center is under " +
+		"Downloads by a point and a half: it is touched above the tab bar (CHALLENGES 257)",
 	"ios26-pocketcasts-episode-sheet.xml": "a two-point divider runs across the row of buttons through Play's " +
 		"center, and Play is touched just above it (CHALLENGES 238)",
 	"ios26-icecubes-display-settings.xml": "Ice Cubes pins a sample post at the top of Display Settings and " +
@@ -219,4 +226,32 @@ func TestANonControlOverTheCenterIsAvoided(t *testing.T) {
 		}
 		return true
 	})
+}
+
+// A control inside a plain view laid over the target covers it. Pocket Casts'
+// search results are a plain view over Discover, and their filter chips sit
+// where Discover's category chips are: a tap on Comedy pressed Podcasts and
+// reported Comedy tapped, because only the plain view, the outermost cover,
+// was looked at. On the iPhone, which the capture is from. CHALLENGES 257.
+func TestAControlInsideAPlainCoverCovers(t *testing.T) {
+	tree := loadIOS(t, "ios26-pocketcasts-search-over-discover.xml")
+	chip := func(label string) *Node {
+		var found *Node
+		tree.Walk(func(n *Node) bool {
+			if found == nil && n.Class == "XCUIElementTypeButton" && n.Label == label {
+				found = n
+			}
+			return found == nil
+		})
+		if found == nil {
+			t.Fatalf("no %q chip in the capture", label)
+		}
+		return found
+	}
+	if a := tree.AimAt(chip("Comedy")); !a.Moved || a.CenterCover == nil || a.CenterCover.Label != "Podcasts" {
+		t.Errorf("Comedy aimed %+v, want moved off its center, which is under Podcasts", a)
+	}
+	if a := tree.AimAt(chip("Fiction")); a.Blocker == nil || a.Blocker.Label != "Episodes" {
+		t.Errorf("Fiction aimed %+v, want blocked by Episodes", a)
+	}
 }

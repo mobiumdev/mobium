@@ -94,9 +94,11 @@ this is what is not.
   Pro simulator, an iPad Air simulator, where it found an ambiguous
   locator's remedy naming a role both matches shared (242), and the iPhone
   15 Plus, where onboarding and the first-run tip are skipped unless the
-  app is freshly installed. Still to do: this build's search, which
-  answers any query with the same unrelated podcasts — probably its empty
-  credentials, unmeasured.
+  app is freshly installed. This build's search fails ("Search Failed")
+  where the App Store build's finds what is asked — its empty
+  credentials, measured on 2026-10-06; what looked like the same
+  unrelated podcasts for every query was `map` listing Discover under the
+  search screen (CHALLENGES 257).
 - **A fifth third-party app on iOS, the first whose WebView opens: Kiwix.**
   Begun 2026-10-05: the offline Wikipedia reader (GPL-3.0), SwiftUI around
   a WKWebView that a build from its source makes inspectable (a production
@@ -217,6 +219,15 @@ this is what is not.
   the error's details (CHALLENGES 158) — and `wait` also waits for checked,
   unchecked, focused and a value (`docs/checks/wait-states.sh`). Still to
   come:
+  - A covered target's clear point beside another control. Since
+    CHALLENGES 257 a control inside a plain view laid over a target covers
+    it, but a tap moved off a covered center can land a few points from a
+    second control, and iOS gives it that control: Pocket Casts' Comedy,
+    under its search's filter chips, pressed Episodes on the iPhone. How
+    far iOS reaches for a nearby control is unmeasured, and the simulator's
+    `launch --hit-test` is where to measure it. And `map` lists a screen an
+    app laid over another as if nothing covered it — on the iPhone the
+    tree gives no sign.
   - An overlay hidden from accessibility on iOS, which WebDriverAgent's tree
     does not contain, so a tap under one still lands on it. **On a
     simulator, `mobium hit-test` sees it** since 2026-09-29: UIKit's own hit
