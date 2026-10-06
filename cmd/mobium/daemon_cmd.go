@@ -44,6 +44,7 @@ func newDaemonStartCmd() *cobra.Command {
 			}
 
 			d := daemon.New(daemon.Options{Version: version, IdleTimeout: idle})
+			dropLogStreamsOnSignal(d)
 
 			ctx, cancel := context.WithCancel(context.Background())
 			defer cancel()

@@ -168,3 +168,14 @@ func (a *Android) Close() error {
 	a.gray.close()
 	return nil
 }
+
+// DropLogStream ends a phone's log capture the way a dropped connection
+// does, leaving the session as it was; the next action reconnects. It is
+// how a drop is driven on purpose (the daemon's SIGUSR1). Reports whether
+// there was a stream to drop: a simulator has none of its own here.
+func (w *WDA) DropLogStream() bool {
+	if w.phone == nil || w.plog == nil {
+		return false
+	}
+	return w.plog.Drop()
+}

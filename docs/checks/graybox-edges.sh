@@ -18,7 +18,9 @@
 #             stopped saying it is busy;
 #   - deaf:   the log stream is killed: a tap says the app is not heard, and
 #             the gray box hears it again — on Android by itself, from where
-#             the stream stopped; on a simulator at the next gray-box launch.
+#             the stream stopped; on a simulator at the next gray-box launch;
+#             on an iPhone at the next action, waiting for the app to
+#             restate its work before trusting a count of zero.
 #
 # away and crash leave the app and tap the status bar — a point on the home
 # screen can be an app's icon, and on the simulator one opened another app.
@@ -26,8 +28,9 @@
 # they leave the app for is the phone's owner's: on a phone they run only
 # with ALLOW_PHONE=1. deaf kills the gray box's log stream, which is a
 # process on this Mac on Android (adb logcat) and on a simulator (log
-# stream); on a real iPhone it is a connection inside Mobium's daemon, with
-# nothing outside to stop, so there it is skipped and said so.
+# stream); on a real iPhone it is a connection inside Mobium's daemon, which
+# the daemon drops on SIGUSR1 — mid-work, so the reconnect has to recover
+# work it did not hear.
 set -e
 DEV="$1"
 if [ -z "$DEV" ]; then echo "usage: $0 <serial|udid>" >&2; exit 2; fi
@@ -139,7 +142,29 @@ if [ -n "$STREAM" ]; then
   echo "$said" | grep -q "waited [0-9]* ms for the app to go idle (busy: quiet)" || fail "not heard again: $said"
   row "deaf" "said it could not hear the app, then heard it again"
 else
-  echo "    (a real iPhone: its log stream is a connection inside Mobium's daemon, with no process here to stop — deaf runs on Android and a simulator)"
+  # A real iPhone: its log stream is a connection inside the daemon, with no
+  # process here to stop, so the daemon drops it on SIGUSR1 — the way an
+  # unplugged cable or a restarted relay would — and the session stays. The
+  # drop comes mid-work: the gray box must reconnect at the next action,
+  # give the app time to restate the work it lost in the gap, wait it out,
+  # and say so. The saying is the evidence the drop happened at all.
+  demo
+  pid=$("$ROOT/bin/mobium" daemon status --json | python3 -c 'import json, sys; print(json.load(sys.stdin)["pid"])')
+  [ -n "$pid" ] || fail "no daemon PID to signal"
+  sleep 2
+  # The work starts inside the gap, so its busy line is lost: the alert is
+  # opened while heard, the stream dropped, and the alert's Refresh accepted
+  # — answering an alert waits on nothing, so nothing reconnects until the
+  # tap on Row B. Only the app's restatement of its work can save that tap.
+  $M tap testid=busyAlert >/dev/null
+  kill -USR1 "$pid"
+  sleep 0.3
+  $M alert accept >/dev/null
+  said=$($M tap testid=busyRowB)
+  current "after work that started while the log stream was down"
+  echo "$said" | grep -q "after its log stream dropped and was reconnected" || fail "deaf: the drop was not said: $said"
+  echo "$said" | grep -q "waited [0-9]* ms for the app to go idle" || fail "deaf: not waited after the drop: $said"
+  row "deaf" "work begun while the stream was down: reconnected, waited out"
 fi
 $M terminate "$APP" >/dev/null 2>&1 || true
 echo "graybox-edges.sh: ok"

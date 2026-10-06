@@ -145,7 +145,12 @@ did not run never reads as one that passed:
   starts again by itself within a second, from the device time of the last
   line it read, so nothing written in the gap is lost; on a simulator the
   next `launch --gray-box` starts it again; on an iPhone the session's log
-  capture reconnects at the next action.
+  capture reconnects at the next action. What the app said during the gap
+  is lost there — work begun in it, among other things — so after a
+  reconnect the count starts again from zero and the wait gives the app
+  700 ms to restate the work it has in flight before trusting it, and the
+  result says so: `gray box: waited 758 ms for the app to go idle, after its
+  log stream dropped and was reconnected`.
 
 The Busy Demo's crash button dies holding work; the next tap, on the
 emulator's home screen, was not held up by it:

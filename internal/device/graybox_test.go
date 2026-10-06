@@ -211,3 +211,43 @@ func TestGrayBoxDeafIsSaid(t *testing.T) {
 		t.Errorf("still deaf after hearing: %q", w.Unwaited)
 	}
 }
+
+// A stream regained after a drop: work in flight restates itself and is
+// waited out; a count held from before the gap is not trusted either way.
+func TestGrayBoxRegainedStreamWaitsForTheNextWord(t *testing.T) {
+	g := NewGrayBox()
+	g.Feed("MOBIUM-GRAYBOX busy=1 tag=quiet", time.Now())
+	g.Deaf("the phone's log stream stopped")
+	g.Hearing()
+	go func() {
+		time.Sleep(400 * time.Millisecond)
+		g.Feed("MOBIUM-GRAYBOX still busy=1", time.Now())
+		time.Sleep(500 * time.Millisecond)
+		g.Feed("MOBIUM-GRAYBOX busy=0 tag=quiet", time.Now())
+	}()
+	w, err := g.AwaitIdle(context.Background(), Previous{}, 5*time.Second)
+	if err != nil || w.Unwaited != "" || !w.Regained {
+		t.Fatalf("w=%+v err=%v", w, err)
+	}
+	if w.Waited < 850*time.Millisecond {
+		t.Errorf("waited %s: work restated after the gap was not waited out", w.Waited)
+	}
+
+	// Work that finished during the gap: idle once the app has had time
+	// to say otherwise, not held until a stale lease runs out.
+	g2 := NewGrayBox()
+	g2.Feed("MOBIUM-GRAYBOX busy=1 tag=quiet", time.Now())
+	g2.Deaf("dropped")
+	g2.Hearing()
+	w2, err := g2.AwaitIdle(context.Background(), Previous{}, 5*time.Second)
+	if err != nil || w2.Unwaited != "" || !w2.Regained {
+		t.Fatalf("w2=%+v err=%v", w2, err)
+	}
+	if w2.Waited < grayBoxRecover-50*time.Millisecond || w2.Waited > grayBoxRecover+300*time.Millisecond {
+		t.Errorf("waited %s, want about %s", w2.Waited, grayBoxRecover)
+	}
+	// And only once: the next wait is not held again.
+	if w3, _ := g2.AwaitIdle(context.Background(), Previous{}, time.Second); w3.Regained || w3.Waited > 100*time.Millisecond {
+		t.Errorf("the regained wait repeated: %+v", w3)
+	}
+}

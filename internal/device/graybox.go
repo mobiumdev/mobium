@@ -50,6 +50,10 @@ type GrayBox struct {
 	away bool
 	// deaf is why the stream stopped, while it is stopped.
 	deaf string
+	// regained is when a stream that had stopped was heard again. Lines
+	// from the gap are lost — a busy=1 among them — so until the app has had
+	// time to restate its count, zero is not trusted.
+	regained time.Time
 }
 
 // GrayBoxPrefix starts every line the gray-box library writes.
@@ -75,6 +79,10 @@ const grayBoxDelivery = 50 * time.Millisecond
 // grayBoxLease is how long a busy count stands without being restated. The
 // library restates it every 500ms, so three missed beats.
 const grayBoxLease = 1500 * time.Millisecond
+
+// grayBoxRecover is how long after a stream is regained a count of zero is
+// not trusted: one restatement of the count (every 500ms) and its delivery.
+const grayBoxRecover = 700 * time.Millisecond
 
 // NewGrayBox returns a gray box that has heard nothing yet.
 func NewGrayBox() *GrayBox {
@@ -203,6 +211,13 @@ func (g *GrayBox) IsDeaf() bool {
 func (g *GrayBox) Hearing() {
 	g.mu.Lock()
 	defer g.mu.Unlock()
+	if g.deaf != "" {
+		// What it held before the gap is stale either way: work may have
+		// finished unheard. The count starts again from zero, and work
+		// still in flight restates itself within grayBoxRecover.
+		g.regained = time.Now()
+		g.busy, g.tags = 0, map[string]int{}
+	}
 	g.deaf = ""
 	g.notify()
 }
@@ -217,6 +232,9 @@ type IdleWait struct {
 	// said it is away, its busy lease ran out, or the stream is not
 	// hearing it.
 	Unwaited string `json:"not_waited,omitempty"`
+	// Regained says the stream had dropped and was heard again, so the
+	// wait gave the app time to restate its count first.
+	Regained bool `json:"stream_regained,omitempty"`
 }
 
 // Previous is the call before this one, which a wait counts its grace from.
@@ -239,7 +257,7 @@ func (g *GrayBox) AwaitIdle(ctx context.Context, prev Previous, limit time.Durat
 	for {
 		now := time.Now()
 		g.mu.Lock()
-		busy, lift, ch, said, away, deaf := g.busy, g.lift, g.changed, g.said, g.away, g.deaf
+		busy, lift, ch, said, away, deaf, regained := g.busy, g.lift, g.changed, g.said, g.away, g.deaf, g.regained
 		for t := range g.tags {
 			seen[t] = true
 		}
@@ -262,6 +280,11 @@ func (g *GrayBox) AwaitIdle(ctx context.Context, prev Previous, limit time.Durat
 				ready = l
 			}
 		}
+		if !regained.IsZero() {
+			if r := regained.Add(grayBoxRecover); r.After(ready) {
+				ready = r
+			}
+		}
 		unwaited := ""
 		switch {
 		case deaf != "":
@@ -277,7 +300,12 @@ func (g *GrayBox) AwaitIdle(ctx context.Context, prev Previous, limit time.Durat
 			return IdleWait{Waited: now.Sub(start), Ms: now.Sub(start).Milliseconds(), Unwaited: unwaited}, nil
 		}
 		if busy == 0 && !now.Before(ready) {
-			w := IdleWait{Waited: now.Sub(start), Ms: now.Sub(start).Milliseconds()}
+			w := IdleWait{Waited: now.Sub(start), Ms: now.Sub(start).Milliseconds(), Regained: !regained.IsZero()}
+			if !regained.IsZero() {
+				g.mu.Lock()
+				g.regained = time.Time{}
+				g.mu.Unlock()
+			}
 			for t := range seen {
 				w.Busy = append(w.Busy, t)
 			}

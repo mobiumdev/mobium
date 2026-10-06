@@ -120,7 +120,9 @@ func (p *PhoneLog) capture(conn net.Conn) {
 	}
 	p.mu.Lock()
 	defer p.mu.Unlock()
-	if p.closed {
+	// A capture that is no longer the current one — dropped, and already
+	// replaced by a reconnect — must not mark the new stream stopped.
+	if p.closed || p.conn != conn {
 		return
 	}
 	p.stopped = sc.Err()
@@ -130,6 +132,30 @@ func (p *PhoneLog) capture(conn net.Conn) {
 	if p.gray != nil {
 		p.gray.Deaf(fmt.Sprintf("the phone's log stream stopped (%v)", p.stopped))
 	}
+}
+
+// Drop ends the capture the way a dropped connection does — the phone
+// unplugged, its relay restarted — and leaves the session as it was: the
+// next read or gray-box wait reconnects. It exists so the path a real drop
+// takes can be driven on purpose: the daemon calls it on SIGUSR1, which is
+// how docs/checks/graybox-edges.sh drops an iPhone's stream mid-work.
+// Reports whether there was a stream to drop.
+func (p *PhoneLog) Drop() bool {
+	p.mu.Lock()
+	conn := p.conn
+	running := conn != nil && p.stopped == nil && !p.closed
+	if running {
+		p.stopped = mobiumerr.New(mobiumerr.DeviceServer, "the phone's log stream was dropped")
+		p.conn = nil
+		if p.gray != nil {
+			p.gray.Deaf(fmt.Sprintf("the phone's log stream stopped (%v)", p.stopped))
+		}
+	}
+	p.mu.Unlock()
+	if running {
+		conn.Close()
+	}
+	return running
 }
 
 // Resume restarts a capture that stopped, and says whether it is running.
