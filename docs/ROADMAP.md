@@ -110,8 +110,9 @@ this is what is not.
   through its wrapper, and every tap into the page refused because the
   WebView runs under the bars — fixed by anchoring the page on text both
   sides report, which makes Safari's page tappable too, on a simulator and
-  on the iPhone. Held by `docs/checks/kiwix-ios.sh` on the simulator. The
-  App Store build on the iPhone, meant as the control whose WebView is
+  on the iPhone. Held by `docs/checks/kiwix-ios.sh` on the simulator and,
+  since 2026-10-06, on the iPhone, where its first run found a page under
+  the Library mapped link by link (CHALLENGES 256). The App Store build on the iPhone, meant as the control whose WebView is
   closed, was not one: its page is published, mapped and tapped like the
   simulator's — a tap on Hank Crawford opened Hank Crawford — so a
   production build of Kiwix is reachable as shipped. Its ZIM came through

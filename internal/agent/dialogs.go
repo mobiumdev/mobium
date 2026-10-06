@@ -234,9 +234,10 @@ func dialogWords(d *uitree.Node) string {
 // one thing on it. It closes when touched outside it, at a point found as
 // the refusal behind it finds one (screenOver). CHALLENGES 235.
 //
-// Only where there is such a point. Safari's share sheet is a popover too,
-// with nothing outside it to touch and its own controls in map; saying it
-// closes when touched outside would be a claim with nothing to try.
+// Only where there is such a point. Safari's share sheet is a popover too:
+// expanded it has nothing outside it to touch, and saying it closes when
+// touched outside would be a claim with nothing to try; at half height a
+// tap over the page closed it and pressed nothing (CHALLENGES 256).
 func popoverNote(t *uitree.Tree) string {
 	p := t.Popover()
 	if p == nil {
