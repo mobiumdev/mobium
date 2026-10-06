@@ -34,6 +34,8 @@ const snapshotRetryDelay = 700 * time.Millisecond
 // Android drives an emulator (or handset) through adb and uiautomator.
 type Android struct {
 	adb *device.ADB
+	// gray hears an app launched with the gray-box library on.
+	gray grayBox
 }
 
 // NewAndroid returns a driver bound to an already-selected device.
@@ -267,6 +269,7 @@ func (a *Android) LongPress(ctx context.Context, x, y int, d time.Duration) erro
 
 // Launch brings an app to the foreground by package name.
 func (a *Android) Launch(ctx context.Context, appID string) error {
+	a.gray.off()
 	return a.adb.LaunchApp(ctx, appID)
 }
 

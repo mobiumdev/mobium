@@ -735,3 +735,34 @@ func TestFailedLastIsWhatLastFailedWouldRun(t *testing.T) {
 		}
 	}
 }
+
+// A file with grayBox launches its app with the gray box on before every
+// test, and one with grayBox and no app is refused before anything runs.
+func TestGrayBoxLaunchesWithTheGrayBox(t *testing.T) {
+	dir := t.TempDir()
+	p := write(t, dir, "busy.test.json", `{"app": "dev.mobium.mobiumapp", "grayBox": true, "tests": [
+	  {"name": "one", "steps": [{"tap": "testid=busyQuiet"}]},
+	  {"name": "two", "steps": [{"tap": "testid=busyQuiet"}]}
+	]}`)
+	var launches []map[string]interface{}
+	f := &fake{answer: func(tool string, args map[string]interface{}) (*agent.ToolsCallResult, error) {
+		if tool == "app_launch" {
+			launches = append(launches, args)
+		}
+		return nil, nil
+	}}
+	run(t, &Config{Dir: dir}, Options{Files: []string{p}}, f)
+	if len(launches) != 2 {
+		t.Fatalf("%d launches, want 2", len(launches))
+	}
+	for _, l := range launches {
+		if l["gray_box"] != true {
+			t.Errorf("launched without the gray box: %v", l)
+		}
+	}
+
+	q := write(t, dir, "noapp.test.json", `{"grayBox": true, "tests": [{"name": "x", "steps": [{"tap": "testid=a"}]}]}`)
+	if _, err := LoadFile(q); err == nil || !strings.Contains(err.Error(), "grayBox with no app") {
+		t.Errorf("grayBox with no app: %v", err)
+	}
+}

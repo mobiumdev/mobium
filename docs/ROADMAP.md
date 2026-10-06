@@ -6,6 +6,16 @@ this is what is not.
 
 ## Next
 
+- ~~**Gray box: waiting for the app to say it is idle.**~~ Done 2026-10-05, iOS and Android:
+  `launch --gray-box` turns on Mobium's gray-box library in an app built
+  with it, the app writes when it is busy to the device log, and every
+  action waits for it to be idle before finding its target
+  ([the gray box guide](guides/graybox.md), `docs/checks/graybox.sh`, on the
+  iPhone 15 Plus, the iPhone 17 Pro simulator, the Pixel 8 Pro and the
+  Pixel 7 emulator). On MobiumApp's Busy Demo, a tap right after a quiet
+  refresh was stale 6 to 10 times in 10 launched normally, and 0 in 10 with
+  the gray box, on every one. Next: hooks the app registers for a test to
+  call, and the library for a native app and for Flutter.
 - ~~**A test runner — `mobium test`, on the phones.**~~ Done: iterations 1
   and 2 are built and checked (`docs/checks/test-runner.sh`): JSON test files of
   `app_batch` steps, `app_wait_for` and `expect` assertions, projects as

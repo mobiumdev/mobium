@@ -67,6 +67,7 @@ const (
 	CapHitTest          = "hitTest"
 	CapAudit            = "audit"
 	CapSlider           = "slider"
+	CapGrayBox          = "grayBox"
 )
 
 // KnownCapabilities is every capability Mobium understands, for diagnostics
@@ -79,7 +80,7 @@ var KnownCapabilities = []string{
 	CapClipboard, CapClipboardRead, CapAlerts, CapPinch,
 	CapDoubleTap, CapDrag, CapMultiTouch, CapDeviceLogs, CapCrashes, CapKeyboard, CapRecording,
 	CapClearData, CapSource, CapAccessibility, CapAppState, CapBattery, CapDeviceClock, CapShake,
-	CapNetwork, CapFiles, CapBiometric, CapHitTest, CapAudit, CapSlider,
+	CapNetwork, CapFiles, CapBiometric, CapHitTest, CapAudit, CapSlider, CapGrayBox,
 }
 
 // has reports whether d claims the capability. A driver that does not report

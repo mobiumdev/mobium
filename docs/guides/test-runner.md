@@ -84,7 +84,9 @@ each assertion is an `app_wait_for` step or an `expect`:
 }
 ```
 
-Every test starts from a fresh app: `app` is stopped and launched, then
+Every test starts from a fresh app: `app` is stopped and launched — with
+`"grayBox": true` beside it, launched with [the gray box](graybox.md) on —
+then
 `beforeEach` runs, then the test's steps. The file is checked before anything
 runs — a misspelled tool, an argument its tool does not take, a key the
 format does not have — and `--list` shows what a run would cover without a

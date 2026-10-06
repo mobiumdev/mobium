@@ -240,6 +240,10 @@ person and may change. Every client raises the code as its own exception:
   target looks exactly like one that lets touches through. Mobium taps and
   says a view is over the point, in the result, rather than refuse something
   that works.
+- **Work the screen does not show.** A request in flight behind rows that
+  look finished passes every check, and a tap lands on a row about to be
+  replaced. An app that says when it is busy can be waited for:
+  [gray box](graybox.md), `mobium launch --gray-box`.
 - **What the app does with the tap.** A tap that reached its target is
   reported as tapped. Whether the app did the right thing is what `wait`, and
   a test, are for.

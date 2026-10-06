@@ -641,7 +641,11 @@ func runOnce(j job, t Test, opts Options, call Caller, attempt int) ([]*Failure,
 
 	if app := j.file.App; app != "" {
 		_, _ = call("app_terminate", dev(map[string]interface{}{"app": app}))
-		if _, err := callReaching(call, "app_launch", dev(map[string]interface{}{"app": app}), deadline); err != nil {
+		launch := map[string]interface{}{"app": app}
+		if j.file.GrayBox {
+			launch["gray_box"] = true
+		}
+		if _, err := callReaching(call, "app_launch", dev(launch), deadline); err != nil {
 			return []*Failure{fail(0, nil, err)}, trace
 		}
 	}

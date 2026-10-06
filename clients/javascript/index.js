@@ -793,10 +793,16 @@ export class Device {
    * launches: every action on an element in it then asks UIKit where the
    * touch goes first, and is refused when it would land elsewhere. A real
    * iPhone and Android refuse it.
+   *
+   * `grayBox` launches the app with Mobium's gray-box library
+   * turned on: the app says when it is busy, and every action waits for it
+   * to be idle before finding its target. It needs an app built with the
+   * library.
    */
-  async launch(app, { hitTest = false } = {}) {
+  async launch(app, { hitTest = false, grayBox = false } = {}) {
     const args = { app }
     if (hitTest) args.hit_test = true
+    if (grayBox) args.gray_box = true
     await this.#text('app_launch', args)
   }
 

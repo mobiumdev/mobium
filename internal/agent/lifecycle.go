@@ -214,6 +214,18 @@ func (h *Handlers) launchAppOn(ctx context.Context, s *session, args map[string]
 	// that took 5.2s against 2.5s from Settings.
 
 	launch := ctrl.Launch
+	gray := boolArg(args, "gray_box")
+	if gray && boolArg(args, "hit_test") {
+		return nil, mobiumerr.New(mobiumerr.InvalidArgument, "gray_box and hit_test are not built to launch together "+
+			"yet — launch with one of them")
+	}
+	if gray {
+		g, ok := mobiumdriver.AsGrayBoxer(s.driver)
+		if !ok {
+			return nil, cannot(s, mobiumdriver.CapGrayBox, "launch an app with the gray box")
+		}
+		launch = g.LaunchGrayBox
+	}
 	if boolArg(args, "hit_test") {
 		l, ok := mobiumdriver.AsHitProbeLauncher(s.driver)
 		if !ok {
@@ -239,6 +251,17 @@ func (h *Handlers) launchAppOn(ctx context.Context, s *session, args map[string]
 	msg := fmt.Sprintf("launched %s", id)
 	if boolArg(args, "hit_test") {
 		msg += ", with the hit probe: every action on an element in it asks UIKit first"
+	}
+	if gray && app == id {
+		heard, err := grayBoxHeard(ctx, s)
+		if err != nil {
+			return nil, err
+		}
+		if heard {
+			msg += ", with the gray box: every action waits for the app to say it is idle"
+		} else {
+			msg += ", but " + fmt.Sprintf(grayBoxUnheard, grayBoxAnswer)
+		}
 	}
 	if app != "" && app != id {
 		// Worth saying rather than hiding: the launch was accepted but

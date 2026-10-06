@@ -549,6 +549,17 @@ func (a *ADB) ForwardAbstract(ctx context.Context, socketName string) (int, erro
 // launchable activity — so that is asked second, and a phone app that
 // declares both still opens on its phone screen.
 func (a *ADB) LaunchApp(ctx context.Context, pkg string) error {
+	return a.launch(ctx, pkg, nil)
+}
+
+// LaunchAppWith starts pkg afresh — stopped first, so its activity is
+// created again and reads what it was started with — passing opts to
+// `am start`: extras such as GrayBoxExtra.
+func (a *ADB) LaunchAppWith(ctx context.Context, pkg string, opts ...string) error {
+	return a.launch(ctx, pkg, append([]string{"-S"}, opts...))
+}
+
+func (a *ADB) launch(ctx context.Context, pkg string, opts []string) error {
 	component := ""
 	for _, category := range []string{"", "android.intent.category.LEANBACK_LAUNCHER"} {
 		args := []string{"cmd", "package", "resolve-activity", "--brief"}
@@ -567,7 +578,7 @@ func (a *ADB) LaunchApp(ctx context.Context, pkg string) error {
 		return mobiumerr.New(mobiumerr.InvalidArgument, "%s has no launchable activity (is it installed?)", pkg)
 	}
 
-	started, err := a.Shell(ctx, "am", "start", "-n", component)
+	started, err := a.Shell(ctx, append(append([]string{"am", "start"}, opts...), "-n", component)...)
 	if err != nil {
 		return err
 	}

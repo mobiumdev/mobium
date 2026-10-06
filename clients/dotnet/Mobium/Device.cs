@@ -342,6 +342,14 @@ namespace Mobium
         /// </summary>
         public void LaunchWithHitTest(string app) => Act("app_launch", Args("app", app, "hit_test", true));
 
+        /// <summary>
+        /// Launches an app with Mobium's gray-box library turned on:
+        /// the app says when it is busy, and every action waits for it to be
+        /// idle before finding its target. It needs an app built with the
+        /// library.
+        /// </summary>
+        public void LaunchWithGrayBox(string app) => Act("app_launch", Args("app", app, "gray_box", true));
+
         /// <summary>Stops a running app.</summary>
         public void Terminate(string app) => Act("app_terminate", Args("app", app));
 

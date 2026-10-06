@@ -527,7 +527,7 @@ class Device:
 
     # -- app lifecycle -----------------------------------------------------
 
-    def launch(self, app: str, hit_test: bool = False) -> None:
+    def launch(self, app: str, hit_test: bool = False, gray_box: bool = False) -> None:
         """Bring an app to the foreground by package name or bundle id.
 
         Every ref from the previous screen is discarded — call map(), or just
@@ -537,10 +537,17 @@ class Device:
         it launches: every action on an element in it then asks UIKit where
         the touch goes first, and is refused when it would land elsewhere. A
         real iPhone and Android refuse it.
+
+        ``gray_box`` launches the app with Mobium's gray-box library
+        turned on: the app says when it is busy, and every action waits for
+        it to be idle before finding its target. It needs an app built with
+        the library.
         """
         args: dict[str, Any] = {"app": app}
         if hit_test:
             args["hit_test"] = True
+        if gray_box:
+            args["gray_box"] = True
         self._call("app_launch", args)
 
     def terminate(self, app: str) -> None:

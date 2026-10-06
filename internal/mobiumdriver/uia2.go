@@ -47,6 +47,8 @@ type UIA2 struct {
 	instrum  *exec.Cmd
 	instrLog *device.SyncBuffer
 	cancel   context.CancelFunc
+	// gray hears an app launched with the gray-box library on.
+	gray grayBox
 }
 
 // NewUIA2 prepares a driver. Nothing touches the device until Start.
@@ -216,6 +218,7 @@ func (u *UIA2) Close() error {
 
 func (u *UIA2) teardownLocked(ctx context.Context) {
 	u.w3c.closeSession(ctx)
+	u.gray.close()
 	if u.port != 0 {
 		u.adb.RemoveForward(ctx, u.port)
 		u.port = 0
@@ -531,6 +534,7 @@ func xpathFor(n *uitree.Node) string {
 
 // Launch brings an app to the foreground by package name.
 func (u *UIA2) Launch(ctx context.Context, appID string) error {
+	u.gray.off()
 	return u.adb.LaunchApp(ctx, appID)
 }
 
