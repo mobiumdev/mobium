@@ -120,7 +120,7 @@ func (u *UIA2) Start(ctx context.Context, progress func(string)) error {
 		u.teardownLocked(ctx)
 		return err
 	}
-	if err := u.capIdleWait(ctx); err != nil {
+	if err := u.configure(ctx); err != nil {
 		u.teardownLocked(ctx)
 		return err
 	}
@@ -131,7 +131,7 @@ func (u *UIA2) Start(ctx context.Context, progress func(string)) error {
 		if err := u.w3c.openSession(ctx, nil); err != nil {
 			return err
 		}
-		return u.capIdleWait(ctx)
+		return u.configure(ctx)
 	}
 	return nil
 }
@@ -149,23 +149,40 @@ func (u *UIA2) Start(ctx context.Context, progress func(string)) error {
 // (CHALLENGES 109).
 const idleWaitCap = 500
 
-// capIdleWait sets the server's idle wait to idleWaitCap and confirms it did.
-func (u *UIA2) capIdleWait(ctx context.Context) error {
+// listenForToasts is UiAutomator2's notification listener, which records
+// toasts for a client that asserts on them. Mobium never asks for them, and
+// while the listener runs, every read of the screen fails with "Cannot set
+// AccessibilityNodeInfo's field 'mSealed'" for as long as a system toast is
+// up: one toast held a read for 3.6s, five queued outlasted the six-second
+// retry, on a Pixel 7 AVD and a Pixel 8 Pro alike. With it off, the read
+// after five toasts took 0.6s and saw the app beneath them (CHALLENGES 254).
+const listenForToasts = false
+
+// configure sets the server's idle wait to idleWaitCap and turns its toast
+// listener off, and confirms both by reading them back.
+func (u *UIA2) configure(ctx context.Context) error {
 	path := u.w3c.sessionPath("/appium/settings")
 	if err := u.w3c.do(ctx, http.MethodPost, path, map[string]interface{}{
-		"settings": map[string]interface{}{"waitForIdleTimeout": idleWaitCap},
+		"settings": map[string]interface{}{
+			"waitForIdleTimeout":         idleWaitCap,
+			"enableNotificationListener": listenForToasts,
+		},
 	}, nil); err != nil {
-		return fmt.Errorf("cap the UiAutomator2 idle wait: %w", err)
+		return fmt.Errorf("configure the UiAutomator2 server: %w", err)
 	}
 	var got struct {
 		Value map[string]interface{} `json:"value"`
 	}
 	if err := u.w3c.do(ctx, http.MethodGet, path, nil, &got); err != nil {
-		return fmt.Errorf("read back the UiAutomator2 idle wait: %w", err)
+		return fmt.Errorf("read back the UiAutomator2 server's settings: %w", err)
 	}
 	if v, ok := got.Value["waitForIdleTimeout"].(float64); !ok || v != idleWaitCap {
 		return mobiumerr.New(mobiumerr.NotConfirmed, "UiAutomator2 accepted waitForIdleTimeout %d and reads back %v",
 			idleWaitCap, got.Value["waitForIdleTimeout"])
+	}
+	if got.Value["enableNotificationListener"] != interface{}(listenForToasts) {
+		return mobiumerr.New(mobiumerr.NotConfirmed, "UiAutomator2 accepted enableNotificationListener %v and reads back %v",
+			listenForToasts, got.Value["enableNotificationListener"])
 	}
 	return nil
 }

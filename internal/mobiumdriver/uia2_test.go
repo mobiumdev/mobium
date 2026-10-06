@@ -543,33 +543,41 @@ const bareIDSource = `<?xml version='1.0' encoding='UTF-8' standalone='yes' ?>
 </android.widget.FrameLayout>
 </hierarchy>`
 
-// The idle wait is capped and read back: a server that accepted the setting
-// and kept its own is reported, not believed. At the default every read of an
-// animating screen blocked until the animation ended (CHALLENGES 109).
-func TestUIA2CapsTheIdleWait(t *testing.T) {
+// The idle wait is capped and the toast listener turned off, and both are
+// read back: a server that accepted a setting and kept its own is reported,
+// not believed. At the default idle wait every read of an animating screen
+// blocked until the animation ended (CHALLENGES 109); with the listener on,
+// no read got through while a system toast was up (CHALLENGES 254).
+func TestUIA2ConfiguresTheServer(t *testing.T) {
 	for _, tc := range []struct {
 		readBack string
 		ok       bool
-	}{{`500`, true}, {`10000`, false}, {`0`, false}} {
-		var posted interface{}
+	}{
+		{`{"waitForIdleTimeout":500,"enableNotificationListener":false}`, true},
+		{`{"waitForIdleTimeout":10000,"enableNotificationListener":false}`, false},
+		{`{"waitForIdleTimeout":0,"enableNotificationListener":false}`, false},
+		{`{"waitForIdleTimeout":500,"enableNotificationListener":true}`, false},
+		{`{"waitForIdleTimeout":500}`, false},
+	} {
+		var posted map[string]interface{}
 		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Content-Type", "application/json")
 			if r.Method == http.MethodPost {
 				var body map[string]map[string]interface{}
 				json.NewDecoder(r.Body).Decode(&body)
-				posted = body["settings"]["waitForIdleTimeout"]
+				posted = body["settings"]
 				w.Write([]byte(`{"value":null}`))
 				return
 			}
-			w.Write([]byte(`{"value":{"waitForIdleTimeout":` + tc.readBack + `}}`))
+			w.Write([]byte(`{"value":` + tc.readBack + `}`))
 		}))
 		c := newW3CClient(5 * time.Second)
 		c.setBase(srv.URL)
 		c.sessionID = "S1"
-		err := (&UIA2{w3c: c}).capIdleWait(context.Background())
+		err := (&UIA2{w3c: c}).configure(context.Background())
 		srv.Close()
-		if posted != float64(idleWaitCap) {
-			t.Errorf("posted waitForIdleTimeout %v, want %d", posted, idleWaitCap)
+		if posted["waitForIdleTimeout"] != float64(idleWaitCap) || posted["enableNotificationListener"] != false {
+			t.Errorf("posted %v, want waitForIdleTimeout %d and enableNotificationListener false", posted, idleWaitCap)
 		}
 		if (err == nil) != tc.ok {
 			t.Errorf("read back %s: err = %v", tc.readBack, err)

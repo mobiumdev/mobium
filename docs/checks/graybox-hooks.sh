@@ -11,6 +11,10 @@
 #   - raiseToast: the toast the app draws says what was sent — an ASCII
 #                 message, then one that is not, which a phone's keyboard
 #                 would drop if it were typed as it is;
+#   - toasts:     five raised at once, and the screen still reads: on Android
+#                 each is also a system toast, and while one was up no read
+#                 got through, until the session turned UiAutomator2's toast
+#                 listener off (CHALLENGES 254);
 #   - signIn:     the app is signed in without its form: the welcome screen
 #                 greets the name sent, and screen says so;
 #   - unknown:    a name the app never registered is refused, naming the
@@ -44,6 +48,11 @@ for msg in "Toast raised by test script" "Привет, café — 5 ✓"; do
   [ "$shown" = "$msg" ] || fail "the toast says \"$shown\", not \"$msg\""
 done
 row "raiseToast" "the app's toast says what was sent, ASCII and not"
+
+for i in 1 2 3 4 5; do $M hook raiseToast "queued $i" >/dev/null || fail "hook raiseToast queued $i"; done
+shown=$($M text testid=hookToast 2>&1) || fail "the screen did not read with toasts up: $shown"
+[ "$shown" = "queued 5" ] || fail "with toasts up the app's toast says \"$shown\", not \"queued 5\""
+row "toasts" "five raised at once, and the screen still reads"
 
 said=$($M hook signIn mobium) || fail "hook signIn: $said"
 echo "$said" | grep -q 'answered: "signed in as mobium"' || fail "signIn answered $said"

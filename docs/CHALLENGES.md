@@ -547,7 +547,9 @@ the extra snapshot it takes is by definition taken when something is moving.
 
 Snapshot errors inside an action's retry budget are now retried, with the last
 one kept so a device that is genuinely unreachable still reports what it said
-rather than a generic timeout.
+rather than a generic timeout. The toasts were not only animating: the
+server's toast listener broke every read while one was up, which 254 found
+and turned off.
 
 ### 32. `doctor` could not run in the situation it exists for
 **Found by:** testing it against a deliberately broken environment, which is
@@ -5487,6 +5489,25 @@ at last exposed what the fallback had covered: iOS runs an alert button's
 handler only once the alert has gone, after the lift's 150 ms of grace, and
 a refresh started from an alert was tapped stale. The grace now counts
 from the later of the lift and the action's end.
+
+### 254. No read got through while a system toast was up
+
+**Found by:** calling a hook that raises a toast five times and then reading
+the screen: the hooks all answered, and the read failed after six seconds
+with `Cannot set AccessibilityNodeInfo's field 'mSealed' to 'true'`. One
+toast held a read for 3.6 seconds; five, queued for about ten, outlasted
+the retry budget — on a Pixel 7 AVD (Android 15) and a Pixel 8 Pro (Android
+17) alike. `uiautomator dump`, with UiAutomator2 stopped and the toast still
+up, read the screen in 1.9 seconds, the app beneath the toast included: the
+screen could be read, and the server could not read it. The cause was the
+server's notification listener, which records toasts for a client that
+asserts on them; Mobium never does. With `enableNotificationListener` off
+the read after five toasts took 0.6 seconds on the AVD and 1.0 on the Pixel,
+and saw the app's own text. The session now turns it off and reads it back,
+as it does the idle wait (109). Defect 31 met this first, tapping a row
+that raised toasts, and called it animation; its retry was right for a
+screen in motion and only outwaited this one. `graybox-hooks.sh` queues
+five toasts and reads the screen, on any Android device.
 
 ## Findings that were not defects
 
