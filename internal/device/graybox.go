@@ -54,6 +54,15 @@ type GrayBox struct {
 	// from the gap are lost — a busy=1 among them — so until the app has had
 	// time to restate its count, zero is not trusted.
 	regained time.Time
+	// answers are hook answers by call id, until collected.
+	answers map[string]HookAnswer
+}
+
+// HookAnswer is what the app said to one hook call: ok with its result as
+// JSON, or not, with its error's text.
+type HookAnswer struct {
+	OK      bool
+	Payload string
 }
 
 // GrayBoxPrefix starts every line the gray-box library writes.
@@ -86,7 +95,7 @@ const grayBoxRecover = 700 * time.Millisecond
 
 // NewGrayBox returns a gray box that has heard nothing yet.
 func NewGrayBox() *GrayBox {
-	return &GrayBox{changed: make(chan struct{}), tags: map[string]int{}}
+	return &GrayBox{changed: make(chan struct{}), tags: map[string]int{}, answers: map[string]HookAnswer{}}
 }
 
 // Reset forgets everything heard, for an app launched again.
@@ -94,6 +103,7 @@ func (g *GrayBox) Reset() {
 	g.mu.Lock()
 	defer g.mu.Unlock()
 	g.on, g.busy, g.tags, g.lift, g.said, g.away = false, 0, map[string]int{}, time.Time{}, time.Time{}, false
+	g.answers = map[string]HookAnswer{}
 	g.notify()
 }
 
@@ -109,13 +119,34 @@ func (g *GrayBox) Feed(msg string, at time.Time) {
 	if i < 0 {
 		return
 	}
-	fields := strings.Fields(msg[i+len(GrayBoxPrefix):])
+	rest := msg[i+len(GrayBoxPrefix):]
+	fields := strings.Fields(rest)
 	if len(fields) == 0 {
 		return
 	}
 	g.mu.Lock()
 	defer g.mu.Unlock()
 	switch {
+	case fields[0] == "hook" && len(fields) >= 3 && strings.HasPrefix(fields[1], "id="):
+		// hook id=<id> ok <json> | hook id=<id> error <text>, then the
+		// library's " t=<ms>"; the payload is everything between.
+		ok := fields[2] == "ok"
+		if !ok && fields[2] != "error" {
+			return
+		}
+		payload := rest
+		for _, f := range fields[:3] {
+			payload = strings.TrimSpace(strings.TrimPrefix(strings.TrimSpace(payload), f))
+		}
+		if j := strings.LastIndex(payload, " t="); j >= 0 {
+			if _, err := strconv.ParseInt(strings.TrimSpace(payload[j+3:]), 10, 64); err == nil {
+				payload = payload[:j]
+			}
+		}
+		if g.answers == nil {
+			g.answers = map[string]HookAnswer{}
+		}
+		g.answers[strings.TrimPrefix(fields[1], "id=")] = HookAnswer{OK: ok, Payload: strings.TrimSpace(payload)}
 	case fields[0] == "on":
 		// A process starting over: whatever the last one held is gone.
 		g.busy, g.tags, g.away = 0, map[string]int{}, false
@@ -162,6 +193,32 @@ func (g *GrayBox) Feed(msg string, at time.Time) {
 	}
 	g.on = true
 	g.notify()
+}
+
+// AwaitAnswer waits up to limit for the app's answer to hook call id, and
+// collects it.
+func (g *GrayBox) AwaitAnswer(ctx context.Context, id string, limit time.Duration) (HookAnswer, error) {
+	deadline := time.NewTimer(limit)
+	defer deadline.Stop()
+	for {
+		g.mu.Lock()
+		a, ok := g.answers[id]
+		if ok {
+			delete(g.answers, id)
+		}
+		ch := g.changed
+		g.mu.Unlock()
+		if ok {
+			return a, nil
+		}
+		select {
+		case <-ch:
+		case <-deadline.C:
+			return HookAnswer{}, mobiumerr.New(mobiumerr.Timeout, "the app did not answer within %s", limit)
+		case <-ctx.Done():
+			return HookAnswer{}, ctx.Err()
+		}
+	}
 }
 
 // On reports whether the app has said anything since it was launched.
@@ -270,12 +327,18 @@ func (g *GrayBox) AwaitIdle(ctx context.Context, prev Previous, limit time.Durat
 		// Work a tap starts is announced as the tap is handled: after its
 		// lift, the grace; with no lift heard during an action — a button
 		// in an alert, which is a window of its own — after the action.
+		//
+		// After an action, the grace counts from the later of its lift and
+		// its end. iOS runs an alert button's handler only once the alert has
+		// finished going away, after the lift: counted from the lift alone,
+		// the busy line came after the grace and the next tap landed stale.
 		ready := prev.End.Add(grayBoxDelivery)
 		if !lift.Before(prev.Start) && !lift.IsZero() {
 			if l := lift.Add(grayBoxGrace); l.After(ready) {
 				ready = l
 			}
-		} else if prev.Acted {
+		}
+		if prev.Acted {
 			if l := prev.End.Add(grayBoxGrace); l.After(ready) {
 				ready = l
 			}

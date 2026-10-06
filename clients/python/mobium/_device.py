@@ -786,6 +786,18 @@ class Device:
         """
         return self._data("app_hit_test", {"target": target}) or {}
 
+    def hook(self, name: str, *args: str, timeout_ms: int | None = None) -> Any:
+        """Call a hook the app registered with Mobium's gray-box library, by
+        name, and return what it answered — sign in, seed data, raise a
+        toast, without walking the UI. The app must have been launched with
+        ``launch(app, gray_box=True)``. Raises InvalidArgumentError for a
+        name the app never registered, naming the ones it did.
+        """
+        call: dict[str, Any] = {"hook": name, "args": list(args)}
+        if timeout_ms:
+            call["timeout_ms"] = timeout_ms
+        return (self._data("app_hook", call) or {}).get("result")
+
     def audit(self) -> dict:
         """Run the platform's own accessibility audit on the screen in front:
         on iOS, Apple's, on a simulator or an iPhone (iOS 17 and later).

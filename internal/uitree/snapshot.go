@@ -347,12 +347,23 @@ func roleOf(n *Node) string {
 	return ""
 }
 
+// MailboxLabel names the field Mobium's gray-box library adds in a
+// gray-box launch, which app_hook writes a call into.
+const MailboxLabel = "mobium-mailbox"
+
+// IsMailbox reports whether n is that field. It is Mobium's own plumbing,
+// not part of the app: map leaves it out, so no agent or test is offered it
+// as something to tap or type into.
+func IsMailbox(n *Node) bool {
+	return n.Label == MailboxLabel || n.TestID == MailboxLabel
+}
+
 // Map builds the @ref table for a snapshot. Refs are assigned in document
 // order, which is top-to-bottom, left-to-right on screen.
 func (t *Tree) Map() []Entry {
 	var actionable []*Node
 	t.Walk(func(n *Node) bool {
-		if Actionable(n) {
+		if Actionable(n) && !IsMailbox(n) {
 			actionable = append(actionable, n)
 		}
 		return true

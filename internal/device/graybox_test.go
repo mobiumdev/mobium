@@ -251,3 +251,57 @@ func TestGrayBoxRegainedStreamWaitsForTheNextWord(t *testing.T) {
 		t.Errorf("the regained wait repeated: %+v", w3)
 	}
 }
+
+// A hook's answer is read from its line, the library's own " t=" stamp left
+// off, and collected once.
+func TestGrayBoxHookAnswers(t *testing.T) {
+	g := NewGrayBox()
+	g.Feed(`MOBIUM-GRAYBOX hook id=k1 ok {"shown":true,"note":"a b t=c"} t=1791264643646`, time.Now())
+	g.Feed(`MOBIUM-GRAYBOX hook id=k2 error no hook named nosuch; registered: screen, signIn t=1791264643700`, time.Now())
+	a, err := g.AwaitAnswer(context.Background(), "k1", time.Second)
+	if err != nil || !a.OK || a.Payload != `{"shown":true,"note":"a b t=c"}` {
+		t.Fatalf("k1: %+v %v", a, err)
+	}
+	b, err := g.AwaitAnswer(context.Background(), "k2", time.Second)
+	if err != nil || b.OK || b.Payload != "no hook named nosuch; registered: screen, signIn" {
+		t.Fatalf("k2: %+v %v", b, err)
+	}
+	if _, err := g.AwaitAnswer(context.Background(), "k1", 50*time.Millisecond); err == nil {
+		t.Error("an answer was collected twice")
+	}
+	go func() {
+		time.Sleep(100 * time.Millisecond)
+		g.Feed(`MOBIUM-GRAYBOX hook id=k3 ok "shown" t=1`, time.Now())
+	}()
+	if c, err := g.AwaitAnswer(context.Background(), "k3", time.Second); err != nil || c.Payload != `"shown"` {
+		t.Fatalf("k3: %+v %v", c, err)
+	}
+	var me *mobiumerr.Error
+	if _, err := g.AwaitAnswer(context.Background(), "never", 50*time.Millisecond); !errors.As(err, &me) || me.Code != mobiumerr.Timeout {
+		t.Errorf("no answer: %v, want a timeout", err)
+	}
+}
+
+// An alert's button is handled after the alert has gone: the busy line comes
+// later than the lift's grace, but within the action's own. The grace runs
+// from the later of the two.
+func TestGrayBoxGraceRunsFromTheActionsEndToo(t *testing.T) {
+	g := NewGrayBox()
+	g.Feed("MOBIUM-GRAYBOX on", time.Now())
+	start := time.Now().Add(-400 * time.Millisecond)
+	g.Feed("MOBIUM-GRAYBOX lift", start.Add(50*time.Millisecond))
+	prev := Previous{Start: start, End: time.Now(), Acted: true}
+	go func() {
+		time.Sleep(100 * time.Millisecond)
+		g.Feed("MOBIUM-GRAYBOX busy=1 tag=alert", time.Now())
+		time.Sleep(300 * time.Millisecond)
+		g.Feed("MOBIUM-GRAYBOX busy=0 tag=alert", time.Now())
+	}()
+	w, err := g.AwaitIdle(context.Background(), prev, 5*time.Second)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if w.Waited < 350*time.Millisecond || len(w.Busy) != 1 {
+		t.Errorf("waited %s for %v: work announced after the lift's grace but within the action's was missed", w.Waited, w.Busy)
+	}
+}

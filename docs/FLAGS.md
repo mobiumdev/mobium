@@ -122,6 +122,11 @@ command mentions them.
 | `app_hit_test` | `device` | string | _global_ --device |
 | `app_hit_test` | `driver` | string | _global_ --driver |
 | `app_hit_test` | `target` | string | hit-test |
+| `app_hook` | `args` | array | hook |
+| `app_hook` | `device` | string | _global_ --device |
+| `app_hook` | `driver` | string | _global_ --driver |
+| `app_hook` | `hook` | string | hook |
+| `app_hook` | `timeout_ms` | integer | hook |
 | `app_install` | `content` | string | — |
 | `app_install` | `device` | string | _global_ --device |
 | `app_install` | `driver` | string | _global_ --driver |
@@ -369,6 +374,7 @@ arguments and the two global flags.
 | `grant` | app_grant | — | app, permissions |
 | `grid` | — | --holder --want | — |
 | `hit-test` | app_hit_test | — | target |
+| `hook` | app_hook | --timeout-ms | args, hook, timeout_ms |
 | `inspect` | — | --open --port | darwin, windows |
 | `install` | app_install | — | path |
 | `keyboard` | app_keyboard | --hide --key --text | hide, key, text |

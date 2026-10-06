@@ -18,11 +18,11 @@ differently.
 
 | | |
 | --- | --- |
-| Tools | **71** |
-| CLI commands registered | 80 |
-| …visible in `mobium --help` | 79 |
+| Tools | **72** |
+| CLI commands registered | 81 |
+| …visible in `mobium --help` | 80 |
 | …hidden | 1 (pipe) |
-| Command constructors in source | 86 (includes `daemon start`, `stop`, `status`) |
+| Command constructors in source | 87 (includes `daemon start`, `stop`, `status`) |
 | Client libraries | 5 |
 
 Those three command counts differ on purpose, and the arithmetic is asserted
@@ -62,59 +62,60 @@ been wrong twice.
 | 26 | `app_find` | `find` | `Find` | `find` | `find` | `find` |
 | 27 | `app_grant` | `grant` | `Grant` | `grant` | `grant` | `grant` |
 | 28 | `app_hit_test` | `hit-test` | `HitTest` | `hit_test` | `hitTest` | `hitTest` |
-| 29 | `app_install` | `install` | `Install` | `install` | `install` | `install` |
-| 30 | `app_keyboard` | `keyboard` | `Keyboard` | `keyboard` | `keyboard` | `keyboard` |
-| 31 | `app_launch` | `launch` | `Launch` | `launch` | `launch` | `launch` |
-| 32 | `app_list_apps` | `apps` | `Apps` | `apps` | `apps` | `apps` |
-| 33 | `app_locale` | `locale` | `AppLocale` | `app_locale` | `appLocale` | `appLocale` |
-| 34 | `app_location` | `location` | `Location` | `location` | `location` | `location` |
-| 35 | `app_lock` | `lock` | `ScreenLocked` | `screen_locked` | `screenLocked` | `screenLocked` |
-| 36 | `app_logs` | `logs` | `Logs` | `logs` | `logs` | `logs` |
-| 37 | `app_long_press` | `long-press` | `LongPress` | `long_press` | `longPress` | `longPress` |
-| 38 | `app_map` | `map` | `Map` | `map` | `map` | `map` |
-| 39 | `app_network` | `network` | `ResetNetwork` | `network` | `network` | `network` |
-| 40 | `app_notifications` | `notifications` | `Notifications` | `notifications` | `notifications` | `notifications` |
-| 41 | `app_open_url` | `open` | `OpenURL` | `open_url` | `openUrl` | `openUrl` |
-| 42 | `app_orientation` | `orientation` | `Orientation` | `orientation` | `orientation` | `orientation` |
-| 43 | `app_press` | `press` | `Press` | `press` | `press` | `press` |
-| 44 | `app_press_drag` | `press-drag` | `PressDrag` | `press_drag` | `pressDrag` | `pressDrag` |
-| 45 | `app_press_tap` | `press-tap` | `PressTap` | `press_tap` | `pressTap` | `pressTap` |
-| 46 | `app_record` | `record` | `Record` | `record` | `record` | `record` |
-| 47 | `app_reset_permissions` | `reset-permissions` | `ResetPermissions` | `reset_permissions` | `resetPermissions` | `resetPermissions` |
-| 48 | `app_revoke` | `revoke` | `Revoke` | `revoke` | `revoke` | `revoke` |
-| 49 | `app_rotate` | `rotate` | `Rotate` | `rotate` | `rotate` | `rotate` |
-| 50 | `app_screen` | `screen` | `Screen` | `screen` | `screen` | `screen` |
-| 51 | `app_screenshot` | `screenshot` | `Screenshot` | `screenshot` | `screenshot` | `screenshot` |
-| 52 | `app_scroll_to` | `scroll-to` | `ScrollTo` | `scroll_to` | `scrollTo` | `scrollTo` |
-| 53 | `app_session` | `session` | `Start` | `start` | `start` | `start` |
-| 54 | `app_shake` | `shake` | `Shake` | `shake` | `shake` | `shake` |
-| 55 | `app_shutdown` | `shutdown` | `Shutdown` | `shutdown` | `shutdown` | `shutdown` |
-| 56 | `app_sms` | `sms` | `SendSMS` | `sms` | `sms` | `sms` |
-| 57 | `app_source` | `source` | `Source` | `source` | `source` | `source` |
-| 58 | `app_state` | `state` | `AppState` | `app_state` | `appState` | `appState` |
-| 59 | `app_storage` | `storage` | `Storage` | `storage` | `storage` | `storage` |
-| 60 | `app_swipe` | `swipe` | `Swipe` | `swipe` | `swipe` | `swipe` |
-| 61 | `app_tap` | `tap, double-tap` | `Tap` | `tap` | `tap` | `tap` |
-| 62 | `app_terminate` | `terminate` | `Terminate` | `terminate` | `terminate` | `terminate` |
-| 63 | `app_text` | `text` | `Text` | `text` | `text` | `text` |
-| 64 | `app_time` | `time` | `DeviceTime` | `device_time` | `deviceTime` | `deviceTime` |
-| 65 | `app_timezone` | `timezone` | `Timezone` | `timezone` | `timezone` | `timezone` |
-| 66 | `app_trace` | `trace` | `TraceStart` | `trace_start` | `traceStart` | `traceStart` |
-| 67 | `app_type` | `type` | `Type` | `type` | `type` | `type` |
-| 68 | `app_uninstall` | `uninstall` | `Uninstall` | `uninstall` | `uninstall` | `uninstall` |
-| 69 | `app_upload` | `upload` | `PushPath` | `upload` | `upload` | `upload` |
-| 70 | `app_wait_for` | `wait` | `WaitFor` | `wait_for` | `waitFor` | `waitFor` |
-| 71 | `app_zoom` | `zoom` | `Zoom` | `zoom` | `zoom` | `zoom` |
+| 29 | `app_hook` | `hook` | `Hook` | `hook` | `hook` | `hook` |
+| 30 | `app_install` | `install` | `Install` | `install` | `install` | `install` |
+| 31 | `app_keyboard` | `keyboard` | `Keyboard` | `keyboard` | `keyboard` | `keyboard` |
+| 32 | `app_launch` | `launch` | `Launch` | `launch` | `launch` | `launch` |
+| 33 | `app_list_apps` | `apps` | `Apps` | `apps` | `apps` | `apps` |
+| 34 | `app_locale` | `locale` | `AppLocale` | `app_locale` | `appLocale` | `appLocale` |
+| 35 | `app_location` | `location` | `Location` | `location` | `location` | `location` |
+| 36 | `app_lock` | `lock` | `ScreenLocked` | `screen_locked` | `screenLocked` | `screenLocked` |
+| 37 | `app_logs` | `logs` | `Logs` | `logs` | `logs` | `logs` |
+| 38 | `app_long_press` | `long-press` | `LongPress` | `long_press` | `longPress` | `longPress` |
+| 39 | `app_map` | `map` | `Map` | `map` | `map` | `map` |
+| 40 | `app_network` | `network` | `ResetNetwork` | `network` | `network` | `network` |
+| 41 | `app_notifications` | `notifications` | `Notifications` | `notifications` | `notifications` | `notifications` |
+| 42 | `app_open_url` | `open` | `OpenURL` | `open_url` | `openUrl` | `openUrl` |
+| 43 | `app_orientation` | `orientation` | `Orientation` | `orientation` | `orientation` | `orientation` |
+| 44 | `app_press` | `press` | `Press` | `press` | `press` | `press` |
+| 45 | `app_press_drag` | `press-drag` | `PressDrag` | `press_drag` | `pressDrag` | `pressDrag` |
+| 46 | `app_press_tap` | `press-tap` | `PressTap` | `press_tap` | `pressTap` | `pressTap` |
+| 47 | `app_record` | `record` | `Record` | `record` | `record` | `record` |
+| 48 | `app_reset_permissions` | `reset-permissions` | `ResetPermissions` | `reset_permissions` | `resetPermissions` | `resetPermissions` |
+| 49 | `app_revoke` | `revoke` | `Revoke` | `revoke` | `revoke` | `revoke` |
+| 50 | `app_rotate` | `rotate` | `Rotate` | `rotate` | `rotate` | `rotate` |
+| 51 | `app_screen` | `screen` | `Screen` | `screen` | `screen` | `screen` |
+| 52 | `app_screenshot` | `screenshot` | `Screenshot` | `screenshot` | `screenshot` | `screenshot` |
+| 53 | `app_scroll_to` | `scroll-to` | `ScrollTo` | `scroll_to` | `scrollTo` | `scrollTo` |
+| 54 | `app_session` | `session` | `Start` | `start` | `start` | `start` |
+| 55 | `app_shake` | `shake` | `Shake` | `shake` | `shake` | `shake` |
+| 56 | `app_shutdown` | `shutdown` | `Shutdown` | `shutdown` | `shutdown` | `shutdown` |
+| 57 | `app_sms` | `sms` | `SendSMS` | `sms` | `sms` | `sms` |
+| 58 | `app_source` | `source` | `Source` | `source` | `source` | `source` |
+| 59 | `app_state` | `state` | `AppState` | `app_state` | `appState` | `appState` |
+| 60 | `app_storage` | `storage` | `Storage` | `storage` | `storage` | `storage` |
+| 61 | `app_swipe` | `swipe` | `Swipe` | `swipe` | `swipe` | `swipe` |
+| 62 | `app_tap` | `tap, double-tap` | `Tap` | `tap` | `tap` | `tap` |
+| 63 | `app_terminate` | `terminate` | `Terminate` | `terminate` | `terminate` | `terminate` |
+| 64 | `app_text` | `text` | `Text` | `text` | `text` | `text` |
+| 65 | `app_time` | `time` | `DeviceTime` | `device_time` | `deviceTime` | `deviceTime` |
+| 66 | `app_timezone` | `timezone` | `Timezone` | `timezone` | `timezone` | `timezone` |
+| 67 | `app_trace` | `trace` | `TraceStart` | `trace_start` | `traceStart` | `traceStart` |
+| 68 | `app_type` | `type` | `Type` | `type` | `type` | `type` |
+| 69 | `app_uninstall` | `uninstall` | `Uninstall` | `uninstall` | `uninstall` | `uninstall` |
+| 70 | `app_upload` | `upload` | `PushPath` | `upload` | `upload` | `upload` |
+| 71 | `app_wait_for` | `wait` | `WaitFor` | `wait_for` | `waitFor` | `waitFor` |
+| 72 | `app_zoom` | `zoom` | `Zoom` | `zoom` | `zoom` | `zoom` |
 
 ## Client coverage
 
 | Client | Source | Tools reached |
 | --- | --- | --- |
-| go | [clients/go/mobium.go](../clients/go/mobium.go) | 71 / 71 |
-| python | [clients/python/mobium/_device.py](../clients/python/mobium/_device.py) | 71 / 71 |
-| javascript | [clients/javascript/index.js](../clients/javascript/index.js) | 71 / 71 |
-| java | [clients/java/src/main/java/dev/mobium/Mobium.java](../clients/java/src/main/java/dev/mobium/Mobium.java) | 71 / 71 |
-| dotnet | [clients/dotnet/Mobium/Device.cs](../clients/dotnet/Mobium/Device.cs) | 71 / 71 |
+| go | [clients/go/mobium.go](../clients/go/mobium.go) | 72 / 72 |
+| python | [clients/python/mobium/_device.py](../clients/python/mobium/_device.py) | 72 / 72 |
+| javascript | [clients/javascript/index.js](../clients/javascript/index.js) | 72 / 72 |
+| java | [clients/java/src/main/java/dev/mobium/Mobium.java](../clients/java/src/main/java/dev/mobium/Mobium.java) | 72 / 72 |
+| dotnet | [clients/dotnet/Mobium/Device.cs](../clients/dotnet/Mobium/Device.cs) | 72 / 72 |
 
 ## Commands that dispatch no tool
 

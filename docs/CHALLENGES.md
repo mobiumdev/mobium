@@ -7,7 +7,7 @@ the source.
 
 The pattern across them is the reason the document exists: **almost nothing
 here was found by reading code or by a test written from imagination.** Of
-252 defects, 212 were found only by running against a real device. The other
+253 defects, 213 were found only by running against a real device. The other
 forty — 4, 5, 6, 14, 23, 24, 32, 35, 36, 39, 44, 50, 53, 54, 57, 66, 89,
 99, 100, 121, 123, 129, 130, 133, 134, 139, 140, 141, 142, 144, 150, 158, 162,
 164, 165, 172, 222, 231, 232 and 243 — came from reading code, the compiler, a test, a linter,
@@ -547,7 +547,9 @@ the extra snapshot it takes is by definition taken when something is moving.
 
 Snapshot errors inside an action's retry budget are now retried, with the last
 one kept so a device that is genuinely unreachable still reports what it said
-rather than a generic timeout.
+rather than a generic timeout. The toasts were not only animating: the
+server's toast listener broke every read while one was up, which 254 found
+and turned off.
 
 ### 32. `doctor` could not run in the situation it exists for
 **Found by:** testing it against a deliberately broken environment, which is
@@ -5467,6 +5469,45 @@ count again from zero and waits 700 ms for the app's half-second `still`
 line before trusting it, and says it reconnected: three in three current,
 after 702 to 783 ms. A test holds both the work restated after the gap and
 the work that ended inside it.
+
+### 253. On iOS the gray-box library listened on a window nobody touched
+
+**Found by:** building hooks, whose mailbox — a field WebDriverAgent types
+a call into — took no typing on the simulator: WebDriverAgent found it and
+reported it neither visible nor hittable. Two causes, one hidden behind the
+other. The library starts before React Native puts up its window, and it
+attached its touch watcher and the mailbox to the first key window it saw,
+once; on the simulator a session of taps logged no `lift` at all — the
+gray box held up only because an action with no lift heard gets its grace
+from the action's end. Now both follow the key window as it changes,
+checked twice a second, and the mailbox is kept above React Native's views.
+Then the mailbox at 2 by 2 points, which a real iPhone had typed into, was
+too small for XCTest on the simulator; 8 by 8 points, at the screen's left
+edge, is visible and hittable, and clear of the 16-point margin apps keep.
+A tap now logs its lift on iOS, and every hook call lands. Hearing lifts
+at last exposed what the fallback had covered: iOS runs an alert button's
+handler only once the alert has gone, after the lift's 150 ms of grace, and
+a refresh started from an alert was tapped stale. The grace now counts
+from the later of the lift and the action's end.
+
+### 254. No read got through while a system toast was up
+
+**Found by:** calling a hook that raises a toast five times and then reading
+the screen: the hooks all answered, and the read failed after six seconds
+with `Cannot set AccessibilityNodeInfo's field 'mSealed' to 'true'`. One
+toast held a read for 3.6 seconds; five, queued for about ten, outlasted
+the retry budget — on a Pixel 7 AVD (Android 15) and a Pixel 8 Pro (Android
+17) alike. `uiautomator dump`, with UiAutomator2 stopped and the toast still
+up, read the screen in 1.9 seconds, the app beneath the toast included: the
+screen could be read, and the server could not read it. The cause was the
+server's notification listener, which records toasts for a client that
+asserts on them; Mobium never does. With `enableNotificationListener` off
+the read after five toasts took 0.6 seconds on the AVD and 1.0 on the Pixel,
+and saw the app's own text. The session now turns it off and reads it back,
+as it does the idle wait (109). Defect 31 met this first, tapping a row
+that raised toasts, and called it animation; its retry was right for a
+screen in motion and only outwaited this one. `graybox-hooks.sh` queues
+five toasts and reads the screen, on any Android device.
 
 ## Findings that were not defects
 

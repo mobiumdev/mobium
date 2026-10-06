@@ -1045,6 +1045,18 @@ export class Device {
   }
 
   /**
+   * Calls a hook the app registered with Mobium's gray-box library, by
+   * name, and resolves to what it answered — sign in, seed data, raise a
+   * toast, without walking the UI. The app must have been launched with
+   * `launch(app, { grayBox: true })`. A name the app never registered
+   * rejects with an InvalidArgumentError naming the ones it did.
+   */
+  async hook(name, ...args) {
+    const data = (await this.#data('app_hook', { hook: name, args })) || {}
+    return data.result
+  }
+
+  /**
    * Runs the platform's own accessibility audit on the screen in front: on
    * iOS, Apple's, on a simulator or an iPhone (iOS 17 and later). Resolves to
    * `findings`, each with its type, summary, detail, element, a locator when

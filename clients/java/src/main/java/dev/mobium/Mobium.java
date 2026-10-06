@@ -1042,6 +1042,22 @@ public final class Mobium implements AutoCloseable {
     }
 
     /**
+     * Calls a hook the app registered with Mobium's gray-box library, by
+     * name, and returns what it answered — sign in, seed data, raise a toast,
+     * without walking the UI. The app must have been launched with
+     * {@link #launchWithGrayBox}. A name the app never registered is an
+     * InvalidArgumentException naming the ones it did.
+     *
+     * @param name the hook's name, as the app registered it
+     * @param args the hook's arguments, in order
+     * @return what the hook returned, decoded from JSON
+     */
+    public Object hook(String name, String... args) {
+        Map<String, Object> d = data("app_hook", args("hook", name, "args", java.util.Arrays.asList(args)));
+        return d == null ? null : d.get("result");
+    }
+
+    /**
      * Runs the platform's own accessibility audit on the screen in front: on
      * iOS, Apple's, on a simulator or an iPhone (iOS 17 and later). Android
      * throws: its audits run inside the app.
