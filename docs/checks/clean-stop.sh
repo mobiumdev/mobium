@@ -2,9 +2,10 @@
 # Verify that nothing Mobium started is still running, and optionally stop it.
 #
 #   ./docs/checks/clean-stop.sh            report only
-#   ./docs/checks/clean-stop.sh --quit     stop the daemon, a screen mirror and every
-#                                          virtual device first, and disconnect
-#                                          network devices
+#   ./docs/checks/clean-stop.sh --quit     stop the daemon — and wait until it has
+#                                          gone — then a screen mirror and every
+#                                          virtual device, and disconnect network
+#                                          devices
 #
 # Reporting is the default because emulators are expensive to boot and you may
 # well want to keep yours. Nothing here touches a physical device beyond
@@ -16,11 +17,26 @@
 QUIT=""
 [ "$1" = "--quit" ] && QUIT=1
 network=""
-BIN="./bin/mobium"
+# The binary is this repository's, found from where the script lives, never
+# from where it is run: run from another checkout, ./bin/mobium was that
+# checkout's build — one whose stop gave up after 5 s while an iPhone's
+# session took longer to close.
+ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
+BIN="$ROOT/bin/mobium"
 [ -x "$BIN" ] || BIN="mobium"
 fail=0
 
 note() { printf "  %-34s %s\n" "$1" "$2"; }
+
+# Matching "mobium daemon" as text is not enough: it also matches this
+# script, an editor with the source open, and any shell whose command line
+# happens to contain it — a leaked wait loop of mine was reported as a second
+# daemon for exactly that reason. Require the executable itself to be mobium
+# and the first argument to be daemon.
+daemons() {
+  pgrep -fl "mobium daemon" 2>/dev/null \
+    | awk '$2 ~ /(^|\/)mobium$/ && $3 == "daemon"' | wc -l | tr -d ' '
+}
 bad()  { printf "  %-34s %s   <-- \n" "$1" "$2"; fail=1; }
 # left is for what is left on a device rather than running: --quit stops
 # processes and removes nothing, so its remedy is not --quit.
@@ -142,7 +158,23 @@ if [ -n "$QUIT" ]; then
   # The daemon goes first. It owns the UiAutomator2 and WebDriverAgent
   # sessions, and killing a device out from under one leaves instrumentation
   # running against hardware that is about to vanish.
-  $BIN daemon stop 2>/dev/null | sed 's/^/  /'
+  # Its answer is shown, failures included: a stop that gives up says the
+  # daemon is still closing sessions, and that was once thrown away here.
+  $BIN daemon stop 2>&1 | sed 's/^/  /'
+  # And then waited for. A stop is acknowledged before the sessions close,
+  # and closing an iPhone's can outlast the stop's own wait; the daemon
+  # bounds it at 75 s, plus 10 s for calls in flight. A daemon still running
+  # after that is not killed, and nor is any device under it.
+  i=0
+  while [ "$(daemons)" != "0" ] && [ $i -lt 100 ]; do
+    [ $i = 0 ] && echo "  waiting for the daemon to close its device sessions"
+    sleep 1; i=$((i + 1))
+  done
+  if [ "$(daemons)" != "0" ]; then
+    echo "  the daemon is still running after ${i}s: stopping nothing else, so no device"
+    echo "  goes out from under its session. See docs/SHUTDOWN.md."
+    exit 1
+  fi
   # A mirror next: its server on the device ends with it. scrcpy ignored
   # SIGTERM three times in three on the Fire TV, so it gets five seconds.
   if pgrep -x scrcpy >/dev/null 2>&1; then
@@ -194,13 +226,7 @@ echo "checking:"
 # than judged; --quit is the mode that can tell the difference.
 [ -z "$QUIT" ] && device_checks
 
-# Matching "mobium daemon" as text is not enough: it also matches this
-# script, an editor with the source open, and any shell whose command line
-# happens to contain it — a leaked wait loop of mine was reported as a second
-# daemon for exactly that reason. Require the executable itself to be mobium
-# and the first argument to be daemon.
-n=$(pgrep -fl "mobium daemon" 2>/dev/null \
-      | awk '$2 ~ /(^|\/)mobium$/ && $3 == "daemon"' | wc -l | tr -d ' ')
+n=$(daemons)
 [ "$n" = "0" ] && note "mobium daemon" "none" || bad "mobium daemon" "$n running"
 
 # A client's pipe, or an MCP server, outliving its client. Since 2026-09-27 a
