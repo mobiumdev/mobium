@@ -7,7 +7,7 @@ the source.
 
 The pattern across them is the reason the document exists: **almost nothing
 here was found by reading code or by a test written from imagination.** Of
-251 defects, 211 were found only by running against a real device. The other
+252 defects, 212 were found only by running against a real device. The other
 forty — 4, 5, 6, 14, 23, 24, 32, 35, 36, 39, 44, 50, 53, 54, 57, 66, 89,
 99, 100, 121, 123, 129, 130, 133, 134, 139, 140, 141, 142, 144, 150, 158, 162,
 164, 165, 172, 222, 231, 232 and 243 — came from reading code, the compiler, a test, a linter,
@@ -5448,6 +5448,25 @@ launch — so none could see it. Android was never affected: its gray-box
 launch starts the app afresh with `am start -S`. Now iOS stops the app
 first too, and `graybox.sh` launches with the gray box over a running app
 and must hear it answer, on a simulator and an emulator.
+
+### 252. A phone's log stream, reconnected, trusted a count that missed the gap
+
+**Found by:** building a way to drop an iPhone's gray-box log stream on
+purpose, so the edge check could run the case on a phone at all. A real
+iPhone's log is a connection inside the daemon, with nothing outside to
+stop, so the daemon now drops it on `SIGUSR1`, the way an unplugged cable
+would, and the session reconnects at its next action. With the drop in
+place the gap could be aimed: the Busy Demo's alert opened while heard, the
+stream dropped, and the alert's Refresh accepted — answering an alert waits
+on nothing, so nothing reconnected until the tap on Row B. That tap
+reconnected, found a count of zero, and landed on a stale row twice in
+three, after waiting 85 ms: the work's `busy=1` had been written into the
+gap and was gone. Android never had this, its logcat resuming from the
+device time of the last line it read. Now a regained stream starts the
+count again from zero and waits 700 ms for the app's half-second `still`
+line before trusting it, and says it reconnected: three in three current,
+after 702 to 783 ms. A test holds both the work restated after the gap and
+the work that ended inside it.
 
 ## Findings that were not defects
 

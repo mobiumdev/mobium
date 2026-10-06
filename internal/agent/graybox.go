@@ -64,7 +64,9 @@ func (h *Handlers) reportIdle(res *ToolsCallResult, err error) (*ToolsCallResult
 	var total time.Duration
 	busy := map[string]bool{}
 	unwaited := ""
+	regained := false
 	for _, w := range h.idled {
+		regained = regained || w.Regained
 		total += w.Waited
 		for _, b := range w.Busy {
 			busy[b] = true
@@ -86,6 +88,9 @@ func (h *Handlers) reportIdle(res *ToolsCallResult, err error) (*ToolsCallResult
 			sort.Strings(names)
 			line += " (busy: " + strings.Join(names, ", ") + ")"
 		}
+	}
+	if regained && unwaited == "" {
+		line += ", after its log stream dropped and was reconnected"
 	}
 	if len(res.Content) > 0 && res.Content[0].Type == "text" {
 		res.Content[0].Text += "\n" + line
@@ -120,3 +125,20 @@ func grayBoxHeard(ctx context.Context, s *session) (bool, error) {
 // grayBoxUnheard is the launch's note for an app that did not answer.
 const grayBoxUnheard = "the app has not answered the gray box in %s, so actions are not waited for: it needs " +
 	"Mobium's gray-box library, in a build that reads the MobiumGrayBox launch argument or intent extra"
+
+// DropLogStreams drops every phone session's log stream, the way a dropped
+// connection would, and says how many there were. The daemon calls it on
+// SIGUSR1, so a check can drive the path a real drop takes; the sessions
+// stay as they were, and each reconnects at its next action. It waits for
+// the call in progress, as every call does.
+func (h *Handlers) DropLogStreams() int {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	n := 0
+	for _, s := range h.sessions {
+		if d, ok := s.driver.(interface{ DropLogStream() bool }); ok && d.DropLogStream() {
+			n++
+		}
+	}
+	return n
+}

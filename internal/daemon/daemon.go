@@ -323,3 +323,8 @@ type StatusResult struct {
 	StartTime string `json:"startTime"`
 	Session   string `json:"session"`
 }
+
+// DropLogStreams drops every phone session's log stream (SIGUSR1).
+func (d *Daemon) DropLogStreams() int {
+	return d.handlers.DropLogStreams()
+}
