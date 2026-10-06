@@ -95,7 +95,11 @@ def fix(text):
 # whose input vocabulary is the thing it removes will consume itself, and it
 # will look like it worked — see CHALLENGES, "a spelling sweep that ate its
 # own documentation". CHALLENGES.md quotes six of these words to record that.
-SKIP = {"american-spelling.py", "CHALLENGES.md"}
+#
+# And a captured hierarchy, which quotes another app verbatim: Pocket Casts
+# names an image `no-connection-grey`, and rewriting it would make the
+# capture something no device ever reported. One file at a time, by name.
+SKIP = {"american-spelling.py", "CHALLENGES.md", "ios26-pocketcasts-search-failed.xml"}
 
 if __name__ == "__main__":
     if len(sys.argv) < 3:
