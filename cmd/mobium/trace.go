@@ -18,7 +18,12 @@ func newTraceCmd() *cobra.Command {
 			"saves a zip in Vibium's record format, which player.vibium.dev opens.\n" +
 			"`trace` alone says whether one is running.\n\n" +
 			"Text typed into a field is not recorded, only its length. On a real phone\n" +
-			"the screenshots are its owner's screen: --no-screenshots keeps none.",
+			"the screenshots are its owner's screen: --no-screenshots keeps none.\n\n" +
+			"Each step's screenshot and map are taken after the call, and every call\n" +
+			"waits for them: on a Pixel 8 Pro, two taps took 5.1 s traced against 1.4 s\n" +
+			"without. When timing is what is being shown — a race — trace with\n" +
+			"--no-screenshots --no-maps, which cost nothing measurable, and record the\n" +
+			"screen instead.",
 		Example: `  mobium trace start --name "sign in"
   mobium tap "label=Login Demo"
   mobium fill testid=username mobium
