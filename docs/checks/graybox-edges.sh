@@ -20,8 +20,10 @@
 #             the gray box hears it again — on Android by itself, from where
 #             the stream stopped; on a simulator at the next gray-box launch.
 #
-# away and crash tap a point on the home screen, so they run on emulators
-# and simulators only: on a phone that point is somebody's. deaf kills a
+# away and crash leave the app and tap the status bar — a point on the home
+# screen can be an app's icon, and on the simulator one opened another app —
+# so they run on emulators and simulators only: on a phone the screen is
+# somebody's. deaf kills a
 # process on this Mac, so it runs where the stream is one: an emulator or a
 # simulator.
 set -e
@@ -88,9 +90,9 @@ if [ -n "$VIRTUAL" ]; then
   $M tap testid=busyPoll >/dev/null
   $M press home >/dev/null
   sleep 1
-  said=$($M tap 540 900)
+  said=$($M tap 300 30)
   echo "$said" | grep -q "not waited — the app said it is in the background" || fail "away: $said"
-  row "away" "a tap on the home screen was not held up by the app"
+  row "away" "a tap outside the app was not held up by it"
 
   demo
   sleep 1
@@ -99,7 +101,7 @@ if [ -n "$VIRTUAL" ]; then
   # Android says the app stopped, in a dialog of its own; closing it is the
   # next thing anyone does. iOS goes to the home screen.
   if ! said=$($M tap "text=Close app" 2>/dev/null); then
-    said=$($M tap 540 900)
+    said=$($M tap 300 30)
   fi
   # The lease runs out — or, on Android, the app said it was in the
   # background on its way down. Either way it held nothing up.

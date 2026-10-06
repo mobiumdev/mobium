@@ -770,7 +770,7 @@ func GetToolSchemas() []Tool {
 				"could not finish is reported, not saved as if it had. Android records a frame only " +
 				"when the screen changes, so a still screen is one frame; that is not a failure. One " +
 				"recording per device; ending the session finishes and discards it. A real iPhone " +
-				"refuses for now.",
+				"records WebDriverAgent's screen stream, about ten frames a second at full size.",
 			InputSchema: map[string]interface{}{
 				"type": "object",
 				"properties": withDevice(map[string]interface{}{
