@@ -58,6 +58,12 @@ func (s *Simctl) StreamGrayBox(g *GrayBox) (stop func(), err error) {
 			close(started)
 		}
 		_ = cmd.Wait()
+		if ctx.Err() == nil {
+			// Unlike logcat, the unified log's stream cannot be asked for
+			// what it missed; a stream that ends leaves the gray box deaf,
+			// and the next gray-box launch starts another.
+			g.Deaf("the simulator's log stream stopped; launch the app with gray_box again")
+		}
 	}()
 	select {
 	case <-started:
@@ -78,7 +84,10 @@ const grayBoxTag = "MobiumGrayBox"
 //
 // It starts from the device's own clock, read first: logcat keeps a buffer,
 // so a line written after that moment is delivered however late the stream
-// attaches, and a line from an earlier launch is not.
+// attaches, and a line from an earlier launch is not. If logcat exits — the
+// device dropped off adb — g is told it is deaf, and the stream starts again
+// from the device time of the last line it delivered, so a line written in
+// the gap is still read.
 func (a *ADB) StreamGrayBox(g *GrayBox) (stop func(), err error) {
 	now, err := a.Shell(context.Background(), "date", "+%s.%N")
 	if err != nil {
@@ -89,24 +98,51 @@ func (a *ADB) StreamGrayBox(g *GrayBox) (stop func(), err error) {
 		return nil, mobiumerr.New(mobiumerr.DeviceServer, "the device clock read as %q, not seconds", since)
 	}
 	ctx, cancel := context.WithCancel(context.Background())
-	cmd := exec.CommandContext(ctx, a.Path, a.args("logcat", "-v", "brief", "-T", since,
+	go func() {
+		for ctx.Err() == nil {
+			why := a.followGrayBox(ctx, g, &since)
+			if ctx.Err() != nil {
+				return
+			}
+			g.Deaf(why)
+			select {
+			case <-ctx.Done():
+				return
+			case <-time.After(time.Second):
+			}
+		}
+	}()
+	return cancel, nil
+}
+
+// followGrayBox runs one logcat until it exits, advancing since to the
+// device time of each line, and says why it stopped.
+func (a *ADB) followGrayBox(ctx context.Context, g *GrayBox, since *string) string {
+	cmd := exec.CommandContext(ctx, a.Path, a.args("logcat", "-v", "epoch", "-T", *since,
 		grayBoxTag+":I", "*:S")...)
 	out, err := cmd.StdoutPipe()
 	if err != nil {
-		cancel()
-		return nil, err
+		return err.Error()
 	}
 	if err := cmd.Start(); err != nil {
-		cancel()
-		return nil, fmt.Errorf("follow logcat for the gray box: %w", err)
+		return "logcat would not start: " + err.Error()
 	}
-	go func() {
-		sc := bufio.NewScanner(out)
-		sc.Buffer(make([]byte, 64*1024), 1024*1024)
-		for sc.Scan() {
-			g.Feed(sc.Text(), time.Now())
+	g.Hearing()
+	sc := bufio.NewScanner(out)
+	sc.Buffer(make([]byte, 64*1024), 1024*1024)
+	for sc.Scan() {
+		line := sc.Text()
+		if f := strings.Fields(line); len(f) > 0 {
+			if t, perr := strconv.ParseFloat(f[0], 64); perr == nil {
+				// Just past this line, so a restart does not read it twice.
+				*since = strconv.FormatFloat(t+0.0005, 'f', 3, 64)
+			}
 		}
-		_ = cmd.Wait()
-	}()
-	return cancel, nil
+		g.Feed(line, time.Now())
+	}
+	err = cmd.Wait()
+	if err != nil {
+		return "logcat stopped (" + err.Error() + ")"
+	}
+	return "logcat stopped"
 }

@@ -2,6 +2,7 @@ package device
 
 import (
 	"context"
+	"fmt"
 	"sort"
 	"strconv"
 	"strings"
@@ -19,6 +20,14 @@ import (
 //	MOBIUM-GRAYBOX busy=1 tag=fetch   work started; 1 thing in flight
 //	MOBIUM-GRAYBOX busy=0 tag=fetch   that work finished, and is on screen
 //	MOBIUM-GRAYBOX lift               a finger came up
+//	MOBIUM-GRAYBOX still busy=1       the work is still in flight, every
+//	                                  half second while it is
+//	MOBIUM-GRAYBOX away / back        the app left the foreground / returned
+//
+// Busy is a lease: a count above zero that nothing has restated for
+// grayBoxLease is stale — the app crashed holding it, or was suspended —
+// and is not waited on. Nor is an app that said it is away, or one the
+// stream has stopped hearing; each of those is said in the result instead.
 //
 // The app says when it is busy; nothing here guesses. Without the argument
 // the library writes nothing, so an app launched the ordinary way is driven
@@ -36,6 +45,11 @@ type GrayBox struct {
 	// that runs out can name it.
 	tags map[string]int
 	lift time.Time
+	// said is when the app last stated its count: a busy line, or still.
+	said time.Time
+	away bool
+	// deaf is why the stream stopped, while it is stopped.
+	deaf string
 }
 
 // GrayBoxPrefix starts every line the gray-box library writes.
@@ -58,6 +72,10 @@ const grayBoxGrace = 150 * time.Millisecond
 // writes it: measured at 1 to 4ms on a phone.
 const grayBoxDelivery = 50 * time.Millisecond
 
+// grayBoxLease is how long a busy count stands without being restated. The
+// library restates it every 500ms, so three missed beats.
+const grayBoxLease = 1500 * time.Millisecond
+
 // NewGrayBox returns a gray box that has heard nothing yet.
 func NewGrayBox() *GrayBox {
 	return &GrayBox{changed: make(chan struct{}), tags: map[string]int{}}
@@ -67,7 +85,7 @@ func NewGrayBox() *GrayBox {
 func (g *GrayBox) Reset() {
 	g.mu.Lock()
 	defer g.mu.Unlock()
-	g.on, g.busy, g.tags, g.lift = false, 0, map[string]int{}, time.Time{}
+	g.on, g.busy, g.tags, g.lift, g.said, g.away = false, 0, map[string]int{}, time.Time{}, time.Time{}, false
 	g.notify()
 }
 
@@ -91,8 +109,23 @@ func (g *GrayBox) Feed(msg string, at time.Time) {
 	defer g.mu.Unlock()
 	switch {
 	case fields[0] == "on":
+		// A process starting over: whatever the last one held is gone.
+		g.busy, g.tags, g.away = 0, map[string]int{}, false
 	case fields[0] == "lift":
 		g.lift = at
+	case fields[0] == "away":
+		g.away = true
+	case fields[0] == "back":
+		g.away = false
+	case fields[0] == "still" && len(fields) > 1 && strings.HasPrefix(fields[1], "busy="):
+		n, err := strconv.Atoi(strings.TrimPrefix(fields[1], "busy="))
+		if err != nil || n < 0 {
+			return
+		}
+		if n == 0 {
+			g.tags = map[string]int{}
+		}
+		g.busy, g.said = n, at
 	case strings.HasPrefix(fields[0], "busy="):
 		n, err := strconv.Atoi(strings.TrimPrefix(fields[0], "busy="))
 		if err != nil || n < 0 {
@@ -115,7 +148,7 @@ func (g *GrayBox) Feed(msg string, at time.Time) {
 		if n == 0 {
 			g.tags = map[string]int{}
 		}
-		g.busy = n
+		g.busy, g.said = n, at
 	default:
 		return
 	}
@@ -151,12 +184,47 @@ func (g *GrayBox) AwaitOn(ctx context.Context, timeout time.Duration) bool {
 	}
 }
 
+// Deaf marks the stream as stopped, saying why; Hearing, as running again.
+func (g *GrayBox) Deaf(why string) {
+	g.mu.Lock()
+	defer g.mu.Unlock()
+	g.deaf = why
+	g.notify()
+}
+
+// IsDeaf reports whether the stream has stopped.
+func (g *GrayBox) IsDeaf() bool {
+	g.mu.Lock()
+	defer g.mu.Unlock()
+	return g.deaf != ""
+}
+
+// Hearing marks the stream as running.
+func (g *GrayBox) Hearing() {
+	g.mu.Lock()
+	defer g.mu.Unlock()
+	g.deaf = ""
+	g.notify()
+}
+
 // IdleWait is what waiting for the app took.
 type IdleWait struct {
 	Waited time.Duration `json:"-"`
 	Ms     int64         `json:"waited_ms"`
 	// Busy is what the app said it was busy with while it was waited for.
 	Busy []string `json:"busy,omitempty"`
+	// Unwaited says why the app was not waited for, when it was not: it
+	// said it is away, its busy lease ran out, or the stream is not
+	// hearing it.
+	Unwaited string `json:"not_waited,omitempty"`
+}
+
+// Previous is the call before this one, which a wait counts its grace from.
+type Previous struct {
+	Start, End time.Time
+	// Acted is whether it could have touched the app: a read cannot start
+	// work, so its end needs no grace.
+	Acted bool
 }
 
 // AwaitIdle waits until the app has nothing in flight. since is when the
@@ -164,14 +232,14 @@ type IdleWait struct {
 // handled, so the wait first lets that call's lift arrive and then the
 // grace after it, and only then trusts a count of zero. It gives up after
 // limit, naming what the app was still busy with.
-func (g *GrayBox) AwaitIdle(ctx context.Context, since time.Time, limit time.Duration) (IdleWait, error) {
+func (g *GrayBox) AwaitIdle(ctx context.Context, prev Previous, limit time.Duration) (IdleWait, error) {
 	start := time.Now()
 	deadline := start.Add(limit)
 	seen := map[string]bool{}
 	for {
 		now := time.Now()
 		g.mu.Lock()
-		busy, lift, ch := g.busy, g.lift, g.changed
+		busy, lift, ch, said, away, deaf := g.busy, g.lift, g.changed, g.said, g.away, g.deaf
 		for t := range g.tags {
 			seen[t] = true
 		}
@@ -181,9 +249,32 @@ func (g *GrayBox) AwaitIdle(ctx context.Context, since time.Time, limit time.Dur
 		}
 		g.mu.Unlock()
 
-		ready := since.Add(grayBoxDelivery)
-		if l := lift.Add(grayBoxGrace); l.After(ready) {
-			ready = l
+		// Work a tap starts is announced as the tap is handled: after its
+		// lift, the grace; with no lift heard during an action — a button
+		// in an alert, which is a window of its own — after the action.
+		ready := prev.End.Add(grayBoxDelivery)
+		if !lift.Before(prev.Start) && !lift.IsZero() {
+			if l := lift.Add(grayBoxGrace); l.After(ready) {
+				ready = l
+			}
+		} else if prev.Acted {
+			if l := prev.End.Add(grayBoxGrace); l.After(ready) {
+				ready = l
+			}
+		}
+		unwaited := ""
+		switch {
+		case deaf != "":
+			unwaited = "not hearing the app: " + deaf
+		case away:
+			unwaited = "the app said it is in the background"
+		case busy > 0 && now.Sub(said) > grayBoxLease:
+			unwaited = fmt.Sprintf("the app stopped saying it is busy %s ago (it was busy with %s)",
+				now.Sub(said).Round(100*time.Millisecond), strings.Join(still, ", "))
+		}
+		if unwaited != "" && !now.Before(ready) {
+			sort.Strings(still)
+			return IdleWait{Waited: now.Sub(start), Ms: now.Sub(start).Milliseconds(), Unwaited: unwaited}, nil
 		}
 		if busy == 0 && !now.Before(ready) {
 			w := IdleWait{Waited: now.Sub(start), Ms: now.Sub(start).Milliseconds()}
@@ -199,8 +290,14 @@ func (g *GrayBox) AwaitIdle(ctx context.Context, since time.Time, limit time.Dur
 				mobiumerr.New(mobiumerr.Timeout, "the app was still busy after %s, with %s", limit, strings.Join(still, ", "))
 		}
 		wake := deadline
-		if busy == 0 && ready.Before(wake) {
+		if (busy == 0 || unwaited != "") && ready.Before(wake) {
 			wake = ready
+		}
+		if busy > 0 && unwaited == "" {
+			// The lease may run out with nothing arriving to say so.
+			if l := said.Add(grayBoxLease + time.Millisecond); l.Before(wake) {
+				wake = l
+			}
 		}
 		timer := time.NewTimer(time.Until(wake))
 		select {

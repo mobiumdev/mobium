@@ -114,10 +114,50 @@ $ mobium tap testid=busyRowB --json
 }
 ```
 
+Coordinate taps, long presses and swipes wait the same way as a tap on an
+element, and so does a tap in a WebView. A tap on a button in an alert lifts
+in the alert's own window, which the library does not watch; with no lift
+heard during an action, the grace counts from the action's end instead.
+
 An app that is never idle — one polling in the background — is not waited for
 forever. After 10 seconds the action is refused as a timeout that failed check
 `idle`, naming what the app said kept it busy, with the remedy that works:
 launch the app again without `--gray-box` to act on the screen as it is.
+
+```
+$ mobium tap testid=busyRowA
+error: testid=busyRowA failed check idle: the app says it is still busy after 10s, with poll — something in the app never finishes; to act on the screen as it is, launch the app again without gray_box
+```
+
+### When the app is not waited for
+
+Three things end a wait early, and the result says which, so a check that
+did not run never reads as one that passed:
+
+- **The app went to the background.** The library says `away` and `back`;
+  while the app is away, an action elsewhere is not held up by it.
+- **The app stopped saying it is busy.** Busy is a lease: while work is in
+  flight the library restates the count every half second, from a native
+  timer that a busy JavaScript thread does not stop. A count nothing has
+  restated for 1.5 seconds belongs to an app that crashed holding it, or
+  was suspended, and is not waited on.
+- **Mobium is not hearing the app.** The log stream stopped. On Android it
+  starts again by itself within a second, from the device time of the last
+  line it read, so nothing written in the gap is lost; on a simulator the
+  next `launch --gray-box` starts it again; on an iPhone the session's log
+  capture reconnects at the next action.
+
+The Busy Demo's crash button dies holding work; the next tap, on the
+emulator's home screen, was not held up by it:
+
+```
+$ mobium tap 540 1200
+tapped (540, 1200)
+gray box: not waited — the app stopped saying it is busy 2.1s ago (it was busy with doomed)
+```
+
+On Android the app often reports itself in the background on its way down,
+and then that is the reason given — the same answer, reached sooner.
 
 ## What the app writes
 
@@ -131,6 +171,8 @@ MOBIUM-GRAYBOX on                 the library is listening
 MOBIUM-GRAYBOX busy=1 tag=fetch   work started; 1 thing in flight
 MOBIUM-GRAYBOX busy=0 tag=fetch   that work finished, and is on screen
 MOBIUM-GRAYBOX lift               a finger came up
+MOBIUM-GRAYBOX still busy=1       every half second while work is in flight
+MOBIUM-GRAYBOX away / back        the app left the foreground / returned
 ```
 
 `busy=` is the count of work in flight after the change; `tag=` names it, for
@@ -155,7 +197,10 @@ The Busy Demo has two buttons that start the same 0.4 to 1.6 seconds of
 work, then bring a new generation of rows. **Refresh** replaces the rows with
 a spinner meanwhile; **Refresh quietly** leaves the old rows up. A row says
 whether the one tapped was current. A trial is: tap the refresh, tap Row B,
-read what the row said. [`docs/checks/graybox.sh`](../checks/graybox.sh)
+read what the row said. [`docs/checks/graybox-edges.sh`](../checks/graybox-edges.sh)
+holds the edges above to the same demo, with buttons that start the
+refresh from an alert, run two at once, keep polling, and crash the app
+mid-refresh. [`docs/checks/graybox.sh`](../checks/graybox.sh)
 runs ten after a quiet refresh launched normally, three after a refresh with
 a spinner, and ten after a quiet refresh launched with `--gray-box`:
 
