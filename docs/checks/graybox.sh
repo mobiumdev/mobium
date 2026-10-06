@@ -73,6 +73,12 @@ seen=$(trials busyRefresh 3)
 [ "$seen" -eq 0 ] || fail "black box tapped a stale row after a visible refresh ($seen of 3)"
 row "control" "a refresh with a spinner is waited for already"
 
+# The app is still running from the ordinary launch: --gray-box must start
+# it afresh, or a launch argument never reaches it (iOS kept the running
+# app and its old arguments until this launch stopped it first).
+out=$($M launch --gray-box "$APP") || fail "launch --gray-box: $out"
+echo "$out" | grep -q "with the gray box: every action waits" || fail "an app already running did not answer the gray box: $out"
+row "relaunch" "an app already running is started afresh, and answers"
 out=$(open_demo --gray-box)
 echo "$out" | grep -q "with the gray box: every action waits" || fail "the app did not answer the gray box: $out"
 row "launch" "the app answered the gray box"

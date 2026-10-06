@@ -7,7 +7,7 @@ the source.
 
 The pattern across them is the reason the document exists: **almost nothing
 here was found by reading code or by a test written from imagination.** Of
-250 defects, 210 were found only by running against a real device. The other
+251 defects, 211 were found only by running against a real device. The other
 forty — 4, 5, 6, 14, 23, 24, 32, 35, 36, 39, 44, 50, 53, 54, 57, 66, 89,
 99, 100, 121, 123, 129, 130, 133, 134, 139, 140, 141, 142, 144, 150, 158, 162,
 164, 165, 172, 222, 231, 232 and 243 — came from reading code, the compiler, a test, a linter,
@@ -5432,6 +5432,22 @@ when a new simulator session finds the home screen in front, the first
 command reports that the start put it there and names `app_launch`, through
 the same progress lines that report the start itself. Verified on the
 simulator; no unit test, the start being WebDriverAgent's.
+
+### 251. `launch --gray-box` of a running iOS app never reached it
+
+**Found by:** walking the gray-box demo's quick start from scratch on the
+simulator, exactly as written. The quick start launches MobiumApp normally,
+opens the Busy Demo, and then launches it with `--gray-box` — without
+stopping it in between, as nobody would. The launch reported that the app
+had not answered the gray box, the app stayed on the Busy Demo, and the
+next tap landed stale. A launch argument reaches only a process that
+starts, and WebDriverAgent brought the running app to the front with the
+arguments it already had. Every earlier run had stopped the app first —
+`graybox.sh`, the edge checks and the demo script all terminate before they
+launch — so none could see it. Android was never affected: its gray-box
+launch starts the app afresh with `am start -S`. Now iOS stops the app
+first too, and `graybox.sh` launches with the gray box over a running app
+and must hear it answer, on a simulator and an emulator.
 
 ## Findings that were not defects
 
