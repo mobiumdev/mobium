@@ -27,8 +27,9 @@ func iosCapture(t *testing.T, name string) *uitree.Tree {
 // dialog was on screen, while the tip was the one thing on it. Both now say
 // it is there, what it says, and a point outside it that closes it — the
 // point the refusal behind it already offered. A share sheet is a popover
-// too, with no outside to touch and its own controls in map, and is left
-// alone, as is the player once the tip has gone. CHALLENGES 235.
+// too: at half height it has an outside, over the page, and a tap there
+// closed it (CHALLENGES 256); expanded it has none and is left alone, as is
+// the player once the tip has gone. CHALLENGES 235.
 func TestAPopoverIsSaid(t *testing.T) {
 	note := popoverNote(iosCapture(t, "ios26-pocketcasts-player-popover.xml"))
 	for _, want := range []string{"a popover is in front", `"Add bookmark — Keep the part you wanted"`, "app_tap at x "} {
@@ -36,7 +37,10 @@ func TestAPopoverIsSaid(t *testing.T) {
 			t.Errorf("the note %q does not say %q", note, want)
 		}
 	}
-	for _, name := range []string{"ios26-pocketcasts-player.xml", "ios26-share-sheet-half.xml", "ios26-share-sheet-expanded.xml"} {
+	if note := popoverNote(iosCapture(t, "ios26-share-sheet-half.xml")); !strings.Contains(note, "app_tap at x ") {
+		t.Errorf("the half-height share sheet's note %q gives no point outside it", note)
+	}
+	for _, name := range []string{"ios26-pocketcasts-player.xml", "ios26-share-sheet-expanded.xml"} {
 		if note := popoverNote(iosCapture(t, name)); note != "" {
 			t.Errorf("%s: %q", name, note)
 		}

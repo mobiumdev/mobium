@@ -919,9 +919,12 @@ func TestAnAdjustableElementMapsByItsLabelWithItsValue(t *testing.T) {
 // refusal behind one offers a point outside it — and only where one
 // exists. The point must be on the backdrop: not on the menu, not on a
 // long press's preview of the post. Ice Cubes' image viewer fills the
-// screen and has a Close button, and no point is offered.
+// screen and has a Close button, and no point is offered. Safari's share
+// sheet at half height has its outside, over the page: a tap there closed
+// it and pressed nothing, measured on the simulator. It was offered none
+// while WebKit called the page's links behind it visible (CHALLENGES 256).
 func TestOutsidePointIsOnTheBackdrop(t *testing.T) {
-	for _, f := range []string{"ios26-icecubes-post-menu.xml", "ios26-icecubes-long-press-menu.xml"} {
+	for _, f := range []string{"ios26-icecubes-post-menu.xml", "ios26-icecubes-long-press-menu.xml", "ios26-share-sheet-half.xml"} {
 		tree := loadIOS(t, f)
 		x, y, ok := tree.OutsidePoint()
 		if !ok {
@@ -941,7 +944,7 @@ func TestOutsidePointIsOnTheBackdrop(t *testing.T) {
 	// A viewer and a sheet close by their own controls, and a touch inside
 	// one, between its rows, closes nothing: none is offered.
 	for _, f := range []string{"ios26-icecubes-image-viewer.xml", "ios26-icecubes-add-account.xml",
-		"ios26-netnewswire-add-feed.xml", "ios26-share-sheet-half.xml"} {
+		"ios26-netnewswire-add-feed.xml"} {
 		if x, y, ok := loadIOS(t, f).OutsidePoint(); ok {
 			t.Errorf("%s was offered (%d, %d) as outside what is in front", f, x, y)
 		}
@@ -1119,6 +1122,56 @@ func TestAWebArticleTileIsOneLinkNamedOnce(t *testing.T) {
 		t.Errorf("the tile maps as %d once-named and %d doubled entries, want 1 and 0",
 			count["America the Beautiful (link)"], count["America the Beautiful America the Beautiful (link)"])
 	}
+}
+
+// A page under a screen the app put in front is not on screen, whatever
+// WebKit says of its links: Kiwix's Library over an open article on the
+// iPhone, where the WebView reports itself hidden and every link inside it
+// visible. map listed six of the article's links, and a tap by locator would
+// have landed on a Library card. The main page with nothing over it is the
+// positive control (TestAWebArticleTileIsOneLinkNamedOnce). CHALLENGES 256.
+func TestAPageUnderAScreenInFrontIsNotMapped(t *testing.T) {
+	tree := loadIOS(t, "ios26-kiwix-library-over-article.xml")
+	cards := 0
+	for _, e := range tree.Map() {
+		if e.Role == "link" {
+			t.Errorf("a link on the page behind the Library is mapped: %s", e.Line())
+		}
+		if strings.HasPrefix(e.Label, "Astronomy by Wikipedia, ") {
+			cards++
+		}
+	}
+	if cards != 2 {
+		t.Errorf("%d Astronomy cards in map, want the Library's two", cards)
+	}
+	var links []*Node
+	tree.Walk(func(n *Node) bool {
+		if n.Class == "XCUIElementTypeLink" && strings.HasPrefix(n.Label, "Hank Crawford") {
+			links = append(links, n)
+		}
+		return true
+	})
+	if len(links) == 0 {
+		t.Fatal("the page's Hank Crawford link is not in the tree at all")
+	}
+	for _, n := range links {
+		if n.Displayed || !tree.CoveredByScreen(n) {
+			t.Errorf("Hank Crawford (%s) is displayed=%v and covered=%v, want hidden and covered",
+				n.Class, n.Displayed, tree.CoveredByScreen(n))
+		}
+	}
+	if tree := loadIOS(t, "ios26-kiwix-main-page.xml"); len(tree.Map()) == 0 || !hasLink(tree, "America the Beautiful") {
+		t.Error("the main page with nothing over it lost its links")
+	}
+}
+
+func hasLink(tree *Tree, label string) bool {
+	for _, e := range tree.Map() {
+		if e.Role == "link" && e.Label == label {
+			return true
+		}
+	}
+	return false
 }
 
 // The gray-box mailbox is Mobium's own plumbing: a field the library adds in

@@ -1,15 +1,13 @@
 #!/bin/sh
 # A fifth third-party app on iOS, and the first whose WebView opens: Kiwix,
-# the offline Wikipedia reader, built from its source for a simulator.
+# the offline Wikipedia reader: built from its source for a simulator, or
+# the App Store's build on an iPhone.
 #
-#   docs/checks/kiwix-ios.sh <simulator-udid>
+#   docs/checks/kiwix-ios.sh <simulator-udid | iphone-udid>
 #
 # Kiwix sets isInspectable on its WKWebView unless its build is a
-# "production" one; the App Store's iOS build on an iPhone published its
-# page too, and its taps were measured there by hand. This check is for a
-# simulator because it starts from cleared data and uploads the ZIM, which
-# a phone allows only into apps installed for development (CHALLENGES 249).
-# Its first look found five things wrong
+# "production" one; the App Store's iOS build published its page too, so
+# the same checks run on a phone. Its first look found five things wrong
 # (CHALLENGES 244–248), held here against one pinned ZIM, Wikipedia's Ray
 # Charles articles, so what the page shows does not move:
 #
@@ -22,10 +20,18 @@
 #   - a tap on an article in the WebView, which runs under the bars and is
 #     taller than its page, opens that article (248).
 #
-# The app's data is cleared first. The ZIM is uploaded to its Documents and
-# opened through the system document picker, as a person would: its own
-# download fails in a build from source. KIWIX_ZIM names the file; without
-# it the pinned one is downloaded and its checksum checked.
+# On a simulator the app's data is cleared first. The ZIM is uploaded to its
+# Documents and opened through the system document picker, as a person
+# would: its own download fails in a build from source. KIWIX_ZIM names the
+# file; without it the pinned one is downloaded and its checksum checked.
+#
+# On a phone neither can be done: an App Store app's data is cleared only by
+# reinstalling it, and an upload into its container is refused (CHALLENGES
+# 249). So the ZIM must already be in its library, through Kiwix's own
+# download — Library, Wikipedia, Ray Charles, the mini one — and is opened
+# from the Library's Opened tab; its card, not a checksum, says which it is.
+# Nothing but the app is touched, and the app's state is left as it was
+# found but for the page open in it.
 #
 # To build it (no signing, and no `brew bundle`, which installs pre-commit
 # and a git hook — its last steps are all the build needs):
@@ -49,24 +55,34 @@ row() { printf '    %-12s %-58s ok\n' "$1" "$2"; }
 # ref <pattern>: the first map entry whose line matches, by ref only.
 ref() { $M map | grep -E "^@e[0-9]+ $1" | awk '{ print $1; exit }'; }
 
-xcrun simctl list devices 2>/dev/null | grep -q "$DEV" ||
-  fail "$DEV is not a simulator: this check clears the app's data and uploads into it, which a phone does not allow"
-
-ZIM="${KIWIX_ZIM:-}"
-if [ -z "$ZIM" ]; then
-  ZIM="${TMPDIR:-/tmp}/$ZIM_NAME"
-  [ -f "$ZIM" ] || curl -sfL -o "$ZIM" "https://download.kiwix.org/zim/wikipedia/$ZIM_NAME" ||
-    fail "could not download $ZIM_NAME"
+PHONE=""
+if ! xcrun simctl list devices 2>/dev/null | grep -q "$DEV"; then
+  "$ROOT/bin/mobium" devices 2>/dev/null | grep -E "^$DEV " | grep -q 'ios device' ||
+    fail "$DEV is neither a simulator nor a connected iPhone"
+  PHONE=1
 fi
-[ "$(shasum -a 256 "$ZIM" | cut -c1-64)" = "$ZIM_SHA256" ] ||
-  fail "$ZIM is not the pinned $ZIM_NAME: what this check reads would move"
 
-echo "--- $DEV"
-$M clear-data "$APP" >/dev/null
+if [ -z "$PHONE" ]; then
+  ZIM="${KIWIX_ZIM:-}"
+  if [ -z "$ZIM" ]; then
+    ZIM="${TMPDIR:-/tmp}/$ZIM_NAME"
+    [ -f "$ZIM" ] || curl -sfL -o "$ZIM" "https://download.kiwix.org/zim/wikipedia/$ZIM_NAME" ||
+      fail "could not download $ZIM_NAME"
+  fi
+  [ "$(shasum -a 256 "$ZIM" | cut -c1-64)" = "$ZIM_SHA256" ] ||
+    fail "$ZIM is not the pinned $ZIM_NAME: what this check reads would move"
+fi
+
+echo "--- $DEV${PHONE:+ (iPhone)}"
+# A phone's data stays, so the app is stopped instead: started again it
+# shows the page it was on, with no sheet over it.
+if [ -n "$PHONE" ]; then $M terminate "$APP" >/dev/null 2>&1 || true; else $M clear-data "$APP" >/dev/null; fi
 $M launch "$APP" >/dev/null
 
 echo "  the catalog"
-# A first launch with nothing to read opens the Library by itself.
+# A first launch with nothing to read opens the Library by itself; on a
+# phone it has read something, and the Library is opened by hand.
+[ -z "$PHONE" ] || $M tap "label=Library" >/dev/null
 $M wait "label=Categories" >/dev/null || fail "the Library did not come up"
 $M tap "$(ref 'Wikipedia \(button')" >/dev/null
 $M wait "label=Astronomy by Wikipedia" >/dev/null || fail "the Wikipedia category did not load — is the network up?"
@@ -82,24 +98,51 @@ row 244 "each card is one entry"
 out=$($M scroll-to "label=Ray Charles" --direction down 2>&1 || true)
 case "$out" in
   *"use a ref from app_map"*) fail "off-screen matches were sent to app_map for a ref: $out" ;;
-  *"make it name only one"*) ;;
+  *"make it name only one"*) row 245 "off-screen matches: name only one, not take a ref" ;;
+  # A phone usually has a page open under the Library, and its Ray Charles
+  # links are the only matches — the catalog builds its cards as they come
+  # into view — so the answer is the page's: covered (256). A cleared
+  # simulator has no page.
+  *"screen of the app is in front"*)
+    [ -n "$PHONE" ] || fail "a cleared simulator has no page under the Library, yet: $out"
+    row 245 "not reached: a page is under the Library (256)" ;;
   *) fail "label=Ray Charles was not refused as naming several cards: $out" ;;
 esac
-row 245 "off-screen matches: name only one, not take a ref"
-# Back to the categories, then out of the Library: inside a category its bar
-# has no Done.
+# Back to the categories: inside a category the Library's bar has no tabs.
 $M tap "$(ref 'Categories \(button\)')" >/dev/null
-$M tap "$(ref 'Done \(button')" >/dev/null
 
 echo "  the ZIM"
-$M upload "$ZIM" --app "$APP" >/dev/null
-$M tap "label=Open File" >/dev/null
-$M wait "label=Browse" >/dev/null || fail "the document picker did not come up"
-# It reopens where it was last left; Browse shows the app's own folder.
-if ! $M map | grep -q "$ZIM_NAME"; then $M tap "$(ref 'Browse \(button')" >/dev/null; fi
-$M wait "label=$ZIM_NAME" >/dev/null || fail "the document picker does not show the uploaded ZIM"
-$M tap "$(ref "$ZIM_NAME")" >/dev/null
+if [ -n "$PHONE" ]; then
+  $M tap "$(ref 'Opened \(button')" >/dev/null
+  card=$(ref 'Ray Charles, Wikipedia articles about Ray Charles, .*, mini, ')
+  [ -n "$card" ] ||
+    fail "the Ray Charles mini ZIM is not in Kiwix's library: download it in the app (Library, Wikipedia, Ray Charles) — a phone refuses an upload into an App Store app"
+  $M tap "$card" >/dev/null
+  $M tap "label=Open Main Page" >/dev/null
+else
+  $M tap "$(ref 'Done \(button')" >/dev/null
+  $M upload "$ZIM" --app "$APP" >/dev/null
+  $M tap "label=Open File" >/dev/null
+  $M wait "label=Browse" >/dev/null || fail "the document picker did not come up"
+  # It reopens where it was last left; Browse shows the app's own folder.
+  if ! $M map | grep -q "$ZIM_NAME"; then $M tap "$(ref 'Browse \(button')" >/dev/null; fi
+  $M wait "label=$ZIM_NAME" >/dev/null || fail "the document picker does not show the uploaded ZIM"
+  $M tap "$(ref "$ZIM_NAME")" >/dev/null
+fi
 $M wait "label=Tabs Manager" >/dev/null || fail "the ZIM did not open"
+# A page under the Library is not on screen, though WebKit calls each of its
+# links visible: map listed them, and a tap on one would have landed on a
+# Library card (256).
+$M tap "label=Library" >/dev/null
+$M wait "label=Categories" >/dev/null || fail "the Library did not come up over the page"
+if $M map | grep -qE '^@e[0-9]+ .*\(link\)$'; then
+  fail "map lists the page's links under the Library: $($M map | grep -E '\(link\)$' | head -2 | tr '\n' ' ')"
+fi
+if out=$($M tap "label=Hank Crawford" 2>&1); then fail "a tap on a link under the Library was reported done: $out"; fi
+case "$out" in *"screen of the app is in front"*) ;; *) fail "a link under the Library was not refused as covered: $out" ;; esac
+row 256 "a page under the Library is neither mapped nor tapped"
+$M tap "$(ref 'Done \(button')" >/dev/null
+$M wait "label=Tabs Manager" >/dev/null || fail "the Library did not close"
 lines=$($M map)
 [ "$(echo "$lines" | grep -cE '^@e[0-9]+ America the Beautiful \(link\)$')" = 1 ] ||
   fail "the America the Beautiful tile is not one link: $(echo "$lines" | grep 'America' | tr '\n' ' ')"
@@ -114,7 +157,9 @@ case "$out" in *"check enabled"*) ;; *) fail "the List button was refused, but n
 row 247 "a tap on the disabled List button is refused"
 
 echo "  the WebView"
-web=$($M contexts | awk '/WEBVIEW/ { print $1; exit }')
+# The WebView showing the ZIM: a phone's Kiwix also lists an about:blank one
+# that answers nothing, from a tab of its own.
+web=$($M contexts | awk '/WEBVIEW/ && /zim:/ { print $1; exit }')
 [ -n "$web" ] || fail "Kiwix published no WebView: is this a build from source?"
 $M context "$web" >/dev/null
 tile=$($M map | grep -E '^@e[0-9]+ Hank Crawford \(link\)$' | awk '{ print $1; exit }')

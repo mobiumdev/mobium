@@ -383,6 +383,19 @@ func iosNodeFrom(e xml.StartElement, parent *Node, sibling int) *Node {
 	if parent.Parent == nil {
 		n.Depth = 0
 	}
+	// What a WebView holds is hidden when the WebView is. WebKit works out
+	// `visible` for its own elements from the page alone, so a page under a
+	// screen the app put in front reports every link on it visible: Kiwix's
+	// Library over an open article on the iPhone mapped six of the article's
+	// links, and a tap on one would have landed on a Library card. The
+	// WebView itself is reported hidden there, and in every captured
+	// hierarchy where it is hidden it is behind something — a sheet, a
+	// player, a share sheet. CHALLENGES 256.
+	for p := parent; p != nil && n.Displayed; p = p.Parent {
+		if p.Class == "XCUIElementTypeWebView" && !p.Displayed {
+			n.Displayed = false
+		}
+	}
 
 	// iOS has no `clickable` attribute, and `hittable` — which WebDriverAgent
 	// documents — is simply absent from a real simulator's output. What it

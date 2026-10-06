@@ -5203,7 +5203,7 @@ it — the tip has nothing to answer it with — but `map`, `map --diff` and
 `app_alert` now say one is in front, what it says, and the same point
 outside it. Only where such a point exists: Safari's share sheet is a
 popover too, with no outside to touch and its controls already in `map`,
-and is left as it was. Measured on the simulator and on an iPhone 15 Plus
+and is left as it was — at half height that was wrong, an effect of 256. Measured on the simulator and on an iPhone 15 Plus
 running the App Store build: following the point the note gives closed
 the tip, and the player mapped 17 controls on both.
 
@@ -5528,6 +5528,38 @@ old script reported it running after 1 second and had already moved on;
 now the script uses its own repository's binary, shows the stop's answer,
 waits for the daemon to go — 12 seconds for one that took 12 — and one
 still running after 100 seconds stops the script before any device.
+
+### 256. A page under a screen in front was mapped, link by link
+
+**Found by:** `kiwix-ios.sh` on the iPhone 15 Plus, the first time it ran
+there. A phone's Kiwix has read something, so its Library opens over the
+article left open, where a cleared simulator's opens over nothing. `map`
+listed the Library and, above it, six of the article's links — America
+the Beautiful, Hank Crawford — on a screen showing only the Library; a tap
+on one would have landed on a Library card. The WebView reports itself
+`visible="false"` there, and every link inside it `visible="true"`: WebKit
+works out its own elements' visibility from the page, which knows nothing
+of what the app put over it. So the cover check written for a screen in
+front (217) never applied, since it asks the target first. Every captured
+hierarchy with a hidden WebView — Pocket Casts' player and its episode
+sheet, Safari's share sheet — had it behind something, and between two and
+33 nodes in it claiming visible; none on screen reported hidden. The iOS
+parser now hides whatever a hidden WebView holds, so the page leaves
+`map` and a locator into it is refused as covered. Without the fix the
+same check fails on the simulator, once a page is open under the Library.
+
+Two answers moved with it. `kiwix-ios.sh`'s 245 asked `label=Ray Charles`
+of the catalog; on the phone all four matches were the article's links —
+the catalog builds its cards as they scroll in — and "use a ref from
+app_map" for a screen that showed none of them was this defect, not 245's.
+Now it is refused as covered, which is right; 245 is reached where no page
+is under the Library. And 235 recorded that Safari's share sheet, a
+popover, has "no outside to touch": that was this defect too, the page's
+links covering every point above the sheet. At half height the point now
+offered, on iOS's own "dismiss popup" region, was tapped on the simulator
+and closed the sheet, pressing nothing; `map` says so, as it does for
+Pocket Casts' tip. Expanded, it still has none. `kiwix-ios.sh` holds this
+on the simulator and the iPhone, which it now also runs on.
 
 ## Findings that were not defects
 
