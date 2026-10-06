@@ -8,6 +8,7 @@ real device, with every command and line of output what mobium printed.
 | [The command line](cli.md) | how the commands fit together: sessions, the map-act-map loop, locators and refs, `--json`, exit statuses, `batch`, and the daemon |
 | [MCP](mcp.md) | Mobium as an agent's tools: connecting a client, an agent driving a device, what a client sees, answers, failures and sessions |
 | [Auto-wait](autowait.md) | what an action waits for before it touches anything, what it refuses and why, and waiting on purpose with `mobium wait` |
+| [Tutorial: a flaky test made steady with the gray box](graybox-tutorial.md) | a test that taps right after work the screen does not show, failing five times in five, and passing once the app says when it is busy |
 | [Gray box](graybox.md) | an app that says when it is busy: `launch --gray-box`, every action waiting for the app to be idle, and the lines an app writes to say so |
 | [Test runner](test-runner.md) | `mobium test`: a config, a test file, a failure with its evidence, retries and flaky, several devices, CI — and the step shorthand, soft assertions, a trace and a debugger, one test over several cases with `each`, and a page to run tests from with `--ui` |
 | [Inspector](inspector.md) | `mobium inspect`: the screen with every element outlined, the locator for any of them, trying a locator, and recording what you do as a test |

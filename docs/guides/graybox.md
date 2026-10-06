@@ -48,7 +48,10 @@ $ mobium launch --gray-box com.android.settings
 launched com.android.settings, but the app has not answered the gray box in 5s, so actions are not waited for: it needs Mobium's gray-box library, in a build that reads the MobiumGrayBox launch argument or intent extra
 ```
 
-From MCP and the clients it is `app_launch` with `gray_box: true` —
+In a test file it is `"grayBox": true` beside `"app"`, and each test's launch
+turns it on — [the tutorial](graybox-tutorial.md) takes a test from five
+failures in five to five passes that way. From MCP and the clients it is
+`app_launch` with `gray_box: true` —
 `launch(app, gray_box=True)` in Python, `launch(app, { grayBox: true })` in
 JavaScript, `LaunchWithGrayBox` in Go and .NET, `launchWithGrayBox` in Java.
 

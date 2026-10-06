@@ -26,7 +26,10 @@ type File struct {
 	Path        string `json:"-"`
 	Description string `json:"description,omitempty"`
 	// App is launched fresh before each test: terminated, then launched.
-	App        string `json:"app,omitempty"`
+	App string `json:"app,omitempty"`
+	// GrayBox launches App with the gray box on, so every step waits for
+	// the app to say it is idle (docs/guides/graybox.md).
+	GrayBox    bool   `json:"grayBox,omitempty"`
 	BeforeEach []Step `json:"beforeEach,omitempty"`
 	Tests      []Test `json:"tests"`
 }
@@ -264,6 +267,10 @@ func LoadFile(path string) (*File, error) {
 	f.Path = path
 	if len(f.Tests) == 0 {
 		return nil, mobiumerr.New(mobiumerr.InvalidArgument, "%s has no tests", path)
+	}
+	if f.GrayBox && f.App == "" {
+		return nil, mobiumerr.New(mobiumerr.InvalidArgument, "%s sets grayBox with no app: the gray box is "+
+			"turned on by the launch before each test, which only an \"app\" makes", path)
 	}
 	// Cases become tests before anything is checked, so each is checked as
 	// any test is — its name unique, every step one that could run.
