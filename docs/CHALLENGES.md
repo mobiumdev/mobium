@@ -5561,6 +5561,42 @@ and closed the sheet, pressing nothing; `map` says so, as it does for
 Pocket Casts' tip. Expanded, it still has none. `kiwix-ios.sh` holds this
 on the simulator and the iPhone, which it now also runs on.
 
+### 257. A tap on a chip under another screen's chip pressed that one
+
+**Found by:** measuring why Pocket Casts' search, built from source,
+"answers any query with the same unrelated podcasts" (ROADMAP). It does
+not: it fails, "Search Failed — Check your Internet connection", while
+the App Store build on the iPhone finds Radiolab for "Radiolab" — the
+build's empty credentials, as suspected. The unrelated podcasts were
+`map` listing Discover's front page, under the search screen. On the
+iPhone the search's filter chips sit exactly over Discover's category
+chips, and `tap label=Comedy` pressed the Podcasts filter and reported
+Comedy tapped. The cover check (115) looked only at the outermost node
+over a point: there, the search screen's plain view, which says nothing
+about touches, so the chip inside it was never considered. A control
+inside a cover that is not one now counts as a cover. Across every
+captured hierarchy that changed 14 of 910 targets, each a control over
+the target's center, and two of them taps nobody had caught: Kiwix's last
+catalog card has its center a point and a half under the Library's
+Downloads tab, and a Pocket Casts search result under the Discover tab —
+both now touched above the tab bar. On the iPhone, Fiction, under
+Episodes from edge to edge, is refused.
+
+Two things are left, both measured. Comedy's center is under Podcasts,
+and the tap moved to a "clear point" in the six-point gap between
+Podcasts and Episodes — and iOS gave the touch to Episodes. The result
+now names the cover, but the point is not clear: a point a few points
+from a control is that control's. And `map` still lists the screen
+behind: Discover's chips under the results, its rows under "Search
+Failed". On the iPhone nothing in the tree marks them — the covered
+chips report exactly what they do with nothing over them. Two rules were
+tried and dropped: counting scroll views as covers blocked about thirty
+navigation-bar buttons with nothing over them, since iOS 26 scrolls
+content under the bars while listing it after them; and refusing a
+target that lies mostly inside its cover's row of controls would refuse
+Notification Center's Show less and the Obstruction Demo's half-covered
+button, where moving is measured right.
+
 ## Findings that were not defects
 
 Worth recording because each one closed off an approach that looked obvious.

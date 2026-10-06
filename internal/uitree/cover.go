@@ -83,7 +83,12 @@ func isIOSClass(class string) bool {
 // DrawnOver returns what the tree says is drawn over point (x, y) of target:
 // nodes after it in document order whose bounds contain the point, other than
 // the target, its ancestors and its descendants. Only the outermost of a
-// nested set is returned — a cover's own label is part of the cover.
+// nested set is returned — a cover's own label is part of the cover — except
+// a control inside a cover that is not one. Pocket Casts' search results are
+// a plain view laid over Discover, and their filter chips sit exactly over
+// Discover's category chips: a tap on Comedy pressed Podcasts and reported
+// Comedy tapped, because the plain view, the outermost, says nothing about
+// touches and the chip inside it was never looked at. CHALLENGES 257.
 func (t *Tree) DrawnOver(target *Node, x, y int) []*Node {
 	if t == nil || target == nil {
 		return nil
@@ -100,7 +105,7 @@ func (t *Tree) DrawnOver(target *Node, x, y int) []*Node {
 			return true
 		}
 		for _, o := range over {
-			if n.Within(o) {
+			if n.Within(o) && (IsControl(o) || !IsControl(n)) {
 				return true
 			}
 		}
