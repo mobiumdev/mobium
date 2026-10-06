@@ -538,7 +538,7 @@ class Device:
         the touch goes first, and is refused when it would land elsewhere. A
         real iPhone and Android refuse it.
 
-        ``gray_box``, on iOS, launches the app with Mobium's gray-box library
+        ``gray_box`` launches the app with Mobium's gray-box library
         turned on: the app says when it is busy, and every action waits for
         it to be idle before finding its target. It needs an app built with
         the library.

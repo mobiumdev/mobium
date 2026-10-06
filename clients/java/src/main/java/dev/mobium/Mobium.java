@@ -649,7 +649,7 @@ public final class Mobium implements AutoCloseable {
     public void launchWithHitTest(String app) { act("app_launch", args("app", app, "hit_test", true)); }
 
     /**
-     * Launches an app on iOS with Mobium's gray-box library turned on: the app
+     * Launches an app with Mobium's gray-box library turned on: the app
      * says when it is busy, and every action waits for it to be idle before
      * finding its target. It needs an app built with the library.
      *

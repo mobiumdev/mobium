@@ -120,7 +120,7 @@ func (w *WDA) launchWith(ctx context.Context, appID string, tags []string, zone 
 	if len(tags) > 0 {
 		args = launchArguments(tags)
 	}
-	if w.isGray(appID) {
+	if w.gray.isFor(appID) {
 		args = append(args, device.GrayBoxArgument...)
 	}
 	env := map[string]string{}

@@ -343,7 +343,7 @@ namespace Mobium
         public void LaunchWithHitTest(string app) => Act("app_launch", Args("app", app, "hit_test", true));
 
         /// <summary>
-        /// Launches an app on iOS with Mobium's gray-box library turned on:
+        /// Launches an app with Mobium's gray-box library turned on:
         /// the app says when it is busy, and every action waits for it to be
         /// idle before finding its target. It needs an app built with the
         /// library.

@@ -287,7 +287,7 @@ func (w *WDA) Close() error {
 
 func (w *WDA) teardownLocked(ctx context.Context) {
 	w.w3c.closeSession(ctx)
-	w.grayClose()
+	w.gray.close()
 	if w.plog != nil {
 		w.plog.Close()
 		w.plog = nil
@@ -883,7 +883,7 @@ func iosXPathFor(n *uitree.Node) string {
 // is pinned to, if it is.
 func (w *WDA) Launch(ctx context.Context, appID string) error {
 	w.setProbed(appID, false)
-	w.grayOff()
+	w.gray.off()
 	if tags, zone := w.pinnedLocale(appID), w.sessionZone(); len(tags) > 0 || zone != "" {
 		return w.launchWith(ctx, appID, tags, zone)
 	}

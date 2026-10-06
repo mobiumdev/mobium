@@ -5,9 +5,9 @@
 # MobiumApp links Mobium's gray-box library, which is silent unless the app
 # was launched with --gray-box.
 #
-#   docs/checks/graybox.sh <ios-udid> [rounds]
+#   docs/checks/graybox.sh <serial|udid> [rounds]
 #
-# A simulator or a real iPhone. iOS only, for now.
+# A simulator, a real iPhone, an emulator or an Android phone.
 #
 #   - launched the ordinary way, tap Refresh quietly then Row B: some taps
 #     land on a stale row. If none does, the run proves nothing — a check
@@ -17,19 +17,17 @@
 #   - Refresh, which shows a spinner, is current either way: what can be
 #     seen is waited for already;
 #   - --gray-box on an app without the library says it did not answer, and
-#     actions are not waited for (on a simulator only, with Settings).
+#     actions are not waited for — Settings, on a simulator or an emulator
+#     only: on Android --gray-box starts the app afresh, and a person's
+#     Settings is not stopped for a check.
 set -e
 DEV="$1"
 ROUNDS="${2:-10}"
-if [ -z "$DEV" ]; then echo "usage: $0 <ios-udid> [rounds]" >&2; exit 2; fi
+if [ -z "$DEV" ]; then echo "usage: $0 <serial|udid> [rounds]" >&2; exit 2; fi
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 fail() { echo "FAIL: $*" >&2; exit 1; }
 row() { printf '    %-12s %-58s ok\n' "$1" "$2"; }
 APP=dev.mobium.mobiumapp
-case "$DEV" in
-  *-*-*-*-*|????????-????????????????) ;;
-  *) echo "graybox.sh is iOS only, for now" >&2; exit 2 ;;
-esac
 M="$ROOT/bin/mobium --device $DEV"
 echo "--- $DEV"
 
@@ -90,12 +88,16 @@ row "report" "the tap says it waited, and for what"
 $M terminate "$APP" >/dev/null 2>&1 || true
 
 case "$DEV" in
-  ????????-????????????????) echo "    (a real iPhone: the app-without-the-library case runs on a simulator)" ;;
-  *)
-    out=$($M launch --gray-box com.apple.Preferences)
-    echo "$out" | grep -q "has not answered the gray box" || fail "an app without the library was not reported as unheard: $out"
-    $M terminate com.apple.Preferences >/dev/null 2>&1 || true
-    row "unheard" "an app without the library launches, and says it did not answer"
-    ;;
+  *-*-*-*-*) SETTINGS=com.apple.Preferences ;;
+  emulator-*) SETTINGS=com.android.settings ;;
+  *) SETTINGS= ;;
 esac
+if [ -n "$SETTINGS" ]; then
+  out=$($M launch --gray-box "$SETTINGS")
+  echo "$out" | grep -q "has not answered the gray box" || fail "an app without the library was not reported as unheard: $out"
+  $M terminate "$SETTINGS" >/dev/null 2>&1 || true
+  row "unheard" "an app without the library launches, and says it did not answer"
+else
+  echo "    (a phone: the app-without-the-library case runs on a simulator or an emulator)"
+fi
 echo "graybox.sh: ok"

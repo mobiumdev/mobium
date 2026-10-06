@@ -113,4 +113,4 @@ func grayBoxHeard(ctx context.Context, s *session) (bool, error) {
 
 // grayBoxUnheard is the launch's note for an app that did not answer.
 const grayBoxUnheard = "the app has not answered the gray box in %s, so actions are not waited for: it needs " +
-	"Mobium's gray-box library, in a build that reads the -MobiumGrayBox launch argument"
+	"Mobium's gray-box library, in a build that reads the MobiumGrayBox launch argument or intent extra"

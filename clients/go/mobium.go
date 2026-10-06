@@ -662,7 +662,7 @@ func (d *Device) LaunchWithHitTest(ctx context.Context, app string) error {
 	return d.act(ctx, "app_launch", map[string]any{"app": app, "hit_test": true})
 }
 
-// LaunchWithGrayBox launches an app on iOS with Mobium's gray-box library
+// LaunchWithGrayBox launches an app with Mobium's gray-box library
 // turned on: the app says when it is busy, and every action waits for it to
 // be idle before finding its target. It needs an app built with the library.
 func (d *Device) LaunchWithGrayBox(ctx context.Context, app string) error {

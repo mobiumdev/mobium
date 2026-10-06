@@ -25,7 +25,7 @@ func newLaunchCmd() *cobra.Command {
 	}
 	cmd.Flags().BoolVar(&hitTest, "hit-test", false, "On an iOS simulator, load the hit probe into the app as it "+
 		"launches, so every tap on an element in it asks UIKit where the touch goes first (docs/guides/autowait.md)")
-	cmd.Flags().BoolVar(&grayBox, "gray-box", false, "On iOS, launch the app with Mobium's gray-box library on, so "+
+	cmd.Flags().BoolVar(&grayBox, "gray-box", false, "Launch the app with Mobium's gray-box library on, so "+
 		"every action waits for the app to say it is idle (docs/guides/graybox.md)")
 	return cmd
 }

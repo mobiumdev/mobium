@@ -11,9 +11,10 @@ when that work is finished and on screen. Every action then waits for the app
 to be idle before it finds its target. The app says when; Mobium does not
 guess.
 
-iOS, on a simulator and a real iPhone. Everything here was measured on an
-iPhone 15 Plus on iOS 26.6.2 and an iPhone 17 Pro simulator on iOS 26.5, on
-[MobiumApp](https://github.com/mobiumdev/mobium-app)'s Busy Demo, which
+iOS and Android, on simulators, emulators and phones. Everything here was
+measured on an iPhone 15 Plus on iOS 26.6.2, an iPhone 17 Pro simulator on
+iOS 26.5, a Pixel 8 Pro on Android 17 and a Pixel 7 emulator on Android 15,
+on [MobiumApp](https://github.com/mobiumdev/mobium-app)'s Busy Demo, which
 links the library.
 
 ## Contents
@@ -31,16 +32,20 @@ $ mobium launch --gray-box dev.mobium.mobiumapp
 launched dev.mobium.mobiumapp, with the gray box: every action waits for the app to say it is idle
 ```
 
-`--gray-box` launches the app with the argument `-MobiumGrayBox YES`. iOS
-keeps a launch argument for that launch only, so the next ordinary launch is
-ordinary again, and a person running the same build never turns it on. The
-library writes nothing without it.
+On iOS, `--gray-box` launches the app with the argument
+`-MobiumGrayBox YES`, which iOS keeps for that launch only. On Android it
+starts the app afresh — stopped first, so its activity reads what it was
+started with — with the intent extra `MobiumGrayBox=true`, which a launch
+from the home screen never carries. Either way the next ordinary launch is
+ordinary, a person running the same build never turns it on, and the library
+writes nothing without it.
 
-An app that does not link the library launches normally, and says so:
+An app that does not link the library launches normally, and says so (an
+emulator; a simulator says the same of `com.apple.Preferences`):
 
 ```
-$ mobium launch --gray-box com.apple.Preferences
-launched com.apple.Preferences, but the app has not answered the gray box in 5s, so actions are not waited for: it needs Mobium's gray-box library, in a build that reads the -MobiumGrayBox launch argument
+$ mobium launch --gray-box com.android.settings
+launched com.android.settings, but the app has not answered the gray box in 5s, so actions are not waited for: it needs Mobium's gray-box library, in a build that reads the MobiumGrayBox launch argument or intent extra
 ```
 
 From MCP and the clients it is `app_launch` with `gray_box: true` —
@@ -50,7 +55,7 @@ JavaScript, `LaunchWithGrayBox` in Go and .NET, `launchWithGrayBox` in Java.
 ## What an action does
 
 Before an action finds its target, it waits until the app has nothing in
-flight. The result says what it waited for:
+flight. The result says what it waited for (the iPhone):
 
 ```
 $ mobium tap testid=busyQuiet
@@ -69,7 +74,19 @@ The wait is the check `idle`, after the five auto-wait makes. Work a tap
 starts is announced as the tap is handled, so the wait first lets the last
 call's touch arrive, then 150 ms after the finger lifted — measured: the
 app's busy line came 0 to 15 ms after the lift, in 200 trials — and only
-then trusts a count of zero. On an idle app it costs about 35 ms.
+then trusts a count of zero. On an idle app it costs about 35 ms, or nothing
+when the last call ended long enough ago — `gray box: the app was idle`, as
+the emulator printed for the tap before this one:
+
+```
+$ mobium tap testid=busyQuiet
+tapped testid=busyQuiet at (540, 901)
+gray box: the app was idle
+
+$ mobium tap testid=busyRowB
+tapped testid=busyRowB at (540, 1095)
+gray box: waited 1184 ms for the app to go idle (busy: quiet)
+```
 
 With `--json` the waits are in `app_idle` (this one on the simulator):
 
@@ -101,9 +118,10 @@ launch the app again without `--gray-box` to act on the screen as it is.
 
 ## What the app writes
 
-The library writes one line to the device log for each change, under the
-`os_log` subsystem `dev.mobium.graybox`, at the default (notice) level, with
-its values public:
+The library writes one line to the device log for each change — on iOS under
+the `os_log` subsystem `dev.mobium.graybox`, at the default (notice) level,
+with its values public; on Android to logcat under the tag `MobiumGrayBox`,
+at info:
 
 ```
 MOBIUM-GRAYBOX on                 the library is listening
@@ -114,17 +132,19 @@ MOBIUM-GRAYBOX lift               a finger came up
 
 `busy=` is the count of work in flight after the change; `tag=` names it, for
 a refusal to name. Anything after the fields — MobiumApp's library adds the
-phone's clock as `t=` — is ignored. On a phone the lines arrive through the
-log the session already captures, 1 to 4 ms after the app writes them; on a
-simulator through a log stream narrowed to that subsystem.
+phone's clock as `t=` — is ignored. On an iPhone the lines arrive through
+the log the session already captures, 1 to 4 ms after the app writes them;
+on a simulator through a log stream narrowed to that subsystem; on Android
+through logcat narrowed to that tag, from the device's own clock at the
+moment of the launch, so a line from an earlier launch is never read.
 
 The app decides what counts as work, as it decides when it is finished. In
 MobiumApp the Busy Demo calls the library's `busy("quiet")` when it starts
 and `idle("quiet")` in an effect after the new rows are rendered, so idle
 means "done and on screen", not "the response arrived". The library is a
 local Expo module, `modules/graybox` in MobiumApp, about ninety lines of
-Swift: copying it into another React Native app, or writing the same lines
-from a native one, is all it takes.
+Swift and seventy of Kotlin: copying it into another React Native app, or
+writing the same lines from a native one, is all it takes.
 
 ## The Busy Demo, measured
 
@@ -132,27 +152,31 @@ The Busy Demo has two buttons that start the same 0.4 to 1.6 seconds of
 work, then bring a new generation of rows. **Refresh** replaces the rows with
 a spinner meanwhile; **Refresh quietly** leaves the old rows up. A row says
 whether the one tapped was current. A trial is: tap the refresh, tap Row B,
-read what the row said. Fifty of each, interleaved, on the iPhone:
+read what the row said. [`docs/checks/graybox.sh`](../checks/graybox.sh)
+runs ten after a quiet refresh launched normally, three after a refresh with
+a spinner, and ten after a quiet refresh launched with `--gray-box`:
 
-| | Launched normally | Launched with `--gray-box` |
+| Device | Launched normally: stale | With `--gray-box`: stale |
 | --- | --- | --- |
-| Refresh quietly | **15 of 50 current** | **50 of 50 current** |
-| Refresh, with a spinner | 50 of 50 current | 50 of 50 current |
+| iPhone 15 Plus, iOS 26.6.2 | 6 of 10, and 7 of 10 | 0 of 10, twice |
+| iPhone 17 Pro simulator, iOS 26.5 | 9 of 10 | 0 of 10 |
+| Pixel 8 Pro, Android 17 | 9 of 10 | 0 of 10 |
+| Pixel 7 emulator, Android 15 | 10 of 10 | 0 of 10 |
 
-The spinner is the control: what the screen shows, auto-wait already waits
-for. The quiet refresh is what only the app can say. On a simulator, where
-calls are faster, a quiet refresh left Row B stale 9 times in 10.
+After a refresh with a spinner, a normal launch tapped a current row every
+time, on every device: that is the control — what the screen shows, auto-wait
+already waits for. The quiet refresh is what only the app can say. Over fifty
+more trials on the iPhone, launched normally, 35 of 50 rows tapped after a
+quiet refresh were stale, and none of 50 after a refresh with a spinner.
 
-[`docs/checks/graybox.sh`](../checks/graybox.sh) runs it on any iOS device,
-and fails if the ordinary launch never tapped a stale row — a run in which
+The check fails if the normal launch never tapped a stale row: a run in which
 gray box had nothing to prevent shows nothing.
 
 ## What it does not do
 
 - **Detect work.** The app says when it is busy. Work it does not declare is
   not waited for, and an app that says it is idle too early is believed.
-- **Android, yet.** The same lines would come through logcat; not built.
-- **An app without the library** — anything from the App Store — which stays
+- **An app without the library** — anything from an app store — which stays
   driven the ordinary way.
 - **`--hit-test` together with it**, for now: launch with one of them.
 - **Switching apps.** The gray box belongs to the app last launched with it.
