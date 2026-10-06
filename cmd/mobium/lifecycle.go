@@ -3,24 +3,30 @@ package main
 import "github.com/spf13/cobra"
 
 func newLaunchCmd() *cobra.Command {
-	var hitTest bool
+	var hitTest, grayBox bool
 	cmd := &cobra.Command{
 		Use:   "launch <package | bundle-id>",
 		Short: "Bring an app to the foreground",
 		Example: `  mobium launch com.google.android.dialer
   mobium launch com.apple.Preferences
-  mobium launch --hit-test dev.mobium.mobiumapp`,
+  mobium launch --hit-test dev.mobium.mobiumapp
+  mobium launch --gray-box dev.mobium.mobiumapp`,
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			call := map[string]interface{}{"app": args[0]}
 			if hitTest {
 				call["hit_test"] = true
 			}
+			if grayBox {
+				call["gray_box"] = true
+			}
 			return runTool("app_launch", call)
 		},
 	}
 	cmd.Flags().BoolVar(&hitTest, "hit-test", false, "On an iOS simulator, load the hit probe into the app as it "+
 		"launches, so every tap on an element in it asks UIKit where the touch goes first (docs/guides/autowait.md)")
+	cmd.Flags().BoolVar(&grayBox, "gray-box", false, "On iOS, launch the app with Mobium's gray-box library on, so "+
+		"every action waits for the app to say it is idle (docs/guides/graybox.md)")
 	return cmd
 }
 

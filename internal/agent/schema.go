@@ -381,6 +381,15 @@ func GetToolSchemas() []Tool {
 						"description": "Package name on Android (\"com.example.shop\") or bundle " +
 							"id on iOS (\"com.example.Shop\").",
 					},
+					"gray_box": map[string]interface{}{
+						"type": "boolean",
+						"description": "iOS: launch the app with Mobium's gray-box library turned on (the " +
+							"-MobiumGrayBox launch argument), so the app says in the device log when it is " +
+							"busy and every action waits for it to be idle before finding its target — work " +
+							"the screen does not show included. Needs an app built with the library; one " +
+							"without it launches normally and the result says it did not answer. On a " +
+							"simulator and a real iPhone. Not with hit_test.",
+					},
 					"hit_test": map[string]interface{}{
 						"type": "boolean",
 						"description": "iOS simulator only: load the hit probe into the app as it " +

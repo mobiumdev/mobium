@@ -40,6 +40,8 @@ type WDA struct {
 	// phone whose relay would not start — which DeviceLogs then reports.
 	plog    *device.PhoneLog
 	plogErr error
+	// gray hears an app launched with the gray-box library on.
+	gray grayBox
 
 	// expecting is the app a phone was told is coming, until a read shows
 	// it. See expectApp.
@@ -285,6 +287,7 @@ func (w *WDA) Close() error {
 
 func (w *WDA) teardownLocked(ctx context.Context) {
 	w.w3c.closeSession(ctx)
+	w.grayClose()
 	if w.plog != nil {
 		w.plog.Close()
 		w.plog = nil
@@ -880,6 +883,7 @@ func iosXPathFor(n *uitree.Node) string {
 // is pinned to, if it is.
 func (w *WDA) Launch(ctx context.Context, appID string) error {
 	w.setProbed(appID, false)
+	w.grayOff()
 	if tags, zone := w.pinnedLocale(appID), w.sessionZone(); len(tags) > 0 || zone != "" {
 		return w.launchWith(ctx, appID, tags, zone)
 	}

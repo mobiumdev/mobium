@@ -71,6 +71,8 @@ type PhoneLog struct {
 	stopped error
 	conn    net.Conn
 	closed  bool
+	// gray hears every line as it is captured, when a gray-box app runs.
+	gray *GrayBox
 }
 
 // StartPhoneLog connects to the phone's syslog relay and starts capturing.
@@ -142,6 +144,18 @@ func (p *PhoneLog) add(e phoneLogEntry) {
 		p.entries = append(p.entries[:0], p.entries[drop:]...)
 	}
 	p.entries = append(p.entries, e)
+	if p.gray != nil {
+		p.gray.Feed(e.Message, now)
+	}
+}
+
+// FeedGrayBox passes every line captured from now on to g as it arrives,
+// which is how a gray-box wait hears the app within milliseconds instead of
+// on the next read.
+func (p *PhoneLog) FeedGrayBox(g *GrayBox) {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	p.gray = g
 }
 
 func parseSyslogRecord(rec []byte) (phoneLogEntry, bool) {

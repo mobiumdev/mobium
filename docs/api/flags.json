@@ -944,6 +944,14 @@
     },
     {
       "tool": "app_launch",
+      "arg": "gray_box",
+      "type": "boolean",
+      "setBy": [
+        "launch"
+      ]
+    },
+    {
+      "tool": "app_launch",
       "arg": "hit_test",
       "type": "boolean",
       "setBy": [
@@ -2937,10 +2945,12 @@
         "app_launch"
       ],
       "flags": [
+        "--gray-box",
         "--hit-test"
       ],
       "sends": [
         "app",
+        "gray_box",
         "hit_test"
       ]
     },

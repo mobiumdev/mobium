@@ -7,6 +7,7 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/mobiumdev/mobium/internal/device"
 	"github.com/mobiumdev/mobium/internal/mobiumerr"
 )
 
@@ -118,6 +119,9 @@ func (w *WDA) launchWith(ctx context.Context, appID string, tags []string, zone 
 	args := []string{}
 	if len(tags) > 0 {
 		args = launchArguments(tags)
+	}
+	if w.isGray(appID) {
+		args = append(args, device.GrayBoxArgument...)
 	}
 	env := map[string]string{}
 	if zone != "" {

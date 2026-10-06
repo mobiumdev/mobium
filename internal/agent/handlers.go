@@ -110,6 +110,11 @@ type Handlers struct {
 	// it, which the end of the session puts back.
 	netBaseline map[string]networkBaseline
 	handled     []HandledDialog
+	// idled is what the gray box waited for during the current call, and
+	// lastCallEnd when the previous call returned, which a gray-box wait
+	// counts its grace from (graybox.go).
+	idled       []device.IdleWait
+	lastCallEnd time.Time
 }
 
 // NewHandlers creates the tool layer.
@@ -221,6 +226,8 @@ func (h *Handlers) CallMeta(name string, args, meta map[string]interface{}) (*To
 	defer cancel()
 
 	h.handled = nil
+	h.idled = nil
+	defer func() { h.lastCallEnd = time.Now() }()
 	// While a device has a trace running, each call on it is recorded, and
 	// the screen after it (app_trace).
 	if untraced, _ := meta[MetaUntraced].(bool); name != "app_trace" && !untraced {
@@ -228,7 +235,7 @@ func (h *Handlers) CallMeta(name string, args, meta map[string]interface{}) (*To
 			t := s.trace
 			id := traceBefore(t, name, args)
 			res, err := h.dispatch(ctx, name, args)
-			res, err = h.reportHandled(res, err)
+			res, err = h.reportIdle(h.reportHandled(res, err))
 			// A call that ended the session ended the trace with it.
 			if s.trace == t {
 				h.traceAfter(s, t, id, !IsReadCall(name, args), res, err)
@@ -237,7 +244,7 @@ func (h *Handlers) CallMeta(name string, args, meta map[string]interface{}) (*To
 		}
 	}
 	res, err := h.dispatch(ctx, name, args)
-	return h.reportHandled(res, err)
+	return h.reportIdle(h.reportHandled(res, err))
 }
 
 // dispatch runs one tool by name.
@@ -1354,6 +1361,11 @@ func floatArg(args map[string]interface{}, key string) (float64, error) {
 // An unresolvable ref is not retried: that is a mistake in the call, not a
 // screen that has yet to settle.
 func (h *Handlers) resolveNode(ctx context.Context, s *session, target string) (*uitree.Node, *uitree.Tree, error) {
+	// An app launched with gray_box says when it is busy; its target is
+	// found on the screen its work produced.
+	if err := h.awaitAppIdle(ctx, s, target); err != nil {
+		return nil, nil, err
+	}
 	// A dialog in the way is refused below; a declared rule for it answers
 	// it instead, and the target is resolved again. Bounded, because a rule
 	// whose button raises another dialog must not loop forever.
