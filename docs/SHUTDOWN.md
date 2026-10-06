@@ -55,6 +55,14 @@ Ctrl-C or SIGTERM exits at once. Either way, what a session left behind is
 still there: run `docs/checks/clean-stop.sh --quit`, or the commands under
 "On the device" below.
 
+**`clean-stop.sh --quit` waits for the daemon too**, and stops nothing else
+until it has gone: it shows what `daemon stop` answered, waits up to 100
+seconds for the process to exit — the daemon's own 75 for sessions and 10
+for calls in flight, with a margin — and, if it is still running then,
+stops there rather than shut a device down under its session. It uses the
+`bin/mobium` of the repository it lives in, wherever it is run from
+(CHALLENGES 255).
+
 ### 2. Simulators, then emulators
 
 ```sh

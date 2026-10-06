@@ -5509,6 +5509,26 @@ that raised toasts, and called it animation; its retry was right for a
 screen in motion and only outwaited this one. `graybox-hooks.sh` queues
 five toasts and reads the screen, on any Android device.
 
+### 255. `clean-stop.sh --quit` reported a daemon it had asked to stop, and went on
+
+**Found by:** stopping everything after an evening on an iPhone: the script
+said the daemon had stopped, shut the simulator and the emulator down, and
+then reported the daemon and the iPhone's WebDriverAgent runner still
+running. A `daemon stop` by hand moments later stopped both. Three faults,
+any one enough. The script ran `./bin/mobium` — from the directory it was
+run in, not its own repository, so run from another checkout it used that
+checkout's build, whose stop gave up after 5 seconds where today's waits
+90. It threw away what the stop answered, `2>/dev/null`, so a stop that
+gave up said nothing. And it never waited: it went on to the devices and
+to its checks at once — shutting devices down under a live session, the
+order SHUTDOWN.md exists to prevent. Which of these bit that evening was
+not reproduced; an iPhone session, and the same act on it again, stopped
+in a second. A stand-in daemon that ignores the stop shows the rest: the
+old script reported it running after 1 second and had already moved on;
+now the script uses its own repository's binary, shows the stop's answer,
+waits for the daemon to go — 12 seconds for one that took 12 — and one
+still running after 100 seconds stops the script before any device.
+
 ## Findings that were not defects
 
 Worth recording because each one closed off an approach that looked obvious.
