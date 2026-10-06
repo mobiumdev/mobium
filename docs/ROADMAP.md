@@ -219,15 +219,15 @@ this is what is not.
   the error's details (CHALLENGES 158) — and `wait` also waits for checked,
   unchecked, focused and a value (`docs/checks/wait-states.sh`). Still to
   come:
-  - A covered target's clear point beside another control. Since
-    CHALLENGES 257 a control inside a plain view laid over a target covers
-    it, but a tap moved off a covered center can land a few points from a
-    second control, and iOS gives it that control: Pocket Casts' Comedy,
-    under its search's filter chips, pressed Episodes on the iPhone. How
-    far iOS reaches for a nearby control is unmeasured, and the simulator's
-    `launch --hit-test` is where to measure it. And `map` lists a screen an
-    app laid over another as if nothing covered it — on the iPhone the
-    tree gives no sign.
+  - `map` lists a screen an app laid over another as if nothing covered
+    it: Discover's chips under Pocket Casts' search results. On the iPhone
+    the tree gives no sign; taps into it are refused since CHALLENGES 257,
+    where a control's container, not its frame, was measured to be what
+    takes a touch.
+  - Reading Pocket Casts' Radiolab page on the iPhone: WebDriverAgent did
+    not answer `/source` within 60 seconds, three times running, while the
+    page was plainly up (2026-10-06). The podcast `pocketcasts-ios.sh`
+    opens reads. Unmeasured: whether the length of its episode list is why.
   - An overlay hidden from accessibility on iOS, which WebDriverAgent's tree
     does not contain, so a tap under one still lands on it. **On a
     simulator, `mobium hit-test` sees it** since 2026-09-29: UIKit's own hit

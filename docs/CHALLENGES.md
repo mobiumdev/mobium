@@ -5597,6 +5597,25 @@ target that lies mostly inside its cover's row of controls would refuse
 Notification Center's Show less and the Obstruction Demo's half-covered
 button, where moving is measured right.
 
+**The gap, measured and closed.** Pocket Casts' Discover chips on the
+simulator are native controls with nothing over them: 37 points high, in a
+strip 54 high. Across the six-point gap between two, a tap opened All
+Categories up to its midpoint and Comedy after it; ten points below a
+chip's frame still opened it; two points above the strip opened nothing —
+22 taps, and the strip's bounds were exactly where a chip took a touch. A
+control's frame is what is drawn, and its container is what is touched. So
+a point inside the container of a control laid over the target is not
+clear either — edges included, since the strip's top row was a chip's —
+unless the container fills the screen or holds the target itself, which
+is how the Obstruction Demo's covers and Notification Center's stand.
+Comedy and All Categories are now refused on the iPhone, each naming the
+chip over it, and a search result beside them still opens. Across every
+capture this changed seven aims, each a real cover: the rows under Search
+Failed now refused under Try Again, and the last search result, whose old
+aim was inside the mini player — a tap that would have opened the player.
+`obstruction.sh`, `pocketcasts-ios.sh` and `kiwix-ios.sh` pass on the
+simulator. `map` listing the screen behind is still open.
+
 ## Findings that were not defects
 
 Worth recording because each one closed off an approach that looked obvious.
