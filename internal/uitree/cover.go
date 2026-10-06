@@ -242,7 +242,7 @@ func (t *Tree) aimAtPoint(target *Node, x, y int) (Aim, bool) {
 	if k := t.Keyboard(); k != nil {
 		over = without(over, k)
 	}
-	if firstControl(over) != nil {
+	if firstControl(over) != nil || t.stripAt(target, x, y) != nil {
 		return Aim{}, false
 	}
 	a := Aim{X: x, Y: y}
@@ -277,6 +277,59 @@ func (t *Tree) aimAtPoint(target *Node, x, y int) (Aim, bool) {
 	}
 	return a, true
 }
+
+// stripAt returns a control drawn over target whose container holds (x, y),
+// or nil. A control's frame is what is drawn, not what takes a touch: in a
+// strip of chips every point belongs to a chip, the nearest one. Measured on
+// Pocket Casts' category chips on the simulator, 37 points high in a strip
+// 54 high: across the six-point gap between two chips a tap opened the one
+// it was nearer, ten points below a chip's frame still opened it, and two
+// points above the strip opened nothing — 22 taps, every one inside the
+// strip's bounds a chip's. So a point beside a covering control, in its
+// container, is not clear: Comedy, under the search's filter chips on the
+// iPhone, was touched in the gap between Podcasts and Episodes and pressed
+// Episodes. Not a container that fills the screen, which is every control's
+// on some layer, nor one the target is in itself, as a cover laid beside
+// its own button is: the Obstruction Demo's and Notification Center's
+// covers share their target's parent, and moving off them is measured
+// right. CHALLENGES 257.
+func (t *Tree) stripAt(target *Node, x, y int) *Node {
+	screen := t.Screen
+	if screen.Empty() && t.Root != nil {
+		screen = t.Root.Bounds
+	}
+	k := t.Keyboard()
+	var found *Node
+	seen := false
+	t.Walk(func(n *Node) bool {
+		if found != nil {
+			return false
+		}
+		if n == target {
+			seen = true
+			return true
+		}
+		if k != nil && n.Within(k) {
+			return true
+		}
+		if !seen || n.Within(target) || target.Within(n) || !n.Displayed || n.Bounds.Empty() || !IsControl(n) ||
+			!overlaps(n.Bounds, target.Bounds) || namesTheSameControl(target, n) {
+			return true
+		}
+		p := n.Parent
+		if p == nil || p.Bounds.Empty() || target.Within(p) || (!screen.Empty() && enclosesRect(p.Bounds, screen)) {
+			return true
+		}
+		// Edges included: a touch at the strip's top edge was a chip's.
+		if x >= p.Bounds.X1 && x <= p.Bounds.X2 && y >= p.Bounds.Y1 && y <= p.Bounds.Y2 {
+			found = n
+		}
+		return true
+	})
+	return found
+}
+
+func overlaps(a, b Rect) bool { return a.X1 < b.X2 && b.X1 < a.X2 && a.Y1 < b.Y2 && b.Y1 < a.Y2 }
 
 func firstControl(nodes []*Node) *Node {
 	for _, n := range nodes {

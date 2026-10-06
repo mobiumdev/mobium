@@ -232,7 +232,9 @@ func TestANonControlOverTheCenterIsAvoided(t *testing.T) {
 // search results are a plain view over Discover, and their filter chips sit
 // where Discover's category chips are: a tap on Comedy pressed Podcasts and
 // reported Comedy tapped, because only the plain view, the outermost cover,
-// was looked at. On the iPhone, which the capture is from. CHALLENGES 257.
+// was looked at; then, moved off its center into the gap beside Podcasts, a
+// tap pressed Episodes, the strip being the chips'. On the iPhone, which the
+// capture is from. CHALLENGES 257.
 func TestAControlInsideAPlainCoverCovers(t *testing.T) {
 	tree := loadIOS(t, "ios26-pocketcasts-search-over-discover.xml")
 	chip := func(label string) *Node {
@@ -248,10 +250,42 @@ func TestAControlInsideAPlainCoverCovers(t *testing.T) {
 		}
 		return found
 	}
-	if a := tree.AimAt(chip("Comedy")); !a.Moved || a.CenterCover == nil || a.CenterCover.Label != "Podcasts" {
-		t.Errorf("Comedy aimed %+v, want moved off its center, which is under Podcasts", a)
+	// Not moved into the gap beside Podcasts either: the gap is the chip
+	// strip's, and the touch there went to Episodes on the iPhone.
+	for _, c := range []struct{ target, cover string }{{"Comedy", "Podcasts"}, {"All Categories", "Top Results"}} {
+		if a := tree.AimAt(chip(c.target)); a.Blocker == nil || a.Blocker.Label != c.cover {
+			t.Errorf("%s aimed %+v, want blocked by %s and its strip", c.target, a, c.cover)
+		}
 	}
 	if a := tree.AimAt(chip("Fiction")); a.Blocker == nil || a.Blocker.Label != "Episodes" {
 		t.Errorf("Fiction aimed %+v, want blocked by Episodes", a)
+	}
+}
+
+// A control's container is its touch area, not its frame: in a strip of
+// chips every point is the nearest chip's. Measured on Pocket Casts' Discover
+// chips on the simulator — across a six-point gap, ten points below a chip,
+// never two points above the strip. So a covered target is not moved into a
+// strip laid over it: the rows under "Search Failed" lie under Try Again's,
+// and a search result under the mini player's, whose old aim was inside the
+// player. CHALLENGES 257.
+func TestAStripOverATargetIsNotClear(t *testing.T) {
+	failed := loadIOS(t, "ios26-pocketcasts-search-failed.xml")
+	for _, e := range failed.Map() {
+		if e.Label != "Machine Gods NPR" {
+			continue
+		}
+		if a := failed.AimAt(e.Node); a.Blocker == nil || a.Blocker.Label != "Try Again" {
+			t.Errorf("%s under Search Failed aimed %+v, want blocked by Try Again", e.Label, a)
+		}
+	}
+	search := loadIOS(t, "ios26-pocketcasts-search.xml")
+	for _, e := range search.Map() {
+		if e.Node.Bounds != (Rect{X1: 0, Y1: 766, X2: 402, Y2: 846}) {
+			continue
+		}
+		if a := search.AimAt(e.Node); a.Blocker == nil {
+			t.Errorf("the last result, under the mini player and the tab bar, aimed at (%d, %d)", a.X, a.Y)
+		}
 	}
 }
