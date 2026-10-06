@@ -117,6 +117,13 @@ func (w *WDA) LaunchGrayBox(ctx context.Context, app string) error {
 	if err != nil {
 		return err
 	}
+	// A launch argument reaches only a process that starts: WebDriverAgent
+	// brought an app already running to the front with its old arguments,
+	// and it never heard the gray box — measured on a simulator, where the
+	// app stayed on the screen it was on and wrote nothing. So the app is
+	// stopped first, as Android's launch with the extra starts it afresh.
+	// Stopping an app that is not running is not an error worth stopping for.
+	_ = w.Terminate(ctx, app)
 	return w.launchWith(ctx, app, w.pinnedLocale(app), w.sessionZone())
 }
 
