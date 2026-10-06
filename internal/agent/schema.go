@@ -1885,6 +1885,36 @@ func GetToolSchemas() []Tool {
 			},
 		},
 		{
+			Name: "app_hook",
+			Description: "Call a hook the app registered with Mobium's gray-box library, by name, and " +
+				"return what it answered — sign in, seed data, raise a toast: state set up without " +
+				"walking the UI. Needs the app launched with gray_box. The call is written into a " +
+				"field the library adds only in a gray-box launch and the answer read from the device " +
+				"log; it waits for the app to be idle first, and a hook's own work counts as busy. On " +
+				"iOS the call is typed, about 16 ms a character. An unknown name is refused, naming " +
+				"the hooks the app registered; a hook that throws is reported with its message.",
+			InputSchema: map[string]interface{}{
+				"type": "object",
+				"properties": withDevice(map[string]interface{}{
+					"hook": map[string]interface{}{
+						"type":        "string",
+						"description": "The hook's name, as the app registered it (\"signIn\")",
+					},
+					"args": map[string]interface{}{
+						"type":        "array",
+						"items":       map[string]interface{}{"type": "string"},
+						"description": "Arguments for the hook, as strings, in order",
+					},
+					"timeout_ms": map[string]interface{}{
+						"type":        "integer",
+						"description": "How long to wait for the app's answer (default 15000)",
+					},
+				}),
+				"required":             []string{"hook"},
+				"additionalProperties": false,
+			},
+		},
+		{
 			Name: "app_biometric",
 			Description: "Biometrics on an emulator or simulator: read whether a face or finger is " +
 				"enrolled, enroll or unenroll one, and present a matching (match) or non-matching " +

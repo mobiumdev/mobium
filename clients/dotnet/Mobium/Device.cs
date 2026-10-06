@@ -618,6 +618,19 @@ namespace Mobium
             Data("app_hit_test", Args("target", target));
 
         /// <summary>
+        /// Calls a hook the app registered with Mobium's gray-box library, by
+        /// name, and returns what it answered — sign in, seed data, raise a
+        /// toast, without walking the UI. The app must have been launched with
+        /// LaunchWithGrayBox. A name the app never registered throws an
+        /// InvalidArgumentException naming the ones it did.
+        /// </summary>
+        public object? Hook(string name, params string[] args)
+        {
+            var d = Data("app_hook", Args("hook", name, "args", new List<object?>(args)));
+            return d.TryGetValue("result", out var r) ? r : null;
+        }
+
+        /// <summary>
         /// Runs the platform's own accessibility audit on the screen in front:
         /// on iOS, Apple's, on a simulator or an iPhone (iOS 17 and later).
         /// The answer holds <c>findings</c>, each with its type, summary,

@@ -21,6 +21,7 @@ links the library.
 
 - [Turning it on](#turning-it-on)
 - [What an action does](#what-an-action-does)
+- [Hooks: calling into the app](#hooks-calling-into-the-app)
 - [What the app writes](#what-the-app-writes)
 - [The Busy Demo, measured](#the-busy-demo-measured)
 - [What it does not do](#what-it-does-not-do)
@@ -164,6 +165,76 @@ gray box: not waited — the app stopped saying it is busy 2.1s ago (it was busy
 On Android the app often reports itself in the background on its way down,
 and then that is the reason given — the same answer, reached sooner.
 
+## Hooks: calling into the app
+
+Waiting is the way out of the app. Hooks are the way in: functions the app
+registers by name, which a test calls to set up state without walking the
+UI — sign in, seed data, raise a toast. MobiumApp registers three; in
+outline:
+
+```ts
+GrayBox.register('raiseToast', message => { showToast(message); return 'shown'; });
+GrayBox.register('screen', () => screenRef.current);
+GrayBox.register('signIn', username => { setLoggedInAs(username); setScreen('secret'); return `signed in as ${username}`; });
+```
+
+A test calls one by name, with string arguments, and gets back what it
+returned (the emulator):
+
+```
+$ mobium hook screen
+hook screen answered: "home"
+gray box: waited 114 ms for the app to go idle
+
+$ mobium hook raiseToast "Toast raised by test script"
+hook raiseToast answered: "shown"
+gray box: waited 104 ms for the app to go idle
+
+$ mobium text testid=hookToast
+Toast raised by test script
+
+$ mobium hook signIn mobium
+hook signIn answered: "signed in as mobium"
+gray box: waited 102 ms for the app to go idle
+
+$ mobium text testid=welcomeText
+Welcome, mobium!
+```
+
+From MCP it is `app_hook` with `hook`, `args` and an optional `timeout_ms`;
+from the clients, `hook(name, *args)` in Python, `hook(name, ...args)` in
+JavaScript, `Hook(ctx, name, args...)` in Go, `hook(name, args...)` in Java
+and `Hook(name, params args)` in .NET, each returning what the hook returned,
+decoded from JSON.
+
+How a call travels: Mobium waits for the app to be idle, then writes
+`{"i":<id>,"h":"<name>","a":[...]}` into a field the library adds only in a
+gray-box launch — set whole through UiAutomator2 on Android, typed through
+WebDriverAgent on iOS, with everything outside ASCII escaped, since a real
+iPhone's keyboard has dropped letters outside its layout. The library hands
+the call to the registered function and writes its answer to the device log,
+where the gray box is already listening:
+`MOBIUM-GRAYBOX hook id=<id> ok <json>`, or `error <text>`. A hook's own
+work counts as busy, until two frames after it answers, so the next action
+waits for what the hook changed to be on screen. `map` never lists the
+field. A call takes about 0.6 s on an Android emulator and 1.4 to 1.9 s on
+an iOS simulator, where it is typed.
+
+What goes wrong is said:
+
+```
+$ mobium hook nosuch
+error: the app has no hook named nosuch; registered: raiseToast, screen, signIn
+```
+
+A name the app never registered is `invalid_argument`, naming the ones it
+did; a hook that throws is `device_server`, with its message; an app
+launched without `--gray-box` is `device_not_ready`, naming the launch; no
+answer within 15 seconds (`--timeout-ms`) is `timeout`.
+
+Register hooks only in builds made for testing. They answer only in a
+gray-box launch, but a hook in a shipped app would still be a door into it.
+
 ## What the app writes
 
 The library writes one line to the device log for each change — on iOS under
@@ -178,6 +249,7 @@ MOBIUM-GRAYBOX busy=0 tag=fetch   that work finished, and is on screen
 MOBIUM-GRAYBOX lift               a finger came up
 MOBIUM-GRAYBOX still busy=1       every half second while work is in flight
 MOBIUM-GRAYBOX away / back        the app left the foreground / returned
+MOBIUM-GRAYBOX hook id=7 ok <json>  a hook answered (error <text> if it threw)
 ```
 
 `busy=` is the count of work in flight after the change; `tag=` names it, for

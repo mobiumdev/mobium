@@ -7,7 +7,7 @@ the source.
 
 The pattern across them is the reason the document exists: **almost nothing
 here was found by reading code or by a test written from imagination.** Of
-252 defects, 212 were found only by running against a real device. The other
+253 defects, 213 were found only by running against a real device. The other
 forty — 4, 5, 6, 14, 23, 24, 32, 35, 36, 39, 44, 50, 53, 54, 57, 66, 89,
 99, 100, 121, 123, 129, 130, 133, 134, 139, 140, 141, 142, 144, 150, 158, 162,
 164, 165, 172, 222, 231, 232 and 243 — came from reading code, the compiler, a test, a linter,
@@ -5467,6 +5467,26 @@ count again from zero and waits 700 ms for the app's half-second `still`
 line before trusting it, and says it reconnected: three in three current,
 after 702 to 783 ms. A test holds both the work restated after the gap and
 the work that ended inside it.
+
+### 253. On iOS the gray-box library listened on a window nobody touched
+
+**Found by:** building hooks, whose mailbox — a field WebDriverAgent types
+a call into — took no typing on the simulator: WebDriverAgent found it and
+reported it neither visible nor hittable. Two causes, one hidden behind the
+other. The library starts before React Native puts up its window, and it
+attached its touch watcher and the mailbox to the first key window it saw,
+once; on the simulator a session of taps logged no `lift` at all — the
+gray box held up only because an action with no lift heard gets its grace
+from the action's end. Now both follow the key window as it changes,
+checked twice a second, and the mailbox is kept above React Native's views.
+Then the mailbox at 2 by 2 points, which a real iPhone had typed into, was
+too small for XCTest on the simulator; 8 by 8 points, at the screen's left
+edge, is visible and hittable, and clear of the 16-point margin apps keep.
+A tap now logs its lift on iOS, and every hook call lands. Hearing lifts
+at last exposed what the fallback had covered: iOS runs an alert button's
+handler only once the alert has gone, after the lift's 150 ms of grace, and
+a refresh started from an alert was tapped stale. The grace now counts
+from the later of the lift and the action's end.
 
 ## Findings that were not defects
 

@@ -47,7 +47,7 @@ var actingTools = map[string]bool{
 	"app_press_drag": true, "app_check": true, "app_press": true, "app_lock": true,
 	"app_session": true, "app_screen": true, "app_uninstall": true, "app_clear_data": true,
 	"app_batch": true, "app_shake": true, "app_biometric": true, "app_background": true, "app_install": true,
-	"app_upload": true, "app_trace": true,
+	"app_upload": true, "app_trace": true, "app_hook": true,
 }
 
 // ReadOnlyTool says whether every call to the tool only reads — MCP's

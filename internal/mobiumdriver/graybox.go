@@ -179,3 +179,41 @@ func (w *WDA) DropLogStream() bool {
 	}
 	return w.plog.Drop()
 }
+
+// MailboxID is the accessibility id of the field the gray-box library adds
+// in a gray-box launch, which a hook call is written into.
+const MailboxID = "mobium-mailbox"
+
+// Mailboxer is implemented by backends that can write a hook call into the
+// app's gray-box mailbox.
+type Mailboxer interface {
+	WriteMailbox(ctx context.Context, text string) error
+}
+
+// AsMailboxer returns the driver's mailbox writer, if it has one: a driver
+// with the gray box, and a way to set a field's text.
+func AsMailboxer(d Driver) (Mailboxer, bool) {
+	m, ok := d.(Mailboxer)
+	return m, ok && has(d, CapGrayBox)
+}
+
+// writeMailbox finds the mailbox by its accessibility id and sets its text:
+// WebDriverAgent types it, a key at a time; UiAutomator2 sets it whole.
+func writeMailbox(ctx context.Context, c *w3cClient, text string) error {
+	id, err := c.findElement(ctx, "accessibility id", MailboxID)
+	if err != nil {
+		return mobiumerr.New(mobiumerr.Unsupported, "the app has no gray-box mailbox, so it takes no hooks: it needs "+
+			"a gray-box library that registers them, as MobiumApp's modules/graybox does (%v)", err)
+	}
+	return c.setElementValue(ctx, id, text)
+}
+
+// WriteMailbox writes a hook call into the app's mailbox.
+func (w *WDA) WriteMailbox(ctx context.Context, text string) error {
+	return writeMailbox(ctx, w.w3c, text)
+}
+
+// WriteMailbox writes a hook call into the app's mailbox.
+func (u *UIA2) WriteMailbox(ctx context.Context, text string) error {
+	return writeMailbox(ctx, u.w3c, text)
+}

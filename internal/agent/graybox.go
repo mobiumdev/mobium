@@ -5,8 +5,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
+	"unicode/utf16"
 
 	"github.com/mobiumdev/mobium/internal/mobiumdriver"
 	"github.com/mobiumdev/mobium/internal/mobiumerr"
@@ -141,4 +143,124 @@ func (h *Handlers) DropLogStreams() int {
 		}
 	}
 	return n
+}
+
+// grayBoxHookLimit bounds a wait for a hook's answer by default: on an
+// iPhone the call is typed a key at a time, about 16 ms a character.
+const grayBoxHookLimit = 15 * time.Second
+
+// HookView is what a hook answered.
+type HookView struct {
+	Hook   string      `json:"hook"`
+	Result interface{} `json:"result"`
+}
+
+// hook calls a hook the app registered with its gray-box library, by name,
+// and returns what it answered. The call is written into the app's mailbox
+// — a field that exists only in a gray-box launch — and the answer read
+// from the device log, where the gray box already listens.
+func (h *Handlers) hook(ctx context.Context, args map[string]interface{}) (*ToolsCallResult, error) {
+	s, err := h.sessionFor(ctx, args)
+	if err != nil {
+		return nil, err
+	}
+	name := strings.TrimSpace(stringArg(args, "hook"))
+	if name == "" {
+		return nil, mobiumerr.New(mobiumerr.InvalidArgument, "app_hook needs the name of a hook the app registered")
+	}
+	var hookArgs []string
+	if raw, ok := args["args"].([]interface{}); ok {
+		for _, a := range raw {
+			str, ok := a.(string)
+			if !ok {
+				return nil, mobiumerr.New(mobiumerr.InvalidArgument, "a hook's args are strings; got %v", a)
+			}
+			hookArgs = append(hookArgs, str)
+		}
+	}
+	limit := grayBoxHookLimit
+	if ms, ok := intArg(args, "timeout_ms"); ok && ms > 0 {
+		limit = time.Duration(ms) * time.Millisecond
+	}
+
+	gb, ok := mobiumdriver.AsGrayBoxer(s.driver)
+	if !ok {
+		return nil, cannot(s, mobiumdriver.CapGrayBox, "call an app's hooks")
+	}
+	g := gb.GrayBox()
+	if g == nil || !g.On() {
+		return nil, mobiumerr.New(mobiumerr.DeviceNotReady, "the app is not listening for hooks: it was not launched "+
+			"with the gray box on, or has not answered it — launch it with gray_box first").
+			WithRemedy("app_launch with gray_box")
+	}
+	mb, ok := mobiumdriver.AsMailboxer(s.driver)
+	if !ok {
+		return nil, cannot(s, mobiumdriver.CapGrayBox, "call an app's hooks")
+	}
+	// A hook goes in when the app is idle, as an action does: what it sets
+	// up should not race what the app is still doing.
+	if err := h.awaitAppIdle(ctx, s, "hook "+name); err != nil {
+		return nil, err
+	}
+
+	id := strconv.FormatInt(time.Now().UnixNano(), 36)
+	call, err := asciiJSON(map[string]interface{}{"i": id, "h": name, "a": nonNilStrings(hookArgs)})
+	if err != nil {
+		return nil, err
+	}
+	if err := mb.WriteMailbox(ctx, call); err != nil {
+		return nil, err
+	}
+	answer, err := g.AwaitAnswer(ctx, id, limit)
+	if err != nil {
+		if mobiumerr.CodeOf(err) == mobiumerr.Timeout {
+			return nil, mobiumerr.New(mobiumerr.Timeout, "the app did not answer hook %s within %s — the call was "+
+				"written; the app's handler may still be running, or it never reached the app", name, limit).
+				WithDetail("hook", name)
+		}
+		return nil, err
+	}
+	if !answer.OK {
+		if strings.HasPrefix(answer.Payload, "no hook named ") {
+			return nil, mobiumerr.New(mobiumerr.InvalidArgument, "the app has %s", answer.Payload).
+				WithDetail("hook", name)
+		}
+		return nil, mobiumerr.New(mobiumerr.DeviceServer, "hook %s failed in the app: %s", name, answer.Payload).
+			WithDetail("hook", name).WithDetail("hook_error", answer.Payload)
+	}
+	var result interface{}
+	if err := json.Unmarshal([]byte(answer.Payload), &result); err != nil {
+		result = answer.Payload
+	}
+	shown, _ := json.Marshal(result)
+	return Result(fmt.Sprintf("hook %s answered: %s", name, shown), HookView{Hook: name, Result: result}), nil
+}
+
+func nonNilStrings(a []string) []string {
+	if a == nil {
+		return []string{}
+	}
+	return a
+}
+
+// asciiJSON is JSON with every character outside ASCII escaped. On an
+// iPhone the call is typed on the keyboard, which has dropped letters
+// outside its own layout (CHALLENGES 159); escapes are plain ASCII, and the
+// app's JSON parser turns them back.
+func asciiJSON(v interface{}) (string, error) {
+	raw, err := json.Marshal(v)
+	if err != nil {
+		return "", mobiumerr.New(mobiumerr.InvalidArgument, "the hook call cannot be encoded: %v", err)
+	}
+	var b strings.Builder
+	for _, r := range string(raw) {
+		if r < 0x80 {
+			b.WriteRune(r)
+			continue
+		}
+		for _, u := range utf16.Encode([]rune{r}) {
+			fmt.Fprintf(&b, "\\u%04x", u)
+		}
+	}
+	return b.String(), nil
 }

@@ -1120,3 +1120,24 @@ func TestAWebArticleTileIsOneLinkNamedOnce(t *testing.T) {
 			count["America the Beautiful (link)"], count["America the Beautiful America the Beautiful (link)"])
 	}
 }
+
+// The gray-box mailbox is Mobium's own plumbing: a field the library adds in
+// a gray-box launch. map must not offer it.
+func TestMapLeavesOutTheGrayBoxMailbox(t *testing.T) {
+	tr := &Tree{Root: &Node{Class: "android.widget.FrameLayout", Displayed: true, Enabled: true,
+		Bounds: Rect{X1: 0, Y1: 0, X2: 1080, Y2: 2400},
+		Children: []*Node{
+			{Class: "android.widget.EditText", Label: MailboxLabel, Displayed: true, Enabled: true, Clickable: true,
+				Bounds: Rect{X1: 0, Y1: 200, X2: 2, Y2: 202}},
+			{Class: "android.widget.Button", Text: "Refresh", Displayed: true, Enabled: true, Clickable: true,
+				Bounds: Rect{X1: 48, Y1: 800, X2: 1032, Y2: 944}},
+		}}}
+	for _, e := range tr.Map() {
+		if e.Label == MailboxLabel {
+			t.Fatalf("map offered the mailbox: %+v", e)
+		}
+	}
+	if len(tr.Map()) != 1 {
+		t.Errorf("map = %+v, want only Refresh", tr.Map())
+	}
+}

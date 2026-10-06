@@ -839,6 +839,48 @@
       ]
     },
     {
+      "tool": "app_hook",
+      "arg": "args",
+      "type": "array",
+      "setBy": [
+        "hook"
+      ]
+    },
+    {
+      "tool": "app_hook",
+      "arg": "device",
+      "type": "string",
+      "setBy": [
+        "--device"
+      ],
+      "global": true
+    },
+    {
+      "tool": "app_hook",
+      "arg": "driver",
+      "type": "string",
+      "setBy": [
+        "--driver"
+      ],
+      "global": true
+    },
+    {
+      "tool": "app_hook",
+      "arg": "hook",
+      "type": "string",
+      "setBy": [
+        "hook"
+      ]
+    },
+    {
+      "tool": "app_hook",
+      "arg": "timeout_ms",
+      "type": "integer",
+      "setBy": [
+        "hook"
+      ]
+    },
+    {
       "tool": "app_install",
       "arg": "content",
       "type": "string"
@@ -2901,6 +2943,20 @@
       ],
       "sends": [
         "target"
+      ]
+    },
+    {
+      "command": "hook",
+      "tools": [
+        "app_hook"
+      ],
+      "flags": [
+        "--timeout-ms"
+      ],
+      "sends": [
+        "args",
+        "hook",
+        "timeout_ms"
       ]
     },
     {

@@ -313,6 +313,7 @@ export class Device {
   biometric(action?: 'status' | 'enroll' | 'unenroll' | 'match' | 'nomatch'): Promise<Data>
   /** Whether a tap on the target would reach it, by UIKit's hit test (iOS simulators). */
   hitTest(target: string): Promise<Data>
+  hook(name: string, ...args: string[]): Promise<unknown>
   audit(): Promise<Data>
   /** One app's state: not_installed, not_running, background or foreground. */
   appState(app: string): Promise<Data>

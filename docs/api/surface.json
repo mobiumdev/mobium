@@ -338,6 +338,18 @@
     },
     {
       "n": 29,
+      "tool": "app_hook",
+      "cli": "hook",
+      "clients": {
+        "dotnet": "Hook",
+        "go": "Hook",
+        "java": "hook",
+        "javascript": "hook",
+        "python": "hook"
+      }
+    },
+    {
+      "n": 30,
       "tool": "app_install",
       "cli": "install",
       "clients": {
@@ -349,7 +361,7 @@
       }
     },
     {
-      "n": 30,
+      "n": 31,
       "tool": "app_keyboard",
       "cli": "keyboard",
       "clients": {
@@ -361,7 +373,7 @@
       }
     },
     {
-      "n": 31,
+      "n": 32,
       "tool": "app_launch",
       "cli": "launch",
       "clients": {
@@ -373,7 +385,7 @@
       }
     },
     {
-      "n": 32,
+      "n": 33,
       "tool": "app_list_apps",
       "cli": "apps",
       "clients": {
@@ -385,7 +397,7 @@
       }
     },
     {
-      "n": 33,
+      "n": 34,
       "tool": "app_locale",
       "cli": "locale",
       "clients": {
@@ -397,7 +409,7 @@
       }
     },
     {
-      "n": 34,
+      "n": 35,
       "tool": "app_location",
       "cli": "location",
       "clients": {
@@ -409,7 +421,7 @@
       }
     },
     {
-      "n": 35,
+      "n": 36,
       "tool": "app_lock",
       "cli": "lock",
       "clients": {
@@ -421,7 +433,7 @@
       }
     },
     {
-      "n": 36,
+      "n": 37,
       "tool": "app_logs",
       "cli": "logs",
       "clients": {
@@ -433,7 +445,7 @@
       }
     },
     {
-      "n": 37,
+      "n": 38,
       "tool": "app_long_press",
       "cli": "long-press",
       "clients": {
@@ -445,7 +457,7 @@
       }
     },
     {
-      "n": 38,
+      "n": 39,
       "tool": "app_map",
       "cli": "map",
       "clients": {
@@ -457,7 +469,7 @@
       }
     },
     {
-      "n": 39,
+      "n": 40,
       "tool": "app_network",
       "cli": "network",
       "clients": {
@@ -469,7 +481,7 @@
       }
     },
     {
-      "n": 40,
+      "n": 41,
       "tool": "app_notifications",
       "cli": "notifications",
       "clients": {
@@ -481,7 +493,7 @@
       }
     },
     {
-      "n": 41,
+      "n": 42,
       "tool": "app_open_url",
       "cli": "open",
       "clients": {
@@ -493,7 +505,7 @@
       }
     },
     {
-      "n": 42,
+      "n": 43,
       "tool": "app_orientation",
       "cli": "orientation",
       "clients": {
@@ -505,7 +517,7 @@
       }
     },
     {
-      "n": 43,
+      "n": 44,
       "tool": "app_press",
       "cli": "press",
       "clients": {
@@ -517,7 +529,7 @@
       }
     },
     {
-      "n": 44,
+      "n": 45,
       "tool": "app_press_drag",
       "cli": "press-drag",
       "clients": {
@@ -529,7 +541,7 @@
       }
     },
     {
-      "n": 45,
+      "n": 46,
       "tool": "app_press_tap",
       "cli": "press-tap",
       "clients": {
@@ -541,7 +553,7 @@
       }
     },
     {
-      "n": 46,
+      "n": 47,
       "tool": "app_record",
       "cli": "record",
       "clients": {
@@ -553,7 +565,7 @@
       }
     },
     {
-      "n": 47,
+      "n": 48,
       "tool": "app_reset_permissions",
       "cli": "reset-permissions",
       "clients": {
@@ -565,7 +577,7 @@
       }
     },
     {
-      "n": 48,
+      "n": 49,
       "tool": "app_revoke",
       "cli": "revoke",
       "clients": {
@@ -577,7 +589,7 @@
       }
     },
     {
-      "n": 49,
+      "n": 50,
       "tool": "app_rotate",
       "cli": "rotate",
       "clients": {
@@ -589,7 +601,7 @@
       }
     },
     {
-      "n": 50,
+      "n": 51,
       "tool": "app_screen",
       "cli": "screen",
       "clients": {
@@ -601,7 +613,7 @@
       }
     },
     {
-      "n": 51,
+      "n": 52,
       "tool": "app_screenshot",
       "cli": "screenshot",
       "clients": {
@@ -613,7 +625,7 @@
       }
     },
     {
-      "n": 52,
+      "n": 53,
       "tool": "app_scroll_to",
       "cli": "scroll-to",
       "clients": {
@@ -625,7 +637,7 @@
       }
     },
     {
-      "n": 53,
+      "n": 54,
       "tool": "app_session",
       "cli": "session",
       "clients": {
@@ -637,7 +649,7 @@
       }
     },
     {
-      "n": 54,
+      "n": 55,
       "tool": "app_shake",
       "cli": "shake",
       "clients": {
@@ -649,7 +661,7 @@
       }
     },
     {
-      "n": 55,
+      "n": 56,
       "tool": "app_shutdown",
       "cli": "shutdown",
       "clients": {
@@ -661,7 +673,7 @@
       }
     },
     {
-      "n": 56,
+      "n": 57,
       "tool": "app_sms",
       "cli": "sms",
       "clients": {
@@ -673,7 +685,7 @@
       }
     },
     {
-      "n": 57,
+      "n": 58,
       "tool": "app_source",
       "cli": "source",
       "clients": {
@@ -685,7 +697,7 @@
       }
     },
     {
-      "n": 58,
+      "n": 59,
       "tool": "app_state",
       "cli": "state",
       "clients": {
@@ -697,7 +709,7 @@
       }
     },
     {
-      "n": 59,
+      "n": 60,
       "tool": "app_storage",
       "cli": "storage",
       "clients": {
@@ -709,7 +721,7 @@
       }
     },
     {
-      "n": 60,
+      "n": 61,
       "tool": "app_swipe",
       "cli": "swipe",
       "clients": {
@@ -721,7 +733,7 @@
       }
     },
     {
-      "n": 61,
+      "n": 62,
       "tool": "app_tap",
       "cli": "tap, double-tap",
       "clients": {
@@ -733,7 +745,7 @@
       }
     },
     {
-      "n": 62,
+      "n": 63,
       "tool": "app_terminate",
       "cli": "terminate",
       "clients": {
@@ -745,7 +757,7 @@
       }
     },
     {
-      "n": 63,
+      "n": 64,
       "tool": "app_text",
       "cli": "text",
       "clients": {
@@ -757,7 +769,7 @@
       }
     },
     {
-      "n": 64,
+      "n": 65,
       "tool": "app_time",
       "cli": "time",
       "clients": {
@@ -769,7 +781,7 @@
       }
     },
     {
-      "n": 65,
+      "n": 66,
       "tool": "app_timezone",
       "cli": "timezone",
       "clients": {
@@ -781,7 +793,7 @@
       }
     },
     {
-      "n": 66,
+      "n": 67,
       "tool": "app_trace",
       "cli": "trace",
       "clients": {
@@ -793,7 +805,7 @@
       }
     },
     {
-      "n": 67,
+      "n": 68,
       "tool": "app_type",
       "cli": "type",
       "clients": {
@@ -805,7 +817,7 @@
       }
     },
     {
-      "n": 68,
+      "n": 69,
       "tool": "app_uninstall",
       "cli": "uninstall",
       "clients": {
@@ -817,7 +829,7 @@
       }
     },
     {
-      "n": 69,
+      "n": 70,
       "tool": "app_upload",
       "cli": "upload",
       "clients": {
@@ -829,7 +841,7 @@
       }
     },
     {
-      "n": 70,
+      "n": 71,
       "tool": "app_wait_for",
       "cli": "wait",
       "clients": {
@@ -841,7 +853,7 @@
       }
     },
     {
-      "n": 71,
+      "n": 72,
       "tool": "app_zoom",
       "cli": "zoom",
       "clients": {
@@ -857,37 +869,37 @@
     {
       "language": "go",
       "file": "clients/go/mobium.go",
-      "covers": 71
+      "covers": 72
     },
     {
       "language": "python",
       "file": "clients/python/mobium/_device.py",
-      "covers": 71
+      "covers": 72
     },
     {
       "language": "javascript",
       "file": "clients/javascript/index.js",
-      "covers": 71
+      "covers": 72
     },
     {
       "language": "java",
       "file": "clients/java/src/main/java/dev/mobium/Mobium.java",
-      "covers": 71
+      "covers": 72
     },
     {
       "language": "dotnet",
       "file": "clients/dotnet/Mobium/Device.cs",
-      "covers": 71
+      "covers": 72
     }
   ],
   "counts": {
-    "tools": 71,
-    "cliRegistered": 80,
-    "cliVisible": 79,
+    "tools": 72,
+    "cliRegistered": 81,
+    "cliVisible": 80,
     "cliHidden": [
       "pipe"
     ],
-    "cliConstructors": 86,
+    "cliConstructors": 87,
     "clients": 5
   },
   "cliWithoutTool": [

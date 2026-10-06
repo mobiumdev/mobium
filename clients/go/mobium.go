@@ -1140,6 +1140,22 @@ func (d *Device) HitTest(ctx context.Context, target string) (HitTestResult, err
 	return out, err
 }
 
+// Hook calls a hook the app registered with Mobium's gray-box library, by
+// name, and returns what it answered, decoded from JSON — sign in, seed
+// data, raise a toast, without walking the UI. The app must have been
+// launched with LaunchWithGrayBox. A name the app never registered is an
+// ErrInvalidArgument naming the ones it did.
+func (d *Device) Hook(ctx context.Context, name string, args ...string) (any, error) {
+	if args == nil {
+		args = []string{}
+	}
+	var out struct {
+		Result any `json:"result"`
+	}
+	err := d.data(ctx, "app_hook", map[string]any{"hook": name, "args": args}, &out)
+	return out.Result, err
+}
+
 // AuditFinding is one thing the platform's accessibility audit found.
 type AuditFinding struct {
 	Type    string `json:"type"`

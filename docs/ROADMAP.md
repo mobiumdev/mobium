@@ -14,8 +14,10 @@ this is what is not.
   iPhone 15 Plus, the iPhone 17 Pro simulator, the Pixel 8 Pro and the
   Pixel 7 emulator). On MobiumApp's Busy Demo, a tap right after a quiet
   refresh was stale 6 to 10 times in 10 launched normally, and 0 in 10 with
-  the gray box, on every one. Next: hooks the app registers for a test to
-  call, and the library for a native app and for Flutter.
+  the gray box, on every one. Hooks since 2026-10-05: `app_hook` calls a
+  function the app registered by name and returns what it answered
+  (`docs/checks/graybox-hooks.sh`). Next: the library for a native app and
+  for Flutter.
 - ~~**A test runner — `mobium test`, on the phones.**~~ Done: iterations 1
   and 2 are built and checked (`docs/checks/test-runner.sh`): JSON test files of
   `app_batch` steps, `app_wait_for` and `expect` assertions, projects as

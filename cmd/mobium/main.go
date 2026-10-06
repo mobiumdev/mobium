@@ -153,6 +153,7 @@ func main() {
 		newShakeCmd(),
 		newBiometricCmd(),
 		newHitTestCmd(),
+		newHookCmd(),
 		newAuditCmd(),
 		newNetworkCmd(),
 		newTestCmd(),
