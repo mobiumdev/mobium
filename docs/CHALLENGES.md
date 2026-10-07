@@ -5616,6 +5616,55 @@ aim was inside the mini player — a tap that would have opened the player.
 `obstruction.sh`, `pocketcasts-ios.sh` and `kiwix-ios.sh` pass on the
 simulator. `map` listing the screen behind is still open.
 
+### 258. A screen with a long list could not be read at all
+
+**Found by:** measuring 257 on the iPhone 15 Plus. On Pocket Casts' Radiolab
+page `map`, `text` and every action failed: WebDriverAgent did not answer a
+read within the 60 seconds it is given. The page's episode list is 673 rows,
+and iOS reports every row to accessibility whether it is on screen or not —
+2,847 elements, ten times an ordinary screen, reaching fifty screens down.
+WebDriverAgent works `visible` out for each: 83.8 seconds for the read, and
+25.5 on another try of the same page, against 6.3 and 3.3 without
+`visible`. A first measurement said 106 seconds and almost nothing visible;
+the phone's screen had gone dark during it, and it was thrown away.
+
+Asking iOS less was the whole fix to the time, and what to put in its place
+was measured. An element entirely off the screen is hidden, and so is
+everything inside one — the texts of an off-screen row report themselves
+near the top of the screen, so a child's own bounds cannot be trusted where
+its row's can. That agreed with iOS on 2,816 of 2,847 elements and never hid
+one iOS showed; the 31 it showed and iOS hid are all covered, under the mini
+player and the tab bar, which geometry cannot see. So a session whose last
+screen held 1,000 elements or more reads without `visible` first, and a
+full read that times out falls back the same way; `map` then says that what
+is shown was worked out, and that a covered element may be listed. On the
+iPhone the first `map` of the page took 91 seconds, the timeout and then the
+fallback, and every one after it four.
+
+The first version stopped there, and a tap on "Search episodes", under the
+tab bar, swiped the episode list to its end — 34 swipes over two tries, 2007
+on screen — because the scroll that brings a target into view steers by
+where the target is reported, and off such a screen that is nowhere it is.
+So on a screen read this way a locator matches only what is shown, and an
+action never scrolls by itself: it is refused, naming `app_swipe` and
+`app_scroll_to`. On the iPhone that tap was refused in five seconds with the
+page untouched; `scroll-to` "The Resistance of a Cow", 25 rows down, took
+three swipes and stopped with it on screen; and back to the search results,
+a small screen, was read in full again.
+
+### 259. A page in a WebView was moved off the screen in every read
+
+**Found by:** checking 258's inferred visibility against iOS's. Pocket
+Casts' podcast description is a WebView at 16,500, holding two plain views
+at 0,0 its size, holding the page at 16,500 again. The rule that moves
+content drawn by another process back on screen (128) knows that content
+by its shape — a child at 0,0 the size of a parent that is not — and moved
+the page by 16,500 a second time, to 32,1000, below the screen, in every
+read, visible or not. Content that lies inside the parent where it is, and
+outside the wrapper's own rectangle at 0,0, is in screen coordinates
+already, and is now left there; the share sheet, whose rows lie inside the
+wrapper's rectangle, still moves.
+
 ## Findings that were not defects
 
 Worth recording because each one closed off an approach that looked obvious.

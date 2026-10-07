@@ -53,6 +53,12 @@ type WDA struct {
 	// points every read at SpringBoard so map shows it. See wdanotify.go.
 	shadeHint bool
 
+	// lastCount is how many elements the last read of the screen held, which
+	// says whether the next is likely to be too large to read in full. See
+	// hugeRead.
+	countMu   sync.Mutex
+	lastCount int
+
 	// found is the element findUnique found last, by how it was found, until
 	// the next read of the screen.
 	foundMu sync.Mutex
@@ -304,8 +310,18 @@ func (w *WDA) teardownLocked(ctx context.Context) {
 // Snapshot fetches and parses the UI hierarchy.
 func (w *WDA) Snapshot(ctx context.Context) (*uitree.Tree, error) {
 	w.forgetFound()
+	if w.wasHuge() {
+		if t, ok := w.hugeRead(ctx); ok {
+			return t, nil
+		}
+	}
 	xml, err := w.w3c.source(ctx)
 	if err != nil {
+		if timedOut(err) && ctx.Err() == nil {
+			if t, ok := w.hugeRead(ctx); ok {
+				return t, nil
+			}
+		}
 		return nil, err
 	}
 	// Notification Center opened here and gone since — a notification
@@ -337,6 +353,7 @@ func (w *WDA) Snapshot(ctx context.Context) (*uitree.Tree, error) {
 			tree = under
 		}
 	}
+	w.setCount(tree.Count())
 	// WDA reports points; everything above this layer works in device pixels,
 	// which is also what screenshots are in.
 	tree.Scale(w.scale)

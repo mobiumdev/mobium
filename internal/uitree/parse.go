@@ -134,6 +134,9 @@ type Tree struct {
 	// hierarchy; empty where the source gives none (iOS, the dump backend).
 	// It is what tells a window that floats — a dialog — from the app's.
 	Screen Rect
+	// VisibilityInferred is set when which elements are shown was worked out
+	// from where they are rather than read from the platform (InferVisibility).
+	VisibilityInferred bool
 }
 
 var boundsRe = regexp.MustCompile(`\[(-?\d+),(-?\d+)\]\[(-?\d+),(-?\d+)\]`)

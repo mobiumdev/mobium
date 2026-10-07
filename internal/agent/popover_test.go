@@ -64,3 +64,16 @@ func TestAlertSaysAPopoverIsUp(t *testing.T) {
 		t.Errorf("accept = %v", err)
 	}
 }
+
+// A screen whose visibility was worked out from geometry says so in map,
+// and one read in full does not. CHALLENGES 258.
+func TestMapSaysWhenVisibilityWasInferred(t *testing.T) {
+	tree := iosCapture(t, "ios26-pocketcasts-player.xml")
+	if note := inferredNote(tree); note != "" {
+		t.Errorf("a full read carries a note: %q", note)
+	}
+	tree.InferVisibility()
+	if note := inferredNote(tree); !strings.Contains(note, "worked out from where each element is") {
+		t.Errorf("an inferred read's note is %q", note)
+	}
+}
