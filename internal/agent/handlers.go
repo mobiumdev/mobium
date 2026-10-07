@@ -1722,7 +1722,7 @@ func (h *Handlers) resolveNodeOnce(ctx context.Context, s *session, target strin
 	// for something that exists nowhere leaves the list scrolled. Bounded by
 	// maxScrolls, and skipped on a screen with nothing scrollable, so an
 	// ordinary miss stays cheap.
-	n, t, _, serr := h.scrollIntoView(ctx, s, loc, "down", true)
+	n, t, _, serr := h.scrollIntoView(ctx, s, loc, "down", true, h.refName(s.dev.Serial, target))
 	if serr != nil {
 		if resolveErr != nil {
 			// Android leaves out what the keyboard covers, so a target under
@@ -1740,6 +1740,14 @@ func (h *Handlers) resolveNodeOnce(ctx context.Context, s *session, target strin
 	// screen to still be moving, so it waits the whole window.
 	if err := h.sameAfterScroll(s.dev.Serial, target, n); err != nil {
 		return nil, nil, err
+	}
+	// From here the element is the one the scroll found, not whatever the
+	// ref's old position now holds: settle re-resolves its locator while it
+	// waits, and with the ref's, after a carousel paged to Freakonomics
+	// Radio, it tapped the position the row had left — off the screen, at
+	// x 575 of 402 points — and reported done. CHALLENGES 267.
+	if strings.HasPrefix(target, "@") {
+		loc = uitree.Derive(n, t)
 	}
 	return h.settle(ctx, s, loc, n, t, 0)
 }

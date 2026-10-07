@@ -264,6 +264,19 @@ this is what is not.
     found a reused row after the scroll. Left: a carousel that snaps a page
     at a time overshoots a measured nudge, so a ref there is refused and
     `map` must be read again — a locator by text reaches the row.
+  - A sweep of the Android checks on the Android 15 emulator, 2026-10-06
+    evening. The emulator stopped answering `adb` partway and was cold
+    booted; what failed before that was rerun. Found: bold text left on
+    after a restore, once, under that load (CHALLENGES 266), and
+    `files.sh` taking the emulator for an iPhone, fixed. `chrome.sh` and
+    `pwa.sh` were stopped by Chrome's notification prompt, and the web tap's
+    refusal blamed installed web apps instead (CHALLENGES 268); answered,
+    both pass. Left: `files.sh` met seven
+    `mobium-report (N).txt` left in Download by earlier runs, MediaStore
+    numbering every new save while the check reads the plain name — removed,
+    and the check should clear what it made under any number; and
+    `graybox.sh` could not show its control (the black box was current on
+    all ten quiet refreshes), so that run says nothing either way.
   - A sweep of 28 simulator checks on 2026-10-06 found three failures
     besides those fixed (CHALLENGES 263, 265): `notifications-ios.sh`, as
     MobiumApp was not allowed to notify on that simulator — the same at

@@ -898,3 +898,24 @@ func TestAFailedReadOnALockedDeviceSaysSo(t *testing.T) {
 		t.Errorf("a failed read on an unlocked device became %v", err)
 	}
 }
+
+// A tap into a page a dialog covers says so, and how to answer it — not that
+// the app stopped reporting its WebView. CHALLENGES 268.
+func TestATapIntoAPageUnderADialogNamesTheDialog(t *testing.T) {
+	err := webDialogOver("Chrome notifications make things easier\nYou'll be able to…", "WEBVIEW_com.android.chrome")
+	if mobiumerr.CodeOf(err) != mobiumerr.DeviceNotReady {
+		t.Errorf("code %s", mobiumerr.CodeOf(err))
+	}
+	said := err.Error()
+	if e, _ := mobiumerr.As(err); e != nil {
+		said += " — " + e.Remedy
+	}
+	for _, want := range []string{`"Chrome notifications make things easier"`, "answer the dialog", "app_dialogs"} {
+		if !strings.Contains(said, want) {
+			t.Errorf("the refusal lacks %q: %s", want, said)
+		}
+	}
+	if strings.Contains(err.Error(), "web apps") {
+		t.Errorf("the refusal still blames installed web apps: %v", err)
+	}
+}

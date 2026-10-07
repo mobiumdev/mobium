@@ -810,3 +810,33 @@ func TestARefMustNameTheSameElementAfterAScroll(t *testing.T) {
 		t.Errorf("a locator that is not a ref was refused: %v", err)
 	}
 }
+
+// A ref's scroll follows the element map named, not the position the ref
+// was given, once a reused cell holds something else there: Freakonomics
+// Radio's ref found Revisionist History after a nudge, and the loop chased
+// it until the carousel paged to its end. CHALLENGES 267.
+func TestARefsScrollFollowsTheNameMapGave(t *testing.T) {
+	tree, err := uitree.ParseIOS([]byte(`<?xml version="1.0" encoding="UTF-8"?>
+<XCUIElementTypeApplication type="XCUIElementTypeApplication" name="x" label="x" enabled="true" visible="true" accessible="false" x="0" y="0" width="402" height="874">
+ <XCUIElementTypeCollectionView type="XCUIElementTypeCollectionView" enabled="true" visible="true" accessible="false" x="16" y="316" width="382" height="273">
+  <XCUIElementTypeButton type="XCUIElementTypeButton" label="Revisionist History" enabled="true" visible="true" accessible="true" x="16" y="316" width="362" height="53"/>
+  <XCUIElementTypeButton type="XCUIElementTypeButton" label="Freakonomics Radio" enabled="true" visible="true" accessible="true" x="394" y="316" width="362" height="53"/>
+ </XCUIElementTypeCollectionView>
+</XCUIElementTypeApplication>`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	at, _ := uitree.ParseLocator("label=Revisionist History")
+	if n, err := refPicker(at, "Freakonomics Radio")(tree); err != nil || uitree.Describe(n) != "Freakonomics Radio" {
+		t.Errorf("followed the position, not the name: %v, %v", n, err)
+	}
+	if n, err := refPicker(at, "Revisionist History")(tree); err != nil || uitree.Describe(n) != "Revisionist History" {
+		t.Errorf("the position holding the named element was not used: %v, %v", n, err)
+	}
+	if _, err := refPicker(at, "Planet Money")(tree); mobiumerr.CodeOf(err) != mobiumerr.NoSuchElement {
+		t.Errorf("a name on no element resolved: %v", err)
+	}
+	if n, err := refPicker(at, "")(tree); err != nil || uitree.Describe(n) != "Revisionist History" {
+		t.Errorf("a locator that is not a ref did not resolve as itself: %v, %v", n, err)
+	}
+}

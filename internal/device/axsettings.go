@@ -4,6 +4,7 @@ import (
 	"context"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/mobiumdev/mobium/internal/mobiumerr"
 )
@@ -138,11 +139,30 @@ var unsetMeans = map[androidKey]string{
 	animationScales[2]: "1.0",
 }
 
+// liveMeans is what the window's configuration shows once the system has
+// heard a key written to what unset means. The write and the delete went
+// out back to back, and the system read the key after the delete, found
+// nothing and kept the old value: on the Android 15 emulator the session
+// ended with font_weight_adjustment unset and fontWeightAdjustment=300 on
+// screen minutes later, the text still bold. So the delete waits for this.
+// CHALLENGES 266.
+var liveMeans = map[androidKey]string{
+	boldTextKey:  "fontWeightAdjustment=0",
+	fontScaleKey: "fontScale=1.0",
+}
+
+// liveWait is how long a restore waits for the system to show what it wrote
+// before deleting the key regardless.
+const liveWait = 3 * time.Second
+
 func (a *ADB) rawPut(ctx context.Context, k androidKey, v string) error {
 	if v == "null" {
 		if off, ok := unsetMeans[k]; ok {
 			if _, err := a.Shell(ctx, "settings", "put", k.namespace, k.key, off); err != nil {
 				return err
+			}
+			if want, ok := liveMeans[k]; ok {
+				a.awaitWindowConfig(ctx, want)
 			}
 		}
 		_, err := a.Shell(ctx, "settings", "delete", k.namespace, k.key)
@@ -150,6 +170,23 @@ func (a *ADB) rawPut(ctx context.Context, k androidKey, v string) error {
 	}
 	_, err := a.Shell(ctx, "settings", "put", k.namespace, k.key, shellQuote(v))
 	return err
+}
+
+// awaitWindowConfig waits, up to liveWait, until the window manager's
+// configuration shows want.
+func (a *ADB) awaitWindowConfig(ctx context.Context, want string) {
+	deadline := time.Now().Add(liveWait)
+	for time.Now().Before(deadline) {
+		out, err := a.Shell(ctx, "dumpsys", "window")
+		if err == nil && strings.Contains(string(out), want) {
+			return
+		}
+		select {
+		case <-ctx.Done():
+			return
+		case <-time.After(150 * time.Millisecond):
+		}
+	}
 }
 
 // snapshot reads keys as they are, for an undo that restores them exactly.
