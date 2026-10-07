@@ -150,3 +150,48 @@ func TestAudioSaysTheVolume(t *testing.T) {
 		}
 	}
 }
+
+// expect makes the stop an assertion: what was heard either is what was
+// asked, or the stop fails as not_confirmed saying what was heard — and the
+// capture is still saved, since it is the evidence.
+func TestAudioExpect(t *testing.T) {
+	for _, c := range []struct {
+		name   string
+		expect interface{}
+		code   mobiumerr.Code
+		says   string
+	}{
+		{"the tone", []interface{}{map[string]interface{}{"hz": 440.0, "min_ms": 900.0, "max_ms": 1100.0}}, "", "440 Hz"},
+		{"the wrong tone", []interface{}{map[string]interface{}{"hz": 880.0}}, mobiumerr.NotConfirmed, "expected 880 Hz; heard 440 Hz for 1.0s"},
+		{"silence", []interface{}{}, mobiumerr.NotConfirmed, "expected silence; heard 440 Hz"},
+		{"a typo", []interface{}{map[string]interface{}{"hz": 440.0, "min": 900.0}}, mobiumerr.InvalidArgument, `has "min"`},
+		{"no hz", []interface{}{map[string]interface{}{"min_ms": 900.0}}, mobiumerr.InvalidArgument, "needs hz"},
+	} {
+		rec := &fakeAudio{samples: tone440()}
+		h := NewHandlers()
+		s := &session{dev: fakeDevice(), driver: &audioDriver{rec: rec}, backend: BackendUIA2}
+		_, _ = h.audioOn(context.Background(), s, map[string]interface{}{"action": "start"})
+		path := filepath.Join(t.TempDir(), "e.wav")
+		res, err := h.audioOn(context.Background(), s, map[string]interface{}{"action": "stop", "path": path, "expect": c.expect})
+		if mobiumerr.CodeOf(err) != c.code && !(c.code == "" && err == nil) {
+			t.Errorf("%s: %v", c.name, err)
+			continue
+		}
+		msg := ""
+		if err != nil {
+			msg = err.Error()
+		} else {
+			msg = textOf(res)
+		}
+		if !strings.Contains(msg, c.says) {
+			t.Errorf("%s: %q lacks %q", c.name, msg, c.says)
+		}
+		_, statErr := os.Stat(path)
+		switch {
+		case c.code == mobiumerr.InvalidArgument && (statErr == nil || s.audio == nil):
+			t.Errorf("%s: a bad expect must leave the capture running and save nothing", c.name)
+		case c.code != mobiumerr.InvalidArgument && statErr != nil:
+			t.Errorf("%s: the capture was not saved: %v", c.name, statErr)
+		}
+	}
+}

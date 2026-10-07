@@ -615,7 +615,23 @@ this is what is not.
     permission, filtered to the app under test, since the phone also plays
     its owner's notifications and calls; the iOS simulator, whose audio
     goes to a Mac device of its own; and an iPhone. Each to be measured
-    first. Also open: comparing a capture with a baseline recording, and
+    first. **Measured since, on the Pixel 8 Pro** (2026-10-07): a capture
+    of one app's audio alone works from adb as the shell user — an audio
+    policy matching MobiumApp's uid, with no app installed and no consent
+    asked. It heard 440 Hz, the sequence, and the silence as silence, and
+    not the tap's click, which is the system's; and at -15 dBFS, what the
+    app wrote, since it taps the app before the volume. Not built yet: a
+    pinned helper on the phone for `--app`.
+  - **Asserting it in a test, done**: stop takes `expect`, the sounds to
+    hear in order, and fails as not_confirmed saying what was heard, with
+    the capture saved; `--expect 440:1.8-2.2,880` on the CLI, and
+    `tests/audio/` in `mobium test` (guide, section 11). The result also
+    says the media volume: the same tone arrived at -9 dBFS at 15 of 15,
+    -42 at 5, -63 at 1 and as silence at 0.
+  - **An incoming call** silenced the app's tone on the emulator for as
+    long as it rang and brought it back on hang-up, while the app said it
+    was playing throughout; the capture held the ring instead.
+  - Also open: comparing a capture with a baseline recording, and
     the emulator's microphone (`injectAudio`), which would let a test
     speak to an app.
 - **Seeing an app's outgoing intents** on Android, so a test can assert that

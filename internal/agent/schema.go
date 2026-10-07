@@ -817,6 +817,30 @@ func GetToolSchemas() []Tool {
 						"type":        "string",
 						"description": "Where to save the audio, on stop — a .wav on this machine.",
 					},
+					"expect": map[string]interface{}{
+						"type": "array",
+						"description": "On stop: the sounds the capture must hold, in order — each a " +
+							"pitch, 0 for a sound with no one pitch, with an optional length; [] is " +
+							"silence. Sounds shorter than ignore_ms do not count. A capture that " +
+							"holds anything else fails as not_confirmed, saying what was heard, and " +
+							"is still saved.",
+						"items": map[string]interface{}{
+							"type": "object",
+							"properties": map[string]interface{}{
+								"hz":     map[string]interface{}{"type": "number", "minimum": 0, "description": "The pitch, or 0 for a sound with no one pitch."},
+								"min_ms": map[string]interface{}{"type": "integer", "minimum": 0, "description": "The shortest it may last."},
+								"max_ms": map[string]interface{}{"type": "integer", "minimum": 0, "description": "The longest it may last."},
+							},
+							"required":             []string{"hz"},
+							"additionalProperties": false,
+						},
+					},
+					"ignore_ms": map[string]interface{}{
+						"type":        "integer",
+						"minimum":     0,
+						"default":     200,
+						"description": "With expect: sounds this short or shorter do not count — a tap's own click is 100.",
+					},
 					"return_data": map[string]interface{}{
 						"type": "boolean",
 						"description": "On stop without a path: return the WAV, base64, instead of " +

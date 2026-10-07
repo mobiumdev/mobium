@@ -1710,6 +1710,28 @@ public final class Mobium implements AutoCloseable {
     }
 
     /**
+     * Stops a capture as an assertion: saves the WAV at path and checks the
+     * sounds it held, in order — each a map with {@code hz}, and optional
+     * {@code min_ms} and {@code max_ms}; an empty list is silence. Sounds of
+     * ignoreMs or less do not count; null keeps the default of 200. Anything
+     * else throws NotConfirmedException saying what was heard, and the
+     * capture is still saved.
+     *
+     * @param path where to save the WAV
+     * @param expect the sounds to hear, in order
+     * @param ignoreMs how short a sound may be and not count, or null
+     * @return the capture's timeline and volumes
+     */
+    public Map<String, Object> audioExpect(String path, List<Map<String, Object>> expect, Integer ignoreMs) {
+        Map<String, Object> args = new LinkedHashMap<>();
+        args.put("action", "stop");
+        args.put("path", path);
+        args.put("expect", expect);
+        if (ignoreMs != null) args.put("ignore_ms", ignoreMs);
+        return data("app_audio", args);
+    }
+
+    /**
      * Starts recording this session as a trace: from now on every call on the
      * device is a step, with the screen after it and the map's elements drawn
      * over it, until {@link #traceStop(String)} saves it. Text typed into a

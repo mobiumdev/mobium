@@ -16,10 +16,15 @@ mobium test --ui --open                             # pick, run and watch on a p
   step shorthand, the Login in the long form — each test from a
   freshly launched app. The Login's refusals are one test over three cases
   (`"each"`), each with its own message.
+- `audio/` hears MobiumApp's Audio Demo and asserts it at each capture's
+  stop. An Android emulator only, so it is not under `mobiumapp/`: run it
+  with `mobium test audio --project android`.
 - `controls/` are for the runner, not the app, and are not run by default:
   `must-fail.test.json` must fail, every test of it, and `flaky.test.json`
   must pass only on a retry, from cleared app data, and `soft.test.json`
-  must fail with two soft failures and still reach its last step.
+  must fail with two soft failures and still reach its last step, and
+  `audio-must-fail.test.json` must fail both its tests, each saying what
+  was heard, with its capture saved — `docs/checks/audio.sh` runs it.
   `docs/checks/test-runner.sh` runs all three and says whether they did.
 - `mobium.config.json` names the projects. The iOS one takes its device from
   `MOBIUM_IOS_DEVICE`: a simulator's id is one Mac's, and a phone's is

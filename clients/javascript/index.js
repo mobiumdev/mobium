@@ -1507,11 +1507,18 @@ export class Device {
    * it was taken at, each stream's index from min to max and muted. Assert
    * on sound, silence and pitch; the level follows the device's volume, and
    * at its lowest a playing app is silence. An Android emulator only.
+   *
+   * expect makes stop an assertion: the sounds to hear, in order, each
+   * { hz: 440 } with optional min_ms and max_ms; [] is silence. Sounds of
+   * ignoreMs (default 200) or less do not count. Anything else rejects with
+   * NotConfirmedError saying what was heard, and the capture is still saved.
    */
-  async audio({ action, path } = {}) {
+  async audio({ action, path, expect, ignoreMs } = {}) {
     const args = {}
     if (action) args.action = action
     if (path) args.path = path
+    if (expect !== undefined) args.expect = expect
+    if (ignoreMs !== undefined) args.ignore_ms = ignoreMs
     return (await this.#data('app_audio', args)) || {}
   }
 

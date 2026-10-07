@@ -1071,6 +1071,23 @@ namespace Mobium
         }
 
         /// <summary>
+        /// Stops a capture as an assertion: saves the WAV at path and checks
+        /// the sounds it held, in order — each a dictionary with <c>hz</c>,
+        /// and optional <c>min_ms</c> and <c>max_ms</c>; an empty list is
+        /// silence. Sounds of ignoreMs or less do not count; null keeps the
+        /// default of 200. Anything else throws NotConfirmedException saying
+        /// what was heard, and the capture is still saved.
+        /// </summary>
+        public IDictionary<string, object?> AudioExpect(string path, IEnumerable<IDictionary<string, object?>> expect, int? ignoreMs = null)
+        {
+            var args = Args("action", "stop");
+            args["path"] = path;
+            args["expect"] = new List<IDictionary<string, object?>>(expect);
+            if (ignoreMs.HasValue) args["ignore_ms"] = ignoreMs.Value;
+            return Data("app_audio", args);
+        }
+
+        /// <summary>
         /// Starts a trace of this session: from now until
         /// <see cref="TraceStop"/>, every call on the device is a step —
         /// before and after, the point an action touched, a failure's error —

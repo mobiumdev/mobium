@@ -37,6 +37,8 @@ command mentions them.
 | `app_audio` | `action` | string | audio |
 | `app_audio` | `device` | string | _global_ --device |
 | `app_audio` | `driver` | string | _global_ --driver |
+| `app_audio` | `expect` | array | audio |
+| `app_audio` | `ignore_ms` | integer | audio |
 | `app_audio` | `path` | string | audio |
 | `app_audio` | `return_data` | boolean | — |
 | `app_audit` | `device` | string | _global_ --device |
@@ -351,7 +353,7 @@ arguments and the two global flags.
 | `alert` | app_alert | --text | action, text |
 | `appearance` | app_appearance | — | appearance |
 | `apps` | app_list_apps | --system | system |
-| `audio` | app_audio | --output | action, path |
+| `audio` | app_audio | --expect --ignore-ms --output | action, expect, ignore_ms, path |
 | `audit` | app_audit | — | — |
 | `background` | app_background | --app | app, seconds |
 | `batch` | app_batch | — | steps |

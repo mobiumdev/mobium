@@ -122,6 +122,22 @@
     },
     {
       "tool": "app_audio",
+      "arg": "expect",
+      "type": "array",
+      "setBy": [
+        "audio"
+      ]
+    },
+    {
+      "tool": "app_audio",
+      "arg": "ignore_ms",
+      "type": "integer",
+      "setBy": [
+        "audio"
+      ]
+    },
+    {
+      "tool": "app_audio",
       "arg": "path",
       "type": "string",
       "setBy": [
@@ -2696,10 +2712,14 @@
         "app_audio"
       ],
       "flags": [
+        "--expect",
+        "--ignore-ms",
         "--output"
       ],
       "sends": [
         "action",
+        "expect",
+        "ignore_ms",
         "path"
       ]
     },

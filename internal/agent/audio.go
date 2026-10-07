@@ -73,6 +73,18 @@ func (h *Handlers) audioOn(ctx context.Context, s *session, args map[string]inte
 			return nil, mobiumerr.New(mobiumerr.InvalidArgument, "stop needs a path to save the audio to, "+
 				"e.g. \"capture.wav\"")
 		}
+		// Read before the capture stops: a mistake here must not cost it.
+		want, expecting, err := audioExpectation(args)
+		if err != nil {
+			return nil, err
+		}
+		ignore := audio.DefaultIgnore
+		if ms, ok := args["ignore_ms"].(float64); ok {
+			if ms < 0 {
+				return nil, mobiumerr.New(mobiumerr.InvalidArgument, "ignore_ms must not be negative")
+			}
+			ignore = time.Duration(ms) * time.Millisecond
+		}
 		if returnData {
 			dir, err := os.MkdirTemp("", "mobium-audio-")
 			if err != nil {
@@ -100,19 +112,84 @@ func (h *Handlers) audioOn(ctx context.Context, s *session, args map[string]inte
 		view.Path, view.Bytes = path, n
 		view.Duration = (time.Duration(len(samples)) * time.Second / device.AudioRate).Round(time.Millisecond)
 		view.Timeline = audio.Analyze(samples, device.AudioRate)
+		var miss string
+		if expecting {
+			miss = audio.Check(view.Timeline, want, ignore)
+		}
 		if returnData {
 			wav, err := os.ReadFile(path)
 			if err != nil {
 				return nil, fmt.Errorf("read the audio back: %w", err)
 			}
 			view.Path, view.Data = "", base64.StdEncoding.EncodeToString(wav)
+			if miss != "" {
+				// The capture is the evidence: it goes back with the
+				// failure, for the CLI or pipe to save where it was asked.
+				return nil, audioMissed(miss, view, "").WithDetail("data", view.Data)
+			}
 			return Result("captured "+AudioHeard(view), view), nil
+		}
+		if miss != "" {
+			return nil, audioMissed(miss, view, " — the capture is saved at "+path).WithDetail("path", path)
 		}
 		return Result(AudioSavedMessage(path, view), view), nil
 
 	default:
 		return nil, mobiumerr.New(mobiumerr.InvalidArgument, "action must be \"start\", \"stop\" or omitted, got %q", action)
 	}
+}
+
+// audioMissed is the failure of a stop whose capture did not hold what was
+// expected: what was heard, and the volume it was heard at, which at its
+// lowest is why an app was silent.
+func audioMissed(miss string, v AudioView, saved string) *mobiumerr.Error {
+	return mobiumerr.New(mobiumerr.NotConfirmed, "%s%s%s", miss, volumeNote(v), saved).
+		WithDetail("timeline", v.Timeline).WithDetail("volumes", v.Volumes)
+}
+
+// audioExpectation reads stop's expect: the sounds a capture must hold, in
+// order. Present and empty is silence; absent is no expectation.
+func audioExpectation(args map[string]interface{}) ([]audio.Expected, bool, error) {
+	raw, ok := args["expect"]
+	if !ok || raw == nil {
+		return nil, false, nil
+	}
+	list, ok := raw.([]interface{})
+	if !ok {
+		return nil, false, mobiumerr.New(mobiumerr.InvalidArgument, "expect is a list of sounds, each "+
+			"{\"hz\": 440} with optional min_ms and max_ms; [] is silence")
+	}
+	want := make([]audio.Expected, 0, len(list))
+	for i, item := range list {
+		m, ok := item.(map[string]interface{})
+		hz, hasHz := m["hz"].(float64)
+		if !ok || !hasHz || hz < 0 {
+			return nil, false, mobiumerr.New(mobiumerr.InvalidArgument, "expect[%d] needs hz, a pitch, or 0 for "+
+				"a sound with no one pitch: {\"hz\": 440}", i)
+		}
+		e := audio.Expected{Hz: hz}
+		for k, dst := range map[string]*int{"min_ms": &e.MinMs, "max_ms": &e.MaxMs} {
+			if v, ok := m[k]; ok {
+				n, ok := v.(float64)
+				if !ok || n < 0 {
+					return nil, false, mobiumerr.New(mobiumerr.InvalidArgument, "expect[%d].%s must be a "+
+						"number of milliseconds", i, k)
+				}
+				*dst = int(n)
+			}
+		}
+		for k := range m {
+			if k != "hz" && k != "min_ms" && k != "max_ms" {
+				return nil, false, mobiumerr.New(mobiumerr.InvalidArgument, "expect[%d] has %q; a sound "+
+					"takes hz, min_ms and max_ms", i, k)
+			}
+		}
+		if e.MaxMs > 0 && e.MinMs > e.MaxMs {
+			return nil, false, mobiumerr.New(mobiumerr.InvalidArgument, "expect[%d]: min_ms is more than max_ms", i)
+		}
+		want = append(want, e)
+	}
+	return want, true, nil
 }
 
 // AudioSavedMessage is what a stop says once the audio is on disk — the

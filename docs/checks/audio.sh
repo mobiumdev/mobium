@@ -147,4 +147,16 @@ $M --json audio stop -o "$CHECK_TMP/silent.wav" > "$CHECK_TMP/silent.json"
 n=$(expect silent) || fail "silence: $n"
 row "silence" "heard as silence ($n short sound(s)), while the platform said playing"
 
+# The same through mobium test: an expect at the stop passes on what was
+# played and fails, saying what was heard, on what was not — with the
+# capture still saved.
+(cd "$ROOT/tests" && MOBIUM_SESSION= "$ROOT/bin/mobium" test audio/audio.test.json --project android \
+  --output "$CHECK_TMP/report" > "$CHECK_TMP/test-pass.txt" 2>&1) || fail "tests/audio failed: $(tail -5 "$CHECK_TMP/test-pass.txt")"
+(cd "$ROOT/tests" && MOBIUM_SESSION= "$ROOT/bin/mobium" test controls/audio-must-fail.test.json --project android \
+  --output "$CHECK_TMP/report" > "$CHECK_TMP/test-fail.txt" 2>&1) && fail "the must-fail audio tests passed"
+grep -q "expected 880 Hz; heard 440 Hz" "$CHECK_TMP/test-fail.txt" || fail "a wrong pitch did not say what was heard: $(tail -5 "$CHECK_TMP/test-fail.txt")"
+grep -q "expected silence; heard 440 Hz" "$CHECK_TMP/test-fail.txt" || fail "silence expected did not say what was heard"
+[ "$(grep -c "the capture is saved at" "$CHECK_TMP/test-fail.txt")" -ge 2 ] || fail "a failed expect did not keep its capture"
+row "test" "mobium test: expect passes on what played, fails saying what was heard"
+
 echo "PASS"

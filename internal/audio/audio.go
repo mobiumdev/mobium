@@ -112,8 +112,10 @@ func Analyze(samples []int16, rate int) []Segment {
 	return out
 }
 
-// samePitch reports whether two readings are one sound: both without a
+// SamePitch reports whether two readings are one sound: both without a
 // pitch, or both within 2% or 5 Hz of each other.
+func SamePitch(a, b float64) bool { return samePitch(a, b) }
+
 func samePitch(a, b float64) bool {
 	if a == 0 || b == 0 {
 		return a == b
