@@ -210,6 +210,26 @@ func waitGone(pid int, timeout time.Duration, fromFile bool) bool {
 	}
 }
 
+// WaitStopping waits out a daemon on its way down: the PID file names a
+// process still alive that no longer answers. A daemon told to stop closes
+// its socket and exits about 0.1s later; a command in that gap found no
+// daemon and started one, which refused — one is already running — and
+// exited, and the command then waited ten seconds for an answer nothing
+// would give. Nine in ten after a pkill. CHALLENGES 279.
+func WaitStopping() {
+	pid, err := ReadPID()
+	if err != nil || pid == 0 || !Running(pid) {
+		return
+	}
+	// Not shutdownGrace: a PID file can name a process that reused the
+	// number, which never goes, and this wait must cost no more than the
+	// ten seconds a start already had.
+	waitGone(pid, stoppingWait, true)
+	CleanStale()
+}
+
+const stoppingWait = 10 * time.Second
+
 func sendRequest(method string, params json.RawMessage) (*agent.Response, error) {
 	socketPath, err := paths.SocketPath()
 	if err != nil {

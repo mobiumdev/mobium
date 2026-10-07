@@ -40,6 +40,9 @@ func (h *Handlers) audioOn(ctx context.Context, s *session, args map[string]inte
 	switch action := stringArg(args, "action"); action {
 	case "", "status":
 		if s.audio == nil {
+			if lost := lostAudio(s.dev.Serial); lost != "" {
+				return Result("not capturing audio — "+lost, view), nil
+			}
 			return Result("not capturing audio", view), nil
 		}
 		view.Recording = true
@@ -60,6 +63,7 @@ func (h *Handlers) audioOn(ctx context.Context, s *session, args map[string]inte
 			return nil, err
 		}
 		s.audio = r
+		writeAudioNote(s.dev.Serial, audioNote{PID: os.Getpid(), Started: r.Started()})
 		view.Recording = true
 		if !r.Captures() {
 			return Result("recording what interrupts the app's audio — a phone's sound is not captured; stop "+
@@ -69,6 +73,12 @@ func (h *Handlers) audioOn(ctx context.Context, s *session, args map[string]inte
 
 	case "stop":
 		if s.audio == nil {
+			if lost := lostAudio(s.dev.Serial); lost != "" {
+				removeAudioNote(s.dev.Serial)
+				return nil, mobiumerr.New(mobiumerr.Internal, "%s", lost).WithRemedy("a capture lives in the daemon " +
+					"that started it: start a new one and play the sound again, and stop a capture before " +
+					"`mobium daemon stop`")
+			}
 			return nil, mobiumerr.New(mobiumerr.InvalidArgument, "no audio is being captured — start with action \"start\"")
 		}
 		if !s.audio.Captures() {
@@ -102,6 +112,7 @@ func (h *Handlers) audioOn(ctx context.Context, s *session, args map[string]inte
 		}
 		r := s.audio
 		s.audio = nil
+		removeAudioNote(s.dev.Serial)
 		view.Elapsed = time.Since(r.Started()).Round(time.Millisecond)
 		got, err := r.Stop(ctx)
 		if err != nil {
@@ -165,6 +176,7 @@ func (h *Handlers) audioEventsStop(ctx context.Context, s *session, args map[str
 	}
 	r := s.audio
 	s.audio = nil
+	removeAudioNote(s.dev.Serial)
 	view.Elapsed = time.Since(r.Started()).Round(time.Millisecond)
 	got, err := r.Stop(ctx)
 	if err != nil {

@@ -116,6 +116,7 @@ func autoStartDaemon() error {
 	if err != nil {
 		return fmt.Errorf("find mobium executable: %w", err)
 	}
+	daemon.WaitStopping()
 
 	cmd := exec.Command(exe, "daemon", "start", "--idle-timeout", daemonIdleTimeout)
 	// Detach: the daemon must outlive the command that started it.
@@ -127,8 +128,11 @@ func autoStartDaemon() error {
 		return fmt.Errorf("start daemon: %w", err)
 	}
 	// The child is reparented to init; not reaping it here would leave a
-	// zombie for the life of this process.
-	go cmd.Wait()
+	// zombie for the life of this process. Its exit also ends the wait: a
+	// daemon that refused to start answers nothing, and polling on for ten
+	// seconds only delays saying so.
+	exited := make(chan error, 1)
+	go func() { exited <- cmd.Wait() }()
 
 	logf("started daemon (pid %d)", cmd.Process.Pid)
 
@@ -139,7 +143,16 @@ func autoStartDaemon() error {
 		if _, err := daemon.Status(); err == nil {
 			return nil
 		}
-		time.Sleep(25 * time.Millisecond)
+		select {
+		case err := <-exited:
+			// Another daemon may have won the socket; then it answers.
+			if _, serr := daemon.Status(); serr == nil {
+				return nil
+			}
+			return mobiumerr.New(mobiumerr.Internal, "the daemon exited as it started (%v) — "+
+				"`mobium daemon start` runs it in the foreground and prints why", err)
+		case <-time.After(25 * time.Millisecond):
+		}
 	}
 	return fmt.Errorf("daemon did not come up within 10s (try `mobium daemon start` to see why)")
 }

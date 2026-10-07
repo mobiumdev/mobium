@@ -4,8 +4,10 @@ import (
 	"context"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"runtime"
 	"runtime/pprof"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -322,6 +324,53 @@ func TestWaitGone(t *testing.T) {
 	if !waitGone(pid, 0, false) {
 		t.Error("an already-dead process was reported as running")
 	}
+}
+
+func TestWaitStopping(t *testing.T) {
+	// A daemon told to stop from outside — a pkill, a SIGTERM — closes its
+	// socket and exits about 0.1s later. A command in that gap started a new
+	// daemon, which found the old one's PID file naming a live process,
+	// refused, and exited, and the command waited ten seconds for nothing:
+	// nine in ten after a pkill. WaitStopping is what a start now does
+	// first. CHALLENGES 279.
+	t.Setenv("MOBIUM_HOME", shortTempDir(t))
+	t.Setenv("MOBIUM_SESSION", "")
+	proc := exec.Command("sh", "-c", "sleep 0.3")
+	if err := proc.Start(); err != nil {
+		t.Fatalf("start: %v", err)
+	}
+	go proc.Wait()
+	if err := os.MkdirAll(filepath.Dir(mustPIDPath(t)), 0o700); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(mustPIDPath(t), []byte(strconv.Itoa(proc.Process.Pid)), 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	start := time.Now()
+	WaitStopping()
+	if waited := time.Since(start); waited < 150*time.Millisecond {
+		t.Errorf("returned after %v, while the stopping daemon was still alive", waited)
+	}
+	if pid, _ := ReadPID(); pid != 0 {
+		t.Errorf("the PID file still names %d once its daemon has gone", pid)
+	}
+
+	// With no daemon going, it returns at once.
+	start = time.Now()
+	WaitStopping()
+	if waited := time.Since(start); waited > 100*time.Millisecond {
+		t.Errorf("waited %v with nothing to wait for", waited)
+	}
+}
+
+func mustPIDPath(t *testing.T) string {
+	t.Helper()
+	p, err := paths.PIDPath()
+	if err != nil {
+		t.Fatal(err)
+	}
+	return p
 }
 
 // A tool call that never returns holds the lock that closing the sessions

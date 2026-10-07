@@ -157,6 +157,9 @@ type session struct {
 	// session discards it, as it does a recording.
 	audio device.AudioRecording
 
+	// closeWhy is why the session is closing, for what it discards to say.
+	closeWhy string
+
 	// trace is a session trace in progress (app_trace), or nil. Ending the
 	// session discards it, as it does a recording.
 	trace *sessionTrace
@@ -200,6 +203,11 @@ func (s *session) close() {
 		s.audio.Discard(ctx)
 		cancel()
 		s.audio = nil
+		why := s.closeWhy
+		if why == "" {
+			why = "its session was closed"
+		}
+		endAudioNote(s.dev.Serial, why)
 	}
 	s.stopRoute()
 	// Before the driver closes: an undo needs the device to reach.
@@ -402,6 +410,7 @@ func (h *Handlers) externalSessionFor(ctx context.Context, backend Backend, ref 
 // closeSessions tears down every cached driver.
 func (h *Handlers) closeSessions() {
 	for serial, s := range h.sessions {
+		s.closeWhy = "the daemon was stopped"
 		s.close()
 		delete(h.sessions, serial)
 	}

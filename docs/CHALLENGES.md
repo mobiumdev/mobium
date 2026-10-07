@@ -6001,6 +6001,39 @@ tests both, and failed before the fix ("a check that does not parse
 passed"); it also parses every check, so `make ci` fails on one that does
 not.
 
+### 279. A command after a pkill waited ten seconds for a daemon nobody started
+
+**Found by:** chasing an open lead from the audio demo — twice "daemon did
+not come up within 10s" right after daemons were killed with `pkill`. Ten
+`pkill`s in a row reproduced it ten times; a `kill -9` and `mobium daemon
+stop` never did. A daemon sent SIGTERM closes its socket and exits about
+0.1s later. A command in that gap found no daemon and started one, which
+read the PID file, found that process still alive, refused — "a daemon is
+already running" — and exited; the old one then exited too, and the
+command polled ten seconds for an answer nothing would give, then sent the
+user to `mobium daemon start`, which by then worked. A start now waits out
+a daemon on its way down (`daemon.WaitStopping`, at most the ten seconds a
+start already had, since a PID file can name a reused number), and a
+daemon that exits as it starts ends the wait at once, saying so. Ten
+`pkill`s: each next command answered in 0.7s. `TestWaitStopping` fails
+with the wait taken out.
+
+### 280. A capture lost with its daemon was answered as never started
+
+**Found by:** cutting a capture short, on purpose. A capture lives in the
+memory of the daemon that started it. After `mobium daemon stop` or a
+`kill -9` mid-capture, the next daemon answered `audio status` with "not
+capturing audio", exit 0, and `audio stop` with "no audio is being
+captured — start with action "start"": the wrong cause, and a remedy that
+recovers nothing — and a graceful stop discarded the capture without a
+word. A running capture now leaves a note beside the daemon's socket,
+named for the session and device; a stop removes it, and a session that
+discards the capture writes why. The next daemon says "the capture started
+at 16:54:10, 2s ago, was lost: the daemon was stopped" — or "the daemon
+holding it (pid N) ended without stopping it" — as `internal`, with a
+remedy that works: start again, and stop a capture before stopping the
+daemon. `audio.sh` stops its own daemon mid-capture and asserts it.
+
 ## Findings that were not defects
 
 Worth recording because each one closed off an approach that looked obvious.
