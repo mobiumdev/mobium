@@ -1722,7 +1722,7 @@ func (h *Handlers) resolveNodeOnce(ctx context.Context, s *session, target strin
 	// for something that exists nowhere leaves the list scrolled. Bounded by
 	// maxScrolls, and skipped on a screen with nothing scrollable, so an
 	// ordinary miss stays cheap.
-	n, t, _, serr := h.scrollIntoView(ctx, s, loc, "down")
+	n, t, _, serr := h.scrollIntoView(ctx, s, loc, "down", true)
 	if serr != nil {
 		if resolveErr != nil {
 			// Android leaves out what the keyboard covers, so a target under
@@ -1738,7 +1738,38 @@ func (h *Handlers) resolveNodeOnce(ctx context.Context, s *session, target strin
 	}
 	// A list that has just been scrolled is the most likely thing on any
 	// screen to still be moving, so it waits the whole window.
+	if err := h.sameAfterScroll(s.dev.Serial, target, n); err != nil {
+		return nil, nil, err
+	}
 	return h.settle(ctx, s, loc, n, t, 0)
+}
+
+// sameAfterScroll refuses a ref that, once its list has scrolled, finds an
+// element other than the one map named. A ref with no words of its own is
+// a position in the tree, and a list reuses its cells: after a sideways
+// nudge in Pocket Casts' Discover carousel, the ref map gave Freakonomics
+// Radio found the cell now showing Revisionist History, and the tap opened
+// it and reported done. staleRef lets a ref through whose position is
+// unchanged, for an element whose own text moves; after a scroll a reused
+// cell sits where the old one was, so only the name is evidence. CHALLENGES
+// 261.
+func (h *Handlers) sameAfterScroll(serial, ref string, node *uitree.Node) error {
+	table, ok := h.refs[serial]
+	if !ok || !strings.HasPrefix(ref, "@") {
+		return nil
+	}
+	was, ok := table.seen[ref]
+	if !ok {
+		return nil
+	}
+	if now := uitree.Describe(node); now != was.name {
+		return mobiumerr.New(mobiumerr.NoSuchElement, "%s was %q when the map was taken; its list scrolled to bring "+
+			"it into view, and its locator now finds %q — a list reuses its rows, so a ref that names a position "+
+			"finds whatever moved into it", ref, was.name, now).
+			WithRemedy("run app_map again, and use the ref it gives").
+			WithDetail("ref", ref)
+	}
+	return nil
 }
 
 // settle waits until the element's rectangle stops moving.

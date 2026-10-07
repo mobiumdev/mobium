@@ -5691,6 +5691,34 @@ sleeping Android screen shows itself, so that is where it is asked. On the
 emulator `map`, `text` and `tap` each said the device was locked, and
 `map` read the launcher again once `lock unlock` had run.
 
+### 261. A carousel row was scrolled for the wrong way, and then a ref found another row
+
+**Found by:** measuring long lists on the simulator. Pocket Casts' Discover
+has a carousel of rows in columns inside a vertical page; Freakonomics
+Radio sat in the second column, a four-point sliver at the right edge, in
+view top to bottom. A tap on it swiped the page down and was refused as
+"on the screen but never scrolled fully into view". An action that has to
+scroll asks for "down", since nothing told it a direction, and the measured
+nudge that finishes a near miss (114) travelled the axis it was asked for.
+Once a target is found, the side it is out on is known, and so is the axis
+when it is out on one only: a target out to the right and in view top to
+bottom comes in only by moving sideways. Nothing infers which way the
+carousel scrolls. An action's own scroll now nudges along that axis; with
+the change taken out the same tap was refused as before. `app_scroll_to`
+keeps its caller's axis — `mobium-app.sh` asserts that a horizontal pager
+scrolled "down" is not answered by moving sideways, and it failed until
+the change was narrowed to actions.
+
+The first try at that found the second defect. The tap by ref moved the
+carousel, then opened Revisionist History and reported Freakonomics tapped.
+A row with no words of its own maps to a position in the tree, and the
+carousel reuses its cells: after the move the same position held another
+podcast. `staleRef` lets a ref through whose position is unchanged, for an
+element whose own text moves, and after a scroll it was not asked at all —
+and a reused cell sits exactly where the old one did. Now a ref whose list
+has scrolled must name what map named, or the action is refused naming what
+it found instead. By its text the same tap opened Freakonomics Radio.
+
 ## Findings that were not defects
 
 Worth recording because each one closed off an approach that looked obvious.

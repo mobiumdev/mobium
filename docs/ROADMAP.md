@@ -257,10 +257,16 @@ this is what is not.
     screens, so reading light first everywhere to spare the first read of
     a long list would tax every read for a case met in one app so far; left
     as it is. Not measured: a mailbox or a contacts list, which are someone's.
-  - A Discover row in Pocket Casts' horizontal carousel, on the simulator,
-    is refused as "on the screen but never scrolled fully into view" after
-    one scroll *down* — the wrong axis for its container — while it is
-    plainly on screen (2026-10-06, Freakonomics Radio). Not looked into.
+  - ~~A Discover row in Pocket Casts' horizontal carousel refused after a
+    scroll down.~~ Fixed on 2026-10-06 (CHALLENGES 261), with a ref that
+    found a reused row after the scroll. Left: a carousel that snaps a page
+    at a time overshoots a measured nudge, so a ref there is refused and
+    `map` must be read again — a locator by text reaches the row.
+  - `icecubes-ios.sh` fails on the simulator at "scroll-to called Report
+    Post in view, and map does not list it", at #136, #139 and #142 alike,
+    so from before any of 2026-10-06's changes. Ice Cubes reads a live
+    timeline, so a different first post is the likely reason; not looked
+    into.
   - ~~Two things seen once on the iPhone with its screen dark.~~ Explained
     on 2026-10-06 (CHALLENGES 260): the hang was a long list's read (258)
     and the launch preceded the lock. A locked device now says so in `map`
