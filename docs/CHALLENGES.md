@@ -5719,6 +5719,25 @@ and a reused cell sits exactly where the old one did. Now a ref whose list
 has scrolled must name what map named, or the action is refused naming what
 it found instead. By its text the same tap opened Freakonomics Radio.
 
+### 262. A menu that fit on the screen called an item hidden in it "on screen already"
+
+**Found by:** `icecubes-ios.sh`, failing at "scroll-to called Report Post in
+view, and map does not list it" — at #136, #139 and #142 alike, so not
+any change of that day's, and taken at first for the live timeline. It
+was the menu. Ice Cubes' long-press menu had run past the bottom of the
+screen, and 220 made the screen's edge the end of a list's viewport. Now
+it fits: a list 875 points tall inside a panel 334 tall that clips it, and
+Report Post sits 170 points below the panel's edge, reported hidden by iOS
+and left out of `map`, while the viewport — the list's bounds, cut at the
+screen — still reached it. A list's viewport now also ends where what
+holds it ends. Across every capture that changed four verdicts among 1,481
+targets in a list: Report Post in this menu; in the "…" menu, Report Post
+with 16 of its 43 points inside its panel, whose center would have landed
+outside the menu and closed it; a text iOS reports hidden; and a scroll
+indicator. `icecubes-ios.sh` passes again, with `mobium-app.sh`,
+`feed.sh`, `pocketcasts-ios.sh`, `kiwix-ios.sh`, `obstruction.sh` and
+`autowait.sh`, on the simulator.
+
 ## Findings that were not defects
 
 Worth recording because each one closed off an approach that looked obvious.

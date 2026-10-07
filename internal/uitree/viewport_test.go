@@ -44,3 +44,47 @@ func TestAListWithNoBarIsAllInView(t *testing.T) {
 		})
 	}
 }
+
+// A list taller than the panel that shows it is in view only within the
+// panel. Ice Cubes' long-press menu, once it fit on the screen: a list 875
+// points tall in a panel 334 tall, and Report Post 170 points below the
+// panel's edge — which iOS reports hidden — was taken as in view, so
+// scroll-to called it there and map did not list it. Translate, the last
+// item the panel shows, is in view. CHALLENGES 262.
+func TestAListIsInViewOnlyInsideThePanelThatShowsIt(t *testing.T) {
+	tree := loadIOS(t, "ios26-icecubes-short-menu.xml")
+	item := func(label string) *Node {
+		var found *Node
+		tree.Walk(func(n *Node) bool {
+			if found == nil && n.Class == "XCUIElementTypeButton" && n.Label == label {
+				found = n
+			}
+			return found == nil
+		})
+		if found == nil {
+			t.Fatalf("no %q in the menu", label)
+		}
+		return found
+	}
+	for _, c := range []struct {
+		label string
+		in    bool
+	}{{"Report Post", false}, {"Translate", true}} {
+		n := item(c.label)
+		var list *Node
+		for p := n.Parent; p != nil; p = p.Parent {
+			if p.Scrollable {
+				list = p
+				break
+			}
+		}
+		if list == nil {
+			t.Fatalf("%s is in no list", c.label)
+		}
+		v := tree.Viewport(list)
+		in := n.Bounds.Y1 >= v.Y1 && n.Bounds.Y2 <= v.Y2
+		if in != c.in {
+			t.Errorf("%s at %v against the viewport %v: in view %v, want %v", c.label, n.Bounds, v, in, c.in)
+		}
+	}
+}

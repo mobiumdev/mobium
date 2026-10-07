@@ -46,7 +46,26 @@ func (t *Tree) Viewport(c *Node) Rect {
 	if v.Y2 <= v.Y1 {
 		v = c.Bounds
 	}
-	return t.onScreen(v)
+	return t.onScreen(withinAncestors(c, v))
+}
+
+// withinAncestors is r less whatever of it runs past the bounds of what holds
+// c. A list can be taller than the panel that shows it: Ice Cubes' long-press
+// menu, once it fit on the screen, was a list 875 points tall in a panel 334
+// tall that clips it, and scroll-to answered "on screen already" for Report
+// Post, 170 points below the panel's edge, which iOS reports hidden and map
+// does not list. The screen's edge was what clipped it while the menu ran
+// past the screen (onScreen). Unclipped by an ancestor it does not meet.
+// CHALLENGES 262.
+func withinAncestors(c *Node, r Rect) Rect {
+	for p := c.Parent; p != nil; p = p.Parent {
+		b := p.Bounds
+		if b.Empty() || b.X2 <= r.X1 || b.X1 >= r.X2 || b.Y2 <= r.Y1 || b.Y1 >= r.Y2 {
+			continue
+		}
+		r = Rect{X1: max(r.X1, b.X1), Y1: max(r.Y1, b.Y1), X2: min(r.X2, b.X2), Y2: min(r.Y2, b.Y2)}
+	}
+	return r
 }
 
 // onScreen is r less whatever of it runs past the screen. A container can
