@@ -850,11 +850,27 @@ func (w *WDA) elementFor(ctx context.Context, n *uitree.Node) (string, error) {
 // found the key, and failed with "the previously found element "Search"
 // Button is not present" once the results replaced the keyboard, after the
 // text had gone into the field. CHALLENGES 240.
+//
+// A text field is either of its two types: Flutter's password field is a
+// TextField until it has focus and a SecureTextField after, so the field
+// found as a TextField to type into was gone by the time the typing looked
+// for it again, "stale element reference", on every run of flutter.sh since
+// 240 (CHALLENGES 265). The keyboard's keys are neither, so 240's case does
+// not come back.
 func namePredicate(n *uitree.Node) (string, bool) {
 	if n.TestID == "" || n.Class == "" || strings.ContainsAny(n.TestID+n.Class, `"\`) {
 		return "", false
 	}
+	if textFieldTypes[n.Class] {
+		return fmt.Sprintf(`name == "%s" AND type IN {"XCUIElementTypeTextField", "XCUIElementTypeSecureTextField"}`,
+			n.TestID), true
+	}
 	return fmt.Sprintf(`name == "%s" AND type == "%s"`, n.TestID, n.Class), true
+}
+
+var textFieldTypes = map[string]bool{
+	"XCUIElementTypeTextField":       true,
+	"XCUIElementTypeSecureTextField": true,
 }
 
 // countNamed is how many nodes of the tree n came from share its name and

@@ -5738,6 +5738,51 @@ indicator. `icecubes-ios.sh` passes again, with `mobium-app.sh`,
 `feed.sh`, `pocketcasts-ios.sh`, `kiwix-ios.sh`, `obstruction.sh` and
 `autowait.sh`, on the simulator.
 
+### 263. A back button was covered by the list scrolled under its bar
+
+**Found by:** a sweep of the simulator checks after 262. `netnewswire-ios.sh`
+failed at its last step: a tap on the Feeds back button was refused as
+covered by an article row. iOS 26 runs the article list under its
+navigation bar and lists the rows after the bar; UIKit draws the bar over
+them. Until 257 only the outermost node over a point counted — a plain view
+there, which says nothing about touches — and since 257 a control inside
+it does, here the row's cell. A control in a navigation bar, toolbar or tab
+bar is now never covered by scrolling content, whatever the order. It
+changed no aim across the captured screens, none of which had a list under
+a bar's control; the check is what showed it. `netnewswire-ios.sh` passes
+again on the simulator, with `icecubes-ios.sh`, `pocketcasts-ios.sh` and
+`obstruction.sh`.
+
+### 264. map listed what controls covered as if it could be pressed
+
+**Found by:** what 257 left open. `map` listed Discover's category chips
+under Pocket Casts' search results, and its rows under "Search Failed",
+with nothing to say a tap on them is refused. An entry a control covers at
+every point now says so — `(button, covered by "Podcasts")`, and `covered`
+in the structured result — asked the way a tap asks (AimAt). Across every
+capture it marked 14 of 896 entries, each a real cover: those chips and
+rows, a search result under the mini player, Ice Cubes' tint swatch under
+its pinned sample post, and the Obstruction Demo's full cover, hidden
+overlay and scrim. What a plain view covers stays unmarked — it may take a
+touch or let it through, and the tree cannot say — so the mark is a
+refusal's, never a guess.
+
+### 265. Flutter's password field went stale between finding it and typing
+
+**Found by:** the same sweep. `flutter.sh` failed at typing the password:
+"stale element reference: the previously found element "password"
+TextField is not present". `git bisect` between #96, where it passed, and
+#136 named the commit of 240, which made WebDriverAgent find a named
+element by its name and its type together, so that a field named "Search"
+was not the keyboard's Search key. Flutter's password field is an
+`XCUIElementTypeTextField` until it takes focus and a
+`SecureTextField` after — read back on the simulator, before and after a
+tap — so the element found as a TextField was gone when the typing looked
+for it again. A field is now found as either field type; the keyboard's
+keys are neither, so 240's case cannot return. `flutter.sh` passes again,
+with `pocketcasts-ios.sh` (240's search field) and `login.sh`. Red since
+2026-10-05, and found only because every check was run.
+
 ## Findings that were not defects
 
 Worth recording because each one closed off an approach that looked obvious.

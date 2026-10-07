@@ -43,7 +43,14 @@ type Entry struct {
 	// everything else. A string because it is the app's: iOS reports
 	// "80%" or "1.2", whatever the app made of the position.
 	Value string `json:"value,omitempty"`
-	Node  *Node  `json:"-"`
+	// Covered names a control drawn over every point of the element, so a
+	// tap on it is refused (AimAt's Blocker), and is empty otherwise. map
+	// listed Discover's category chips under Pocket Casts' search results,
+	// and the rows under its "Search Failed", as if they could be pressed.
+	// It cannot say what a plain view covers, which may let a tap through
+	// or take it: what it marks, a tap refuses. CHALLENGES 264.
+	Covered string `json:"covered,omitempty"`
+	Node    *Node  `json:"-"`
 }
 
 // Line renders the entry the way the CLI prints it.
@@ -67,6 +74,9 @@ func (e Entry) Line() string {
 	}
 	if e.Value != "" {
 		states = append(states, e.Value)
+	}
+	if e.Covered != "" {
+		states = append(states, fmt.Sprintf("covered by %q", e.Covered))
 	}
 	return fmt.Sprintf("%s %s (%s)", e.Ref, e.Label, strings.Join(states, ", "))
 }
@@ -390,6 +400,9 @@ func (t *Tree) Map() []Entry {
 		if n.node.Checkable {
 			checked := n.node.Checked
 			e.Checked = &checked
+		}
+		if a := t.AimAt(n.node); a.Blocker != nil {
+			e.Covered = Describe(a.Blocker)
 		}
 		out = append(out, e)
 	}

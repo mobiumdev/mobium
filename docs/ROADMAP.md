@@ -262,6 +262,12 @@ this is what is not.
     found a reused row after the scroll. Left: a carousel that snaps a page
     at a time overshoots a measured nudge, so a ref there is refused and
     `map` must be read again — a locator by text reaches the row.
+  - A sweep of 28 simulator checks on 2026-10-06 found three failures
+    besides those fixed (CHALLENGES 263, 265): `notifications-ios.sh`, as
+    MobiumApp was not allowed to notify on that simulator — the same at
+    #136, so its permission, not a change; and `third-party-app-ios.sh`,
+    which needs Wikipedia from the App Store and the simulator has none.
+    Neither is a defect; both want a simulator set up for them.
   - ~~`icecubes-ios.sh` failing at Report Post.~~ Not the live timeline:
     the long-press menu now fits on the screen, and a list's viewport did
     not end at the panel that clips it. Fixed on 2026-10-06 (CHALLENGES
