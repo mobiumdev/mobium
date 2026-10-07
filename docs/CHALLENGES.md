@@ -5665,6 +5665,32 @@ outside the wrapper's own rectangle at 0,0, is in screen coordinates
 already, and is now left there; the share sheet, whose rows lie inside the
 wrapper's rectangle, still moves.
 
+### 260. A locked device's screen read as an odd one, or as a screen changing
+
+**Found by:** two things seen once on the iPhone 15 Plus with its screen
+dark — a read that hung for its 60 seconds, and a `launch` reported done a
+moment before a screenshot showed the screen black. Measured with the phone
+locked through Mobium, neither was a lock defect: `launch` was refused as
+`device_not_ready`, behind the lock screen, in 15 seconds; `current` said
+SpringBoard; `map` answered in five. The hang was 258's — Radiolab's page,
+whose full read is slow lit or dark — and the launch was the phone locking
+just after it, during that read.
+
+What the measurement found instead was that a locked device's screen said
+nothing of the lock. `map` on the locked iPhone listed two bare scroll views,
+which reads as some app's odd screen. And on the Android 15 emulator, put to
+sleep by `lock lock`, the first `map` listed the launcher it had shown a
+moment before and the next failed after ten seconds blaming "the screen was
+changing" — UiAutomator2 waits for a window a sleeping screen does not have.
+Now `map` with SpringBoard in front asks whether the device is locked (a
+second on the iPhone) and says so with the remedy the launch refusal gives;
+and a read that fails — `map`, `text`, or an action's — asks once, and
+answers `device_not_ready` when it is. Asking on every Android `map` would
+cost 60 to 134 ms against a 30 ms read, and the failed read is where a
+sleeping Android screen shows itself, so that is where it is asked. On the
+emulator `map`, `text` and `tap` each said the device was locked, and
+`map` read the launcher again once `lock unlock` had run.
+
 ## Findings that were not defects
 
 Worth recording because each one closed off an approach that looked obvious.

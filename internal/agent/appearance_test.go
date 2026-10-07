@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/mobiumdev/mobium/internal/device"
 	"github.com/mobiumdev/mobium/internal/mobiumdriver"
@@ -830,5 +831,70 @@ func TestSelectAndMediaKeysAreReportedAsSent(t *testing.T) {
 		if textOf(res) != "pressed "+b || res.StructuredContent.(PressView).Confirmed {
 			t.Errorf("%s: %q", b, textOf(res))
 		}
+	}
+}
+
+// map on a locked iPhone listed two bare scroll views and said nothing of a
+// lock. It says so now, with the remedy the launch refusal gives — asked only
+// when the system shell is in front, so an app's map is not slowed by it.
+func TestMapSaysTheDeviceIsLocked(t *testing.T) {
+	h, s, d := withButtons(t)
+	ctx := context.Background()
+	screen := func(bundle string) *uitree.Tree {
+		tree, err := uitree.ParseIOS([]byte(`<?xml version="1.0" encoding="UTF-8"?><XCUIElementTypeApplication ` +
+			`type="XCUIElementTypeApplication" name="x" label="x" enabled="true" visible="true" accessible="false" ` +
+			`x="0" y="0" width="430" height="932" bundleId="` + bundle + `"/>`))
+		if err != nil {
+			t.Fatal(err)
+		}
+		return tree
+	}
+	d.locked = true
+	if note := h.lockedNote(ctx, s, screen("com.apple.springboard")); !strings.Contains(note, "mobium lock unlock") {
+		t.Errorf("a locked device's lock screen got the note %q", note)
+	}
+	if note := h.lockedNote(ctx, s, screen("au.com.shiftyjelly.podcasts")); note != "" {
+		t.Errorf("an app's screen was asked about and noted: %q", note)
+	}
+	d.locked = false
+	if note := h.lockedNote(ctx, s, screen("com.apple.springboard")); note != "" {
+		t.Errorf("an unlocked home screen got the note %q", note)
+	}
+}
+
+// sleepingDriver is a device whose screen cannot be read: Android's asleep,
+// where UiAutomator2 waits for a window and gives up.
+type sleepingDriver struct{ locked bool }
+
+func (d *sleepingDriver) Snapshot(ctx context.Context) (*uitree.Tree, error) {
+	return nil, errors.New("could not read the UI hierarchy: each failing while the screen was changing")
+}
+func (d *sleepingDriver) Screenshot(ctx context.Context) ([]byte, error)    { return nil, nil }
+func (d *sleepingDriver) Tap(ctx context.Context, x, y int) error           { return nil }
+func (d *sleepingDriver) Name() string                                      { return "fake" }
+func (d *sleepingDriver) ScreenLocked(ctx context.Context) (bool, error)    { return d.locked, nil }
+func (d *sleepingDriver) SetScreenLocked(ctx context.Context, v bool) error { d.locked = v; return nil }
+
+// A read that fails on a locked device says the device is locked, not that
+// the screen was changing; one that fails on an unlocked device keeps its
+// own reason. Measured on the Android 15 emulator, asleep after `lock lock`.
+func TestAFailedReadOnALockedDeviceSaysSo(t *testing.T) {
+	h := NewHandlers()
+	h.implicitWait = 200 * time.Millisecond
+	d := &sleepingDriver{locked: true}
+	s := &session{dev: fakeDevice(), driver: d, backend: BackendUIA2}
+	ctx := context.Background()
+	readErr := errors.New("the screen was changing")
+	if err := h.lockedRead(ctx, s, readErr); mobiumerr.CodeOf(err) != mobiumerr.DeviceNotReady ||
+		!strings.Contains(err.Error(), "mobium lock unlock") {
+		t.Errorf("a failed read on a locked device gave %v", err)
+	}
+	_, err := h.tapOn(ctx, s, map[string]interface{}{"target": "text=Settings"})
+	if mobiumerr.CodeOf(err) != mobiumerr.DeviceNotReady {
+		t.Errorf("a tap on a locked device that cannot be read gave %v", err)
+	}
+	d.locked = false
+	if err := h.lockedRead(ctx, s, readErr); err != readErr {
+		t.Errorf("a failed read on an unlocked device became %v", err)
 	}
 }

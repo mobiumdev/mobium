@@ -232,10 +232,10 @@ this is what is not.
     element something covers; and an action there does not scroll for its
     target. Unmeasured: other apps' long lists — a mailbox, a contacts
     list — and where between 393 and 2,847 elements a read stops fitting.
-  - Two things seen once on the iPhone with its screen dark, 2026-10-06,
-    neither reproduced: a read hung for its 60 seconds rather than being
-    refused as `device_not_ready`, and `launch` reported success a moment
-    before a screenshot showed the screen dark.
+  - ~~Two things seen once on the iPhone with its screen dark.~~ Explained
+    on 2026-10-06 (CHALLENGES 260): the hang was a long list's read (258)
+    and the launch preceded the lock. A locked device now says so in `map`
+    on iOS, and in any failed read on both platforms.
   - An overlay hidden from accessibility on iOS, which WebDriverAgent's tree
     does not contain, so a tap under one still lands on it. **On a
     simulator, `mobium hit-test` sees it** since 2026-09-29: UIKit's own hit
