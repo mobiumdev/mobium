@@ -117,10 +117,10 @@ if ! $M map | grep -qE '^@e[0-9]+ Search podcasts or add RSS URL \(input\)'; the
 fi
 
 echo "  a podcast"
-# Discover is live, and a build from source cannot search — it answers
-# "Search Failed", without the App Store build's credentials (CHALLENGES
-# 257) — so the check takes the first podcast Discover ranks, whatever it
-# is, and holds the shape of its rows rather than their words.
+# Discover is live, and its search reaches a backend that once answered
+# "Search Failed" for an afternoon (CHALLENGES 257), so the check takes the
+# first podcast Discover ranks, whatever it is, and holds the shape of its
+# rows rather than their words — none of what it holds needs a search.
 $M wait "text=Search podcasts or add RSS URL" >/dev/null || fail "Discover did not come up"
 lines=$($M map)
 if echo "$lines" | grep -E '^@e[0-9]+ .+ Follow \(button\)$' | grep -qvE '^@e[0-9]+ Follow \('; then

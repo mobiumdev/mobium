@@ -5597,6 +5597,12 @@ target that lies mostly inside its cover's row of controls would refuse
 Notification Center's Show less and the Obstruction Demo's half-covered
 button, where moving is measured right.
 
+**Corrected the same evening:** the source build can search. Six searches
+from fresh launches on the simulator all answered in 5 to 7 seconds, with
+the podcast asked for first and its name in nearly every row; the
+afternoon's "Search Failed" was passing, and the credentials were never
+shown to be why.
+
 **The gap, measured and closed.** Pocket Casts' Discover chips on the
 simulator are native controls with nothing over them: 37 points high, in a
 strip 54 high. Across the six-point gap between two, a tap opened All
