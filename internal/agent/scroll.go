@@ -129,7 +129,7 @@ func (h *Handlers) scrollToOn(ctx context.Context, s *session, args map[string]i
 	if err != nil {
 		return nil, err
 	}
-	node, tree, scrolls, err := h.scrollIntoView(ctx, s, loc, dir, false)
+	node, tree, scrolls, err := h.scrollIntoView(ctx, s, loc, dir, false, h.refName(s.dev.Serial, target))
 	if err != nil {
 		return nil, err
 	}
@@ -178,7 +178,12 @@ func plural(n int) string {
 // the axis it is out on (nudgeInto). app_scroll_to keeps the caller's axis —
 // the caller named it, and a horizontal pager scrolled "down" must not
 // answer by moving sideways.
-func (h *Handlers) scrollIntoView(ctx context.Context, s *session, loc uitree.Locator, dir string, followTarget bool) (*uitree.Node, *uitree.Tree, int, error) {
+//
+// name is what map called the target when it is a ref, and "" otherwise: the
+// loop follows the element by it rather than by the ref's position once the
+// two part (refPicker).
+func (h *Handlers) scrollIntoView(ctx context.Context, s *session, loc uitree.Locator, dir string, followTarget bool, name string) (*uitree.Node, *uitree.Tree, int, error) {
+	pick := refPicker(loc, name)
 	tree, err := s.driver.Snapshot(ctx)
 	if err != nil {
 		return nil, nil, 0, err
@@ -187,7 +192,7 @@ func (h *Handlers) scrollIntoView(ctx context.Context, s *session, loc uitree.Lo
 	// Already there? Resolve against the container it will be measured
 	// against, so "visible" means the same thing before and after scrolling.
 	container := scrollContainer(tree)
-	n, resolveErr := resolvedAndVisible(loc, tree, container)
+	n, resolveErr := resolvedAndVisible(pick, tree, container)
 	if resolveErr == nil {
 		return n, tree, 0, nil
 	}
@@ -216,7 +221,7 @@ func (h *Handlers) scrollIntoView(ctx context.Context, s *session, loc uitree.Lo
 			return nil, nil, 0, err
 		}
 		container = scrollContainer(tree)
-		if n, resolveErr = resolvedAndVisible(loc, tree, container); resolveErr == nil {
+		if n, resolveErr = resolvedAndVisible(pick, tree, container); resolveErr == nil {
 			return n, tree, 0, nil
 		}
 		if !matchedNothing(resolveErr) && !errors.Is(resolveErr, errOffScreen) {
@@ -261,7 +266,7 @@ func (h *Handlers) scrollIntoView(ctx context.Context, s *session, loc uitree.Lo
 	// bottom edge past the top of the list on an iPhone simulator, where a
 	// swipe coasts, and the next swipe found the end and gave up with the
 	// button in plain sight above it. CHALLENGES 114.
-	partial, partialIn := offScreenTarget(loc, tree)
+	partial, partialIn := offScreenTarget(pick, tree)
 
 	for i := 1; i <= maxScrolls; i++ {
 		nudged, err := nudgeInto(ctx, gest, partialIn, partial, horizontal(dir), followTarget)
@@ -294,7 +299,7 @@ func (h *Handlers) scrollIntoView(ctx context.Context, s *session, loc uitree.Lo
 				"the swipe changed the screen instead of scrolling it, so it does not "+
 				"scroll that way. Try the other axis, or app_swipe", dir, loc)
 		}
-		n, resolveErr := resolvedAndVisible(loc, tree, container)
+		n, resolveErr := resolvedAndVisible(pick, tree, container)
 		if resolveErr == nil {
 			return n, tree, i, nil
 		}
@@ -302,7 +307,7 @@ func (h *Handlers) scrollIntoView(ctx context.Context, s *session, loc uitree.Lo
 			return nil, nil, i, resolveErr
 		}
 		lastErr = resolveErr
-		partial, partialIn = offScreenTarget(loc, tree)
+		partial, partialIn = offScreenTarget(pick, tree)
 
 		now := read(container)
 		if !moved(prev, now) {
@@ -323,7 +328,7 @@ func (h *Handlers) scrollIntoView(ctx context.Context, s *session, loc uitree.Lo
 					return nil, nil, i, mobiumerr.New(mobiumerr.ElementNotReachable, "the scrollable area went away "+
 						"while it loaded, scrolling %s for %s", dir, loc)
 				}
-				if n, err := resolvedAndVisible(loc, tree, container); err == nil {
+				if n, err := resolvedAndVisible(pick, tree, container); err == nil {
 					return n, tree, i, nil
 				}
 				if busyIn(tree, container) {
@@ -466,8 +471,8 @@ const maxReveal = 5
 // finding two of them want completely different responses from the caller,
 // and reporting the second as the first sends them looking for something that
 // is on the screen in front of them.
-func resolvedAndVisible(loc uitree.Locator, tree *uitree.Tree, container *uitree.Node) (*uitree.Node, error) {
-	n, err := pickOne(loc, tree)
+func resolvedAndVisible(pick picker, tree *uitree.Tree, container *uitree.Node) (*uitree.Node, error) {
+	n, err := pick(tree)
 	if err != nil {
 		return nil, err
 	}
@@ -479,11 +484,52 @@ func resolvedAndVisible(loc uitree.Locator, tree *uitree.Tree, container *uitree
 	return n, nil
 }
 
+// picker resolves the scroll's target on a tree.
+type picker func(*uitree.Tree) (*uitree.Node, error)
+
+// refPicker resolves a locator, and for a ref follows the element map named
+// rather than the position the ref was given. A row with no words of its
+// own maps to a position, and a list reuses its cells: after a nudge in
+// Pocket Casts' Discover carousel the position held another podcast, the
+// loop chased that one, and the carousel, which snaps a page at a time,
+// paged to its end (CHALLENGES 267). So while the position still holds the
+// named element it is used; once it does not, the one element of that name
+// is, and when there is none, or several, the target is not on this screen.
+func refPicker(loc uitree.Locator, name string) picker {
+	return func(t *uitree.Tree) (*uitree.Node, error) {
+		n, err := pickOne(loc, t)
+		if name == "" || (err == nil && uitree.Describe(n) == name) {
+			return n, err
+		}
+		var found []*uitree.Node
+		t.Walk(func(m *uitree.Node) bool {
+			if m.Clickable && !m.Bounds.Empty() && uitree.Describe(m) == name {
+				found = append(found, m)
+			}
+			return true
+		})
+		if len(found) == 1 {
+			return found[0], nil
+		}
+		return nil, mobiumerr.New(mobiumerr.NoSuchElement, "no element named %q on the current screen", name)
+	}
+}
+
+// refName is what map called a ref when it was taken, or "" for a locator
+// that is not a ref.
+func (h *Handlers) refName(serial, target string) string {
+	table, ok := h.refs[serial]
+	if !ok || !strings.HasPrefix(target, "@") {
+		return ""
+	}
+	return table.seen[target].name
+}
+
 // offScreenTarget returns the node a locator names and the container that
 // moves it, when it resolves with real bounds but not wholly inside that
 // container — the case a measured swipe can finish. Otherwise both are nil.
-func offScreenTarget(loc uitree.Locator, tree *uitree.Tree) (*uitree.Node, *uitree.Node) {
-	n, err := pickOne(loc, tree)
+func offScreenTarget(pick picker, tree *uitree.Tree) (*uitree.Node, *uitree.Node) {
+	n, err := pick(tree)
 	if err != nil || n.Bounds.Empty() {
 		return nil, nil
 	}

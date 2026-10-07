@@ -32,8 +32,10 @@ if [ -z "$DEV" ]; then echo "usage: $0 <serial|udid>" >&2; exit 2; fi
 PHONE=
 case "$DEV" in
   *-*-*-*-*) PLATFORM=ios; M="$ROOT/bin/mobium --driver wda --device $DEV" ;;
-  *-*) PLATFORM=ios; PHONE=1; M="$ROOT/bin/mobium --driver wda --device $DEV" ;;
+  # Before the iPhone's pattern: emulator-5554 has a hyphen too, and was
+  # taken for a phone and refused.
   emulator-*) PLATFORM=android; M="$ROOT/bin/mobium --device $DEV" ;;
+  *-*) PLATFORM=ios; PHONE=1; M="$ROOT/bin/mobium --driver wda --device $DEV" ;;
   *) PLATFORM=android; PHONE=1; M="$ROOT/bin/mobium --device $DEV" ;;
 esac
 if [ "$PLATFORM" = ios ] && [ -n "$PHONE" ] && [ ! -d "${MOBIUMAPP_BUNDLE:-}" ]; then

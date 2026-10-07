@@ -5789,6 +5789,53 @@ keys are neither, so 240's case cannot return. `flutter.sh` passes again,
 with `pocketcasts-ios.sh` (240's search field) and `login.sh`. Red since
 2026-10-05, and found only because every check was run.
 
+### 266. Bold text stayed on after the session put it back, once, under load
+
+**Found by:** a sweep of the Android checks on the Android 15 emulator.
+`accessibility.sh` failed at its last step: every raw setting was back as
+it was, and the screen was not — `font_weight_adjustment` unset again,
+the window's configuration still at `fontWeightAdjustment=300`, and still
+there minutes later. 143 met this on a phone and fixed it by writing what
+unset means before deleting the key, so the system hears a change; the two
+went out back to back, and if the system reads the key after the delete it
+finds nothing and keeps what it had. The emulator stopped answering `adb`
+altogether a few checks later, so it was slow when this happened. Not
+reproduced: on a cold-booted emulator the check passed twice with the old
+restore and twice with the new. The delete now waits, up to three seconds,
+for the configuration to show the value written — for bold text and font
+scale, the two with a value on screen to read — which closes the race
+whether or not it is what happened.
+
+### 267. A ref into a paging carousel was chased by its old position, then tapped there
+
+**Found by:** what 261 left: a ref to Freakonomics Radio, in the second
+column of Pocket Casts' Discover carousel, was refused once the carousel
+had paged to its end, because the scroll loop re-resolved the ref by its
+position after every nudge and each reused cell sent it after another row.
+The loop now follows the element `map` named: the position while it still
+holds that name, otherwise the one element of that name. The first try at
+that tapped `(1725, 1027)` and reported done — x 575 points on a screen 402
+wide, where the row had been before the carousel paged — because the wait
+that follows a scroll for the element to stop moving re-resolved the ref's
+old locator. After a scroll the action now uses a locator derived from the
+element found. By ref, from the carousel's first page, the tap opens
+Freakonomics Radio on the simulator.
+
+### 268. A tap into Chrome's page under a prompt blamed Chrome's web apps
+
+**Found by:** the Android sweep. `chrome.sh` was refused a tap in an
+ordinary tab — "com.android.chrome is in front but its accessibility tree
+has no WebView … Chrome's installed web apps do this when opened while
+Chrome is running" — at #92 as on `main`, so no change of the day's. What
+was on screen was Chrome's own "Chrome notifications make things easier"
+prompt, over example.com; `pwa.sh`, stopped by the same prompt, had said so,
+because an action on the native side asks for a dialog first. The web
+tap's refusal for a missing WebView, written for 200, did not, and named a
+cause that was not the case and a remedy that could not help. It now asks
+the tree and the alert endpoint first and, with a dialog in front, says the
+page is under it and to answer the dialog. On the emulator the prompt drew
+the new refusal; answered with No thanks, `chrome.sh` and `pwa.sh` passed.
+
 ## Findings that were not defects
 
 Worth recording because each one closed off an approach that looked obvious.

@@ -3,6 +3,7 @@ package agent
 import (
 	"context"
 	"fmt"
+	"github.com/mobiumdev/mobium/internal/mobiumdriver"
 	"github.com/mobiumdev/mobium/internal/mobiumerr"
 	"strings"
 	"time"
@@ -231,6 +232,19 @@ func (h *Handlers) webFrame(ctx context.Context, s *session) (*webview.Frame, er
 		}
 	}
 	if host == nil {
+		// A dialog in front hides the WebView as well, and says so: Chrome's
+		// "Chrome notifications make things easier" over example.com on the
+		// Android 15 emulator drew this refusal, which blamed installed web
+		// apps, while chrome.sh's page was in a plain tab under a prompt
+		// that a tap of "No thanks" would close. CHALLENGES 268.
+		if text := appDialogText(tree); text != "" {
+			return nil, webDialogOver(text, s.webCtx)
+		}
+		if a, ok := mobiumdriver.AsAlerts(s.driver); ok {
+			if text, aerr := a.AlertText(ctx); aerr == nil && strings.TrimSpace(text) != "" {
+				return nil, webDialogOver(text, s.webCtx)
+			}
+		}
 		// Two causes look the same from here, and only the first has a
 		// remedy: the app moved to a screen with no WebView, or it still
 		// shows the page and has stopped putting the WebView in the
@@ -739,4 +753,14 @@ func (h *Handlers) webType(ctx context.Context, s *session, target, text string,
 		case <-time.After(100 * time.Millisecond):
 		}
 	}
+}
+
+// webDialogOver is the refusal for a tap into a page that a dialog covers.
+func webDialogOver(dialog, ctxName string) error {
+	dialog = strings.TrimSpace(strings.SplitN(dialog, "\n", 2)[0])
+	return mobiumerr.New(mobiumerr.DeviceNotReady, "a dialog is over the app — %q — so the page of %s is "+
+		"underneath it and a tap into the page would land on the dialog", dialog, ctxName).
+		WithRemedy("answer the dialog first: app_context NATIVE_APP and tap one of its buttons from app_map, "+
+			"or declare an answer with app_dialogs").
+		WithDetail("dialog", dialog)
 }
