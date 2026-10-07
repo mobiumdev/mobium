@@ -29,8 +29,12 @@ this is what is not.
   restore (266). Four checks were made sturdier: `files.sh` (an emulator
   taken for an iPhone; MediaStore's numbered saves), `icecubes-ios.sh` (a
   post taller than the screen), `pocketcasts-ios.sh` (a search left open).
-  Two dark-screen sightings on the iPhone were explained (260). Not run on
-  the phone: `autowait.sh`, which turns Reduce Motion on through Settings.
+  Two dark-screen sightings on the iPhone were explained (260). Since, with
+  the owner's leave, every check written for a phone has passed on it:
+  `autowait.sh` once with Reduce Motion on and once with it off (the
+  switch moved by hand — a phone's cannot be from outside), `record.sh`,
+  and `mobium-app.sh` from a reinstall (`MOBIUMAPP_BUNDLE`), so its
+  permission prompt was a fresh one.
   The two left red on the simulator were setup, not code:
   `notifications-ios.sh` passes once MobiumApp is allowed to notify (Settings
   > Apps > MobiumApp > Notifications on iOS 26 — a reinstall or a data
@@ -315,7 +319,13 @@ this is what is not.
     overlay hittable, where a touch lands on the overlay, and the
     pass-through target not, where a touch reaches it — accessibility's
     answer, as `visible` is. What sees the overlay is UIKit's hit test,
-    inside the app.
+    inside the app. Decided on 2026-10-07 to leave it: asked through the
+    gray-box channel, one question took 1.8 to 1.9 seconds on the iPhone 15
+    Plus — a hook that does nothing, five times — against a whole tap at
+    about one, so asking before every action would triple it; a listener of
+    the app's own over the network tunnel would be fast and was declined, as
+    for the simulator's probe. The auto-wait guide says plainly that a real
+    iPhone's actions are not protected.
 - ~~**Session recording and `diff map`.**~~ Done 2026-09-29. `mobium trace
   start|stop` records a session as Vibium does: a zip in Vibium's record
   format, with every call a step, the screen after it and the map drawn

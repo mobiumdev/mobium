@@ -128,6 +128,27 @@ It aimed around the cover and said so. A system dialog, an iOS sheet and the
 on-screen keyboard are covers too, refused the same way, with the remedy for
 each: answer the dialog, hide the keyboard.
 
+`map` says the same before anything is tapped. A target a control covers at
+every point — one a tap would be refused for — is marked with what covers it,
+here on an Android emulator:
+
+```
+$ mobium map
+…
+@e3 Fully covered (button, covered by "full cover")
+@e4 Center covered (button)
+@e6 Edge covered (button)
+@e9 Under a plain view (button)
+@e10 Under a hidden overlay (button, covered by "hidden overlay")
+@e11 Under a scrim (button, covered by "scrim")
+```
+
+The half and edge covers leave a point a tap reaches, so those targets are
+not marked. Neither is the one under a plain view: nothing in the tree says
+whether a plain view takes a touch or lets it through, so `map` marks only
+what a tap would refuse. The structured result carries the same as
+`covered`.
+
 ## 4. Refusing the wrong kind of target
 
 `type` and `fill` go into text fields. Anything that is certainly not one is
@@ -225,9 +246,15 @@ person and may change. Every client raises the code as its own exception:
 
 ## What it does not see
 
-- **An overlay hidden from accessibility on iOS**, unless asked for.
-  WebDriverAgent's tree does not contain it, so a tap under one lands on it —
-  WebDriverAgent's own `hittable` gets it wrong too, measured. UIKit's own
+- **An overlay hidden from accessibility on iOS.** On a real iPhone no
+  action checks for one: a tap under it lands on the overlay and is
+  reported as tapped. WebDriverAgent's tree does not contain it, and its own
+  `hittable` gets it wrong too, measured. It is uncommon — none was met in
+  five third-party apps driven on the phone — and asking each action would
+  cost more than the action: through the gray box, one question took 1.9
+  seconds on an iPhone 15 Plus, where a whole tap takes one. Where it
+  matters, run the same flow on a simulator with `--hit-test`, or ask on
+  the phone when in doubt. UIKit's own
   hit test does see it: `mobium hit-test <target>` asks it whether a touch
   at the point a tap would use reaches the target, and names what it would
   reach instead. It attaches a debugger to the app, about two seconds a call
