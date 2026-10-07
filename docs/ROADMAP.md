@@ -6,6 +6,23 @@ this is what is not.
 
 ## Next
 
+- ~~**Every check, swept.**~~ Done 2026-10-06: 28 on the iPhone 17 Pro
+  simulator, 31 on the Android 15 emulator, and the nine that stay inside
+  their apps on the iPhone 15 Plus, each with a fresh daemon. Two
+  regressions had sat red unnoticed: a back button "covered" by the list
+  under its bar (CHALLENGES 263, from 257) and Flutter's password field
+  going stale (265, from 240), both fixed. So were a menu whose list ran past
+  the panel that clips it (262), a ref chased into a paging carousel and
+  tapped off the screen (261, 267), a web tap that blamed Chrome's web apps
+  for a dialog (268), and once, under load, bold text left on after a
+  restore (266). Four checks were made sturdier: `files.sh` (an emulator
+  taken for an iPhone; MediaStore's numbered saves), `icecubes-ios.sh` (a
+  post taller than the screen), `pocketcasts-ios.sh` (a search left open).
+  Two dark-screen sightings on the iPhone were explained (260). Not run on
+  the phone: `autowait.sh`, which turns Reduce Motion on through Settings.
+  Left: two simulator checks want setup, not code — `notifications-ios.sh`
+  needs MobiumApp allowed to notify, and `third-party-app-ios.sh` needs
+  Wikipedia from the App Store.
 - ~~**Gray box: waiting for the app to say it is idle.**~~ Done 2026-10-05, iOS and Android:
   `launch --gray-box` turns on Mobium's gray-box library in an app built
   with it, the app writes when it is busy to the device log, and every
@@ -74,7 +91,8 @@ this is what is not.
   screen-sized plain view reported not visible, is behind another screen of
   the app and is refused; measured against every captured hierarchy, with
   the obstruction screens as the control. Held by `icecubes-ios.sh`.
-- **A fourth third-party app on iOS: Pocket Casts.** Begun 2026-10-05: a
+- ~~**A fourth third-party app on iOS: Pocket Casts.**~~ Done 2026-10-06,
+  on the simulator and the iPhone. Begun 2026-10-05: a
   podcast player (MPL-2.0), built from its source at `72b785001~1` for a
   simulator — its main branch needs Xcode 27, and its scheme the watchOS
   simulator runtime, for the Watch app it embeds — and from the App Store
@@ -101,8 +119,8 @@ this is what is not.
   was passing, not the build's empty credentials, as CHALLENGES 257 first
   said; what looked like the same unrelated podcasts for every query was
   `map` listing Discover under the search screen.
-- **A fifth third-party app on iOS, the first whose WebView opens: Kiwix.**
-  Begun 2026-10-05: the offline Wikipedia reader (GPL-3.0), SwiftUI around
+- ~~**A fifth third-party app on iOS, the first whose WebView opens: Kiwix.**~~
+  Done 2026-10-06, on the simulator and the iPhone. Begun 2026-10-05: the offline Wikipedia reader (GPL-3.0), SwiftUI around
   a WKWebView that a build from its source makes inspectable (a production
   build does not). Built for a simulator from its main branch with Xcode
   26.6 and its prebuilt libkiwix; a ZIM — Wikipedia's Ray Charles, 761 KB —
@@ -134,7 +152,8 @@ this is what is not.
   reproduced: the emulator and the booted simulators went away mid-session
   with nothing in Mobium stopping them and nothing in their logs saying
   why. The hang switching into a background tab is CHALLENGES 203, fixed.
-- **Back, on both platforms ([BACK.md](BACK.md)).** Measured 2026-10-01 on
+- ~~**Back, on both platforms ([BACK.md](BACK.md)).**~~ Done 2026-10-05,
+  the last two questions answered on the iPhone. Measured 2026-10-01 on
   the Pixel 8 Pro, both AVDs, the simulator and the iPhone: Mobium's back key
   and its edge swipes reach the platform's back on every one, and on iOS 26 a
   swipe from anywhere pops a navigation stack unless a row with swipe actions
@@ -259,50 +278,6 @@ this is what is not.
     screens, so reading light first everywhere to spare the first read of
     a long list would tax every read for a case met in one app so far; left
     as it is. Not measured: a mailbox or a contacts list, which are someone's.
-  - ~~A Discover row in Pocket Casts' horizontal carousel refused after a
-    scroll down.~~ Fixed on 2026-10-06 (CHALLENGES 261), with a ref that
-    found a reused row after the scroll. Left: a carousel that snaps a page
-    at a time overshoots a measured nudge, so a ref there is refused and
-    `map` must be read again — a locator by text reaches the row.
-  - A sweep of nine in-app checks on the iPhone 15 Plus, 2026-10-06 late,
-    after the day's cover, viewport, scroll and ref changes (#138–#147):
-    `obstruction`, `login`, `feed`, `mobium-app`, `flutter`, `kiwix-ios`
-    and `netnewswire-ios` passed — 263 and 265 on real hardware.
-    `icecubes-ios.sh` failed because the live timeline's first post filled
-    the screen with its controls below the edge; the check now swipes until
-    a post's controls are in view, letting the list settle before mapping,
-    and passes. `pocketcasts-ios.sh` failed on a search left open by earlier
-    work; the check now closes one, and passes. `autowait.sh` was not run:
-    on a phone it turns Reduce Motion on through Settings, a device-wide
-    change, and a phone restore of that switch once went wrong (#118).
-  - A sweep of the Android checks on the Android 15 emulator, 2026-10-06
-    evening. The emulator stopped answering `adb` partway and was cold
-    booted; what failed before that was rerun. Found: bold text left on
-    after a restore, once, under that load (CHALLENGES 266), and
-    `files.sh` taking the emulator for an iPhone, fixed. `chrome.sh` and
-    `pwa.sh` were stopped by Chrome's notification prompt, and the web tap's
-    refusal blamed installed web apps instead (CHALLENGES 268); answered,
-    both pass. `files.sh` met seven `mobium-report (N).txt` left in
-    Download by earlier runs, MediaStore numbering every new save while the
-    check read the plain name; it now refuses to start over any report,
-    naming them, and clears every one it made, numbered or not (a planted
-    one was refused and left in place). `graybox.sh` could not show its
-    control on that loaded emulator; on a fresh one it passed three runs of
-    three.
-  - A sweep of 28 simulator checks on 2026-10-06 found three failures
-    besides those fixed (CHALLENGES 263, 265): `notifications-ios.sh`, as
-    MobiumApp was not allowed to notify on that simulator — the same at
-    #136, so its permission, not a change; and `third-party-app-ios.sh`,
-    which needs Wikipedia from the App Store and the simulator has none.
-    Neither is a defect; both want a simulator set up for them.
-  - ~~`icecubes-ios.sh` failing at Report Post.~~ Not the live timeline:
-    the long-press menu now fits on the screen, and a list's viewport did
-    not end at the panel that clips it. Fixed on 2026-10-06 (CHALLENGES
-    262); the check passes on the simulator.
-  - ~~Two things seen once on the iPhone with its screen dark.~~ Explained
-    on 2026-10-06 (CHALLENGES 260): the hang was a long list's read (258)
-    and the launch preceded the lock. A locked device now says so in `map`
-    on iOS, and in any failed read on both platforms.
   - An overlay hidden from accessibility on iOS, which WebDriverAgent's tree
     does not contain, so a tap under one still lands on it. **On a
     simulator, `mobium hit-test` sees it** since 2026-09-29: UIKit's own hit
@@ -319,6 +294,12 @@ this is what is not.
     the same with it as without. Not
     on a phone, where Mobium could reach a probe only over the phone's
     network; it refuses, and `hit-test` there stays the debugger's.
+    XCTest's own `hittable` is no shortcut, measured on 2026-10-06 on the
+    simulator's Obstruction Demo: it called the target under the hidden
+    overlay hittable, where a touch lands on the overlay, and the
+    pass-through target not, where a touch reaches it — accessibility's
+    answer, as `visible` is. What sees the overlay is UIKit's hit test,
+    inside the app.
 - ~~**Session recording and `diff map`.**~~ Done 2026-09-29. `mobium trace
   start|stop` records a session as Vibium does: a zip in Vibium's record
   format, with every call a step, the screen after it and the map drawn
