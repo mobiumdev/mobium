@@ -106,7 +106,15 @@ func sendFilesAsContent(tool string, args map[string]interface{}) (func(*agent.T
 				return saveFailedAudio(r, path)
 			}
 			var v agent.AudioView
-			if err := remarshal(r.StructuredContent, &v); err != nil || v.Data == "" {
+			if err := remarshal(r.StructuredContent, &v); err != nil {
+				return nil, mobiumerr.New(mobiumerr.DeviceServer, "the daemon returned no audio to save at %s", path)
+			}
+			if v.Data == "" && len(v.Timeline) == 0 {
+				// A phone's stop: no sound was captured, so there is
+				// nothing to save, and its answer says so.
+				return r, nil
+			}
+			if v.Data == "" {
 				return nil, mobiumerr.New(mobiumerr.DeviceServer, "the daemon returned no audio to save at %s", path)
 			}
 			wav, err := base64.StdEncoding.DecodeString(v.Data)

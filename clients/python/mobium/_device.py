@@ -1224,6 +1224,7 @@ class Device:
         path: str | None = None,
         expect: list | None = None,
         ignore_ms: int | None = None,
+        app: str | None = None,
     ) -> dict:
         """Capture what the device plays: ``action`` "start", or "stop" with
         ``path`` to save a WAV; neither asks whether a capture is running.
@@ -1240,6 +1241,11 @@ class Device:
         silence. Sounds of ``ignore_ms`` (default 200) or less do not count.
         Anything else raises NotConfirmedError saying what was heard, and the
         capture is still saved.
+
+        Stop also returns ``interruptions`` — a call muting ``app`` (on start;
+        default the app in front), a ringtone, alarm or notification over it,
+        each with ``kind``, ``from`` and ``to``. On an Android phone only the
+        interruptions are recorded: nothing outside it hears the sound.
         """
         args: dict = {}
         if action:
@@ -1250,6 +1256,8 @@ class Device:
             args["expect"] = expect
         if ignore_ms is not None:
             args["ignore_ms"] = ignore_ms
+        if app:
+            args["app"] = app
         return self._data("app_audio", args or None) or {}
 
     def trace_start(

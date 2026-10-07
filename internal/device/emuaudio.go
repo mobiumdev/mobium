@@ -51,6 +51,9 @@ type AudioRecording interface {
 	Stop(ctx context.Context) (AudioCapture, error)
 	// Discard ends the capture and keeps nothing.
 	Discard(ctx context.Context)
+	// Captures is whether the sound itself is captured; a phone's is not,
+	// only what interrupted it.
+	Captures() bool
 }
 
 // AudioCapture is what a capture heard, and the device's volumes as it began
@@ -63,6 +66,10 @@ type AudioCapture struct {
 	// Volumes are read at the start and at the end; nil when the device
 	// could not say.
 	VolumesAtStart, VolumesAtEnd []StreamVolume
+	// Interruptions are what cut across the app's audio meanwhile, and App
+	// the app they were read for.
+	Interruptions []AudioInterruption
+	App           string
 }
 
 // VolumeReader reads a device's volumes.
@@ -148,7 +155,7 @@ func readIni(path string) map[string]string {
 
 // StartEmulatorAudio starts capturing what the emulator adb calls serial
 // plays, reading its volumes with volumes as it starts and stops.
-func StartEmulatorAudio(ctx context.Context, serial string, volumes VolumeReader) (AudioRecording, error) {
+func StartEmulatorAudio(ctx context.Context, serial string, volumes VolumeReader, interruptions InterruptionReader) (AudioRecording, error) {
 	ep, err := findEmulatorEndpoint(serial, emulatorDiscoveryDirs())
 	if err != nil {
 		return nil, err
@@ -162,7 +169,7 @@ func StartEmulatorAudio(ctx context.Context, serial string, volumes VolumeReader
 		return nil, err
 	}
 	a := r.(*emuAudio)
-	a.volumes, a.before = volumes, before
+	a.volumes, a.before, a.interruptions = volumes, before, interruptions
 	return a, nil
 }
 
@@ -185,9 +192,12 @@ type emuAudio struct {
 	samples []int16
 	err     error
 
-	volumes VolumeReader
-	before  []StreamVolume
+	volumes       VolumeReader
+	before        []StreamVolume
+	interruptions InterruptionReader
 }
+
+func (r *emuAudio) Captures() bool { return true }
 
 func startStreamAudio(ctx context.Context, ep emulatorEndpoint, serial string) (AudioRecording, error) {
 	// AudioFormat{samplingRate: AudioRate, channels: Mono, format: S16,
@@ -326,6 +336,10 @@ func (r *emuAudio) Stop(ctx context.Context) (AudioCapture, error) {
 	if r.volumes != nil {
 		after, _ = r.volumes(ctx)
 	}
+	var cut []AudioInterruption
+	if r.interruptions != nil {
+		cut, _ = r.interruptions(ctx)
+	}
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	if r.err != nil {
@@ -336,7 +350,7 @@ func (r *emuAudio) Stop(ctx context.Context) (AudioCapture, error) {
 	if want := int(elapsed * AudioRate / time.Second); len(r.samples) < want {
 		r.samples = append(r.samples, make([]int16, want-len(r.samples))...)
 	}
-	return AudioCapture{Samples: r.samples, VolumesAtStart: r.before, VolumesAtEnd: after}, nil
+	return AudioCapture{Samples: r.samples, VolumesAtStart: r.before, VolumesAtEnd: after, Interruptions: cut}, nil
 }
 
 func (r *emuAudio) Discard(ctx context.Context) {

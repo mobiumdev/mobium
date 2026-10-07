@@ -1870,6 +1870,10 @@ type Audio struct {
 	Timeline       []AudioSegment `json:"timeline,omitempty"`
 	Volumes        []StreamVolume `json:"volumes,omitempty"`
 	VolumesAtStart []StreamVolume `json:"volumesAtStart,omitempty"`
+	// App is the app the capture was for, and Interruptions what cut across
+	// its audio: on an Android phone, all that is recorded.
+	App           string              `json:"app,omitempty"`
+	Interruptions []AudioInterruption `json:"interruptions,omitempty"`
 	// Duration and Elapsed are nanoseconds.
 	Duration int64 `json:"duration,omitempty"`
 	Elapsed  int64 `json:"elapsed,omitempty"`
@@ -1889,6 +1893,25 @@ func (d *Device) Audio(ctx context.Context, action, path string) (Audio, error) 
 	}
 	var out Audio
 	err := d.data(ctx, "app_audio", args, &out)
+	return out, err
+}
+
+// AudioInterruption is something that cut across an app's audio while it was
+// captured: Kind is "muted_for_call", "ringtone", "alarm" or "notification";
+// From and To are nanoseconds since the capture began, and Open means it had
+// not ended at the stop.
+type AudioInterruption struct {
+	Kind string `json:"kind"`
+	From int64  `json:"from"`
+	To   int64  `json:"to"`
+	Open bool   `json:"open,omitempty"`
+}
+
+// AudioStart starts a capture for app, whose interruptions the stop reports;
+// Audio with "start" uses the app in front.
+func (d *Device) AudioStart(ctx context.Context, app string) (Audio, error) {
+	var out Audio
+	err := d.data(ctx, "app_audio", map[string]any{"action": "start", "app": app}, &out)
 	return out, err
 }
 

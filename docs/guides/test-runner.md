@@ -435,8 +435,15 @@ path either way — it is the evidence. Assert on pitch and length, never
 on level: the level follows the device's media volume, which the result
 reports, and at its lowest an app that plays is heard as silence. Sounds
 of 200ms or less do not count (`ignore_ms`): with touch sounds on, a tap
-is a tenth of a second of sound. An Android emulator only for now;
-`tests/audio/` is a suite of it, run with `--project android`.
+is a tenth of a second of sound. `tests/audio/` is a suite of it, run
+with `--project android` on an emulator.
+
+The stop's result also has `interruptions`: what cut across the app's
+audio — the app muted for a call or by a volume, a ringtone, alarm,
+notification or another app's media over it — read from Android's audio
+service for `app` (on start; default the app in front). On an Android
+phone that is all a capture records, since nothing outside a phone hears
+its sound: `expect` is refused there, and `interruptions` is the answer.
 
 ## Writing tests
 

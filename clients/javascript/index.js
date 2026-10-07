@@ -1512,10 +1512,16 @@ export class Device {
    * { hz: 440 } with optional min_ms and max_ms; [] is silence. Sounds of
    * ignoreMs (default 200) or less do not count. Anything else rejects with
    * NotConfirmedError saying what was heard, and the capture is still saved.
+   *
+   * Stop also resolves to interruptions — a call muting app (on start;
+   * default the app in front), a ringtone, alarm or notification over it,
+   * each with kind, from and to. On an Android phone only the interruptions
+   * are recorded: nothing outside it hears the sound.
    */
-  async audio({ action, path, expect, ignoreMs } = {}) {
+  async audio({ action, path, expect, ignoreMs, app } = {}) {
     const args = {}
     if (action) args.action = action
+    if (app) args.app = app
     if (path) args.path = path
     if (expect !== undefined) args.expect = expect
     if (ignoreMs !== undefined) args.ignore_ms = ignoreMs

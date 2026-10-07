@@ -2,8 +2,8 @@
   "description": "MobiumApp's Audio Demo, heard: each test captures what the device plays and asserts it at the stop. An Android emulator only — run with --project android; iOS and phones refuse the capture.",
   "app": "dev.mobium.mobiumapp",
   "beforeEach": [
-    {"scroll_to": {"target": "text=Audio Demo", "direction": "down"}},
-    {"tap": "text=Audio Demo"},
+    {"scroll_to": {"target": "label=Audio Demo", "direction": "down"}},
+    {"tap": "label=Audio Demo"},
     {"wait_for": {"target": "testid=audioState"}}
   ],
   "tests": [

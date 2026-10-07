@@ -104,6 +104,14 @@
     },
     {
       "tool": "app_audio",
+      "arg": "app",
+      "type": "string",
+      "setBy": [
+        "audio"
+      ]
+    },
+    {
+      "tool": "app_audio",
       "arg": "device",
       "type": "string",
       "setBy": [
@@ -2712,12 +2720,14 @@
         "app_audio"
       ],
       "flags": [
+        "--app",
         "--expect",
         "--ignore-ms",
         "--output"
       ],
       "sends": [
         "action",
+        "app",
         "expect",
         "ignore_ms",
         "path"

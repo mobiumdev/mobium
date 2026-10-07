@@ -2,8 +2,8 @@
   "description": "Must fail, both tests: an audio expectation that is wrong is a failure that says what was heard, and the capture is still saved. An Android emulator only; docs/checks/audio.sh runs it.",
   "app": "dev.mobium.mobiumapp",
   "beforeEach": [
-    {"scroll_to": {"target": "text=Audio Demo", "direction": "down"}},
-    {"tap": "text=Audio Demo"},
+    {"scroll_to": {"target": "label=Audio Demo", "direction": "down"}},
+    {"tap": "label=Audio Demo"},
     {"wait_for": {"target": "testid=audioState"}}
   ],
   "tests": [

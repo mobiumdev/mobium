@@ -55,17 +55,24 @@ func (h *Handlers) audioOn(ctx context.Context, s *session, args map[string]inte
 		if !ok {
 			return nil, cannot(s, mobiumdriver.CapAudio, "capture audio")
 		}
-		r, err := rec.StartAudio(ctx)
+		r, err := rec.StartAudio(ctx, stringArg(args, "app"))
 		if err != nil {
 			return nil, err
 		}
 		s.audio = r
 		view.Recording = true
+		if !r.Captures() {
+			return Result("recording what interrupts the app's audio — a phone's sound is not captured; stop "+
+				"it with action \"stop\"", view), nil
+		}
 		return Result("capturing audio — stop it with action \"stop\" and a path", view), nil
 
 	case "stop":
 		if s.audio == nil {
 			return nil, mobiumerr.New(mobiumerr.InvalidArgument, "no audio is being captured — start with action \"start\"")
+		}
+		if !s.audio.Captures() {
+			return h.audioEventsStop(ctx, s, args, view)
 		}
 		path := stringArg(args, "path")
 		returnData := path == "" && boolArg(args, "return_data")
@@ -101,6 +108,7 @@ func (h *Handlers) audioOn(ctx context.Context, s *session, args map[string]inte
 			return nil, err
 		}
 		samples := got.Samples
+		view.App, view.Interruptions = got.App, got.Interruptions
 		view.Volumes = got.VolumesAtEnd
 		if !sameVolumes(got.VolumesAtStart, got.VolumesAtEnd) {
 			view.VolumesAtStart = got.VolumesAtStart
@@ -137,6 +145,101 @@ func (h *Handlers) audioOn(ctx context.Context, s *session, args map[string]inte
 	default:
 		return nil, mobiumerr.New(mobiumerr.InvalidArgument, "action must be \"start\", \"stop\" or omitted, got %q", action)
 	}
+}
+
+// audioEventsStop ends a capture that recorded no sound — a phone's — and
+// says what interrupted the app. There is nothing to save and nothing to
+// hold an expect against, and an expect is refused before the capture
+// stops, so it is not lost to a mistake.
+func (h *Handlers) audioEventsStop(ctx context.Context, s *session, args map[string]interface{}, view AudioView) (*ToolsCallResult, error) {
+	if _, expecting, _ := audioExpectation(args); expecting {
+		return nil, mobiumerr.New(mobiumerr.Unsupported, "a phone's sound is not captured, so there is nothing "+
+			"to hold expect against — only what interrupted the app, in the result's interruptions. Assert "+
+			"what was heard on an emulator")
+	}
+	r := s.audio
+	s.audio = nil
+	view.Elapsed = time.Since(r.Started()).Round(time.Millisecond)
+	got, err := r.Stop(ctx)
+	if err != nil {
+		return nil, err
+	}
+	view.App, view.Interruptions = got.App, got.Interruptions
+	view.Volumes = got.VolumesAtEnd
+	if !sameVolumes(got.VolumesAtStart, got.VolumesAtEnd) {
+		view.VolumesAtStart = got.VolumesAtStart
+	}
+	msg := fmt.Sprintf("%s's audio over %s — its sound is not captured on a phone; %s", view.App, view.Elapsed,
+		interruptionsSaid(view.Interruptions))
+	return Result(msg, view), nil
+}
+
+// interruptionsSaid says what interrupted the app, in time order.
+func interruptionsSaid(cut []device.AudioInterruption) string {
+	if len(cut) == 0 {
+		return "nothing interrupted it"
+	}
+	// Brief ones are counted, not listed: on the Pixel an alarm muted the
+	// app for 40ms in pairs each time its sound began again, and eight of
+	// them listed one by one buried the alarm. The result keeps every one.
+	var parts []string
+	brief := map[string]int{}
+	var briefOrder []string
+	for _, c := range cut {
+		name := interruptionName(c)
+		if !c.Open && c.To-c.From < briefInterruption {
+			if brief[name] == 0 {
+				briefOrder = append(briefOrder, name)
+			}
+			brief[name]++
+			continue
+		}
+		span := fmt.Sprintf("%.1f–%.1fs", c.From.Seconds(), c.To.Seconds())
+		if c.Open {
+			span = fmt.Sprintf("from %.1fs, still at the stop", c.From.Seconds())
+		}
+		parts = append(parts, name+" "+span)
+	}
+	for _, name := range briefOrder {
+		if brief[name] == 1 {
+			parts = append(parts, fmt.Sprintf("%s once, for under %.2fs", name, briefInterruption.Seconds()))
+		} else {
+			parts = append(parts, fmt.Sprintf("%s %d times, each under %.2fs", name, brief[name], briefInterruption.Seconds()))
+		}
+	}
+	return "interrupted: " + strings.Join(parts, ", ")
+}
+
+// briefInterruption is how short an interruption is counted rather than
+// listed in a message.
+const briefInterruption = 250 * time.Millisecond
+
+// interruptionName says what an interruption was.
+func interruptionName(c device.AudioInterruption) string {
+	if c.Kind == device.InterruptMuted {
+		switch c.Reason {
+		case "call":
+			return "muted for a call"
+		case "streamVolume":
+			return "muted, the device's volume at its lowest"
+		case "clientVolume":
+			return "muted, its own player's volume at zero"
+		}
+		return "muted (" + c.Reason + ")"
+	}
+	names := map[string]string{
+		device.InterruptRingtone:     "a ringtone played",
+		device.InterruptAlarm:        "an alarm played",
+		device.InterruptNotification: "a notification sounded",
+		device.InterruptVoiceCall:    "a voice call played",
+		device.InterruptAssistant:    "the assistant spoke",
+		device.InterruptNavigation:   "navigation spoke",
+		device.InterruptMedia:        "another app's media played",
+	}
+	if n := names[c.Kind]; n != "" {
+		return n
+	}
+	return "another app's sound played (" + c.Usage + ")"
 }
 
 // audioMissed is the failure of a stop whose capture did not hold what was
@@ -216,10 +319,14 @@ func AudioHeard(v AudioView) string {
 			parts = append(parts, fmt.Sprintf("%s sound, no one pitch (%.0f dBFS)", span, seg.Level))
 		}
 	}
-	if !sound {
-		return fmt.Sprintf("%s, silence throughout — nothing reached %.0f dBFS%s", head, audio.SoundFloor, volumeNote(v))
+	cut := ""
+	if len(v.Interruptions) > 0 {
+		cut = "; " + interruptionsSaid(v.Interruptions)
 	}
-	return head + ": " + strings.Join(parts, ", ") + volumeNote(v)
+	if !sound {
+		return fmt.Sprintf("%s, silence throughout — nothing reached %.0f dBFS%s%s", head, audio.SoundFloor, volumeNote(v), cut)
+	}
+	return head + ": " + strings.Join(parts, ", ") + volumeNote(v) + cut
 }
 
 // volumeNote says the media volume a capture ended at, and what it started
@@ -281,6 +388,12 @@ type AudioView struct {
 	// ended, and VolumesAtStart as it began, when they were different.
 	Volumes        []device.StreamVolume `json:"volumes,omitempty"`
 	VolumesAtStart []device.StreamVolume `json:"volumesAtStart,omitempty"`
+	// App is the app the capture is for, and Interruptions what cut across
+	// its audio meanwhile: a call muting it, a ringtone, alarm or
+	// notification sounding over it — read from the audio service, so on a
+	// phone, where the sound itself is not captured, too.
+	App           string                     `json:"app,omitempty"`
+	Interruptions []device.AudioInterruption `json:"interruptions,omitempty"`
 	// Data is the WAV, base64, when it was returned rather than saved.
 	Data   string `json:"data,omitempty"`
 	Device string `json:"device"`
