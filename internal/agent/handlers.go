@@ -526,7 +526,7 @@ func (h *Handlers) mapScreen(ctx context.Context, args map[string]interface{}) (
 	dev, driver := s.dev, s.driver
 	tree, err := driver.Snapshot(ctx)
 	if err != nil {
-		return nil, err
+		return nil, h.lockedRead(ctx, s, err)
 	}
 
 	entries := tree.Map()
@@ -547,6 +547,9 @@ func (h *Handlers) mapScreen(ctx context.Context, args map[string]interface{}) (
 			text += "\n" + note
 		}
 		if note := inferredNote(tree); note != "" {
+			text += "\n" + note
+		}
+		if note := h.lockedNote(ctx, s, tree); note != "" {
 			text += "\n" + note
 		}
 		return text
@@ -572,6 +575,49 @@ func (h *Handlers) mapScreen(ctx context.Context, args map[string]interface{}) (
 		return Result(withNote("No actionable elements found"), view), nil
 	}
 	return Result(withNote(strings.Join(table.lines, "\n")), view), nil
+}
+
+// lockedNote says a map is of the lock screen, or "" when it is not. On a
+// locked iPhone map listed two bare scroll views and nothing else, which
+// reads as an odd screen of some app, not as a device to unlock. Asked only
+// when the system shell is in front — SpringBoard, or Android's SystemUI,
+// which draws its keyguard — so an ordinary map costs nothing; the question
+// took about a second on the iPhone 15 Plus.
+func (h *Handlers) lockedNote(ctx context.Context, s *session, tree *uitree.Tree) string {
+	if pkg := tree.Package(); pkg != springboardBundleID && pkg != "com.android.systemui" {
+		return ""
+	}
+	ctrl, ok := mobiumdriver.AsScreenLock(s.driver)
+	if !ok {
+		return ""
+	}
+	if locked, err := ctrl.ScreenLocked(ctx); err != nil || !locked {
+		return ""
+	}
+	return "the device is locked, and this is its lock screen — run `mobium lock unlock` (app_lock with state " +
+		"\"unlock\"), which unlocks a device with no PIN, pattern or password, or unlock it by hand"
+}
+
+// lockedRead is the answer for a read of the screen that failed: the device
+// being locked when it is, the failure otherwise. An Android screen asleep
+// cannot be read — UiAutomator2 waits ten seconds for a window and gives up,
+// and the retry blamed "the screen was changing" — so the one question worth
+// asking after a failed read is whether there is a screen to read. Asked only
+// then, so a read that works costs nothing more.
+func (h *Handlers) lockedRead(ctx context.Context, s *session, err error) error {
+	if err == nil || ctx.Err() != nil {
+		return err
+	}
+	ctrl, ok := mobiumdriver.AsScreenLock(s.driver)
+	if !ok {
+		return err
+	}
+	if locked, lerr := ctrl.ScreenLocked(ctx); lerr != nil || !locked {
+		return err
+	}
+	return mobiumerr.New(mobiumerr.DeviceNotReady, "the screen could not be read because the device is locked — "+
+		"run `mobium lock unlock` (app_lock with state \"unlock\"), which unlocks a device with no PIN, pattern "+
+		"or password, or unlock it by hand").WithDetail("read_error", err.Error())
 }
 
 // inferredNote says when which elements are shown was worked out from where
@@ -778,7 +824,7 @@ func (h *Handlers) text(ctx context.Context, args map[string]interface{}) (*Tool
 	dev, driver := s.dev, s.driver
 	tree, err := driver.Snapshot(ctx)
 	if err != nil {
-		return nil, err
+		return nil, h.lockedRead(ctx, s, err)
 	}
 
 	target := stringArg(args, "target")
@@ -1558,6 +1604,9 @@ func (h *Handlers) resolveNodeOnce(ctx context.Context, s *session, target strin
 	// readTook is how long the last read of the screen took, which settle
 	// counts toward its window.
 	var readTook time.Duration
+	// readFailed is whether the last attempt could not read the screen at
+	// all, which on a locked device is the lock's doing (lockedRead).
+	var readFailed bool
 
 	if n, t, took, ok := h.lightResolve(ctx, s, loc, target); ok {
 		return h.settle(ctx, s, loc, n, t, took)
@@ -1577,9 +1626,10 @@ func (h *Handlers) resolveNodeOnce(ctx context.Context, s *session, target strin
 			// later. Treating a snapshot error as final turned a hiccup into
 			// a failed action; the reason is kept so a real outage still says
 			// what it was.
-			resolveErr = err
+			resolveErr, readFailed = err, true
 			return false, nil
 		}
+		readFailed = false
 		tree = t
 		node, resolveErr = pickOne(loc, t)
 		// Not waited for: a ref's element does not come back once its
@@ -1604,6 +1654,9 @@ func (h *Handlers) resolveNodeOnce(ctx context.Context, s *session, target strin
 		return nil, nil, err
 
 	case err != nil:
+		if readFailed {
+			return nil, nil, h.lockedRead(ctx, s, resolveErr)
+		}
 		// Nothing matched. It may simply be below the fold, so scrolling is
 		// worth a try — but only for a miss: a locator that already matches
 		// twice is on screen twice, and scrolling can only make it worse
