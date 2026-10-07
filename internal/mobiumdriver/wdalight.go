@@ -4,9 +4,9 @@ import (
 	"context"
 	"errors"
 	"net"
-	"net/http"
 	"strings"
 
+	"github.com/mobiumdev/mobium/internal/mobiumerr"
 	"github.com/mobiumdev/mobium/internal/uitree"
 )
 
@@ -64,24 +64,29 @@ func (w *WDA) LightSnapshot(ctx context.Context) (*uitree.Tree, bool, error) {
 // ElementVisible asks WebDriverAgent whether one element is visible, finding
 // it by its test id or its label when that is unique on the light read, so
 // the element found is the node meant.
+//
+// Asked in the find itself — the element named, and visible — rather than
+// found and then asked: one request where there were two, 171ms and 78ms of
+// a tap on the iPhone 15 Plus. Found, it is visible, and remembered under
+// its plain search so the rectangle read that follows finds it at no cost;
+// not found, it is not shown to be visible, which sends the action to a full
+// read as a hidden one always did. CHALLENGES 272.
 func (w *WDA) ElementVisible(ctx context.Context, n *uitree.Node, t *uitree.Tree) (bool, bool, error) {
-	id, ok, err := w.findUnique(ctx, n, t)
-	if !ok || err != nil {
-		return false, ok, err
+	strategy, selector, ok := uniqueSelector(n, t)
+	if !ok {
+		return false, false, nil
 	}
-	var resp struct {
-		Value interface{} `json:"value"`
-	}
-	if err := w.w3c.do(ctx, http.MethodGet, w.w3c.sessionPath("/element/"+id+"/attribute/visible"), nil, &resp); err != nil {
+	id, err := w.w3c.findElement(ctx, strategy, selector+" AND visible == 1")
+	if err != nil {
+		if mobiumerr.CodeOf(err) == mobiumerr.NoSuchElement {
+			return false, true, nil
+		}
 		return false, true, err
 	}
-	switch v := resp.Value.(type) {
-	case bool:
-		return v, true, nil
-	case string:
-		return v == "true" || v == "1", true, nil
-	}
-	return false, true, nil
+	w.foundMu.Lock()
+	w.found = map[string]string{strategy + "\x00" + selector: id}
+	w.foundMu.Unlock()
+	return true, true, nil
 }
 
 // findUnique finds the element a node names by its test id, or its label,
@@ -90,21 +95,8 @@ func (w *WDA) ElementVisible(ctx context.Context, n *uitree.Node, t *uitree.Tree
 // the next read of the screen, so a visibility check and a rectangle read of
 // the same element find it once.
 func (w *WDA) findUnique(ctx context.Context, n *uitree.Node, t *uitree.Tree) (string, bool, error) {
-	var strategy, selector string
-	switch {
-	case n.TestID != "" && countNodes(t, func(m *uitree.Node) bool { return m.TestID == n.TestID }) == 1:
-		// By name and type together: "accessibility id" also matches labels,
-		// so a name no other node has can still find another element
-		// (CHALLENGES 240).
-		p, ok := namePredicate(n)
-		if !ok {
-			return "", false, nil
-		}
-		strategy, selector = "predicate string", p
-	case n.Label != "" && !strings.ContainsAny(n.Label, `"\\`) &&
-		countNodes(t, func(m *uitree.Node) bool { return m.Label == n.Label }) == 1:
-		strategy, selector = "predicate string", `label == "`+n.Label+`"`
-	default:
+	strategy, selector, ok := uniqueSelector(n, t)
+	if !ok {
 		return "", false, nil
 	}
 	key := strategy + "\x00" + selector
@@ -121,6 +113,26 @@ func (w *WDA) findUnique(ctx context.Context, n *uitree.Node, t *uitree.Tree) (s
 		w.foundMu.Unlock()
 	}
 	return id, true, err
+}
+
+// uniqueSelector is the search that can find only n: its test id with its
+// type, or its label, when no other node in t has it. ok is false otherwise.
+func uniqueSelector(n *uitree.Node, t *uitree.Tree) (strategy, selector string, ok bool) {
+	switch {
+	case n.TestID != "" && countNodes(t, func(m *uitree.Node) bool { return m.TestID == n.TestID }) == 1:
+		// By name and type together: "accessibility id" also matches labels,
+		// so a name no other node has can still find another element
+		// (CHALLENGES 240).
+		p, ok := namePredicate(n)
+		if !ok {
+			return "", "", false
+		}
+		return "predicate string", p, true
+	case n.Label != "" && !strings.ContainsAny(n.Label, `"\\`) &&
+		countNodes(t, func(m *uitree.Node) bool { return m.Label == n.Label }) == 1:
+		return "predicate string", `label == "` + n.Label + `"`, true
+	}
+	return "", "", false
 }
 
 // forgetFound drops the element remembered by findUnique: a new read of the
