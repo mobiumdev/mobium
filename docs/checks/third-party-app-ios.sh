@@ -32,6 +32,13 @@ DEV="${1:?usage: third-party-app-ios.sh <iphone-udid>}"
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 M="$ROOT/bin/mobium --driver wda --device $DEV"
 APP=org.wikimedia.wikipedia
+# A simulator is refused by name: an App Store app does not run on one, and
+# "install Wikipedia from the App Store" — what a sweep of the simulator
+# checks was told — is advice a simulator cannot take.
+if xcrun simctl list devices 2>/dev/null | grep -q "$DEV"; then
+  echo "third-party-app-ios.sh is for a real iPhone: Wikipedia from the App Store is device-signed and does not run on a simulator" >&2
+  exit 2
+fi
 fail() { echo "FAIL: $*" >&2; exit 1; }
 
 # refOf prints the ref of the first map entry whose label contains $1.
@@ -42,7 +49,11 @@ for e in json.load(sys.stdin)['elements']:
 "; }
 
 echo "--- $DEV (iPhone)"
-$M apps | grep -q "^$APP " || fail "$APP is not installed — install Wikipedia from the App Store"
+# A phone that cannot be reached answers apps with an error, which is not
+# the same as an app that is not installed: a locked phone was reported as
+# missing Wikipedia.
+apps=$($M apps 2>&1) || fail "cannot list the apps: $(echo "$apps" | tail -1)"
+echo "$apps" | grep -q "^$APP " || fail "$APP is not installed — install Wikipedia from the App Store"
 echo "    install        $APP present, confirmed by listing"
 
 $M terminate $APP >/dev/null 2>&1 || true

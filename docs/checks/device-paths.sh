@@ -85,7 +85,8 @@ fi
 
 # iOS
 A=dev.mobium.mobiumapp
-$M apps | grep -q "$A" || fail "$A is not installed — MobiumApp is what the container is checked in"
+apps=$($M apps 2>&1) || fail "cannot list the apps: $(echo "$apps" | tail -1)"
+echo "$apps" | grep -q "$A" || fail "$A is not installed — MobiumApp is what the container is checked in"
 roundtrip container "tmp/mobium-check-$$" --app "$A"
 out=$($M download --device-path Library/Preferences -o "$W/prefs" --app "$A" 2>&1) || fail "the app's own folder: $out"
 row "app's own" "$(echo "$out" | sed -n 's/.*(\(a folder of [^)]*\)).*/Library\/Preferences, \1/p')"

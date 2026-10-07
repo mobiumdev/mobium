@@ -20,9 +20,12 @@ this is what is not.
   post taller than the screen), `pocketcasts-ios.sh` (a search left open).
   Two dark-screen sightings on the iPhone were explained (260). Not run on
   the phone: `autowait.sh`, which turns Reduce Motion on through Settings.
-  Left: two simulator checks want setup, not code — `notifications-ios.sh`
-  needs MobiumApp allowed to notify, and `third-party-app-ios.sh` needs
-  Wikipedia from the App Store.
+  The two left red on the simulator were setup, not code:
+  `notifications-ios.sh` passes once MobiumApp is allowed to notify (Settings
+  > Apps > MobiumApp > Notifications on iOS 26 — a reinstall or a data
+  reset asks again, and `dialogs.sh` answers a permission prompt), and
+  `third-party-app-ios.sh` is for a real iPhone and now says so on a
+  simulator (CHALLENGES 269).
 - ~~**Gray box: waiting for the app to say it is idle.**~~ Done 2026-10-05, iOS and Android:
   `launch --gray-box` turns on Mobium's gray-box library in an app built
   with it, the app writes when it is busy to the device log, and every
