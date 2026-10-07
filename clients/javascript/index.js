@@ -1500,6 +1500,21 @@ export class Device {
   }
 
   /**
+   * Capture what the device plays: action 'start', or 'stop' with a path to
+   * save a WAV; neither asks whether a capture is running. Stop resolves to
+   * a timeline — segments with from and to in nanoseconds, sound, and for a
+   * sound its hz (0 with no one pitch) and level in dBFS. Assert on sound,
+   * silence and pitch; the level follows the device's volume. An Android
+   * emulator only.
+   */
+  async audio({ action, path } = {}) {
+    const args = {}
+    if (action) args.action = action
+    if (path) args.path = path
+    return (await this.#data('app_audio', args)) || {}
+  }
+
+  /**
    * Start recording the session as a trace: until traceStop(), every call on
    * this device is a step, with the screen after it and the map's elements
    * drawn over it. `name` titles the trace; `screenshots` and `maps` are true

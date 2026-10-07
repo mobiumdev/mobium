@@ -1218,6 +1218,22 @@ class Device:
             args["path"] = path
         return self._data("app_record", args or None) or {}
 
+    def audio(self, action: str | None = None, path: str | None = None) -> dict:
+        """Capture what the device plays: ``action`` "start", or "stop" with
+        ``path`` to save a WAV; neither asks whether a capture is running.
+
+        Stop returns a ``timeline``: segments with ``from`` and ``to`` in
+        nanoseconds, ``sound``, and for a sound its ``hz`` (0 when it has no
+        one pitch) and ``level`` in dBFS. Assert on sound, silence and pitch;
+        the level follows the device's volume. An Android emulator only.
+        """
+        args: dict = {}
+        if action:
+            args["action"] = action
+        if path:
+            args["path"] = path
+        return self._data("app_audio", args or None) or {}
+
     def trace_start(
         self, name: str | None = None, screenshots: bool | None = None, maps: bool | None = None
     ) -> dict:

@@ -114,6 +114,7 @@ var argExemptions = []ArgExemption{
 	{"app_upload", "content", "set by the CLI and pipe from the file when the daemon is on another machine; a person gives a path"},
 	{"app_trace", "return_data", "set by the CLI and pipe on stop when the daemon is on another machine, which then save the trace at the path given"},
 	{"app_record", "return_data", "set by the CLI and pipe on stop when the daemon is on another machine, which then save the video at the path given"},
+	{"app_audio", "return_data", "set by the CLI and pipe on stop when the daemon is on another machine, which then save the WAV at the path given"},
 }
 
 // CheckFlags reports keys the CLI sends that no tool accepts, arguments no

@@ -355,6 +355,8 @@ func (h *Handlers) dispatch(ctx context.Context, name string, args map[string]in
 		return h.keyboard(ctx, args)
 	case "app_record":
 		return h.record(ctx, args)
+	case "app_audio":
+		return h.audioCapture(ctx, args)
 	case "app_trace":
 		return h.traceTool(ctx, args)
 	case "app_eval":

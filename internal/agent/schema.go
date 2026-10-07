@@ -794,6 +794,38 @@ func GetToolSchemas() []Tool {
 			},
 		},
 		{
+			Name: "app_audio",
+			Description: "Capture what the device plays: start, stop with a path to save it as a WAV, or " +
+				"omit the action to ask whether a capture is running. Stop answers with a timeline — " +
+				"when there was sound and when silence, to a tenth of a second, and each sound's pitch " +
+				"and level — which is what to assert on: levels follow the device's volume, pitches do " +
+				"not. Everything the device played is in it, the system's sounds too: with touch sounds " +
+				"on, a tap is a tenth of a second of sound. An Android emulator only, from its control " +
+				"port; a phone or an iOS device is refused. One capture per device; ending the session " +
+				"discards it.",
+			InputSchema: map[string]interface{}{
+				"type": "object",
+				"properties": withDevice(map[string]interface{}{
+					"action": map[string]interface{}{
+						"type":        "string",
+						"description": "start or stop. Omit to ask whether a capture is running.",
+						"enum":        []string{"start", "stop"},
+					},
+					"path": map[string]interface{}{
+						"type":        "string",
+						"description": "Where to save the audio, on stop — a .wav on this machine.",
+					},
+					"return_data": map[string]interface{}{
+						"type": "boolean",
+						"description": "On stop without a path: return the WAV, base64, instead of " +
+							"saving it — for a daemon on another machine; the CLI and pipe ask for it " +
+							"and save it where the caller said.",
+					},
+				}),
+				"additionalProperties": false,
+			},
+		},
+		{
 			Name: "app_trace",
 			Description: "Record a session as a trace: start, then every call on this device is a step — " +
 				"before and after, the point an action touched, a failure's error — and after each the " +
@@ -2079,6 +2111,7 @@ var PathArguments = map[string][]string{
 	"app_screenshot": {"path"},
 	"app_location":   {"gpx"},
 	"app_record":     {"path"},
+	"app_audio":      {"path"},
 	"app_trace":      {"path"},
 	"app_upload":     {"path"},
 	"app_download":   {"path"},

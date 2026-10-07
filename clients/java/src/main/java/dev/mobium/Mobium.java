@@ -1688,6 +1688,26 @@ public final class Mobium implements AutoCloseable {
     }
 
     /**
+     * Captures what the device plays: action "start", or "stop" with a path
+     * to save a WAV; null asks whether a capture is running. Stop returns a
+     * {@code timeline} of segments — {@code from} and {@code to} in
+     * nanoseconds, {@code sound}, and for a sound its {@code hz} (0 with no
+     * one pitch) and {@code level} in dBFS. Assert on sound, silence and
+     * pitch; the level follows the device's volume. An Android emulator only.
+     * A relative path is this process's.
+     *
+     * @param action {@code "start"}, {@code "stop"}, or null to ask whether one is running
+     * @param path where to save the WAV on stop, or null
+     * @return whether a capture is running, or on stop its timeline
+     */
+    public Map<String, Object> audio(String action, String path) {
+        Map<String, Object> args = new LinkedHashMap<>();
+        if (action != null && !action.isBlank()) args.put("action", action);
+        if (path != null && !path.isBlank()) args.put("path", path);
+        return data("app_audio", args);
+    }
+
+    /**
      * Starts recording this session as a trace: from now on every call on the
      * device is a step, with the screen after it and the map's elements drawn
      * over it, until {@link #traceStop(String)} saves it. Text typed into a

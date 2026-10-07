@@ -153,6 +153,10 @@ type session struct {
 	// recording is a screen recording in progress, or nil. One per device.
 	recording device.Recording
 
+	// audio is an audio capture in progress (app_audio), or nil. Ending the
+	// session discards it, as it does a recording.
+	audio device.AudioRecording
+
 	// trace is a session trace in progress (app_trace), or nil. Ending the
 	// session discards it, as it does a recording.
 	trace *sessionTrace
@@ -190,6 +194,12 @@ func (s *session) close() {
 		s.recording.Discard(ctx)
 		cancel()
 		s.recording = nil
+	}
+	if s.audio != nil {
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		s.audio.Discard(ctx)
+		cancel()
+		s.audio = nil
 	}
 	s.stopRoute()
 	// Before the driver closes: an undo needs the device to reach.

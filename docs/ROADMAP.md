@@ -549,6 +549,35 @@ this is what is not.
   to its own: shut down from a call pinned to a simulator, the emulator went
   and the simulator stayed. A phone is refused by both. An agent over MCP,
   which has no shell, can start a device now (`docs/checks/boot.sh`).
+- **Audio** (written down 2026-10-07): what an app played, heard and
+  checked. **On an Android emulator, done** — `mobium audio start`, then
+  `stop -o capture.wav` saves a WAV and answers with a timeline: sound and
+  silence to a tenth of a second, each sound's pitch and level
+  (`docs/checks/audio.sh`, on MobiumApp's Audio Demo, mobiumdev/mobium-app#21).
+  It reads the emulator's own audio stream from its control port, which
+  the emulator opens by default on 127.0.0.1 with a token in its discovery
+  file, so nothing is started and nothing is put on the device; the boot's
+  `-no-audio` silences the Mac and not the stream. What was measured:
+  - **The platform's word is not the sound.** `dumpsys audio` reports the
+    Audio Demo's silence — a player playing zeros — exactly as it reports
+    a tone: `started`, its usage, not muted. The simulator's audio device
+    on the Mac runs alike for both, and goes on running after. Either
+    says a player runs, not that anything was heard.
+  - **The system's sounds are in it.** With touch sounds on, a tap is a
+    tenth of a second near 780 Hz at -47 dBFS; with them off the silence's
+    loudest window was -97. The timeline reports it where it fell.
+  - **Levels follow the device's volume** — a tone written at -15 dBFS
+    arrived at -42 — so a check asserts sound, silence and pitch.
+  - **The stream says nothing until the device has played**: not even its
+    headers, so a capture counts that time as silence.
+  - **Not yet**: a real phone, where nothing outside it hears what it
+    plays — a capture needs a helper on the phone with the shell's
+    permission, filtered to the app under test, since the phone also plays
+    its owner's notifications and calls; the iOS simulator, whose audio
+    goes to a Mac device of its own; and an iPhone. Each to be measured
+    first. Also open: comparing a capture with a baseline recording, and
+    the emulator's microphone (`injectAudio`), which would let a test
+    speak to an app.
 - **Seeing an app's outgoing intents** on Android, so a test can assert that
   "share" asked for the chooser with the right text, without stubbing it.
 - **Menus and long press on iOS.** Measured 2026-10-04 on Ice Cubes'

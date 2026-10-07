@@ -95,6 +95,31 @@ func sendFilesAsContent(tool string, args map[string]interface{}) (func(*agent.T
 			return agent.Result(agent.RecordSavedMessage(path, v), v), nil
 		}, nil
 
+	case "app_audio":
+		if action, _ := args["action"].(string); action != "stop" || path == "" {
+			return same, nil
+		}
+		delete(args, "path")
+		args["return_data"] = true
+		return func(r *agent.ToolsCallResult) (*agent.ToolsCallResult, error) {
+			if r.IsError {
+				return r, nil
+			}
+			var v agent.AudioView
+			if err := remarshal(r.StructuredContent, &v); err != nil || v.Data == "" {
+				return nil, mobiumerr.New(mobiumerr.DeviceServer, "the daemon returned no audio to save at %s", path)
+			}
+			wav, err := base64.StdEncoding.DecodeString(v.Data)
+			if err != nil {
+				return nil, fmt.Errorf("decode the audio: %w", err)
+			}
+			if err := writeLocal(path, wav); err != nil {
+				return nil, err
+			}
+			v.Data, v.Path = "", path
+			return agent.Result(agent.AudioSavedMessage(path, v), v), nil
+		}, nil
+
 	case "app_trace":
 		if action, _ := args["action"].(string); action != "stop" || path == "" {
 			return same, nil
