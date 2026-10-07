@@ -58,11 +58,14 @@ UPLOAD="$TOKEN.txt"
 cleanup() {
   rm -rf "$OUT"
   if [ "$PLATFORM" = android ]; then
-    for f in "$UPLOAD" mobium-report.txt; do
-      adb -s "$DEV" shell rm -f "/sdcard/Download/$f" >/dev/null 2>&1 || true
-      adb -s "$DEV" shell content delete --uri content://media/external/downloads \
-        --where "\"_display_name='$f'\"" >/dev/null 2>&1 || true
-    done
+    # Every report the run made, under whatever name: MediaStore numbers a
+    # save whose name is taken — "mobium-report (1).txt" — and removing only
+    # the plain name left seven behind over a week, until a run downloaded a
+    # stale one. None was there when the run began (checked below).
+    adb -s "$DEV" shell rm -f "/sdcard/Download/$UPLOAD" >/dev/null 2>&1 || true
+    adb -s "$DEV" shell "rm -f /sdcard/Download/mobium-report*.txt" >/dev/null 2>&1 || true
+    adb -s "$DEV" shell content delete --uri content://media/external/downloads \
+      --where "\"_display_name='$UPLOAD' OR _display_name LIKE 'mobium-report%'\"" >/dev/null 2>&1 || true
   elif [ -n "$PHONE" ]; then
     $M uninstall $APP >/dev/null 2>&1 || true
     $M install "$MOBIUMAPP_BUNDLE" >/dev/null 2>&1 || echo "WARNING: reinstall MobiumApp from $MOBIUMAPP_BUNDLE" >&2
@@ -85,10 +88,12 @@ fi
 # same as an app that is not installed.
 apps=$($M apps 2>&1) || fail "cannot list the apps: $(echo "$apps" | tail -1)"
 echo "$apps" | grep -q "$APP" || fail "$APP is not installed"
-if [ "$PLATFORM" = android ] && [ -n "$PHONE" ] &&
-  adb -s "$DEV" shell ls /sdcard/Download/mobium-report.txt >/dev/null 2>&1; then
-  trap - EXIT
-  fail "a mobium-report.txt is in this phone's Download folder already, and this check would remove it"
+if [ "$PLATFORM" = android ]; then
+  there=$(adb -s "$DEV" shell ls /sdcard/Download/ 2>/dev/null | tr -d '\r' | grep '^mobium-report' | tr '\n' ' ' | sed 's/ *$//')
+  if [ -n "$there" ]; then
+    trap - EXIT
+    fail "the Download folder holds $there already — the app would save under another number and this check would read the wrong one; remove them if they are an earlier run's"
+  fi
 fi
 
 $M terminate $APP >/dev/null 2>&1 || true

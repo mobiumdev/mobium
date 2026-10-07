@@ -282,12 +282,13 @@ this is what is not.
     `files.sh` taking the emulator for an iPhone, fixed. `chrome.sh` and
     `pwa.sh` were stopped by Chrome's notification prompt, and the web tap's
     refusal blamed installed web apps instead (CHALLENGES 268); answered,
-    both pass. Left: `files.sh` met seven
-    `mobium-report (N).txt` left in Download by earlier runs, MediaStore
-    numbering every new save while the check reads the plain name — removed,
-    and the check should clear what it made under any number; and
-    `graybox.sh` could not show its control (the black box was current on
-    all ten quiet refreshes), so that run says nothing either way.
+    both pass. `files.sh` met seven `mobium-report (N).txt` left in
+    Download by earlier runs, MediaStore numbering every new save while the
+    check read the plain name; it now refuses to start over any report,
+    naming them, and clears every one it made, numbered or not (a planted
+    one was refused and left in place). `graybox.sh` could not show its
+    control on that loaded emulator; on a fresh one it passed three runs of
+    three.
   - A sweep of 28 simulator checks on 2026-10-06 found three failures
     besides those fixed (CHALLENGES 263, 265): `notifications-ios.sh`, as
     MobiumApp was not allowed to notify on that simulator — the same at
