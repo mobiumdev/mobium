@@ -32,6 +32,8 @@ DEV="$1"; APK="$2"
 if [ -z "$DEV" ]; then echo "usage: $0 <serial> [apk]" >&2; exit 2; fi
 
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
+. "$ROOT/docs/checks/lib.sh"
+check_lock "$DEV"
 M="$ROOT/bin/mobium --device $DEV"
 APP=org.wikipedia
 fail() { echo "FAIL: $*" >&2; exit 1; }

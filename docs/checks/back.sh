@@ -26,6 +26,8 @@ set -e
 DEV="$1"
 if [ -z "$DEV" ]; then echo "usage: $0 <android-serial | simulator-udid | iphone-udid>" >&2; exit 2; fi
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
+. "$ROOT/docs/checks/lib.sh"
+check_lock "$DEV"
 APP=dev.mobium.mobiumapp
 case "$DEV" in
   ????????-????????????????) PLATFORM=ios; PHONE=1 ;;

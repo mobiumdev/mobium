@@ -41,6 +41,8 @@ set -e
 DEV="$1"
 if [ -z "$DEV" ]; then echo "usage: $0 <emulator-serial | android-serial | simulator-udid>" >&2; exit 2; fi
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
+. "$ROOT/docs/checks/lib.sh"
+check_lock "$DEV"
 case "$DEV" in
   emulator-*) PLATFORM=android; M="$ROOT/bin/mobium --device $DEV" ;;
   ????????-????-????-????-????????????)

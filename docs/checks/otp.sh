@@ -33,6 +33,8 @@ set -e
 DEV="$1"
 if [ -z "$DEV" ]; then echo "usage: $0 <serial|udid>" >&2; exit 2; fi
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
+. "$ROOT/docs/checks/lib.sh"
+check_lock "$DEV"
 fail() { echo "FAIL: $*" >&2; exit 1; }
 row() { printf '    %-16s %-56s ok\n' "$1" "$2"; }
 APP=dev.mobium.mobiumapp

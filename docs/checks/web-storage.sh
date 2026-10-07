@@ -23,8 +23,10 @@
 # simulators; it leaves the page's storage cleared.
 set -e
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
+. "$ROOT/docs/checks/lib.sh"
 DEV="$1"
 if [ -z "$DEV" ]; then echo "usage: $0 <serial|udid>" >&2; exit 2; fi
+check_lock "$DEV"
 case "$DEV" in
   *-*-*-*-*) PLATFORM=ios; M="$ROOT/bin/mobium --driver wda --device $DEV" ;;
   *)         PLATFORM=android; M="$ROOT/bin/mobium --device $DEV" ;;
@@ -33,7 +35,7 @@ APP=dev.mobium.mobiumapp
 fail() { echo "FAIL: $*" >&2; exit 1; }
 row() { printf '    %-14s %-58s ok\n' "$1" "$2"; }
 OUT=$(mktemp -d)
-trap 'rm -rf "$OUT"' EXIT
+at_exit 'rm -rf "$OUT"'
 appContexts() { $M contexts | awk -v id="WEBVIEW_$1" \
   '$1 == id || (index($1, id "_") == 1 && substr($1, length(id) + 2) ~ /^[0-9]+$/) { print $1 }'; }
 

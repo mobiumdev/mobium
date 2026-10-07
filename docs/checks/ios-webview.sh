@@ -16,10 +16,12 @@
 set -e
 UDID="${1:-booted}"
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
+. "$ROOT/docs/checks/lib.sh"
 M="$ROOT/bin/mobium --driver wda"
 # Named, not left to selection: with a phone connected as well as the
 # simulator, "the iOS device" is two devices and every command is refused.
 [ "$UDID" = booted ] || M="$M --device $UDID"
+[ "$UDID" = booted ] || check_lock "$UDID"
 fail() { echo "FAIL: $*" >&2; exit 1; }
 
 # appContexts lists the WebView contexts that belong to one app — WEBVIEW_<id>,

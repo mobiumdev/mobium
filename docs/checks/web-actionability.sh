@@ -19,6 +19,8 @@ set -e
 DEV="$1"
 if [ -z "$DEV" ]; then echo "usage: $0 <serial|udid>" >&2; exit 2; fi
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
+. "$ROOT/docs/checks/lib.sh"
+check_lock "$DEV"
 fail() { echo "FAIL: $*" >&2; exit 1; }
 row() { printf '    %-24s %-50s ok\n' "$1" "$2"; }
 APP=dev.mobium.mobiumapp
@@ -32,7 +34,7 @@ echo "--- $DEV ($PLATFORM)"
 # answered "not installed" here while the real error was the device.
 APPS=$($M apps 2>&1) || fail "could not list the apps: $APPS"
 echo "$APPS" | grep -q "$APP" || fail "$APP is not installed — build it first (see mobium-app.sh's header)"
-trap '$M context NATIVE_APP >/dev/null 2>&1; $M terminate "$APP" >/dev/null 2>&1 || true' EXIT
+at_exit '$M context NATIVE_APP >/dev/null 2>&1; $M terminate "$APP" >/dev/null 2>&1 || true'
 
 $M terminate "$APP" >/dev/null 2>&1 || true
 $M launch "$APP" >/dev/null

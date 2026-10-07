@@ -25,6 +25,8 @@ set -e
 DEV="$1"
 if [ -z "$DEV" ]; then echo "usage: $0 <android-serial>" >&2; exit 2; fi
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
+. "$ROOT/docs/checks/lib.sh"
+check_lock "$DEV"
 fail() { echo "FAIL: $*" >&2; exit 1; }
 row() { printf '    %-14s %-58s ok\n' "$1" "$2"; }
 APP=dev.mobium.mobiumapp
@@ -61,7 +63,7 @@ restore() {
   if [ "$was_on" = null ]; then a settings delete secure accessibility_enabled >/dev/null
   else a "settings put secure accessibility_enabled '$was_on'"; fi
 }
-trap restore EXIT INT TERM
+at_exit restore
 
 $M daemon stop >/dev/null 2>&1 || true
 if [ "$was_svc" = null ] || [ -z "$was_svc" ]; then on="$TB"; else on="$was_svc:$TB"; fi
@@ -102,7 +104,7 @@ row "after" "every service still bound, touch exploration on"
 
 $M terminate "$APP" >/dev/null 2>&1 || true
 restore
-trap - EXIT INT TERM
+at_exit_clear
 [ "$(a settings get secure enabled_accessibility_services)" = "$was_svc" ] || fail "enabled services not put back: $(a settings get secure enabled_accessibility_services)"
 [ "$(a settings get secure accessibility_enabled)" = "$was_on" ] || fail "accessibility_enabled not put back"
 row "restored" "the device's accessibility settings as found"

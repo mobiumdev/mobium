@@ -50,6 +50,8 @@
 set -e
 DEV="${1:?usage: mobium-app.sh <udid|serial>}"
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
+. "$ROOT/docs/checks/lib.sh"
+check_lock "$DEV"
 # An iOS simulator is named by a UUID; an Android device never is. iOS is not
 # inferred from the serial anywhere in mobium, so the backend is named here.
 # A real iPhone's UDID is two groups, 00008120-0001234567890ABC, so it needs a

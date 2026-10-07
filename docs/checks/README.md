@@ -19,6 +19,38 @@ simulator UDID, `ios-webview.sh` defaults to the booted simulator,
 `test-runner.sh` and `test-ui.sh` run on `emulator-5554` and read
 `MOBIUM_IOS_DEVICE` for iOS, and `test-grid.sh` reads `MOBIUM_GRID`.
 
+## Running several at once
+
+Every check sources [lib.sh](lib.sh), which keeps it from reaching into
+another:
+
+- **A daemon of its own** (`MOBIUM_SESSION`), stopped when the check ends.
+  Checks once shared one: a check that ended on the `uiautomator` backend
+  handed it to every check after, and one run's `daemon stop` ended another
+  device's trace. A session the caller set, as a grid run's or
+  `mobium test`'s, is kept.
+- **One check per device.** `check_lock` takes the device, and a second
+  check on it is refused, naming the first; a lock whose holder has gone is
+  taken over. A check that runs another shares its lock.
+- **A folder of its own**, `CHECK_TMP`, removed at the end, and `at_exit` for
+  cleanup in place of `trap ... EXIT`, which would replace the prelude's.
+
+So checks on different devices can run side by side:
+
+```sh
+./docs/checks/obstruction.sh emulator-5554 &
+./docs/checks/obstruction.sh <simulator-udid> &
+wait
+```
+
+What they share is the machine: an emulator under load stopped answering
+`adb` once, mid-sweep, so start with as many devices as the Mac drives
+comfortably. `make ci` runs [lib-selftest.sh](lib-selftest.sh), which tests
+the prelude without a device and fails when a check stops using it. Four
+checks do not: `clean-stop.sh`, which stops the caller's daemon, and
+`test-runner.sh`, `test-grid.sh` and `test-ui.sh`, which test the sessions
+`mobium test` and the grid give themselves.
+
 | Script | What it proves |
 | --- | --- |
 | [calculator.sh](calculator.sh) | A full type-and-read loop: 1 + 1 = 2 in Google Calculator, every step asserted against a named element |

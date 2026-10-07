@@ -30,6 +30,8 @@
 set -e
 DEV="${1:?usage: third-party-app-ios.sh <iphone-udid>}"
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
+. "$ROOT/docs/checks/lib.sh"
+check_lock "$DEV"
 M="$ROOT/bin/mobium --driver wda --device $DEV"
 APP=org.wikimedia.wikipedia
 # A simulator is refused by name: an App Store app does not run on one, and

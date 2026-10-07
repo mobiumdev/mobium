@@ -46,6 +46,8 @@
 set -e
 DEV="${1:?usage: kiwix-ios.sh <simulator-udid>}"
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
+. "$ROOT/docs/checks/lib.sh"
+check_lock "$DEV"
 M="$ROOT/bin/mobium --driver wda --device $DEV"
 APP=self.Kiwix
 ZIM_NAME=wikipedia_en_ray-charles_mini_2026-08.zim

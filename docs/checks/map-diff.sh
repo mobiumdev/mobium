@@ -14,7 +14,9 @@
 # Leaves the Form Demo's box as it found it. Emulators and simulators.
 set -e
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
+. "$ROOT/docs/checks/lib.sh"
 DEV="${1:?usage: map-diff.sh <serial|udid>}"
+check_lock "$DEV"
 case "$DEV" in
   *-*-*-*-*) M="$ROOT/bin/mobium --driver wda --device $DEV" ;;
   *) M="$ROOT/bin/mobium --device $DEV" ;;

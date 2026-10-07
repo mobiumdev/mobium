@@ -41,6 +41,8 @@
 set -e
 DEV="${1:?usage: pocketcasts-ios.sh <udid>}"
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
+. "$ROOT/docs/checks/lib.sh"
+check_lock "$DEV"
 M="$ROOT/bin/mobium --driver wda --device $DEV"
 APP=au.com.shiftyjelly.podcasts
 fail() { echo "FAIL: $*" >&2; exit 1; }

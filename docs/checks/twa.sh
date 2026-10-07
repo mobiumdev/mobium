@@ -26,6 +26,8 @@ set -e
 DEV="$1"; PKG="${2:-com.oyo.consumerlite}"
 if [ -z "$DEV" ]; then echo "usage: $0 <android-serial> [package]" >&2; exit 2; fi
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
+. "$ROOT/docs/checks/lib.sh"
+check_lock "$DEV"
 M="$ROOT/bin/mobium --device $DEV"
 fail() { $M context NATIVE_APP >/dev/null 2>&1 || true; echo "FAIL: $*" >&2; exit 1; }
 row() { printf '    %-12s %-60s ok\n' "$1" "$2"; }

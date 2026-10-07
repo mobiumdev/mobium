@@ -24,6 +24,8 @@ set -e
 DEV="$1"
 if [ -z "$DEV" ]; then echo "usage: $0 <android-serial>" >&2; exit 2; fi
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
+. "$ROOT/docs/checks/lib.sh"
+check_lock "$DEV"
 M="$ROOT/bin/mobium --device $DEV"
 A="adb -s $DEV"
 fail() { echo "FAIL: $*" >&2; exit 1; }
@@ -40,7 +42,7 @@ cleanup() {
   for p in $PIDS; do kill "$p" 2>/dev/null || true; wait "$p" 2>/dev/null || true; done
   rm -rf "$TMP"
 }
-trap cleanup EXIT
+at_exit cleanup
 
 # connects: can the device open a connection to the internet at all.
 connects() { $A shell 'nc -z -w 5 connectivitycheck.gstatic.com 80 >/dev/null 2>&1 && echo yes || echo no' | tr -d '\r'; }

@@ -15,8 +15,10 @@
 # battery is put back — full, on AC — at the end.
 set -e
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
+. "$ROOT/docs/checks/lib.sh"
 DEV="$1"
 if [ -z "$DEV" ]; then echo "usage: $0 <serial|udid>" >&2; exit 2; fi
+check_lock "$DEV"
 case "$DEV" in
   *-*-*-*-*) PLATFORM=ios; M="$ROOT/bin/mobium --driver wda --device $DEV" ;;
   emulator-*) PLATFORM=android; M="$ROOT/bin/mobium --device $DEV" ;;
@@ -56,7 +58,7 @@ fi
 ADB="adb -s $DEV"
 restore() { $ADB emu power ac on >/dev/null 2>&1; $ADB emu power status charging >/dev/null 2>&1
   $ADB emu power capacity 100 >/dev/null 2>&1; }
-trap restore EXIT
+at_exit restore
 
 for want in 42 73; do
   $ADB emu power ac off >/dev/null

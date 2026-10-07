@@ -16,12 +16,14 @@ set -e
 DEV="$1"
 if [ -z "$DEV" ]; then echo "usage: $0 <udid>" >&2; exit 2; fi
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
+. "$ROOT/docs/checks/lib.sh"
+check_lock "$DEV"
 fail() { echo "FAIL: $*" >&2; exit 1; }
 row() { printf '    %-12s %-54s ok\n' "$1" "$2"; }
 M="$ROOT/bin/mobium --device $DEV"
 P=com.apple.Preferences
 general() { $M map 2>/dev/null | grep -o -E '\b(General|一般)\b' | head -1; }
-trap '$M locale $P "" >/dev/null 2>&1 || true' EXIT
+at_exit '$M locale $P "" >/dev/null 2>&1 || true'
 echo "--- $DEV"
 
 $M locale $P | grep -q 'follows the device' || fail "Settings started out pinned"
