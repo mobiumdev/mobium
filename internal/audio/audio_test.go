@@ -136,3 +136,33 @@ func TestWriteWAV(t *testing.T) {
 		t.Errorf("sample 10 = %d, want %d", s, samples[10])
 	}
 }
+
+// A tone that starts partway into a window is that tone in it, not a sound
+// with no pitch: measured on Android 17, the Audio Demo's 880 began 50ms
+// into a window five times in eight, and the sliver read as a separate
+// pitchless sound inside what should have been silence. A click is still a
+// sound with no pitch.
+func TestAnalyzeToneStartingMidWindow(t *testing.T) {
+	quiet := 0.00832 * math.Sqrt2
+	for _, lead := range []int{10, 30, 50, 70, 90} {
+		got := Analyze(join(tone(440, 2000, quiet), tone(0, 1000+lead, 0), tone(880, 2000-lead, quiet), tone(0, 500, 0)), rate)
+		var sounds []Segment
+		for _, s := range got {
+			if s.Sound {
+				sounds = append(sounds, s)
+			}
+		}
+		if len(sounds) != 2 || sounds[0].Hz != 440 || math.Abs(sounds[1].Hz-880) > 2 {
+			t.Errorf("880 starting %dms into a window: sounds %+v", lead, sounds)
+		}
+	}
+	click := make([]int16, rate/10)
+	for i := 0; i < 48; i++ {
+		click[rate/20+i] = int16(8000 * (1 - float64(i)/48) * float64(1-2*(i%2)))
+	}
+	for _, seg := range Analyze(click, rate) {
+		if seg.Hz != 0 {
+			t.Errorf("a click read with a pitch: %+v", seg)
+		}
+	}
+}

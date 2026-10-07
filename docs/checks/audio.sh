@@ -107,13 +107,15 @@ row "tone" "440 Hz for about 2 s ($n short sound(s) besides)"
 
 capture audioSequence sequence
 n=$(expect sequence 440 880) || fail "440, a pause, then 880: $n"
-python3 - "$CHECK_TMP/sequence.json" <<'EOF' || fail "the pause between 440 and 880 was not about a second of silence"
+python3 - "$CHECK_TMP/sequence.json" <<'EOF' > "$CHECK_TMP/gap.txt" 2>&1 || fail "the pause between 440 and 880 was not about a second of silence: $(cat "$CHECK_TMP/gap.txt")"
 import json, sys
 segs = json.load(open(sys.argv[1]))["timeline"]
 tones = [s for s in segs if s["sound"] and (s["to"] - s["from"]) / 1e9 > 0.2]
 gap = (tones[1]["from"] - tones[0]["to"]) / 1e9
 quiet = [s for s in segs if s["from"] >= tones[0]["to"] and s["to"] <= tones[1]["from"]]
-sys.exit(0 if 0.8 <= gap <= 1.2 and all(not s["sound"] for s in quiet) else 1)
+if not (0.8 <= gap <= 1.2 and all(not s["sound"] for s in quiet)):
+    sys.exit("heard " + ", ".join("%.1f-%.1fs %s" % (s["from"] / 1e9, s["to"] / 1e9,
+        ("%.0f Hz" % s.get("hz", 0)) if s["sound"] else "silence") for s in segs))
 EOF
 row "sequence" "440 Hz, about a second of silence, then 880 Hz"
 
