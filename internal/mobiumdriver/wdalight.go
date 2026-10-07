@@ -2,6 +2,8 @@ package mobiumdriver
 
 import (
 	"context"
+	"errors"
+	"net"
 	"net/http"
 	"strings"
 
@@ -27,11 +29,16 @@ import (
 // light read that took it off early let the next read hang (CHALLENGES 71).
 // Not over a notification banner either, which only the full read sees
 // through (CHALLENGES 155).
+//
+// Nor on a screen too large to read in full (hugeRead): its full read is
+// already this one, and the one element's visibility, asked by finding it
+// among thousands, did not come back — a tap on Radiolab's page asked again
+// on every pass of the cover wait and ran 342s. CHALLENGES 258.
 func (w *WDA) LightSnapshot(ctx context.Context) (*uitree.Tree, bool, error) {
 	w.hintMu.Lock()
 	hinted := w.expecting != ""
 	w.hintMu.Unlock()
-	if hinted {
+	if hinted || w.wasHuge() {
 		return nil, false, nil
 	}
 	w.forgetFound()
@@ -42,6 +49,10 @@ func (w *WDA) LightSnapshot(ctx context.Context) (*uitree.Tree, bool, error) {
 	tree, err := uitree.ParseIOS([]byte(xml))
 	if err != nil {
 		return nil, false, err
+	}
+	if count := tree.Count(); count >= uitree.HugeScreen {
+		w.setCount(count)
+		return nil, false, nil
 	}
 	if app, banner := bannerOver(tree); app != "" || banner != nil {
 		return nil, false, nil
@@ -129,4 +140,67 @@ func countNodes(t *uitree.Tree, match func(*uitree.Node) bool) int {
 		return true
 	})
 	return c
+}
+
+// A screen too large to read in full.
+//
+// A long table is reported whole, every row whether on screen or not, and
+// WebDriverAgent works visible out for each: Pocket Casts' Radiolab page,
+// 673 episodes and 2,847 elements, took 83.8s on an iPhone 15 Plus, past
+// the 60s a read is given, so map, text and every action failed on it.
+// Without visible it took 6.3s. So once a session's screen is that large,
+// it is read without visible, and what is shown is worked out from where
+// it is (uitree.InferVisibility) — marked, so map can say so. A screen
+// that turns out small again is read in full. The first read of a large
+// screen does not know it is one: it times out, and is read this way then.
+// CHALLENGES 258.
+
+// hugeRead reads without visible, and answers only for a screen of
+// uitree.HugeScreen elements or more, with visibility inferred. Not while a
+// phone's active-app hint is on, nor over a notification banner, as for
+// LightSnapshot.
+func (w *WDA) hugeRead(ctx context.Context) (*uitree.Tree, bool) {
+	w.hintMu.Lock()
+	hinted := w.expecting != ""
+	w.hintMu.Unlock()
+	if hinted {
+		return nil, false
+	}
+	xml, err := w.w3c.sourceWithout(ctx, "visible")
+	if err != nil {
+		return nil, false
+	}
+	tree, err := uitree.ParseIOS([]byte(xml))
+	if err != nil {
+		return nil, false
+	}
+	count := tree.Count()
+	w.setCount(count)
+	if count < uitree.HugeScreen {
+		return nil, false
+	}
+	if app, banner := bannerOver(tree); app != "" || banner != nil {
+		return nil, false
+	}
+	tree.InferVisibility()
+	tree.Scale(w.scale)
+	return tree, true
+}
+
+func (w *WDA) wasHuge() bool {
+	w.countMu.Lock()
+	defer w.countMu.Unlock()
+	return w.lastCount >= uitree.HugeScreen
+}
+
+func (w *WDA) setCount(n int) {
+	w.countMu.Lock()
+	w.lastCount = n
+	w.countMu.Unlock()
+}
+
+// timedOut says whether a request gave up waiting for the server.
+func timedOut(err error) bool {
+	var ne net.Error
+	return errors.As(err, &ne) && ne.Timeout()
 }

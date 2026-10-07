@@ -224,10 +224,18 @@ this is what is not.
     the tree gives no sign; taps into it are refused since CHALLENGES 257,
     where a control's container, not its frame, was measured to be what
     takes a touch.
-  - Reading Pocket Casts' Radiolab page on the iPhone: WebDriverAgent did
-    not answer `/source` within 60 seconds, three times running, while the
-    page was plainly up (2026-10-06). The podcast `pocketcasts-ios.sh`
-    opens reads. Unmeasured: whether the length of its episode list is why.
+  - A screen with a long list (CHALLENGES 258), read since 2026-10-06
+    without `visible` and with what is shown worked out from geometry.
+    Three things are left: the first read of such a screen does not know
+    it is one, and pays the 60-second timeout before falling back (91
+    seconds for Radiolab's page, four after); `map` there may list an
+    element something covers; and an action there does not scroll for its
+    target. Unmeasured: other apps' long lists — a mailbox, a contacts
+    list — and where between 393 and 2,847 elements a read stops fitting.
+  - Two things seen once on the iPhone with its screen dark, 2026-10-06,
+    neither reproduced: a read hung for its 60 seconds rather than being
+    refused as `device_not_ready`, and `launch` reported success a moment
+    before a screenshot showed the screen dark.
   - An overlay hidden from accessibility on iOS, which WebDriverAgent's tree
     does not contain, so a tap under one still lands on it. **On a
     simulator, `mobium hit-test` sees it** since 2026-09-29: UIKit's own hit

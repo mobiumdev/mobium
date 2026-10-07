@@ -544,7 +544,10 @@ func (h *Handlers) mapScreen(ctx context.Context, args map[string]interface{}) (
 	// empty for a reason the caller cannot see from the list alone.
 	withNote := func(text string) string {
 		if note := popoverNote(tree); note != "" {
-			return text + "\n" + note
+			text += "\n" + note
+		}
+		if note := inferredNote(tree); note != "" {
+			text += "\n" + note
 		}
 		return text
 	}
@@ -569,6 +572,19 @@ func (h *Handlers) mapScreen(ctx context.Context, args map[string]interface{}) (
 		return Result(withNote("No actionable elements found"), view), nil
 	}
 	return Result(withNote(strings.Join(table.lines, "\n")), view), nil
+}
+
+// inferredNote says when which elements are shown was worked out from where
+// they are, on a screen too large for iOS to be asked (CHALLENGES 258): an
+// element something covers may be listed, and a tap on it is refused by
+// what is over it, not by iOS. "" otherwise.
+func inferredNote(t *uitree.Tree) string {
+	if t == nil || !t.VisibilityInferred {
+		return ""
+	}
+	return fmt.Sprintf("this screen holds %d elements — a long list iOS reports whole, on screen or not — so "+
+		"what is shown was worked out from where each element is, not asked of iOS: one that something "+
+		"covers may be listed", t.Count())
 }
 
 func (h *Handlers) tap(ctx context.Context, args map[string]interface{}) (*ToolsCallResult, error) {
@@ -1196,10 +1212,38 @@ func isNearMiss(err error) bool {
 	return ok
 }
 
+// notShownOnHugeScreen is the refusal for a target an action would have
+// scrolled to, on a screen whose visibility was worked out from geometry.
+func notShownOnHugeScreen(loc uitree.Locator, tree *uitree.Tree, resolveErr error) error {
+	why := "it is not on screen where nothing covers it"
+	code := mobiumerr.ElementNotReachable
+	if resolveErr != nil && matchedNothing(resolveErr) {
+		why, code = "nothing on screen matches it", mobiumerr.NoSuchElement
+	}
+	return failedCheck(code, loc, checkVisible,
+		fmt.Sprintf("%s, and this screen holds %d elements — a long list iOS reports whole — so where one off "+
+			"the screen is cannot be known, and an action does not scroll for it", why, tree.Count()),
+		"swipe the list with app_swipe until app_map shows it, then act on it, or use app_scroll_to with a direction").
+		WithRemedy("app_swipe, or app_scroll_to with a direction, then act on what app_map shows").
+		WithDetail("locator", loc.String())
+}
+
 // pickOne resolves a locator to exactly one node, refusing an ambiguous match
-// rather than guessing which element the caller meant.
+// rather than guessing which element the caller meant. On a screen whose
+// visibility was worked out from geometry it matches only what is shown: an
+// element off such a screen is reported where it is not, the texts of an
+// off-screen row near the top of the screen (CHALLENGES 258).
 func pickOne(loc uitree.Locator, tree *uitree.Tree) (*uitree.Node, error) {
 	matches := loc.Resolve(tree)
+	if tree != nil && tree.VisibilityInferred {
+		shown := matches[:0:0]
+		for _, m := range matches {
+			if m.Displayed {
+				shown = append(shown, m)
+			}
+		}
+		matches = shown
+	}
 	switch len(matches) {
 	case 0:
 		if alt := nearMiss(loc, tree); alt != nil {
@@ -1610,6 +1654,15 @@ func (h *Handlers) resolveNodeOnce(ctx context.Context, s *session, target strin
 		if container == nil || inView(tree.Viewport(container), node.Bounds) {
 			return h.settle(ctx, s, loc, node, tree, readTook)
 		}
+	}
+
+	// Not on a screen too large for iOS to say what is shown (CHALLENGES
+	// 258): there, where an element off the screen is reported is not where
+	// it is, and a tap on Pocket Casts' "Search episodes", under the tab bar,
+	// swiped Radiolab's episode list to its end and on, steering by it. The
+	// caller swipes, and acts on what map shows.
+	if tree != nil && tree.VisibilityInferred {
+		return nil, nil, notShownOnHugeScreen(loc, tree, resolveErr)
 	}
 
 	// Scrolling changes the screen on the way to succeeding or failing: a tap

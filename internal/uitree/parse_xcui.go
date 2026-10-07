@@ -96,15 +96,48 @@ func ParseIOS(data []byte) (*Tree, error) {
 // space of its own, and the parent's origin is the offset. Nothing is named,
 // so another remote view with the same habit is corrected too, and the check
 // runs at every depth, so one nested in another is corrected twice.
+//
+// Only when what is inside is in that space too. Pocket Casts' podcast
+// description has the same shape, a hidden wrapper at 0,0 the size of its
+// parent at 16,500, with its content inside already on screen at 16,500 —
+// and moved again it read as 32,1000, below the screen. Content that lies
+// inside the parent where it is, and outside the wrapper's own rectangle,
+// is in screen coordinates already. CHALLENGES 259.
 func rebaseRemoteContent(n *Node) {
 	for _, c := range n.Children {
 		b, p := c.Bounds, n.Bounds
 		if b.X1 == 0 && b.Y1 == 0 && (p.X1 != 0 || p.Y1 != 0) &&
-			!b.Empty() && b.Width() == p.Width() && b.Height() == p.Height() {
+			!b.Empty() && b.Width() == p.Width() && b.Height() == p.Height() && !alreadyOnScreen(c, p) {
 			shiftSubtree(c, p.X1, p.Y1)
 		}
 		rebaseRemoteContent(c)
 	}
+}
+
+// alreadyOnScreen says whether what c holds lies inside p, in screen
+// coordinates, and outside c's own rectangle at 0,0, which only content
+// placed on screen already can. Looked for below any wrappers of c's own
+// rectangle: the description is a WebView at 16,500, then two views at 0,0
+// its size, then the page at 16,500.
+func alreadyOnScreen(c *Node, p Rect) bool {
+	for _, g := range c.Children {
+		if g.Bounds == c.Bounds {
+			if alreadyOnScreen(g, p) {
+				return true
+			}
+			continue
+		}
+		gb := g.Bounds
+		if gb.Empty() {
+			continue
+		}
+		inParent := gb.X1 >= p.X1 && gb.Y1 >= p.Y1 && gb.X2 <= p.X2 && gb.Y2 <= p.Y2
+		inLocal := gb.X1 >= 0 && gb.Y1 >= 0 && gb.X2 <= c.Bounds.Width() && gb.Y2 <= c.Bounds.Height()
+		if inParent && !inLocal {
+			return true
+		}
+	}
+	return false
 }
 
 // shiftSubtree moves n and everything under it by dx, dy. A node with no
