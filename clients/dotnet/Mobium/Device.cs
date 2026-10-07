@@ -1057,15 +1057,33 @@ namespace Mobium
         /// path to save a WAV; neither asks whether a capture is running. Stop
         /// returns a <c>timeline</c> of segments — <c>from</c> and <c>to</c>
         /// in nanoseconds, <c>sound</c>, and for a sound its <c>hz</c> (0 with
-        /// no one pitch) and <c>level</c> in dBFS. Assert on sound, silence
-        /// and pitch; the level follows the device's volume. An Android
-        /// emulator only. A relative path is this process's.
+        /// no one pitch) and <c>level</c> in dBFS, and the <c>volumes</c> it
+        /// was taken at. Assert on sound, silence and pitch; the level follows
+        /// the device's volume, and at its lowest a playing app is silence. An
+        /// Android emulator only. A relative path is this process's.
         /// </summary>
         public IDictionary<string, object?> Audio(string? action = null, string? path = null)
         {
             var args = Args();
             if (!string.IsNullOrWhiteSpace(action)) args["action"] = action;
             if (!string.IsNullOrWhiteSpace(path)) args["path"] = path;
+            return Data("app_audio", args);
+        }
+
+        /// <summary>
+        /// Stops a capture as an assertion: saves the WAV at path and checks
+        /// the sounds it held, in order — each a dictionary with <c>hz</c>,
+        /// and optional <c>min_ms</c> and <c>max_ms</c>; an empty list is
+        /// silence. Sounds of ignoreMs or less do not count; null keeps the
+        /// default of 200. Anything else throws NotConfirmedException saying
+        /// what was heard, and the capture is still saved.
+        /// </summary>
+        public IDictionary<string, object?> AudioExpect(string path, IEnumerable<IDictionary<string, object?>> expect, int? ignoreMs = null)
+        {
+            var args = Args("action", "stop");
+            args["path"] = path;
+            args["expect"] = new List<IDictionary<string, object?>>(expect);
+            if (ignoreMs.HasValue) args["ignore_ms"] = ignoreMs.Value;
             return Data("app_audio", args);
         }
 

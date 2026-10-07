@@ -27,6 +27,7 @@ func (u *UIA2) StartAudio(ctx context.Context) (device.AudioRecording, error) {
 // can be tested without one.
 type emulatorAudio interface {
 	IsEmulator(context.Context) bool
+	StreamVolumes(context.Context) ([]device.StreamVolume, error)
 }
 
 // startEmulatorAudio is device.StartEmulatorAudio, replaceable in tests.
@@ -42,7 +43,7 @@ func androidAudioOn(ctx context.Context, adb emulatorAudio, serial string) (devi
 			"outside the phone hears what it plays, and a capture there needs a helper on the phone that "+
 			"has not been built. Capture on an emulator, which hands its audio out")
 	}
-	return startEmulatorAudio(ctx, serial)
+	return startEmulatorAudio(ctx, serial, adb.StreamVolumes)
 }
 
 // StartAudio is refused on iOS: neither a simulator's audio nor a phone's is

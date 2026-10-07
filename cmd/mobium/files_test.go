@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/base64"
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"strings"
@@ -9,6 +10,7 @@ import (
 
 	"github.com/mobiumdev/mobium/internal/agent"
 	"github.com/mobiumdev/mobium/internal/device"
+	"github.com/mobiumdev/mobium/internal/mobiumerr"
 )
 
 // A path names a file on the caller's disk, so with the daemon on another
@@ -158,5 +160,44 @@ func TestBatchStepsFilesAreEachReadied(t *testing.T) {
 	if !strings.Contains(text, "2. app_screenshot: ") || !strings.Contains(text, want) ||
 		!strings.Contains(text, "3. app_screenshot: image 1 below") {
 		t.Errorf("text = %q", text)
+	}
+}
+
+func TestParseAudioExpect(t *testing.T) {
+	got, err := parseAudioExpect("440:1.8-2.2, 880, 0:-0.5, 660:2-")
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := `[{"hz":440,"max_ms":2200,"min_ms":1800},{"hz":880},{"hz":0,"max_ms":500},{"hz":660,"min_ms":2000}]`
+	if b, _ := json.Marshal(got); string(b) != want {
+		t.Errorf("got %s", b)
+	}
+	if got, err := parseAudioExpect("silence"); err != nil || len(got) != 0 || got == nil {
+		t.Errorf("silence: %v, %v", got, err)
+	}
+	for _, bad := range []string{"", "loud", "440:2", "440:a-b", "-5"} {
+		if _, err := parseAudioExpect(bad); err == nil {
+			t.Errorf("%q was accepted", bad)
+		}
+	}
+}
+
+// A stop whose expectation failed sends the WAV back with the failure; the
+// CLI saves it where it was asked and still reports the failure.
+func TestSaveFailedAudio(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "miss.wav")
+	failed := agent.ErrorResult(mobiumerr.New(mobiumerr.NotConfirmed, "expected 880 Hz; heard 440 Hz").
+		WithDetail("data", base64.StdEncoding.EncodeToString([]byte("RIFFwav"))))
+	got, err := saveFailedAudio(&failed, path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if b, err := os.ReadFile(path); err != nil || string(b) != "RIFFwav" {
+		t.Fatalf("saved %q, %v", b, err)
+	}
+	p := got.StructuredContent.(mobiumerr.Payload)
+	if !got.IsError || p.Code != mobiumerr.NotConfirmed || p.Details["data"] != nil || p.Details["path"] != path ||
+		!strings.Contains(got.Content[0].Text, "saved at "+path) {
+		t.Errorf("got %+v", got)
 	}
 }

@@ -799,7 +799,9 @@ func GetToolSchemas() []Tool {
 				"omit the action to ask whether a capture is running. Stop answers with a timeline — " +
 				"when there was sound and when silence, to a tenth of a second, and each sound's pitch " +
 				"and level — which is what to assert on: levels follow the device's volume, pitches do " +
-				"not. Everything the device played is in it, the system's sounds too: with touch sounds " +
+				"not. The result also gives the media and alarm volumes it was taken at: at the lowest " +
+				"media volume a playing app is heard as silence. Everything the device played is in " +
+				"it, the system's sounds too: with touch sounds " +
 				"on, a tap is a tenth of a second of sound. An Android emulator only, from its control " +
 				"port; a phone or an iOS device is refused. One capture per device; ending the session " +
 				"discards it.",
@@ -814,6 +816,30 @@ func GetToolSchemas() []Tool {
 					"path": map[string]interface{}{
 						"type":        "string",
 						"description": "Where to save the audio, on stop — a .wav on this machine.",
+					},
+					"expect": map[string]interface{}{
+						"type": "array",
+						"description": "On stop: the sounds the capture must hold, in order — each a " +
+							"pitch, 0 for a sound with no one pitch, with an optional length; [] is " +
+							"silence. Sounds shorter than ignore_ms do not count. A capture that " +
+							"holds anything else fails as not_confirmed, saying what was heard, and " +
+							"is still saved.",
+						"items": map[string]interface{}{
+							"type": "object",
+							"properties": map[string]interface{}{
+								"hz":     map[string]interface{}{"type": "number", "minimum": 0, "description": "The pitch, or 0 for a sound with no one pitch."},
+								"min_ms": map[string]interface{}{"type": "integer", "minimum": 0, "description": "The shortest it may last."},
+								"max_ms": map[string]interface{}{"type": "integer", "minimum": 0, "description": "The longest it may last."},
+							},
+							"required":             []string{"hz"},
+							"additionalProperties": false,
+						},
+					},
+					"ignore_ms": map[string]interface{}{
+						"type":        "integer",
+						"minimum":     0,
+						"default":     200,
+						"description": "With expect: sounds this short or shorter do not count — a tap's own click is 100.",
 					},
 					"return_data": map[string]interface{}{
 						"type": "boolean",

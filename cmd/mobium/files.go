@@ -103,7 +103,7 @@ func sendFilesAsContent(tool string, args map[string]interface{}) (func(*agent.T
 		args["return_data"] = true
 		return func(r *agent.ToolsCallResult) (*agent.ToolsCallResult, error) {
 			if r.IsError {
-				return r, nil
+				return saveFailedAudio(r, path)
 			}
 			var v agent.AudioView
 			if err := remarshal(r.StructuredContent, &v); err != nil || v.Data == "" {
@@ -342,4 +342,30 @@ func bundleAsContent(path string, args map[string]interface{}) error {
 	delete(args, "path")
 	args["content"], args["name"] = base64.StdEncoding.EncodeToString(raw), name
 	return nil
+}
+
+// saveFailedAudio saves the WAV a stop sends back with a failed expectation —
+// the evidence of what was heard — where the caller asked, and says so.
+func saveFailedAudio(r *agent.ToolsCallResult, path string) (*agent.ToolsCallResult, error) {
+	var p mobiumerr.Payload
+	if err := remarshal(r.StructuredContent, &p); err != nil {
+		return r, nil
+	}
+	data, _ := p.Details["data"].(string)
+	if data == "" {
+		return r, nil
+	}
+	wav, err := base64.StdEncoding.DecodeString(data)
+	if err != nil {
+		return r, nil
+	}
+	if err := writeLocal(path, wav); err != nil {
+		return nil, err
+	}
+	delete(p.Details, "data")
+	p.Details["path"] = path
+	e := mobiumerr.FromPayload(p)
+	e.Message = p.Message + " — the capture is saved at " + path
+	res := agent.ErrorResult(e)
+	return &res, nil
 }

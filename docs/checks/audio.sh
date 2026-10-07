@@ -14,7 +14,9 @@
 #   - a tone until stopped ends when Stop is pressed, not when it would have;
 #   - silence, the negative control, is heard as silence — while the
 #     platform reports a player started for it, just as it does for a tone.
-#     That contrast is what the capture is for.
+#     That contrast is what the capture is for;
+#   - an incoming call silences the tone while it rings, and it comes back
+#     after the hang-up, while the app says it played throughout.
 #
 # Each capture may also hold a tap's own click when touch sounds are on: a
 # tenth of a second of sound with no one pitch, or one near 780 Hz. The
@@ -146,5 +148,50 @@ $M --json audio stop -o "$CHECK_TMP/silent.wav" > "$CHECK_TMP/silent.json"
 [ "${started:-0}" -ge 1 ] || fail "the platform reported no player started during the silence — the contrast is not shown"
 n=$(expect silent) || fail "silence: $n"
 row "silence" "heard as silence ($n short sound(s)), while the platform said playing"
+
+# An incoming call, while the app plays: Android silences the app for as
+# long as it rings and gives it back after, while the app itself says it is
+# playing throughout. The capture hears the ring in its place — so the tone
+# stops before the call and comes back after the hang-up, and something
+# else sounds in between.
+$M audio start >/dev/null
+$M tap testid=audioLoop >/dev/null
+sleep 2
+$M call ring >/dev/null || fail "the emulator would not ring"
+sleep 5
+$M call hang >/dev/null || fail "the call would not end"
+sleep 2.5
+$M tap testid=audioStop >/dev/null
+ended
+$M --json audio stop -o "$CHECK_TMP/call.wav" > "$CHECK_TMP/call.json"
+python3 - "$CHECK_TMP/call.json" > "$CHECK_TMP/call.txt" 2>&1 <<'EOF' || fail "a call during a tone: $(cat "$CHECK_TMP/call.txt")"
+import json, sys
+segs = json.load(open(sys.argv[1]))["timeline"]
+def show(): return ", ".join("%.1f-%.1fs %s" % (s["from"] / 1e9, s["to"] / 1e9,
+    ("%.0f Hz" % s.get("hz", 0)) if s["sound"] else "silence") for s in segs)
+tones = [s for s in segs if s["sound"] and abs(s.get("hz", 0) - 440) <= 9 and (s["to"] - s["from"]) / 1e9 > 0.5]
+if len(tones) < 2:
+    sys.exit("the tone did not stop and come back: " + show())
+first, last = tones[0], tones[-1]
+between = [s for s in segs if s["from"] >= first["to"] and s["to"] <= last["from"]]
+if any(s["sound"] and abs(s.get("hz", 0) - 440) <= 9 for s in between):
+    sys.exit("the tone went on while it rang: " + show())
+if not any(s["sound"] for s in between):
+    sys.exit("nothing rang between: " + show())
+print("%.1fs" % ((last["from"] - first["to"]) / 1e9))
+EOF
+row "call" "a call silences the tone while it rings ($(cat "$CHECK_TMP/call.txt")), then gives it back"
+
+# The same through mobium test: an expect at the stop passes on what was
+# played and fails, saying what was heard, on what was not — with the
+# capture still saved.
+(cd "$ROOT/tests" && MOBIUM_SESSION= "$ROOT/bin/mobium" test audio/audio.test.json --project android \
+  --output "$CHECK_TMP/report" > "$CHECK_TMP/test-pass.txt" 2>&1) || fail "tests/audio failed: $(tail -5 "$CHECK_TMP/test-pass.txt")"
+(cd "$ROOT/tests" && MOBIUM_SESSION= "$ROOT/bin/mobium" test controls/audio-must-fail.test.json --project android \
+  --output "$CHECK_TMP/report" > "$CHECK_TMP/test-fail.txt" 2>&1) && fail "the must-fail audio tests passed"
+grep -q "expected 880 Hz; heard 440 Hz" "$CHECK_TMP/test-fail.txt" || fail "a wrong pitch did not say what was heard: $(tail -5 "$CHECK_TMP/test-fail.txt")"
+grep -q "expected silence; heard 440 Hz" "$CHECK_TMP/test-fail.txt" || fail "silence expected did not say what was heard"
+[ "$(grep -c "the capture is saved at" "$CHECK_TMP/test-fail.txt")" -ge 2 ] || fail "a failed expect did not keep its capture"
+row "test" "mobium test: expect passes on what played, fails saying what was heard"
 
 echo "PASS"

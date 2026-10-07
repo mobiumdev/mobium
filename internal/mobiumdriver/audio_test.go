@@ -11,12 +11,15 @@ import (
 type phoneOrEmulator bool
 
 func (e phoneOrEmulator) IsEmulator(context.Context) bool { return bool(e) }
+func (e phoneOrEmulator) StreamVolumes(context.Context) ([]device.StreamVolume, error) {
+	return nil, nil
+}
 
 // A phone is refused by name, before anything looks for a control port it
 // cannot have; an emulator goes on to the capture.
 func TestAndroidAudioRefusesAPhone(t *testing.T) {
 	asked := ""
-	startEmulatorAudio = func(_ context.Context, serial string) (device.AudioRecording, error) {
+	startEmulatorAudio = func(_ context.Context, serial string, _ device.VolumeReader) (device.AudioRecording, error) {
 		asked = serial
 		return nil, nil
 	}

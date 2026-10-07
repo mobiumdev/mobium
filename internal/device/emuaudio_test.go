@@ -139,10 +139,11 @@ func TestStreamAudioPlacesByClock(t *testing.T) {
 		t.Errorf("Authorization %q", tok)
 	}
 	time.Sleep(800 * time.Millisecond)
-	samples, err := rec.Stop(context.Background())
+	got, err := rec.Stop(context.Background())
 	if err != nil {
 		t.Fatal(err)
 	}
+	samples := got.Samples
 	if got := len(samples); got < AudioRate*7/10 || got > AudioRate*12/10 {
 		t.Fatalf("%d samples for about 0.8s", got)
 	}

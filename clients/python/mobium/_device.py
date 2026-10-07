@@ -1218,20 +1218,38 @@ class Device:
             args["path"] = path
         return self._data("app_record", args or None) or {}
 
-    def audio(self, action: str | None = None, path: str | None = None) -> dict:
+    def audio(
+        self,
+        action: str | None = None,
+        path: str | None = None,
+        expect: list | None = None,
+        ignore_ms: int | None = None,
+    ) -> dict:
         """Capture what the device plays: ``action`` "start", or "stop" with
         ``path`` to save a WAV; neither asks whether a capture is running.
 
         Stop returns a ``timeline``: segments with ``from`` and ``to`` in
         nanoseconds, ``sound``, and for a sound its ``hz`` (0 when it has no
-        one pitch) and ``level`` in dBFS. Assert on sound, silence and pitch;
-        the level follows the device's volume. An Android emulator only.
+        one pitch) and ``level`` in dBFS, and the ``volumes`` it was taken at:
+        each stream's ``index`` from ``min`` to ``max``, and ``muted``. Assert
+        on sound, silence and pitch; the level follows the device's volume,
+        and at its lowest a playing app is silence. An Android emulator only.
+
+        ``expect`` makes stop an assertion: the sounds to hear, in order, each
+        ``{"hz": 440}`` with optional ``min_ms`` and ``max_ms``; ``[]`` is
+        silence. Sounds of ``ignore_ms`` (default 200) or less do not count.
+        Anything else raises NotConfirmedError saying what was heard, and the
+        capture is still saved.
         """
         args: dict = {}
         if action:
             args["action"] = action
         if path:
             args["path"] = path
+        if expect is not None:
+            args["expect"] = expect
+        if ignore_ms is not None:
+            args["ignore_ms"] = ignore_ms
         return self._data("app_audio", args or None) or {}
 
     def trace_start(

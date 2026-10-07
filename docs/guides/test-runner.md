@@ -24,6 +24,7 @@ installed and a device running — and MobiumApp installed
 - [8. Shorter steps, soft checks, a trace and a debugger](#8-shorter-steps-soft-checks-a-trace-and-a-debugger)
 - [9. One test over several cases: `each`](#9-one-test-over-several-cases-each)
 - [10. A page to run tests from: `--ui`](#10-a-page-to-run-tests-from---ui)
+- [11. What the app played: `audio`](#11-what-the-app-played-audio)
 - [Writing tests](#writing-tests)
 - [The commands](#the-commands)
 
@@ -409,6 +410,33 @@ just saved is the test that runs. A run from the page is the run `mobium
 test` makes from the same config and flags, and writes the same reports. The
 page answers only its own address with the token it prints, as `mobium
 inspect`'s does.
+
+## 11. What the app played: `audio`
+
+A capture starts as a step and is asserted at its stop: `expect` is the
+sounds to hear, in order, each a pitch with an optional length, and `[]` is
+silence.
+
+```json
+{"name": "the sequence is heard in order", "steps": [
+  {"audio": {"action": "start"}},
+  {"tap": "testid=audioSequence"},
+  {"wait_for": {"target": "text=finished:", "timeout_ms": 10000}},
+  {"audio": {"action": "stop", "path": "mobium-report/sequence.wav", "expect": [
+    {"hz": 440, "min_ms": 1800, "max_ms": 2300},
+    {"hz": 880, "min_ms": 1800, "max_ms": 2300}
+  ]}}
+]}
+```
+
+A capture that holds anything else fails the step as `not_confirmed`,
+saying what was expected and what was heard, and the WAV is saved at the
+path either way — it is the evidence. Assert on pitch and length, never
+on level: the level follows the device's media volume, which the result
+reports, and at its lowest an app that plays is heard as silence. Sounds
+of 200ms or less do not count (`ignore_ms`): with touch sounds on, a tap
+is a tenth of a second of sound. An Android emulator only for now;
+`tests/audio/` is a suite of it, run with `--project android`.
 
 ## Writing tests
 

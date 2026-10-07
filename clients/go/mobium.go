@@ -1849,12 +1849,27 @@ type AudioSegment struct {
 	Level float64 `json:"level,omitempty"`
 }
 
+// StreamVolume is one of the device's volume streams, "media" or "alarm":
+// its index on the device's own scale, Min to Max, and whether it is muted.
+type StreamVolume struct {
+	Stream string `json:"stream"`
+	Index  int    `json:"index"`
+	Min    int    `json:"min"`
+	Max    int    `json:"max"`
+	Muted  bool   `json:"muted,omitempty"`
+}
+
 // Audio is what app_audio reports: whether a capture is running, and on stop
-// where the WAV went and the timeline of what it held.
+// where the WAV went, the timeline of what it held, and the volumes it was
+// taken at — what arrives follows the media volume, and at its lowest a
+// playing app is heard as silence. VolumesAtStart is set only when they
+// changed during the capture.
 type Audio struct {
-	Recording bool           `json:"recording"`
-	Path      string         `json:"path,omitempty"`
-	Timeline  []AudioSegment `json:"timeline,omitempty"`
+	Recording      bool           `json:"recording"`
+	Path           string         `json:"path,omitempty"`
+	Timeline       []AudioSegment `json:"timeline,omitempty"`
+	Volumes        []StreamVolume `json:"volumes,omitempty"`
+	VolumesAtStart []StreamVolume `json:"volumesAtStart,omitempty"`
 	// Duration and Elapsed are nanoseconds.
 	Duration int64 `json:"duration,omitempty"`
 	Elapsed  int64 `json:"elapsed,omitempty"`
@@ -1871,6 +1886,32 @@ func (d *Device) Audio(ctx context.Context, action, path string) (Audio, error) 
 	}
 	if path != "" {
 		args["path"] = path
+	}
+	var out Audio
+	err := d.data(ctx, "app_audio", args, &out)
+	return out, err
+}
+
+// AudioExpected is one sound an AudioExpect stop must hear: a pitch, 0 for a
+// sound with no one pitch, and optionally how long it lasts.
+type AudioExpected struct {
+	Hz    float64 `json:"hz"`
+	MinMs int     `json:"min_ms,omitempty"`
+	MaxMs int     `json:"max_ms,omitempty"`
+}
+
+// AudioExpect stops a capture as an assertion: it saves the WAV at path and
+// checks the sounds it held are expect, in order; an empty expect is
+// silence. Sounds of ignoreMs or less do not count; 0 keeps the default of
+// 200. Anything else is a not_confirmed error saying what was heard, and the
+// capture is still saved.
+func (d *Device) AudioExpect(ctx context.Context, path string, expect []AudioExpected, ignoreMs int) (Audio, error) {
+	if expect == nil {
+		expect = []AudioExpected{}
+	}
+	args := map[string]any{"action": "stop", "path": path, "expect": expect}
+	if ignoreMs > 0 {
+		args["ignore_ms"] = ignoreMs
 	}
 	var out Audio
 	err := d.data(ctx, "app_audio", args, &out)

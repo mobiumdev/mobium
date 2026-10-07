@@ -1,0 +1,23 @@
+{
+  "description": "Must fail, both tests: an audio expectation that is wrong is a failure that says what was heard, and the capture is still saved. An Android emulator only; docs/checks/audio.sh runs it.",
+  "app": "dev.mobium.mobiumapp",
+  "beforeEach": [
+    {"scroll_to": {"target": "text=Audio Demo", "direction": "down"}},
+    {"tap": "text=Audio Demo"},
+    {"wait_for": {"target": "testid=audioState"}}
+  ],
+  "tests": [
+    {"name": "a tone expected that was not played", "steps": [
+      {"audio": {"action": "start"}},
+      {"tap": "testid=audioTone"},
+      {"wait_for": {"target": "text=finished:", "timeout_ms": 10000}},
+      {"audio": {"action": "stop", "path": "mobium-report/miss-tone.wav", "expect": [{"hz": 880}]}}
+    ]},
+    {"name": "silence expected while a tone played", "steps": [
+      {"audio": {"action": "start"}},
+      {"tap": "testid=audioTone"},
+      {"wait_for": {"target": "text=finished:", "timeout_ms": 10000}},
+      {"audio": {"action": "stop", "path": "mobium-report/miss-silence.wav", "expect": []}}
+    ]}
+  ]
+}

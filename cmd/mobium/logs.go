@@ -2,8 +2,11 @@ package main
 
 import (
 	"fmt"
+	"strconv"
+	"strings"
 	"time"
 
+	"github.com/mobiumdev/mobium/internal/mobiumerr"
 	"github.com/spf13/cobra"
 )
 
@@ -164,7 +167,8 @@ func newRecordCmd() *cobra.Command {
 }
 
 func newAudioCmd() *cobra.Command {
-	var output string
+	var output, expect string
+	var ignoreMs int
 	cmd := &cobra.Command{
 		Use:   "audio [start | stop]",
 		Short: "Capture what the device plays, and say what it held",
@@ -174,10 +178,16 @@ func newAudioCmd() *cobra.Command {
 			"capture is running.\n\n" +
 			"Assert on sound, silence and pitch, not on level: the level follows the\n" +
 			"device's volume. Everything the device played is in it — with touch sounds\n" +
-			"on, a tap is a tenth of a second of sound. An Android emulator only.",
+			"on, a tap is a tenth of a second of sound. An Android emulator only.\n\n" +
+			"--expect makes the stop an assertion: the sounds to hear, in order, each a\n" +
+			"pitch with an optional length in seconds — 440:1.8-2.2 — or 0 for a sound\n" +
+			"with no one pitch; \"silence\" for none. Sounds of --ignore-ms or less do not\n" +
+			"count. Anything else fails, says what was heard, and still saves the WAV.",
 		Example: `  mobium audio start
   mobium tap testid=play
-  mobium audio stop -o capture.wav`,
+  mobium audio stop -o capture.wav
+  mobium audio stop -o capture.wav --expect 440:1.8-2.2,880
+  mobium audio stop -o quiet.wav --expect silence`,
 		Args: cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			call := map[string]interface{}{}
@@ -189,11 +199,23 @@ func newAudioCmd() *cobra.Command {
 					output = fmt.Sprintf("audio-%s.wav", time.Now().Format("20060102-150405"))
 				}
 				call["path"] = output
+				if cmd.Flags().Changed("expect") {
+					want, err := parseAudioExpect(expect)
+					if err != nil {
+						return err
+					}
+					call["expect"] = want
+				}
+				if cmd.Flags().Changed("ignore-ms") {
+					call["ignore_ms"] = ignoreMs
+				}
 			}
 			return runTool("app_audio", call)
 		},
 	}
 	cmd.Flags().StringVarP(&output, "output", "o", "", "Where to save the WAV on stop (default: ./audio-<timestamp>.wav)")
+	cmd.Flags().StringVar(&expect, "expect", "", "On stop: the sounds to hear in order, e.g. 440:1.8-2.2,880, or \"silence\"")
+	cmd.Flags().IntVar(&ignoreMs, "ignore-ms", 200, "With --expect: sounds this short or shorter do not count")
 	return cmd
 }
 
@@ -233,4 +255,47 @@ func newDialogsCmd() *cobra.Command {
 	cmd.Flags().StringVar(&press, "press", "", "Caption of the button to press, ignoring case")
 	cmd.Flags().BoolVar(&clear, "clear", false, "Remove every rule for this device")
 	return cmd
+}
+
+// parseAudioExpect reads --expect into app_audio's expect: "silence", or
+// comma-separated pitches, each with an optional length in seconds —
+// "440:1.8-2.2" is 440 Hz lasting 1.8 to 2.2s, "440:2-" at least 2s,
+// "440:-2" at most 2s.
+func parseAudioExpect(s string) ([]interface{}, error) {
+	s = strings.TrimSpace(s)
+	want := []interface{}{}
+	if s == "silence" {
+		return want, nil
+	}
+	bad := func(part string) error {
+		return mobiumerr.New(mobiumerr.InvalidArgument, "--expect %q: write pitches in Hz, each with an "+
+			"optional length in seconds — 440:1.8-2.2,880 — or \"silence\"", part)
+	}
+	for _, part := range strings.Split(s, ",") {
+		part = strings.TrimSpace(part)
+		hzText, length, hasLength := strings.Cut(part, ":")
+		hz, err := strconv.ParseFloat(hzText, 64)
+		if err != nil || hz < 0 {
+			return nil, bad(part)
+		}
+		item := map[string]interface{}{"hz": hz}
+		if hasLength {
+			lo, hi, ok := strings.Cut(length, "-")
+			if !ok {
+				return nil, bad(part)
+			}
+			for k, v := range map[string]string{"min_ms": lo, "max_ms": hi} {
+				if v == "" {
+					continue
+				}
+				secs, err := strconv.ParseFloat(v, 64)
+				if err != nil || secs < 0 {
+					return nil, bad(part)
+				}
+				item[k] = int(secs * 1000)
+			}
+		}
+		want = append(want, item)
+	}
+	return want, nil
 }

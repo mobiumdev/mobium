@@ -48,10 +48,25 @@ type AudioRecording interface {
 	// Stop ends the capture and returns what was heard, mono at AudioRate,
 	// one sample per sample period since Started: time the stream sent
 	// nothing is silence, in its place.
-	Stop(ctx context.Context) ([]int16, error)
+	Stop(ctx context.Context) (AudioCapture, error)
 	// Discard ends the capture and keeps nothing.
 	Discard(ctx context.Context)
 }
+
+// AudioCapture is what a capture heard, and the device's volumes as it began
+// and as it ended: what arrives follows the media volume — a tone the
+// Audio Demo wrote at a quarter of full scale arrived at -9 dBFS at 15 of 15,
+// -42 at 5 and -63 at 1, and at 0 as silence (Android 15 emulator) — so a
+// silent capture means little without them.
+type AudioCapture struct {
+	Samples []int16
+	// Volumes are read at the start and at the end; nil when the device
+	// could not say.
+	VolumesAtStart, VolumesAtEnd []StreamVolume
+}
+
+// VolumeReader reads a device's volumes.
+type VolumeReader func(ctx context.Context) ([]StreamVolume, error)
 
 // emulatorEndpoint is where an emulator's control port answers, and the
 // token it wants, read from the discovery file the emulator writes for each
@@ -132,13 +147,23 @@ func readIni(path string) map[string]string {
 }
 
 // StartEmulatorAudio starts capturing what the emulator adb calls serial
-// plays.
-func StartEmulatorAudio(ctx context.Context, serial string) (AudioRecording, error) {
+// plays, reading its volumes with volumes as it starts and stops.
+func StartEmulatorAudio(ctx context.Context, serial string, volumes VolumeReader) (AudioRecording, error) {
 	ep, err := findEmulatorEndpoint(serial, emulatorDiscoveryDirs())
 	if err != nil {
 		return nil, err
 	}
-	return startStreamAudio(ctx, ep, serial)
+	var before []StreamVolume
+	if volumes != nil {
+		before, _ = volumes(ctx)
+	}
+	r, err := startStreamAudio(ctx, ep, serial)
+	if err != nil {
+		return nil, err
+	}
+	a := r.(*emuAudio)
+	a.volumes, a.before = volumes, before
+	return a, nil
 }
 
 // headerWait is how long a start waits to hear the stream refused. A refusal
@@ -159,6 +184,9 @@ type emuAudio struct {
 	mu      sync.Mutex
 	samples []int16
 	err     error
+
+	volumes VolumeReader
+	before  []StreamVolume
 }
 
 func startStreamAudio(ctx context.Context, ep emulatorEndpoint, serial string) (AudioRecording, error) {
@@ -286,25 +314,29 @@ func (r *emuAudio) finish(err error) {
 
 func (r *emuAudio) Started() time.Time { return r.started }
 
-func (r *emuAudio) Stop(ctx context.Context) ([]int16, error) {
+func (r *emuAudio) Stop(ctx context.Context) (AudioCapture, error) {
 	elapsed := time.Since(r.started)
 	r.cancel()
 	select {
 	case <-r.done:
 	case <-ctx.Done():
-		return nil, ctx.Err()
+		return AudioCapture{}, ctx.Err()
+	}
+	var after []StreamVolume
+	if r.volumes != nil {
+		after, _ = r.volumes(ctx)
 	}
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	if r.err != nil {
-		return nil, mobiumerr.New(mobiumerr.DeviceServer, "the emulator's audio stream broke: %v", r.err)
+		return AudioCapture{}, mobiumerr.New(mobiumerr.DeviceServer, "the emulator's audio stream broke: %v", r.err)
 	}
 	// The stream says nothing until the device plays, and nothing once it
 	// stops: the rest of the time it was capturing is silence.
 	if want := int(elapsed * AudioRate / time.Second); len(r.samples) < want {
 		r.samples = append(r.samples, make([]int16, want-len(r.samples))...)
 	}
-	return r.samples, nil
+	return AudioCapture{Samples: r.samples, VolumesAtStart: r.before, VolumesAtEnd: after}, nil
 }
 
 func (r *emuAudio) Discard(ctx context.Context) {

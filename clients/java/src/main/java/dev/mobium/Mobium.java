@@ -1692,8 +1692,10 @@ public final class Mobium implements AutoCloseable {
      * to save a WAV; null asks whether a capture is running. Stop returns a
      * {@code timeline} of segments — {@code from} and {@code to} in
      * nanoseconds, {@code sound}, and for a sound its {@code hz} (0 with no
-     * one pitch) and {@code level} in dBFS. Assert on sound, silence and
-     * pitch; the level follows the device's volume. An Android emulator only.
+     * one pitch) and {@code level} in dBFS, and the {@code volumes} it was
+     * taken at. Assert on sound, silence and pitch; the level follows the
+     * device's volume, and at its lowest a playing app is silence. An
+     * Android emulator only.
      * A relative path is this process's.
      *
      * @param action {@code "start"}, {@code "stop"}, or null to ask whether one is running
@@ -1704,6 +1706,28 @@ public final class Mobium implements AutoCloseable {
         Map<String, Object> args = new LinkedHashMap<>();
         if (action != null && !action.isBlank()) args.put("action", action);
         if (path != null && !path.isBlank()) args.put("path", path);
+        return data("app_audio", args);
+    }
+
+    /**
+     * Stops a capture as an assertion: saves the WAV at path and checks the
+     * sounds it held, in order — each a map with {@code hz}, and optional
+     * {@code min_ms} and {@code max_ms}; an empty list is silence. Sounds of
+     * ignoreMs or less do not count; null keeps the default of 200. Anything
+     * else throws NotConfirmedException saying what was heard, and the
+     * capture is still saved.
+     *
+     * @param path where to save the WAV
+     * @param expect the sounds to hear, in order
+     * @param ignoreMs how short a sound may be and not count, or null
+     * @return the capture's timeline and volumes
+     */
+    public Map<String, Object> audioExpect(String path, List<Map<String, Object>> expect, Integer ignoreMs) {
+        Map<String, Object> args = new LinkedHashMap<>();
+        args.put("action", "stop");
+        args.put("path", path);
+        args.put("expect", expect);
+        if (ignoreMs != null) args.put("ignore_ms", ignoreMs);
         return data("app_audio", args);
     }
 
