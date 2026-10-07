@@ -113,6 +113,12 @@ func (h *Handlers) audioOn(ctx context.Context, s *session, args map[string]inte
 		if !sameVolumes(got.VolumesAtStart, got.VolumesAtEnd) {
 			view.VolumesAtStart = got.VolumesAtStart
 		}
+		// The folder is made, as a screenshot's and a trace's are: a test
+		// file's "mobium-report/x.wav" failed here once the capture had
+		// stopped, and the capture was lost with it.
+		if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+			return nil, fmt.Errorf("save the audio: %w", err)
+		}
 		n, err := audio.WriteWAV(path, samples, device.AudioRate)
 		if err != nil {
 			return nil, fmt.Errorf("save the audio: %w", err)

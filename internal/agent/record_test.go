@@ -2,6 +2,8 @@ package agent
 
 import (
 	"context"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -84,5 +86,20 @@ func TestClosingASessionDiscardsItsRecording(t *testing.T) {
 	s.close()
 	if !rec.discarded || s.recording != nil {
 		t.Errorf("discarded = %v, recording = %v", rec.discarded, s.recording)
+	}
+}
+
+// The folder a recording is saved into is made before the recording stops:
+// a test file's path in a new folder failed once the recording had ended.
+func TestRecordMakesTheFolder(t *testing.T) {
+	rec := &fakeRecording{info: device.MP4Info{Frames: 3, Duration: time.Second}}
+	call, _ := withRecorder(t, rec)
+	_, _ = call(map[string]interface{}{"action": "start"})
+	path := filepath.Join(t.TempDir(), "not-yet", "deeper", "r.mp4")
+	if _, err := call(map[string]interface{}{"action": "stop", "path": path}); err != nil {
+		t.Fatal(err)
+	}
+	if fi, err := os.Stat(filepath.Dir(path)); err != nil || !fi.IsDir() {
+		t.Fatalf("the folder was not made: %v", err)
 	}
 }

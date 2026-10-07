@@ -265,3 +265,19 @@ func TestAudioCountsBriefInterruptions(t *testing.T) {
 		t.Errorf("kept %d", len(v.Interruptions))
 	}
 }
+
+// A path in a folder that does not exist yet is saved there: a test file's
+// "mobium-report/x.wav" failed when its folder had not been made, after the
+// capture had stopped, and lost it.
+func TestAudioMakesTheFolder(t *testing.T) {
+	h := NewHandlers()
+	s := &session{dev: fakeDevice(), driver: &audioDriver{rec: &fakeAudio{samples: tone440()}}, backend: BackendUIA2}
+	_, _ = h.audioOn(context.Background(), s, map[string]interface{}{"action": "start"})
+	path := filepath.Join(t.TempDir(), "mobium-report", "deeper", "x.wav")
+	if _, err := h.audioOn(context.Background(), s, map[string]interface{}{"action": "stop", "path": path}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := os.Stat(path); err != nil {
+		t.Fatal(err)
+	}
+}
