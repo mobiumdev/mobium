@@ -5836,6 +5836,20 @@ the tree and the alert endpoint first and, with a dialog in front, says the
 page is under it and to answer the dialog. On the emulator the prompt drew
 the new refusal; answered with No thanks, `chrome.sh` and `pwa.sh` passed.
 
+### 269. A check skipped and passed on a device it could not reach
+
+**Found by:** setting the simulator up for the two checks a sweep had left
+red. `third-party-app-ios.sh`, run on a locked iPhone, said Wikipedia was
+not installed: `$M apps | grep` threw away the error that said the phone
+was locked, and the miss read as a missing app. Six checks shaped the same
+way; in `device-state.sh` the miss was "skipped, not installed" and exit 0
+— a pass, on a device nothing had been asked of. The four whose first step
+is "is the app here" now keep `apps`' answer and fail on its error, naming
+it, as `files.sh` already did; on the locked iPhone each said so. And
+`third-party-app-ios.sh` refuses a simulator by name: an App Store app is
+device-signed, and "install Wikipedia from the App Store" was advice a
+simulator cannot take.
+
 ## Findings that were not defects
 
 Worth recording because each one closed off an approach that looked obvious.

@@ -34,7 +34,8 @@ fail() { echo "FAIL: $*" >&2; exit 1; }
 row() { printf '    %-12s %-60s ok\n' "$1" "$2"; }
 echo "--- $DEV ($PLATFORM)"
 
-$M apps | grep -q "$APP" || fail "$APP is not installed — build and install MobiumApp's flutter/ demo first"
+apps=$($M apps 2>&1) || fail "cannot list the apps: $(echo "$apps" | tail -1)"
+echo "$apps" | grep -q "$APP" || fail "$APP is not installed — build and install MobiumApp's flutter/ demo first"
 $M terminate "$APP" >/dev/null 2>&1 || true
 $M launch "$APP" >/dev/null; sleep 2
 MAP=$($M map)

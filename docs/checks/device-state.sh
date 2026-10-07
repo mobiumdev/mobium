@@ -85,7 +85,8 @@ $M orientation auto >/dev/null
 # Language. Android stores a tag it has no translation for exactly as happily
 # as one it does, so the check is what appears on screen, not what the setting
 # reads back.
-$M apps | grep -q "^$APP " || { echo "    locale         skipped, $APP is not installed"; exit 0; }
+apps=$($M apps 2>&1) || fail "cannot list the apps: $(echo "$apps" | tail -1)"
+echo "$apps" | grep -q "^$APP " || { echo "    locale         skipped, $APP is not installed"; exit 0; }
 
 $M locale "$APP" | grep -q 'follows the device' || fail "$APP started out pinned"
 $M locale "$APP" ja-JP >/dev/null

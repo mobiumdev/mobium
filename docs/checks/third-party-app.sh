@@ -50,7 +50,8 @@ fi
 # Verify by reading the state back: `install` reporting success is not the
 # same as the package being there, and this whole project exists downstream of
 # that distinction.
-$M apps | grep -q "^$APP " || fail "$APP is not installed (pass the APK path as the second argument)"
+apps=$($M apps 2>&1) || fail "cannot list the apps: $(echo "$apps" | tail -1)"
+echo "$apps" | grep -q "^$APP " || fail "$APP is not installed (pass the APK path as the second argument)"
 echo "    install        $APP present, confirmed by listing"
 
 $M terminate $APP >/dev/null

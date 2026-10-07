@@ -32,6 +32,13 @@ DEV="${1:?usage: third-party-app-ios.sh <iphone-udid>}"
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 M="$ROOT/bin/mobium --driver wda --device $DEV"
 APP=org.wikimedia.wikipedia
+# A simulator is refused by name: an App Store app does not run on one, and
+# "install Wikipedia from the App Store" — what a sweep of the simulator
+# checks was told — is advice a simulator cannot take.
+if xcrun simctl list devices 2>/dev/null | grep -q "$DEV"; then
+  echo "third-party-app-ios.sh is for a real iPhone: Wikipedia from the App Store is device-signed and does not run on a simulator" >&2
+  exit 2
+fi
 fail() { echo "FAIL: $*" >&2; exit 1; }
 
 # refOf prints the ref of the first map entry whose label contains $1.
@@ -42,7 +49,11 @@ for e in json.load(sys.stdin)['elements']:
 "; }
 
 echo "--- $DEV (iPhone)"
-$M apps | grep -q "^$APP " || fail "$APP is not installed — install Wikipedia from the App Store"
+# A phone that cannot be reached answers apps with an error, which is not
+# the same as an app that is not installed: a locked phone was reported as
+# missing Wikipedia.
+apps=$($M apps 2>&1) || fail "cannot list the apps: $(echo "$apps" | tail -1)"
+echo "$apps" | grep -q "^$APP " || fail "$APP is not installed — install Wikipedia from the App Store"
 echo "    install        $APP present, confirmed by listing"
 
 $M terminate $APP >/dev/null 2>&1 || true
@@ -95,11 +106,17 @@ if broken: sys.exit("a label spans lines on %s" % ", ".join(broken))
 echo "    labels         bounded, no markup, none empty, one line each   ok"
 
 # A card is something to tap, so it has to be in the map. The feed's first
-# card is Wikipedia's featured article, whatever today's is.
+# card is Wikipedia's featured article, whatever today's is: the first long
+# button that owns a Save for later. Since 237 a row is no longer named by
+# the buttons inside it, so Save for later is its own entry, right after the
+# card; before, it was in the card's label. Either shape is the card.
 CARD=$($M map --json | python3 -c '
 import json, sys
-for e in json.load(sys.stdin)["elements"]:
-    if e["role"] == "button" and len(e["label"]) > 60 and "Save for later" in e["label"]:
+els = json.load(sys.stdin)["elements"]
+for i, e in enumerate(els):
+    long = e["role"] == "button" and len(e["label"]) > 60
+    owns = i + 1 < len(els) and els[i + 1]["label"] == "Save for later"
+    if long and ("Save for later" in e["label"] or owns):
         print(e["ref"]); break
 ')
 [ -n "$CARD" ] || fail "no feed card in the map — the featured article is on screen and not a target"
