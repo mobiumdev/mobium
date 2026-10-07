@@ -234,9 +234,14 @@ row "silence" "heard as silence ($n short sound(s)), while the platform said pla
 $M audio start --app "$APP" >/dev/null
 $M tap testid=audioLoop >/dev/null
 sleep 2
+# From here a check cut off would leave the call ringing, and its ringtone
+# in every capture after — the next run heard a 1046 Hz tone it never played.
+at_exit "[ -z \"\$CALL_UP\" ] || $M call hang >/dev/null 2>&1 || true"
+CALL_UP=1
 $M call ring >/dev/null || fail "the emulator would not ring"
 sleep 5
 $M call hang >/dev/null || fail "the call would not end"
+CALL_UP=""
 sleep 2.5
 $M tap testid=audioStop >/dev/null
 ended
@@ -266,10 +271,19 @@ alarm_step
 
 # The same through mobium test: an expect at the stop passes on what was
 # played and fails, saying what was heard, on what was not — with the
-# capture still saved.
+# capture still saved. On this check's device: tests/mobium.config.json
+# names emulator-5554, and a check on another emulator once ran its tests
+# there, passing for a device it never touched and colliding with the
+# check running on 5554. So the run gets a config naming $DEV, and the
+# report must name it too.
+printf '{"testDir": "%s", "timeout": 90000, "projects": [{"name": "android", "device": "%s"}]}\n' \
+  "$ROOT/tests" "$DEV" > "$CHECK_TMP/mobium.config.json"
 (cd "$ROOT/tests" && MOBIUM_SESSION= "$ROOT/bin/mobium" test audio/audio.test.json --project android \
+  --config "$CHECK_TMP/mobium.config.json" \
   --output "$CHECK_TMP/report" > "$CHECK_TMP/test-pass.txt" 2>&1) || fail "tests/audio failed: $(tail -5 "$CHECK_TMP/test-pass.txt")"
+grep -q "\[android · $DEV\]" "$CHECK_TMP/test-pass.txt" || fail "tests/audio did not run on $DEV: $(grep -m1 '\[android' "$CHECK_TMP/test-pass.txt")"
 (cd "$ROOT/tests" && MOBIUM_SESSION= "$ROOT/bin/mobium" test controls/audio-must-fail.test.json --project android \
+  --config "$CHECK_TMP/mobium.config.json" \
   --output "$CHECK_TMP/report" > "$CHECK_TMP/test-fail.txt" 2>&1) && fail "the must-fail audio tests passed"
 grep -q "expected 880 Hz; heard 440 Hz" "$CHECK_TMP/test-fail.txt" || fail "a wrong pitch did not say what was heard: $(tail -5 "$CHECK_TMP/test-fail.txt")"
 grep -q "expected silence; heard 440 Hz" "$CHECK_TMP/test-fail.txt" || fail "silence expected did not say what was heard"

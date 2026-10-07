@@ -48,6 +48,10 @@ at_exit_clear() {
 
 _check_exit() {
   _check_status=$?
+  if [ "$_check_status" = 0 ] && [ -n "$CHECK_SUM" ] && [ "$(cksum < "$CHECK_SELF")" != "$CHECK_SUM" ]; then
+    echo "$CHECK_SELF changed while it ran, and sh reads a script as it goes: its result means nothing" >&2
+    _check_status=2
+  fi
   trap - EXIT INT TERM
   _check_rest="$_check_handlers"
   _check_handlers=""
@@ -71,6 +75,17 @@ _check_exit() {
 }
 trap _check_exit EXIT
 trap 'exit 130' INT TERM
+
+# A check must parse before it runs. Under set -e, macOS's sh (bash 3.2)
+# hands an EXIT trap a syntax error as status 0, and this trap exits with
+# the status it is given: audio.sh died at line 266 and reported a pass.
+# The checksum catches the other way there: a check edited while it ran.
+CHECK_SELF="$0"
+CHECK_SUM=""
+if [ -f "$CHECK_SELF" ]; then
+  sh -n "$CHECK_SELF" || { echo "$CHECK_SELF does not parse, so it was not run" >&2; exit 2; }
+  CHECK_SUM=$(cksum < "$CHECK_SELF")
+fi
 
 # check_lock DEV takes the device for this check, or refuses: two checks on
 # one device fight over its session. A lock whose holder has gone is taken.
