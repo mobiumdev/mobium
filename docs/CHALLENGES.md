@@ -5909,6 +5909,27 @@ Android has no lookup like 271's to remove: a call that asks the device
 nothing took 28 to 32ms on the emulator, about what `adb devices` alone
 takes.
 
+### 273. A tone that began inside a window had no pitch
+
+**Found by:** running `audio.sh` on the Android 17 emulator, where it
+failed once in three: "the pause between 440 and 880 was not about a
+second of silence". The timeline had a tenth of a second of sound with no
+pitch, at -48 to -57 dBFS, between the two tones — five captures in eight.
+It was the 880's first window. A window is weighed toward its middle
+before its pitch is read, so a tone that fills only its last few tens of
+milliseconds is a short burst there, spread over every frequency, and no
+one pitch held the share it needed. Where the tone started against the
+window grid decided it, which is why Android 15 had passed six runs and
+17 then passed two of three.
+
+The pitch is now read from the part of the window that sounds, and a
+sound shorter than five milliseconds has none. A test plays 880 starting
+10 to 90ms into a window — it failed at 70 and 90, at the levels the
+device showed — and a click still has no pitch. With the fix all eight
+captures were clean, and `audio.sh` passed three times on each emulator.
+What it changes: a tap's click that shares a window with a tone's first
+samples is now part of that tone, which did start inside the window.
+
 ## Findings that were not defects
 
 Worth recording because each one closed off an approach that looked obvious.

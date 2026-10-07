@@ -589,6 +589,11 @@ this is what is not.
   `stop -o capture.wav` saves a WAV and answers with a timeline: sound and
   silence to a tenth of a second, each sound's pitch and level
   (`docs/checks/audio.sh`, on MobiumApp's Audio Demo, mobiumdev/mobium-app#21).
+  The check passes on Android 15 and 17, each booted by `mobium boot`:
+  seven runs in seven on 15, and on 17 three in three since a tone
+  starting inside a window lost its pitch there (CHALLENGES 273). A 90-second capture placed a 45-second tone within
+  0.15s of the taps that started and stopped it, at both ends: the stream
+  keeps to the clock.
   It reads the emulator's own audio stream from its control port, which
   the emulator opens by default on 127.0.0.1 with a token in its discovery
   file, so nothing is started and nothing is put on the device; the boot's

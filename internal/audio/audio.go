@@ -134,8 +134,28 @@ func read(x []int16, rate int) window {
 	if level < SoundFloor {
 		return window{level: level}
 	}
-	return window{level: level, hz: pitch(x, rate)}
+	// The pitch is the sounding part's: a tone that starts or stops inside
+	// the window fills only part of it, and weighed over the whole window
+	// it is a short burst with no one pitch. Five milliseconds is too short
+	// to hold one.
+	first, last := -1, -1
+	for i, s := range x {
+		if s > edge || s < -edge {
+			if first < 0 {
+				first = i
+			}
+			last = i
+		}
+	}
+	if first < 0 || last-first < rate/200 {
+		return window{level: level}
+	}
+	return window{level: level, hz: pitch(x[first:last+1], rate)}
 }
+
+// edge is the amplitude that marks where sound begins inside a window: well
+// above the quiet floor's few counts, and below a tone at the sound floor.
+const edge = 8
 
 // pitch is the strongest frequency in x, refined between bins, or 0 if no
 // frequency holds the tonal share of the energy. A Hann window keeps a tone
@@ -166,9 +186,11 @@ func pitch(x []int16, rate int) float64 {
 	if total == 0 {
 		return 0
 	}
-	// A Hann window spreads one tone over three bins.
+	// A Hann window spreads one tone over two bins either side of its peak
+	// for every window's length of samples: wider the shorter the sound.
+	spread := 2 * n / len(x)
 	var near float64
-	for k := max(1, best-2); k <= min(half-1, best+2); k++ {
+	for k := max(1, best-spread); k <= min(half-1, best+spread); k++ {
 		near += mag[k]
 	}
 	if near/total < tonal {
