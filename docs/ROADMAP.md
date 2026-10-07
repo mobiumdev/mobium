@@ -262,11 +262,10 @@ this is what is not.
     found a reused row after the scroll. Left: a carousel that snaps a page
     at a time overshoots a measured nudge, so a ref there is refused and
     `map` must be read again — a locator by text reaches the row.
-  - `icecubes-ios.sh` fails on the simulator at "scroll-to called Report
-    Post in view, and map does not list it", at #136, #139 and #142 alike,
-    so from before any of 2026-10-06's changes. Ice Cubes reads a live
-    timeline, so a different first post is the likely reason; not looked
-    into.
+  - ~~`icecubes-ios.sh` failing at Report Post.~~ Not the live timeline:
+    the long-press menu now fits on the screen, and a list's viewport did
+    not end at the panel that clips it. Fixed on 2026-10-06 (CHALLENGES
+    262); the check passes on the simulator.
   - ~~Two things seen once on the iPhone with its screen dark.~~ Explained
     on 2026-10-06 (CHALLENGES 260): the hang was a long list's read (258)
     and the launch preceded the lock. A locked device now says so in `map`
