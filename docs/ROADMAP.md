@@ -631,6 +631,15 @@ this is what is not.
   - **An incoming call** silenced the app's tone on the emulator for as
     long as it rang and brought it back on hang-up, while the app said it
     was playing throughout; the capture held the ring instead.
+    `audio.sh` asserts it. **On the Pixel 8 Pro, with the ringer on and a
+    real call** (2026-10-07), the audio service logged "call: muting" the
+    app's player as the ringtone started and "call: unmuting" 12.6s later,
+    and neither shell capture showed it: the mute is the app's own player
+    volume, which the capture sits before, and the system's ringtone was
+    kept out of a capture matching its usage. So on a phone an
+    interruption is read from `dumpsys audio`'s player events — any phone
+    adb reaches, a cloud farm's included — not heard; and making one ring
+    takes a call from outside, which only a farm with a line can place.
   - Also open: comparing a capture with a baseline recording, and
     the emulator's microphone (`injectAudio`), which would let a test
     speak to an app.
