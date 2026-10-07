@@ -106,11 +106,17 @@ if broken: sys.exit("a label spans lines on %s" % ", ".join(broken))
 echo "    labels         bounded, no markup, none empty, one line each   ok"
 
 # A card is something to tap, so it has to be in the map. The feed's first
-# card is Wikipedia's featured article, whatever today's is.
+# card is Wikipedia's featured article, whatever today's is: the first long
+# button that owns a Save for later. Since 237 a row is no longer named by
+# the buttons inside it, so Save for later is its own entry, right after the
+# card; before, it was in the card's label. Either shape is the card.
 CARD=$($M map --json | python3 -c '
 import json, sys
-for e in json.load(sys.stdin)["elements"]:
-    if e["role"] == "button" and len(e["label"]) > 60 and "Save for later" in e["label"]:
+els = json.load(sys.stdin)["elements"]
+for i, e in enumerate(els):
+    long = e["role"] == "button" and len(e["label"]) > 60
+    owns = i + 1 < len(els) and els[i + 1]["label"] == "Save for later"
+    if long and ("Save for later" in e["label"] or owns):
         print(e["ref"]); break
 ')
 [ -n "$CARD" ] || fail "no feed card in the map — the featured article is on screen and not a target"

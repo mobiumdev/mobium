@@ -25,7 +25,9 @@ this is what is not.
   > Apps > MobiumApp > Notifications on iOS 26 — a reinstall or a data
   reset asks again, and `dialogs.sh` answers a permission prompt), and
   `third-party-app-ios.sh` is for a real iPhone and now says so on a
-  simulator (CHALLENGES 269).
+  simulator (CHALLENGES 269). On the iPhone it passed in 77 seconds once
+  it found the featured card the way 237 maps it — Save for later its own
+  entry after the card, no longer in the card's label.
 - ~~**Gray box: waiting for the app to say it is idle.**~~ Done 2026-10-05, iOS and Android:
   `launch --gray-box` turns on Mobium's gray-box library in an app built
   with it, the app writes when it is busy to the device log, and every
