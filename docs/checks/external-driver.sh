@@ -15,6 +15,8 @@ DEV="$1"
 if [ -z "$DEV" ]; then echo "usage: $0 <serial>   (see: mobium devices)" >&2; exit 2; fi
 
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
+. "$ROOT/docs/checks/lib.sh"
+check_lock "$DEV"
 M="$ROOT/bin/mobium --device $DEV"
 MOBIUM_DRIVER_ADB="$ROOT/examples/drivers/mobium-driver-adb"
 export MOBIUM_DRIVER_ADB
@@ -26,7 +28,7 @@ export MOBIUM_DRIVER_ADB
 "$ROOT/bin/mobium" daemon stop >/dev/null 2>&1 || true
 
 TMP="$(mktemp -d)"
-trap 'rm -rf "$TMP"' EXIT
+at_exit 'rm -rf "$TMP"'
 fail() { echo "FAIL: $*" >&2; exit 1; }
 
 echo "--- $DEV"

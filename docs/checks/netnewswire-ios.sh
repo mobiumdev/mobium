@@ -39,6 +39,8 @@
 set -e
 DEV="${1:?usage: netnewswire-ios.sh <udid>}"
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
+. "$ROOT/docs/checks/lib.sh"
+check_lock "$DEV"
 M="$ROOT/bin/mobium --driver wda --device $DEV"
 fail() { echo "FAIL: $*" >&2; exit 1; }
 row() { printf '    %-12s %-58s ok\n' "$1" "$2"; }

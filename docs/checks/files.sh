@@ -25,8 +25,10 @@
 # mobium-report.txt is there already, and removes only the two files it made.
 set -e
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
+. "$ROOT/docs/checks/lib.sh"
 DEV="$1"
 if [ -z "$DEV" ]; then echo "usage: $0 <serial|udid>" >&2; exit 2; fi
+check_lock "$DEV"
 # A simulator is a UUID of five groups; a real iPhone's UDID is two,
 # 00008120-0001234567890ABC. Anything else is an Android serial.
 PHONE=
@@ -74,7 +76,7 @@ cleanup() {
     rm -f "$docs/$UPLOAD" "$docs/mobium-report.txt"
   fi
 }
-trap cleanup EXIT
+at_exit cleanup
 
 "$ROOT/bin/mobium" daemon stop >/dev/null 2>&1 || true
 echo "--- $DEV ($PLATFORM)"
@@ -91,7 +93,7 @@ echo "$apps" | grep -q "$APP" || fail "$APP is not installed"
 if [ "$PLATFORM" = android ]; then
   there=$(adb -s "$DEV" shell ls /sdcard/Download/ 2>/dev/null | tr -d '\r' | grep '^mobium-report' | tr '\n' ' ' | sed 's/ *$//')
   if [ -n "$there" ]; then
-    trap - EXIT
+    at_exit_clear
     fail "the Download folder holds $there already — the app would save under another number and this check would read the wrong one; remove them if they are an earlier run's"
   fi
 fi

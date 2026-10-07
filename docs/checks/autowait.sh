@@ -23,6 +23,8 @@ set -e
 DEV="$1"
 if [ -z "$DEV" ]; then echo "usage: $0 <serial|udid>" >&2; exit 2; fi
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
+. "$ROOT/docs/checks/lib.sh"
+check_lock "$DEV"
 fail() { echo "FAIL: $*" >&2; exit 1; }
 row() { printf '    %-16s %-52s ok\n' "$1" "$2"; }
 ms() { python3 -c 'import time; print(int(time.time()*1000))'; }
@@ -63,7 +65,7 @@ reduce() { # reduce on|off
   fi
 }
 cleanup() { reduce off >/dev/null 2>&1 || true; $M terminate "$APP" >/dev/null 2>&1 || true; }
-trap cleanup EXIT
+at_exit cleanup
 # A session first, so the setting's undo belongs to it.
 $M current >/dev/null
 

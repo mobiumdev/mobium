@@ -26,6 +26,8 @@ set -e
 DEV="$1"
 if [ -z "$DEV" ]; then echo "usage: $0 <serial|udid>" >&2; exit 2; fi
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
+. "$ROOT/docs/checks/lib.sh"
+check_lock "$DEV"
 fail() { echo "FAIL: $*" >&2; exit 1; }
 row() { printf '    %-13s %-60s ok\n' "$1" "$2"; }
 APP=dev.mobium.mobiumapp
@@ -39,7 +41,7 @@ echo "--- $DEV ($KIND)"
 
 $M terminate "$APP" >/dev/null 2>&1 || true
 $M launch "$APP" >/dev/null
-trap '$M terminate "$APP" >/dev/null 2>&1 || true' EXIT
+at_exit '$M terminate "$APP" >/dev/null 2>&1 || true'
 $M scroll-to "testid=obstructionBtn" --direction down >/dev/null 2>&1 || true
 $M tap "testid=obstructionBtn" >/dev/null
 $M wait "testid=obstructionOutcome" >/dev/null

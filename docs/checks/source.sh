@@ -16,11 +16,13 @@ set -e
 DEV="$1"
 if [ -z "$DEV" ]; then echo "usage: $0 <serial|udid>" >&2; exit 2; fi
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
+. "$ROOT/docs/checks/lib.sh"
+check_lock "$DEV"
 fail() { echo "FAIL: $*" >&2; exit 1; }
 APP=dev.mobium.mobiumapp
 SECRET='Hunter2x9'
 TMP="$(mktemp -d)"
-trap 'rm -rf "$TMP"' EXIT
+at_exit 'rm -rf "$TMP"'
 
 case "$DEV" in
   ????????-????????????????) PLATFORM=iphone; UNITS=pt; M="$ROOT/bin/mobium --driver wda --device $DEV" ;;

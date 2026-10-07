@@ -26,7 +26,9 @@
 # printed.
 set -e
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
+. "$ROOT/docs/checks/lib.sh"
 DEV="${1:?usage: compose-app.sh <serial> [path-to-apk]}"
+check_lock "$DEV"
 APK="$2"
 APP=com.junkfood.seal
 M="$ROOT/bin/mobium --device $DEV"
@@ -45,7 +47,7 @@ cleanup() {
     $M uninstall $APP >/dev/null 2>&1 || true
   fi
 }
-trap cleanup EXIT
+at_exit cleanup
 
 "$ROOT/bin/mobium" daemon stop >/dev/null 2>&1 || true
 echo "--- $DEV"

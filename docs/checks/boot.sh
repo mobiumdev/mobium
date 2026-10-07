@@ -20,6 +20,7 @@ set -e
 AVD="$1"; SIM="$2"
 if [ -z "$AVD" ]; then echo "usage: $0 <avd> [simulator-udid]" >&2; exit 2; fi
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
+. "$ROOT/docs/checks/lib.sh"
 M="$ROOT/bin/mobium"
 fail() { echo "FAIL: $*" >&2; exit 1; }
 row() { printf '    %-12s %-60s ok\n' "$1" "$2"; }

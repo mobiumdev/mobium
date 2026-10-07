@@ -18,6 +18,8 @@ set -e
 DEV="$1"
 if [ -z "$DEV" ]; then echo "usage: $0 <serial|udid>" >&2; exit 2; fi
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
+. "$ROOT/docs/checks/lib.sh"
+check_lock "$DEV"
 fail() { echo "FAIL: $*" >&2; exit 1; }
 row() { printf '    %-28s %-40s ok\n' "$1" "$2"; }
 APP=dev.mobium.mobiumapp
@@ -33,7 +35,7 @@ echo "--- $DEV ($PLATFORM)"
 if [ "$PLATFORM" = phone ]; then
   # Somebody's phone: every change is put back when the daemon stops, and
   # the trap stops it on failure too.
-  trap '$ROOT/bin/mobium daemon stop >/dev/null 2>&1 || true' EXIT
+  at_exit '$ROOT/bin/mobium daemon stop >/dev/null 2>&1 || true'
   SWITCHES="reduce_motion bold_text increase_contrast reduce_transparency button_shapes differentiate_without_color"
   before=$($M accessibility) || fail "reading the settings: $before"
   $M terminate $APP >/dev/null 2>&1 || true; $M launch $APP >/dev/null
@@ -103,7 +105,7 @@ live() {
 $M daemon stop >/dev/null 2>&1 || true
 BEFORE=$(raw)
 LIVE_BEFORE=$(live)
-trap '$M daemon stop >/dev/null 2>&1 || true' EXIT
+at_exit '$M daemon stop >/dev/null 2>&1 || true'
 
 # What each platform has, and the value each is changed to. The last column
 # is the app's word for it in a11yState, or - where React Native tells the

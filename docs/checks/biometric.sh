@@ -30,6 +30,8 @@ set -e
 DEV="$1"
 if [ -z "$DEV" ]; then echo "usage: $0 <serial|udid>" >&2; exit 2; fi
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
+. "$ROOT/docs/checks/lib.sh"
+check_lock "$DEV"
 fail() { echo "FAIL: $*" >&2; exit 1; }
 row() { printf '    %-14s %-60s ok\n' "$1" "$2"; }
 
@@ -76,7 +78,7 @@ restore() {
     *) $M biometric enroll >/dev/null 2>&1 || true ;;
   esac
 }
-trap restore EXIT
+at_exit restore
 
 $M terminate $APP >/dev/null 2>&1 || true
 $M launch $APP >/dev/null
@@ -178,7 +180,7 @@ else
   row "after" "the enrolled finger accepted once the lockout ended"
 fi
 
-trap - EXIT
+at_exit_clear
 restore
 case "$was" in
   "no "*) now=$($M biometric); case "$now" in "no "*) ;; *) fail "not put back: $now" ;; esac

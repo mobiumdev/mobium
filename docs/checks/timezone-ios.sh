@@ -20,6 +20,8 @@ set -e
 DEV="$1"
 if [ -z "$DEV" ]; then echo "usage: $0 <udid>" >&2; exit 2; fi
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
+. "$ROOT/docs/checks/lib.sh"
+check_lock "$DEV"
 fail() { echo "FAIL: $*" >&2; exit 1; }
 row() { printf '    %-10s %-58s ok\n' "$1" "$2"; }
 M="$ROOT/bin/mobium --device $DEV"
@@ -46,7 +48,7 @@ shows() {
 echo "--- $DEV"
 
 device=$($M timezone)
-trap '$M timezone "$device" >/dev/null 2>&1 || true' EXIT
+at_exit '$M timezone "$device" >/dev/null 2>&1 || true'
 $M terminate $C >/dev/null 2>&1 || true
 $M launch $C >/dev/null
 # Calendar opens in the view it was last left in. Only the day view has

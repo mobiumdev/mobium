@@ -22,7 +22,9 @@
 # Emulators and simulators.
 set -e
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
+. "$ROOT/docs/checks/lib.sh"
 DEV="${1:?usage: trace.sh <serial|udid>}"
+check_lock "$DEV"
 case "$DEV" in
   *-*-*-*-*) M="$ROOT/bin/mobium --driver wda --device $DEV" ;;
   *) M="$ROOT/bin/mobium --device $DEV" ;;
@@ -31,7 +33,7 @@ APP=dev.mobium.mobiumapp
 fail() { echo "FAIL: $*" >&2; exit 1; }
 row() { printf '    %-14s %-58s ok\n' "$1" "$2"; }
 OUT=$(mktemp -d)
-trap 'rm -rf "$OUT"; $M trace stop -o "$OUT/left.zip" >/dev/null 2>&1 || true' EXIT
+at_exit 'rm -rf "$OUT"; $M trace stop -o "$OUT/left.zip" >/dev/null 2>&1 || true'
 SECRET="Tr4ce-$(od -An -N3 -tx1 /dev/urandom | tr -d ' ')"
 
 "$ROOT/bin/mobium" daemon stop >/dev/null 2>&1 || true

@@ -23,6 +23,8 @@ set -e
 DEV="$1"
 if [ -z "$DEV" ]; then echo "usage: $0 <android-serial | simulator-udid | iphone-udid>" >&2; exit 2; fi
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
+. "$ROOT/docs/checks/lib.sh"
+check_lock "$DEV"
 case "$DEV" in
   ????????-????????????????) PLATFORM=ios; PHONE=1 ;;
   *-*-*-*-*) PLATFORM=ios; PHONE="" ;;
@@ -35,7 +37,7 @@ hash() { shasum -a 256 "$1" | cut -c1-16; }
 echo "--- $DEV ($PLATFORM)"
 
 W=$(mktemp -d)
-trap 'rm -rf "$W"' EXIT
+at_exit 'rm -rf "$W"'
 head -c 70000 /dev/urandom > "$W/bin.dat"
 mkdir -p "$W/tree/sub"; echo one > "$W/tree/a.txt"; echo two22 > "$W/tree/sub/b.txt"
 

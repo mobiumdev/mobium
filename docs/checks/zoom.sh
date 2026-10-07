@@ -22,6 +22,8 @@
 set -e
 DEV="${1:?usage: zoom.sh <udid|serial>}"
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
+. "$ROOT/docs/checks/lib.sh"
+check_lock "$DEV"
 case "$DEV" in
   [0-9A-Fa-f]*-[0-9A-Fa-f]*-[0-9A-Fa-f]*-[0-9A-Fa-f]*-[0-9A-Fa-f]*)
     BACKEND="--driver wda"; PLATFORM=ios ;;

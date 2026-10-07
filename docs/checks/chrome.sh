@@ -30,6 +30,8 @@ case "$DEV" in
   *) PHONE=1 ;;
 esac
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
+. "$ROOT/docs/checks/lib.sh"
+check_lock "$DEV"
 M="$ROOT/bin/mobium --device $DEV"
 # closeTabs closes the pages in the phone's Chrome whose URL matches $1, a
 # Python regular expression, through Chrome's own DevTools endpoint: Mobium has

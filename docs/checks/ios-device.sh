@@ -26,6 +26,8 @@ DEV="$1"
 if [ -z "$DEV" ]; then echo "usage: $0 <udid>   (see: mobium devices)" >&2; exit 2; fi
 
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
+. "$ROOT/docs/checks/lib.sh"
+check_lock "$DEV"
 M="$ROOT/bin/mobium --driver wda --device $DEV"
 fail() { echo "FAIL: $*" >&2; exit 1; }
 now() { python3 -c 'import time; print(time.time())'; }

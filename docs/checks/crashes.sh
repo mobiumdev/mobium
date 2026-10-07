@@ -32,6 +32,8 @@ DEV="$1"
 if [ -z "$DEV" ]; then echo "usage: $0 <serial|udid>" >&2; exit 2; fi
 
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
+. "$ROOT/docs/checks/lib.sh"
+check_lock "$DEV"
 fail() { echo "FAIL: $*" >&2; exit 1; }
 json() { python3 -c "import json,sys; d=json.load(sys.stdin); print($1)"; }
 
@@ -233,7 +235,7 @@ if [ "$PLATFORM" = android ] && [ "$APP" = dev.mobium.mobiumapp ]; then
              adb -s "$DEV" unroot >/dev/null 2>&1
              as_user != || echo "WARNING: adb is still root on $DEV" >&2
              set -e; }
-    trap thaw EXIT
+    at_exit thaw
     adb -s "$DEV" shell am force-stop "$APP"
     $M launch "$APP" >/dev/null
     # Frozen before its first screen is drawn, an app has no window to be
@@ -254,7 +256,7 @@ if [ "$PLATFORM" = android ] && [ "$APP" = dev.mobium.mobiumapp ]; then
     $M crashes "$anr" | head -1 | grep -q "^ANR: Input dispatching timed out" || fail "ANR $anr does not lead with its reason"
     ref=$($M map | grep "Close app" | grep -oE '@e[0-9]+')
     $M tap "$ref" >/dev/null
-    thaw; trap - EXIT
+    thaw; at_exit_clear
     echo "    anr            a frozen app: its dialog, its log line, its report   ok"
   else
     adb -s "$DEV" unroot >/dev/null 2>&1 || true

@@ -230,7 +230,8 @@ docs-check:
 		|| { python3 docs/checks/doc-links.py $$(git ls-files '*.md'); exit 1; }
 	@python3 docs/quickstart/build.py --check >/dev/null \
 		|| { python3 docs/quickstart/build.py --check; exit 1; }
-	@echo "docs: spelling, anchors and quick-start pages clean"
+	@sh docs/checks/lib-selftest.sh >/dev/null || { sh docs/checks/lib-selftest.sh; exit 1; }
+	@echo "docs: spelling, anchors, quick-start pages and the checks' prelude clean"
 
 ci: fmt-check vet lint test clients crosscompile java api-check flags-check license-check docs-check dotnet
 
