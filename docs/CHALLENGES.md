@@ -5944,6 +5944,20 @@ made their folders; `audio` and `record` now do, before the capture
 stops. Each has a test that failed without the fix, and the recording into
 a new folder, failing before on the emulator, now saves.
 
+### 275. A tap's click read as 12 Hz
+
+**Found by:** walking the audio demo's tutorial on the emulator, where a
+capture's first tenth of a second — the tap's own click — read "12 Hz
+(-47 dBFS)". Before 273 it read as a sound with no pitch; reading the pitch
+from the sounding part of a window let the click's lowest bin win. A click
+is a one-sided pulse, and its average offset lands in the lowest bin, whose
+frequency depends only on how long the sounding part is — 12 Hz there, 94
+in the test that reproduced it. The offset is now taken out before the
+pitch is read, and a pitch must be at least 50 Hz and repeat three times
+in the sound. The test failed before; with the fix the click joins the
+tone's first window or reads as a sound with no pitch, `audio.sh` passes,
+and 273's tone starting 10ms into a window — nine cycles — keeps its pitch.
+
 ## Findings that were not defects
 
 Worth recording because each one closed off an approach that looked obvious.

@@ -166,3 +166,23 @@ func TestAnalyzeToneStartingMidWindow(t *testing.T) {
 		}
 	}
 }
+
+// A click is not a pitch, even one that pushes the samples one way: on the
+// Android 15 emulator a tap's click shared a window with nothing else and,
+// read over its sounding part only, came out as "12 Hz" — the lowest bin,
+// where a one-sided pulse puts its energy. Nothing under 50 Hz is a pitch.
+func TestAnalyzeAOneSidedClickHasNoPitch(t *testing.T) {
+	x := make([]int16, rate/10)
+	for i := 0; i < rate/100; i++ { // 10 ms, decaying, all positive
+		x[rate/20+i] = int16(9000 * math.Exp(-float64(i)/80))
+	}
+	for _, seg := range Analyze(x, rate) {
+		if seg.Hz != 0 {
+			t.Errorf("a one-sided click read as %v Hz: %+v", seg.Hz, seg)
+		}
+	}
+	// A real low tone above the floor keeps its pitch.
+	if got := Analyze(tone(60, 1000, 0.25), rate); len(got) != 1 || math.Abs(got[0].Hz-60) > 2 {
+		t.Errorf("60 Hz: %+v", got)
+	}
+}

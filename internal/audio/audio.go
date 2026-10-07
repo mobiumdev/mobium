@@ -167,10 +167,18 @@ func pitch(x []int16, rate int) float64 {
 	for n < len(x) {
 		n <<= 1
 	}
+	// The average offset is no pitch: a one-sided pulse — a tap's click —
+	// puts its energy there, and read as the lowest bin it came out as
+	// "12 Hz" on the emulator.
+	var mean float64
+	for _, s := range x {
+		mean += float64(s)
+	}
+	mean /= float64(len(x))
 	buf := make([]complex128, n)
 	for i, s := range x {
 		w := 0.5 - 0.5*math.Cos(2*math.Pi*float64(i)/float64(len(x)-1))
-		buf[i] = complex(float64(s)*w, 0)
+		buf[i] = complex((float64(s)-mean)*w, 0)
 	}
 	fft(buf)
 	half := n / 2
@@ -207,8 +215,17 @@ func pitch(x []int16, rate int) float64 {
 			k += 0.5 * (a - c) / d
 		}
 	}
-	return k * float64(rate) / float64(n)
+	hz := k * float64(rate) / float64(n)
+	// A pitch is a repetition: fewer than three of its cycles in the sound
+	// is not one, and nothing below 50 Hz is heard as one.
+	if hz < minPitch || hz*float64(len(x))/float64(rate) < 3 {
+		return 0
+	}
+	return hz
 }
+
+// minPitch is the lowest frequency called a pitch.
+const minPitch = 50.0
 
 // fft is an in-place radix-2 transform; len(a) is a power of two.
 func fft(a []complex128) {
