@@ -557,6 +557,12 @@ this is what is not.
   - **iOS, simulator and phone**: WebDriverAgent's MJPEG stream, which
     `record` already reads — 10 full-size JPEGs a second on the iPhone
     15 Plus. A live view shows the stream instead of writing it to a file.
+    **It runs less than a frame behind the screen**, measured on the
+    iPhone 15 Plus (iOS 26.6.2) on 2026-10-07: 9.6 frames a second, a
+    frame every 105ms and never more than 170ms apart, and on three taps
+    that opened MobiumApp screens the first changed frame arrived 40 to
+    90ms *before* the tap call returned, about 0.75s after it was sent.
+    Read by each frame's arrival and JPEG size, nothing decoded or kept.
   - **Android**: not a loop of `screencap`. Measured on the Pixel 8 Pro
     (Android 17, 1008x2244, over a 480 Mb/s USB link that moved 10 MB/s):
     `screencap -p` took 3.3s a frame, 1.4s of it encoding on the phone,
@@ -570,7 +576,7 @@ this is what is not.
     A browser decodes H.264 itself, so Go would pass the stream through
     without decoding it.
   - **Still to measure before building**: how far behind the screen the
-    picture runs, on each platform; whether the H.264 stream outlasts the
+    picture runs on Android and on a simulator; whether the H.264 stream outlasts the
     recorder's limit and survives a rotation; that a stream's process is
     gone from the device when the view closes — a cut-off read once left
     `screenrecord` running on the phone until it was killed by hand.
