@@ -5850,6 +5850,19 @@ it, as `files.sh` already did; on the locked iPhone each said so. And
 device-signed, and "install Wikipedia from the App Store" was advice a
 simulator cannot take.
 
+### 270. Every trace on the iPhone began with a call that had no frame
+
+**Found by:** a second sweep of the in-app checks on the iPhone 15 Plus.
+`trace.sh` failed the same way twice — "call@1 has no snapshot" — and
+passed on the simulator. The first call it records is `terminate`, which
+leaves the phone's home screen up. After each call the trace waits for the
+screen to settle, two reads that agree, then takes the screenshot, all
+inside one ten-second budget; one read of that home screen takes 6.4
+seconds, two of them used the budget up, and the screenshot, at 0.9
+seconds, failed without a word. The settle and the capture have budgets of
+their own now. The check passes on the phone, nine calls and nine frames,
+and still on the simulator.
+
 ## Findings that were not defects
 
 Worth recording because each one closed off an approach that looked obvious.
