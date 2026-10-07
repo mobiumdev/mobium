@@ -94,11 +94,13 @@ this is what is not.
   Pro simulator, an iPad Air simulator, where it found an ambiguous
   locator's remedy naming a role both matches shared (242), and the iPhone
   15 Plus, where onboarding and the first-run tip are skipped unless the
-  app is freshly installed. This build's search fails ("Search Failed")
-  where the App Store build's finds what is asked — its empty
-  credentials, measured on 2026-10-06; what looked like the same
-  unrelated podcasts for every query was `map` listing Discover under the
-  search screen (CHALLENGES 257).
+  app is freshly installed. This build's search works: on the evening of
+  2026-10-06 six searches from fresh launches all answered in 5 to 7
+  seconds, and Serial, Planet Money and Hardcore History each came back
+  first among rows that named them. The "Search Failed" of that afternoon
+  was passing, not the build's empty credentials, as CHALLENGES 257 first
+  said; what looked like the same unrelated podcasts for every query was
+  `map` listing Discover under the search screen.
 - **A fifth third-party app on iOS, the first whose WebView opens: Kiwix.**
   Begun 2026-10-05: the offline Wikipedia reader (GPL-3.0), SwiftUI around
   a WKWebView that a build from its source makes inspectable (a production
