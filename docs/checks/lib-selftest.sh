@@ -31,8 +31,18 @@ wait $holder
 mkdir -p "$H/locks/DEV2"; echo 999999 > "$H/locks/DEV2/pid"
 sh -c '. "$1"; check_lock DEV2' x "$LIB" && pass "stale lock taken" || bad "stale lock refused"
 out=$(sh -c '. "$1"; check_lock DEV3; sh -c ". \"\$1\"; check_lock DEV3 && echo nested-ok" y "$1"' x "$LIB"); [ "$out" = nested-ok ] && pass "nested check shares the lock" || bad "nested: $out"
+# 6. a check that does not parse is refused, not passed: under set -e the
+#    trap was handed a syntax error as status 0. One edited while it runs
+#    is not a pass either.
+mkdir -p "$H/r/docs/checks"; cp "$LIB" "$H/r/docs/checks/"
+printf '#!/bin/sh\nset -e\nROOT="$(cd "$(dirname "$0")/../.." && pwd)"\n. "$ROOT/docs/checks/lib.sh"\necho ran\nif true; then\n  echo x )\nfi\n' > "$H/r/docs/checks/broken.sh"
+out=$(sh "$H/r/docs/checks/broken.sh" 2>&1) && bad "a check that does not parse passed" || st=$?
+[ "$st" = 2 ] && ! echo "$out" | grep -q '^ran$' && pass "a check that does not parse is refused" || bad "unparsable check: exit $st, $out"
+printf '#!/bin/sh\nset -e\nROOT="$(cd "$(dirname "$0")/../.." && pwd)"\n. "$ROOT/docs/checks/lib.sh"\necho "# edited" >> "$0"\n' > "$H/r/docs/checks/edited.sh"
+sh "$H/r/docs/checks/edited.sh" 2>/dev/null && bad "a check edited while it ran passed" || st=$?
+[ "$st" = 2 ] && pass "a check edited while it ran is not a pass" || bad "edited check: exit $st"
 rm -rf "$H"
-# 6. every check is on the prelude, but for these, and none sets its own EXIT
+# 7. every check parses and is on the prelude, but for these, and none sets its own EXIT
 #    trap, which would replace the prelude's. clean-stop.sh stops the
 #    caller's daemon, so it must not have one of its own; the test-runner,
 #    grid and test-ui checks test mobium test's own sessions, which it gives
@@ -41,6 +51,7 @@ exempt=" clean-stop.sh test-runner.sh test-grid.sh test-ui.sh lib.sh lib-selftes
 for f in "$ROOT"/docs/checks/*.sh; do
   n=$(basename "$f")
   case "$exempt" in *" $n "*) continue ;; esac
+  sh -n "$f" || bad "$n does not parse"
   grep -q '^\. "\$ROOT/docs/checks/lib.sh"' "$f" || bad "$n does not source lib.sh"
   if grep -qE '^[^#]*trap [^-].* EXIT' "$f"; then bad "$n sets its own EXIT trap — use at_exit"; fi
 done

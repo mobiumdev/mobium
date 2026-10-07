@@ -5958,6 +5958,49 @@ in the sound. The test failed before; with the fix the click joins the
 tone's first window or reads as a sound with no pitch, `audio.sh` passes,
 and 273's tone starting 10ms into a window — nine cycles — keeps its pitch.
 
+### 276. A check passed for a device it never touched
+
+**Found by:** sweeping `audio.sh` on both emulators at once. Its last step
+runs `mobium test --project android`, and `tests/mobium.config.json` names
+that project's device `emulator-5554`. So `audio.sh emulator-5556` ran its
+test step on 5554: Android 17's pass never tested that step on Android 17,
+and the two checks' test steps started UiAutomator2 servers on 5554 within
+a third of a second — each start stops the server before it, and the loser
+read "Process crashed". Another run's silence test, sent to 5554 while 5554's
+check played tones there, heard them. The check now runs its tests with a
+config naming its own device, and fails unless the report names it — the
+failing run's log, `[android · emulator-5554]` in a check on 5556, is what
+that assertion would have caught. Ten runs on the two emulators in
+parallel passed, each on its own. The rule of 269 one level down: a check
+never passes on a device it was not given.
+
+### 277. A check cut off mid-call left the call ringing
+
+**Found by:** the same sweep, once 276's runs were stopped. The check on
+`emulator-5554` was cut off during its call step, after `call ring` and
+before `call hang`, and its cleanup stopped the capture but not the call.
+Every later run on that emulator heard the ringtone — 1046 Hz for 0.7s
+inside "440 Hz for 2 s" — and failed in nine seconds for a sound it never
+played; `dumpsys telephony.registry` said `mCallState=1`. The call step now
+registers a hang-up with `at_exit` while the call is up, as the Clock step
+does for its timer. Positive control: the check stopped with SIGTERM while
+ringing ended the call (`mCallState=0`, no ringtone player).
+
+### 278. A check that died of a syntax error passed
+
+**Found by:** the same sweep: `audio.sh` stopped at "line 266: syntax error
+near unexpected token `)'" and exited 0. The script had been edited while it
+ran, and sh reads a script as it goes, so it read the new file at the old
+offset — but any syntax error does the same. Under `set -e`, macOS's sh
+(bash 3.2) hands an EXIT trap a syntax error as status 0, and `lib.sh`'s
+trap exits with the status it is handed; the same script without `set -e`
+or without the trap exits 2. Every check uses both. `lib.sh` now parses the
+check before running it, refusing one that does not parse with exit 2, and
+a check whose file changed while it ran is not a pass. `lib-selftest.sh`
+tests both, and failed before the fix ("a check that does not parse
+passed"); it also parses every check, so `make ci` fails on one that does
+not.
+
 ## Findings that were not defects
 
 Worth recording because each one closed off an approach that looked obvious.
