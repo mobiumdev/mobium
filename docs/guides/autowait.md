@@ -128,6 +128,27 @@ It aimed around the cover and said so. A system dialog, an iOS sheet and the
 on-screen keyboard are covers too, refused the same way, with the remedy for
 each: answer the dialog, hide the keyboard.
 
+`map` says the same before anything is tapped. A target a control covers at
+every point — one a tap would be refused for — is marked with what covers it,
+here on an Android emulator:
+
+```
+$ mobium map
+…
+@e3 Fully covered (button, covered by "full cover")
+@e4 Center covered (button)
+@e6 Edge covered (button)
+@e9 Under a plain view (button)
+@e10 Under a hidden overlay (button, covered by "hidden overlay")
+@e11 Under a scrim (button, covered by "scrim")
+```
+
+The half and edge covers leave a point a tap reaches, so those targets are
+not marked. Neither is the one under a plain view: nothing in the tree says
+whether a plain view takes a touch or lets it through, so `map` marks only
+what a tap would refuse. The structured result carries the same as
+`covered`.
+
 ## 4. Refusing the wrong kind of target
 
 `type` and `fill` go into text fields. Anything that is certainly not one is

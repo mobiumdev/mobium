@@ -29,8 +29,12 @@ this is what is not.
   restore (266). Four checks were made sturdier: `files.sh` (an emulator
   taken for an iPhone; MediaStore's numbered saves), `icecubes-ios.sh` (a
   post taller than the screen), `pocketcasts-ios.sh` (a search left open).
-  Two dark-screen sightings on the iPhone were explained (260). Not run on
-  the phone: `autowait.sh`, which turns Reduce Motion on through Settings.
+  Two dark-screen sightings on the iPhone were explained (260). Since, with
+  the owner's leave, every check written for a phone has passed on it:
+  `autowait.sh` once with Reduce Motion on and once with it off (the
+  switch moved by hand — a phone's cannot be from outside), `record.sh`,
+  and `mobium-app.sh` from a reinstall (`MOBIUMAPP_BUNDLE`), so its
+  permission prompt was a fresh one.
   The two left red on the simulator were setup, not code:
   `notifications-ios.sh` passes once MobiumApp is allowed to notify (Settings
   > Apps > MobiumApp > Notifications on iOS 26 — a reinstall or a data
