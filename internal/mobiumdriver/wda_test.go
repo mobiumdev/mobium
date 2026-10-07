@@ -111,7 +111,7 @@ func TestWDAFindsANamedElementByNameAndType(t *testing.T) {
 	// By its name and its type together, never the name alone, which
 	// WebDriverAgent matches against labels too (CHALLENGES 240).
 	if lookup.body["using"] != "predicate string" ||
-		lookup.body["value"] != `name == "field" AND type == "`+field.Class+`"` {
+		lookup.body["value"] != `name == "field" AND type IN {"XCUIElementTypeTextField", "XCUIElementTypeSecureTextField"}` {
 		t.Errorf("looked up by %v=%v", lookup.body["using"], lookup.body["value"])
 	}
 	if got := typed.body["text"]; got != "a@b.com" {
@@ -669,7 +669,7 @@ func TestANamedElementIsFoundAsItselfOrByItsPath(t *testing.T) {
 		index       int // which node of that name, in document order
 		using, want string
 	}{
-		{"Search", 0, "predicate string", `name == "Search" AND type == "XCUIElementTypeTextField"`},
+		{"Search", 0, "predicate string", `name == "Search" AND type IN {"XCUIElementTypeTextField", "XCUIElementTypeSecureTextField"}`},
 		{"note", 1, "xpath", "/*[1]/*[2]/*[2]"},
 	} {
 		f := newFakeServer(t)
@@ -694,5 +694,22 @@ func TestANamedElementIsFoundAsItselfOrByItsPath(t *testing.T) {
 		if lookup == nil || lookup.body["using"] != tc.using || lookup.body["value"] != tc.want {
 			t.Errorf("%s: looked up by %v", tc.name, lookup)
 		}
+	}
+}
+
+// A text field is found as either field type, since Flutter's password
+// field becomes a SecureTextField when it takes focus; anything else is
+// found by its own type, so the keyboard's Search key is still not a field
+// named Search (240). CHALLENGES 265.
+func TestANamedTextFieldIsFoundAsEitherFieldType(t *testing.T) {
+	both := `type IN {"XCUIElementTypeTextField", "XCUIElementTypeSecureTextField"}`
+	for _, class := range []string{"XCUIElementTypeTextField", "XCUIElementTypeSecureTextField"} {
+		p, ok := namePredicate(&uitree.Node{TestID: "password", Class: class})
+		if !ok || !strings.Contains(p, both) {
+			t.Errorf("%s: %q", class, p)
+		}
+	}
+	if p, _ := namePredicate(&uitree.Node{TestID: "Search", Class: "XCUIElementTypeButton"}); p != `name == "Search" AND type == "XCUIElementTypeButton"` {
+		t.Errorf("a button: %q", p)
 	}
 }

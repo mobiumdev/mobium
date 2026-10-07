@@ -101,7 +101,7 @@ func (t *Tree) DrawnOver(target *Node, x, y int) []*Node {
 			return true
 		}
 		if !seen || n.Within(target) || target.Within(n) || !n.Displayed || n.Bounds.Empty() || isScrollIndicator(n) ||
-			namesTheSameControl(target, n) {
+			namesTheSameControl(target, n) || barOverScroll(target, n) {
 			return true
 		}
 		for _, o := range over {
@@ -313,7 +313,7 @@ func (t *Tree) stripAt(target *Node, x, y int) *Node {
 			return true
 		}
 		if !seen || n.Within(target) || target.Within(n) || !n.Displayed || n.Bounds.Empty() || !IsControl(n) ||
-			!overlaps(n.Bounds, target.Bounds) || namesTheSameControl(target, n) {
+			!overlaps(n.Bounds, target.Bounds) || namesTheSameControl(target, n) || barOverScroll(target, n) {
 			return true
 		}
 		p := n.Parent
@@ -327,6 +327,45 @@ func (t *Tree) stripAt(target *Node, x, y int) *Node {
 		return true
 	})
 	return found
+}
+
+// barOverScroll says n is scrolling content and target is in a bar, which
+// UIKit draws over it whatever the tree's order. iOS 26 runs a list under
+// its navigation bar and lists the rows after the bar, so once a control
+// inside a plain cover counted (CHALLENGES 257), NetNewsWire's Feeds back
+// button was refused as covered by the article row scrolled beneath it.
+// CHALLENGES 263.
+func barOverScroll(target, n *Node) bool {
+	if !hasAncestorClass(target, iosBarTypes) {
+		return false
+	}
+	for p := n.Parent; p != nil; p = p.Parent {
+		if iosScrollTypes[p.Class] && !target.Within(p) {
+			return true
+		}
+	}
+	return false
+}
+
+var iosBarTypes = map[string]bool{
+	"XCUIElementTypeNavigationBar": true,
+	"XCUIElementTypeToolbar":       true,
+	"XCUIElementTypeTabBar":        true,
+}
+
+var iosScrollTypes = map[string]bool{
+	"XCUIElementTypeScrollView":     true,
+	"XCUIElementTypeCollectionView": true,
+	"XCUIElementTypeTable":          true,
+}
+
+func hasAncestorClass(n *Node, classes map[string]bool) bool {
+	for p := n.Parent; p != nil; p = p.Parent {
+		if classes[p.Class] {
+			return true
+		}
+	}
+	return false
 }
 
 func overlaps(a, b Rect) bool { return a.X1 < b.X2 && b.X1 < a.X2 && a.Y1 < b.Y2 && b.Y1 < a.Y2 }

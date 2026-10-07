@@ -32,6 +32,9 @@ type ElementView struct {
 	// Value is what a slider reads, as the app states it, and absent for
 	// everything else.
 	Value string `json:"value,omitempty"`
+	// Covered names a control drawn over all of the element, which a tap
+	// would be refused for, and is absent otherwise.
+	Covered string `json:"covered,omitempty"`
 }
 
 // LocatorView is how a ref resolves on a later screen.
@@ -150,6 +153,7 @@ func elementView(e uitree.Entry) ElementView {
 		Selected: e.Selected,
 		Disabled: e.Disabled,
 		Value:    e.Value,
+		Covered:  e.Covered,
 	}
 }
 

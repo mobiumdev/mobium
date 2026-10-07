@@ -289,3 +289,64 @@ func TestAStripOverATargetIsNotClear(t *testing.T) {
 		}
 	}
 }
+
+// map marks what a tap would refuse as covered, naming the control over it:
+// Discover's category chips under Pocket Casts' search results on the
+// iPhone. A screen with nothing over its targets marks nothing. CHALLENGES
+// 264.
+func TestMapMarksWhatControlsCover(t *testing.T) {
+	lines := map[string]string{}
+	for _, e := range loadIOS(t, "ios26-pocketcasts-search-over-discover.xml").Map() {
+		lines[e.Label] = e.Line()
+	}
+	if got := lines["Comedy"]; !strings.Contains(got, `covered by "Podcasts"`) {
+		t.Errorf("Comedy maps as %q", got)
+	}
+	if got := lines["Top Results"]; strings.Contains(got, "covered") {
+		t.Errorf("the chip in front maps as %q", got)
+	}
+	for _, e := range loadIOS(t, "ios26-pocketcasts-podcast.xml").Map() {
+		if e.Covered != "" {
+			t.Errorf("%s on an ordinary screen is marked covered by %q", e.Label, e.Covered)
+		}
+	}
+}
+
+// A bar is drawn over the list that scrolls beneath it, whatever order the
+// tree lists them in. iOS 26 runs NetNewsWire's article list under its
+// navigation bar and lists the rows after the bar; once a control inside a
+// plain cover counted (257), the Feeds back button was refused as covered by
+// the row beneath it, and map would have marked it so. CHALLENGES 263.
+func TestABarIsNotCoveredByTheListUnderIt(t *testing.T) {
+	tree, err := ParseIOS([]byte(`<?xml version="1.0" encoding="UTF-8"?>
+<XCUIElementTypeApplication type="XCUIElementTypeApplication" name="x" label="x" enabled="true" visible="true" accessible="false" x="0" y="0" width="402" height="874">
+ <XCUIElementTypeWindow type="XCUIElementTypeWindow" enabled="true" visible="true" accessible="false" x="0" y="0" width="402" height="874">
+  <XCUIElementTypeNavigationBar type="XCUIElementTypeNavigationBar" name="Articles" enabled="true" visible="true" accessible="false" x="0" y="62" width="402" height="54">
+   <XCUIElementTypeButton type="XCUIElementTypeButton" name="BackButton" label="Feeds" enabled="true" visible="true" accessible="true" x="16" y="66" width="44" height="44"/>
+  </XCUIElementTypeNavigationBar>
+  <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="0" y="0" width="402" height="874">
+   <XCUIElementTypeTable type="XCUIElementTypeTable" enabled="true" visible="true" accessible="false" x="0" y="0" width="402" height="874">
+    <XCUIElementTypeCell type="XCUIElementTypeCell" name="Starred, NetNewsWire Blog" label="Starred, NetNewsWire Blog" enabled="true" visible="true" accessible="true" x="0" y="40" width="402" height="120"/>
+   </XCUIElementTypeTable>
+  </XCUIElementTypeOther>
+ </XCUIElementTypeWindow>
+</XCUIElementTypeApplication>`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	var back *Node
+	tree.Walk(func(n *Node) bool {
+		if n.Label == "Feeds" {
+			back = n
+		}
+		return back == nil
+	})
+	if a := tree.AimAt(back); a.Blocker != nil || a.Moved {
+		t.Errorf("the back button aimed %+v, covered by the row under its bar", a)
+	}
+	for _, e := range tree.Map() {
+		if e.Covered != "" && e.Label == "Feeds" {
+			t.Errorf("map marks the back button covered by %q", e.Covered)
+		}
+	}
+}
