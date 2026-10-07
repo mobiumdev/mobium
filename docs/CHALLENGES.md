@@ -5889,6 +5889,26 @@ slower) or as an element click (about the same) — what XCTest takes to
 synthesize a touch on a phone. Setting the animation cool-off to zero took
 390ms off a swipe and nothing off a tap.
 
+### 272. A tap found its target, then asked if it was visible
+
+**Found by:** what 271 left. A tap on the iPhone found its element (171ms)
+and then asked whether it was visible (78ms), two requests where one would
+do: the find can ask for the element and its being visible together. Found,
+it is visible; not found, it is not shown to be, and the action reads the
+screen in full as it always did for a hidden one. The element found is
+remembered under its plain search, so the stillness check's rectangle read
+that follows costs no second find. That read could not join them: it is
+the second sample of whether the target has stopped, taken a moment later.
+On the simulator one request took 70 to 82ms against 108 to 126 for two,
+and found a visible target and not a covered one. On the iPhone eight taps
+took a median of 962ms against 1,025ms, every one landing, and
+`obstruction.sh` and `autowait.sh` pass there; on the simulator with every
+action sent down this path, so do they and `login.sh`.
+
+Android has no lookup like 271's to remove: a call that asks the device
+nothing took 28 to 32ms on the emulator, about what `adb devices` alone
+takes.
+
 ## Findings that were not defects
 
 Worth recording because each one closed off an approach that looked obvious.
