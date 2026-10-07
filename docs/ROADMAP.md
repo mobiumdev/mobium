@@ -614,14 +614,51 @@ this is what is not.
     plays — a capture needs a helper on the phone with the shell's
     permission, filtered to the app under test, since the phone also plays
     its owner's notifications and calls; the iOS simulator, whose audio
-    goes to a Mac device of its own; and an iPhone. Each to be measured
-    first. **Measured since, on the Pixel 8 Pro** (2026-10-07): a capture
+    goes to a Mac device of its own; and an iPhone — both measured since,
+    below. **Measured since, on the Pixel 8 Pro** (2026-10-07): a capture
     of one app's audio alone works from adb as the shell user — an audio
     policy matching MobiumApp's uid, with no app installed and no consent
     asked. It heard 440 Hz, the sequence, and the silence as silence, and
     not the tap's click, which is the system's; and at -15 dBFS, what the
     app wrote, since it taps the app before the volume. Not built yet: a
     pinned helper on the phone for `--app`.
+  - **iOS, measured, not built** (2026-10-07; `docs/probes/ios-audio-sim.swift`,
+    `ios-audio-phone.swift`, `audio-runs.py`). Both heard the Audio Demo's
+    440 Hz, a second of silence and 880 Hz, two seconds each, at -15.1
+    dBFS — what the app writes — and its silence as zeros while audio kept
+    arriving: the negative control. `mobium audio` still refuses both.
+    - **The simulator, one app.** An app in the simulator is a process on
+      the Mac, and CoreAudio lists it by its bundle id with the process's
+      path holding the simulator's UDID. A process tap (macOS 14.2+) on it
+      hears that app alone: a sound played on the Mac during the capture
+      was not in it. The app is muted on the Mac's speakers while tapped,
+      and nothing is put on the simulator. Costs: macOS asks once for
+      "System Audio Recording" for whatever runs the tap, and until it is
+      allowed the tap gets no audio at all — no IO cycles, which can be
+      told from silence. An app is listed only once it has opened audio
+      (Settings never was), so a capture started first must watch for it.
+      CoreAudio's "running output" stayed on through the silence and after
+      the tone ended — the platform's word again, not the sound.
+    - **A real iPhone, the whole route.** The phone's USB screen-capture
+      source — the one a USB view of the screen uses, after CoreMediaIO is
+      told to allow such devices — carries its sound too, and WebDriverAgent's
+      taps worked while it ran (iPhone Mirroring drops them). It is not a
+      listener: while it runs the phone is silent and the Mac plays nothing,
+      because the capture is an audio route on the phone, which asks once
+      what it is. So the app under test sees its output change when a
+      capture starts and stops, and the phone's owner hears nothing
+      meanwhile. Sound arrives about 1.3s after the capture opens. Not
+      measured: whether other apps' sound is in it (it is the phone's
+      route, so likely), whether the level follows the phone's volume, and
+      what tells a call or an alarm cutting across the app on iOS.
+    - **Building it**: Mobium is built with `CGO_ENABLED=0`, and both APIs
+      are Objective-C, so the likely route is a small Swift helper compiled
+      on the Mac, as WebDriverAgent is — a simulator or a phone means
+      Xcode is there.
+    - Measuring the simulator found MobiumApp's tone module crashing on
+      play — "player did not see an IO cycle" — in a process left running
+      for hours, seconds after the audio device it played to was gone. A
+      fresh launch played every time; what removed the device is not known.
   - **Asserting it in a test, done**: stop takes `expect`, the sounds to
     hear in order, and fails as not_confirmed saying what was heard, with
     the capture saved; `--expect 440:1.8-2.2,880` on the CLI, and
