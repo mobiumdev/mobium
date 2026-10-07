@@ -5848,7 +5848,10 @@ is "is the app here" now keep `apps`' answer and fail on its error, naming
 it, as `files.sh` already did; on the locked iPhone each said so. And
 `third-party-app-ios.sh` refuses a simulator by name: an App Store app is
 device-signed, and "install Wikipedia from the App Store" was advice a
-simulator cannot take.
+simulator cannot take. The phone sweep after it found one more:
+`ios-webview.sh`, given the iPhone's UDID with no simulator booted, said
+"skipping" and exited 0 in no time at all; it refuses a device that is not
+a booted simulator now, naming `ios-device.sh` for a phone.
 
 ### 270. Every trace on the iPhone began with a call that had no frame
 

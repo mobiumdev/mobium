@@ -32,6 +32,14 @@ appContexts() { $M contexts | awk -v id="WEBVIEW_$1" \
   '$1 == id || (index($1, id "_") == 1 && substr($1, length(id) + 2) ~ /^[0-9]+$/) { print $1 }'; }
 
 command -v xcrun >/dev/null || { echo "no xcrun; skipping" >&2; exit 0; }
+# A device named that is not a booted simulator is refused, not skipped: a
+# phone's UDID with no simulator booted said "skipping" and exited 0 — a
+# pass for a check that ran nothing (CHALLENGES 269). A phone's WebViews are
+# ios-device.sh's.
+if [ "$UDID" != booted ] && ! xcrun simctl list devices booted | grep -q "$UDID"; then
+  echo "ios-webview.sh is for a booted simulator, and $UDID is not one — on a real iPhone, ios-device.sh drives its WebViews" >&2
+  exit 2
+fi
 xcrun simctl list devices booted | grep -q Booted || {
   echo "no booted simulator; skipping" >&2; exit 0; }
 
