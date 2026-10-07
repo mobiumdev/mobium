@@ -1849,12 +1849,27 @@ type AudioSegment struct {
 	Level float64 `json:"level,omitempty"`
 }
 
+// StreamVolume is one of the device's volume streams, "media" or "alarm":
+// its index on the device's own scale, Min to Max, and whether it is muted.
+type StreamVolume struct {
+	Stream string `json:"stream"`
+	Index  int    `json:"index"`
+	Min    int    `json:"min"`
+	Max    int    `json:"max"`
+	Muted  bool   `json:"muted,omitempty"`
+}
+
 // Audio is what app_audio reports: whether a capture is running, and on stop
-// where the WAV went and the timeline of what it held.
+// where the WAV went, the timeline of what it held, and the volumes it was
+// taken at — what arrives follows the media volume, and at its lowest a
+// playing app is heard as silence. VolumesAtStart is set only when they
+// changed during the capture.
 type Audio struct {
-	Recording bool           `json:"recording"`
-	Path      string         `json:"path,omitempty"`
-	Timeline  []AudioSegment `json:"timeline,omitempty"`
+	Recording      bool           `json:"recording"`
+	Path           string         `json:"path,omitempty"`
+	Timeline       []AudioSegment `json:"timeline,omitempty"`
+	Volumes        []StreamVolume `json:"volumes,omitempty"`
+	VolumesAtStart []StreamVolume `json:"volumesAtStart,omitempty"`
 	// Duration and Elapsed are nanoseconds.
 	Duration int64 `json:"duration,omitempty"`
 	Elapsed  int64 `json:"elapsed,omitempty"`

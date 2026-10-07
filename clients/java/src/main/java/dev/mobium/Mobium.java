@@ -1692,8 +1692,10 @@ public final class Mobium implements AutoCloseable {
      * to save a WAV; null asks whether a capture is running. Stop returns a
      * {@code timeline} of segments — {@code from} and {@code to} in
      * nanoseconds, {@code sound}, and for a sound its {@code hz} (0 with no
-     * one pitch) and {@code level} in dBFS. Assert on sound, silence and
-     * pitch; the level follows the device's volume. An Android emulator only.
+     * one pitch) and {@code level} in dBFS, and the {@code volumes} it was
+     * taken at. Assert on sound, silence and pitch; the level follows the
+     * device's volume, and at its lowest a playing app is silence. An
+     * Android emulator only.
      * A relative path is this process's.
      *
      * @param action {@code "start"}, {@code "stop"}, or null to ask whether one is running

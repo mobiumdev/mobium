@@ -799,7 +799,9 @@ func GetToolSchemas() []Tool {
 				"omit the action to ask whether a capture is running. Stop answers with a timeline — " +
 				"when there was sound and when silence, to a tenth of a second, and each sound's pitch " +
 				"and level — which is what to assert on: levels follow the device's volume, pitches do " +
-				"not. Everything the device played is in it, the system's sounds too: with touch sounds " +
+				"not. The result also gives the media and alarm volumes it was taken at: at the lowest " +
+				"media volume a playing app is heard as silence. Everything the device played is in " +
+				"it, the system's sounds too: with touch sounds " +
 				"on, a tap is a tenth of a second of sound. An Android emulator only, from its control " +
 				"port; a phone or an iOS device is refused. One capture per device; ending the session " +
 				"discards it.",

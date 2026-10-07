@@ -1224,8 +1224,10 @@ class Device:
 
         Stop returns a ``timeline``: segments with ``from`` and ``to`` in
         nanoseconds, ``sound``, and for a sound its ``hz`` (0 when it has no
-        one pitch) and ``level`` in dBFS. Assert on sound, silence and pitch;
-        the level follows the device's volume. An Android emulator only.
+        one pitch) and ``level`` in dBFS, and the ``volumes`` it was taken at:
+        each stream's ``index`` from ``min`` to ``max``, and ``muted``. Assert
+        on sound, silence and pitch; the level follows the device's volume,
+        and at its lowest a playing app is silence. An Android emulator only.
         """
         args: dict = {}
         if action:

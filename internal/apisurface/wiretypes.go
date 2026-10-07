@@ -63,6 +63,7 @@ var GoWireTypes = map[string][2]string{
 	"Recording":       {"internal/agent", "RecordView"},
 	"Audio":           {"internal/agent", "AudioView"},
 	"AudioSegment":    {"internal/audio", "Segment"},
+	"StreamVolume":    {"internal/device", "StreamVolume"},
 	"Screen":          {"internal/agent", "ScreenView"},
 	"Session":         {"internal/agent", "SessionView"},
 	"StorageItem":     {"internal/webview", "StorageItem"},

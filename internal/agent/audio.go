@@ -84,9 +84,14 @@ func (h *Handlers) audioOn(ctx context.Context, s *session, args map[string]inte
 		r := s.audio
 		s.audio = nil
 		view.Elapsed = time.Since(r.Started()).Round(time.Millisecond)
-		samples, err := r.Stop(ctx)
+		got, err := r.Stop(ctx)
 		if err != nil {
 			return nil, err
+		}
+		samples := got.Samples
+		view.Volumes = got.VolumesAtEnd
+		if !sameVolumes(got.VolumesAtStart, got.VolumesAtEnd) {
+			view.VolumesAtStart = got.VolumesAtStart
 		}
 		n, err := audio.WriteWAV(path, samples, device.AudioRate)
 		if err != nil {
@@ -135,9 +140,54 @@ func AudioHeard(v AudioView) string {
 		}
 	}
 	if !sound {
-		return fmt.Sprintf("%s, silence throughout — nothing reached %.0f dBFS", head, audio.SoundFloor)
+		return fmt.Sprintf("%s, silence throughout — nothing reached %.0f dBFS%s", head, audio.SoundFloor, volumeNote(v))
 	}
-	return head + ": " + strings.Join(parts, ", ")
+	return head + ": " + strings.Join(parts, ", ") + volumeNote(v)
+}
+
+// volumeNote says the media volume a capture ended at, and what it started
+// at if that was different: what arrives follows it, and at its lowest a
+// playing app is heard as silence.
+func volumeNote(v AudioView) string {
+	media := func(vols []device.StreamVolume) (device.StreamVolume, bool) {
+		for _, s := range vols {
+			if s.Stream == "media" {
+				return s, true
+			}
+		}
+		return device.StreamVolume{}, false
+	}
+	end, ok := media(v.Volumes)
+	if !ok {
+		return ""
+	}
+	say := func(s device.StreamVolume) string {
+		out := fmt.Sprintf("%d of %d", s.Index, s.Max)
+		if s.Muted {
+			out += ", muted"
+		}
+		return out
+	}
+	note := " — at media volume " + say(end)
+	if start, ok := media(v.VolumesAtStart); ok {
+		note += " (it was " + say(start) + " when the capture started)"
+	}
+	if end.Muted || end.Index <= end.Min {
+		note += ", where nothing played as media is heard"
+	}
+	return note
+}
+
+func sameVolumes(a, b []device.StreamVolume) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for i := range a {
+		if a[i] != b[i] {
+			return false
+		}
+	}
+	return true
 }
 
 // AudioView is the result of app_audio.
@@ -150,6 +200,10 @@ type AudioView struct {
 	// Timeline is what the capture holds: sound and silence, each sound's
 	// pitch and level.
 	Timeline []audio.Segment `json:"timeline,omitempty"`
+	// Volumes are the device's media and alarm volumes as the capture
+	// ended, and VolumesAtStart as it began, when they were different.
+	Volumes        []device.StreamVolume `json:"volumes,omitempty"`
+	VolumesAtStart []device.StreamVolume `json:"volumesAtStart,omitempty"`
 	// Data is the WAV, base64, when it was returned rather than saved.
 	Data   string `json:"data,omitempty"`
 	Device string `json:"device"`

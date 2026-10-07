@@ -1503,9 +1503,10 @@ export class Device {
    * Capture what the device plays: action 'start', or 'stop' with a path to
    * save a WAV; neither asks whether a capture is running. Stop resolves to
    * a timeline — segments with from and to in nanoseconds, sound, and for a
-   * sound its hz (0 with no one pitch) and level in dBFS. Assert on sound,
-   * silence and pitch; the level follows the device's volume. An Android
-   * emulator only.
+   * sound its hz (0 with no one pitch) and level in dBFS — and the volumes
+   * it was taken at, each stream's index from min to max and muted. Assert
+   * on sound, silence and pitch; the level follows the device's volume, and
+   * at its lowest a playing app is silence. An Android emulator only.
    */
   async audio({ action, path } = {}) {
     const args = {}

@@ -1057,9 +1057,10 @@ namespace Mobium
         /// path to save a WAV; neither asks whether a capture is running. Stop
         /// returns a <c>timeline</c> of segments — <c>from</c> and <c>to</c>
         /// in nanoseconds, <c>sound</c>, and for a sound its <c>hz</c> (0 with
-        /// no one pitch) and <c>level</c> in dBFS. Assert on sound, silence
-        /// and pitch; the level follows the device's volume. An Android
-        /// emulator only. A relative path is this process's.
+        /// no one pitch) and <c>level</c> in dBFS, and the <c>volumes</c> it
+        /// was taken at. Assert on sound, silence and pitch; the level follows
+        /// the device's volume, and at its lowest a playing app is silence. An
+        /// Android emulator only. A relative path is this process's.
         /// </summary>
         public IDictionary<string, object?> Audio(string? action = null, string? path = null)
         {
