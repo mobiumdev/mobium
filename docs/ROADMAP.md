@@ -230,8 +230,37 @@ this is what is not.
     it is one, and pays the 60-second timeout before falling back (91
     seconds for Radiolab's page, four after); `map` there may list an
     element something covers; and an action there does not scroll for its
-    target. Unmeasured: other apps' long lists — a mailbox, a contacts
-    list — and where between 393 and 2,847 elements a read stops fitting.
+    target. Measured on 2026-10-06 across apps with nothing personal in
+    them, on the iPhone 15 Plus — elements, cells, read without and with
+    `visible`:
+
+    | Screen | Elements | Cells | Light | Full |
+    |---|---|---|---|---|
+    | App Store, Top Free Apps | 195 | 9 | 0.46 s | 1.49 s |
+    | App Store, Apps tab | 198 | 13 | 0.46 s | 1.64 s |
+    | Pocket Casts, Hardcore History | 204 | 14 | 0.50 s | 2.88 s |
+    | Pocket Casts, This American Life | 215 | 16 | 0.49 s | 3.24 s |
+    | Settings, Keyboards | 263 | 22 | 0.52 s | 2.51 s |
+    | Wikipedia, search results | 264 | 13 | 0.50 s | 2.70 s |
+    | Pocket Casts, The Daily | 413 | 65 | 0.93 s | 9.57 s |
+    | Settings, Add New Keyboard | 597 | 174 | 0.97 s | 7.18 s |
+    | Pocket Casts, Radiolab | 2,847 | 674 | 3.3–6.3 s | 25.5–83.8 s |
+    | Pocket Casts, 99% Invisible | 3,495 | 836 | 7.69 s | 104.48 s |
+
+    Only a table that hands accessibility every row grows past the
+    threshold — Pocket Casts' episode lists. The App Store and Wikipedia
+    build rows as they come into view and stay small; Settings' longest
+    list here is 597 elements and reads in seven seconds. A full read cost
+    15 to 30 ms an element on the large screens, so 1,000 fits the 60
+    seconds with room, and nothing measured fell between 597 and 2,847.
+    A read without `visible` costs 15 to 30% of a full one even on small
+    screens, so reading light first everywhere to spare the first read of
+    a long list would tax every read for a case met in one app so far; left
+    as it is. Not measured: a mailbox or a contacts list, which are someone's.
+  - A Discover row in Pocket Casts' horizontal carousel, on the simulator,
+    is refused as "on the screen but never scrolled fully into view" after
+    one scroll *down* — the wrong axis for its container — while it is
+    plainly on screen (2026-10-06, Freakonomics Radio). Not looked into.
   - ~~Two things seen once on the iPhone with its screen dark.~~ Explained
     on 2026-10-06 (CHALLENGES 260): the hang was a long list's read (258)
     and the launch preceded the lock. A locked device now says so in `map`
