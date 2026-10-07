@@ -919,3 +919,31 @@ func TestATapIntoAPageUnderADialogNamesTheDialog(t *testing.T) {
 		t.Errorf("the refusal still blames installed web apps: %v", err)
 	}
 }
+
+// healthDriver is a session's driver whose health a test sets.
+type healthDriver struct {
+	fakeDriver
+	ok bool
+}
+
+func (d *healthDriver) Healthy(ctx context.Context) bool { return d.ok }
+
+// A device named by the serial of a live WebDriverAgent session is that
+// session, without listing devices: the listing cost 375ms of every call on
+// the iPhone. One that no longer answers is looked up again — here, where no
+// simulator or phone exists, that lookup fails, which is how the test sees
+// it happened. CHALLENGES 271.
+func TestALiveIOSSessionIsReusedWithoutALookup(t *testing.T) {
+	h := NewHandlers()
+	d := &healthDriver{ok: true}
+	s := &session{dev: &device.Device{Serial: "SIM-1"}, driver: d, backend: BackendWDA}
+	h.sessions["SIM-1"] = s
+	got, err := h.iosSessionFor(context.Background(), "SIM-1")
+	if err != nil || got != s {
+		t.Fatalf("a live session was not reused: %v, %v", got, err)
+	}
+	d.ok = false
+	if got, err := h.iosSessionFor(context.Background(), "SIM-1"); err == nil && got == s {
+		t.Error("a session that no longer answers was reused without a lookup")
+	}
+}

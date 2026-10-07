@@ -5866,6 +5866,29 @@ seconds, failed without a word. The settle and the capture have budgets of
 their own now. The check passes on the phone, nine calls and nine frames,
 and still on the simulator.
 
+### 271. Every call to an iPhone listed every device first
+
+**Found by:** measuring where a tap's time goes on the iPhone 15 Plus. A tap
+in MobiumApp that moves nothing took 1.4 seconds, and WebDriverAgent's
+requests in it came to about a second: the light read 229ms, finding the
+element 171ms, its visibility 78ms, its rectangle 82ms, the touch 462ms. The
+rest was before any of them: `mobium trace`, which asks the device nothing,
+took 395ms against 19ms for a call that never reaches a device. Every call
+naming an iOS device looked it up first — `devicectl list devices` and the
+simulator list, about 350ms on the phone — and only then found the session
+already open for it. A device named by the serial of a live session is now
+that session; one whose session no longer answers, as a phone whose tunnel
+has moved, is looked up again. A no-op call took 29ms after, on the phone
+and 24 on the simulator, and the tap 1.0 seconds; `obstruction.sh` went
+from 81 to 48 seconds on the phone.
+
+Measured on the way, and left: the touch itself, 430 to 460ms, is the same
+whether WebDriverAgent waits two seconds for animations or none, and
+whether it is sent as W3C actions, as WebDriverAgent's own tap (190ms
+slower) or as an element click (about the same) — what XCTest takes to
+synthesize a touch on a phone. Setting the animation cool-off to zero took
+390ms off a swipe and nothing off a tap.
+
 ## Findings that were not defects
 
 Worth recording because each one closed off an approach that looked obvious.
