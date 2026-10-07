@@ -68,6 +68,7 @@ const (
 	CapAudit            = "audit"
 	CapSlider           = "slider"
 	CapGrayBox          = "grayBox"
+	CapAudio            = "audio"
 )
 
 // KnownCapabilities is every capability Mobium understands, for diagnostics
@@ -80,7 +81,7 @@ var KnownCapabilities = []string{
 	CapClipboard, CapClipboardRead, CapAlerts, CapPinch,
 	CapDoubleTap, CapDrag, CapMultiTouch, CapDeviceLogs, CapCrashes, CapKeyboard, CapRecording,
 	CapClearData, CapSource, CapAccessibility, CapAppState, CapBattery, CapDeviceClock, CapShake,
-	CapNetwork, CapFiles, CapBiometric, CapHitTest, CapAudit, CapSlider, CapGrayBox,
+	CapNetwork, CapFiles, CapBiometric, CapHitTest, CapAudit, CapSlider, CapGrayBox, CapAudio,
 }
 
 // has reports whether d claims the capability. A driver that does not report
@@ -341,6 +342,12 @@ func AsBundleResetter(d Driver) (BundleResetter, bool) {
 func AsScreenRecorder(d Driver) (ScreenRecorder, bool) {
 	r, ok := d.(ScreenRecorder)
 	return r, ok && has(d, CapRecording)
+}
+
+// AsAudioRecorder returns the driver's audio capture support, if any.
+func AsAudioRecorder(d Driver) (AudioRecorder, bool) {
+	r, ok := d.(AudioRecorder)
+	return r, ok && has(d, CapAudio)
 }
 
 // AsFileTransfer returns the driver's support for moving files to and from

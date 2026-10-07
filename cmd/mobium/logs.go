@@ -163,6 +163,40 @@ func newRecordCmd() *cobra.Command {
 	return cmd
 }
 
+func newAudioCmd() *cobra.Command {
+	var output string
+	cmd := &cobra.Command{
+		Use:   "audio [start | stop]",
+		Short: "Capture what the device plays, and say what it held",
+		Long: "`audio start` begins; `audio stop -o capture.wav` finishes, saves a WAV and\n" +
+			"prints a timeline: when there was sound and when silence, to a tenth of a\n" +
+			"second, and each sound's pitch and level. `audio` alone says whether a\n" +
+			"capture is running.\n\n" +
+			"Assert on sound, silence and pitch, not on level: the level follows the\n" +
+			"device's volume. Everything the device played is in it — with touch sounds\n" +
+			"on, a tap is a tenth of a second of sound. An Android emulator only.",
+		Example: `  mobium audio start
+  mobium tap testid=play
+  mobium audio stop -o capture.wav`,
+		Args: cobra.MaximumNArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			call := map[string]interface{}{}
+			if len(args) == 1 {
+				call["action"] = args[0]
+			}
+			if len(args) == 1 && args[0] == "stop" {
+				if output == "" {
+					output = fmt.Sprintf("audio-%s.wav", time.Now().Format("20060102-150405"))
+				}
+				call["path"] = output
+			}
+			return runTool("app_audio", call)
+		},
+	}
+	cmd.Flags().StringVarP(&output, "output", "o", "", "Where to save the WAV on stop (default: ./audio-<timestamp>.wav)")
+	return cmd
+}
+
 func newDialogsCmd() *cobra.Command {
 	var when, press string
 	var clear bool

@@ -95,6 +95,45 @@
       "global": true
     },
     {
+      "tool": "app_audio",
+      "arg": "action",
+      "type": "string",
+      "setBy": [
+        "audio"
+      ]
+    },
+    {
+      "tool": "app_audio",
+      "arg": "device",
+      "type": "string",
+      "setBy": [
+        "--device"
+      ],
+      "global": true
+    },
+    {
+      "tool": "app_audio",
+      "arg": "driver",
+      "type": "string",
+      "setBy": [
+        "--driver"
+      ],
+      "global": true
+    },
+    {
+      "tool": "app_audio",
+      "arg": "path",
+      "type": "string",
+      "setBy": [
+        "audio"
+      ]
+    },
+    {
+      "tool": "app_audio",
+      "arg": "return_data",
+      "type": "boolean"
+    },
+    {
       "tool": "app_audit",
       "arg": "device",
       "type": "string",
@@ -2649,6 +2688,19 @@
       ],
       "sends": [
         "system"
+      ]
+    },
+    {
+      "command": "audio",
+      "tools": [
+        "app_audio"
+      ],
+      "flags": [
+        "--output"
+      ],
+      "sends": [
+        "action",
+        "path"
       ]
     },
     {

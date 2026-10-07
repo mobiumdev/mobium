@@ -1838,6 +1838,45 @@ func (d *Device) Record(ctx context.Context, action, path string) (Recording, er
 	return out, err
 }
 
+// AudioSegment is one stretch of an audio capture's timeline: sound or
+// silence from From to To since the capture began, in nanoseconds. Hz is a
+// sound's pitch, 0 when it has none; Level its loudness in dBFS.
+type AudioSegment struct {
+	From  int64   `json:"from"`
+	To    int64   `json:"to"`
+	Sound bool    `json:"sound"`
+	Hz    float64 `json:"hz,omitempty"`
+	Level float64 `json:"level,omitempty"`
+}
+
+// Audio is what app_audio reports: whether a capture is running, and on stop
+// where the WAV went and the timeline of what it held.
+type Audio struct {
+	Recording bool           `json:"recording"`
+	Path      string         `json:"path,omitempty"`
+	Timeline  []AudioSegment `json:"timeline,omitempty"`
+	// Duration and Elapsed are nanoseconds.
+	Duration int64 `json:"duration,omitempty"`
+	Elapsed  int64 `json:"elapsed,omitempty"`
+}
+
+// Audio starts ("start") or stops ("stop", saving a WAV to path) a capture
+// of what the device plays, or with an empty action asks whether one is
+// running. Assert on the timeline's sound, silence and pitch; the level
+// follows the device's volume. An Android emulator only.
+func (d *Device) Audio(ctx context.Context, action, path string) (Audio, error) {
+	args := map[string]any{}
+	if action != "" {
+		args["action"] = action
+	}
+	if path != "" {
+		args["path"] = path
+	}
+	var out Audio
+	err := d.data(ctx, "app_audio", args, &out)
+	return out, err
+}
+
 // Trace is what app_trace reports: whether a trace is running on the device,
 // how many calls it holds and for how long, and on stop where the zip went
 // and its size. Elapsed is a duration as Go prints one, "1m2.5s".

@@ -61,6 +61,8 @@ var GoWireTypes = map[string][2]string{
 	"OriginStorage":   {"internal/webview", "OriginStorage"},
 	"PageSource":      {"internal/agent", "SourceView"},
 	"Recording":       {"internal/agent", "RecordView"},
+	"Audio":           {"internal/agent", "AudioView"},
+	"AudioSegment":    {"internal/audio", "Segment"},
 	"Screen":          {"internal/agent", "ScreenView"},
 	"Session":         {"internal/agent", "SessionView"},
 	"StorageItem":     {"internal/webview", "StorageItem"},

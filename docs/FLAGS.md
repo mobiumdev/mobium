@@ -34,6 +34,11 @@ command mentions them.
 | `app_appearance` | `appearance` | string | appearance |
 | `app_appearance` | `device` | string | _global_ --device |
 | `app_appearance` | `driver` | string | _global_ --driver |
+| `app_audio` | `action` | string | audio |
+| `app_audio` | `device` | string | _global_ --device |
+| `app_audio` | `driver` | string | _global_ --driver |
+| `app_audio` | `path` | string | audio |
+| `app_audio` | `return_data` | boolean | — |
 | `app_audit` | `device` | string | _global_ --device |
 | `app_audit` | `driver` | string | _global_ --driver |
 | `app_background` | `app` | string | background |
@@ -346,6 +351,7 @@ arguments and the two global flags.
 | `alert` | app_alert | --text | action, text |
 | `appearance` | app_appearance | — | appearance |
 | `apps` | app_list_apps | --system | system |
+| `audio` | app_audio | --output | action, path |
 | `audit` | app_audit | — | — |
 | `background` | app_background | --app | app, seconds |
 | `batch` | app_batch | — | steps |

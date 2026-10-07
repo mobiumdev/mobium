@@ -130,6 +130,7 @@ func main() {
 		newCrashesCmd(),
 		newKeyboardCmd(),
 		newRecordCmd(),
+		newAudioCmd(),
 		newTraceCmd(),
 		newEvalCmd(),
 		newCookiesCmd(),
