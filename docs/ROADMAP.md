@@ -640,6 +640,20 @@ this is what is not.
     interruption is read from `dumpsys audio`'s player events — any phone
     adb reaches, a cloud farm's included — not heard; and making one ring
     takes a call from outside, which only a farm with a line can place.
+  - **What interrupted the app, done** (2026-10-07): the stop reports it
+    from that log, for start's `app` or the app in front — the app's own
+    player muted, for a call or by a volume, and any other app's player
+    sounding over it, named by what it is for: ringtone, alarm,
+    notification, voice call, assistant, navigation, another app's media
+    (a touch's click is not one). **On a phone `audio start` records
+    these alone**, no sound, so any Android phone adb reaches — a cloud
+    farm's — reports a call or an alarm cutting across the app. A Clock
+    timer's alarm was reported on the emulator and the Pixel; on the Pixel
+    it also muted the app's media for 40ms in pairs each time its sound
+    began again, which the message counts rather than lists. `audio.sh`
+    asserts the call's report and the alarm on both, the phone with
+    `ALLOW_PHONE=1`, which stops its timer by the timer's own Stop — never
+    by force-stopping Clock, which would cancel its owner's alarms.
   - Also open: comparing a capture with a baseline recording, and
     the emulator's microphone (`injectAudio`), which would let a test
     speak to an app.

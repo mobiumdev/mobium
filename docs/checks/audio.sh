@@ -135,10 +135,11 @@ alarm_step() {
     --ez android.intent.extra.alarm.SKIP_UI true >/dev/null || fail "Clock would not take a timer"
   # From here a failure would leave the timer ringing. An emulator's Clock
   # holds nobody's alarms and is stopped outright; a phone's never is.
+  TIMER_SET=1
   if [ -n "$PHONE" ]; then
-    at_exit 'echo "if Clock is still ringing, stop its 4-second timer by hand" >&2'
+    at_exit '[ -z "$TIMER_SET" ] || echo "if Clock is still ringing, stop its 4-second timer by hand" >&2'
   else
-    at_exit "adb -s '$DEV' shell am force-stop com.google.android.deskclock >/dev/null 2>&1 || true"
+    at_exit "[ -z \"\$TIMER_SET\" ] || adb -s '$DEV' shell am force-stop com.google.android.deskclock >/dev/null 2>&1 || true"
   fi
   i=0
   until adb -s "$DEV" shell dumpsys audio | sed -n '/players:/,/^$/p' | grep 'state:started' | grep -q USAGE_ALARM; do
@@ -159,6 +160,7 @@ alarm_step() {
     adb -s "$DEV" shell am force-stop com.google.android.deskclock
     adb -s "$DEV" shell pm clear com.google.android.deskclock >/dev/null
   fi
+  TIMER_SET=""
   $M launch "$APP" >/dev/null
   $M tap testid=audioStop >/dev/null 2>&1 || true
   $M --json audio stop -o "$CHECK_TMP/alarm.wav" > "$CHECK_TMP/alarm.json" || fail "audio stop failed: $(cat "$CHECK_TMP/alarm.json")"
