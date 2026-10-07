@@ -406,8 +406,13 @@ this is what is not.
   (1.77 s to 1.83 s on Settings). So a `map` that patched a light read
   would cost more than it saved on any screen with a hidden element, and
   one that skipped the patch would hand out refs to things not shown.
-  Still to do: what is left of a Settings tap, mostly WebDriverAgent
-  waiting out the page animation after the touch. Found on the
+  What is left of a tap was measured on 2026-10-06 on the iPhone, in
+  MobiumApp (CHALLENGES 271): a lookup of every device before each call,
+  375ms, gone; then the light read, finding the element, its visibility
+  and rectangle, about 560ms together, and the touch, 430 to 460ms, which
+  no WebDriverAgent wait setting and no other way of tapping shortens. A
+  tap that moves nothing is 1.0 seconds now. Untried: asking visibility
+  and the rectangle in one request, and Android's own lookup per call. Found on the
   way: a locator's resolution (`pickOne`) does not consult visibility on a
   full read either, so a uniquely labeled element iOS calls hidden is
   acted on unless it is under a dialog or the keyboard, or has no bounds.

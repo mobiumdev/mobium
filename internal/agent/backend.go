@@ -400,6 +400,15 @@ func (h *Handlers) closeSessions() {
 // iosSessionFor resolves an iOS simulator or a real iPhone and its
 // WebDriverAgent session.
 func (h *Handlers) iosSessionFor(ctx context.Context, ref string) (*session, error) {
+	// A device named by the serial of a session already open, and still
+	// answering, is that session: the lookup below lists every simulator and
+	// asks devicectl for every phone, and on the iPhone 15 Plus that was 375
+	// of the 1,400ms each tap took — paid by every call, a status check
+	// included. A phone whose tunnel has moved fails the health check and is
+	// looked up again. CHALLENGES 271.
+	if s, ok := h.sessions[ref]; ok && ref != "" && s.backend == BackendWDA && s.healthy(ctx) {
+		return s, nil
+	}
 	target, err := device.SelectIOS(ctx, ref)
 	if err != nil {
 		return nil, err
