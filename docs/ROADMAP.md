@@ -549,6 +549,35 @@ this is what is not.
   to its own: shut down from a call pinned to a simulator, the emulator went
   and the simulator stayed. A phone is refused by both. An agent over MCP,
   which has no shell, can start a device now (`docs/checks/boot.sh`).
+- **A live view of any device** (written down 2026-10-07): a page the
+  daemon serves, showing the device's screen as it changes, for watching a
+  run, a demo, or a phone across the desk. Watching only, or clicks sent
+  as `app_tap` — never a second way in, since input that does not go
+  through the session is input nothing checks. The picture is half built:
+  - **iOS, simulator and phone**: WebDriverAgent's MJPEG stream, which
+    `record` already reads — 10 full-size JPEGs a second on the iPhone
+    15 Plus. A live view shows the stream instead of writing it to a file.
+  - **Android**: not a loop of `screencap`. Measured on the Pixel 8 Pro
+    (Android 17, 1008x2244, over a 480 Mb/s USB link that moved 10 MB/s):
+    `screencap -p` took 3.3s a frame, 1.4s of it encoding on the phone,
+    and a raw frame 1.2s — under one frame a second. (`UIA2.Screenshot`
+    cites 0.13s; that was not this phone, and a phone's screenshot is
+    worth re-timing on its own.) `screenrecord --output-format=h264`
+    to stdout through `adb exec-out` is a stream instead: first bytes in
+    0.7s, about 118 pictures a second while MobiumApp's list scrolled (the
+    screen's 120Hz), 1.7 MB/s, and nothing while the screen is still —
+    one picture in 12s of an idle launcher. `--time-limit 0` was accepted.
+    A browser decodes H.264 itself, so Go would pass the stream through
+    without decoding it.
+  - **Still to measure before building**: how far behind the screen the
+    picture runs, on each platform; whether the H.264 stream outlasts the
+    recorder's limit and survives a rotation; that a stream's process is
+    gone from the device when the view closes — a cut-off read once left
+    `screenrecord` running on the phone until it was killed by hand.
+  - **Not**: a screenshot answered from the stream's latest frame. A
+    frame is a JPEG where `screenshot` promises a PNG, and up to a tenth
+    of a second old — a screenshot right after a tap could show the
+    screen from before it.
 - **Audio** (written down 2026-10-07): what an app played, heard and
   checked. **On an Android emulator, done** — `mobium audio start`, then
   `stop -o capture.wav` saves a WAV and answers with a timeline: sound and
