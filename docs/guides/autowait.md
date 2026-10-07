@@ -246,9 +246,15 @@ person and may change. Every client raises the code as its own exception:
 
 ## What it does not see
 
-- **An overlay hidden from accessibility on iOS**, unless asked for.
-  WebDriverAgent's tree does not contain it, so a tap under one lands on it —
-  WebDriverAgent's own `hittable` gets it wrong too, measured. UIKit's own
+- **An overlay hidden from accessibility on iOS.** On a real iPhone no
+  action checks for one: a tap under it lands on the overlay and is
+  reported as tapped. WebDriverAgent's tree does not contain it, and its own
+  `hittable` gets it wrong too, measured. It is uncommon — none was met in
+  five third-party apps driven on the phone — and asking each action would
+  cost more than the action: through the gray box, one question took 1.9
+  seconds on an iPhone 15 Plus, where a whole tap takes one. Where it
+  matters, run the same flow on a simulator with `--hit-test`, or ask on
+  the phone when in doubt. UIKit's own
   hit test does see it: `mobium hit-test <target>` asks it whether a touch
   at the point a tap would use reaches the target, and names what it would
   reach instead. It attaches a debugger to the app, about two seconds a call
