@@ -80,6 +80,12 @@ func (h *Handlers) recordOn(ctx context.Context, s *session, args map[string]int
 			defer func() { _ = os.RemoveAll(dir) }()
 			path = filepath.Join(dir, "recording.mp4")
 		}
+		// The folder is made before the recording stops, as a screenshot's is:
+		// a test file's "not-yet/r.mp4" failed the pull once the recording
+		// had ended, and the recording was lost.
+		if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+			return nil, fmt.Errorf("save the recording: %w", err)
+		}
 		r := s.recording
 		s.recording = nil
 		view.Elapsed = time.Since(r.Started()).Round(time.Millisecond)

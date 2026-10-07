@@ -5930,6 +5930,20 @@ captures were clean, and `audio.sh` passed three times on each emulator.
 What it changes: a tap's click that shares a window with a tone's first
 samples is now part of that tone, which did start inside the window.
 
+### 274. A capture saved into a folder not yet made was lost
+
+**Found by:** the audio demo's repository, whose test file saved its
+capture to `mobium-report/sequence.wav` before anything had made that
+folder. Mobium's own `tests/audio/` had passed only because its
+`mobium-report/` was already there. The step failed with "no such file or
+directory" — after the capture had stopped, so the capture went with it,
+and a test meant to pass reported two failures that were not the app's.
+`record` did the same: the pull off the device failed into a folder not
+yet made, once the recording had ended. A screenshot and a trace already
+made their folders; `audio` and `record` now do, before the capture
+stops. Each has a test that failed without the fix, and the recording into
+a new folder, failing before on the emulator, now saves.
+
 ## Findings that were not defects
 
 Worth recording because each one closed off an approach that looked obvious.
