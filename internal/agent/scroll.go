@@ -129,7 +129,7 @@ func (h *Handlers) scrollToOn(ctx context.Context, s *session, args map[string]i
 	if err != nil {
 		return nil, err
 	}
-	node, tree, scrolls, err := h.scrollIntoView(ctx, s, loc, dir)
+	node, tree, scrolls, err := h.scrollIntoView(ctx, s, loc, dir, false)
 	if err != nil {
 		return nil, err
 	}
@@ -172,7 +172,13 @@ func plural(n int) string {
 // was already visible" and "this was eleven swipes down a settings list" —
 // worth saying, because the second is usually a sign the caller wants a deep
 // link instead.
-func (h *Handlers) scrollIntoView(ctx context.Context, s *session, loc uitree.Locator, dir string) (*uitree.Node, *uitree.Tree, int, error) {
+//
+// followTarget is for an action's own scroll, which asks for "down" because
+// nothing told it a direction: once the target is found, the nudge travels
+// the axis it is out on (nudgeInto). app_scroll_to keeps the caller's axis —
+// the caller named it, and a horizontal pager scrolled "down" must not
+// answer by moving sideways.
+func (h *Handlers) scrollIntoView(ctx context.Context, s *session, loc uitree.Locator, dir string, followTarget bool) (*uitree.Node, *uitree.Tree, int, error) {
 	tree, err := s.driver.Snapshot(ctx)
 	if err != nil {
 		return nil, nil, 0, err
@@ -258,7 +264,7 @@ func (h *Handlers) scrollIntoView(ctx context.Context, s *session, loc uitree.Lo
 	partial, partialIn := offScreenTarget(loc, tree)
 
 	for i := 1; i <= maxScrolls; i++ {
-		nudged, err := nudgeInto(ctx, gest, partialIn, partial, horizontal(dir))
+		nudged, err := nudgeInto(ctx, gest, partialIn, partial, horizontal(dir), followTarget)
 		if err != nil {
 			return nil, nil, i, err
 		}
@@ -496,9 +502,24 @@ func offScreenTarget(loc uitree.Locator, tree *uitree.Tree) (*uitree.Node, *uitr
 // the target is bigger than the container along the axis and can never fit;
 // the caller's full swipe goes instead. The direction is from where the
 // target is, not from the caller's: once found, which side it is on is known.
-func nudgeInto(ctx context.Context, gest mobiumdriver.Gesturer, c, n *uitree.Node, horiz bool) (bool, error) {
+//
+// The axis, too, is from where the target is when it is out on one axis
+// only: a row in a horizontal carousel inside a vertical page, out to the
+// right and in view top to bottom, comes in only by moving sideways. An
+// action's own scroll asks for "down", and on Pocket Casts' Discover a tap
+// on Freakonomics Radio, the second column of a carousel of rows, swiped
+// the page down once and was refused as never scrolled into view. Nothing
+// here says which way the carousel scrolls; where the target lies does.
+// Out on both axes, or neither, the caller's axis stands — and always for
+// app_scroll_to, whose caller named it. CHALLENGES 261.
+func nudgeInto(ctx context.Context, gest mobiumdriver.Gesturer, c, n *uitree.Node, horiz, followTarget bool) (bool, error) {
 	if c == nil || n == nil {
 		return false, nil
+	}
+	outX := n.Bounds.X1 < c.Bounds.X1 || n.Bounds.X2 > c.Bounds.X2
+	outY := n.Bounds.Y1 < c.Bounds.Y1 || n.Bounds.Y2 > c.Bounds.Y2
+	if followTarget && outX != outY {
+		horiz = outX
 	}
 	lo, hi, clo, chi := n.Bounds.Y1, n.Bounds.Y2, c.Bounds.Y1, c.Bounds.Y2
 	if horiz {

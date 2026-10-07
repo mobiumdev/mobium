@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/mobiumdev/mobium/internal/mobiumdriver"
+	"github.com/mobiumdev/mobium/internal/mobiumerr"
 	"github.com/mobiumdev/mobium/internal/uitree"
 )
 
@@ -597,7 +598,7 @@ func TestAFoundTargetIsSwipedInByTheDistanceItIsOut(t *testing.T) {
 
 	r := &swipeRecorder{}
 	below := &uitree.Node{Bounds: uitree.Rect{X1: 48, Y1: 2190, X2: 1158, Y2: 2334}}
-	if ok, err := nudgeInto(ctx, r, list, below, false); !ok || err != nil {
+	if ok, err := nudgeInto(ctx, r, list, below, false, false); !ok || err != nil {
 		t.Fatalf("no nudge for a target below: %v, %v", ok, err)
 	}
 	// 33 out plus an eighth of 1896 is 270, centered on the list's middle.
@@ -607,7 +608,7 @@ func TestAFoundTargetIsSwipedInByTheDistanceItIsOut(t *testing.T) {
 
 	r = &swipeRecorder{}
 	above := &uitree.Node{Bounds: uitree.Rect{X1: 48, Y1: 81, X2: 1158, Y2: 228}}
-	if ok, _ := nudgeInto(ctx, r, list, above, false); !ok || r.swipes[0][3] <= r.swipes[0][1] {
+	if ok, _ := nudgeInto(ctx, r, list, above, false, false); !ok || r.swipes[0][3] <= r.swipes[0][1] {
 		t.Errorf("a target above was not swiped down toward: %v", r.swipes)
 	}
 	// Past the top by 324, plus 237: 561, which is under half the list.
@@ -617,10 +618,10 @@ func TestAFoundTargetIsSwipedInByTheDistanceItIsOut(t *testing.T) {
 
 	r = &swipeRecorder{}
 	tall := &uitree.Node{Bounds: uitree.Rect{X1: 0, Y1: 300, X2: 1206, Y2: 2500}}
-	if ok, _ := nudgeInto(ctx, r, list, tall, false); ok || len(r.swipes) != 0 {
+	if ok, _ := nudgeInto(ctx, r, list, tall, false, false); ok || len(r.swipes) != 0 {
 		t.Errorf("a target taller than the list was nudged: %v", r.swipes)
 	}
-	if ok, _ := nudgeInto(ctx, r, nil, nil, false); ok {
+	if ok, _ := nudgeInto(ctx, r, nil, nil, false, false); ok {
 		t.Error("nudged with no target")
 	}
 }
@@ -758,5 +759,54 @@ func TestAChildlessScrollViewIsReadThroughItsParent(t *testing.T) {
 	}
 	if moved(read(before), read(screen(1))) {
 		t.Error("the same rows counted as movement")
+	}
+}
+
+// A target out of its container on one axis only is nudged along that axis,
+// whatever the caller asked: Pocket Casts' Discover carousel, rows in
+// columns, the second column out to the right and in view top to bottom.
+// An action asks for "down"; the swipe must travel sideways and hold still
+// vertically. Out on both axes, the caller's axis stands. CHALLENGES 261.
+func TestANudgeTravelsTheAxisTheTargetIsOutOn(t *testing.T) {
+	carousel := &uitree.Node{Bounds: uitree.Rect{X1: 16, Y1: 316, X2: 398, Y2: 589}}
+	row := &uitree.Node{Bounds: uitree.Rect{X1: 394, Y1: 316, X2: 756, Y2: 369}}
+	g := &recordingGesturer{}
+	nudged, err := nudgeInto(context.Background(), g, carousel, row, false, true)
+	if err != nil || !nudged {
+		t.Fatalf("nudged %v: %v", nudged, err)
+	}
+	if g.y1 != g.y2 || g.x2 >= g.x1 {
+		t.Errorf("swiped (%d,%d) to (%d,%d), want leftward and level", g.x1, g.y1, g.x2, g.y2)
+	}
+	below := &uitree.Node{Bounds: uitree.Rect{X1: 500, Y1: 600, X2: 600, Y2: 650}}
+	g = &recordingGesturer{}
+	if nudged, _ := nudgeInto(context.Background(), g, carousel, below, false, true); nudged && g.x1 != g.x2 {
+		t.Errorf("out on both axes, swiped (%d,%d) to (%d,%d), want the caller's vertical axis", g.x1, g.y1, g.x2, g.y2)
+	}
+	// app_scroll_to named its axis: a "down" there stays vertical.
+	g = &recordingGesturer{}
+	if nudged, _ := nudgeInto(context.Background(), g, carousel, row, false, false); nudged && g.y1 == g.y2 {
+		t.Errorf("an explicit vertical scroll swiped sideways, (%d,%d) to (%d,%d)", g.x1, g.y1, g.x2, g.y2)
+	}
+}
+
+// A ref that names a position, once its list has scrolled, may find a cell
+// reused for something else: Freakonomics Radio's ref found Revisionist
+// History, and the tap opened it. Refused when the name changed; let
+// through when it did not. CHALLENGES 261.
+func TestARefMustNameTheSameElementAfterAScroll(t *testing.T) {
+	h := NewHandlers()
+	h.refs["fake"] = &refTable{entries: map[string]uitree.Locator{}, seen: map[string]refSeen{
+		"@e11": {name: "Freakonomics Radio Freakonomics Radio + Stitcher"}}}
+	other := &uitree.Node{Label: "Revisionist History Pushkin Industries", Displayed: true, Enabled: true}
+	if err := h.sameAfterScroll("fake", "@e11", other); mobiumerr.CodeOf(err) != mobiumerr.NoSuchElement {
+		t.Errorf("a reused cell was let through: %v", err)
+	}
+	same := &uitree.Node{Label: "Freakonomics Radio Freakonomics Radio + Stitcher", Displayed: true, Enabled: true}
+	if err := h.sameAfterScroll("fake", "@e11", same); err != nil {
+		t.Errorf("the same element was refused: %v", err)
+	}
+	if err := h.sameAfterScroll("fake", "text=Freakonomics Radio", other); err != nil {
+		t.Errorf("a locator that is not a ref was refused: %v", err)
 	}
 }
