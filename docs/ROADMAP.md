@@ -8,7 +8,10 @@ this is what is not.
 
 - ~~**Every check, swept.**~~ Done 2026-10-06: 28 on the iPhone 17 Pro
   simulator, 31 on the Android 15 emulator, and the nine that stay inside
-  their apps on the iPhone 15 Plus, each with a fresh daemon. Two
+  their apps on the iPhone 15 Plus, each with a fresh daemon — and then
+  twelve more in MobiumApp on the phone, where `trace.sh` alone failed: a
+  trace's first frame starved by two slow settle reads (CHALLENGES 270),
+  fixed. Two
   regressions had sat red unnoticed: a back button "covered" by the list
   under its bar (CHALLENGES 263, from 257) and Flutter's password field
   going stale (265, from 240), both fixed. So were a menu whose list ran past

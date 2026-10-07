@@ -28,8 +28,9 @@ import (
 // Version is this binary's version, set by main, for a trace's header.
 var Version = "dev"
 
-// traceCapture bounds the screenshot and map taken after each call, so a
-// device that stops answering does not hold the call's answer.
+// traceCapture bounds, after each call, the wait for the screen to settle,
+// and separately the screenshot and map taken then, so a device that stops
+// answering does not hold the call's answer for long.
 const traceCapture = 10 * time.Second
 
 // sessionTrace is a trace in progress on one device.
@@ -222,12 +223,18 @@ func (h *Handlers) traceAfter(s *session, t *sessionTrace, id string, settle boo
 	if !t.screenshots {
 		return
 	}
-	ctx, cancel := context.WithTimeout(context.Background(), traceCapture)
-	defer cancel()
 	var settled *uitree.Tree
 	if settle && err == nil {
-		settled = settledTree(ctx, s)
+		sctx, scancel := context.WithTimeout(context.Background(), traceCapture)
+		settled = settledTree(sctx, s)
+		scancel()
 	}
+	// The capture's own budget, after the settle's: one read of the iPhone
+	// 15 Plus's home screen takes 6.4s, two of them outlasted a budget the
+	// two shared, and the screenshot after them failed — every trace on the
+	// phone began with a call that had no frame. CHALLENGES 270.
+	ctx, cancel := context.WithTimeout(context.Background(), traceCapture)
+	defer cancel()
 	png, serr := s.driver.Screenshot(ctx)
 	if serr != nil || len(png) == 0 {
 		return
