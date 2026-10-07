@@ -1071,6 +1071,16 @@ namespace Mobium
         }
 
         /// <summary>
+        /// Starts a capture for an app: stop then reports what interrupted it
+        /// — a call muting it, a ringtone, alarm or notification over it — in
+        /// <c>interruptions</c>. <see cref="Audio"/> with "start" uses the app
+        /// in front. On an Android phone only the interruptions are recorded:
+        /// nothing outside it hears the sound.
+        /// </summary>
+        public IDictionary<string, object?> AudioStart(string app) =>
+            Data("app_audio", Args("action", "start", "app", app));
+
+        /// <summary>
         /// Stops a capture as an assertion: saves the WAV at path and checks
         /// the sounds it held, in order — each a dictionary with <c>hz</c>,
         /// and optional <c>min_ms</c> and <c>max_ms</c>; an empty list is

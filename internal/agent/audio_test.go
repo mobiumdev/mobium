@@ -17,21 +17,25 @@ import (
 type fakeAudio struct {
 	samples    []int16
 	start, end []device.StreamVolume
+	cut        []device.AudioInterruption
+	phone      bool
 	discarded  bool
 }
 
 func (f *fakeAudio) Started() time.Time { return time.Now().Add(-2 * time.Second) }
 func (f *fakeAudio) Stop(ctx context.Context) (device.AudioCapture, error) {
-	return device.AudioCapture{Samples: f.samples, VolumesAtStart: f.start, VolumesAtEnd: f.end}, nil
+	return device.AudioCapture{Samples: f.samples, VolumesAtStart: f.start, VolumesAtEnd: f.end,
+		Interruptions: f.cut, App: "dev.mobium.mobiumapp"}, nil
 }
 func (f *fakeAudio) Discard(ctx context.Context) { f.discarded = true }
+func (f *fakeAudio) Captures() bool              { return !f.phone }
 
 type audioDriver struct {
 	fakeDriver
 	rec *fakeAudio
 }
 
-func (d *audioDriver) StartAudio(ctx context.Context) (device.AudioRecording, error) {
+func (d *audioDriver) StartAudio(ctx context.Context, app string) (device.AudioRecording, error) {
 	return d.rec, nil
 }
 
@@ -193,5 +197,71 @@ func TestAudioExpect(t *testing.T) {
 		case c.code != mobiumerr.InvalidArgument && statErr != nil:
 			t.Errorf("%s: the capture was not saved: %v", c.name, statErr)
 		}
+	}
+}
+
+// A call during a capture is said where it fell, on the timeline's clock.
+func TestAudioSaysWhatInterruptedIt(t *testing.T) {
+	cut := []device.AudioInterruption{
+		{Kind: device.InterruptMuted, Reason: "call", From: 2300 * time.Millisecond, To: 7700 * time.Millisecond},
+		{Kind: device.InterruptRingtone, From: 3 * time.Second, To: 9 * time.Second, Open: true},
+	}
+	h := NewHandlers()
+	s := &session{dev: fakeDevice(), driver: &audioDriver{rec: &fakeAudio{samples: tone440(), cut: cut}}, backend: BackendUIA2}
+	_, _ = h.audioOn(context.Background(), s, map[string]interface{}{"action": "start"})
+	res, err := h.audioOn(context.Background(), s, map[string]interface{}{"action": "stop", "path": filepath.Join(t.TempDir(), "c.wav")})
+	if err != nil {
+		t.Fatal(err)
+	}
+	msg := textOf(res)
+	for _, w := range []string{"interrupted: muted for a call 2.3–7.7s", "a ringtone played from 3.0s, still at the stop"} {
+		if !strings.Contains(msg, w) {
+			t.Errorf("%q lacks %q", msg, w)
+		}
+	}
+	if v := res.StructuredContent.(AudioView); len(v.Interruptions) != 2 || v.App != "dev.mobium.mobiumapp" {
+		t.Errorf("view %+v", v)
+	}
+}
+
+// A phone records what interrupted the app and no sound: stop needs no path,
+// saves nothing, and refuses an expect before the capture stops.
+func TestAudioOnAPhone(t *testing.T) {
+	rec := &fakeAudio{phone: true, cut: []device.AudioInterruption{{Kind: device.InterruptMuted, Reason: "call", From: time.Second, To: 2 * time.Second}}}
+	h := NewHandlers()
+	s := &session{dev: fakeDevice(), driver: &audioDriver{rec: rec}, backend: BackendUIA2}
+	res, err := h.audioOn(context.Background(), s, map[string]interface{}{"action": "start"})
+	if err != nil || !strings.Contains(textOf(res), "not captured") {
+		t.Fatalf("start: %v %q", err, textOf(res))
+	}
+	if _, err := h.audioOn(context.Background(), s, map[string]interface{}{"action": "stop", "expect": []interface{}{}}); mobiumerr.CodeOf(err) != mobiumerr.Unsupported || s.audio == nil {
+		t.Fatalf("expect on a phone: %v, still capturing %v", err, s.audio != nil)
+	}
+	res, err = h.audioOn(context.Background(), s, map[string]interface{}{"action": "stop"})
+	if err != nil || !strings.Contains(textOf(res), "muted for a call 1.0–2.0s") || s.audio != nil {
+		t.Fatalf("stop: %v %q", err, textOf(res))
+	}
+}
+
+// Many brief mutes are counted in the message, and all kept in the result.
+func TestAudioCountsBriefInterruptions(t *testing.T) {
+	cut := []device.AudioInterruption{{Kind: device.InterruptAlarm, Usage: "USAGE_ALARM", From: 5 * time.Second, To: 50 * time.Second}}
+	for i := 0; i < 8; i++ {
+		at := time.Duration(6+i*6) * time.Second
+		cut = append(cut, device.AudioInterruption{Kind: device.InterruptMuted, Reason: "streamVolume", From: at, To: at + 40*time.Millisecond})
+	}
+	h := NewHandlers()
+	s := &session{dev: fakeDevice(), driver: &audioDriver{rec: &fakeAudio{phone: true, cut: cut}}, backend: BackendUIA2}
+	_, _ = h.audioOn(context.Background(), s, map[string]interface{}{"action": "start"})
+	res, err := h.audioOn(context.Background(), s, map[string]interface{}{"action": "stop"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	msg := textOf(res)
+	if !strings.Contains(msg, "an alarm played 5.0–50.0s, muted, the device's volume at its lowest 8 times, each under 0.25s") {
+		t.Errorf("%q", msg)
+	}
+	if v := res.StructuredContent.(AudioView); len(v.Interruptions) != 9 {
+		t.Errorf("kept %d", len(v.Interruptions))
 	}
 }

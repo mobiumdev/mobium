@@ -3,10 +3,15 @@
 # through `mobium audio` and checked by the timeline it answers with.
 #
 #   docs/checks/audio.sh <emulator-serial>
+#   ALLOW_PHONE=1 docs/checks/audio.sh <android-phone-serial>
 #
-# An Android emulator only: the capture reads the emulator's control port,
-# and a phone or an iOS device is refused — this check refuses them by name
-# rather than reporting what it could not hear.
+# On an emulator, the sound is captured from its control port and every step
+# runs. On a phone, whose sound nothing outside it hears, only what
+# interrupted the app is recorded, so only the alarm step runs — and only
+# with ALLOW_PHONE=1, since it sets a 4-second timer in the phone's Clock,
+# rings it, and stops it with the timer's own Stop, which removes it. It
+# never force-stops Clock: that would cancel the owner's alarms. iOS is
+# refused by name.
 #
 #   - 440 Hz for 2 s is heard as 440 Hz for about 2 s;
 #   - 440, a second of silence, then 880, in that order, the silence between;
@@ -16,7 +21,10 @@
 #     platform reports a player started for it, just as it does for a tone.
 #     That contrast is what the capture is for;
 #   - an incoming call silences the tone while it rings, and it comes back
-#     after the hang-up, while the app says it played throughout.
+#     after the hang-up, while the app says it played throughout — and the
+#     result's interruptions say the app was muted for a call, and a
+#     ringtone played;
+#   - a Clock timer's alarm over the tone is an interruption of kind alarm.
 #
 # Each capture may also hold a tap's own click when touch sounds are on: a
 # tenth of a second of sound with no one pitch, or one near 780 Hz. The
@@ -24,14 +32,19 @@
 # many they saw.
 set -e
 DEV="$1"
-if [ -z "$DEV" ]; then echo "usage: $0 <emulator-serial>" >&2; exit 2; fi
+if [ -z "$DEV" ]; then echo "usage: $0 <emulator-serial>, or ALLOW_PHONE=1 $0 <phone-serial>" >&2; exit 2; fi
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 . "$ROOT/docs/checks/lib.sh"
+PHONE=""
 case "$DEV" in
   emulator-*) ;;
   *-*-*-*-*|????????-????????????????)
-    echo "audio.sh is for an Android emulator: iOS audio is not captured yet" >&2; exit 2 ;;
-  *) echo "audio.sh is for an Android emulator: $DEV is a phone, whose audio is not captured yet" >&2; exit 2 ;;
+    echo "audio.sh is for Android: iOS audio is not captured yet" >&2; exit 2 ;;
+  *)
+    if [ "${ALLOW_PHONE:-}" != 1 ]; then
+      echo "audio.sh on a phone sets, rings and removes a timer in its Clock: run it with ALLOW_PHONE=1" >&2; exit 2
+    fi
+    PHONE=1 ;;
 esac
 check_lock "$DEV"
 fail() { echo "FAIL: $*" >&2; exit 1; }
@@ -44,8 +57,8 @@ APPS=$($M apps 2>&1) || fail "could not list the apps: $APPS"
 echo "$APPS" | grep -q "$APP" || fail "$APP is not installed — build it first (see docs/checks/mobium-app.sh)"
 $M terminate "$APP" >/dev/null 2>&1 || true
 $M launch "$APP" >/dev/null
-$M scroll-to "text=Audio Demo" >/dev/null 2>&1 || true
-$M tap "text=Audio Demo" >/dev/null || fail "MobiumApp has no Audio Demo — rebuild it"
+$M scroll-to "label=Audio Demo" >/dev/null 2>&1 || true
+$M tap "label=Audio Demo" >/dev/null || fail "MobiumApp has no Audio Demo — rebuild it"
 $M wait testid=audioState >/dev/null || fail "the Audio Demo did not open"
 at_exit "$M tap testid=audioStop >/dev/null 2>&1 || true; $M audio stop -o '$CHECK_TMP/left.wav' >/dev/null 2>&1 || true"
 
@@ -96,6 +109,68 @@ for s, (hz, lo, hi) in zip(long_, want):
 print(len(short))
 EOF
 }
+
+# interrupted KIND [REASON]: the stop's result in $CHECK_TMP/$1.json holds an
+# interruption of that kind (and reason), starting while the capture ran.
+interrupted() {
+  python3 - "$CHECK_TMP/$1.json" "$2" "${3:-}" <<'EOF'
+import json, sys
+v = json.load(open(sys.argv[1]))
+got = v.get("interruptions") or []
+hit = [c for c in got if c["kind"] == sys.argv[2] and (not sys.argv[3] or c.get("reason") == sys.argv[3])]
+if not hit:
+    sys.exit("no %s%s among %s" % (sys.argv[2], " (" + sys.argv[3] + ")" if sys.argv[3] else "",
+             [(c["kind"], c.get("reason") or c.get("usage"), round(c["from"] / 1e9, 1)) for c in got] or "none"))
+print("%.1f-%.1fs" % (hit[0]["from"] / 1e9, hit[0]["to"] / 1e9))
+EOF
+}
+
+# The alarm: a 4-second Clock timer rings over the tone, and is stopped by
+# its own Stop, which removes it. Its player says it is for an alarm, and the
+# result says an alarm interrupted the app.
+alarm_step() {
+  $M audio start --app "$APP" >/dev/null || fail "audio start was refused"
+  $M tap testid=audioLoop >/dev/null
+  adb -s "$DEV" shell am start -a android.intent.action.SET_TIMER --ei android.intent.extra.alarm.LENGTH 4 \
+    --ez android.intent.extra.alarm.SKIP_UI true >/dev/null || fail "Clock would not take a timer"
+  # From here a failure would leave the timer ringing. An emulator's Clock
+  # holds nobody's alarms and is stopped outright; a phone's never is.
+  if [ -n "$PHONE" ]; then
+    at_exit 'echo "if Clock is still ringing, stop its 4-second timer by hand" >&2'
+  else
+    at_exit "adb -s '$DEV' shell am force-stop com.google.android.deskclock >/dev/null 2>&1 || true"
+  fi
+  i=0
+  until adb -s "$DEV" shell dumpsys audio | sed -n '/players:/,/^$/p' | grep 'state:started' | grep -q USAGE_ALARM; do
+    i=$((i + 1)); [ $i -lt 40 ] || fail "the timer's alarm did not start within 10 s"
+    sleep 0.25
+  done
+  sleep 2
+  if [ -n "$PHONE" ]; then
+    # The timer's own Stop, by its label, removes that timer and nothing else.
+    adb -s "$DEV" shell am start -a android.intent.action.SHOW_TIMERS >/dev/null
+    $M wait "label=Stop 4 seconds timer" --timeout 5s >/dev/null 2>&1 || fail "the 4-second timer is not ringing in Clock"
+    $M tap "label=Stop 4 seconds timer" >/dev/null || fail "could not stop the timer"
+    sleep 1
+    ! $M map 2>/dev/null | grep -q "4 seconds timer" || fail "the 4-second timer is still in Clock — remove it by hand"
+  else
+    # An emulator's Clock labels every timer's buttons alike, so it is
+    # stopped and cleared: nobody's alarms are there.
+    adb -s "$DEV" shell am force-stop com.google.android.deskclock
+    adb -s "$DEV" shell pm clear com.google.android.deskclock >/dev/null
+  fi
+  $M launch "$APP" >/dev/null
+  $M tap testid=audioStop >/dev/null 2>&1 || true
+  $M --json audio stop -o "$CHECK_TMP/alarm.wav" > "$CHECK_TMP/alarm.json" || fail "audio stop failed: $(cat "$CHECK_TMP/alarm.json")"
+  span=$(interrupted alarm alarm 2>&1) || fail "the alarm: $span"
+  row "clock" "a Clock timer's alarm over the tone, reported at $span"
+}
+
+if [ -n "$PHONE" ]; then
+  alarm_step
+  echo "PASS (a phone: the alarm step only — its sound is not captured)"
+  exit 0
+fi
 
 out=$($M audio stop -o "$CHECK_TMP/none.wav" 2>&1) && fail "audio stop with nothing capturing was accepted: $out"
 $M audio start >/dev/null
@@ -154,7 +229,7 @@ row "silence" "heard as silence ($n short sound(s)), while the platform said pla
 # playing throughout. The capture hears the ring in its place — so the tone
 # stops before the call and comes back after the hang-up, and something
 # else sounds in between.
-$M audio start >/dev/null
+$M audio start --app "$APP" >/dev/null
 $M tap testid=audioLoop >/dev/null
 sleep 2
 $M call ring >/dev/null || fail "the emulator would not ring"
@@ -180,7 +255,12 @@ if not any(s["sound"] for s in between):
     sys.exit("nothing rang between: " + show())
 print("%.1fs" % ((last["from"] - first["to"]) / 1e9))
 EOF
+muted=$(interrupted call muted call 2>&1) || fail "a call during a tone: $muted"
+rang=$(interrupted call ringtone 2>&1) || fail "a call during a tone: $rang"
 row "call" "a call silences the tone while it rings ($(cat "$CHECK_TMP/call.txt")), then gives it back"
+row "" "and the result says: muted for a call $muted, a ringtone $rang"
+
+alarm_step
 
 # The same through mobium test: an expect at the stop passes on what was
 # played and fails, saying what was heard, on what was not — with the

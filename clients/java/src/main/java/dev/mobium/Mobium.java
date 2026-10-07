@@ -1710,6 +1710,20 @@ public final class Mobium implements AutoCloseable {
     }
 
     /**
+     * Starts a capture for an app: stop then reports what interrupted it — a
+     * call muting it, a ringtone, alarm or notification over it — in
+     * {@code interruptions}. {@link #audio(String, String)} with "start" uses
+     * the app in front. On an Android phone only the interruptions are
+     * recorded: nothing outside it hears the sound.
+     *
+     * @param app the app's package
+     * @return that a capture is running
+     */
+    public Map<String, Object> audioStart(String app) {
+        return data("app_audio", args("action", "start", "app", app));
+    }
+
+    /**
      * Stops a capture as an assertion: saves the WAV at path and checks the
      * sounds it held, in order — each a map with {@code hz}, and optional
      * {@code min_ms} and {@code max_ms}; an empty list is silence. Sounds of

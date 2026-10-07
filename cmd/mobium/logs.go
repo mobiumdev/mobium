@@ -167,7 +167,7 @@ func newRecordCmd() *cobra.Command {
 }
 
 func newAudioCmd() *cobra.Command {
-	var output, expect string
+	var output, expect, app string
 	var ignoreMs int
 	cmd := &cobra.Command{
 		Use:   "audio [start | stop]",
@@ -178,7 +178,11 @@ func newAudioCmd() *cobra.Command {
 			"capture is running.\n\n" +
 			"Assert on sound, silence and pitch, not on level: the level follows the\n" +
 			"device's volume. Everything the device played is in it — with touch sounds\n" +
-			"on, a tap is a tenth of a second of sound. An Android emulator only.\n\n" +
+			"on, a tap is a tenth of a second of sound.\n\n" +
+			"The stop also says what interrupted the app — a call muting it, a ringtone,\n" +
+			"alarm or notification over it — for --app, or the app in front at the start.\n" +
+			"An Android emulator captures the sound; on an Android phone, which nothing\n" +
+			"outside it can hear, only the interruptions are recorded.\n\n" +
 			"--expect makes the stop an assertion: the sounds to hear, in order, each a\n" +
 			"pitch with an optional length in seconds — 440:1.8-2.2 — or 0 for a sound\n" +
 			"with no one pitch; \"silence\" for none. Sounds of --ignore-ms or less do not\n" +
@@ -193,6 +197,9 @@ func newAudioCmd() *cobra.Command {
 			call := map[string]interface{}{}
 			if len(args) == 1 {
 				call["action"] = args[0]
+			}
+			if app != "" {
+				call["app"] = app
 			}
 			if len(args) == 1 && args[0] == "stop" {
 				if output == "" {
@@ -214,6 +221,7 @@ func newAudioCmd() *cobra.Command {
 		},
 	}
 	cmd.Flags().StringVarP(&output, "output", "o", "", "Where to save the WAV on stop (default: ./audio-<timestamp>.wav)")
+	cmd.Flags().StringVar(&app, "app", "", "On start: the app whose interruptions to report (default: the app in front)")
 	cmd.Flags().StringVar(&expect, "expect", "", "On stop: the sounds to hear in order, e.g. 440:1.8-2.2,880, or \"silence\"")
 	cmd.Flags().IntVar(&ignoreMs, "ignore-ms", 200, "With --expect: sounds this short or shorter do not count")
 	return cmd

@@ -798,12 +798,13 @@ func GetToolSchemas() []Tool {
 			Description: "Capture what the device plays: start, stop with a path to save it as a WAV, or " +
 				"omit the action to ask whether a capture is running. Stop answers with a timeline — " +
 				"when there was sound and when silence, to a tenth of a second, and each sound's pitch " +
-				"and level — which is what to assert on: levels follow the device's volume, pitches do " +
-				"not. The result also gives the media and alarm volumes it was taken at: at the lowest " +
-				"media volume a playing app is heard as silence. Everything the device played is in " +
-				"it, the system's sounds too: with touch sounds " +
-				"on, a tap is a tenth of a second of sound. An Android emulator only, from its control " +
-				"port; a phone or an iOS device is refused. One capture per device; ending the session " +
+				"and level — and with what interrupted the app: a call muting it, a ringtone, alarm or " +
+				"notification sounding over it, read from Android's audio service. Assert on sound, " +
+				"silence and pitch, not level: the result gives the media volume, and at its lowest a " +
+				"playing app is silence. Everything the device played is in the sound, the system's " +
+				"too: with touch sounds on, a tap is a tenth of a second of it. An Android emulator " +
+				"captures the sound; an Android phone, whose sound nothing outside it hears, records " +
+				"only the interruptions; iOS is refused. One capture per device; ending the session " +
 				"discards it.",
 			InputSchema: map[string]interface{}{
 				"type": "object",
@@ -816,6 +817,12 @@ func GetToolSchemas() []Tool {
 					"path": map[string]interface{}{
 						"type":        "string",
 						"description": "Where to save the audio, on stop — a .wav on this machine.",
+					},
+					"app": map[string]interface{}{
+						"type": "string",
+						"description": "On start: the app whose interruptions to report, by package — " +
+							"a call muting it, a ringtone, alarm or notification over it. Default: the " +
+							"app in front.",
 					},
 					"expect": map[string]interface{}{
 						"type": "array",
