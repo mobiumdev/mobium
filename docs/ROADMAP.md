@@ -11,7 +11,15 @@ this is what is not.
   their apps on the iPhone 15 Plus, each with a fresh daemon — and then
   twelve more in MobiumApp on the phone, where `trace.sh` alone failed: a
   trace's first frame starved by two slow settle reads (CHALLENGES 270),
-  fixed. Two
+  fixed. Then, with the owner's leave, the phone checks that open
+  Settings, Calendar or Safari or turn the device: `back`, `audit`,
+  `locale-ios`, `timezone-ios` and `orientation` passed, and the phone was
+  in portrait after; `clear-data` checked its refusal and said the reset
+  needs MobiumApp's .app; `ios-webview.sh` skipped to a pass and now
+  refuses a phone (269); `ios-device.sh` stopped at contexts with the phone
+  off its cable — lockdown needs USB, and the error said so — and passed,
+  all ten steps, once it was plugged in. `record.sh` was not run: on a phone it records
+  Settings. Two
   regressions had sat red unnoticed: a back button "covered" by the list
   under its bar (CHALLENGES 263, from 257) and Flutter's password field
   going stale (265, from 240), both fixed. So were a menu whose list ran past
