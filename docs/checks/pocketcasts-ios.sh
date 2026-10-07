@@ -108,6 +108,11 @@ if $M map | grep -qE '^@e[0-9]+ Close player \('; then
   pause
   tapref "Close player" >/dev/null
 fi
+# A search left open covers Discover's root, and the Discover tab does not
+# close it: on the iPhone a run met one and found no Discover (2026-10-06).
+if $M map | grep -qE '^@e[0-9]+ Cancel \(button'; then
+  $M tap "label=Cancel" >/dev/null 2>&1 || true
+fi
 # Only when Discover's root is not already up: a tap on the selected tab
 # there opens its search instead.
 if ! $M map | grep -qE '^@e[0-9]+ Search podcasts or add RSS URL \(input\)'; then
