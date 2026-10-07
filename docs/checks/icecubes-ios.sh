@@ -82,8 +82,20 @@ $M tap "label=Trending,role=button" >/dev/null
 $M wait "label=Reply,role=button" >/dev/null || fail "choosing Trending did not bring the timeline back"
 row "picker" "in map, and its menu opened by ref"
 
-# A post's controls (214).
+# A post's controls (214). The timeline is live, and a post can be taller
+# than the screen — one filled the iPhone's on 2026-10-06, its controls below
+# the edge — so swipe until a post's controls are in view; every post has a
+# Reply, so scroll-to would be told it names several.
 posts=$($M map)
+tries=0
+while ! echo "$posts" | grep -q "^@e[0-9]* Reply (button)" && [ $tries -lt 4 ]; do
+  $M swipe up >/dev/null
+  # A swipe coasts; a map taken while the timeline moves hands out refs
+  # that are elsewhere by the time they are used.
+  sleep 2
+  posts=$($M map)
+  tries=$((tries + 1))
+done
 for b in Reply Boost Favorite "Share post link"; do
   echo "$posts" | grep -q "^@e[0-9]* $b (button)" || fail "no post's $b button is in map"
 done

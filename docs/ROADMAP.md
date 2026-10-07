@@ -264,6 +264,17 @@ this is what is not.
     found a reused row after the scroll. Left: a carousel that snaps a page
     at a time overshoots a measured nudge, so a ref there is refused and
     `map` must be read again — a locator by text reaches the row.
+  - A sweep of nine in-app checks on the iPhone 15 Plus, 2026-10-06 late,
+    after the day's cover, viewport, scroll and ref changes (#138–#147):
+    `obstruction`, `login`, `feed`, `mobium-app`, `flutter`, `kiwix-ios`
+    and `netnewswire-ios` passed — 263 and 265 on real hardware.
+    `icecubes-ios.sh` failed because the live timeline's first post filled
+    the screen with its controls below the edge; the check now swipes until
+    a post's controls are in view, letting the list settle before mapping,
+    and passes. `pocketcasts-ios.sh` failed on a search left open by earlier
+    work; the check now closes one, and passes. `autowait.sh` was not run:
+    on a phone it turns Reduce Motion on through Settings, a device-wide
+    change, and a phone restore of that switch once went wrong (#118).
   - A sweep of the Android checks on the Android 15 emulator, 2026-10-06
     evening. The emulator stopped answering `adb` partway and was cold
     booted; what failed before that was rerun. Found: bold text left on
