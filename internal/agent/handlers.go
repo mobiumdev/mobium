@@ -153,6 +153,30 @@ func (h *Handlers) SetProgress(fn func(string)) {
 	h.mu.Unlock()
 }
 
+// Recording reports whether anything is being recorded — an audio capture,
+// a screen recording, a trace — which a daemon's idle timer must count as
+// use: one with no calls for its timeout shut down under a capture and
+// lost it, though a capture longer than the timeout is a normal one.
+// CHALLENGES 282.
+func (h *Handlers) Recording() bool {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	if len(h.heldTraces) > 0 {
+		return true
+	}
+	for _, s := range h.sessions {
+		// A capture counts until it is full: one left running is not a
+		// reason to keep the daemon up for ever.
+		if s.audio != nil && time.Since(s.audio.Started()) < device.MaxAudioCapture {
+			return true
+		}
+		if s.recording != nil || s.trace != nil {
+			return true
+		}
+	}
+	return false
+}
+
 // Close stops every device-side server the handlers started.
 func (h *Handlers) Close() {
 	h.mu.Lock()

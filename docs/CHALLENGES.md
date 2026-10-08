@@ -6053,6 +6053,25 @@ a session discards now says which way: "the device stopped answering — it
 restarted, or went away", a different driver asked for, the device shut
 down, the session ended.
 
+### 282. A capture longer than the daemon's idle timeout was lost, and one left running had no end
+
+**Found by:** measuring a long capture. The daemon shuts itself down after
+30 minutes with no calls, and a capture is no call: started on a daemon
+with a 20-second idle timeout and stopped 45 seconds later, the capture
+was gone — the daemon had stopped under it (280 says so now, but it was
+still lost). Counting a capture as use fixed that and opened the other
+side: a capture nobody stops would keep the daemon up for ever. And
+holding it was no cost until the stop: a stream sends nothing while the
+device is quiet, so ten minutes held 25MB, and the stop, filling the
+quiet in at once, took the daemon to 208MB — a capture left running for
+a day would have asked for 8GB. So a capture keeps at most an hour
+(`device.MaxAudioCapture`): packets after it are dropped, the stop fills
+in only to the hour and says "the first of a capture that ran 1h12m",
+and the idle timer counts a capture as use only until it is full, as it
+does a screen recording and a trace. Ten minutes measured: tones tapped
+at 1.13s and 586.85s were heard at 1.4s and 587.0s, the same delay at both
+ends, and the stop took 0.13s.
+
 ## Findings that were not defects
 
 Worth recording because each one closed off an approach that looked obvious.

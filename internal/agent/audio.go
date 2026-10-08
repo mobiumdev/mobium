@@ -322,6 +322,10 @@ func AudioSavedMessage(path string, v AudioView) string {
 // AudioHeard says what a capture holds, segment by segment.
 func AudioHeard(v AudioView) string {
 	head := fmt.Sprintf("%s of audio", v.Duration)
+	if v.Elapsed-v.Duration > time.Second {
+		head += fmt.Sprintf(", the first of a capture that ran %s — a capture keeps at most %s",
+			v.Elapsed.Round(time.Second), device.MaxAudioCapture)
+	}
 	var sound bool
 	var parts []string
 	for _, seg := range v.Timeline {

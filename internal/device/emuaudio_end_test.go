@@ -40,3 +40,20 @@ func TestEmuAudioEndedBeforeStop(t *testing.T) {
 		t.Errorf("an EOF from the stop's own cancel: %v", err)
 	}
 }
+
+// CHALLENGES 282: a capture left running would have been filled in, at the
+// stop, with all the silence since it started — 8GB for a day.
+func TestEmuAudioKeepsAtMostMaxAudioCapture(t *testing.T) {
+	defer func(m time.Duration) { MaxAudioCapture = m }(MaxAudioCapture)
+	MaxAudioCapture = 2 * time.Second
+	for _, have := range []int{AudioRate, 3 * AudioRate} {
+		done := make(chan struct{})
+		close(done)
+		r := &emuAudio{started: time.Now().Add(-5 * time.Second), cancel: func() {}, done: done,
+			samples: make([]int16, have)}
+		got, err := r.Stop(context.Background())
+		if err != nil || len(got.Samples) != 2*AudioRate {
+			t.Errorf("%d samples held, 5s elapsed, a 2s limit: kept %d (%v)", have, len(got.Samples), err)
+		}
+	}
+}

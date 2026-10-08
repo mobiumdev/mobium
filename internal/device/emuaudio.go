@@ -41,6 +41,14 @@ import (
 // 48kHz, so nothing is resampled on the way.
 const AudioRate = 48000
 
+// MaxAudioCapture is the most a capture keeps. Silence is not sent, so a
+// capture holds little while it runs — 25MB at ten minutes, measured — and
+// the stop fills the quiet in at once: 208MB after those ten minutes, and a
+// capture left running for a day would have asked for 8GB. Past this the
+// capture keeps what it had and the stop says so. A var for tests.
+// CHALLENGES 282.
+var MaxAudioCapture = time.Hour
+
 // AudioRecording is an audio capture in progress.
 type AudioRecording interface {
 	// Started is when the capture began, by the host's clock.
@@ -305,6 +313,9 @@ func (r *emuAudio) read(body io.Reader) {
 		}
 		pcm := audioPacketPCM(msg)
 		arrived := time.Since(r.started)
+		if arrived > MaxAudioCapture {
+			continue
+		}
 		r.mu.Lock()
 		// Where this packet would start had nothing been lost.
 		expected := int(arrived*AudioRate/time.Second) - len(pcm)/2
@@ -369,8 +380,11 @@ func (r *emuAudio) Stop(ctx context.Context) (AudioCapture, error) {
 	}
 	// The stream says nothing until the device plays, and nothing once it
 	// stops: the rest of the time it was capturing is silence.
-	if want := int(elapsed * AudioRate / time.Second); len(r.samples) < want {
+	kept := min(elapsed, MaxAudioCapture)
+	if want := int(kept * AudioRate / time.Second); len(r.samples) < want {
 		r.samples = append(r.samples, make([]int16, want-len(r.samples))...)
+	} else if len(r.samples) > want {
+		r.samples = r.samples[:want]
 	}
 	return AudioCapture{Samples: r.samples, VolumesAtStart: r.before, VolumesAtEnd: after, Interruptions: cut}, nil
 }

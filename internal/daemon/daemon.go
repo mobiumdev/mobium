@@ -193,6 +193,11 @@ func (d *Daemon) watchIdle(ctx context.Context) {
 	for {
 		select {
 		case <-ticker.C:
+			// A recording in progress is use, though no call comes. Asked
+			// before d.mu is taken: the handlers have a lock of their own.
+			if d.handlers.Recording() {
+				d.touchActivity()
+			}
 			d.mu.Lock()
 			idle := time.Since(d.lastActivity)
 			d.mu.Unlock()
