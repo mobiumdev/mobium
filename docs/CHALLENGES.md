@@ -6233,6 +6233,17 @@ name. `lib.sh`'s `check_platform` does that for those that source it, and
 2, "is for an Android device, and <udid> is not one". `lib-selftest.sh`
 tests it.
 
+### 292. A check read a phone it could not reach as pinned
+
+**Found by:** the release checklist on the iPhone, 2026-10-07. The phone
+locked mid-batch, WebDriverAgent could not start, and `locale-ios.sh`
+failed with "Settings started out pinned": its first read was piped into a
+`grep` for "follows the device", so any failure of the read — this one
+included — read as a pin. Settings followed the device all along, read
+back once the phone answered. The read's own error is now the failure,
+and the pin is reported only from an answer that says one — the shape of
+269, a check that turned an unreachable device into a finding.
+
 ## Findings that were not defects
 
 Worth recording because each one closed off an approach that looked obvious.

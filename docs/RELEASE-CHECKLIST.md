@@ -22,6 +22,14 @@ other platform and failed for the wrong reason (291). `icecubes-ios.sh`
 failed twice and passed once, a lead in ROADMAP. Not run: the phones and
 Windows, and the manual items below.
 
+**The iPhone half, 2026-10-07:** an iPhone 15 Plus, iOS 26.6.2. "A real
+iPhone" below, all five, and then every check that runs on a phone: all
+passed or refused correctly (battery, shake), except `icecubes-ios.sh`, the
+lead in ROADMAP, now seen on the phone too. The phone locked mid-batch and
+three checks failed for that alone, passing when run again; one of them
+misread it as a finding (CHALLENGES 292). Still to run: the Pixel, Windows
+and the manual items.
+
 **Last full run: 2026-09-25**, on a Pixel 7 AVD (API 35), an iPhone 17 Pro
 simulator (iOS 26.5) and an iPhone 15 Plus (iOS 26.6.2): 29 minutes by the
 clock, from booting the emulator to `clean-stop.sh` reporting clean, with the
