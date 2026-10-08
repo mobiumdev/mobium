@@ -126,12 +126,16 @@ func samePitch(a, b float64) bool {
 // read measures one window: its level, and its pitch when one frequency
 // holds most of its energy.
 func read(x []int16, rate int) window {
-	var sum float64
+	// The power about the mean: a constant offset is no sound — an offset
+	// alone read as -30 dBFS of sound with no pitch.
+	var sum, mean float64
 	for _, s := range x {
 		v := float64(s) / 32768
 		sum += v * v
+		mean += v
 	}
-	power := sum / float64(len(x))
+	mean /= float64(len(x))
+	power := max(0, sum/float64(len(x))-mean*mean)
 	level := 10 * math.Log10(power+1e-18)
 	if level < SoundFloor {
 		return window{level: level}

@@ -829,7 +829,8 @@ func GetToolSchemas() []Tool {
 						"type": "array",
 						"description": "On stop: the sounds the capture must hold, in order — each a " +
 							"pitch, 0 for a sound with no one pitch, with an optional length; [] is " +
-							"silence. Sounds shorter than ignore_ms do not count. A capture that " +
+							"silence. A sound of ignore_ms or less on its own does not count; short ones " +
+							"that run on into each other do. A capture that " +
 							"holds anything else fails as not_confirmed, saying what was heard, and " +
 							"is still saved.",
 						"items": map[string]interface{}{

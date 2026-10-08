@@ -6153,6 +6153,30 @@ daemon, whose directory is nobody's — app_batch steps included. The .NET
 client could not be run on this Mac; a test of the list `AudioExpect`
 writes, under a culture that writes 1,5, runs on the Windows CI.
 
+### 287. `expect` silence passed on a sweep, a melody, a vibrato and a beeping alarm
+
+**Found by:** playing the analysis sounds it had never met, synthesized:
+chords, tones under noise, clipping, 40 Hz to 15 kHz, sweeps, melodies,
+vibrato, beeps, speech-like bursts, an offset. Most read right — a chord of
+equals as a sound with no one pitch, a tone 20 dB over another as that
+tone, clipped 440 as 440, 40 Hz as no pitch. But the timeline splits a
+sound wherever its pitch moves more than 2% between tenths of a second,
+and `expect` dropped every piece of 200ms or less as a tap's click: a
+two-second sweep, melodies of 150ms and of 250ms notes, a ±20 Hz vibrato on
+440, and eight 80ms beeps — a timer's alarm — all passed as silence, the
+control the feature is built on. `expect` now counts a run of short pieces,
+across silences no longer than a tenth of a second, as one sound when
+together they last longer than the 200ms; it keeps a pitch when the pieces
+are all within 5% of one — under a semitone, so two notes are never one —
+so the vibrato and the beeps are 440, and the sweep and melodies a sound
+with no one pitch. A lone click, two clicks a second apart, a click before
+a tone and 440 then 660 a second each are unchanged; the tests failed
+before. On the emulator, the ringtone: before, `expect` silence accounted
+for 0.9s of five seconds of ringing; now all of it. And a constant offset
+read as -30 dBFS of sound with no pitch; a window's level is now its power
+about its mean. Left as a limit, not fixed: a gap shorter than a tenth of
+a second is not seen, so two tones 50ms apart are one.
+
 ## Findings that were not defects
 
 Worth recording because each one closed off an approach that looked obvious.

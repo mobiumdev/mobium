@@ -1238,7 +1238,8 @@ class Device:
 
         ``expect`` makes stop an assertion: the sounds to hear, in order, each
         ``{"hz": 440}`` with optional ``min_ms`` and ``max_ms``; ``[]`` is
-        silence. Sounds of ``ignore_ms`` (default 200) or less do not count.
+        silence. A sound of ``ignore_ms`` (default 200) or less on its own does
+        not count, but short ones that run on into each other do.
         Anything else raises NotConfirmedError saying what was heard, and the
         capture is still saved.
 
