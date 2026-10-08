@@ -6072,6 +6072,24 @@ does a screen recording and a trace. Ten minutes measured: tones tapped
 at 1.13s and 586.85s were heard at 1.4s and 587.0s, the same delay at both
 ends, and the stop took 0.13s.
 
+### 283. Every capture left its connection to the emulator open, and ending a session discarded one without a word
+
+**Found by:** ending captures the ways other than a stop, and counting what
+was left. Each capture opened a connection to the emulator's control port
+and never closed it: `lsof` on the daemon counted one per capture, nine
+after nine — stopped or discarded alike — for as long as the daemon ran.
+The capture's transport was its alone, and the stream's connection went
+back to its pool when the stream ended, where nothing would take it out;
+closing the transport's idle connections as the stream ended did not
+reach it either, so the capture now dials its own and closes it. One
+during a capture, none after, stopped or discarded; the new test, a fake
+control port counting its connections, failed before with three left
+open from three. And `app_session end` with a capture running answered
+"session ended … anything it changed for the session is put back" and
+dropped the capture; only a later status said it was lost. The end now
+says "the audio capture running for 3s was discarded, unsaved — stop it
+first to keep it", and the same for a screen recording.
+
 ## Findings that were not defects
 
 Worth recording because each one closed off an approach that looked obvious.

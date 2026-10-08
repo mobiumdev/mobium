@@ -195,6 +195,16 @@ func (h *Handlers) sessionEnd(args map[string]interface{}) (*ToolsCallResult, er
 	closed, stopped := h.stopLaunched(s)
 	view.ClosedTabs = closed
 	restored := h.restoreNetwork(s)
+	// What the end discards, said with it: the capture went without a word,
+	// and only a later status told anyone. CHALLENGES 283.
+	var discarded []string
+	if s.audio != nil {
+		discarded = append(discarded, fmt.Sprintf("the audio capture running for %s",
+			time.Since(s.audio.Started()).Round(time.Second)))
+	}
+	if s.recording != nil {
+		discarded = append(discarded, "the screen recording")
+	}
 	s.closeWhy = "the session was ended"
 	s.close()
 	delete(h.sessions, keys[0])
@@ -208,6 +218,13 @@ func (h *Handlers) sessionEnd(args map[string]interface{}) (*ToolsCallResult, er
 	}
 	if restored {
 		text += "; the network is as it was before app_network changed it"
+	}
+	if len(discarded) > 0 {
+		verb, it := " was", "it"
+		if len(discarded) > 1 {
+			verb, it = " were", "them"
+		}
+		text += "; " + strings.Join(discarded, " and ") + verb + " discarded, unsaved — stop " + it + " first to keep " + it
 	}
 	switch {
 	case stopped == nil && s.launched != "":

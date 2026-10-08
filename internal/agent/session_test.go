@@ -328,3 +328,28 @@ func TestSessionExposureOnlyOnARealPhonesServer(t *testing.T) {
 		}
 	}
 }
+
+// CHALLENGES 283: ending a session discarded a running capture without a
+// word; only a later status said it was lost.
+func TestEndingSaysWhatItDiscarded(t *testing.T) {
+	t.Setenv("MOBIUM_HOME", t.TempDir())
+	t.Setenv("MOBIUM_SESSION", "")
+	h := twoSessions()
+	h.sessions["emulator-5554"].audio = heldAudio{}
+	writeAudioNote("emulator-5554", audioNote{PID: 1, Started: time.Now()})
+	res, err := h.sessionTool(context.Background(), map[string]interface{}{"action": "end", "device": "emulator-5554"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	text := res.Content[0].Text
+	if !strings.Contains(text, "the audio capture running for") || !strings.Contains(text, "was discarded, unsaved — stop it first") {
+		t.Errorf("end said %q", text)
+	}
+	if got := lostAudio("emulator-5554"); !strings.HasSuffix(got, "the session was ended") {
+		t.Errorf("a later status: %q", got)
+	}
+	res, _ = h.sessionTool(context.Background(), map[string]interface{}{"action": "end", "device": "emulator-5556"})
+	if strings.Contains(res.Content[0].Text, "discarded") {
+		t.Errorf("a session holding nothing said it discarded something: %q", res.Content[0].Text)
+	}
+}

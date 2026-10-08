@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -171,5 +172,65 @@ func TestStreamAudioNoAnswer(t *testing.T) {
 	_, err = startStreamAudio(context.Background(), emulatorEndpoint{addr: addr}, "emulator-5554")
 	if mobiumerr.CodeOf(err) != mobiumerr.DeviceNotReady {
 		t.Fatalf("got %v", err)
+	}
+}
+
+// CHALLENGES 283: every capture left its connection to the emulator open —
+// nine captures, nine connections. A stop and a discard close it.
+func TestCaptureClosesItsConnection(t *testing.T) {
+	ln, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatal(err)
+	}
+	var mu sync.Mutex
+	open := 0
+	var p http.Protocols
+	p.SetUnencryptedHTTP2(true)
+	srv := &http.Server{Protocols: &p,
+		ConnState: func(_ net.Conn, s http.ConnState) {
+			mu.Lock()
+			defer mu.Unlock()
+			switch s {
+			case http.StateNew:
+				open++
+			case http.StateClosed, http.StateHijacked:
+				open--
+			}
+		},
+		Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "application/grpc")
+			_, _ = w.Write(packet([]int16{1, 2, 3}))
+			w.(http.Flusher).Flush()
+			<-r.Context().Done()
+		})}
+	go func() { _ = srv.Serve(ln) }()
+	t.Cleanup(func() { _ = srv.Close() })
+	ep := emulatorEndpoint{addr: ln.Addr().String()}
+
+	openNow := func() int {
+		deadline := time.Now().Add(2 * time.Second)
+		for {
+			mu.Lock()
+			n := open
+			mu.Unlock()
+			if n == 0 || time.Now().After(deadline) {
+				return n
+			}
+			time.Sleep(10 * time.Millisecond)
+		}
+	}
+	for i := 0; i < 3; i++ {
+		r, err := startStreamAudio(context.Background(), ep, "emulator-5554")
+		if err != nil {
+			t.Fatal(err)
+		}
+		if i == 2 {
+			r.Discard(context.Background())
+		} else if _, err := r.Stop(context.Background()); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if n := openNow(); n != 0 {
+		t.Errorf("%d connection(s) left open after three captures", n)
 	}
 }
