@@ -707,8 +707,8 @@ this is what is not.
   swiped 15 times and blamed the list's length. A ref is now followed to
   where a nudge moved it, and one lost among look-alikes is refused at once,
   saying to map again. Since: five passes in five on the simulator and four
-  in four on the iPhone 15 Plus. It follows what the timeline shows, so a
-  pass is not proof: worth watching in the next sweeps on both devices.
+  in four on the iPhone 15 Plus, against one in four before. Done; the
+  ordinary sweeps cover it.
 - **Seeing an app's outgoing intents** on Android, so a test can assert that
   "share" asked for the chooser with the right text, without stubbing it.
 - **Menus and long press on iOS.** Measured 2026-10-04 on Ice Cubes'
