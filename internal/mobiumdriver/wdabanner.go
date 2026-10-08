@@ -102,3 +102,19 @@ func appOf(n *uitree.Node) string {
 	}
 	return ""
 }
+
+// appUnderBanner is the app a notification banner is showing over, read from
+// what WebDriverAgent reads now, or "" when no banner is the reason it reads
+// SpringBoard.
+func (w *WDA) appUnderBanner(ctx context.Context) string {
+	xml, err := w.w3c.source(ctx)
+	if err != nil {
+		return ""
+	}
+	tree, err := uitree.ParseIOS([]byte(xml))
+	if err != nil {
+		return ""
+	}
+	app, _ := bannerOver(tree)
+	return app
+}

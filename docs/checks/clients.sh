@@ -21,6 +21,7 @@ DEV="$1"
 if [ -z "$DEV" ]; then echo "usage: $0 <android-serial>" >&2; exit 2; fi
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 . "$ROOT/docs/checks/lib.sh"
+check_platform android "$DEV"
 check_lock "$DEV"
 cd "$ROOT" || exit 1
 MOBIUM_E2E_DEVICE="$DEV"; MOBIUM_BIN_PATH="$ROOT/bin/mobium"

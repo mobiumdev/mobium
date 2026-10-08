@@ -45,6 +45,7 @@ set -e
 DEV="${1:?usage: icecubes-ios.sh <udid>}"
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 . "$ROOT/docs/checks/lib.sh"
+check_platform ios "$DEV"
 check_lock "$DEV"
 M="$ROOT/bin/mobium --driver wda --device $DEV"
 fail() { echo "FAIL: $*" >&2; exit 1; }

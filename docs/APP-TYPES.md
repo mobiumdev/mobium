@@ -104,7 +104,7 @@ on both devices above.
 | The page says | `display-mode: standalone`, a service worker registered and active | the same, and `navigator.standalone` |
 | Its context | `WEBVIEW_com.android.chrome`, named for Chrome | `WEBVIEW_com.apple.SafariViewService`, named for neither the app nor Safari |
 | `map`, `text`, `eval` | work | work |
-| A tap in the web context | lands — on a WebAPK on the Pixel 8 Pro, Chrome running or not. On an emulator's shortcut opened while Chrome is running, Chrome stops reporting the WebView within about five seconds and the tap is refused ([CHALLENGES 200](CHALLENGES.md)) | refused: the host is 874 points and the viewport 812, the difference being the status bar |
+| A tap in the web context | lands — on a WebAPK on the Pixel 8 Pro, Chrome running or not. On an emulator's shortcut opened while Chrome is running, Chrome stops reporting the WebView within about five seconds and the tap is refused ([CHALLENGES 200](CHALLENGES.md)) | lands, since 2026-10-07 (CHALLENGES 290): the host is 874 points and the viewport 812, the difference being the status bar, and a tap is placed from text both the page and the native tree report, as in Safari ([CHALLENGES 248](CHALLENGES.md)); before that anchor it was refused |
 | A tap from `NATIVE_APP` | works while Chrome reports the page; once it stops, its tree is empty there too | works — WebKit puts the page's controls in the accessibility tree |
 
 Three things follow.

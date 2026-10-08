@@ -42,7 +42,13 @@ printf '#!/bin/sh\nset -e\nROOT="$(cd "$(dirname "$0")/../.." && pwd)"\n. "$ROOT
 sh "$H/r/docs/checks/edited.sh" 2>/dev/null && bad "a check edited while it ran passed" || st=$?
 [ "$st" = 2 ] && pass "a check edited while it ran is not a pass" || bad "edited check: exit $st"
 rm -rf "$H"
-# 7. every check parses and is on the prelude, but for these, and none sets its own EXIT
+# 7. a check given the other kind of device refuses it by name, exit 2
+out=$(sh -c '. "$1"; check_platform android 457C7DC2-C706-45D9-8D68-1D26953E28B1' x "$LIB" 2>&1) && bad "an Android check took a simulator" || st=$?
+[ "$st" = 2 ] && echo "$out" | grep -q "is for an Android device" && pass "an Android check refuses a simulator" || bad "platform: exit $st, $out"
+out=$(sh -c '. "$1"; check_platform ios emulator-5554' x "$LIB" 2>&1) && bad "an iOS check took an emulator" || st=$?
+[ "$st" = 2 ] && pass "an iOS check refuses an emulator" || bad "platform: exit $st"
+sh -c '. "$1"; check_platform ios 00008120-000A75EA1ED8A01E' x "$LIB" && pass "an iPhone's UDID is iOS" || bad "an iPhone's UDID was refused"
+# 8. every check, but for these, and none sets its own EXIT
 #    trap, which would replace the prelude's. clean-stop.sh stops the
 #    caller's daemon, so it must not have one of its own; the test-runner,
 #    grid and test-ui checks test mobium test's own sessions, which it gives

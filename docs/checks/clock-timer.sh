@@ -20,6 +20,9 @@
 # phone whose saved timers all have "Timer" in the name.
 set -e
 DEV="$1"; M="./bin/mobium --device $DEV"
+case "$DEV" in
+  ????????-????????????????|*-*-*-*-*) echo "$(basename "$0") is for an Android device, and $DEV is not one" >&2; exit 2 ;;
+esac
 if [ -z "$DEV" ]; then echo "usage: $0 <serial>" >&2; exit 2; fi
 ID=com.google.android.deskclock:id
 

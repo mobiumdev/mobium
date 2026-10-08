@@ -129,3 +129,45 @@ func TestWDARefusedTurnIsTakenBack(t *testing.T) {
 		t.Errorf("rotations asked for: %v, want landscape and then portrait again", asked)
 	}
 }
+
+// CHALLENGES 289: Safari brought back from the background took landscape
+// and still read portrait at once — three times in three — and was taken
+// back; a second later it turned. The turn is read until it shows.
+func TestWDATurnIsWaitedFor(t *testing.T) {
+	var mu sync.Mutex
+	reads, z := 0, 0
+	var asked []int
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		mu.Lock()
+		defer mu.Unlock()
+		w.Header().Set("Content-Type", "application/json")
+		if r.Method == http.MethodPost {
+			var body struct{ Z int }
+			json.NewDecoder(r.Body).Decode(&body)
+			asked = append(asked, body.Z)
+			z = body.Z
+			w.Write([]byte(`{"value":null}`))
+			return
+		}
+		reads++
+		shown := z
+		if reads <= 2 { // still turning
+			shown = 0
+		}
+		fmt.Fprintf(w, `{"value":{"x":0,"y":0,"z":%d}}`, shown)
+	}))
+	t.Cleanup(srv.Close)
+	c := newW3CClient(5 * time.Second)
+	c.setBase(srv.URL)
+	c.sessionID = "S1"
+	d := &WDA{w3c: c, scale: 1}
+
+	if err := d.SetOrientation(context.Background(), OrientationLandscape); err != nil {
+		t.Fatalf("a turn that showed a moment later was refused: %v", err)
+	}
+	mu.Lock()
+	defer mu.Unlock()
+	if len(asked) != 1 || asked[0] != 270 {
+		t.Errorf("rotations asked for: %v, want landscape once", asked)
+	}
+}

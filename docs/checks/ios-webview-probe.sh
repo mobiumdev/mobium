@@ -9,11 +9,18 @@
 # *platform* assumption, and those rot — if Apple changes any of this, this
 # script fails and the plan built on it needs revisiting.
 #
-# It needs Safari open on a page. Run:
-#   xcrun simctl openurl <udid> https://example.com
+# It needs Safari open on a page, and opens example.com itself: with Safari
+# closed there is no page to announce, and the probe timed out with a
+# traceback where it should have said so (CHALLENGES 290).
 set -e
 U="$1"
 [ -n "$U" ] || { echo "usage: $0 <simulator-udid>"; exit 2; }
+case "$U" in
+  *-*-*-*-*) ;;
+  *) echo "$0 is for an iOS simulator; $U is not one" >&2; exit 2 ;;
+esac
+xcrun simctl openurl "$U" https://example.com || { echo "could not open example.com in the simulator's Safari" >&2; exit 1; }
+sleep 3
 
 SOCK=$(xcrun simctl spawn "$U" launchctl print "system/com.apple.webinspectord" 2>/dev/null \
         | grep -oE "/private/var/tmp/[^ ]*webinspectord_sim.socket" | head -1)

@@ -308,18 +308,23 @@ func (w *WDA) typeKeys(ctx context.Context, text string) error {
 // KeyboardShown looks for the keyboard in the hierarchy, where iOS puts it —
 // its keys along with it.
 func (w *WDA) KeyboardShown(ctx context.Context) (bool, error) {
-	src, err := w.w3c.source(ctx)
+	// Read as every read is: under a notification banner WebDriverAgent
+	// reads SpringBoard, which has no keyboard, and a raw read here said
+	// "hidden" over a keyboard that was up — so `keyboard --hide` answered
+	// "already hidden" and the next tap was refused as covered. Snapshot
+	// reads the app under the banner (CHALLENGES 155, 288).
+	tree, err := w.Snapshot(ctx)
 	if err != nil {
-		return false, err
+		src, serr := w.w3c.source(ctx)
+		if serr != nil {
+			return false, err
+		}
+		return strings.Contains(src, `type="XCUIElementTypeKeyboard"`), nil
 	}
 	// On screen, not merely in the tree: with a hardware keyboard attached a
 	// simulator keeps the software one below the screen's edge, where it
 	// covers nothing and nobody can see it. Counting it said "shown" over an
 	// empty screen, and the keyboard check believed it (CHALLENGES 107).
-	tree, err := uitree.ParseIOS([]byte(src))
-	if err != nil {
-		return strings.Contains(src, `type="XCUIElementTypeKeyboard"`), nil
-	}
 	return tree.Keyboard() != nil, nil
 }
 
@@ -357,6 +362,17 @@ func (w *WDA) HideKeyboard(ctx context.Context) error {
 // FocusedField reports the field with keyboard focus, or nil.
 func (w *WDA) FocusedField(ctx context.Context) (*FocusedField, error) {
 	id, err := w.w3c.activeElement(ctx)
+	if err == ErrNoFocus {
+		// Under a notification banner the question goes to SpringBoard,
+		// where nothing has focus; asked of the app under it, the field
+		// that has it answers (CHALLENGES 288).
+		if app := w.appUnderBanner(ctx); app != "" {
+			_ = w.asApp(ctx, app, func() error {
+				id, err = w.w3c.activeElement(ctx)
+				return err
+			})
+		}
+	}
 	if err == ErrNoFocus {
 		return nil, nil
 	}
