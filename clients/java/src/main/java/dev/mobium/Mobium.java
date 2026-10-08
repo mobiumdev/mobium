@@ -1726,8 +1726,9 @@ public final class Mobium implements AutoCloseable {
     /**
      * Stops a capture as an assertion: saves the WAV at path and checks the
      * sounds it held, in order — each a map with {@code hz}, and optional
-     * {@code min_ms} and {@code max_ms}; an empty list is silence. Sounds of
-     * ignoreMs or less do not count; null keeps the default of 200. Anything
+     * {@code min_ms} and {@code max_ms}; an empty list is silence. A sound of
+     * ignoreMs or less on its own does not count, but short ones that run on
+     * into each other do; null keeps the default of 200. Anything
      * else throws NotConfirmedException saying what was heard, and the
      * capture is still saved.
      *

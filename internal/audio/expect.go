@@ -2,6 +2,7 @@ package audio
 
 import (
 	"fmt"
+	"math"
 	"strings"
 	"time"
 )
@@ -19,15 +20,76 @@ type Expected struct {
 // second.
 const DefaultIgnore = 200 * time.Millisecond
 
-// Sounds are the timeline's sounds longer than ignore, in order.
+// Sounds are the sounds that count against an expectation, in order: each
+// of the timeline's sounds longer than ignore, and each run of shorter ones
+// that together last longer than it — across silences no longer than a
+// Window. The timeline splits a sound wherever its pitch moves, and dropping
+// each short piece let a sweep, a melody of quarter-second notes, a wide
+// vibrato and a train of 80ms beeps all pass `expect` silence. A run keeps a
+// pitch when its pieces are all within 5% of one — under a semitone, so two
+// notes are never one — and otherwise has none. CHALLENGES 287.
 func Sounds(timeline []Segment, ignore time.Duration) []Segment {
-	var out []Segment
+	var out, run []Segment
+	flush := func() {
+		for len(run) > 0 && !run[len(run)-1].Sound {
+			run = run[:len(run)-1]
+		}
+		if len(run) > 0 && run[len(run)-1].To-run[0].From > ignore {
+			out = append(out, joinRun(run))
+		}
+		run = nil
+	}
 	for _, s := range timeline {
-		if s.Sound && s.To-s.From > ignore {
+		switch {
+		case s.Sound && s.To-s.From > ignore:
+			flush()
 			out = append(out, s)
+		case s.Sound:
+			run = append(run, s)
+		case len(run) > 0 && s.To-s.From <= Window:
+			run = append(run, s)
+		default:
+			flush()
 		}
 	}
+	flush()
 	return out
+}
+
+// joinRun is one sound made of short pieces: from the first to the last,
+// at their mean power, with their pitch if they share one.
+func joinRun(run []Segment) Segment {
+	seg := Segment{From: run[0].From, To: run[len(run)-1].To, Sound: true}
+	var power, sounding float64
+	var pitches []float64
+	pitched := true
+	for _, r := range run {
+		if !r.Sound {
+			continue
+		}
+		d := (r.To - r.From).Seconds()
+		power += d * math.Pow(10, r.Level/10)
+		sounding += d
+		if r.Hz == 0 {
+			pitched = false
+		}
+		pitches = append(pitches, r.Hz)
+	}
+	if sounding > 0 {
+		seg.Level = round1(10 * math.Log10(power/sounding))
+	}
+	if pitched {
+		m := median(pitches)
+		for _, hz := range pitches {
+			if math.Abs(hz-m) > 0.05*m {
+				pitched = false
+			}
+		}
+		if pitched {
+			seg.Hz = math.Round(m)
+		}
+	}
+	return seg
 }
 
 // Check says whether the timeline's sounds longer than ignore are want, in

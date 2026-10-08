@@ -1509,8 +1509,9 @@ export class Device {
    * at its lowest a playing app is silence. An Android emulator only.
    *
    * expect makes stop an assertion: the sounds to hear, in order, each
-   * { hz: 440 } with optional min_ms and max_ms; [] is silence. Sounds of
-   * ignoreMs (default 200) or less do not count. Anything else rejects with
+   * { hz: 440 } with optional min_ms and max_ms; [] is silence. A sound of
+   * ignoreMs (default 200) or less on its own does not count, but short ones
+   * that run on into each other do. Anything else rejects with
    * NotConfirmedError saying what was heard, and the capture is still saved.
    *
    * Stop also resolves to interruptions — a call muting app (on start;

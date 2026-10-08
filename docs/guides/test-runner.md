@@ -433,9 +433,10 @@ A capture that holds anything else fails the step as `not_confirmed`,
 saying what was expected and what was heard, and the WAV is saved at the
 path either way — it is the evidence. Assert on pitch and length, never
 on level: the level follows the device's media volume, which the result
-reports, and at its lowest an app that plays is heard as silence. Sounds
-of 200ms or less do not count (`ignore_ms`): with touch sounds on, a tap
-is a tenth of a second of sound. `tests/audio/` is a suite of it, run
+reports, and at its lowest an app that plays is heard as silence. A sound
+of 200ms or less on its own does not count (`ignore_ms`): with touch sounds
+on, a tap is a tenth of a second of sound. Short sounds that run on into
+each other do — a melody, a sweep, a beeping alarm. `tests/audio/` is a suite of it, run
 with `--project android` on an emulator.
 
 The stop's result also has `interruptions`: what cut across the app's

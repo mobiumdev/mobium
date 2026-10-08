@@ -1925,8 +1925,8 @@ type AudioExpected struct {
 
 // AudioExpect stops a capture as an assertion: it saves the WAV at path and
 // checks the sounds it held are expect, in order; an empty expect is
-// silence. Sounds of ignoreMs or less do not count; 0 keeps the default of
-// 200. Anything else is a not_confirmed error saying what was heard, and the
+// silence. A sound of ignoreMs or less on its own does not count, but short
+// ones that run on into each other do; 0 keeps the default of 200. Anything else is a not_confirmed error saying what was heard, and the
 // capture is still saved.
 func (d *Device) AudioExpect(ctx context.Context, path string, expect []AudioExpected, ignoreMs int) (Audio, error) {
 	if expect == nil {
