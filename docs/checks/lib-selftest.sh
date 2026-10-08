@@ -53,7 +53,7 @@ sh -c '. "$1"; check_platform ios 00008120-000A75EA1ED8A01E' x "$LIB" && pass "a
 #    caller's daemon, so it must not have one of its own; the test-runner,
 #    grid and test-ui checks test mobium test's own sessions, which it gives
 #    each project only when none is set; the rest run no device check.
-exempt=" clean-stop.sh test-runner.sh test-grid.sh test-ui.sh lib.sh lib-selftest.sh calculator.sh clock-timer.sh ios-webview-probe.sh "
+exempt=" clean-stop.sh test-runner.sh test-grid.sh test-ui.sh lib.sh lib-selftest.sh ios-webview-probe.sh "
 for f in "$ROOT"/docs/checks/*.sh; do
   n=$(basename "$f")
   case "$exempt" in *" $n "*) continue ;; esac

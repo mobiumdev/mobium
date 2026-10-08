@@ -272,6 +272,14 @@ func (h *Handlers) webFrame(ctx context.Context, s *session) (*webview.Frame, er
 	if k := tree.Keyboard(); k != nil && k.Bounds.Y1 < host.Bounds.Y2 && tree.Package() != safariBundleID {
 		return webview.NewFrameUnderKeyboard(host.Bounds, metrics)
 	}
+	// Android's keyboard is the same case in another window, missing from
+	// the tree: on the Pixel 8 Pro it left MobiumApp's WebView 770 CSS pixels
+	// tall over a 401-pixel viewport, and every tap with it up was refused.
+	// Its touchable region is read as the keyboard check reads it — only
+	// while something has focus, since it costs a dumpsys. CHALLENGES 294.
+	if keyboardOverWebView(ctx, s, tree, host.Bounds) {
+		return webview.NewFrameUnderKeyboard(host.Bounds, metrics)
+	}
 	frame, err := webview.NewFrame(host.Bounds, metrics)
 	if err != nil && host.Bounds.Width() > 0 && metrics != nil && metrics.CSSWidth > 0 {
 		// A WebView taller than its page: where the page starts is read from
@@ -763,4 +771,34 @@ func webDialogOver(dialog, ctxName string) error {
 		WithRemedy("answer the dialog first: app_context NATIVE_APP and tap one of its buttons from app_map, "+
 			"or declare an answer with app_dialogs").
 		WithDetail("dialog", dialog)
+}
+
+// keyboardOverWebView reports whether Android's keyboard, another window,
+// reaches into the WebView's area. Not knowing is no reason to change the
+// frame.
+func keyboardOverWebView(ctx context.Context, s *session, tree *uitree.Tree, host uitree.Rect) bool {
+	kr, ok := mobiumdriver.AsKeyboardRegioner(s.driver)
+	if !ok || tree == nil {
+		return false
+	}
+	focused := false
+	tree.Walk(func(x *uitree.Node) bool {
+		if x.Focused {
+			focused = true
+		}
+		return !focused
+	})
+	if !focused {
+		return false
+	}
+	regions, err := kr.KeyboardRegions(ctx)
+	if err != nil {
+		return false
+	}
+	for _, r := range regions {
+		if r.X1 < host.X2 && r.X2 > host.X1 && r.Y1 < host.Y2 && r.Y2 > host.Y1 {
+			return true
+		}
+	}
+	return false
 }

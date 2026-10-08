@@ -19,11 +19,16 @@
 # `label=1` matches nothing, and `label=Timer` matches eleven things on a
 # phone whose saved timers all have "Timer" in the name.
 set -e
-DEV="$1"; M="./bin/mobium --device $DEV"
-case "$DEV" in
-  ????????-????????????????|*-*-*-*-*) echo "$(basename "$0") is for an Android device, and $DEV is not one" >&2; exit 2 ;;
-esac
+DEV="$1"
 if [ -z "$DEV" ]; then echo "usage: $0 <serial>" >&2; exit 2; fi
+# On the prelude since 2026-10-07: run outside it, this check left its
+# daemon up, and the UiAutomator2 server under it held UiAutomation, so the
+# next check that read the screen any other way failed (CHALLENGES 293).
+ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
+. "$ROOT/docs/checks/lib.sh"
+check_platform android "$DEV"
+check_lock "$DEV"
+M="$ROOT/bin/mobium --device $DEV"
 ID=com.google.android.deskclock:id
 
 # show normalizes both layouts to HH:MM:SS.

@@ -428,3 +428,35 @@ func TestTheBackRemedyNamesARealArgument(t *testing.T) {
 	}
 	t.Error("no app_press tool")
 }
+
+// CHALLENGES 294: Android's keyboard over an app's WebView shrank the page's
+// viewport and not the WebView, and every tap with it up was refused. The
+// frame is the WebView's while the keyboard reaches into it — asked only
+// while something has focus.
+func TestKeyboardOverWebViewIsReadFromItsRegion(t *testing.T) {
+	host := uitree.Rect{X1: 0, Y1: 300, X2: 1008, Y2: 2100}
+	tree := func(focus bool) *uitree.Tree {
+		field := &uitree.Node{Focused: focus, Displayed: true, Bounds: uitree.Rect{X1: 40, Y1: 600, X2: 960, Y2: 700}}
+		root := &uitree.Node{Children: []*uitree.Node{field}, Bounds: host}
+		field.Parent = root
+		return &uitree.Tree{Root: root}
+	}
+	focused, idle := tree(true), tree(false)
+	for _, c := range []struct {
+		name    string
+		regions []uitree.Rect
+		tree    *uitree.Tree
+		want    bool
+		asked   int
+	}{
+		{"the keyboard over the WebView", []uitree.Rect{{X1: 0, Y1: 1300, X2: 1008, Y2: 2244}}, focused, true, 1},
+		{"the keyboard below it", []uitree.Rect{{X1: 0, Y1: 2150, X2: 1008, Y2: 2244}}, focused, false, 1},
+		{"nothing focused, nothing asked", []uitree.Rect{{X1: 0, Y1: 1300, X2: 1008, Y2: 2244}}, idle, false, 0},
+	} {
+		d := &regionDriver{regions: c.regions}
+		s := &session{driver: d}
+		if got := keyboardOverWebView(context.Background(), s, c.tree, host); got != c.want || d.asked != c.asked {
+			t.Errorf("%s: %v, asked %d times", c.name, got, d.asked)
+		}
+	}
+}

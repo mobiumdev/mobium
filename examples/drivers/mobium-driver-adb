@@ -186,7 +186,21 @@ class Driver:
         # goes to stdout, "ERROR: could not get idle state." to stderr, and it
         # exits 0 either way. Reading only stdout turns a diagnosable failure
         # into "no output".
-        out, err = self.adb.shell2("uiautomator", "dump", DUMP_PATH)
+        try:
+            out, err = self.adb.shell2("uiautomator", "dump", DUMP_PATH)
+        except DriverError as e:
+            # UiAutomation belongs to one client at a time, and a dump while
+            # another holds it fails with nothing on either stream — read
+            # after a check that left mobium's own UiAutomator2 server up,
+            # "failed: no output" named no cause (CHALLENGES 293).
+            held = self.uiautomation_holders()
+            if held:
+                raise DriverError(
+                    f"uiautomator dump failed: UiAutomation is held by {', '.join(held)}, and one "
+                    "client may use it at a time — stop that one first (for mobium's own "
+                    "UiAutomator2 server, `mobium daemon stop`)"
+                ) from e
+            raise
         if DUMP_PATH not in out:
             reason = " ".join(x for x in (out.strip(), err) if x) or "no output"
             if "idle state" in reason:
@@ -211,6 +225,16 @@ class Driver:
         if not children:
             raise DriverError("the hierarchy has no elements in it")
         return to_wire(children[0])
+
+    def uiautomation_holders(self):
+        """The processes holding UiAutomation, by their command lines: a
+        running instrumentation such as UiAutomator2's, or another dump."""
+        try:
+            out = self.adb.shell("ps", "-A", "-o", "ARGS")
+        except DriverError:
+            return []
+        return sorted({line.strip() for line in out.splitlines()
+                       if "uiautomator" in line and "ps -A" not in line})
 
     def screenshot(self, params):
         png = self.adb.run("exec-out", "screencap", "-p", binary=True)
