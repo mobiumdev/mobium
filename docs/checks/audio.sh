@@ -269,6 +269,16 @@ row "" "and the result says: muted for a call $muted, a ringtone $rang"
 
 alarm_step
 
+# A capture lives in the daemon that started it. One lost with its daemon
+# was answered "no audio is being captured — start with action start", as
+# if none had been started (CHALLENGES 280): the next daemon says it was
+# lost, and why.
+$M audio start --app "$APP" >/dev/null || fail "audio start was refused"
+"$ROOT/bin/mobium" daemon stop >/dev/null
+lost=$($M audio stop -o "$CHECK_TMP/lost.wav" 2>&1) && fail "a stop after its daemon was stopped saved something: $lost"
+echo "$lost" | grep -q "was lost: the daemon was stopped" || fail "a capture lost with its daemon: $lost"
+row "lost" "a capture lost with its daemon says so, and why"
+
 # The same through mobium test: an expect at the stop passes on what was
 # played and fails, saying what was heard, on what was not — with the
 # capture still saved. On this check's device: tests/mobium.config.json
