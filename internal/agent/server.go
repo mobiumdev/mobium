@@ -86,6 +86,11 @@ func (s *Server) handleRequest(data []byte) *Response {
 		}}
 	}
 
+	// This process runs where its host started it, so a relative path means
+	// here, and the answer names it in full. CHALLENGES 286.
+	if req.Method == "tools/call" {
+		req.Params = absoluteCallParams(req.Params)
+	}
 	result, rpcErr := Route(req, s.handlers, s.version, nil)
 
 	// Notifications get no response, even on error.
@@ -193,3 +198,18 @@ func (s *Server) SetBackend(b Backend) { s.handlers.SetBackend(b) }
 
 // SetProgress installs a callback for slow one-time setup.
 func (s *Server) SetProgress(fn func(string)) { s.handlers.SetProgress(fn) }
+
+// absoluteCallParams is a tools/call's params with its path arguments made
+// absolute; anything it cannot read goes on unchanged, for Route to refuse.
+func absoluteCallParams(raw json.RawMessage) json.RawMessage {
+	var p ToolsCallParams
+	if json.Unmarshal(raw, &p) != nil || p.Arguments == nil {
+		return raw
+	}
+	AbsolutePaths(p.Name, p.Arguments)
+	out, err := json.Marshal(p)
+	if err != nil {
+		return raw
+	}
+	return out
+}

@@ -36,6 +36,7 @@ namespace Mobium.Tests
             JsonParsesTheShapesTheWireUses();
             JsonWritesNumbersWithoutTheCulturesOpinion();
             StdioIsUtf8WhateverTheConsoleThinks();
+            AudioExpectWritesItsSounds();
             ElementReadsAToolResult();
             BoundsComputeTheirCenter();
             UntilBuildsItsArguments();
@@ -162,6 +163,32 @@ namespace Mobium.Tests
                 var written = Json.Write(new Dictionary<string, object> { ["x"] = 540, ["s"] = 1.5 });
                 Yes("integer unaffected by culture", written.Contains("\"x\":540"));
                 Yes("decimal point stays a point", written.Contains("\"s\":1.5"));
+            }
+            finally
+            {
+                System.Globalization.CultureInfo.CurrentCulture = previous;
+            }
+        }
+
+        private static void AudioExpectWritesItsSounds()
+        {
+            // AudioExpect sends a list of dictionaries through the hand-written
+            // writer, and the daemon refuses any key it does not know; under a
+            // culture that writes 1,5 the bounds must still be numbers.
+            var previous = System.Globalization.CultureInfo.CurrentCulture;
+            try
+            {
+                System.Globalization.CultureInfo.CurrentCulture =
+                    new System.Globalization.CultureInfo("de-DE");
+                var written = Json.Write(new Dictionary<string, object?>
+                {
+                    ["expect"] = new List<IDictionary<string, object?>>
+                    {
+                        new Dictionary<string, object?> { ["hz"] = 440, ["min_ms"] = 1800 },
+                        new Dictionary<string, object?> { ["hz"] = 880.5 },
+                    },
+                });
+                Eq("expect as written", "{\"expect\":[{\"hz\":440,\"min_ms\":1800},{\"hz\":880.5}]}", written);
             }
             finally
             {

@@ -1,6 +1,7 @@
 package agent
 
 import (
+	"path/filepath"
 	"sort"
 	"strings"
 
@@ -2148,4 +2149,34 @@ var PathArguments = map[string][]string{
 	"app_trace":      {"path"},
 	"app_upload":     {"path"},
 	"app_download":   {"path"},
+}
+
+// AbsolutePaths makes each path argument of a call absolute, against this
+// process's directory, the steps of an app_batch included. A front door that
+// runs in its caller's directory calls it before the call: the CLI and
+// `mobium pipe` for their caller, and `mobium mcp`, which its host starts in
+// a directory the agent never sees — it saved a relative path where it was
+// asked and answered with it unresolved, so the agent was told "out/x.wav"
+// and not where that was. CHALLENGES 286. Never the daemon: its directory is
+// wherever it started, which is nobody's.
+func AbsolutePaths(tool string, args map[string]interface{}) {
+	if tool == "app_batch" {
+		steps, _ := args["steps"].([]interface{})
+		for _, item := range steps {
+			step, _ := item.(map[string]interface{})
+			name, _ := step["name"].(string)
+			stepArgs, _ := step["arguments"].(map[string]interface{})
+			if name != "" && name != "app_batch" && stepArgs != nil {
+				AbsolutePaths(name, stepArgs)
+			}
+		}
+		return
+	}
+	for _, key := range PathArguments[tool] {
+		if p, ok := args[key].(string); ok && p != "" && !filepath.IsAbs(p) {
+			if abs, err := filepath.Abs(p); err == nil {
+				args[key] = abs
+			}
+		}
+	}
 }
