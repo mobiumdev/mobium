@@ -30,10 +30,12 @@
 #   explanation, the page counting nothing; that is accepted there, and said.
 #   A WebAPK on the Pixel 8 Pro kept its WebView, so on a phone the tap must
 #   land.
-# - iOS: the same tap is refused, because the page's position in its host
-#   cannot be known; from NATIVE_APP the button is in the tree, and a tap
-#   there lands — the page counts it. docs/APP-TYPES.md, "Progressive web
-#   apps".
+# - iOS: the same tap lands — placed from text the page and the native tree
+#   both report, as in Safari (CHALLENGES 248). It was refused while the
+#   page's position in its host could not be known, and this check asserted
+#   the refusal until the tap began to land (290). From NATIVE_APP the button
+#   is in the tree, and a tap there lands too — the page counts each.
+#   docs/APP-TYPES.md, "Progressive web apps".
 #
 # A real iPhone is refused: the check would add a web app to its home
 # screen, and nothing outside can take it off again.
@@ -244,15 +246,14 @@ if [ "$PLATFORM" = android ]; then
     row "refused" "Chrome stopped reporting the WebView; the tap says so (CHALLENGES 200)"
   fi
 else
-  if $M tap "$PROBE" >/dev/null 2>&1; then fail "a tap in the web context was not refused"; fi
-  $M map 2>&1 | grep -q "cannot be tapped" || fail "the map did not say why the page cannot be tapped"
-  [ "$($M eval 'window.__taps')" = 0 ] || fail "the refused tap reached the page anyway"
-  row "refused" "a tap in the web context, and the map says why"
+  out=$($M tap "$PROBE" 2>&1) || fail "a tap in the web context was refused: $out"
+  [ "$($M eval 'window.__taps')" = 1 ] || fail "a tap in the web context was reported but did not reach the page"
+  row "tap" "a tap on $PROBE in the web context landed: the page counted one"
   $M context NATIVE_APP >/dev/null
   $M tap 'label=Mobium probe' >/dev/null
   $M context "$CTX" >/dev/null
-  [ "$($M eval 'window.__taps')" = 1 ] || fail "a tap from NATIVE_APP did not reach the page"
-  row "tap" "the page's button from NATIVE_APP landed: the page counted one"
+  [ "$($M eval 'window.__taps')" = 2 ] || fail "a tap from NATIVE_APP did not reach the page"
+  row "native tap" "the page's button from NATIVE_APP landed: the page counted a second"
 fi
 
 $M context NATIVE_APP >/dev/null

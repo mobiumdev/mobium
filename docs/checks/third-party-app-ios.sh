@@ -31,6 +31,7 @@ set -e
 DEV="${1:?usage: third-party-app-ios.sh <iphone-udid>}"
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 . "$ROOT/docs/checks/lib.sh"
+check_platform ios "$DEV"
 check_lock "$DEV"
 M="$ROOT/bin/mobium --driver wda --device $DEV"
 APP=org.wikimedia.wikipedia

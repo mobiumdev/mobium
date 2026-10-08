@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/mobiumdev/mobium/internal/mobiumerr"
 )
@@ -55,6 +56,9 @@ func (w *WDA) Orientation(ctx context.Context) (string, bool, error) {
 	return mode, false, err
 }
 
+// orientationWait is how long a turn has to show in what the app reports.
+var orientationWait = 2 * time.Second
+
 // SetOrientation turns the front app and reads it back.
 //
 // An app that supports only some orientations is not turned, and
@@ -73,11 +77,31 @@ func (w *WDA) SetOrientation(ctx context.Context, mode string) error {
 		_, err := OrientationQuarter(mode)
 		return err
 	}
-	setErr := w.w3c.do(ctx, http.MethodPost, w.w3c.sessionPath("/rotation"),
-		map[string]interface{}{"x": 0, "y": 0, "z": z}, nil)
-	got, _, readErr := w.Orientation(ctx)
-	if setErr == nil && readErr == nil && got == mode {
-		return nil
+	// The turn is waited for, not read once: Safari brought back from the
+	// background answered still portrait at once, three times in three, and
+	// was taken back; a second later the same request turned it. An app that
+	// cannot turn costs the wait, and is refused as before. CHALLENGES 289.
+	var setErr, readErr error
+	var got string
+	deadline := time.Now().Add(orientationWait)
+	sent := false
+	for {
+		// Sent again only while WebDriverAgent refuses it; one it took is
+		// read until it shows, so a refused turn is asked for once and taken
+		// back once.
+		if !sent {
+			setErr = w.w3c.do(ctx, http.MethodPost, w.w3c.sessionPath("/rotation"),
+				map[string]interface{}{"x": 0, "y": 0, "z": z}, nil)
+			sent = setErr == nil
+		}
+		got, _, readErr = w.Orientation(ctx)
+		if setErr == nil && readErr == nil && got == mode {
+			return nil
+		}
+		if time.Now().After(deadline) || ctx.Err() != nil {
+			break
+		}
+		time.Sleep(250 * time.Millisecond)
 	}
 	if readErr != nil {
 		return mobiumerr.New(mobiumerr.NotConfirmed, "asked for %s and could not read the orientation back: %w",

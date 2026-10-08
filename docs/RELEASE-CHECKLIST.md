@@ -12,6 +12,16 @@ emulator, an iPhone simulator and a real iPhone — and a real Android phone for
 the items that say so. Most of it is now the scripts in [checks/](checks/),
 which assert what they can and print what a person should read.
 
+**Emulator and simulator half, 2026-10-07:** every check in
+[checks/](checks/) on a Pixel 7 AVD (Android 15) and an iPhone 17 Pro
+simulator (iOS 26.5), side by side, about two hours. Android passed all 48
+that apply to it, after the emulator stopped answering adb mid-run and was
+shut down and booted again; the simulator found three defects and two
+checks out of date (CHALLENGES 288–290), and fourteen checks that ran on the
+other platform and failed for the wrong reason (291). `icecubes-ios.sh`
+failed twice and passed once, a lead in ROADMAP. Not run: the phones and
+Windows, and the manual items below.
+
 **Last full run: 2026-09-25**, on a Pixel 7 AVD (API 35), an iPhone 17 Pro
 simulator (iOS 26.5) and an iPhone 15 Plus (iOS 26.6.2): 29 minutes by the
 clock, from booting the emulator to `clean-stop.sh` reporting clean, with the

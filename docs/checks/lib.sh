@@ -87,6 +87,23 @@ if [ -f "$CHECK_SELF" ]; then
   CHECK_SUM=$(cksum < "$CHECK_SELF")
 fi
 
+# check_platform android|ios DEV refuses a device of the other kind, by name,
+# with exit 2. An Android check given a simulator tried to launch Google's
+# Calculator there, and an iOS one given an emulator failed listing its apps
+# under the wrong driver: failures that named the wrong cause, in a sweep that
+# ran every check on both (CHALLENGES 291). A simulator's UDID is five groups
+# and an iPhone's two; anything else is an Android serial.
+check_platform() {
+  case "$2" in
+    ????????-????????????????|*-*-*-*-*) _check_kind=ios ;;
+    *) _check_kind=android ;;
+  esac
+  [ "$_check_kind" = "$1" ] && return 0
+  if [ "$1" = ios ]; then _check_want="an iOS device"; else _check_want="an Android device"; fi
+  echo "$(basename "$0") is for $_check_want, and $2 is not one" >&2
+  exit 2
+}
+
 # check_lock DEV takes the device for this check, or refuses: two checks on
 # one device fight over its session. A lock whose holder has gone is taken.
 #

@@ -6177,6 +6177,62 @@ read as -30 dBFS of sound with no pitch; a window's level is now its power
 about its mean. Left as a limit, not fixed: a gap shorter than a tenth of
 a second is not seen, so two tones 50ms apart are one.
 
+### 288. The keyboard read as hidden under a notification banner
+
+**Found by:** the release checklist's simulator half, 2026-10-07. `otp.sh`
+stopped at its Verify button, "the keyboard is over it", three runs in
+three. Its code arrives as a notification, and while the banner shows,
+WebDriverAgent reads SpringBoard (155): `Snapshot` reads the app under the
+banner, but the keyboard read and the focus read asked the raw source and
+the active element, so both answered from SpringBoard — "the keyboard is
+hidden", over a keyboard that was up, and no field focused. `keyboard
+--hide` then answered "already hidden", exit 0, and the check's fallback to
+enter never ran. Old: the same three runs on every build back to 30
+September; the check passed before only while MobiumApp's notifications
+were off, and the app reinstalled that day turned them on. Both reads now
+go to the app under a banner — the keyboard through `Snapshot`, the focus
+by asking the app when SpringBoard has none. The test, a fake WebDriverAgent
+answering as the simulator did, failed before. `otp.sh` passes. Its first
+run in the sweep failed a step earlier, a whole code typed as a dropped
+keystroke, and that has not come back in seven runs since; the same read
+under the banner is the likely cause, not shown.
+
+### 289. A turn was refused for an app that had just come back
+
+**Found by:** the same run: `orientation.sh` failed to turn Safari to
+landscape, alone as in the sweep, while by hand it turned every time. The
+difference was Safari already running: brought back from the background
+and turned at once, it accepted the request and still read portrait, three
+times in three, and the request was taken back as for an app that cannot
+turn (218); a second later the same turn showed. The turn is now read for
+up to two seconds before it is called refused, and sent again only while
+WebDriverAgent refuses it, so a refused turn is still asked once and taken
+back once. The test, an app that shows the turn on its third read, failed
+before.
+
+### 290. Two checks asserted what was no longer so
+
+**Found by:** the same run. `pwa.sh` asserted that a tap in an iOS web
+app's page is refused, its position in its host unknown; it landed — the
+page counted it — since taps are placed from text both the page and the
+native tree report (248). The check and docs/APP-TYPES.md now say it lands.
+And `ios-webview-probe.sh` timed out with a Python traceback whenever
+Safari was closed, its header asking for a page nobody opened; it opens
+example.com itself.
+
+### 291. Checks for one platform ran on the other and failed for the wrong reason
+
+**Found by:** the same run, which gave every check both devices. Six
+Android checks given the simulator tried to launch Google's apps on it,
+asked `adb` for it, or took it for a phone and asked for `ALLOW_PHONE=1`,
+and `network.sh` blamed the simulator's internet; six iOS checks given the
+emulator failed listing its apps under the wrong driver. Each named a cause
+that was not the case, where 269's rule says to refuse the other kind by
+name. `lib.sh`'s `check_platform` does that for those that source it, and
+`calculator.sh` and `clock-timer.sh`, which do not, the same inline: exit
+2, "is for an Android device, and <udid> is not one". `lib-selftest.sh`
+tests it.
+
 ## Findings that were not defects
 
 Worth recording because each one closed off an approach that looked obvious.

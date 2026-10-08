@@ -16,6 +16,7 @@ if [ -z "$DEV" ]; then echo "usage: $0 <serial>   (see: mobium devices)" >&2; ex
 
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 . "$ROOT/docs/checks/lib.sh"
+check_platform android "$DEV"
 check_lock "$DEV"
 M="$ROOT/bin/mobium --device $DEV"
 MOBIUM_DRIVER_ADB="$ROOT/examples/drivers/mobium-driver-adb"

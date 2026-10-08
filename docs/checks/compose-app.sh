@@ -28,6 +28,7 @@ set -e
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 . "$ROOT/docs/checks/lib.sh"
 DEV="${1:?usage: compose-app.sh <serial> [path-to-apk]}"
+check_platform android "$DEV"
 check_lock "$DEV"
 APK="$2"
 APP=com.junkfood.seal
