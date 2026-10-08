@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
-	"path/filepath"
 	"strings"
 	"time"
 
@@ -88,13 +87,7 @@ func prepareFiles(tool string, args map[string]interface{}) (func(*agent.ToolsCa
 	// directory saved into another, reporting the wrong path as a success.
 	// Resolved here because the CLI and every client (through `pipe`) come
 	// through this one function.
-	for _, key := range agent.PathArguments[tool] {
-		if p, ok := args[key].(string); ok && p != "" && !filepath.IsAbs(p) {
-			if abs, err := filepath.Abs(p); err == nil {
-				args[key] = abs
-			}
-		}
-	}
+	agent.AbsolutePaths(tool, args)
 
 	// When the daemon's disk is not the caller's, a path means a file on the
 	// wrong machine: send the file's content instead, and save what comes

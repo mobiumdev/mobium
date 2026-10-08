@@ -6133,6 +6133,26 @@ behind, then said "something is still running" with nothing running —
 and `--quit` could not clear it. It counts sockets and pid files now, and
 lists noted captures on a line of their own; a pid file left still fails.
 
+### 286. MCP answered a saved file's path as it was given, relative
+
+**Found by:** driving audio through every front door — the five clients and
+raw MCP — after a day that went through the CLI. The clients all held:
+each saved a relative path under its caller's directory and said so in
+full, raised the code's own exception for a wrong `expect` (with the
+capture's path in its details) and for a capture lost with its daemon
+(with its remedy), and JavaScript's natural `minMs` was refused, not
+ignored, with the capture still running. `mobium mcp` saved its files in
+the right place — its directory is its host's — but answered `path:
+"out/mcp.wav"`, and the same in a failed expect's details: unresolved, so
+an agent in a host that started the server somewhere it never sees is
+told a file exists and not where. The CLI and `mobium pipe` resolve
+relative paths before the call; the MCP server, which runs the handlers
+in its own process, did not. `agent.AbsolutePaths` is now the one place
+this is done, for the CLI and pipe and for the MCP server — never the
+daemon, whose directory is nobody's — app_batch steps included. The .NET
+client could not be run on this Mac; a test of the list `AudioExpect`
+writes, under a culture that writes 1,5, runs on the Windows CI.
+
 ## Findings that were not defects
 
 Worth recording because each one closed off an approach that looked obvious.
