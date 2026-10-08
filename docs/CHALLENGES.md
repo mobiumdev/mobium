@@ -6034,6 +6034,25 @@ holding it (pid N) ended without stopping it" — as `internal`, with a
 remedy that works: start again, and stop a capture before stopping the
 daemon. `audio.sh` stops its own daemon mid-capture and asserts it.
 
+### 281. An emulator's audio stream that ended by itself was read as silence
+
+**Found by:** killing the emulator mid-capture, on purpose. The stream
+ended with no error — the read loop took its EOF for the stop's own end —
+and the stop then padded every second after it with silence, the way it
+pads the quiet a stream does not send: a capture whose device died three
+seconds in would answer three seconds of sound and seven of silence, and
+an `expect` of silence would pass. Measured first that it can only mean the
+device went: a stream left open for 180s of silence never ended, and the
+same probe saw the end nine seconds after `adb emu kill`. It did not reach
+a user only because every way back to `stop` closed the session first: a
+device that came back failed the session's health check, and one that did
+not was `no_device`. The recording now notes an end the stop did not ask
+for, and the stop answers `device_not_ready`, saying how far in it ended
+and that nothing after it was heard; the test failed before. And a capture
+a session discards now says which way: "the device stopped answering — it
+restarted, or went away", a different driver asked for, the device shut
+down, the session ended.
+
 ## Findings that were not defects
 
 Worth recording because each one closed off an approach that looked obvious.

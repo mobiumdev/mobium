@@ -110,6 +110,7 @@ func (h *Handlers) shutdown(ctx context.Context, args map[string]interface{}) (*
 	view := ShutdownView{Device: serial}
 	for key, s := range h.sessions {
 		if key == serial || s.dev.Serial == serial {
+			s.closeWhy = "the device was shut down"
 			s.close()
 			delete(h.sessions, key)
 			view.SessionEnded = true

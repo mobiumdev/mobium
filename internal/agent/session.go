@@ -195,6 +195,7 @@ func (h *Handlers) sessionEnd(args map[string]interface{}) (*ToolsCallResult, er
 	closed, stopped := h.stopLaunched(s)
 	view.ClosedTabs = closed
 	restored := h.restoreNetwork(s)
+	s.closeWhy = "the session was ended"
 	s.close()
 	delete(h.sessions, keys[0])
 	delete(h.refs, s.dev.Serial)

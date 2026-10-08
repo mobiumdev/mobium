@@ -313,7 +313,11 @@ func (h *Handlers) resolveSession(ctx context.Context, args map[string]interface
 		if s.backend == backend && s.healthy(ctx) {
 			return s, nil
 		}
-		h.retire(dev.Serial, s)
+		why := "the device stopped answering — it restarted, or went away"
+		if s.backend != backend {
+			why = "a different driver was asked for"
+		}
+		h.retire(dev.Serial, s, why)
 	}
 
 	s := &session{dev: dev, backend: backend}
@@ -386,7 +390,7 @@ func (h *Handlers) externalSessionFor(ctx context.Context, backend Backend, ref 
 		if s.healthy(ctx) {
 			return s, nil
 		}
-		h.retire(key, s)
+		h.retire(key, s, "the driver stopped answering")
 	}
 
 	d := mobiumdriver.NewExternal(string(backend), path, ref)
@@ -438,7 +442,7 @@ func (h *Handlers) iosSessionFor(ctx context.Context, ref string) (*session, err
 		if s.backend == BackendWDA && s.healthy(ctx) {
 			return s, nil
 		}
-		h.retire(serial, s)
+		h.retire(serial, s, "the device stopped answering — it restarted, or went away")
 	}
 
 	var d *mobiumdriver.WDA
@@ -612,11 +616,12 @@ func uiAutomationHeld(ctx context.Context, adb *device.ADB, serial string, cause
 // the caller's, not the session's: on a Fire TV whose Wi-Fi link dropped
 // mid-recording, the trace went with the session and the stop that
 // followed found none (CHALLENGES 212).
-func (h *Handlers) retire(key string, s *session) {
+func (h *Handlers) retire(key string, s *session, why string) {
 	if s.trace != nil {
 		h.heldTraces[key] = s.trace
 		s.trace = nil
 	}
+	s.closeWhy = why
 	s.close()
 	delete(h.sessions, key)
 }

@@ -191,6 +191,10 @@ type emuAudio struct {
 	mu      sync.Mutex
 	samples []int16
 	err     error
+	// stopping is set by Stop before it cancels the stream; ended is when
+	// the stream ended without being asked to — the emulator went away.
+	stopping bool
+	ended    time.Duration
 
 	volumes       VolumeReader
 	before        []StreamVolume
@@ -314,10 +318,19 @@ func (r *emuAudio) read(body io.Reader) {
 	}
 }
 
+// finish records how the stream ended. One the stop asked for is no
+// failure, however it surfaced. One that ended by itself is: the stream stays
+// open through minutes of silence (measured, 180s), and ended with no error
+// when the emulator was killed — and the stop then padded the time after it
+// with silence, as if it had been heard. CHALLENGES 281.
 func (r *emuAudio) finish(err error) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
-	if !errors.Is(err, context.Canceled) && !errors.Is(err, io.EOF) && !errors.Is(err, io.ErrUnexpectedEOF) {
+	switch {
+	case r.stopping || errors.Is(err, context.Canceled):
+	case errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF):
+		r.ended = time.Since(r.started)
+	default:
 		r.err = err
 	}
 }
@@ -326,6 +339,9 @@ func (r *emuAudio) Started() time.Time { return r.started }
 
 func (r *emuAudio) Stop(ctx context.Context) (AudioCapture, error) {
 	elapsed := time.Since(r.started)
+	r.mu.Lock()
+	r.stopping = true
+	r.mu.Unlock()
 	r.cancel()
 	select {
 	case <-r.done:
@@ -344,6 +360,12 @@ func (r *emuAudio) Stop(ctx context.Context) (AudioCapture, error) {
 	defer r.mu.Unlock()
 	if r.err != nil {
 		return AudioCapture{}, mobiumerr.New(mobiumerr.DeviceServer, "the emulator's audio stream broke: %v", r.err)
+	}
+	if r.ended > 0 {
+		return AudioCapture{}, mobiumerr.New(mobiumerr.DeviceNotReady, "the emulator's audio stream ended %s into "+
+			"the capture, %s before the stop — the emulator stopped or restarted, and nothing after it was heard",
+			r.ended.Round(100*time.Millisecond), (elapsed - r.ended).Round(100*time.Millisecond)).
+			WithRemedy("check the emulator is running (`mobium devices`), then start the capture again")
 	}
 	// The stream says nothing until the device plays, and nothing once it
 	// stops: the rest of the time it was capturing is silence.
