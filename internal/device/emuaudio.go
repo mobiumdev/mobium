@@ -6,6 +6,7 @@ import (
 	"context"
 	"encoding/binary"
 	"errors"
+	"fmt"
 	"io"
 	"net"
 	"net/http"
@@ -89,6 +90,8 @@ type VolumeReader func(ctx context.Context) ([]StreamVolume, error)
 // instance while it runs.
 type emulatorEndpoint struct {
 	addr, token string
+	// avd is the AVD's name, from the discovery file, for a remedy to name.
+	avd string
 }
 
 // emulatorDiscoveryDirs are where the emulator writes its discovery files,
@@ -134,14 +137,19 @@ func findEmulatorEndpoint(serial string, dirs []string) (emulatorEndpoint, error
 			if err != nil || !info.ModTime().After(bestTime) {
 				continue
 			}
-			best = emulatorEndpoint{addr: "127.0.0.1:" + fields["grpc.port"], token: fields["grpc.token"]}
+			best = emulatorEndpoint{addr: "127.0.0.1:" + fields["grpc.port"], token: fields["grpc.token"], avd: fields["avd.name"]}
 			bestTime = info.ModTime()
 		}
 	}
 	if best.addr == "" {
+		// `mobium boot` on an emulator already running restarts nothing —
+		// it says it is running — so the remedy names the stop as well.
+		// CHALLENGES 284.
 		return emulatorEndpoint{}, mobiumerr.New(mobiumerr.DeviceNotReady, "%s has no control port Mobium "+
-			"can find (looked in %s) — it was started with -no-grpc, or by an emulator older than 33; "+
-			"restart it with `mobium boot`", serial, strings.Join(dirs, ", "))
+			"can find (looked in %s) — it was started with -no-grpc, or by an emulator older than 33",
+			serial, strings.Join(dirs, ", ")).
+			WithRemedy(fmt.Sprintf("restart it: `mobium shutdown %s`, then `mobium boot <its AVD>`, which "+
+				"starts it with the control port on", serial))
 	}
 	return best, nil
 }
@@ -280,7 +288,7 @@ func startStreamAudio(ctx context.Context, ep emulatorEndpoint, serial string) (
 			return
 		}
 		defer func() { _ = resp.Body.Close() }()
-		if err := grpcRefusal(resp, serial); err != nil {
+		if err := grpcRefusal(resp, serial, ep); err != nil {
 			answered <- err
 			return
 		}
@@ -312,15 +320,21 @@ func startStreamAudio(ctx context.Context, ep emulatorEndpoint, serial string) (
 
 // grpcRefusal is the error a response carries when the call was refused
 // rather than started. gRPC says so in a header, with HTTP 200.
-func grpcRefusal(resp *http.Response, serial string) error {
+func grpcRefusal(resp *http.Response, serial string, ep emulatorEndpoint) error {
 	status := resp.Header.Get("Grpc-Status")
 	if resp.StatusCode == http.StatusOK && (status == "" || status == "0") {
 		return nil
 	}
 	message := resp.Header.Get("Grpc-Message")
 	if status == "16" || status == "7" {
+		avd := ep.avd
+		if avd == "" {
+			avd = "<its AVD>"
+		}
+		restart := fmt.Sprintf("`mobium shutdown %s`, then `mobium boot %s`", serial, avd)
 		return mobiumerr.New(mobiumerr.DeviceServer, "%s's control port refused the token in its discovery "+
-			"file (gRPC status %s %s) — restart the emulator with `mobium boot`", serial, status, message)
+			"file (gRPC status %s %s) — restart the emulator: %s", serial, status, message, restart).
+			WithRemedy("restart the emulator, which writes a new token: " + restart)
 	}
 	return mobiumerr.New(mobiumerr.DeviceServer, "%s's control port refused the audio stream: HTTP %d, gRPC "+
 		"status %q %s", serial, resp.StatusCode, status, message)

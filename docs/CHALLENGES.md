@@ -6090,6 +6090,24 @@ dropped the capture; only a later status said it was lost. The end now
 says "the audio capture running for 3s was discarded, unsaved — stop it
 first to keep it", and the same for a screen recording.
 
+### 284. Two audio remedies said to restart with a command that restarts nothing
+
+**Found by:** making the emulator's control port refuse, on purpose — the
+token in its discovery file changed. The refusal was clear, and its remedy
+was "restart the emulator with `mobium boot`"; so was the remedy for an
+emulator with no control port at all. `mobium boot` on an emulator that is
+running answers "mobium-test was already running, as emulator-5554" and
+changes nothing, so the remedy, followed, left the error where it was. Both
+now name the stop as well — "`mobium shutdown emulator-5554`, then `mobium
+boot mobium-test`", the AVD read from the discovery file — in the message
+and as the error's remedy. Followed literally on the emulator, the two
+commands wrote a new token and the capture worked. The other two ways the
+port could fail were not defects: a discovery file left by an emulator
+killed with -9 was removed by the next one as it started, and a frozen
+emulator never reached the capture — opening its session timed out first.
+That timeout's own hint, to try the other Android driver, cannot help a
+frozen emulator either; it is left as a lead (ROADMAP, "Audio").
+
 ## Findings that were not defects
 
 Worth recording because each one closed off an approach that looked obvious.

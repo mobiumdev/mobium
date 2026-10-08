@@ -49,8 +49,13 @@ func TestFindEmulatorEndpointMissing(t *testing.T) {
 	// Started with -no-grpc: a file, but no port.
 	writeIni(t, dir, "pid_1.ini", "port.serial=5554\nport.adb=5555\n", 0)
 	_, err := findEmulatorEndpoint("emulator-5554", []string{dir})
-	if mobiumerr.CodeOf(err) != mobiumerr.DeviceNotReady || !strings.Contains(err.Error(), "mobium boot") {
+	if mobiumerr.CodeOf(err) != mobiumerr.DeviceNotReady {
 		t.Fatalf("got %v", err)
+	}
+	// A restart, not a boot alone, which on a running emulator changes
+	// nothing. CHALLENGES 284.
+	if e, _ := mobiumerr.As(err); !strings.Contains(e.Remedy, "`mobium shutdown emulator-5554`, then `mobium boot") {
+		t.Fatalf("remedy %q", e.Remedy)
 	}
 	if _, err := findEmulatorEndpoint("3C191FDJG001QX", []string{dir}); mobiumerr.CodeOf(err) != mobiumerr.Unsupported {
 		t.Fatalf("a phone: got %v", err)
@@ -106,9 +111,22 @@ func TestStreamAudioRefused(t *testing.T) {
 		w.Header().Set("Grpc-Message", "unauthenticated")
 		w.WriteHeader(http.StatusOK)
 	})
+	ep.avd = "mobium-test"
 	_, err := startStreamAudio(context.Background(), ep, "emulator-5554")
 	if mobiumerr.CodeOf(err) != mobiumerr.DeviceServer || !strings.Contains(err.Error(), "token") {
 		t.Fatalf("got %v", err)
+	}
+	// The remedy restarts the emulator: `mobium boot` alone, on one already
+	// running, says it is running and changes nothing. CHALLENGES 284.
+	e, _ := mobiumerr.As(err)
+	if want := "`mobium shutdown emulator-5554`, then `mobium boot mobium-test`"; !strings.Contains(e.Remedy, want) {
+		t.Errorf("remedy %q does not say %s", e.Remedy, want)
+	}
+	if _, err := findEmulatorEndpoint("emulator-5554", []string{t.TempDir()}); err == nil ||
+		!strings.Contains(err.Error(), "no control port") {
+		t.Errorf("no discovery file: %v", err)
+	} else if e, _ := mobiumerr.As(err); !strings.Contains(e.Remedy, "`mobium shutdown emulator-5554`, then `mobium boot") {
+		t.Errorf("no discovery file, remedy %q", e.Remedy)
 	}
 }
 

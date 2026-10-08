@@ -691,6 +691,13 @@ this is what is not.
     asserts the call's report and the alarm on both, the phone with
     `ALLOW_PHONE=1`, which stops its timer by the timer's own Stop — never
     by force-stopping Clock, which would cancel its owner's alarms.
+  - **Hardened** (2026-10-07, CHALLENGES 279–284): a capture cut short — by
+    its daemon stopping or killed, the emulator dying, a session ended —
+    says it was lost and why; a capture outlasts the idle timeout and keeps
+    at most an hour; each closes its connection; refusals name remedies
+    that work. A lead from it: a frozen emulator's session start times out
+    on `adb` and suggests the other Android driver, which needs the same
+    `adb`.
   - Also open: comparing a capture with a baseline recording, and
     the emulator's microphone (`injectAudio`), which would let a test
     speak to an app.
