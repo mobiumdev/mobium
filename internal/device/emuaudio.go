@@ -7,6 +7,7 @@ import (
 	"encoding/binary"
 	"errors"
 	"io"
+	"net"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -211,6 +212,31 @@ type emuAudio struct {
 
 func (r *emuAudio) Captures() bool { return true }
 
+// connSet keeps the connections a transport dialed, to close them itself.
+type connSet struct {
+	mu    sync.Mutex
+	conns []net.Conn
+}
+
+func (c *connSet) dial(ctx context.Context, network, addr string) (net.Conn, error) {
+	conn, err := (&net.Dialer{}).DialContext(ctx, network, addr)
+	if err == nil {
+		c.mu.Lock()
+		c.conns = append(c.conns, conn)
+		c.mu.Unlock()
+	}
+	return conn, err
+}
+
+func (c *connSet) closeAll() {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	for _, conn := range c.conns {
+		_ = conn.Close()
+	}
+	c.conns = nil
+}
+
 func startStreamAudio(ctx context.Context, ep emulatorEndpoint, serial string) (AudioRecording, error) {
 	// AudioFormat{samplingRate: AudioRate, channels: Mono, format: S16,
 	// mode: MODE_REAL_TIME} — real time, so a slow reader loses audio
@@ -234,12 +260,20 @@ func startStreamAudio(ctx context.Context, ep emulatorEndpoint, serial string) (
 	}
 	var protocols http.Protocols
 	protocols.SetUnencryptedHTTP2(true)
-	client := &http.Client{Transport: &http.Transport{Protocols: &protocols}}
+	// The capture closes its own connection when the stream ends. Left to
+	// the transport, which is this capture's alone, the connection stayed
+	// open after the stream: one per capture, nine after nine, and closing
+	// the transport's idle connections as the stream ended did not reach
+	// it. CHALLENGES 283.
+	var conns connSet
+	transport := &http.Transport{Protocols: &protocols, DialContext: conns.dial}
+	client := &http.Client{Transport: transport}
 
 	r := &emuAudio{started: time.Now(), cancel: cancel, done: make(chan struct{})}
 	answered := make(chan error, 1)
 	go func() {
 		defer close(r.done)
+		defer conns.closeAll()
 		resp, err := client.Do(req)
 		if err != nil {
 			answered <- err
