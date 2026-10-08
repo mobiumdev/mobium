@@ -6244,6 +6244,35 @@ back once the phone answered. The read's own error is now the failure,
 and the pin is reported only from an answer that says one — the shape of
 269, a check that turned an unreachable device into a finding.
 
+### 293. A check left its daemon up, and the next one failed with "no output"
+
+**Found by:** the release checklist on the Pixel 8 Pro, 2026-10-07.
+`external-driver.sh` failed after `calculator.sh` and passed alone: the
+reference driver's `uiautomator dump` failed with "no output". The two
+Calculator and Clock checks ran outside the prelude — listed with checks
+that "run no device check", which they do — so their daemon stayed up after
+them, and its UiAutomator2 server held UiAutomation, which one client may
+use at a time (182). Reproduced in that order, and gone in it once both
+checks were put on `lib.sh`, which stops a check's daemon at its end;
+`lib-selftest.sh` no longer exempts them. And the reference driver, which
+said only "no output", now asks `ps` what holds UiAutomation and names it,
+as Mobium's own driver does — shown with a session left holding it.
+
+### 294. Android's keyboard over an app's WebView refused every tap
+
+**Found by:** the same run: `web-type.sh` failed on the Pixel at "a tap with
+the keyboard up was refused" — "the WebView element is 770 CSS pixels tall
+but the page's viewport is 401". It is 230 on Android: the keyboard shrinks
+the page's viewport and not the WebView, and the height check written for
+Safari's chrome (47) refused. iOS's answer asked the keyboard node in the
+app's tree, and Android's keyboard is another window, never there; the
+emulator's keyboard, a floating toolbar, shrinks nothing, so every run
+there passed. The frame under the keyboard now asks Android's keyboard
+regions too — only while something has focus, as the keyboard check does.
+Measured by touch, as 230 was: with the frame at the WebView's top,
+`web-type.sh` passed twice on the Pixel, each field judged by what the page
+says it holds, and the Pixel's other WebView checks passed after it.
+
 ## Findings that were not defects
 
 Worth recording because each one closed off an approach that looked obvious.

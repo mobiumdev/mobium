@@ -30,6 +30,17 @@ three checks failed for that alone, passing when run again; one of them
 misread it as a finding (CHALLENGES 292). Still to run: the Pixel, Windows
 and the manual items.
 
+**The Pixel half, 2026-10-07:** a Pixel 8 Pro, Android 17: `calculator.sh`,
+`external-driver.sh`, `crashes.sh` and `clients.sh` (all five clients), and
+every check that runs on a phone, with the owner's settings compared before
+and after — all fifteen read back as found, and no mock location left. Two
+defects found and fixed (CHALLENGES 293, 294). `chrome.sh` and `pwa.sh`
+stopped at Chrome's own notification promo, which Mobium refused to tap
+through, rightly; answering it is the owner's. Not run on this phone:
+`clock-timer.sh`, which force-stops Clock and so would cancel the owner's
+alarms, and `compose-app.sh` and `third-party-app.sh`, whose apps are not on
+it. Still to run: Windows and the manual items.
+
 **Last full run: 2026-09-25**, on a Pixel 7 AVD (API 35), an iPhone 17 Pro
 simulator (iOS 26.5) and an iPhone 15 Plus (iOS 26.6.2): 29 minutes by the
 clock, from booting the emulator to `clean-stop.sh` reporting clean, with the
