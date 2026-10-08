@@ -6273,6 +6273,27 @@ Measured by touch, as 230 was: with the frame at the WebView's top,
 `web-type.sh` passed twice on the Pixel, each field judged by what the page
 says it holds, and the Pixel's other WebView checks passed after it.
 
+### 295. A ref among look-alikes swiped fifteen times and blamed the list
+
+**Found by:** `icecubes-ios.sh`, three failures in four runs on the
+simulator and the iPhone 15 Plus, 2026-10-07: "no element matches path=…
+after scrolling down 15 times — the list is longer than mobium will swipe;
+try a deep link". Every post's "…" button is labeled
+`status.action.context-menu`, so its ref is a position. The live timeline
+lays itself out again between a map and a tap, and once the list moved, the
+position held another post's button or nothing. The follow by name from 267
+then found several buttons of that name, which it rightly would not choose
+between, and the loop took "several" for "none here" and swiped to its
+limit: a cause that was not the case, and a remedy that could not help.
+Two changes. After a measured nudge the element is looked for where the
+nudge moved it — the one of its name nearest that place, and none when a
+second is about as near. Otherwise a ref whose position no longer holds its
+name, among several of that name, is refused at once as `no_such_element`:
+the screen has changed since the map, run it again. A name held once is
+followed as before (267). Not reproduced on demand, since it follows what
+the timeline shows: the tap test drives the loop on a list of look-alikes,
+and swiped six times before the fix and none after.
+
 ## Findings that were not defects
 
 Worth recording because each one closed off an approach that looked obvious.
