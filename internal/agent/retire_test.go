@@ -14,7 +14,7 @@ func TestATraceOutlivesItsSession(t *testing.T) {
 	old := &session{dev: fakeDevice(), driver: &buttonDriver{}, trace: tr}
 	h.sessions["tv"] = old
 
-	h.retire("tv", old)
+	h.retire("tv", old, "the device stopped answering")
 	if _, still := h.sessions["tv"]; still || old.trace != nil {
 		t.Fatal("the retired session is still cached, or still holds the trace")
 	}
