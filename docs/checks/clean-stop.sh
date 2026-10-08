@@ -278,8 +278,14 @@ n=$(pgrep -f "CoreSimulator/Profiles/Runtimes" 2>/dev/null | wc -l | tr -d ' ')
 # while the daemon used another reported "cleared" for files it never looked at.
 state="${MOBIUM_HOME:-$HOME/.mobium}"
 if [ -d "$state/daemon" ]; then
-  n=$(ls -A "$state/daemon" 2>/dev/null | wc -l | tr -d ' ')
+  # A note of a capture lost with its daemon is no socket and runs nothing:
+  # it waits for the next status or stop to report it (CHALLENGES 280).
+  # Counted as one, it made this check fail with nothing running, and
+  # --quit could not clear it. CHALLENGES 285.
+  n=$(ls -A "$state/daemon" 2>/dev/null | grep -v '^audio-.*\.json$' | wc -l | tr -d ' ')
   [ "$n" = "0" ] && note "daemon socket/pid" "cleared" || bad "daemon socket/pid" "$n file(s) left"
+  lost=$(ls -A "$state/daemon" 2>/dev/null | grep -c '^audio-.*\.json$')
+  [ "$lost" = "0" ] || note "lost audio captures" "$lost noted, for the next status or stop to report"
 fi
 
 echo

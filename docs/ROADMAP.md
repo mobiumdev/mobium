@@ -695,9 +695,8 @@ this is what is not.
     its daemon stopping or killed, the emulator dying, a session ended —
     says it was lost and why; a capture outlasts the idle timeout and keeps
     at most an hour; each closes its connection; refusals name remedies
-    that work. A lead from it: a frozen emulator's session start times out
-    on `adb` and suggests the other Android driver, which needs the same
-    `adb`.
+    that work, and a frozen emulator is named as not answering adb and
+    can be shut down (285).
   - Also open: comparing a capture with a baseline recording, and
     the emulator's microphone (`injectAudio`), which would let a test
     speak to an app.

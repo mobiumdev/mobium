@@ -150,6 +150,11 @@ func (a *ADB) Run(ctx context.Context, rest ...string) ([]byte, error) {
 	return out, err
 }
 
+// ADBTimeoutKey is the detail an adb command that timed out carries, naming
+// the command: the device did not answer adb, which no other Android driver
+// can get past either.
+const ADBTimeoutKey = "adb_timeout"
+
 // run is Run, also handing back stderr for callers that need to read the
 // device command's own diagnostics.
 func (a *ADB) run(ctx context.Context, rest ...string) (stdout, stderr []byte, err error) {
@@ -164,7 +169,7 @@ func (a *ADB) run(ctx context.Context, rest ...string) (stdout, stderr []byte, e
 
 	if ctx.Err() == context.DeadlineExceeded {
 		return nil, errBuf.Bytes(), mobiumerr.New(mobiumerr.Timeout, "adb %s timed out after %s",
-			strings.Join(rest, " "), defaultTimeout)
+			strings.Join(rest, " "), defaultTimeout).WithDetail(ADBTimeoutKey, strings.Join(rest, " "))
 	}
 	if e := unreachable(a.Serial, errBuf.String()); e != nil {
 		return outBuf.Bytes(), errBuf.Bytes(), e

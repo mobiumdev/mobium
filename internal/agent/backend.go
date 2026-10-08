@@ -342,6 +342,12 @@ func (h *Handlers) resolveSession(ctx context.Context, args map[string]interface
 				e.Retryable = true
 				return nil, e
 			}
+			// Nor for a device that does not answer adb at all — a frozen
+			// emulator timed out on `adb shell` and was told to try the
+			// other driver. CHALLENGES 285.
+			if e, ok := mobiumerr.As(err); ok && e.Code == mobiumerr.Timeout && e.Details[device.ADBTimeoutKey] != nil {
+				return nil, notAnsweringADB(dev.Serial, err)
+			}
 			return nil, fmt.Errorf("%w\n\nTo run without the UiAutomator2 server, "+
 				"use --driver uiautomator (slower, and it cannot type).", err)
 		}
@@ -350,6 +356,21 @@ func (h *Handlers) resolveSession(ctx context.Context, args map[string]interface
 
 	h.adopt(dev.Serial, s)
 	return s, nil
+}
+
+// notAnsweringADB is a device that did not answer adb in time: frozen, hung
+// or overloaded. Every Android driver goes through adb, so the remedy is the
+// device, never another driver.
+func notAnsweringADB(serial string, cause error) error {
+	remedy := fmt.Sprintf("check it answers: `adb -s %s shell true`; a phone may need unlocking, its cable, "+
+		"or a restart", serial)
+	if strings.HasPrefix(serial, "emulator-") {
+		remedy = fmt.Sprintf("restart it: `mobium shutdown %s`, which ends a frozen emulator too, then "+
+			"`mobium boot <its AVD>`", serial)
+	}
+	return mobiumerr.New(mobiumerr.DeviceNotReady, "%s is not answering adb (%v) — frozen, hung or "+
+		"overloaded; every Android driver goes through adb, so another one cannot help", serial, cause).
+		WithRemedy(remedy)
 }
 
 // openSessionFor is the session a call naming no driver belongs to: the one
