@@ -27,7 +27,10 @@ general() { $M map 2>/dev/null | grep -o -E '\b(General|一般)\b' | head -1; }
 at_exit '$M locale $P "" >/dev/null 2>&1 || true'
 echo "--- $DEV"
 
-$M locale $P | grep -q 'follows the device' || fail "Settings started out pinned"
+# The first read's own failure is the failure: any error here once read as
+# "pinned", on a phone that had locked mid-batch (CHALLENGES 292).
+first=$($M locale $P 2>&1) || fail "could not read Settings' language: $first"
+echo "$first" | grep -q 'follows the device' || fail "Settings started out pinned: $first"
 $M terminate $P >/dev/null 2>&1 || true
 $M launch $P >/dev/null
 [ "$(general)" = General ] || fail "Settings does not read General before the pin: '$(general)'"

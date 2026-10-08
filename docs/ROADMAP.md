@@ -707,7 +707,9 @@ this is what is not.
   and the position named another — the tap swiped 15 times and blamed "the
   list is longer than mobium will swipe", suggesting a deep link: neither
   true. It follows what the live timeline shows, so it did not fail on
-  demand. CHALLENGES 261 and 267 are the same family.
+  demand; it failed the same way on the iPhone 15 Plus the same day —
+  three failures in four runs over two devices. CHALLENGES 261 and 267
+  are the same family.
 - **Seeing an app's outgoing intents** on Android, so a test can assert that
   "share" asked for the chooser with the right text, without stubbing it.
 - **Menus and long press on iOS.** Measured 2026-10-04 on Ice Cubes'
