@@ -598,7 +598,7 @@ func TestAFoundTargetIsSwipedInByTheDistanceItIsOut(t *testing.T) {
 
 	r := &swipeRecorder{}
 	below := &uitree.Node{Bounds: uitree.Rect{X1: 48, Y1: 2190, X2: 1158, Y2: 2334}}
-	if ok, err := nudgeInto(ctx, r, list, below, false, false); !ok || err != nil {
+	if ok, _, _, err := nudgeInto(ctx, r, list, below, false, false); !ok || err != nil {
 		t.Fatalf("no nudge for a target below: %v, %v", ok, err)
 	}
 	// 33 out plus an eighth of 1896 is 270, centered on the list's middle.
@@ -608,7 +608,7 @@ func TestAFoundTargetIsSwipedInByTheDistanceItIsOut(t *testing.T) {
 
 	r = &swipeRecorder{}
 	above := &uitree.Node{Bounds: uitree.Rect{X1: 48, Y1: 81, X2: 1158, Y2: 228}}
-	if ok, _ := nudgeInto(ctx, r, list, above, false, false); !ok || r.swipes[0][3] <= r.swipes[0][1] {
+	if ok, _, _, _ := nudgeInto(ctx, r, list, above, false, false); !ok || r.swipes[0][3] <= r.swipes[0][1] {
 		t.Errorf("a target above was not swiped down toward: %v", r.swipes)
 	}
 	// Past the top by 324, plus 237: 561, which is under half the list.
@@ -618,10 +618,10 @@ func TestAFoundTargetIsSwipedInByTheDistanceItIsOut(t *testing.T) {
 
 	r = &swipeRecorder{}
 	tall := &uitree.Node{Bounds: uitree.Rect{X1: 0, Y1: 300, X2: 1206, Y2: 2500}}
-	if ok, _ := nudgeInto(ctx, r, list, tall, false, false); ok || len(r.swipes) != 0 {
+	if ok, _, _, _ := nudgeInto(ctx, r, list, tall, false, false); ok || len(r.swipes) != 0 {
 		t.Errorf("a target taller than the list was nudged: %v", r.swipes)
 	}
-	if ok, _ := nudgeInto(ctx, r, nil, nil, false, false); ok {
+	if ok, _, _, _ := nudgeInto(ctx, r, nil, nil, false, false); ok {
 		t.Error("nudged with no target")
 	}
 }
@@ -771,7 +771,7 @@ func TestANudgeTravelsTheAxisTheTargetIsOutOn(t *testing.T) {
 	carousel := &uitree.Node{Bounds: uitree.Rect{X1: 16, Y1: 316, X2: 398, Y2: 589}}
 	row := &uitree.Node{Bounds: uitree.Rect{X1: 394, Y1: 316, X2: 756, Y2: 369}}
 	g := &recordingGesturer{}
-	nudged, err := nudgeInto(context.Background(), g, carousel, row, false, true)
+	nudged, _, _, err := nudgeInto(context.Background(), g, carousel, row, false, true)
 	if err != nil || !nudged {
 		t.Fatalf("nudged %v: %v", nudged, err)
 	}
@@ -780,12 +780,12 @@ func TestANudgeTravelsTheAxisTheTargetIsOutOn(t *testing.T) {
 	}
 	below := &uitree.Node{Bounds: uitree.Rect{X1: 500, Y1: 600, X2: 600, Y2: 650}}
 	g = &recordingGesturer{}
-	if nudged, _ := nudgeInto(context.Background(), g, carousel, below, false, true); nudged && g.x1 != g.x2 {
+	if nudged, _, _, _ := nudgeInto(context.Background(), g, carousel, below, false, true); nudged && g.x1 != g.x2 {
 		t.Errorf("out on both axes, swiped (%d,%d) to (%d,%d), want the caller's vertical axis", g.x1, g.y1, g.x2, g.y2)
 	}
 	// app_scroll_to named its axis: a "down" there stays vertical.
 	g = &recordingGesturer{}
-	if nudged, _ := nudgeInto(context.Background(), g, carousel, row, false, false); nudged && g.y1 == g.y2 {
+	if nudged, _, _, _ := nudgeInto(context.Background(), g, carousel, row, false, false); nudged && g.y1 == g.y2 {
 		t.Errorf("an explicit vertical scroll swiped sideways, (%d,%d) to (%d,%d)", g.x1, g.y1, g.x2, g.y2)
 	}
 }
@@ -838,5 +838,97 @@ func TestARefsScrollFollowsTheNameMapGave(t *testing.T) {
 	}
 	if n, err := refPicker(at, "")(tree); err != nil || uitree.Describe(n) != "Revisionist History" {
 		t.Errorf("a locator that is not a ref did not resolve as itself: %v, %v", n, err)
+	}
+}
+
+// CHALLENGES 295: every post in Ice Cubes has a "…" button of one name, so
+// its ref is a position, and after a nudge the position held another post's
+// button or nothing. The follower looks where the nudge moved it.
+func TestAFollowedRefIsFoundWhereTheNudgeMovedIt(t *testing.T) {
+	button := func(y int) *uitree.Node {
+		return &uitree.Node{Clickable: true, Displayed: true, Label: "status.action.context-menu",
+			Bounds: uitree.Rect{X1: 1000, Y1: y, X2: 1100, Y2: y + 80}}
+	}
+	screen := func(ys ...int) *uitree.Tree {
+		root := &uitree.Node{Bounds: uitree.Rect{X2: 1206, Y2: 2622}}
+		for _, y := range ys {
+			b := button(y)
+			b.Parent = root
+			root.Children = append(root.Children, b)
+		}
+		return &uitree.Tree{Root: root}
+	}
+	// The ref's position: the first child, whatever it now holds.
+	f := &follower{loc: uitree.Locator{Kind: uitree.KindPath, Value: "/0"}, name: "status.action.context-menu"}
+
+	// Before: the target at the bottom edge, y 2560. A nudge of 900 moves
+	// the list up; the target is now at 1660, and the first child — the
+	// ref's position — holds another post's button at 760.
+	f.moved(uitree.Rect{X1: 1000, Y1: 2560, X2: 1100, Y2: 2640}, 0, 900)
+	got, err := f.pick(screen(760, 1660, 2500))
+	if err != nil || got.Bounds.Y1 != 1660 {
+		t.Fatalf("after a nudge the follower picked %+v (%v), want the button at 1660", got, err)
+	}
+
+	// Two look-alikes as near as each other: no guess.
+	if n := nearestNamed(screen(1500, 1820), "status.action.context-menu", uitree.Rect{X1: 1000, Y1: 1660, X2: 1100, Y2: 1740}); n != nil {
+		t.Errorf("between two equally near look-alikes it chose %+v", n.Bounds)
+	}
+	// Nothing near where it should be: none.
+	if n := nearestNamed(screen(100), "status.action.context-menu", uitree.Rect{X1: 1000, Y1: 1660, X2: 1100, Y2: 1740}); n != nil {
+		t.Errorf("a button far from where it went was taken for it: %+v", n.Bounds)
+	}
+}
+
+// CHALLENGES 295: the live timeline re-laid out between map and tap, the
+// ref's position held something else, several buttons shared its name, and
+// the loop swiped fifteen times before blaming the list's length. With no
+// nudge to follow, the follower refuses at once, saying why.
+func TestARefLostAmongLookAlikesIsRefusedAtOnce(t *testing.T) {
+	root := &uitree.Node{Bounds: uitree.Rect{X2: 1206, Y2: 2622}}
+	for _, y := range []int{700, 1500} {
+		b := &uitree.Node{Clickable: true, Displayed: true, Label: "status.action.context-menu",
+			Bounds: uitree.Rect{X1: 1000, Y1: y, X2: 1100, Y2: y + 80}, Parent: root}
+		root.Children = append(root.Children, b)
+	}
+	other := &uitree.Node{Clickable: true, Displayed: true, Label: "Reply", Bounds: uitree.Rect{X1: 100, Y1: 300, X2: 200, Y2: 380}, Parent: root}
+	root.Children = append([]*uitree.Node{other}, root.Children...)
+	f := &follower{loc: uitree.Locator{Kind: uitree.KindPath, Value: "/0"}, name: "status.action.context-menu"}
+	_, err := f.pick(&uitree.Tree{Root: root})
+	if !lostAmongLookAlikes(err) || !strings.Contains(err.Error(), "2 elements on the screen share that name") {
+		t.Fatalf("a ref lost among look-alikes: %v", err)
+	}
+	if e, _ := mobiumerr.As(err); !strings.Contains(e.Remedy, "app_map again") {
+		t.Errorf("remedy %q", e.Remedy)
+	}
+	// One of its name is still found, as before (CHALLENGES 267).
+	root.Children = root.Children[:2]
+	if n, err := f.pick(&uitree.Tree{Root: root}); err != nil || n.Bounds.Y1 != 700 {
+		t.Errorf("the one of its name: %v %v", n, err)
+	}
+}
+
+// The same through the loop, as it failed: the ref's position now holds
+// another element below the fold, so the tap scrolls for it, and the rows
+// on the screen all share the name map gave it. It used to swipe fifteen
+// times and blame the list's length; it is refused before the first swipe.
+func TestATapOnARefLostAmongLookAlikesDoesNotSwipe(t *testing.T) {
+	same := make([]string, 30)
+	for i := range same {
+		same[i] = "More"
+	}
+	same[7] = "Row 07"
+	h, sess, d := withList(t, same)
+	there, _ := uitree.ParseLocator("text=Row 07")
+	h.refs["fake"] = &refTable{entries: map[string]uitree.Locator{"@e9": there},
+		// Where map saw it, so staleRef's unchanged-position escape lets the
+		// ref through, as it lets a reused cell (261).
+		seen: map[string]refSeen{"@e9": {name: "More", bounds: uitree.Rect{Y1: 1600, X2: 1080, Y2: 1800}}}}
+	_, err := tap(h, sess, map[string]interface{}{"target": "@e9"})
+	if !lostAmongLookAlikes(err) {
+		t.Fatalf("not refused as lost among look-alikes: %v", err)
+	}
+	if d.swipes != 0 || len(d.tapped) != 0 {
+		t.Errorf("swiped %d times and tapped %v", d.swipes, d.tapped)
 	}
 }

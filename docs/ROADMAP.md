@@ -700,16 +700,14 @@ this is what is not.
   - Also open: comparing a capture with a baseline recording, and
     the emulator's microphone (`injectAudio`), which would let a test
     speak to an app.
-- **A ref by position after a scroll in a list of look-alikes** (lead,
-  2026-10-07). `icecubes-ios.sh` failed twice in three on the simulator:
-  every post's "…" button has the same label, so its ref is a position, and
-  when the first one `map` listed needed a scroll, the list reused its cells
-  and the position named another — the tap swiped 15 times and blamed "the
-  list is longer than mobium will swipe", suggesting a deep link: neither
-  true. It follows what the live timeline shows, so it did not fail on
-  demand; it failed the same way on the iPhone 15 Plus the same day —
-  three failures in four runs over two devices. CHALLENGES 261 and 267
-  are the same family.
+- **A ref by position after a scroll in a list of look-alikes** (done,
+  2026-10-08, CHALLENGES 295). `icecubes-ios.sh` failed three times in four
+  over the simulator and the iPhone: every post's "…" button has the same
+  label, so its ref is a position, the live timeline moved it, and the tap
+  swiped 15 times and blamed the list's length. A ref is now followed to
+  where a nudge moved it, and one lost among look-alikes is refused at once,
+  saying to map again. It follows what the timeline shows, so a pass is not
+  proof: worth watching in the next sweeps on both devices.
 - **Seeing an app's outgoing intents** on Android, so a test can assert that
   "share" asked for the chooser with the right text, without stubbing it.
 - **Menus and long press on iOS.** Measured 2026-10-04 on Ice Cubes'

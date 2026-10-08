@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/mobiumdev/mobium/internal/mobiumerr"
+	"math"
 	"strings"
 	"time"
 
@@ -183,7 +184,8 @@ func plural(n int) string {
 // loop follows the element by it rather than by the ref's position once the
 // two part (refPicker).
 func (h *Handlers) scrollIntoView(ctx context.Context, s *session, loc uitree.Locator, dir string, followTarget bool, name string) (*uitree.Node, *uitree.Tree, int, error) {
-	pick := refPicker(loc, name)
+	follow := &follower{loc: loc, name: name}
+	pick := picker(follow.pick)
 	tree, err := s.driver.Snapshot(ctx)
 	if err != nil {
 		return nil, nil, 0, err
@@ -200,7 +202,7 @@ func (h *Handlers) scrollIntoView(ctx context.Context, s *session, loc uitree.Lo
 	// into the other. Verified on an iPhone 17 Pro: a Settings cell and the
 	// static text inside it carry the same label, so `label=Privacy &
 	// Security` matches twice while the old message insisted nothing matched.
-	if !matchedNothing(resolveErr) && !errors.Is(resolveErr, errOffScreen) {
+	if lostAmongLookAlikes(resolveErr) || !matchedNothing(resolveErr) && !errors.Is(resolveErr, errOffScreen) {
 		return nil, nil, 0, resolveErr
 	}
 	// A screen in the middle of changing can read, for a moment, as having
@@ -224,7 +226,7 @@ func (h *Handlers) scrollIntoView(ctx context.Context, s *session, loc uitree.Lo
 		if n, resolveErr = resolvedAndVisible(pick, tree, container); resolveErr == nil {
 			return n, tree, 0, nil
 		}
-		if !matchedNothing(resolveErr) && !errors.Is(resolveErr, errOffScreen) {
+		if lostAmongLookAlikes(resolveErr) || !matchedNothing(resolveErr) && !errors.Is(resolveErr, errOffScreen) {
 			return nil, nil, 0, resolveErr
 		}
 	}
@@ -269,9 +271,14 @@ func (h *Handlers) scrollIntoView(ctx context.Context, s *session, loc uitree.Lo
 	partial, partialIn := offScreenTarget(pick, tree)
 
 	for i := 1; i <= maxScrolls; i++ {
-		nudged, err := nudgeInto(ctx, gest, partialIn, partial, horizontal(dir), followTarget)
+		nudged, dx, dy, err := nudgeInto(ctx, gest, partialIn, partial, horizontal(dir), followTarget)
 		if err != nil {
 			return nil, nil, i, err
+		}
+		if nudged {
+			follow.moved(partial.Bounds, dx, dy)
+		} else {
+			follow.expect = nil // a full swipe's distance is not known
 		}
 		if !nudged {
 			if err := swipeWithin(ctx, gest, container.Bounds, dir); err != nil {
@@ -303,7 +310,7 @@ func (h *Handlers) scrollIntoView(ctx context.Context, s *session, loc uitree.Lo
 		if resolveErr == nil {
 			return n, tree, i, nil
 		}
-		if !matchedNothing(resolveErr) && !errors.Is(resolveErr, errOffScreen) {
+		if lostAmongLookAlikes(resolveErr) || !matchedNothing(resolveErr) && !errors.Is(resolveErr, errOffScreen) {
 			return nil, nil, i, resolveErr
 		}
 		lastErr = resolveErr
@@ -496,23 +503,114 @@ type picker func(*uitree.Tree) (*uitree.Node, error)
 // named element it is used; once it does not, the one element of that name
 // is, and when there is none, or several, the target is not on this screen.
 func refPicker(loc uitree.Locator, name string) picker {
-	return func(t *uitree.Tree) (*uitree.Node, error) {
-		n, err := pickOne(loc, t)
-		if name == "" || (err == nil && uitree.Describe(n) == name) {
-			return n, err
+	return (&follower{loc: loc, name: name}).pick
+}
+
+// follower is refPicker with a memory of where its element went. A name
+// shared by many — every post in Ice Cubes has a "…" button called
+// status.action.context-menu — is a position in map, and once a nudge moved
+// the list the position named another post's button, or nothing, and the
+// one-of-that-name rule found several: the loop swiped fifteen times and
+// blamed the list's length, two runs in three on the simulator and the
+// iPhone. After a nudge the loop knows how far it moved the list, so the
+// element is looked for where it went: the one of its name nearest the
+// place it was, moved by the nudge, when it is clearly the nearest. That
+// comes before the position, which after a nudge may hold a look-alike.
+// CHALLENGES 295.
+type follower struct {
+	loc    uitree.Locator
+	name   string
+	expect *uitree.Rect
+}
+
+func (f *follower) pick(t *uitree.Tree) (*uitree.Node, error) {
+	if f.name != "" && f.expect != nil {
+		if n := nearestNamed(t, f.name, *f.expect); n != nil {
+			return n, nil
 		}
-		var found []*uitree.Node
-		t.Walk(func(m *uitree.Node) bool {
-			if m.Clickable && !m.Bounds.Empty() && uitree.Describe(m) == name {
-				found = append(found, m)
-			}
-			return true
-		})
-		if len(found) == 1 {
-			return found[0], nil
-		}
-		return nil, mobiumerr.New(mobiumerr.NoSuchElement, "no element named %q on the current screen", name)
 	}
+	n, err := pickOne(f.loc, t)
+	if f.name == "" || (err == nil && uitree.Describe(n) == f.name) {
+		return n, err
+	}
+	var found []*uitree.Node
+	t.Walk(func(m *uitree.Node) bool {
+		if m.Clickable && !m.Bounds.Empty() && uitree.Describe(m) == f.name {
+			found = append(found, m)
+		}
+		return true
+	})
+	if len(found) == 1 {
+		return found[0], nil
+	}
+	if len(found) > 1 && f.expect == nil {
+		// Its position no longer holds it, and several share its name:
+		// the screen changed since the map — a live timeline re-laid out
+		// between map and tap — and no swipe can say which one it was.
+		// Swiping on, the loop blamed the list's length after fifteen.
+		return nil, mobiumerr.New(mobiumerr.NoSuchElement, "the element map named %q is no longer where the "+
+			"map saw it, and %d elements on the screen share that name, so which one it was cannot be "+
+			"told — the screen has changed since the map", f.name, len(found)).
+			WithRemedy("run app_map again, and use the ref it gives").
+			WithDetail(lookAlikesKey, len(found))
+	}
+	return nil, mobiumerr.New(mobiumerr.NoSuchElement, "no element named %q on the current screen", f.name)
+}
+
+// lookAlikesKey marks a ref that cannot be told from its look-alikes, which
+// the scroll loop answers at once rather than swiping for. CHALLENGES 295.
+const lookAlikesKey = "look_alikes"
+
+// lostAmongLookAlikes reports whether err is that refusal.
+func lostAmongLookAlikes(err error) bool {
+	e, ok := mobiumerr.As(err)
+	return ok && e.Details[lookAlikesKey] != nil
+}
+
+// moved records that a nudge moved the list by dx, dy from where the element
+// was, so the next pick looks for it there.
+func (f *follower) moved(from uitree.Rect, dx, dy int) {
+	r := uitree.Rect{X1: from.X1 - dx, Y1: from.Y1 - dy, X2: from.X2 - dx, Y2: from.Y2 - dy}
+	f.expect = &r
+}
+
+// nearestNamed is the element named name nearest want, when it is clearly
+// the nearest: no other of the name within twice its distance, and itself
+// within a quarter of the screen's height. Otherwise nil — a guess between
+// two look-alikes is the wrong tap this exists to avoid.
+func nearestNamed(t *uitree.Tree, name string, want uitree.Rect) *uitree.Node {
+	cx, cy := (want.X1+want.X2)/2, (want.Y1+want.Y2)/2
+	dist := func(r uitree.Rect) float64 {
+		return math.Hypot(float64((r.X1+r.X2)/2-cx), float64((r.Y1+r.Y2)/2-cy))
+	}
+	var best, second *uitree.Node
+	t.Walk(func(m *uitree.Node) bool {
+		if !m.Clickable || m.Bounds.Empty() || uitree.Describe(m) != name {
+			return true
+		}
+		switch {
+		case best == nil || dist(m.Bounds) < dist(best.Bounds):
+			best, second = m, best
+		case second == nil || dist(m.Bounds) < dist(second.Bounds):
+			second = m
+		}
+		return true
+	})
+	if best == nil {
+		return nil
+	}
+	d := dist(best.Bounds)
+	limit := 0.0
+	if t.Root != nil {
+		limit = float64(t.Root.Bounds.Height()) / 4
+	}
+	if limit > 0 && d > limit {
+		return nil
+	}
+	if second != nil && dist(second.Bounds) < 2*d {
+		return nil
+	}
+	return best
 }
 
 // refName is what map called a ref when it was taken, or "" for a locator
@@ -558,9 +656,9 @@ func offScreenTarget(pick picker, tree *uitree.Tree) (*uitree.Node, *uitree.Node
 // here says which way the carousel scrolls; where the target lies does.
 // Out on both axes, or neither, the caller's axis stands — and always for
 // app_scroll_to, whose caller named it. CHALLENGES 261.
-func nudgeInto(ctx context.Context, gest mobiumdriver.Gesturer, c, n *uitree.Node, horiz, followTarget bool) (bool, error) {
+func nudgeInto(ctx context.Context, gest mobiumdriver.Gesturer, c, n *uitree.Node, horiz, followTarget bool) (bool, int, int, error) {
 	if c == nil || n == nil {
-		return false, nil
+		return false, 0, 0, nil
 	}
 	outX := n.Bounds.X1 < c.Bounds.X1 || n.Bounds.X2 > c.Bounds.X2
 	outY := n.Bounds.Y1 < c.Bounds.Y1 || n.Bounds.Y2 > c.Bounds.Y2
@@ -573,7 +671,7 @@ func nudgeInto(ctx context.Context, gest mobiumdriver.Gesturer, c, n *uitree.Nod
 	}
 	span := chi - clo
 	if hi-lo > span {
-		return false, nil
+		return false, 0, 0, nil
 	}
 	// d > 0 moves the content toward lower coordinates: up, or left.
 	d := 0
@@ -583,7 +681,7 @@ func nudgeInto(ctx context.Context, gest mobiumdriver.Gesturer, c, n *uitree.Nod
 	case lo < clo:
 		d = -(clo - lo + span/8)
 	default:
-		return false, nil
+		return false, 0, 0, nil
 	}
 	if limit := span / 2; d > limit {
 		d = limit
@@ -594,10 +692,10 @@ func nudgeInto(ctx context.Context, gest mobiumdriver.Gesturer, c, n *uitree.Nod
 	from, to := mid+d/2, mid-d/2
 	if horiz {
 		y := (c.Bounds.Y1 + c.Bounds.Y2) / 2
-		return true, gest.Swipe(ctx, from, y, to, y, scrollDuration)
+		return true, from - to, 0, gest.Swipe(ctx, from, y, to, y, scrollDuration)
 	}
 	x := (c.Bounds.X1 + c.Bounds.X2) / 2
-	return true, gest.Swipe(ctx, x, from, x, to, scrollDuration)
+	return true, 0, from - to, gest.Swipe(ctx, x, from, x, to, scrollDuration)
 }
 
 // errOffScreen means the locator resolved but the element is outside the part
