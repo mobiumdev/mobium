@@ -6,6 +6,8 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
+	"strconv"
 	"strings"
 	"time"
 
@@ -25,6 +27,10 @@ var emulatorBootTimeout = 210 * time.Second
 
 // goneTimeout bounds waiting for a device to be gone after it was told to go.
 var goneTimeout = time.Minute
+
+// emuKillWait is how long an emulator's console has to take a kill, and the
+// emulator to leave adb's list after it, before its process is ended.
+var emuKillWait = 10 * time.Second
 
 // FindEmulator finds the SDK's emulator binary: under ANDROID_HOME or
 // ANDROID_SDK_ROOT, the SDK's usual place, or on PATH.
@@ -230,8 +236,38 @@ func ShutdownEmulator(ctx context.Context, serial string) error {
 	if err != nil {
 		return err
 	}
-	if out, err := exec.CommandContext(ctx, adb, "-s", serial, "emu", "kill").CombinedOutput(); err != nil {
-		return mobiumerr.New(mobiumerr.DeviceServer, "adb emu kill %s: %v: %s", serial, err, strings.TrimSpace(string(out)))
+	listed := func(ctx context.Context) bool {
+		devs, err := Devices(ctx)
+		if err != nil {
+			return true
+		}
+		for _, d := range devs {
+			if d.Serial == serial {
+				return true
+			}
+		}
+		return false
+	}
+	// A frozen emulator does not answer its console, and `adb emu kill`
+	// waited on it without end: `mobium shutdown` on one stopped with
+	// SIGSTOP ran six minutes and left it running. So the console gets
+	// emuKillWait, and an emulator still listed after it is ended through
+	// its own process, named by its discovery file. CHALLENGES 285.
+	kctx, cancel := context.WithTimeout(ctx, emuKillWait)
+	out, killErr := exec.CommandContext(kctx, adb, "-s", serial, "emu", "kill").CombinedOutput()
+	cancel()
+	if killErr == nil {
+		gctx, cancel := context.WithTimeout(ctx, emuKillWait)
+		for listed(gctx) && gctx.Err() == nil {
+			time.Sleep(250 * time.Millisecond)
+		}
+		cancel()
+	}
+	if listed(ctx) {
+		if err := killEmulatorProcess(serial, emulatorDiscoveryDirs()); err != nil {
+			return mobiumerr.New(mobiumerr.DeviceServer, "%s did not answer its console (adb emu kill: %v %s), "+
+				"and %v", serial, killErr, strings.TrimSpace(string(out)), err)
+		}
 	}
 	return waitGone(ctx, func(ctx context.Context) bool {
 		devs, err := Devices(ctx)
@@ -361,4 +397,56 @@ func contains(xs []string, x string) bool {
 		}
 	}
 	return false
+}
+
+// killEmulatorProcess ends the emulator adb calls serial through its process,
+// the one its discovery file names — only once ps says that process is an
+// emulator, since a file left by one that died can name a number reused.
+func killEmulatorProcess(serial string, dirs []string) error {
+	if runtime.GOOS == "windows" {
+		return mobiumerr.New(mobiumerr.Unsupported, "ending an emulator by its process is not done on Windows")
+	}
+	pid := emulatorPID(serial, dirs)
+	if pid == 0 {
+		return mobiumerr.New(mobiumerr.DeviceServer, "its process is not named by any discovery file")
+	}
+	// The program's name, not its path: macOS's ps gives the whole path, and
+	// a directory named for an emulator made a plain sleep look like one.
+	comm, err := exec.Command("ps", "-p", strconv.Itoa(pid), "-o", "comm=").Output()
+	name := strings.ToLower(filepath.Base(strings.TrimSpace(string(comm))))
+	if err != nil || !strings.Contains(name, "qemu") && !strings.Contains(name, "emulator") {
+		return mobiumerr.New(mobiumerr.DeviceServer, "its discovery file names pid %d, which is not an emulator", pid)
+	}
+	p, err := os.FindProcess(pid)
+	if err == nil {
+		err = p.Kill()
+	}
+	if err != nil {
+		return mobiumerr.New(mobiumerr.DeviceServer, "its process, pid %d, could not be ended: %v", pid, err)
+	}
+	return nil
+}
+
+// emulatorPID is the pid in the newest discovery file for serial, or 0.
+func emulatorPID(serial string, dirs []string) int {
+	console, ok := strings.CutPrefix(serial, "emulator-")
+	if !ok {
+		return 0
+	}
+	best, bestTime := 0, time.Time{}
+	for _, dir := range dirs {
+		files, _ := filepath.Glob(filepath.Join(dir, "pid_*.ini"))
+		for _, f := range files {
+			if readIni(f)["port.serial"] != console {
+				continue
+			}
+			pid, err := strconv.Atoi(strings.TrimSuffix(strings.TrimPrefix(filepath.Base(f), "pid_"), ".ini"))
+			info, serr := os.Stat(f)
+			if err != nil || serr != nil || !info.ModTime().After(bestTime) {
+				continue
+			}
+			best, bestTime = pid, info.ModTime()
+		}
+	}
+	return best
 }

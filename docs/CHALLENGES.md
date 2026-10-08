@@ -6108,6 +6108,31 @@ emulator never reached the capture — opening its session timed out first.
 That timeout's own hint, to try the other Android driver, cannot help a
 frozen emulator either; it is left as a lead (ROADMAP, "Audio").
 
+### 285. A frozen emulator was told to try the other driver, and could not be shut down
+
+**Found by:** the lead 284 left. An emulator stopped with SIGSTOP timed
+out on `adb shell` as a session opened, and the error added "To run
+without the UiAutomator2 server, use --driver uiautomator" — a driver that
+goes through the same adb. The remedy that would help, a restart, did not
+work either: `mobium shutdown` on the frozen emulator ran six minutes and
+ended "read response: i/o timeout" with the emulator still running, since
+`adb emu kill` talks to its console and waited on it without a bound. Now
+an adb command that times out carries `device.ADBTimeoutKey`, and a session
+start that meets one answers `device_not_ready`, "not answering adb …
+every Android driver goes through adb, so another one cannot help", with
+`mobium shutdown` as the remedy for an emulator. And a shutdown gives the
+console ten seconds, then ends the emulator through the process its
+discovery file names — only once ps calls that program qemu or an emulator,
+by its name: macOS's ps gives the whole path, and the first guard took a
+plain `sleep` for an emulator because its test's directory was named for
+one. Measured: the frozen emulator shut down in 10.9s, 20.9s with a
+session and a capture open to close first, and booted again after.
+That capture's loss was noted by 280's file beside the socket, and
+`clean-stop.sh`, which counted every file there as a socket or pid left
+behind, then said "something is still running" with nothing running —
+and `--quit` could not clear it. It counts sockets and pid files now, and
+lists noted captures on a line of their own; a pid file left still fails.
+
 ## Findings that were not defects
 
 Worth recording because each one closed off an approach that looked obvious.

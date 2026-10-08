@@ -353,3 +353,18 @@ func TestEndingSaysWhatItDiscarded(t *testing.T) {
 		t.Errorf("a session holding nothing said it discarded something: %q", res.Content[0].Text)
 	}
 }
+
+// CHALLENGES 285: a frozen emulator timed out on adb and was told to try the
+// other Android driver, which goes through the same adb.
+func TestNotAnsweringADBNamesTheDevice(t *testing.T) {
+	cause := mobiumerr.New(mobiumerr.Timeout, "adb shell true timed out after 30s").WithDetail(device.ADBTimeoutKey, "shell true")
+	for serial, want := range map[string]string{
+		"emulator-5554":  "`mobium shutdown emulator-5554`, which ends a frozen emulator too",
+		"3C191FDJG001QX": "`adb -s 3C191FDJG001QX shell true`",
+	} {
+		e, _ := mobiumerr.As(notAnsweringADB(serial, cause))
+		if e == nil || e.Code != mobiumerr.DeviceNotReady || strings.Contains(e.Error(), "--driver") || !strings.Contains(e.Remedy, want) {
+			t.Errorf("%s: %v (remedy %q)", serial, e, e.Remedy)
+		}
+	}
+}
