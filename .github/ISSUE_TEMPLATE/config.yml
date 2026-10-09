@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Report a security vulnerability
+    url: https://github.com/mobiumdev/mobium/security/advisories/new
+    about: Privately, through GitHub. Please do not open a public issue for it.
+  - name: Documentation
+    url: https://mobiumdev.github.io/
+    about: Quick start, guides and a reference for every tool.

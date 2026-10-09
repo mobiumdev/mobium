@@ -1,0 +1,97 @@
+name: Bug report
+description: Mobium did something wrong, or said it did something it did not.
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting. A report that names the device, the command and what it printed can usually be reproduced the same day.
+
+        A security problem goes through the **Security** tab instead; see [SECURITY.md](https://github.com/mobiumdev/mobium/blob/main/SECURITY.md).
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: What you asked Mobium to do, and what it did or reported.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What you expected
+    validations:
+      required: true
+  - type: textarea
+    id: commands
+    attributes:
+      label: Commands and output
+      description: The commands you ran and everything they printed, errors included. For a client or MCP, the call and the reply.
+      render: shell
+    validations:
+      required: true
+  - type: dropdown
+    id: device
+    attributes:
+      label: Device
+      options:
+        - Android emulator
+        - Android phone or tablet
+        - iOS simulator
+        - iPhone or iPad
+        - Android TV or Fire TV
+        - Another device through a driver process
+    validations:
+      required: true
+  - type: input
+    id: os
+    attributes:
+      label: Device system and model
+      placeholder: Android 15, Pixel 7 emulator · iOS 26.5, iPhone 17 Pro simulator
+    validations:
+      required: true
+  - type: dropdown
+    id: surface
+    attributes:
+      label: How you called Mobium
+      multiple: true
+      options:
+        - CLI
+        - MCP
+        - Go client
+        - Python client
+        - JavaScript client
+        - Java client
+        - .NET client
+        - mobium test
+    validations:
+      required: true
+  - type: dropdown
+    id: host
+    attributes:
+      label: Host
+      options:
+        - macOS
+        - Linux
+        - Windows
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Mobium version
+      description: "`mobium --version`; for a build from `go install`, the line `go version -m $(command -v mobium) | grep mod` prints."
+    validations:
+      required: true
+  - type: textarea
+    id: doctor
+    attributes:
+      label: mobium doctor
+      description: The output of `mobium doctor`. It needs no device and no daemon.
+      render: shell
+  - type: checkboxes
+    id: private
+    attributes:
+      label: Private data
+      options:
+        - label: I removed passwords, personal names, locations, account details and anything else private from the output and screenshots above.
+          required: true
