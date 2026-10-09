@@ -4,6 +4,9 @@
 // process cannot. It exists now rather than later because the UiAutomator2 and
 // WebDriverAgent sessions of steps 3 and 4 must be long-lived, and this is
 // where they will live.
+//
+// The daemon and its line-delimited JSON protocol are adapted from Vibium's
+// (Apache-2.0); see THIRD_PARTY_NOTICES.md.
 package daemon
 
 import (

@@ -1,6 +1,9 @@
 // Package agent is the tool layer shared by mobium's CLI, its daemon and its
 // MCP server. One set of tools, one dispatch, three front doors — so the CLI
 // and an agent driving MCP can never drift apart.
+//
+// The JSON-RPC types here are adapted from Vibium's (Apache-2.0); see
+// THIRD_PARTY_NOTICES.md.
 package agent
 
 import "encoding/json"

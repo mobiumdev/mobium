@@ -18,10 +18,29 @@ The client libraries under `clients/` have no third-party dependencies.
 | [github.com/inconshreveable/mousetrap](https://github.com/inconshreveable/mousetrap) | v1.1.0 | Apache-2.0 | Windows |
 
 Not bundled: [appium-uiautomator2-server](https://github.com/appium/appium-uiautomator2-server)
-and [WebDriverAgent](https://github.com/appium/WebDriverAgent), both Apache-2.0,
+(Apache-2.0) and [WebDriverAgent](https://github.com/appium/WebDriverAgent)
 are downloaded by Mobium at runtime from their upstream releases, pinned by
-version and verified by checksum, and installed on the device or simulator.
-They remain under their own license.
+version and verified by checksum, and installed on the device or simulator;
+for a real iPhone, WebDriverAgent is built from its pinned source. They remain
+under their own license. WebDriverAgent's LICENSE file is the three-clause BSD
+license, while its npm package, `appium-webdriveragent`, declares Apache-2.0;
+both permit this use.
+
+Adapted, not linked: parts of Mobium follow [Vibium](https://github.com/VibiumDev/vibium)'s
+source closely — the daemon and its line-delimited JSON protocol, the
+socket-path guard, and the web actionability checks (visible, enabled,
+receives events), each marked where it lives. Vibium is licensed under the
+Apache License 2.0, reproduced in full under cobra below, and its NOTICE reads:
+
+```text
+Vibium
+Copyright © Vibium Committers
+
+This product includes software developed at Vibium
+(https://github.com/VibiumDev/vibium).
+
+Licensed under the Apache License, Version 2.0.
+```
 
 To regenerate the list of linked modules:
 
