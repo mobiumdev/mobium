@@ -2,13 +2,14 @@
 # MobiumTV — mobium-app's tv/ app — driven as a TV is: with the remote's
 # D-pad, select and media keys, and judged by what the app says it received.
 #
-#   docs/checks/tv-app.sh <android-serial>
+#   docs/checks/tv-app.sh <android-serial | apple-tv-simulator-udid>
 #
 # Any Android device that runs it: a Fire TV over `adb connect`, an Android or
 # Google TV, or Google's Android TV emulator
-# (system-images;android-34;android-tv;arm64-v8a). Needs dev.mobium.tv
-# installed — mobium-app's tv/README.md says how. Nothing on the TV but the
-# app is read or touched, so nothing of the owner's is printed.
+# (system-images;android-34;android-tv;arm64-v8a) — or an Apple TV simulator,
+# with mobium-app's tvos/ app, the same screens on tvOS. Needs dev.mobium.tv
+# installed — mobium-app's tv/README.md and tvos/README.md say how. Nothing on
+# the TV but the app is read or touched, so nothing of the owner's is printed.
 #
 #   - Focus Grid: a D-pad press says where focus went, and the app agrees;
 #     select selects what has focus, and the app says by select; a tap
@@ -24,6 +25,13 @@
 #   - Player Keys: play-pause, fast-forward and stop each arrive, as the app
 #     counts them.
 #
+# An Apple TV differs where the platform does, and the check asserts the
+# difference rather than skipping it: there is no touch screen, so every tap
+# is refused naming the remote; an alert opens with focus on its cancel
+# button, Keep, and is answered with the D-pad and select — app_alert accept
+# is refused — and back answers it with Keep, not as canceled; and the Siri
+# Remote's only media key is Play/Pause, so fast-forward is refused.
+#
 # The first D-pad press after a touch only leaves touch mode and moves
 # nothing, so each screen starts by pressing up until focus stops moving.
 # Over a Fire TV's Wi-Fi link a read can land before the screen it expects —
@@ -35,9 +43,16 @@ DEV="$1"
 if [ -z "$DEV" ]; then echo "usage: $0 <android-serial>" >&2; exit 2; fi
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 . "$ROOT/docs/checks/lib.sh"
-check_platform android "$DEV"
-check_lock "$DEV"
 fail() { echo "FAIL: $*" >&2; exit 1; }
+case "$DEV" in
+  ????????-????????????????|*-*-*-*-*)
+    devs=$("$ROOT/bin/mobium" devices 2>&1) || fail "cannot list devices: $(echo "$devs" | tail -1)"
+    echo "$devs" | grep -q "^$DEV .*apple tv simulator" || {
+      echo "$(basename "$0") is for a TV, and $DEV is not an Apple TV simulator" >&2; exit 2; }
+    TVOS=1 ;;
+  *) check_platform android "$DEV"; TVOS= ;;
+esac
+check_lock "$DEV"
 row() { printf '    %-12s %-60s ok\n' "$1" "$2"; }
 APP=dev.mobium.tv
 M="$ROOT/bin/mobium --device $DEV"
@@ -64,6 +79,12 @@ expect() {
   fail "$1 reads \"$got\", want \"$2\""
 }
 moved() { out=$($M press "$1"); echo "$out" | grep -q "focus moved to $2" || fail "press $1: $out, want focus moved to $2"; }
+# refused <why> <command...>: an Apple TV refuses it, saying <why>.
+refused() {
+  why="$1"; shift
+  if out=$("$@" 2>&1); then fail "$*: an Apple TV did it ($out), want it refused"; fi
+  echo "$out" | grep -q "$why" || fail "$*: refused with \"$out\", want it to say $why"
+}
 
 open 0 grid
 expect focusState "Focused: Tile 1"
@@ -73,15 +94,23 @@ expect focusState "Focused: Tile 6"
 row "focus" "a D-pad press says where focus went, and the app agrees"
 $M press select >/dev/null
 expect selectState "Selected: Tile 6, by select"
-$M tap "text=Tile 3" >/dev/null
-expect selectState "Selected: Tile 3, by touch"
-row "select" "select and a tap arrive as select and as touch"
+if [ -n "$TVOS" ]; then
+  refused "no touch screen" $M tap "text=Tile 3"
+  expect selectState "Selected: Tile 6, by select"
+  row "select" "select arrives as select; a tap is refused, naming the remote"
+else
+  $M tap "text=Tile 3" >/dev/null
+  expect selectState "Selected: Tile 3, by touch"
+  row "select" "select and a tap arrive as select and as touch"
+fi
 
-open 1 panel
-expect panel "Panel: closed"
-$M tap "text=Opens on focus" >/dev/null
-expect panel "Panel: opened by focus on Opens on focus"
-row "tap" "a tap on a focus-opening tile reached it as focus, not a click"
+if [ -z "$TVOS" ]; then
+  open 1 panel
+  expect panel "Panel: closed"
+  $M tap "text=Opens on focus" >/dev/null
+  expect panel "Panel: opened by focus on Opens on focus"
+  row "tap" "a tap on a focus-opening tile reached it as focus, not a click"
+fi
 open 1 panel
 expect panel "Panel: closed"
 moved dpad-right "Opens on focus"
@@ -89,9 +118,13 @@ expect panel "Panel: opened by focus on Opens on focus"
 moved dpad-right "Opens on select"
 $M press select >/dev/null
 expect panel "Panel: opened by select on Opens on select"
-$M tap "text=Opens on select" >/dev/null
-expect panel "Panel: opened by touch on Opens on select"
-row "open" "one tile opens on focus, the other by select or touch"
+if [ -n "$TVOS" ]; then
+  row "open" "one tile opens on focus, the other by select"
+else
+  $M tap "text=Opens on select" >/dev/null
+  expect panel "Panel: opened by touch on Opens on select"
+  row "open" "one tile opens on focus, the other by select or touch"
+fi
 
 open 2 rowScroll
 expect focusState "Focused: Card 1"
@@ -108,14 +141,39 @@ expect dialogOutcome "Dialog: not opened"
 $M press select >/dev/null
 $M wait "text=Discard" --timeout 15s >/dev/null || fail "select did not open the dialog"
 $M alert | grep -q "Discard the draft?" || fail "app_alert does not see the dialog"
-$M alert accept >/dev/null
-expect dialogOutcome "Dialog: Discard"
-$M tap "text=Open dialog" >/dev/null
-$M press back >/dev/null
-expect dialogOutcome "Dialog: canceled"
-row "dialog" "app_alert sees it; accept is Discard, back cancels"
+if [ -n "$TVOS" ]; then
+  refused "answered with its remote" $M alert accept
+  moved dpad-right "Discard"
+  $M press select >/dev/null
+  expect dialogOutcome "Dialog: Discard"
+  $M press select >/dev/null
+  $M wait "text=Keep" --timeout 15s >/dev/null || fail "select did not open the dialog again"
+  $M press back >/dev/null
+  expect dialogOutcome "Dialog: Keep"
+  row "dialog" "app_alert sees it, accept is refused; Discard by remote, back is Keep"
+else
+  $M alert accept >/dev/null
+  expect dialogOutcome "Dialog: Discard"
+  $M tap "text=Open dialog" >/dev/null
+  $M press back >/dev/null
+  expect dialogOutcome "Dialog: canceled"
+  row "dialog" "app_alert sees it; accept is Discard, back cancels"
+fi
 
 open 4 playerState
+if [ -n "$TVOS" ]; then
+  $M press play-pause >/dev/null
+  expect playerState "Player: playing"
+  expect lastKey "Last key: playPause"
+  refused "has no \"fast-forward\" button" $M press fast-forward
+  $M press play-pause >/dev/null
+  expect playerState "Player: paused"
+  expect keyCount "Keys: 2"
+  row "keys" "play-pause arrives twice; fast-forward is refused, two keys counted"
+  $M terminate "$APP" >/dev/null 2>&1 || true
+  echo "PASS"
+  exit 0
+fi
 $M press play-pause >/dev/null
 expect playerState "Player: playing"
 expect lastKey "Last key: KEYCODE_MEDIA_PLAY_PAUSE"

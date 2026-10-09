@@ -894,6 +894,30 @@ this is what is not.
   4. **Budget.** A check takes two to five minutes of device time, so a trial
      of the size last seen covers a few hundred runs. Spend it on breadth — a
      handful of models neither of the phones here resembles — not on repeats.
+- **Apple TV** (2026-10-09, a tvOS 26.5 simulator). The Fire TV's
+  argument carried to tvOS: the same backend as an iPhone, with
+  WebDriverAgent's tvOS runner from the same pinned release, and mobium-app's
+  `tvos/`, MobiumTV's screens in UIKit with the same ids and lines, so
+  `docs/checks/tv-app.sh` drives both and branches only where the platforms
+  differ. It passed three times in three, about a minute each, and still
+  passes on the Android TV emulator. Found on the way: the runner kept the
+  screen after a restart (CHALLENGES 296), focus was in the tree and never
+  read (297), and `alert accept` left the alert up (298). Measured, not yet
+  acted on:
+  - **The first press after the app comes forward moves nothing**: it gives
+    the screen focus, like Android's first press after a touch. The check
+    absorbs it, as on Android, with two presses up.
+  - **A tvOS alert's text is the platform's**: its first line reads
+    "Discard the draft?." — UIKit's label, period and all.
+  - **`map` lists an alert's two `ScrollView`s** as `(list)` entries, and
+    does not say which element has focus, which on a TV matters most —
+    the Fire TV's open item too.
+  - **Not done**: a real Apple TV (it pairs with Xcode over the network, as
+    a phone does over USB, and needs WebDriverAgent built and signed for
+    it); answering an alert by moving focus for the caller; what
+    WebDriverAgent does with a touch on tvOS, which Mobium refuses first;
+    and the `devices` list shows every Apple TV simulator, including the
+    three Xcode makes when the platform is installed.
 - **Fire TV** (written down 2026-09-28; measured 2026-10-01 and 10-02 on a
   Hisense TV with Fire OS 7.7.1.7, which is Android 9). Fire OS is Android —
   7 is Android 9, 8 is Android 11 — reached by `adb connect <tv>:5555` once

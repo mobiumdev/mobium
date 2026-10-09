@@ -487,8 +487,14 @@ func (h *Handlers) devices(ctx context.Context) (*ToolsCallResult, error) {
 		notes = append(notes, "iOS: "+err.Error())
 	}
 	for _, sim := range sims {
-		lines = append(lines, fmt.Sprintf("%-38s %-10s (ios simulator, %s, %s)",
-			sim.UDID, strings.ToLower(sim.State), sim.Name, sim.Runtime))
+		// An Apple TV is driven by the same backend, so its platform on
+		// the wire stays "ios"; the line says what it is.
+		kind := "ios simulator"
+		if sim.TV() {
+			kind = "apple tv simulator"
+		}
+		lines = append(lines, fmt.Sprintf("%-38s %-10s (%s, %s, %s)",
+			sim.UDID, strings.ToLower(sim.State), kind, sim.Name, sim.Runtime))
 		view.Devices = append(view.Devices, DeviceView{
 			ID: sim.UDID, Platform: "ios", State: strings.ToLower(sim.State),
 			Model: sim.Name, Runtime: sim.Runtime, Emulator: true,

@@ -32,6 +32,11 @@ type w3cClient struct {
 	// attaches — a second mobium process, or another tool — silently invalidates
 	// ours. Recovering beats failing every later command.
 	reopen func(context.Context) error
+
+	// noTouch, when set, is what every touch is refused with: a device with
+	// no touch screen, where a pointer action would be an event the
+	// platform never sends.
+	noTouch error
 }
 
 type longerCallKey struct{}
@@ -153,6 +158,9 @@ func (c *w3cClient) source(ctx context.Context) (string, error) {
 
 // pointerSequence sends one W3C pointer action chain.
 func (c *w3cClient) pointerSequence(ctx context.Context, actions []map[string]interface{}) error {
+	if c.noTouch != nil {
+		return c.noTouch
+	}
 	body := map[string]interface{}{
 		"actions": []map[string]interface{}{{
 			"type":       "pointer",
@@ -171,6 +179,9 @@ func (c *w3cClient) pointerSequence(ctx context.Context, actions []map[string]in
 // rather than anything special. That is the whole of multi-touch here, and the
 // reason a pinch needs no new protocol — only a second source.
 func (c *w3cClient) pointerSequences(ctx context.Context, chains ...[]map[string]interface{}) error {
+	if c.noTouch != nil {
+		return c.noTouch
+	}
 	var sources []map[string]interface{}
 	for i, chain := range chains {
 		sources = append(sources, map[string]interface{}{

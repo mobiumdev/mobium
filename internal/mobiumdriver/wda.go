@@ -96,8 +96,21 @@ type WDA struct {
 // NewWDA prepares a driver for a simulator. Nothing touches the simulator
 // until Start.
 func NewWDA(sim *device.Simctl) *WDA {
-	return &WDA{sim: sim, w3c: newW3CClient(requestTimeout), scale: 1}
+	w := &WDA{sim: sim, w3c: newW3CClient(requestTimeout), scale: 1}
+	if sim != nil && sim.TV {
+		w.w3c.noTouch = errTVNoTouch
+	}
+	return w
 }
+
+// errTVNoTouch refuses a touch on an Apple TV. tvOS has no touch screen:
+// the remote moves focus and presses what has it, and an app tells a press
+// from anything else.
+var errTVNoTouch = mobiumerr.New(mobiumerr.Unsupported, "an Apple TV has no touch screen — it is driven with "+
+	"its remote. Move focus with app_press dpad-up, dpad-down, dpad-left or dpad-right, and press select on "+
+	"what has it").
+	WithRemedy("press the D-pad until the target has focus — each press reports where focus went — then " +
+		"press select")
 
 // NewWDAPhone prepares a driver for a real iPhone. Nothing touches the phone
 // until Start.
@@ -106,6 +119,10 @@ func NewWDAPhone(phone *device.Devicectl) *WDA {
 }
 
 func (w *WDA) Name() string { return "ios/wda" }
+
+// tv reports whether this is an Apple TV simulator, driven with a remote:
+// tvOS has no touch screen.
+func (w *WDA) tv() bool { return w.sim != nil && w.sim.TV }
 
 // Start installs and launches the runner, then opens a session.
 func (w *WDA) Start(ctx context.Context, progress func(string)) error {
@@ -180,7 +197,18 @@ func (w *WDA) Start(ctx context.Context, progress func(string)) error {
 		w.teardownLocked(ctx)
 		return err
 	}
-	return w.openLocked(ctx)
+	if err := w.openLocked(ctx); err != nil {
+		return err
+	}
+	// On an Apple TV the runner answers from the foreground and stays
+	// there: measured on a tvOS 26.5 simulator, its empty window took every
+	// remote press after a daemon restart, and nothing on the app's screens
+	// could be read. Home leaves HeadBoard in front instead, as Settings
+	// does on an iPad above.
+	if w.tv() && w.activeApp(ctx) == device.WDABundleID {
+		_ = w.pressTV(ctx, ButtonHome)
+	}
+	return nil
 }
 
 // wdaNudgeAfter is how long a simulator's runner gets to answer on its own

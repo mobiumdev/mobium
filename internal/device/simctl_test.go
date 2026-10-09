@@ -76,16 +76,36 @@ func TestErrNoXcodeIsActionable(t *testing.T) {
 }
 
 func TestWDAArtifactIsPinnedAndChecksummed(t *testing.T) {
-	if len(wdaSimArm64.sha256) != 64 {
-		t.Errorf("WDA checksum is %d chars", len(wdaSimArm64.sha256))
+	for _, r := range []wdaRunner{wdaSimArm64, wdaTVSimArm64} {
+		a := r.artifact
+		if len(a.sha256) != 64 {
+			t.Errorf("%s: checksum is %d chars", a.name, len(a.sha256))
+		}
+		if !strings.Contains(a.url, WDAVersion) {
+			t.Errorf("WDA url %q is not pinned to a version", a.url)
+		}
+		if !strings.HasPrefix(a.url, "https://") {
+			t.Errorf("%s is not fetched over https", a.name)
+		}
+		if !strings.Contains(a.url, "Sim") {
+			t.Errorf("WDA url %q is not the simulator build", a.url)
+		}
+		if !strings.HasPrefix(r.testBinary, "PlugIns/") || !strings.HasPrefix(r.app, r.exe) {
+			t.Errorf("%s: app %q, executable %q and test binary %q do not agree", a.name, r.app, r.exe, r.testBinary)
+		}
 	}
-	if !strings.Contains(wdaSimArm64.url, WDAVersion) {
-		t.Errorf("WDA url %q is not pinned to a version", wdaSimArm64.url)
+	// The tvOS runner is its own build: the iOS one installs on an Apple TV
+	// simulator and never starts.
+	if !strings.Contains(wdaTVSimArm64.artifact.url, "tvOS") || wdaRunnerFor(true) != wdaTVSimArm64 ||
+		wdaRunnerFor(false) != wdaSimArm64 {
+		t.Error("an Apple TV simulator is not given the tvOS runner")
 	}
-	if !strings.HasPrefix(wdaSimArm64.url, "https://") {
-		t.Error("WDA is not fetched over https")
-	}
-	if !strings.Contains(wdaSimArm64.url, "Sim") {
-		t.Errorf("WDA url %q is not the simulator build", wdaSimArm64.url)
+}
+
+func TestSimulatorTV(t *testing.T) {
+	for runtime, want := range map[string]bool{"tvOS 26.5": true, "iOS 26.5": false, "watchOS 26.5": false} {
+		if got := (Simulator{Runtime: runtime}).TV(); got != want {
+			t.Errorf("%s: TV() = %v, want %v", runtime, got, want)
+		}
 	}
 }

@@ -6294,6 +6294,41 @@ followed as before (267). Not reproduced on demand, since it follows what
 the timeline shows: the tap test drives the loop on a list of look-alikes,
 and swiped six times before the fix and none after.
 
+### 296. On an Apple TV the runner kept the screen, and every press went to it
+
+**Found by:** the first Apple TV simulator session (tvOS 26.5), 2026-10-09.
+The first daemon's launch put MobiumTV in front and every press worked. After
+a daemon restart `current` named WebDriverAgent's own runner, `map` found
+nothing, and two D-pad presses reported that nothing on screen had focus:
+tvOS's runner answers from the foreground and stays there, as an iPad's
+does before it answers at all (147). Home, pressed once the session is open
+and only while the runner is in front, leaves HeadBoard there, and the
+next `launch` brings the app forward. Measured: after the fix a restarted
+daemon reads HeadBoard in front, and presses reach the app.
+
+### 297. An Apple TV's focus was in the tree and never read
+
+**Found by:** the same session. WebDriverAgent marks the element with focus
+`focused="true"` on tvOS, and the iOS parser read every attribute but that
+one, so every D-pad press answered "nothing on screen reports focus, so
+where it went cannot be read" while the app's own line said `Focused: Tile
+1`. The parser now reads it, and a press reports where focus went, as on a
+Fire TV. The other readers of `Focused` ask Android's keyboard regions,
+which an iOS driver does not have.
+
+### 298. An Apple TV's alert was "accepted" and stayed up
+
+**Found by:** the same session. `alert accept` on MobiumTV's two-button
+alert answered "accepted the dialog and it is still on screen after 3s":
+the read-back caught it, but the error left the caller with nothing to do.
+A tvOS alert is answered with the remote. It opens with focus on its cancel
+button, the D-pad moves along its buttons, select presses the one that has
+focus, and Back (the remote's Menu) answers with the cancel button.
+`accept` and `dismiss` are now refused on an Apple TV before anything is
+sent, saying so. Touch is refused the same way for every gesture, since
+tvOS has no touch screen. What WebDriverAgent itself does with a pointer
+action on tvOS was not measured; the refusal comes first.
+
 ## Findings that were not defects
 
 Worth recording because each one closed off an approach that looked obvious.

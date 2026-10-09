@@ -27,7 +27,7 @@ func TestNetworkEnsureWDARunner(t *testing.T) {
 	t.Setenv("MOBIUM_HOME", shortTempDir(t))
 
 	var progress []string
-	app, err := EnsureWDARunner(context.Background(), func(m string) { progress = append(progress, m) })
+	app, err := EnsureWDARunner(context.Background(), false, func(m string) { progress = append(progress, m) })
 	if err != nil {
 		t.Fatalf("EnsureWDARunner: %v", err)
 	}
@@ -60,7 +60,7 @@ func TestNetworkEnsureWDARunner(t *testing.T) {
 
 	// A second call must be served from the cache without downloading again.
 	progress = nil
-	again, err := EnsureWDARunner(context.Background(), func(m string) { progress = append(progress, m) })
+	again, err := EnsureWDARunner(context.Background(), false, func(m string) { progress = append(progress, m) })
 	if err != nil {
 		t.Fatalf("second EnsureWDARunner: %v", err)
 	}

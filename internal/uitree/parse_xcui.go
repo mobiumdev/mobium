@@ -412,6 +412,10 @@ func iosNodeFrom(e xml.StartElement, parent *Node, sibling int) *Node {
 		// leaves `selected` out, so read both.
 		Selected:      attr(e, "selected") == "true" || hasTrait(attr(e, "traits"), "Selected"),
 		NotAccessible: attr(e, "accessible") == "false",
+		// On an Apple TV focus is where the remote is: WebDriverAgent marks
+		// the one element that has it focused="true", and a D-pad press is
+		// read back by where it went.
+		Focused: attr(e, "focused") == "true",
 	}
 	if parent.Parent == nil {
 		n.Depth = 0

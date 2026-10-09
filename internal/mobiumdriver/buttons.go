@@ -190,8 +190,44 @@ var iosButtonNames = map[string]string{
 	ButtonVolumeDown: "volumeDown",
 }
 
+// tvButtons is what the Apple TV remote has, as WebDriverAgent presses it
+// on a tvOS simulator. Back is the remote's own Menu button — the platform's
+// back, which every tvOS app answers — and the Siri Remote's only media key
+// is Play/Pause.
+func tvButtons() []string {
+	return []string{ButtonBack, ButtonHome, ButtonDpadUp, ButtonDpadDown, ButtonDpadLeft, ButtonDpadRight,
+		ButtonSelect, ButtonPlayPause}
+}
+
+// tvButtonNames maps the vocabulary onto WebDriverAgent's tvOS spelling, an
+// XCUIRemote button each.
+var tvButtonNames = map[string]string{
+	ButtonBack:      "menu",
+	ButtonHome:      "home",
+	ButtonDpadUp:    "up",
+	ButtonDpadDown:  "down",
+	ButtonDpadLeft:  "left",
+	ButtonDpadRight: "right",
+	ButtonSelect:    "select",
+	ButtonPlayPause: "playpause",
+}
+
+// pressTV sends one of the Apple TV remote's buttons.
+func (w *WDA) pressTV(ctx context.Context, button string) error {
+	name, ok := tvButtonNames[button]
+	if !ok {
+		return mobiumerr.New(mobiumerr.Unsupported, "the Apple TV remote has no %q button — it has %s",
+			button, ButtonNames(tvButtons()))
+	}
+	return w.w3c.do(ctx, "POST", w.w3c.sessionPath("/wda/pressButton"),
+		map[string]interface{}{"name": name}, nil)
+}
+
 // Press sends a hardware button through WebDriverAgent.
 func (w *WDA) Press(ctx context.Context, button string) error {
+	if w.tv() {
+		return w.pressTV(ctx, button)
+	}
 	name, ok := iosButtonNames[button]
 	if !ok {
 		if button == ButtonBack {
@@ -206,7 +242,7 @@ func (w *WDA) Press(ctx context.Context, button string) error {
 		}
 		if button == ButtonSelect || strings.HasPrefix(button, "dpad-") {
 			return mobiumerr.New(mobiumerr.Unsupported, "an iPhone has no D-pad — that is the Apple TV "+
-				"remote, and Mobium does not drive tvOS. Tap the element instead; it has %s",
+				"remote, which Mobium presses on an Apple TV simulator. Tap the element instead; it has %s",
 				ButtonNames(iosButtons()))
 		}
 		return mobiumerr.New(mobiumerr.Unsupported, "iOS has no %q button — it has %s",
@@ -224,7 +260,12 @@ func (w *WDA) Press(ctx context.Context, button string) error {
 }
 
 // SupportedButtons lists what WebDriverAgent can press.
-func (w *WDA) SupportedButtons() []string { return iosButtons() }
+func (w *WDA) SupportedButtons() []string {
+	if w.tv() {
+		return tvButtons()
+	}
+	return iosButtons()
+}
 
 // ScreenLocked reports whether the device is locked.
 func (w *WDA) ScreenLocked(ctx context.Context) (bool, error) {
