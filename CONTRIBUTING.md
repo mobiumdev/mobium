@@ -4,6 +4,11 @@ Thanks for looking. Mobium is small enough that the rules below are most of
 what there is to know; [docs/CHALLENGES.md](docs/CHALLENGES.md) is why each of
 them exists.
 
+Everyone taking part follows the
+[code of conduct](https://github.com/mobiumdev/.github/blob/main/CODE_OF_CONDUCT.md),
+which covers every mobiumdev repository. A vulnerability is reported
+privately, as [SECURITY.md](SECURITY.md) says, never in an issue.
+
 ## The design rule
 
 ***Mutatis mutandis*** — the same argument carried into a new domain, changing
