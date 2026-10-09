@@ -43,6 +43,9 @@ var ErrNoSimulator = mobiumerr.New(mobiumerr.NoDevice,
 type Simctl struct {
 	Path string
 	UDID string
+	// TV is set for an Apple TV simulator, which takes WebDriverAgent's
+	// tvOS runner and is driven with a remote.
+	TV bool
 }
 
 // FindSimctl checks that a usable simctl exists, returning the xcrun path.
@@ -155,6 +158,9 @@ type Simulator struct {
 	Runtime string `json:"runtime"`
 }
 
+// TV reports whether the simulator is an Apple TV.
+func (s Simulator) TV() bool { return strings.HasPrefix(s.Runtime, "tvOS ") }
+
 // Booted reports whether the simulator can accept commands.
 func (s Simulator) Booted() bool { return s.State == "Booted" }
 
@@ -244,6 +250,9 @@ func SelectSimulator(ctx context.Context, ref string) (*Simctl, *Simulator, erro
 		for i := range sims {
 			if sims[i].UDID == ref || strings.EqualFold(sims[i].Name, ref) {
 				s, err := NewSimctl(sims[i].UDID)
+				if s != nil {
+					s.TV = sims[i].TV()
+				}
 				return s, &sims[i], err
 			}
 		}
@@ -261,6 +270,9 @@ func SelectSimulator(ctx context.Context, ref string) (*Simctl, *Simulator, erro
 		return nil, nil, ErrNoSimulator
 	case 1:
 		s, err := NewSimctl(booted[0].UDID)
+		if s != nil {
+			s.TV = booted[0].TV()
+		}
 		return s, &booted[0], err
 	default:
 		var names []string

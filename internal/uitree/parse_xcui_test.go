@@ -564,3 +564,26 @@ func TestRebaseRemoteContentOnlyAtACoordinateReset(t *testing.T) {
 		t.Errorf("a full-screen child moved: %v", top.Bounds)
 	}
 }
+
+// TestXCUIFocus: an Apple TV's focus is read from WebDriverAgent's
+// `focused`, as it reported it on a tvOS 26.5 simulator.
+func TestXCUIFocus(t *testing.T) {
+	src := `<XCUIElementTypeApplication type="XCUIElementTypeApplication" name="MobiumTV" focused="false" x="0" y="0" width="1920" height="1080">
+  <XCUIElementTypeButton type="XCUIElementTypeButton" name="openGrid" label="Focus Grid" enabled="true" visible="true" accessible="true" focused="true" x="60" y="234" width="680" height="110"/>
+  <XCUIElementTypeButton type="XCUIElementTypeButton" name="openRow" label="Row" enabled="true" visible="true" accessible="true" focused="false" x="80" y="482" width="640" height="102"/>
+</XCUIElementTypeApplication>`
+	tree, err := ParseIOS([]byte(src))
+	if err != nil {
+		t.Fatal(err)
+	}
+	var focused []string
+	tree.Walk(func(n *Node) bool {
+		if n.Focused {
+			focused = append(focused, n.Label)
+		}
+		return true
+	})
+	if len(focused) != 1 || focused[0] != "Focus Grid" {
+		t.Errorf("focused = %v, want [Focus Grid]", focused)
+	}
+}

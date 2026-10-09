@@ -30,7 +30,7 @@ no Xcode on a machine doing Android work is normal, not a problem.
 - [Installing a release](#installing-a-release) — no Go needed, from the first release
 - [Android emulator](#android-emulator)
 - [Android real device](#android-real-device)
-- [iOS simulator](#ios-simulator)
+- [iOS simulator](#ios-simulator) — and [an Apple TV simulator](#an-apple-tv-simulator)
 - [iOS real device](#ios-real-device) — native screens, WebViews and Safari
 - [Parallel runs](#parallel-runs) — one daemon for each
 - [Driving another machine's devices](#driving-another-machines-devices) — `--remote`, and a grid
@@ -492,6 +492,32 @@ the point. Neither substrate is a subset of the other.
 The background, and the argument for which stage of a pipeline each device
 belongs to, is in [*Emulator vs Simulator vs Real
 Device*](https://medium.com/@begunova/emulator-vs-simulator-vs-real-device-15ce1dd5babf).
+
+### An Apple TV simulator
+
+Verified on a tvOS 26.5 simulator (Apple TV 4K, 3rd generation, at 1080p)
+with Xcode 26.6, on 2026-10-09. The tvOS platform is a separate download:
+
+```sh
+xcodebuild -downloadPlatform tvOS      # or Xcode > Settings > Components
+xcrun simctl create "Apple TV" \
+  com.apple.CoreSimulator.SimDeviceType.Apple-TV-4K-3rd-generation-1080p \
+  com.apple.CoreSimulator.SimRuntime.tvOS-26-5
+xcrun simctl boot <udid> && open -a Simulator
+```
+
+`mobium devices` lists it as an `apple tv simulator`, and the first command
+installs WebDriverAgent's tvOS runner, from the same pinned release as the
+iOS one and checked the same way. It is driven with the remote, as a Fire TV
+is: `press dpad-up`, `dpad-down`, `dpad-left`, `dpad-right` and `select`,
+each D-pad press reported by where focus went; `back` is the remote's Menu
+button, and `play-pause` is the Siri Remote's only media key. There is no
+touch screen, so `tap` and every other gesture are refused, and so are
+`alert accept` and `dismiss`: an alert opens with focus on its cancel button
+and is answered by moving focus and pressing select.
+[checks/tv-app.sh](checks/tv-app.sh) drives
+[MobiumTV](https://github.com/mobiumdev/mobium-app/tree/main/tvos) on it,
+the same check as on an Android TV.
 
 ---
 

@@ -12,7 +12,7 @@ import (
 	"strings"
 )
 
-// WebDriverAgent is under Apache-2.0. Its project publishes a prebuilt runner
+// WebDriverAgent's LICENSE file is BSD-3-Clause. Its project publishes a prebuilt runner
 // for arm64 simulators, so mobium downloads that rather than requiring an
 // xcodebuild of WDA from source — the step that makes an iOS setup slow and
 // version-fragile.
@@ -21,10 +21,11 @@ import (
 // device-side agent that changes underneath you is the drift this tool exists
 // to avoid, and the checksum only means something against a fixed release.
 const (
-	WDAVersion  = "16.12.8"
-	wdaRelease  = "https://github.com/appium/WebDriverAgent/releases/download/v" + WDAVersion
+	WDAVersion = "16.12.8"
+	wdaRelease = "https://github.com/appium/WebDriverAgent/releases/download/v" + WDAVersion
+	// WDABundleID is the runner's id on an iOS simulator and an Apple TV
+	// simulator alike: the tvOS build differs in its app's name, not its id.
 	WDABundleID = "com.facebook.WebDriverAgentRunner.xctrunner"
-	wdaAppName  = "WebDriverAgentRunner-Runner.app"
 	// WDAPort is where WDA listens on a phone, reached at the phone's own
 	// tunnel address. A simulator's runner listens on the Mac itself, shared
 	// with every other simulator's, so each is given free ports at launch
@@ -32,11 +33,46 @@ const (
 	WDAPort = 8100
 )
 
-// wdaSimArm64 is the prebuilt runner for Apple Silicon simulators.
-var wdaSimArm64 = uia2Artifact{
-	name:   "WebDriverAgentRunner-Build-Sim-arm64.zip",
-	url:    wdaRelease + "/WebDriverAgentRunner-Build-Sim-arm64.zip",
-	sha256: "99bca36962e6f06bb140971f467e851f4cebf9e89c20af8d45bcd6f3bd00aab4",
+// wdaRunner is one prebuilt runner for Apple Silicon simulators: the archive,
+// the app inside it, and WebDriverAgent's own test bundle inside that.
+type wdaRunner struct {
+	artifact   uia2Artifact
+	app        string
+	exe        string
+	testBinary string
+}
+
+// wdaSimArm64 is the runner for iOS simulators.
+var wdaSimArm64 = wdaRunner{
+	artifact: uia2Artifact{
+		name:   "WebDriverAgentRunner-Build-Sim-arm64.zip",
+		url:    wdaRelease + "/WebDriverAgentRunner-Build-Sim-arm64.zip",
+		sha256: "99bca36962e6f06bb140971f467e851f4cebf9e89c20af8d45bcd6f3bd00aab4",
+	},
+	app:        "WebDriverAgentRunner-Runner.app",
+	exe:        "WebDriverAgentRunner-Runner",
+	testBinary: "PlugIns/WebDriverAgentRunner.xctest/WebDriverAgentRunner",
+}
+
+// wdaTVSimArm64 is the runner for Apple TV simulators, from the same
+// release: an iOS runner installs on a tvOS simulator's list of apps and
+// never starts.
+var wdaTVSimArm64 = wdaRunner{
+	artifact: uia2Artifact{
+		name:   "WebDriverAgentRunner_tvOS-Build-Sim-arm64.zip",
+		url:    wdaRelease + "/WebDriverAgentRunner_tvOS-Build-Sim-arm64.zip",
+		sha256: "c644569782ff51b2551802af6bf0ad3d341a5d648c9464265c99f02d38d9bfdb",
+	},
+	app:        "WebDriverAgentRunner_tvOS-Runner.app",
+	exe:        "WebDriverAgentRunner_tvOS-Runner",
+	testBinary: "PlugIns/WebDriverAgentRunner_tvOS.xctest/WebDriverAgentRunner_tvOS",
+}
+
+func wdaRunnerFor(tv bool) wdaRunner {
+	if tv {
+		return wdaTVSimArm64
+	}
+	return wdaSimArm64
 }
 
 // WDACacheDir is where the downloaded runner lives, one directory per version.
@@ -44,25 +80,27 @@ func WDACacheDir() string {
 	return filepath.Join(cacheRoot(), "webdriveragent", WDAVersion)
 }
 
-// EnsureWDARunner downloads and unpacks the runner, returning the .app path.
-func EnsureWDARunner(ctx context.Context, progress func(string)) (string, error) {
+// EnsureWDARunner downloads and unpacks the runner for an iOS simulator, or
+// with tv for an Apple TV simulator, returning the .app path.
+func EnsureWDARunner(ctx context.Context, tv bool, progress func(string)) (string, error) {
+	r := wdaRunnerFor(tv)
 	dir := WDACacheDir()
-	appPath := filepath.Join(dir, wdaAppName)
+	appPath := filepath.Join(dir, r.app)
 
 	// An unpacked runner with its executable present is ready to install.
-	if _, err := os.Stat(filepath.Join(appPath, "WebDriverAgentRunner-Runner")); err == nil {
+	if _, err := os.Stat(filepath.Join(appPath, r.exe)); err == nil {
 		return appPath, nil
 	}
 	if err := os.MkdirAll(dir, 0o755); err != nil {
 		return "", fmt.Errorf("create WebDriverAgent cache: %w", err)
 	}
 
-	zipPath := filepath.Join(dir, wdaSimArm64.name)
-	if ok, _ := fileMatches(zipPath, wdaSimArm64.sha256); !ok {
+	zipPath := filepath.Join(dir, r.artifact.name)
+	if ok, _ := fileMatches(zipPath, r.artifact.sha256); !ok {
 		if progress != nil {
 			progress(fmt.Sprintf("downloading WebDriverAgent %s", WDAVersion))
 		}
-		if err := download(ctx, wdaSimArm64, zipPath); err != nil {
+		if err := download(ctx, r.artifact, zipPath); err != nil {
 			return "", err
 		}
 	}
@@ -74,7 +112,7 @@ func EnsureWDARunner(ctx context.Context, progress func(string)) (string, error)
 		return "", err
 	}
 	if _, err := os.Stat(appPath); err != nil {
-		return "", mobiumerr.New(mobiumerr.ToolchainMissing, "the WebDriverAgent archive did not contain %s", wdaAppName)
+		return "", mobiumerr.New(mobiumerr.ToolchainMissing, "the WebDriverAgent archive did not contain %s", r.app)
 	}
 	return appPath, nil
 }
@@ -133,10 +171,6 @@ func writeZipEntry(f *zip.File, target string) error {
 	return nil
 }
 
-// wdaTestBinary is WebDriverAgent itself: the test bundle inside the runner.
-// The host app around it is a stub whose version reads "1.0" in every build.
-const wdaTestBinary = "PlugIns/WebDriverAgentRunner.xctest/WebDriverAgentRunner"
-
 // EnsureWDAInstalled makes sure mobium's pinned runner is the one installed
 // on the simulator.
 //
@@ -148,13 +182,13 @@ const wdaTestBinary = "PlugIns/WebDriverAgentRunner.xctest/WebDriverAgentRunner"
 // bundle is compared with the verified one instead, and replaced when they
 // differ.
 func (s *Simctl) EnsureWDAInstalled(ctx context.Context, progress func(string)) error {
-	app, err := EnsureWDARunner(ctx, progress)
+	app, err := EnsureWDARunner(ctx, s.TV, progress)
 	if err != nil {
 		return err
 	}
 	msg := "installing WebDriverAgent on " + s.UDID
 	if s.AppInstalled(ctx, WDABundleID) {
-		if s.installedWDAIs(ctx, app) {
+		if s.installedWDAIs(ctx, app, wdaRunnerFor(s.TV).testBinary) {
 			return nil
 		}
 		msg = "replacing a WebDriverAgent that is not mobium's " + WDAVersion + " on " + s.UDID
@@ -166,17 +200,18 @@ func (s *Simctl) EnsureWDAInstalled(ctx context.Context, progress func(string)) 
 }
 
 // installedWDAIs reports whether the runner installed on the simulator is
-// the one at app, by its test bundle's contents.
-func (s *Simctl) installedWDAIs(ctx context.Context, app string) bool {
+// the one at app, by its test bundle's contents: WebDriverAgent itself, in a
+// host app that is a stub whose version reads "1.0" in every build.
+func (s *Simctl) installedWDAIs(ctx context.Context, app, testBinary string) bool {
 	out, err := s.Run(ctx, "get_app_container", s.UDID, WDABundleID)
 	if err != nil {
 		return false
 	}
-	want, err := fileSHA256(filepath.Join(app, wdaTestBinary))
+	want, err := fileSHA256(filepath.Join(app, testBinary))
 	if err != nil {
 		return false
 	}
-	ok, err := fileMatches(filepath.Join(strings.TrimSpace(string(out)), wdaTestBinary), want)
+	ok, err := fileMatches(filepath.Join(strings.TrimSpace(string(out)), testBinary), want)
 	return err == nil && ok
 }
 

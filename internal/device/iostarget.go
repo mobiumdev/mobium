@@ -124,6 +124,7 @@ func finishTarget(t *IOSTarget) (*IOSTarget, error) {
 	if err != nil {
 		return nil, err
 	}
+	s.TV = t.SimInfo.TV()
 	t.Sim = s
 	return t, nil
 }

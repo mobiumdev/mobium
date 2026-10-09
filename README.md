@@ -189,6 +189,13 @@ simulated location — are refused on a phone with the reason; accessibility
 settings go through the phone's own Settings app.
 [docs/SETUP.md](docs/SETUP.md#ios-real-device) has the steps.
 
+**TVs** are driven with a remote: a Fire TV over `adb connect`, an Android
+TV, and since 2026-10-09 an Apple TV simulator, which takes WebDriverAgent's
+tvOS runner. `press` sends the D-pad, select, back and media keys, and a
+D-pad press is reported by where focus went. An Apple TV has no touch screen,
+so a tap there is refused, naming the remote
+([docs/SETUP.md](docs/SETUP.md#an-apple-tv-simulator)).
+
 **Windows is not supported yet.** Everything that needs no device, the
 named-pipe daemon transport included, passes in CI on a Windows runner; no
 emulator or phone has been driven from Windows yet. See

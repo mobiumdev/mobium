@@ -2,6 +2,7 @@ package mobiumdriver
 
 import (
 	"context"
+	"github.com/mobiumdev/mobium/internal/device"
 	"github.com/mobiumdev/mobium/internal/mobiumerr"
 	"strings"
 	"testing"
@@ -68,8 +69,8 @@ func TestIOSRefusesBackWithTheReason(t *testing.T) {
 		t.Errorf("recents refusal = %v", err)
 	}
 
-	// A D-pad is the Apple TV's, which Mobium does not drive, and the
-	// refusal says what to do on a phone instead.
+	// A D-pad is the Apple TV's, and the refusal says what to do on a
+	// phone instead.
 	for _, b := range []string{ButtonDpadDown, ButtonSelect} {
 		err = w.Press(context.Background(), b)
 		if mobiumerr.CodeOf(err) != mobiumerr.Unsupported || !strings.Contains(err.Error(), "no D-pad") ||
@@ -87,7 +88,7 @@ func TestPlatformsDisagreeAboutButtons(t *testing.T) {
 	for _, b := range AllButtons() {
 		all[b] = true
 	}
-	for _, list := range [][]string{androidButtons(), iosButtons()} {
+	for _, list := range [][]string{androidButtons(), iosButtons(), tvButtons()} {
 		for _, b := range list {
 			if !all[b] {
 				t.Errorf("%q is not in the vocabulary", b)
@@ -101,5 +102,53 @@ func TestPlatformsDisagreeAboutButtons(t *testing.T) {
 		if b == ButtonBack {
 			t.Error("iOS is listed as having a back button")
 		}
+	}
+}
+
+// TestAppleTVHasTheRemotesButtons: on an Apple TV simulator back is the
+// remote's Menu button, the D-pad and select are the remote's, and a media
+// key the Siri Remote lacks is refused by naming what it has.
+func TestAppleTVHasTheRemotesButtons(t *testing.T) {
+	for _, b := range tvButtons() {
+		if tvButtonNames[b] == "" {
+			t.Errorf("%s has no WebDriverAgent name", b)
+		}
+	}
+	if tvButtonNames[ButtonBack] != "menu" || tvButtonNames[ButtonSelect] != "select" ||
+		tvButtonNames[ButtonPlayPause] != "playpause" {
+		t.Errorf("tvOS names = %v", tvButtonNames)
+	}
+	w := NewWDA(&device.Simctl{TV: true})
+	if got := strings.Join(w.SupportedButtons(), ","); got != strings.Join(tvButtons(), ",") {
+		t.Errorf("an Apple TV simulator supports %s", got)
+	}
+	for _, b := range []string{ButtonFastForward, ButtonVolumeUp, ButtonRecents} {
+		err := w.Press(context.Background(), b)
+		if mobiumerr.CodeOf(err) != mobiumerr.Unsupported || !strings.Contains(err.Error(), "Apple TV remote") ||
+			!strings.Contains(err.Error(), `"play-pause"`) {
+			t.Errorf("%s refusal = %v", b, err)
+		}
+	}
+}
+
+// TestAppleTVRefusesTouch: tvOS has no touch screen, so every gesture is
+// refused before anything reaches WebDriverAgent, naming the remote.
+func TestAppleTVRefusesTouch(t *testing.T) {
+	w := NewWDA(&device.Simctl{TV: true})
+	ctx := context.Background()
+	for name, err := range map[string]error{
+		"tap":        w.Tap(ctx, 10, 10),
+		"long press": w.LongPress(ctx, 10, 10, 0),
+		"swipe":      w.Swipe(ctx, 10, 10, 20, 20, 0),
+		"multi tap":  w.MultiTap(ctx, []Point{{X: 1, Y: 1}, {X: 2, Y: 2}}),
+	} {
+		e, ok := mobiumerr.As(err)
+		if !ok || e.Code != mobiumerr.Unsupported || !strings.Contains(err.Error(), "no touch screen") ||
+			!strings.Contains(e.Remedy, "press select") {
+			t.Errorf("%s on an Apple TV = %v", name, err)
+		}
+	}
+	if NewWDA(&device.Simctl{}).w3c.noTouch != nil {
+		t.Error("an iOS simulator refuses touch")
 	}
 }
