@@ -26,6 +26,10 @@
 #
 # The first D-pad press after a touch only leaves touch mode and moves
 # nothing, so each screen starts by pressing up until focus stops moving.
+# Over a Fire TV's Wi-Fi link a read can land before the screen it expects —
+# measured 2026-10-08, the grid's status read before the grid was up — so
+# each screen is waited for by its own element, and each expected line with
+# `mobium wait --for text`, never read once.
 set -e
 DEV="$1"
 if [ -z "$DEV" ]; then echo "usage: $0 <android-serial>" >&2; exit 2; fi
@@ -42,7 +46,8 @@ echo "--- $DEV"
 apps=$($M apps 2>&1) || fail "cannot list the apps: $(echo "$apps" | tail -1)"
 echo "$apps" | grep -q "$APP" || fail "$APP is not installed — build and install mobium-app's tv/ app first"
 
-# open <n>: the menu's nth entry (0 is Focus Grid), reached with the remote.
+# open <n> <id>: the menu's nth entry (0 is Focus Grid), reached with the
+# remote, then waited for by an element only that screen has.
 open() {
   $M terminate "$APP" >/dev/null 2>&1 || true
   $M launch "$APP" >/dev/null
@@ -51,12 +56,16 @@ open() {
   i=0
   while [ "$i" -lt "$1" ]; do $M press dpad-down >/dev/null; i=$((i + 1)); done
   $M press select >/dev/null
+  $M wait "testid=$2" --timeout 20s >/dev/null || fail "menu entry $1 did not open the screen with $2"
 }
-says() { $M text "testid=$1"; }
-expect() { got=$(says "$1"); [ "$got" = "$2" ] || fail "$1 reads \"$got\", want \"$2\""; }
+expect() {
+  $M wait "testid=$1" --for text --text "$2" --exact --timeout 15s >/dev/null && return 0
+  got=$($M text "testid=$1" 2>&1) || fail "cannot read $1: $got"
+  fail "$1 reads \"$got\", want \"$2\""
+}
 moved() { out=$($M press "$1"); echo "$out" | grep -q "focus moved to $2" || fail "press $1: $out, want focus moved to $2"; }
 
-open 0
+open 0 grid
 expect focusState "Focused: Tile 1"
 moved dpad-right "Tile 2"
 moved dpad-down "Tile 6"
@@ -68,12 +77,12 @@ $M tap "text=Tile 3" >/dev/null
 expect selectState "Selected: Tile 3, by touch"
 row "select" "select and a tap arrive as select and as touch"
 
-open 1
+open 1 panel
 expect panel "Panel: closed"
 $M tap "text=Opens on focus" >/dev/null
 expect panel "Panel: opened by focus on Opens on focus"
 row "tap" "a tap on a focus-opening tile reached it as focus, not a click"
-open 1
+open 1 panel
 expect panel "Panel: closed"
 moved dpad-right "Opens on focus"
 expect panel "Panel: opened by focus on Opens on focus"
@@ -84,7 +93,7 @@ $M tap "text=Opens on select" >/dev/null
 expect panel "Panel: opened by touch on Opens on select"
 row "open" "one tile opens on focus, the other by select or touch"
 
-open 2
+open 2 rowScroll
 expect focusState "Focused: Card 1"
 i=0
 while [ "$i" -lt 9 ]; do $M press dpad-right >/dev/null; i=$((i + 1)); done
@@ -94,9 +103,10 @@ $M press select >/dev/null
 expect selectState "Selected: Card 10, by select"
 row "row" "focus scrolls Card 10 into view, and select selects it"
 
-open 3
+open 3 dialogButton
 expect dialogOutcome "Dialog: not opened"
 $M press select >/dev/null
+$M wait "text=Discard" --timeout 15s >/dev/null || fail "select did not open the dialog"
 $M alert | grep -q "Discard the draft?" || fail "app_alert does not see the dialog"
 $M alert accept >/dev/null
 expect dialogOutcome "Dialog: Discard"
@@ -105,7 +115,7 @@ $M press back >/dev/null
 expect dialogOutcome "Dialog: canceled"
 row "dialog" "app_alert sees it; accept is Discard, back cancels"
 
-open 4
+open 4 playerState
 $M press play-pause >/dev/null
 expect playerState "Player: playing"
 expect lastKey "Last key: KEYCODE_MEDIA_PLAY_PAUSE"
