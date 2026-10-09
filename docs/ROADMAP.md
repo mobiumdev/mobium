@@ -901,6 +901,15 @@ this is what is not.
   Android and would be the case for a driver process
   ([the driver protocol](../examples/drivers/PROTOCOL.md)). The questions
   this entry asked, answered on the TV:
+  - **An app under test of its own, since 2026-10-08**: mobium-app's `tv/`,
+    MobiumTV, plain Android with a `LEANBACK_LAUNCHER` entry, whose screens
+    each say what they received — focus, select, touch or an accessibility
+    click, a row that scrolls with focus, a dialog, media keys — so nothing
+    on the owner's TV need be read. `docs/checks/tv-app.sh` passes on the
+    Android TV emulator (API 34). It found that a tap on a tile that opens
+    on focus is reported "tapped" while the app received focus and no
+    click, and that the first D-pad press after a touch moves nothing. Not
+    yet run on the Fire TV.
   - **It is listed.** After `adb connect`, `mobium devices` and `mobium
     doctor` both show it, and the UiAutomator2 server installs and runs.
   - **`map` reads the launcher**, and fails with `null root node` on some of
