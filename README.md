@@ -388,6 +388,6 @@ has it.
 Built binaries statically link a few Go libraries under MIT, BSD and
 Apache-2.0 licenses; they are listed, with their notices, in
 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md). The two device-side agents
-(UiAutomator2 server and WebDriverAgent, Apache-2.0) are not bundled: Mobium
-downloads them from their upstream releases at runtime, pinned and
-checksummed, and installs them on the device.
+(the UiAutomator2 server, Apache-2.0, and WebDriverAgent, whose LICENSE file
+is BSD-3-Clause) are not bundled: Mobium downloads them from their upstream
+releases at runtime, pinned and checksummed, and installs them on the device.
