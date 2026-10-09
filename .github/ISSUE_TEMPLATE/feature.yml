@@ -1,0 +1,36 @@
+name: Feature request
+description: Something you need Mobium to do on a device that it does not do yet.
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: goal
+    attributes:
+      label: What you are trying to do
+      description: The task in your own words, and the app or kind of app it is for.
+    validations:
+      required: true
+  - type: textarea
+    id: today
+    attributes:
+      label: What happens today
+      description: What you tried, and what Mobium did or refused, with its output.
+      render: shell
+  - type: dropdown
+    id: platforms
+    attributes:
+      label: Platforms it matters on
+      multiple: true
+      options:
+        - Android emulator
+        - Android phone or tablet
+        - iOS simulator
+        - iPhone or iPad
+        - Android TV or Fire TV
+    validations:
+      required: true
+  - type: textarea
+    id: shape
+    attributes:
+      label: How you would call it
+      description: Optional. A command, a tool call or a test step, as you would like to write it.
+      render: shell
