@@ -74,7 +74,8 @@ func sessionSuffix() (string, error) {
 }
 
 // maxSocketPathLen is the capacity of sockaddr_un.sun_path, minus room for the
-// NUL terminator. 104 on the BSDs and macOS, 108 on Linux.
+// NUL terminator. 104 on the BSDs and macOS, 108 on Linux. The guard that
+// uses it is adapted from Vibium's (Apache-2.0); see THIRD_PARTY_NOTICES.md.
 func maxSocketPathLen() int {
 	if runtime.GOOS == "linux" {
 		return 107
