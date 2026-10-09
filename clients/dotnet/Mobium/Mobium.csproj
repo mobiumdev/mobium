@@ -31,7 +31,7 @@
     <Authors>Lana Begunova</Authors>
     <Description>Drives mobile apps on Android emulators, Android phones, iOS simulators and iPhones, over the mobium CLI. No dependencies.</Description>
     <Copyright>Copyright (c) 2026 Lana Begunova</Copyright>
-    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
     <PackageProjectUrl>https://github.com/mobiumdev/mobium</PackageProjectUrl>
     <RepositoryUrl>https://github.com/mobiumdev/mobium</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
@@ -52,9 +52,11 @@
     <None Include="../README.md" Pack="true" PackagePath="/" />
     <!-- 128px, scaled from assets/branding/mobium-logo.png. -->
     <None Include="icon.png" Pack="true" PackagePath="/" />
-    <!-- The license's text beside its expression: MIT asks for the notice in
-         every copy, and nuget.org shows only the expression. -->
+    <!-- The license's text and the NOTICE beside its expression: the Apache
+         License asks for both in every redistribution, and nuget.org shows
+         only the expression. -->
     <None Include="../../../LICENSE" Pack="true" PackagePath="/" />
+    <None Include="../../../NOTICE" Pack="true" PackagePath="/" />
   </ItemGroup>
 
   <ItemGroup>

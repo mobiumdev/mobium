@@ -22,8 +22,8 @@
 
   <licenses>
     <license>
-      <name>MIT</name>
-      <url>https://opensource.org/licenses/MIT</url>
+      <name>Apache-2.0</name>
+      <url>https://www.apache.org/licenses/LICENSE-2.0.txt</url>
       <distribution>repo</distribution>
     </license>
   </licenses>
@@ -65,13 +65,13 @@
   -->
 
   <build>
-    <!-- The repository's LICENSE, in every jar's META-INF: MIT asks for the
-         notice in every copy, and a jar is one. Read from the root rather
+    <!-- The repository's LICENSE and NOTICE, in every jar's META-INF: the
+         Apache License asks for both in every redistribution, and a jar is one. Read from the root rather
          than copied, so there is one file to keep current. -->
     <resources>
       <resource>
         <directory>../..</directory>
-        <includes><include>LICENSE</include></includes>
+        <includes><include>LICENSE</include><include>NOTICE</include></includes>
         <targetPath>META-INF</targetPath>
       </resource>
     </resources>

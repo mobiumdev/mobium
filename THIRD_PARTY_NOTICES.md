@@ -1,6 +1,7 @@
 # Third-party notices
 
-Mobium's own source is MIT licensed ([LICENSE](LICENSE)). A built `mobium`
+Mobium's own source is licensed under the Apache License 2.0
+([LICENSE](LICENSE), [NOTICE](NOTICE)). A built `mobium`
 binary also contains the Go libraries below, statically linked. Each is
 distributed under its own license, reproduced in full here as those licenses
 require. Ship this file with any binary you redistribute.
@@ -30,7 +31,8 @@ Adapted, not linked: parts of Mobium follow [Vibium](https://github.com/VibiumDe
 source closely — the daemon and its line-delimited JSON protocol, the
 socket-path guard, and the web actionability checks (visible, enabled,
 receives events), each marked where it lives. Vibium is licensed under the
-Apache License 2.0, reproduced in full under cobra below, and its NOTICE reads:
+Apache License 2.0, as Mobium is ([LICENSE](LICENSE)), and its NOTICE, also
+carried in [NOTICE](NOTICE), reads:
 
 ```text
 Vibium

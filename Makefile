@@ -104,7 +104,7 @@ dist:
 		name=mobium_$(VERSION)_$${os}_$${arch}; dir=$(DIST)/$$name; mkdir -p $$dir; \
 		CGO_ENABLED=0 GOOS=$$os GOARCH=$$arch go build -trimpath \
 			-ldflags "-s -w -X main.version=$(VERSION)" -o $$dir/mobium$$ext ./cmd/mobium || exit 1; \
-		cp LICENSE THIRD_PARTY_NOTICES.md README.md $$dir/; \
+		cp LICENSE NOTICE THIRD_PARTY_NOTICES.md README.md $$dir/; \
 		if [ $$os = windows ]; then (cd $(DIST) && zip -qr $$name.zip $$name) || exit 1; \
 		else tar -C $(DIST) -czf $(DIST)/$$name.tar.gz $$name || exit 1; fi; \
 		rm -rf $$dir; echo "  $$name"; \
@@ -211,17 +211,21 @@ flags-check:
 quickstart:
 	@python3 docs/quickstart/build.py
 
-# license-check fails if a client's copy of LICENSE differs from the root's.
-# Python, npm and Go package a client from its own folder, so each carries a
-# copy — MIT asks for the notice in every copy of the software — and a copy is
-# only worth having while it is the same text.
+# license-check fails if a client's copy of LICENSE or NOTICE differs from the
+# root's. Python, npm and Go package a client from its own folder, so each
+# carries copies — the Apache License asks for itself and the NOTICE in every
+# redistribution — and a copy is only worth having while it is the same text.
 LICENSE_COPIES := clients/python/LICENSE clients/javascript/LICENSE clients/go/LICENSE
+NOTICE_COPIES := clients/python/NOTICE clients/javascript/NOTICE clients/go/NOTICE
 
 license-check:
 	@for f in $(LICENSE_COPIES); do \
 		cmp -s LICENSE $$f || { echo "$$f differs from LICENSE: cp LICENSE $$f"; exit 1; }; \
 	done
-	@echo "license copies match"
+	@for f in $(NOTICE_COPIES); do \
+		cmp -s NOTICE $$f || { echo "$$f differs from NOTICE: cp NOTICE $$f"; exit 1; }; \
+	done
+	@echo "license and notice copies match"
 
 docs-check:
 	@python3 docs/checks/american-spelling.py scan $$(git ls-files) >/dev/null \

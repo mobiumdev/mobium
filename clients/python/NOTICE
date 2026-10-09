@@ -1,0 +1,18 @@
+Mobium
+Copyright 2026 Lana Begunova
+
+This product is licensed under the Apache License, Version 2.0 (LICENSE).
+
+Parts of Mobium are adapted from Vibium (https://github.com/VibiumDev/vibium),
+licensed under the Apache License, Version 2.0. Vibium's NOTICE:
+
+  Vibium
+  Copyright © Vibium Committers
+
+  This product includes software developed at Vibium
+  (https://github.com/VibiumDev/vibium).
+
+  Licensed under the Apache License, Version 2.0.
+
+A built mobium binary also contains third-party Go libraries; their licenses
+and notices are in THIRD_PARTY_NOTICES.md.

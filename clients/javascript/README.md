@@ -53,4 +53,4 @@ the same set in every Mobium client — with `code`, `remedy` and `retryable`.
 
 ## License
 
-MIT.
+Apache License 2.0; see LICENSE and NOTICE.

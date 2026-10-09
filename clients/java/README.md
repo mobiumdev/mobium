@@ -209,7 +209,7 @@ A `null` passed where a value is required throws `InvalidArgumentException`
 naming the argument, before anything is sent.
 
 The Maven wrapper scripts (`mvnw`, `mvnw.cmd`) are Apache Maven's, under the
-Apache License 2.0, as their headers say; the client itself is MIT.
+Apache License 2.0, as their headers say, and so is the client itself.
 
 Waiting for something to *disappear* returns `null`, because there is nothing
 left to point at.
