@@ -908,8 +908,13 @@ this is what is not.
     on the owner's TV need be read. `docs/checks/tv-app.sh` passes on the
     Android TV emulator (API 34). It found that a tap on a tile that opens
     on focus is reported "tapped" while the app received focus and no
-    click, and that the first D-pad press after a touch moves nothing. Not
-    yet run on the Fire TV.
+    click, and that the first D-pad press after a touch moves nothing. On
+    the Fire TV it passed the same day, over Wi-Fi in 2 minutes 9 seconds,
+    once each screen and each expected line was waited for: the first run
+    read the grid's status before the grid was up, and the check exited on
+    that error without saying FAIL. While MobiumTV is in front it takes the
+    media keys itself; the home screen's own trailer started playing only
+    once the check had closed the app.
   - **It is listed.** After `adb connect`, `mobium devices` and `mobium
     doctor` both show it, and the UiAutomator2 server installs and runs.
   - **`map` reads the launcher**, and fails with `null root node` on some of
