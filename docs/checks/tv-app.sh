@@ -1,0 +1,120 @@
+#!/bin/sh
+# MobiumTV — mobium-app's tv/ app — driven as a TV is: with the remote's
+# D-pad, select and media keys, and judged by what the app says it received.
+#
+#   docs/checks/tv-app.sh <android-serial>
+#
+# Any Android device that runs it: a Fire TV over `adb connect`, an Android or
+# Google TV, or Google's Android TV emulator
+# (system-images;android-34;android-tv;arm64-v8a). Needs dev.mobium.tv
+# installed — mobium-app's tv/README.md says how. Nothing on the TV but the
+# app is read or touched, so nothing of the owner's is printed.
+#
+#   - Focus Grid: a D-pad press says where focus went, and the app agrees;
+#     select selects what has focus, and the app says by select; a tap
+#     selects by touch.
+#   - Focus or Select: one tile opens on focus, and a tap on it opens it by
+#     focus — Mobium reports "tapped" and the app received no click, which
+#     is why a tap on a TV has to be read back. The other opens by select,
+#     or by touch when tapped.
+#   - Row: nine presses right reach Card 10, scrolled into view by focus
+#     alone, and select selects it.
+#   - Dialog: app_alert sees it, accept presses the positive button
+#     (Discard), and back cancels it.
+#   - Player Keys: play-pause, fast-forward and stop each arrive, as the app
+#     counts them.
+#
+# The first D-pad press after a touch only leaves touch mode and moves
+# nothing, so each screen starts by pressing up until focus stops moving.
+set -e
+DEV="$1"
+if [ -z "$DEV" ]; then echo "usage: $0 <android-serial>" >&2; exit 2; fi
+ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
+. "$ROOT/docs/checks/lib.sh"
+check_platform android "$DEV"
+check_lock "$DEV"
+fail() { echo "FAIL: $*" >&2; exit 1; }
+row() { printf '    %-12s %-60s ok\n' "$1" "$2"; }
+APP=dev.mobium.tv
+M="$ROOT/bin/mobium --device $DEV"
+echo "--- $DEV"
+
+apps=$($M apps 2>&1) || fail "cannot list the apps: $(echo "$apps" | tail -1)"
+echo "$apps" | grep -q "$APP" || fail "$APP is not installed — build and install mobium-app's tv/ app first"
+
+# open <n>: the menu's nth entry (0 is Focus Grid), reached with the remote.
+open() {
+  $M terminate "$APP" >/dev/null 2>&1 || true
+  $M launch "$APP" >/dev/null
+  $M press dpad-up >/dev/null
+  $M press dpad-up >/dev/null
+  i=0
+  while [ "$i" -lt "$1" ]; do $M press dpad-down >/dev/null; i=$((i + 1)); done
+  $M press select >/dev/null
+}
+says() { $M text "testid=$1"; }
+expect() { got=$(says "$1"); [ "$got" = "$2" ] || fail "$1 reads \"$got\", want \"$2\""; }
+moved() { out=$($M press "$1"); echo "$out" | grep -q "focus moved to $2" || fail "press $1: $out, want focus moved to $2"; }
+
+open 0
+expect focusState "Focused: Tile 1"
+moved dpad-right "Tile 2"
+moved dpad-down "Tile 6"
+expect focusState "Focused: Tile 6"
+row "focus" "a D-pad press says where focus went, and the app agrees"
+$M press select >/dev/null
+expect selectState "Selected: Tile 6, by select"
+$M tap "text=Tile 3" >/dev/null
+expect selectState "Selected: Tile 3, by touch"
+row "select" "select and a tap arrive as select and as touch"
+
+open 1
+expect panel "Panel: closed"
+$M tap "text=Opens on focus" >/dev/null
+expect panel "Panel: opened by focus on Opens on focus"
+row "tap" "a tap on a focus-opening tile reached it as focus, not a click"
+open 1
+expect panel "Panel: closed"
+moved dpad-right "Opens on focus"
+expect panel "Panel: opened by focus on Opens on focus"
+moved dpad-right "Opens on select"
+$M press select >/dev/null
+expect panel "Panel: opened by select on Opens on select"
+$M tap "text=Opens on select" >/dev/null
+expect panel "Panel: opened by touch on Opens on select"
+row "open" "one tile opens on focus, the other by select or touch"
+
+open 2
+expect focusState "Focused: Card 1"
+i=0
+while [ "$i" -lt 9 ]; do $M press dpad-right >/dev/null; i=$((i + 1)); done
+expect focusState "Focused: Card 10"
+$M map | grep -q " Card 10 (button)" || fail "Card 10 has focus but map does not list it on the screen"
+$M press select >/dev/null
+expect selectState "Selected: Card 10, by select"
+row "row" "focus scrolls Card 10 into view, and select selects it"
+
+open 3
+expect dialogOutcome "Dialog: not opened"
+$M press select >/dev/null
+$M alert | grep -q "Discard the draft?" || fail "app_alert does not see the dialog"
+$M alert accept >/dev/null
+expect dialogOutcome "Dialog: Discard"
+$M tap "text=Open dialog" >/dev/null
+$M press back >/dev/null
+expect dialogOutcome "Dialog: canceled"
+row "dialog" "app_alert sees it; accept is Discard, back cancels"
+
+open 4
+$M press play-pause >/dev/null
+expect playerState "Player: playing"
+expect lastKey "Last key: KEYCODE_MEDIA_PLAY_PAUSE"
+$M press fast-forward >/dev/null
+expect playerState "Player: skipped forward"
+$M press stop >/dev/null
+expect playerState "Player: stopped"
+expect keyCount "Keys: 3"
+row "keys" "play-pause, fast-forward and stop arrive, three keys counted"
+
+$M terminate "$APP" >/dev/null 2>&1 || true
+echo "PASS"
