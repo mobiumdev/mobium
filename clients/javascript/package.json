@@ -10,7 +10,7 @@
     "url": "git+https://github.com/mobiumdev/mobium.git",
     "directory": "clients/javascript"
   },
-  "license": "MIT",
+  "license": "Apache-2.0",
   "author": "Lana Begunova",
   "type": "module",
   "main": "index.js",
@@ -21,6 +21,6 @@
       "default": "./index.js"
     }
   },
-  "files": ["index.js", "index.d.ts"],
+  "files": ["index.js", "index.d.ts", "NOTICE"],
   "engines": { "node": ">=18" }
 }

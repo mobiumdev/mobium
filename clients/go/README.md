@@ -31,4 +31,4 @@ iOS simulator or iPhone the same way.
 - [Every tool](https://github.com/mobiumdev/mobium/blob/main/docs/API.md) and
   [setting up devices](https://github.com/mobiumdev/mobium/blob/main/docs/SETUP.md)
 
-MIT.
+Apache License 2.0; see LICENSE and NOTICE.

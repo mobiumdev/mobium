@@ -102,6 +102,7 @@ def main():
         add("manifest.json", json.dumps(manifest, indent=2) + "\n")
         add("icon.png", (ROOT / "assets/branding/mobium-icon-512.png").read_bytes())
         add("LICENSE", (ROOT / "LICENSE").read_bytes())
+        add("NOTICE", (ROOT / "NOTICE").read_bytes())
         add("server/mobium", (HERE / "launcher.sh").read_bytes(), 0o755)
         for build in BUILDS:
             add(f"server/mobium-{build.replace('_', '-')}", binary(dist, version, build), 0o755)

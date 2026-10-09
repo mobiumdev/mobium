@@ -381,7 +381,9 @@ to any debugger, and that cannot be forced from outside.
 
 ## License
 
-MIT — see [LICENSE](LICENSE).
+Apache License 2.0 — see [LICENSE](LICENSE) and [NOTICE](NOTICE). Code
+published before this change was MIT licensed, and stays MIT for anyone who
+has it.
 
 Built binaries statically link a few Go libraries under MIT, BSD and
 Apache-2.0 licenses; they are listed, with their notices, in

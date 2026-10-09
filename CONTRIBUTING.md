@@ -113,4 +113,5 @@ old binary.
 ## License
 
 By contributing, you agree that your contributions are licensed under the
-[MIT License](LICENSE).
+[Apache License, Version 2.0](LICENSE), as section 5 of that license
+provides.
