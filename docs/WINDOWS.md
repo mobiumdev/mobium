@@ -192,6 +192,43 @@ how.
 
 ---
 
+## Choosing a Windows host
+
+What is missing is one thing: **an Android device driven from Windows**,
+through the CLI, MCP and a client. Everything that needs no device already
+passes on GitHub's Windows runner. So the question for a host is whether it can
+reach a device, and how close it is to the Windows most users run. Weighed on
+2026-10-08, from an Apple Silicon Mac:
+
+| Host | Cost | Reaches a device | Close to most users | Verdict |
+| --- | --- | --- | --- | --- |
+| An x64 Windows laptop | the hardware | yes: an emulator with WHPX, and phones over USB | the closest | the target; waiting on the hardware |
+| Windows 11 on ARM in a VM on the Mac (VMware Fusion or UTM) | the VM software is free; Windows needs a license to be used properly, though it installs and runs unactivated | a **real** device only: the Fire TV over `adb connect`, the Pixel over wireless debugging, or the Pixel's USB passed through to the VM. **No emulator**: that needs virtualization inside the VM, which a Windows guest does not get on Apple Silicon | partly: ARM64 Windows, running Mobium's `windows/amd64` build and x64 `adb` under its built-in emulation, or the native `windows/arm64` build | the free route to the first device run, today |
+| GitHub-hosted Windows runner | free for this public repository | no: no emulator acceleration, and no way to reach a device | x64 | already used for everything device-free; keep it |
+| A cloud Windows VM | free tiers are too small; an emulator needs nested virtualization on a paid size | only a device in the same cloud, or a device cloud | x64 | not worth it for one run |
+| Microsoft's Windows development VMs | were free, 90-day | — | — | unavailable since October 2024 |
+
+**Recommended order.** Do the first device run in a Windows 11 ARM VM against a
+device over the network — the Fire TV needs nothing but `adb connect`, and a
+Pixel needs wireless debugging — and record what it found. Then repeat it on an
+x64 laptop with an emulator before calling Windows supported: an ARM VM
+proves the transport and the tools layer on Windows, but not the x64 binary
+running natively, the emulator's WHPX path, or USB drivers on a typical
+machine.
+
+**What each run must record:** the Windows build and architecture, which
+Mobium build (`windows/amd64` under emulation or `windows/arm64`), how the
+device was reached (`adb connect`, wireless debugging, USB passthrough, USB),
+and the steps under [What to try](#what-to-try-in-order) with their output.
+
+**Linux is a different question.** The quick start already passed on a
+GitHub-hosted x86_64 Ubuntu runner with KVM, against an emulator booted there
+(`.github/workflows/linux-quickstart.yml`, run by hand). A Linux VM on Apple
+Silicon is ARM, and the Android SDK has no ARM Linux build of `adb` or the
+emulator, so it is not a substitute.
+
+---
+
 ## Setting up the machine
 
 ### 1. Go and the toolchain
@@ -261,7 +298,7 @@ nobody suspected, which is the most valuable thing this exercise can find.
 ```powershell
 '{"jsonrpc":"2.0","id":1,"method":"tools/list"}' | .\bin\mobium.exe mcp
 ```
-Expect 71 tools — [API.md](API.md) is generated from the source and is the
+Expect 73 tools — [API.md](API.md) is generated from the source and is the
 live number if this one has drifted again. It has before.
 
 Then, with an emulator running:
