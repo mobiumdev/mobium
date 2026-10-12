@@ -6518,6 +6518,75 @@ about 105. Every refusal for a dialog in the way now names `app_alert`'s
 `button`, which works on any dialog, an app's own included, and a test ties
 the remedy to the argument.
 
+### 306. A locator printed as exact was pasted back as a part
+
+**Found by:** writing down what a hand-written locator cannot say, for the
+roadmap's locators entry. CHALLENGES 233's wait for `text=Internet` was met
+by "Network & internet" on the screen being left, and 185 had already noted
+"no syntax to ask for the whole of it". The locators `map` derives are exact
+— byte for byte — but a locator printed itself without saying so: a near miss
+suggested `label=Card 8`, an exact match, and pasted back it was a substring
+match again. Reproduced on the Android 15 emulator, on Settings' main screen:
+`mobium wait text=Internet` answered "visible" in 0.75s, on the row "Network
+& internet".
+
+**Fixed:** a value in double quotes is matched whole — `text="Internet"` —
+in any case, since Android draws a button's caption in capitals, and with
+straight and curly quotes alike, since Apple writes Don’t Allow. It may
+contain commas, takes `\"` for a quote, and may be followed by `,role=`. An
+exact or whole locator prints quoted, and parses back to one that matches
+the same. Unquoted is unchanged: a part, in any case, with a whole match
+preferred among several (185). Measured: on the emulator `wait
+'text="Internet"'` timed out on Settings' main screen and was met by the
+Internet row once Network & internet was open, and `text="Discard",role=button`
+pressed DISCARD; on the simulator `text="dialog demo"` found its button by
+label, `text="Dialog"` found nothing, and `label="Don't Allow",role=button`,
+typed straight, pressed the location prompt's Don’t Allow.
+
+### 307. A scoped locator found the switch in the row beside it
+
+**Found by:** the first run on a device of `within`, which scopes a locator
+to a row — `label=More within text=Card 8`, the More in Card 8's row. The
+rule keeps, of the target's matches, the one nearest the anchor, climbing
+from the anchor and stopping at the list, so a row without the target finds
+nothing rather than its neighbor's. The tests passed on lists built for them,
+each marked `scrollable="true"`. On the Android 15 emulator, Settings'
+Network & internet, `find 'role=switch within "Hotspot & tethering"'`
+returned Airplane mode's switch: the Hotspot row has none, and the climb went
+on through the list, which was not marked scrollable — Android marks a
+RecyclerView scrollable only while its rows overflow it, and this one fit.
+
+**Fixed:** a list is known by its class as well as its flag — RecyclerView,
+ListView, GridView, the scroll views, and iOS's Table, CollectionView and
+ScrollView, scrolling or not — and, for one nothing names, such as a Compose
+column, the climb stops at a level whose targets all sit in children of the
+same class and width as the anchor's, which is what rows are. It also stops
+at a scroll container's only child, React Native's wrapper around every row,
+unless that is an iOS Cell. Each rule has a test shown to fail without it.
+Measured again: Hotspot & tethering finds no switch and Airplane mode finds
+its own; on the iOS simulator, Ice Cubes' live timeline, each post's Reply
+scoped by its author is that post's, on screen and off.
+
+**Then MobiumApp's Table Demo**, built for it: thirty rows whose More and
+Delete share their test IDs. `More within "Item 2"` found nothing on the
+emulator — and the tap's own scroll, looking for it, took the list to its
+end — and found all 29 Mores on the simulator. React Native's rows arrive
+flat on both platforms: each an empty node the size of the row, its text and
+buttons beside it under the list. On Android the climb stopped at the
+wrapper, rightly, with nothing found; on iOS the list has two wrappers, and
+the scroll view's scroll bars (167) meant neither was its only child, so the
+climb reached all the rows. Now a chain of only children under a list,
+scroll bars aside, is all wrapper, and at the list a row is found by its
+rectangle: the smallest of the list's children holding the anchor, with the
+targets inside it. `docs/checks/locators.sh` asserts every case on both
+platforms, each by what the app received; the flat captures of both are
+fixtures, and the test fails without the rectangle.
+
+Found on the way and not fixed here: `wait --for visible` passes for an iOS
+element entirely off screen — a post's author at y −728 — because the wait
+counts any match with a size, and iOS keeps rows off screen in the tree with
+real bounds. A lead in ROADMAP.
+
 ## Findings that were not defects
 
 Worth recording because each one closed off an approach that looked obvious.

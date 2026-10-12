@@ -120,6 +120,12 @@ something takes longer than that — a login, a network fetch — wait for the
 thing itself rather than for a duration:
 
 - `mobium wait "text=Welcome back"` — until it is on screen
+- `mobium wait 'text="Wi-Fi"'` — quoted: the whole text, so a part of it on
+  the screen you are leaving cannot satisfy the wait
+- `mobium tap 'label=More within text=Card 8'` — the More in Card 8's row;
+  a row without one finds nothing, never its neighbor's
+- `mobium tap 'label=Delete,nth=3'` — the third Delete shown, in reading
+  order; brittle, so prefer `within`
 - `mobium wait role=progressbar --for hidden` — until a spinner goes
 - `mobium wait @e4 --for text --text "Sent"` — until its text says so
 - `mobium wait testid=submit --for enabled` — until a control can be used

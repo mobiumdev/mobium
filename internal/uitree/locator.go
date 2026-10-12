@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/mobiumdev/mobium/internal/mobiumerr"
 	"sort"
+	"strconv"
 	"strings"
 )
 
@@ -23,34 +24,171 @@ const (
 
 // Locator is a resolvable reference to an element. Exact controls whether
 // string kinds compare by equality or by case-insensitive substring; Role
-// narrows any of the string kinds when both are set.
+// narrows any of the string kinds when both are set. Whole is what a caller
+// asks for by quoting the value: the whole of it, in any case — the derived
+// locators' Exact is byte-for-byte, and Android draws a button's caption in
+// capitals, so a whole caption typed as it reads must still match.
 type Locator struct {
 	Kind  Kind   `json:"kind"`
 	Value string `json:"value"`
 	Exact bool   `json:"exact,omitempty"`
+	Whole bool   `json:"whole,omitempty"`
 	Role  string `json:"role,omitempty"`
+	// Nth picks one of the matches shown, counted from 1 in the order a
+	// person reads the screen; 0 means all of them.
+	Nth int `json:"nth,omitempty"`
+	// Within scopes the locator to what it shares a row with: the target
+	// nearest the anchor in the tree, and never past the list holding the
+	// anchor. See Resolve.
+	Within *Locator `json:"within,omitempty"`
 }
 
+// String is the locator as a caller writes it, and parses back to one that
+// matches the same: an exact or whole value is quoted, since unquoted it
+// would match a part. A near miss printed as `label=Card 8` and pasted back
+// was a substring match again.
 func (l Locator) String() string {
-	s := fmt.Sprintf("%s=%s", l.Kind, l.Value)
+	v := l.Value
+	if (l.Exact || l.Whole) && l.stringKind() {
+		v = quoteValue(v)
+	}
+	s := fmt.Sprintf("%s=%s", l.Kind, v)
 	if l.Role != "" && l.Kind != KindRole {
 		s += "," + string(KindRole) + "=" + l.Role
+	}
+	if l.Nth > 0 {
+		s += ",nth=" + strconv.Itoa(l.Nth)
+	}
+	if l.Within != nil {
+		s += withinWord + l.Within.String()
 	}
 	return s
 }
 
+const withinWord = " within "
+
+// splitWithin finds the first " within " outside a quoted value, or -1.
+func splitWithin(s string) int {
+	quoted := false
+	for i := 0; i < len(s); i++ {
+		switch {
+		case s[i] == '\\' && quoted:
+			i++
+		case s[i] == '"':
+			quoted = !quoted
+		case !quoted && strings.HasPrefix(s[i:], withinWord):
+			return i
+		}
+	}
+	return -1
+}
+
+func (l Locator) stringKind() bool {
+	return l.Kind == KindText || l.Kind == KindLabel || l.Kind == KindTestID || l.Kind == KindClass
+}
+
+func quoteValue(v string) string {
+	return `"` + strings.NewReplacer(`\`, `\\`, `"`, `\"`).Replace(v) + `"`
+}
+
+// unquoteValue reads a value that opens with a double quote: what is inside,
+// with \" and \\ for a quote and a backslash, and what follows the closing
+// quote. ok is false with no closing quote.
+func unquoteValue(v string) (inside, rest string, ok bool) {
+	var b strings.Builder
+	for i := 1; i < len(v); i++ {
+		switch v[i] {
+		case '\\':
+			if i+1 < len(v) {
+				i++
+				b.WriteByte(v[i])
+			}
+		case '"':
+			return b.String(), v[i+1:], true
+		default:
+			b.WriteByte(v[i])
+		}
+	}
+	return "", "", false
+}
+
 // ParseLocator reads the "kind=value" form used in ref files and on the CLI.
-// A bare string with no "=" is treated as text.
+// A bare string with no "=" is treated as text. A value in double quotes is
+// matched whole, in any case — `text="Internet"` is not met by "Network &
+// internet", which `text=Internet` is (CHALLENGES 233) — and may contain
+// commas; \" is a quote inside it. Only ",role=" may follow the closing quote.
+//
+// "label=More within text=Card 8" is the More in the row that says Card 8:
+// the target, scoped to what it shares with the anchor. The anchor may be
+// scoped in turn. A value containing " within " is quoted.
 func ParseLocator(s string) (Locator, error) {
+	if i := splitWithin(s); i >= 0 {
+		target, anchor := strings.TrimSpace(s[:i]), strings.TrimSpace(s[i+len(withinWord):])
+		if target == "" || anchor == "" {
+			return Locator{}, mobiumerr.New(mobiumerr.InvalidArgument, "%q needs a locator on each side of \"within\"", s)
+		}
+		l, err := parseOne(target)
+		if err != nil {
+			return Locator{}, err
+		}
+		in, err := ParseLocator(anchor)
+		if err != nil {
+			return Locator{}, err
+		}
+		l.Within = &in
+		return l, nil
+	}
+	return parseOne(s)
+}
+
+// parseOne reads one locator, unscoped. A trailing ",nth=N" — last, after
+// any ",role=" — picks the Nth of its matches shown.
+func parseOne(s string) (Locator, error) {
+	nth := 0
+	if i := strings.LastIndex(s, ",nth="); i >= 0 && !strings.ContainsAny(s[i+len(",nth="):], `,"`) {
+		n, err := strconv.Atoi(s[i+len(",nth="):])
+		if err != nil || n < 1 {
+			return Locator{}, mobiumerr.New(mobiumerr.InvalidArgument, "nth must be a whole number from 1, got %q",
+				s[i+len(",nth="):])
+		}
+		nth, s = n, s[:i]
+	}
+	l, err := parseBare(s)
+	l.Nth = nth
+	return l, err
+}
+
+// parseBare reads one locator with no nth.
+func parseBare(s string) (Locator, error) {
 	main := s
 	var role string
-	// Only split a trailing ",role=" — values may legitimately contain commas.
-	if i := strings.LastIndex(s, ",role="); i >= 0 {
-		main, role = s[:i], s[i+len(",role="):]
-	}
+	whole := false
 	k, v, ok := strings.Cut(main, "=")
-	if !ok {
-		k, v = string(KindText), main
+	if strings.HasPrefix(s, `"`) {
+		k, v, ok = string(KindText), s, true
+	}
+	if ok && strings.HasPrefix(v, `"`) {
+		inside, rest, closed := unquoteValue(v)
+		if !closed {
+			return Locator{}, mobiumerr.New(mobiumerr.InvalidArgument, "the quoted value in %q has no closing quote", s)
+		}
+		if rest != "" {
+			if !strings.HasPrefix(rest, ",role=") {
+				return Locator{}, mobiumerr.New(mobiumerr.InvalidArgument, "only \",role=\" may follow a quoted value, "+
+					"and %q has %q after it", s, rest)
+			}
+			role = rest[len(",role="):]
+		}
+		v, whole = inside, true
+	} else {
+		// Only split a trailing ",role=" — values may legitimately contain commas.
+		if i := strings.LastIndex(s, ",role="); i >= 0 {
+			main, role = s[:i], s[i+len(",role="):]
+		}
+		k, v, ok = strings.Cut(main, "=")
+		if !ok {
+			k, v = string(KindText), main
+		}
 	}
 	// A role nothing has matches nothing, and a wait for nothing to be
 	// hidden is over at once: `mobium wait role=progressbar --for hidden`,
@@ -67,7 +205,11 @@ func ParseLocator(s string) (Locator, error) {
 		}
 	}
 	switch Kind(k) {
-	case KindText, KindLabel, KindTestID, KindRole, KindClass, KindPath:
+	case KindText, KindLabel, KindTestID, KindClass:
+		return Locator{Kind: Kind(k), Value: v, Whole: whole, Role: role}, nil
+	case KindRole, KindPath:
+		// Quotes change nothing here: a role is a name, and a path is
+		// compared whole already.
 		return Locator{Kind: Kind(k), Value: v, Role: role}, nil
 	default:
 		return Locator{}, mobiumerr.New(mobiumerr.InvalidArgument, "unknown locator kind %q (want text, label, testid, role, class or path)", k)
@@ -273,6 +415,24 @@ func hasNamedRole(n *Node, role string, clickableFallback bool) bool {
 	return false
 }
 
+// field compares one of a node's strings with the value, as the locator asks:
+// whole and in any case when quoted, else byte for byte when Exact, else a
+// part in any case.
+//
+// A whole value also takes straight and curly quotes as one: Apple writes
+// Don’t Allow, and a caller types Don't Allow — app_alert's button matches
+// them alike for the same reason (CHALLENGES 305).
+func (l Locator) field(s string) bool {
+	if l.Whole {
+		return l.Value != "" && strings.EqualFold(foldQuotes(strings.TrimSpace(s)), foldQuotes(strings.TrimSpace(l.Value)))
+	}
+	return match(s, l.Value, l.Exact)
+}
+
+var curlyQuotes = strings.NewReplacer("\u2019", "'", "\u2018", "'", "\u201c", "\"", "\u201d", "\"")
+
+func foldQuotes(s string) string { return curlyQuotes.Replace(s) }
+
 func match(field, value string, exact bool) bool {
 	if value == "" {
 		return false
@@ -290,17 +450,17 @@ func (l Locator) Matches(n *Node) bool {
 	}
 	switch l.Kind {
 	case KindText:
-		return match(n.Text, l.Value, l.Exact)
+		return l.field(n.Text)
 	case KindLabel:
-		return match(n.Label, l.Value, l.Exact) || (namedByHint(n) && match(n.Hint, l.Value, l.Exact))
+		return l.field(n.Label) || (namedByHint(n) && l.field(n.Hint))
 	case KindTestID:
 		// "submit_btn" should match "com.example:id/submit_btn", so compare
 		// the short form too.
-		return match(n.TestID, l.Value, l.Exact) || match(n.ShortTestID(), l.Value, l.Exact)
+		return l.field(n.TestID) || l.field(n.ShortTestID())
 	case KindRole:
 		return HasRole(n, l.Value)
 	case KindClass:
-		return match(n.Class, l.Value, l.Exact) || match(n.ShortClass(), l.Value, l.Exact)
+		return l.field(n.Class) || l.field(n.ShortClass())
 	case KindPath:
 		return n.Path == l.Value
 	}
@@ -322,13 +482,213 @@ func (l Locator) Matches(n *Node) bool {
 //
 // text= also finds an iOS control by its label when it has no text of its
 // own, as labelOnly says.
+//
+// A scoped locator keeps, of its own matches, those nearest an anchor: from
+// each match of the anchor, up through its ancestors, the first that holds
+// any — the row the anchor is in, when the row has one. Never past the list:
+// the climb stops at a scroll container, and at a scroll container's only
+// child, the wrapper React Native puts every row in — except an iOS Cell,
+// which is a row whatever holds it — and at a level whose targets all sit in
+// rows beside the anchor's, which is a list nothing names as one. So the More in Card 8's row is found,
+// and a Card 8 with no More finds nothing, never the More of the row beside
+// it. The cost is a list of one row that is its scroll view's only child on
+// Android, which looks like a wrapper and finds nothing: a miss, never the
+// wrong row. Resolved whole on every read, as any locator is: lists reuse
+// their cells, and a row found once is not the row a moment later.
+//
+// With Nth, of what that leaves the Nth shown — displayed, with a size — in
+// reading order: top to bottom, and along a row left to right. Shown only:
+// iOS keeps rows off screen and buttons under a dialog in the tree, and
+// counting them would make "the second" move with every scroll.
 func (l Locator) Resolve(t *Tree) []*Node {
+	var out []*Node
+	if l.Within == nil {
+		out = l.resolveOwn(t)
+	} else {
+		own := l
+		own.Within = nil
+		out = nearest(own.resolveOwn(t), l.Within.Resolve(t))
+	}
+	if l.Nth == 0 {
+		return out
+	}
+	var shown []*Node
+	for _, n := range out {
+		if n.Displayed && !n.Bounds.Empty() {
+			shown = append(shown, n)
+		}
+	}
+	ReadingOrder(shown)
+	if l.Nth > len(shown) {
+		return nil
+	}
+	return []*Node{shown[l.Nth-1]}
+}
+
+// ReadingOrder sorts nodes as a person reads them: top to bottom, and left to
+// right along a row — two are one row when they overlap by more than half the
+// shorter's height.
+func ReadingOrder(ns []*Node) {
+	sort.SliceStable(ns, func(i, j int) bool {
+		a, b := ns[i].Bounds, ns[j].Bounds
+		h := min(a.Y2-a.Y1, b.Y2-b.Y1)
+		if overlap := min(a.Y2, b.Y2) - max(a.Y1, b.Y1); overlap*2 > h {
+			return a.X1 < b.X1
+		}
+		return a.Y1 < b.Y1
+	})
+}
+
+// nearest is the scoping Resolve describes, in document order.
+func nearest(targets, anchors []*Node) []*Node {
+	keep := map[*Node]bool{}
+	for _, a := range anchors {
+		prev := a
+		for p := a; p != nil; prev, p = p, p.Parent {
+			if p != a && (isList(p) || wrapper(p)) {
+				// At the list with nothing found: the rows may be flat.
+				for _, n := range inRowBox(p, prev, a, targets) {
+					keep[n] = true
+				}
+				break
+			}
+			var found []*Node
+			for _, n := range targets {
+				if n.Within(p) && !otherRow(p, a, n) {
+					found = append(found, n)
+				}
+			}
+			if len(found) > 0 {
+				for _, n := range found {
+					keep[n] = true
+				}
+				break
+			}
+			// A level whose targets are all in the rows beside the anchor's
+			// is the list, whatever it is called: going on only crosses more.
+			if p != a && anyWithin(targets, p) {
+				break
+			}
+		}
+	}
+	var out []*Node
+	for _, n := range targets {
+		if keep[n] {
+			out = append(out, n)
+		}
+	}
+	return out
+}
+
+// inRowBox is the scope where a list's rows are flat. React Native's rows
+// reach UiAutomator2 as empty nodes the size of the row, with the row's text
+// and buttons beside them under the list rather than inside — measured on
+// MobiumApp's Table Demo on the Android 15 emulator — so the tree joins
+// "Item 21" to its More only at the list. The row is then the smallest of
+// the list's children, other than the anchor's own, whose rectangle holds
+// the anchor; its targets are those inside that rectangle and the list.
+func inRowBox(list, top, anchor *Node, targets []*Node) []*Node {
+	var box *Node
+	for _, c := range list.Children {
+		if c == top || c.Bounds.Empty() || !enclosesRect(c.Bounds, anchor.Bounds) {
+			continue
+		}
+		if box == nil || area(c.Bounds) < area(box.Bounds) {
+			box = c
+		}
+	}
+	if box == nil {
+		return nil
+	}
+	var out []*Node
+	for _, n := range targets {
+		if n.Within(list) && !n.Bounds.Empty() && enclosesRect(box.Bounds, n.Bounds) {
+			out = append(out, n)
+		}
+	}
+	return out
+}
+
+// wrapper is a node between a list and its rows: an only child under the
+// list, or under another wrapper. React Native puts one under an Android
+// ScrollView and two under an iOS one (MobiumApp's Table Demo, iOS 26.5),
+// each holding every row. An iOS Cell is a row whatever holds it.
+//
+// Only child but for scroll indicators: an iOS scroll view also holds its
+// scroll bars (CHALLENGES 167), and counted, they hid the wrapper.
+func wrapper(n *Node) bool {
+	if n.Class == "XCUIElementTypeCell" || n.Parent == nil {
+		return false
+	}
+	for _, c := range n.Parent.Children {
+		if c != n && !isScrollIndicator(c) {
+			return false
+		}
+	}
+	return isList(n.Parent) || wrapper(n.Parent)
+}
+
+// isList is a node that holds rows: one that scrolls, or one whose class is
+// a list's whether or not it scrolls now — Android marks a RecyclerView
+// scrollable only while its rows overflow it, and Settings' Network &
+// internet, which fits, had no boundary: a switch was found for Hotspot &
+// tethering in Airplane mode's row, measured on the Android 15 emulator.
+func isList(n *Node) bool {
+	if n.Scrollable {
+		return true
+	}
+	for _, c := range []string{"RecyclerView", "ListView", "GridView", "ScrollView", "XCUIElementTypeTable",
+		"XCUIElementTypeCollectionView", "XCUIElementTypeScrollView"} {
+		if strings.HasSuffix(n.Class, c) {
+			return true
+		}
+	}
+	return false
+}
+
+// otherRow says a target lies in a row beside the anchor's: under p, the two
+// are in different children of the same class and width, as rows are, where
+// a row's own parts — a title and its button — differ in one or the other.
+// It catches a list nothing names as one, such as a Compose column.
+func otherRow(p, anchor, target *Node) bool {
+	var ab, tb *Node
+	for _, c := range p.Children {
+		if anchor.Within(c) {
+			ab = c
+		}
+		if target.Within(c) {
+			tb = c
+		}
+	}
+	if ab == nil || tb == nil || ab == tb {
+		return false
+	}
+	return ab.Class == tb.Class && abs(ab.Bounds.Width()-tb.Bounds.Width()) <= 2 && ab.Bounds.Width() > 0
+}
+
+func anyWithin(ns []*Node, p *Node) bool {
+	for _, n := range ns {
+		if n.Within(p) {
+			return true
+		}
+	}
+	return false
+}
+
+func abs(x int) int {
+	if x < 0 {
+		return -x
+	}
+	return x
+}
+
+func (l Locator) resolveOwn(t *Tree) []*Node {
 	var out, exact []*Node
 	byLabel := map[*Node]bool{}
 	t.Walk(func(n *Node) bool {
 		if l.Matches(n) {
 			out = append(out, n)
-			if l.Kind == KindTestID && !l.Exact && (n.TestID == l.Value || n.ShortTestID() == l.Value) {
+			if l.Kind == KindTestID && !l.Exact && !l.Whole && (n.TestID == l.Value || n.ShortTestID() == l.Value) {
 				exact = append(exact, n)
 			}
 		} else if l.labelOnly(n) {
@@ -379,7 +739,7 @@ func (l Locator) Resolve(t *Tree) []*Node {
 	// prompt has "Allow Paste" and "Don’t Allow Paste", and label=Allow Paste
 	// found both — with a remedy, ",role=button", that could not tell two
 	// buttons apart, and no syntax to ask for the whole of it (CHALLENGES 185).
-	if !l.Exact && len(kept) > 1 {
+	if !l.Exact && !l.Whole && len(kept) > 1 {
 		var whole []*Node
 		for _, n := range kept {
 			if l.wholeMatch(n) {
@@ -447,7 +807,7 @@ func (l Locator) labelOnly(n *Node) bool {
 	if l.Role != "" && !HasRole(n, l.Role) {
 		return false
 	}
-	return match(n.Label, l.Value, l.Exact)
+	return l.field(n.Label)
 }
 
 // containsAny reports whether any of nodes is a descendant of n.

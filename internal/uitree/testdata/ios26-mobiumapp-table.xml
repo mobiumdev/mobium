@@ -1,0 +1,233 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<XCUIElementTypeApplication type="XCUIElementTypeApplication" name="MobiumApp" label="MobiumApp" enabled="true" visible="true" accessible="false" x="0" y="0" width="402" height="874" index="0" traits="" processId="33856" bundleId="dev.mobium.mobiumapp">
+  <XCUIElementTypeWindow type="XCUIElementTypeWindow" enabled="true" visible="true" accessible="false" x="0" y="0" width="402" height="874" index="0" traits="">
+    <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="0" y="0" width="402" height="874" index="0" traits="">
+      <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="0" y="0" width="402" height="874" index="0" traits="">
+        <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="0" y="0" width="402" height="874" index="0" traits="">
+          <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="0" y="0" width="402" height="874" index="0" traits="">
+            <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="0" y="0" width="402" height="874" index="0" traits="">
+              <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="0" y="0" width="402" height="874" index="0" traits="">
+                <XCUIElementTypeButton type="XCUIElementTypeButton" name="backBtn" label="Back" enabled="true" visible="true" accessible="true" x="16" y="78" width="370" height="48" index="0" traits="Button"/>
+                <XCUIElementTypeStaticText type="XCUIElementTypeStaticText" value="Table" name="Table" label="Table" enabled="true" visible="true" accessible="false" x="16" y="135" width="370" height="27" index="1" traits="StaticText">
+                  <XCUIElementTypeStaticText type="XCUIElementTypeStaticText" value="Table" name="Table" label="Table" enabled="true" visible="true" accessible="true" x="16" y="135" width="370" height="27" index="0" traits="StaticText"/>
+                </XCUIElementTypeStaticText>
+                <XCUIElementTypeStaticText type="XCUIElementTypeStaticText" value="Delete: Item 3" name="tableOutcome" label="Delete: Item 3" enabled="true" visible="true" accessible="false" x="16" y="177" width="370" height="20" index="2" traits="StaticText">
+                  <XCUIElementTypeStaticText type="XCUIElementTypeStaticText" value="Delete: Item 3" name="Delete: Item 3" label="Delete: Item 3" enabled="true" visible="true" accessible="true" x="16" y="177" width="370" height="20" index="0" traits="StaticText"/>
+                </XCUIElementTypeStaticText>
+                <XCUIElementTypeOther type="XCUIElementTypeOther" name="table" enabled="true" visible="true" accessible="false" x="16" y="213" width="370" height="611" index="3" traits="">
+                  <XCUIElementTypeScrollView type="XCUIElementTypeScrollView" enabled="true" visible="true" accessible="false" x="16" y="213" width="370" height="611" index="0" traits="">
+                    <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="16" y="213" width="370" height="1920" index="0" traits="">
+                      <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="16" y="213" width="370" height="1920" index="0" traits="">
+                        <XCUIElementTypeOther type="XCUIElementTypeOther" name="tableRow1" enabled="true" visible="true" accessible="false" x="16" y="213" width="370" height="64" index="0" traits=""/>
+                        <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="166" y="221" width="64" height="28" index="1" traits="">
+                          <XCUIElementTypeSwitch type="XCUIElementTypeSwitch" value="0" name="rowStarred" label="Starred" enabled="true" visible="true" accessible="true" x="166" y="221" width="64" height="28" index="0" traits="ToggleButton, Button"/>
+                        </XCUIElementTypeOther>
+                        <XCUIElementTypeButton type="XCUIElementTypeButton" name="rowMore" label="More" enabled="true" visible="true" accessible="true" x="237" y="225" width="66" height="40" index="2" traits="Button"/>
+                        <XCUIElementTypeButton type="XCUIElementTypeButton" name="rowDelete" label="Delete" enabled="true" visible="true" accessible="true" x="311" y="225" width="75" height="40" index="3" traits="Button"/>
+                        <XCUIElementTypeStaticText type="XCUIElementTypeStaticText" value="Item 1" name="Item 1" label="Item 1" enabled="true" visible="true" accessible="false" x="16" y="233" width="143" height="23" index="4" traits="StaticText">
+                          <XCUIElementTypeStaticText type="XCUIElementTypeStaticText" value="Item 1" name="Item 1" label="Item 1" enabled="true" visible="true" accessible="true" x="16" y="233" width="143" height="23" index="0" traits="StaticText"/>
+                        </XCUIElementTypeStaticText>
+                        <XCUIElementTypeOther type="XCUIElementTypeOther" name="tableRow2" enabled="true" visible="true" accessible="false" x="16" y="277" width="370" height="64" index="5" traits=""/>
+                        <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="166" y="285" width="64" height="28" index="6" traits="">
+                          <XCUIElementTypeSwitch type="XCUIElementTypeSwitch" value="0" name="rowStarred" label="Starred" enabled="true" visible="true" accessible="true" x="166" y="285" width="64" height="28" index="0" traits="ToggleButton, Button"/>
+                        </XCUIElementTypeOther>
+                        <XCUIElementTypeButton type="XCUIElementTypeButton" name="rowMore" label="More" enabled="true" visible="true" accessible="true" x="237" y="289" width="66" height="40" index="7" traits="Button"/>
+                        <XCUIElementTypeButton type="XCUIElementTypeButton" name="rowDelete" label="Delete" enabled="true" visible="true" accessible="true" x="311" y="289" width="75" height="40" index="8" traits="Button"/>
+                        <XCUIElementTypeStaticText type="XCUIElementTypeStaticText" value="Item 2" name="Item 2" label="Item 2" enabled="true" visible="true" accessible="false" x="16" y="297" width="143" height="23" index="9" traits="StaticText">
+                          <XCUIElementTypeStaticText type="XCUIElementTypeStaticText" value="Item 2" name="Item 2" label="Item 2" enabled="true" visible="true" accessible="true" x="16" y="297" width="143" height="23" index="0" traits="StaticText"/>
+                        </XCUIElementTypeStaticText>
+                        <XCUIElementTypeOther type="XCUIElementTypeOther" name="tableRow3" enabled="true" visible="true" accessible="false" x="16" y="341" width="370" height="64" index="10" traits=""/>
+                        <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="166" y="349" width="64" height="28" index="11" traits="">
+                          <XCUIElementTypeSwitch type="XCUIElementTypeSwitch" value="0" name="rowStarred" label="Starred" enabled="true" visible="true" accessible="true" x="166" y="349" width="64" height="28" index="0" traits="ToggleButton, Button"/>
+                        </XCUIElementTypeOther>
+                        <XCUIElementTypeButton type="XCUIElementTypeButton" name="rowMore" label="More" enabled="true" visible="true" accessible="true" x="237" y="353" width="66" height="40" index="12" traits="Button"/>
+                        <XCUIElementTypeButton type="XCUIElementTypeButton" name="rowDelete" label="Delete" enabled="true" visible="true" accessible="true" x="311" y="353" width="75" height="40" index="13" traits="Button"/>
+                        <XCUIElementTypeStaticText type="XCUIElementTypeStaticText" value="Item 3" name="Item 3" label="Item 3" enabled="true" visible="true" accessible="false" x="16" y="361" width="143" height="23" index="14" traits="StaticText">
+                          <XCUIElementTypeStaticText type="XCUIElementTypeStaticText" value="Item 3" name="Item 3" label="Item 3" enabled="true" visible="true" accessible="true" x="16" y="361" width="143" height="23" index="0" traits="StaticText"/>
+                        </XCUIElementTypeStaticText>
+                        <XCUIElementTypeOther type="XCUIElementTypeOther" name="tableRow4" enabled="true" visible="true" accessible="false" x="16" y="405" width="370" height="64" index="15" traits=""/>
+                        <XCUIElementTypeButton type="XCUIElementTypeButton" name="rowMore" label="More" enabled="true" visible="true" accessible="true" x="237" y="417" width="66" height="40" index="16" traits="Button"/>
+                        <XCUIElementTypeButton type="XCUIElementTypeButton" name="rowDelete" label="Delete" enabled="true" visible="true" accessible="true" x="311" y="417" width="75" height="40" index="17" traits="Button"/>
+                        <XCUIElementTypeStaticText type="XCUIElementTypeStaticText" value="Item 4" name="Item 4" label="Item 4" enabled="true" visible="true" accessible="false" x="16" y="425" width="214" height="23" index="18" traits="StaticText">
+                          <XCUIElementTypeStaticText type="XCUIElementTypeStaticText" value="Item 4" name="Item 4" label="Item 4" enabled="true" visible="true" accessible="true" x="16" y="425" width="214" height="23" index="0" traits="StaticText"/>
+                        </XCUIElementTypeStaticText>
+                        <XCUIElementTypeOther type="XCUIElementTypeOther" name="tableRow5" enabled="true" visible="true" accessible="false" x="16" y="469" width="370" height="64" index="19" traits=""/>
+                        <XCUIElementTypeButton type="XCUIElementTypeButton" name="rowMore" label="More" enabled="true" visible="true" accessible="true" x="237" y="481" width="66" height="40" index="20" traits="Button"/>
+                        <XCUIElementTypeButton type="XCUIElementTypeButton" name="rowDelete" label="Delete" enabled="true" visible="true" accessible="true" x="311" y="481" width="75" height="40" index="21" traits="Button"/>
+                        <XCUIElementTypeStaticText type="XCUIElementTypeStaticText" value="Item 5" name="Item 5" label="Item 5" enabled="true" visible="true" accessible="false" x="16" y="489" width="214" height="23" index="22" traits="StaticText">
+                          <XCUIElementTypeStaticText type="XCUIElementTypeStaticText" value="Item 5" name="Item 5" label="Item 5" enabled="true" visible="true" accessible="true" x="16" y="489" width="214" height="23" index="0" traits="StaticText"/>
+                        </XCUIElementTypeStaticText>
+                        <XCUIElementTypeOther type="XCUIElementTypeOther" name="tableRow6" enabled="true" visible="true" accessible="false" x="16" y="533" width="370" height="64" index="23" traits=""/>
+                        <XCUIElementTypeButton type="XCUIElementTypeButton" name="rowMore" label="More" enabled="true" visible="true" accessible="true" x="237" y="545" width="66" height="40" index="24" traits="Button"/>
+                        <XCUIElementTypeButton type="XCUIElementTypeButton" name="rowDelete" label="Delete" enabled="true" visible="true" accessible="true" x="311" y="545" width="75" height="40" index="25" traits="Button"/>
+                        <XCUIElementTypeStaticText type="XCUIElementTypeStaticText" value="Item 6" name="Item 6" label="Item 6" enabled="true" visible="true" accessible="false" x="16" y="553" width="214" height="23" index="26" traits="StaticText">
+                          <XCUIElementTypeStaticText type="XCUIElementTypeStaticText" value="Item 6" name="Item 6" label="Item 6" enabled="true" visible="true" accessible="true" x="16" y="553" width="214" height="23" index="0" traits="StaticText"/>
+                        </XCUIElementTypeStaticText>
+                        <XCUIElementTypeOther type="XCUIElementTypeOther" name="tableRow7" enabled="true" visible="true" accessible="false" x="16" y="597" width="370" height="64" index="27" traits=""/>
+                        <XCUIElementTypeButton type="XCUIElementTypeButton" name="rowMore" label="More" enabled="true" visible="true" accessible="true" x="237" y="609" width="66" height="40" index="28" traits="Button"/>
+                        <XCUIElementTypeButton type="XCUIElementTypeButton" name="rowDelete" label="Delete" enabled="true" visible="true" accessible="true" x="311" y="609" width="75" height="40" index="29" traits="Button"/>
+                        <XCUIElementTypeStaticText type="XCUIElementTypeStaticText" value="Item 7" name="Item 7" label="Item 7" enabled="true" visible="true" accessible="false" x="16" y="617" width="214" height="23" index="30" traits="StaticText">
+                          <XCUIElementTypeStaticText type="XCUIElementTypeStaticText" value="Item 7" name="Item 7" label="Item 7" enabled="true" visible="true" accessible="true" x="16" y="617" width="214" height="23" index="0" traits="StaticText"/>
+                        </XCUIElementTypeStaticText>
+                        <XCUIElementTypeOther type="XCUIElementTypeOther" name="tableRow8" enabled="true" visible="true" accessible="false" x="16" y="661" width="370" height="64" index="31" traits=""/>
+                        <XCUIElementTypeButton type="XCUIElementTypeButton" name="rowDelete" label="Delete" enabled="true" visible="true" accessible="true" x="311" y="673" width="75" height="40" index="32" traits="Button"/>
+                        <XCUIElementTypeStaticText type="XCUIElementTypeStaticText" value="Item 8" name="Item 8" label="Item 8" enabled="true" visible="true" accessible="false" x="16" y="681" width="287" height="23" index="33" traits="StaticText">
+                          <XCUIElementTypeStaticText type="XCUIElementTypeStaticText" value="Item 8" name="Item 8" label="Item 8" enabled="true" visible="true" accessible="true" x="16" y="681" width="287" height="23" index="0" traits="StaticText"/>
+                        </XCUIElementTypeStaticText>
+                        <XCUIElementTypeOther type="XCUIElementTypeOther" name="tableRow9" enabled="true" visible="true" accessible="false" x="16" y="725" width="370" height="64" index="34" traits=""/>
+                        <XCUIElementTypeButton type="XCUIElementTypeButton" name="rowMore" label="More" enabled="true" visible="true" accessible="true" x="237" y="737" width="66" height="40" index="35" traits="Button"/>
+                        <XCUIElementTypeButton type="XCUIElementTypeButton" name="rowDelete" label="Delete" enabled="true" visible="true" accessible="true" x="311" y="737" width="75" height="40" index="36" traits="Button"/>
+                        <XCUIElementTypeStaticText type="XCUIElementTypeStaticText" value="Item 9" name="Item 9" label="Item 9" enabled="true" visible="true" accessible="false" x="16" y="745" width="214" height="23" index="37" traits="StaticText">
+                          <XCUIElementTypeStaticText type="XCUIElementTypeStaticText" value="Item 9" name="Item 9" label="Item 9" enabled="true" visible="true" accessible="true" x="16" y="745" width="214" height="23" index="0" traits="StaticText"/>
+                        </XCUIElementTypeStaticText>
+                        <XCUIElementTypeOther type="XCUIElementTypeOther" name="tableRow10" enabled="true" visible="true" accessible="false" x="16" y="789" width="370" height="64" index="38" traits=""/>
+                        <XCUIElementTypeButton type="XCUIElementTypeButton" name="rowMore" label="More" enabled="true" visible="true" accessible="true" x="237" y="801" width="66" height="40" index="39" traits="Button"/>
+                        <XCUIElementTypeButton type="XCUIElementTypeButton" name="rowDelete" label="Delete" enabled="true" visible="true" accessible="true" x="311" y="801" width="75" height="40" index="40" traits="Button"/>
+                        <XCUIElementTypeStaticText type="XCUIElementTypeStaticText" value="Item 10" name="Item 10" label="Item 10" enabled="true" visible="true" accessible="false" x="16" y="809" width="214" height="23" index="41" traits="StaticText">
+                          <XCUIElementTypeStaticText type="XCUIElementTypeStaticText" value="Item 10" name="Item 10" label="Item 10" enabled="true" visible="true" accessible="true" x="16" y="809" width="214" height="23" index="0" traits="StaticText"/>
+                        </XCUIElementTypeStaticText>
+                        <XCUIElementTypeOther type="XCUIElementTypeOther" name="tableRow11" enabled="true" visible="false" accessible="false" x="16" y="853" width="370" height="64" index="42" traits=""/>
+                        <XCUIElementTypeButton type="XCUIElementTypeButton" name="rowMore" label="More" enabled="true" visible="false" accessible="true" x="237" y="865" width="66" height="40" index="43" traits="Button"/>
+                        <XCUIElementTypeButton type="XCUIElementTypeButton" name="rowDelete" label="Delete" enabled="true" visible="false" accessible="true" x="311" y="865" width="75" height="40" index="44" traits="Button"/>
+                        <XCUIElementTypeStaticText type="XCUIElementTypeStaticText" value="Item 11" name="Item 11" label="Item 11" enabled="true" visible="false" accessible="false" x="16" y="873" width="214" height="23" index="45" traits="StaticText">
+                          <XCUIElementTypeStaticText type="XCUIElementTypeStaticText" value="Item 11" name="Item 11" label="Item 11" enabled="true" visible="false" accessible="true" x="16" y="873" width="214" height="23" index="0" traits="StaticText"/>
+                        </XCUIElementTypeStaticText>
+                        <XCUIElementTypeOther type="XCUIElementTypeOther" name="tableRow12" enabled="true" visible="false" accessible="false" x="16" y="917" width="370" height="64" index="46" traits=""/>
+                        <XCUIElementTypeButton type="XCUIElementTypeButton" name="rowMore" label="More" enabled="true" visible="false" accessible="true" x="237" y="929" width="66" height="40" index="47" traits="Button"/>
+                        <XCUIElementTypeButton type="XCUIElementTypeButton" name="rowDelete" label="Delete" enabled="true" visible="false" accessible="true" x="311" y="929" width="75" height="40" index="48" traits="Button"/>
+                        <XCUIElementTypeStaticText type="XCUIElementTypeStaticText" value="Item 12" name="Item 12" label="Item 12" enabled="true" visible="false" accessible="false" x="16" y="937" width="214" height="23" index="49" traits="StaticText">
+                          <XCUIElementTypeStaticText type="XCUIElementTypeStaticText" value="Item 12" name="Item 12" label="Item 12" enabled="true" visible="false" accessible="true" x="16" y="937" width="214" height="23" index="0" traits="StaticText"/>
+                        </XCUIElementTypeStaticText>
+                        <XCUIElementTypeOther type="XCUIElementTypeOther" name="tableRow13" enabled="true" visible="false" accessible="false" x="16" y="981" width="370" height="64" index="50" traits=""/>
+                        <XCUIElementTypeButton type="XCUIElementTypeButton" name="rowMore" label="More" enabled="true" visible="false" accessible="true" x="237" y="993" width="66" height="40" index="51" traits="Button"/>
+                        <XCUIElementTypeButton type="XCUIElementTypeButton" name="rowDelete" label="Delete" enabled="true" visible="false" accessible="true" x="311" y="993" width="75" height="40" index="52" traits="Button"/>
+                        <XCUIElementTypeStaticText type="XCUIElementTypeStaticText" value="Item 13" name="Item 13" label="Item 13" enabled="true" visible="false" accessible="false" x="16" y="1001" width="214" height="23" index="53" traits="StaticText">
+                          <XCUIElementTypeStaticText type="XCUIElementTypeStaticText" value="Item 13" name="Item 13" label="Item 13" enabled="true" visible="false" accessible="true" x="16" y="1001" width="214" height="23" index="0" traits="StaticText"/>
+                        </XCUIElementTypeStaticText>
+                        <XCUIElementTypeOther type="XCUIElementTypeOther" name="tableRow14" enabled="true" visible="false" accessible="false" x="16" y="1045" width="370" height="64" index="54" traits=""/>
+                        <XCUIElementTypeButton type="XCUIElementTypeButton" name="rowMore" label="More" enabled="true" visible="false" accessible="true" x="237" y="1057" width="66" height="40" index="55" traits="Button"/>
+                        <XCUIElementTypeButton type="XCUIElementTypeButton" name="rowDelete" label="Delete" enabled="true" visible="false" accessible="true" x="311" y="1057" width="75" height="40" index="56" traits="Button"/>
+                        <XCUIElementTypeStaticText type="XCUIElementTypeStaticText" value="Item 14" name="Item 14" label="Item 14" enabled="true" visible="false" accessible="false" x="16" y="1065" width="214" height="23" index="57" traits="StaticText">
+                          <XCUIElementTypeStaticText type="XCUIElementTypeStaticText" value="Item 14" name="Item 14" label="Item 14" enabled="true" visible="false" accessible="true" x="16" y="1065" width="214" height="23" index="0" traits="StaticText"/>
+                        </XCUIElementTypeStaticText>
+                        <XCUIElementTypeOther type="XCUIElementTypeOther" name="tableRow15" enabled="true" visible="false" accessible="false" x="16" y="1109" width="370" height="64" index="58" traits=""/>
+                        <XCUIElementTypeButton type="XCUIElementTypeButton" name="rowMore" label="More" enabled="true" visible="false" accessible="true" x="237" y="1121" width="66" height="40" index="59" traits="Button"/>
+                        <XCUIElementTypeButton type="XCUIElementTypeButton" name="rowDelete" label="Delete" enabled="true" visible="false" accessible="true" x="311" y="1121" width="75" height="40" index="60" traits="Button"/>
+                        <XCUIElementTypeStaticText type="XCUIElementTypeStaticText" value="Item 15" name="Item 15" label="Item 15" enabled="true" visible="false" accessible="false" x="16" y="1129" width="214" height="23" index="61" traits="StaticText">
+                          <XCUIElementTypeStaticText type="XCUIElementTypeStaticText" value="Item 15" name="Item 15" label="Item 15" enabled="true" visible="false" accessible="true" x="16" y="1129" width="214" height="23" index="0" traits="StaticText"/>
+                        </XCUIElementTypeStaticText>
+                        <XCUIElementTypeOther type="XCUIElementTypeOther" name="tableRow16" enabled="true" visible="false" accessible="false" x="16" y="1173" width="370" height="64" index="62" traits=""/>
+                        <XCUIElementTypeButton type="XCUIElementTypeButton" name="rowMore" label="More" enabled="true" visible="false" accessible="true" x="237" y="1185" width="66" height="40" index="63" traits="Button"/>
+                        <XCUIElementTypeButton type="XCUIElementTypeButton" name="rowDelete" label="Delete" enabled="true" visible="false" accessible="true" x="311" y="1185" width="75" height="40" index="64" traits="Button"/>
+                        <XCUIElementTypeStaticText type="XCUIElementTypeStaticText" value="Item 16" name="Item 16" label="Item 16" enabled="true" visible="false" accessible="false" x="16" y="1193" width="214" height="23" index="65" traits="StaticText">
+                          <XCUIElementTypeStaticText type="XCUIElementTypeStaticText" value="Item 16" name="Item 16" label="Item 16" enabled="true" visible="false" accessible="true" x="16" y="1193" width="214" height="23" index="0" traits="StaticText"/>
+                        </XCUIElementTypeStaticText>
+                        <XCUIElementTypeOther type="XCUIElementTypeOther" name="tableRow17" enabled="true" visible="false" accessible="false" x="16" y="1237" width="370" height="64" index="66" traits=""/>
+                        <XCUIElementTypeButton type="XCUIElementTypeButton" name="rowMore" label="More" enabled="true" visible="false" accessible="true" x="237" y="1249" width="66" height="40" index="67" traits="Button"/>
+                        <XCUIElementTypeButton type="XCUIElementTypeButton" name="rowDelete" label="Delete" enabled="true" visible="false" accessible="true" x="311" y="1249" width="75" height="40" index="68" traits="Button"/>
+                        <XCUIElementTypeStaticText type="XCUIElementTypeStaticText" value="Item 17" name="Item 17" label="Item 17" enabled="true" visible="false" accessible="false" x="16" y="1257" width="214" height="23" index="69" traits="StaticText">
+                          <XCUIElementTypeStaticText type="XCUIElementTypeStaticText" value="Item 17" name="Item 17" label="Item 17" enabled="true" visible="false" accessible="true" x="16" y="1257" width="214" height="23" index="0" traits="StaticText"/>
+                        </XCUIElementTypeStaticText>
+                        <XCUIElementTypeOther type="XCUIElementTypeOther" name="tableRow18" enabled="true" visible="false" accessible="false" x="16" y="1301" width="370" height="64" index="70" traits=""/>
+                        <XCUIElementTypeButton type="XCUIElementTypeButton" name="rowMore" label="More" enabled="true" visible="false" accessible="true" x="237" y="1313" width="66" height="40" index="71" traits="Button"/>
+                        <XCUIElementTypeButton type="XCUIElementTypeButton" name="rowDelete" label="Delete" enabled="true" visible="false" accessible="true" x="311" y="1313" width="75" height="40" index="72" traits="Button"/>
+                        <XCUIElementTypeStaticText type="XCUIElementTypeStaticText" value="Item 18" name="Item 18" label="Item 18" enabled="true" visible="false" accessible="false" x="16" y="1321" width="214" height="23" index="73" traits="StaticText">
+                          <XCUIElementTypeStaticText type="XCUIElementTypeStaticText" value="Item 18" name="Item 18" label="Item 18" enabled="true" visible="false" accessible="true" x="16" y="1321" width="214" height="23" index="0" traits="StaticText"/>
+                        </XCUIElementTypeStaticText>
+                        <XCUIElementTypeOther type="XCUIElementTypeOther" name="tableRow19" enabled="true" visible="false" accessible="false" x="16" y="1365" width="370" height="64" index="74" traits=""/>
+                        <XCUIElementTypeButton type="XCUIElementTypeButton" name="rowMore" label="More" enabled="true" visible="false" accessible="true" x="237" y="1377" width="66" height="40" index="75" traits="Button"/>
+                        <XCUIElementTypeButton type="XCUIElementTypeButton" name="rowDelete" label="Delete" enabled="true" visible="false" accessible="true" x="311" y="1377" width="75" height="40" index="76" traits="Button"/>
+                        <XCUIElementTypeStaticText type="XCUIElementTypeStaticText" value="Item 19" name="Item 19" label="Item 19" enabled="true" visible="false" accessible="false" x="16" y="1385" width="214" height="23" index="77" traits="StaticText">
+                          <XCUIElementTypeStaticText type="XCUIElementTypeStaticText" value="Item 19" name="Item 19" label="Item 19" enabled="true" visible="false" accessible="true" x="16" y="1385" width="214" height="23" index="0" traits="StaticText"/>
+                        </XCUIElementTypeStaticText>
+                        <XCUIElementTypeOther type="XCUIElementTypeOther" name="tableRow20" enabled="true" visible="false" accessible="false" x="16" y="1429" width="370" height="64" index="78" traits=""/>
+                        <XCUIElementTypeButton type="XCUIElementTypeButton" name="rowMore" label="More" enabled="true" visible="false" accessible="true" x="237" y="1441" width="66" height="40" index="79" traits="Button"/>
+                        <XCUIElementTypeButton type="XCUIElementTypeButton" name="rowDelete" label="Delete" enabled="true" visible="false" accessible="true" x="311" y="1441" width="75" height="40" index="80" traits="Button"/>
+                        <XCUIElementTypeStaticText type="XCUIElementTypeStaticText" value="Item 20" name="Item 20" label="Item 20" enabled="true" visible="false" accessible="false" x="16" y="1449" width="214" height="23" index="81" traits="StaticText">
+                          <XCUIElementTypeStaticText type="XCUIElementTypeStaticText" value="Item 20" name="Item 20" label="Item 20" enabled="true" visible="false" accessible="true" x="16" y="1449" width="214" height="23" index="0" traits="StaticText"/>
+                        </XCUIElementTypeStaticText>
+                        <XCUIElementTypeOther type="XCUIElementTypeOther" name="tableRow21" enabled="true" visible="false" accessible="false" x="16" y="1493" width="370" height="64" index="82" traits=""/>
+                        <XCUIElementTypeButton type="XCUIElementTypeButton" name="rowMore" label="More" enabled="true" visible="false" accessible="true" x="237" y="1505" width="66" height="40" index="83" traits="Button"/>
+                        <XCUIElementTypeButton type="XCUIElementTypeButton" name="rowDelete" label="Delete" enabled="true" visible="false" accessible="true" x="311" y="1505" width="75" height="40" index="84" traits="Button"/>
+                        <XCUIElementTypeStaticText type="XCUIElementTypeStaticText" value="Item 21" name="Item 21" label="Item 21" enabled="true" visible="false" accessible="false" x="16" y="1513" width="214" height="23" index="85" traits="StaticText">
+                          <XCUIElementTypeStaticText type="XCUIElementTypeStaticText" value="Item 21" name="Item 21" label="Item 21" enabled="true" visible="false" accessible="true" x="16" y="1513" width="214" height="23" index="0" traits="StaticText"/>
+                        </XCUIElementTypeStaticText>
+                        <XCUIElementTypeOther type="XCUIElementTypeOther" name="tableRow22" enabled="true" visible="false" accessible="false" x="16" y="1557" width="370" height="64" index="86" traits=""/>
+                        <XCUIElementTypeButton type="XCUIElementTypeButton" name="rowMore" label="More" enabled="true" visible="false" accessible="true" x="237" y="1569" width="66" height="40" index="87" traits="Button"/>
+                        <XCUIElementTypeButton type="XCUIElementTypeButton" name="rowDelete" label="Delete" enabled="true" visible="false" accessible="true" x="311" y="1569" width="75" height="40" index="88" traits="Button"/>
+                        <XCUIElementTypeStaticText type="XCUIElementTypeStaticText" value="Item 22" name="Item 22" label="Item 22" enabled="true" visible="false" accessible="false" x="16" y="1577" width="214" height="23" index="89" traits="StaticText">
+                          <XCUIElementTypeStaticText type="XCUIElementTypeStaticText" value="Item 22" name="Item 22" label="Item 22" enabled="true" visible="false" accessible="true" x="16" y="1577" width="214" height="23" index="0" traits="StaticText"/>
+                        </XCUIElementTypeStaticText>
+                        <XCUIElementTypeOther type="XCUIElementTypeOther" name="tableRow23" enabled="true" visible="false" accessible="false" x="16" y="1621" width="370" height="64" index="90" traits=""/>
+                        <XCUIElementTypeButton type="XCUIElementTypeButton" name="rowMore" label="More" enabled="true" visible="false" accessible="true" x="237" y="1633" width="66" height="40" index="91" traits="Button"/>
+                        <XCUIElementTypeButton type="XCUIElementTypeButton" name="rowDelete" label="Delete" enabled="true" visible="false" accessible="true" x="311" y="1633" width="75" height="40" index="92" traits="Button"/>
+                        <XCUIElementTypeStaticText type="XCUIElementTypeStaticText" value="Item 23" name="Item 23" label="Item 23" enabled="true" visible="false" accessible="false" x="16" y="1641" width="214" height="23" index="93" traits="StaticText">
+                          <XCUIElementTypeStaticText type="XCUIElementTypeStaticText" value="Item 23" name="Item 23" label="Item 23" enabled="true" visible="false" accessible="true" x="16" y="1641" width="214" height="23" index="0" traits="StaticText"/>
+                        </XCUIElementTypeStaticText>
+                        <XCUIElementTypeOther type="XCUIElementTypeOther" name="tableRow24" enabled="true" visible="false" accessible="false" x="16" y="1685" width="370" height="64" index="94" traits=""/>
+                        <XCUIElementTypeButton type="XCUIElementTypeButton" name="rowMore" label="More" enabled="true" visible="false" accessible="true" x="237" y="1697" width="66" height="40" index="95" traits="Button"/>
+                        <XCUIElementTypeButton type="XCUIElementTypeButton" name="rowDelete" label="Delete" enabled="true" visible="false" accessible="true" x="311" y="1697" width="75" height="40" index="96" traits="Button"/>
+                        <XCUIElementTypeStaticText type="XCUIElementTypeStaticText" value="Item 24" name="Item 24" label="Item 24" enabled="true" visible="false" accessible="false" x="16" y="1705" width="214" height="23" index="97" traits="StaticText">
+                          <XCUIElementTypeStaticText type="XCUIElementTypeStaticText" value="Item 24" name="Item 24" label="Item 24" enabled="true" visible="false" accessible="true" x="16" y="1705" width="214" height="23" index="0" traits="StaticText"/>
+                        </XCUIElementTypeStaticText>
+                        <XCUIElementTypeOther type="XCUIElementTypeOther" name="tableRow25" enabled="true" visible="false" accessible="false" x="16" y="1749" width="370" height="64" index="98" traits=""/>
+                        <XCUIElementTypeButton type="XCUIElementTypeButton" name="rowMore" label="More" enabled="true" visible="false" accessible="true" x="237" y="1761" width="66" height="40" index="99" traits="Button"/>
+                        <XCUIElementTypeButton type="XCUIElementTypeButton" name="rowDelete" label="Delete" enabled="true" visible="false" accessible="true" x="311" y="1761" width="75" height="40" index="100" traits="Button"/>
+                        <XCUIElementTypeStaticText type="XCUIElementTypeStaticText" value="Item 25" name="Item 25" label="Item 25" enabled="true" visible="false" accessible="false" x="16" y="1769" width="214" height="23" index="101" traits="StaticText">
+                          <XCUIElementTypeStaticText type="XCUIElementTypeStaticText" value="Item 25" name="Item 25" label="Item 25" enabled="true" visible="false" accessible="true" x="16" y="1769" width="214" height="23" index="0" traits="StaticText"/>
+                        </XCUIElementTypeStaticText>
+                        <XCUIElementTypeOther type="XCUIElementTypeOther" name="tableRow26" enabled="true" visible="false" accessible="false" x="16" y="1813" width="370" height="64" index="102" traits=""/>
+                        <XCUIElementTypeButton type="XCUIElementTypeButton" name="rowMore" label="More" enabled="true" visible="false" accessible="true" x="237" y="1825" width="66" height="40" index="103" traits="Button"/>
+                        <XCUIElementTypeButton type="XCUIElementTypeButton" name="rowDelete" label="Delete" enabled="true" visible="false" accessible="true" x="311" y="1825" width="75" height="40" index="104" traits="Button"/>
+                        <XCUIElementTypeStaticText type="XCUIElementTypeStaticText" value="Item 26" name="Item 26" label="Item 26" enabled="true" visible="false" accessible="false" x="16" y="1833" width="214" height="23" index="105" traits="StaticText">
+                          <XCUIElementTypeStaticText type="XCUIElementTypeStaticText" value="Item 26" name="Item 26" label="Item 26" enabled="true" visible="false" accessible="true" x="16" y="1833" width="214" height="23" index="0" traits="StaticText"/>
+                        </XCUIElementTypeStaticText>
+                        <XCUIElementTypeOther type="XCUIElementTypeOther" name="tableRow27" enabled="true" visible="false" accessible="false" x="16" y="1877" width="370" height="64" index="106" traits=""/>
+                        <XCUIElementTypeButton type="XCUIElementTypeButton" name="rowMore" label="More" enabled="true" visible="false" accessible="true" x="237" y="1889" width="66" height="40" index="107" traits="Button"/>
+                        <XCUIElementTypeButton type="XCUIElementTypeButton" name="rowDelete" label="Delete" enabled="true" visible="false" accessible="true" x="311" y="1889" width="75" height="40" index="108" traits="Button"/>
+                        <XCUIElementTypeStaticText type="XCUIElementTypeStaticText" value="Item 27" name="Item 27" label="Item 27" enabled="true" visible="false" accessible="false" x="16" y="1897" width="214" height="23" index="109" traits="StaticText">
+                          <XCUIElementTypeStaticText type="XCUIElementTypeStaticText" value="Item 27" name="Item 27" label="Item 27" enabled="true" visible="false" accessible="true" x="16" y="1897" width="214" height="23" index="0" traits="StaticText"/>
+                        </XCUIElementTypeStaticText>
+                        <XCUIElementTypeOther type="XCUIElementTypeOther" name="tableRow28" enabled="true" visible="false" accessible="false" x="16" y="1941" width="370" height="64" index="110" traits=""/>
+                        <XCUIElementTypeButton type="XCUIElementTypeButton" name="rowMore" label="More" enabled="true" visible="false" accessible="true" x="237" y="1953" width="66" height="40" index="111" traits="Button"/>
+                        <XCUIElementTypeButton type="XCUIElementTypeButton" name="rowDelete" label="Delete" enabled="true" visible="false" accessible="true" x="311" y="1953" width="75" height="40" index="112" traits="Button"/>
+                        <XCUIElementTypeStaticText type="XCUIElementTypeStaticText" value="Item 28" name="Item 28" label="Item 28" enabled="true" visible="false" accessible="false" x="16" y="1961" width="214" height="23" index="113" traits="StaticText">
+                          <XCUIElementTypeStaticText type="XCUIElementTypeStaticText" value="Item 28" name="Item 28" label="Item 28" enabled="true" visible="false" accessible="true" x="16" y="1961" width="214" height="23" index="0" traits="StaticText"/>
+                        </XCUIElementTypeStaticText>
+                        <XCUIElementTypeOther type="XCUIElementTypeOther" name="tableRow29" enabled="true" visible="false" accessible="false" x="16" y="2005" width="370" height="64" index="114" traits=""/>
+                        <XCUIElementTypeButton type="XCUIElementTypeButton" name="rowMore" label="More" enabled="true" visible="false" accessible="true" x="237" y="2017" width="66" height="40" index="115" traits="Button"/>
+                        <XCUIElementTypeButton type="XCUIElementTypeButton" name="rowDelete" label="Delete" enabled="true" visible="false" accessible="true" x="311" y="2017" width="75" height="40" index="116" traits="Button"/>
+                        <XCUIElementTypeStaticText type="XCUIElementTypeStaticText" value="Item 29" name="Item 29" label="Item 29" enabled="true" visible="false" accessible="false" x="16" y="2025" width="214" height="23" index="117" traits="StaticText">
+                          <XCUIElementTypeStaticText type="XCUIElementTypeStaticText" value="Item 29" name="Item 29" label="Item 29" enabled="true" visible="false" accessible="true" x="16" y="2025" width="214" height="23" index="0" traits="StaticText"/>
+                        </XCUIElementTypeStaticText>
+                        <XCUIElementTypeOther type="XCUIElementTypeOther" name="tableRow30" enabled="true" visible="false" accessible="false" x="16" y="2069" width="370" height="64" index="118" traits=""/>
+                        <XCUIElementTypeButton type="XCUIElementTypeButton" name="rowMore" label="More" enabled="true" visible="false" accessible="true" x="237" y="2081" width="66" height="40" index="119" traits="Button"/>
+                        <XCUIElementTypeButton type="XCUIElementTypeButton" name="rowDelete" label="Delete" enabled="true" visible="false" accessible="true" x="311" y="2081" width="75" height="40" index="120" traits="Button"/>
+                        <XCUIElementTypeStaticText type="XCUIElementTypeStaticText" value="Item 30" name="Item 30" label="Item 30" enabled="true" visible="false" accessible="false" x="16" y="2089" width="214" height="23" index="121" traits="StaticText">
+                          <XCUIElementTypeStaticText type="XCUIElementTypeStaticText" value="Item 30" name="Item 30" label="Item 30" enabled="true" visible="false" accessible="true" x="16" y="2089" width="214" height="23" index="0" traits="StaticText"/>
+                        </XCUIElementTypeStaticText>
+                      </XCUIElementTypeOther>
+                    </XCUIElementTypeOther>
+                    <XCUIElementTypeOther type="XCUIElementTypeOther" value="0%" name="Vertical scroll bar, 4 pages" label="Vertical scroll bar, 4 pages" enabled="true" visible="true" accessible="false" x="353" y="213" width="30" height="599" index="1" traits="Adjustable">
+                      <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="380" y="216" width="3" height="385" index="0" traits=""/>
+                    </XCUIElementTypeOther>
+                    <XCUIElementTypeOther type="XCUIElementTypeOther" value="0%" name="Horizontal scroll bar, 1 page" label="Horizontal scroll bar, 1 page" enabled="true" visible="true" accessible="false" x="28" y="791" width="346" height="30" index="2" traits="Adjustable">
+                      <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="47" y="818" width="340" height="3" index="0" traits=""/>
+                    </XCUIElementTypeOther>
+                    <XCUIElementTypeOther type="XCUIElementTypeOther" value="0%" name="Vertical scroll bar, 4 pages" label="Vertical scroll bar, 4 pages" enabled="true" visible="true" accessible="false" x="353" y="213" width="30" height="599" index="3" traits="Adjustable">
+                      <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="380" y="216" width="3" height="385" index="0" traits=""/>
+                    </XCUIElementTypeOther>
+                    <XCUIElementTypeOther type="XCUIElementTypeOther" value="0%" name="Horizontal scroll bar, 1 page" label="Horizontal scroll bar, 1 page" enabled="true" visible="true" accessible="false" x="28" y="791" width="346" height="30" index="4" traits="Adjustable">
+                      <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="47" y="818" width="340" height="3" index="0" traits=""/>
+                    </XCUIElementTypeOther>
+                  </XCUIElementTypeScrollView>
+                </XCUIElementTypeOther>
+              </XCUIElementTypeOther>
+            </XCUIElementTypeOther>
+          </XCUIElementTypeOther>
+        </XCUIElementTypeOther>
+      </XCUIElementTypeOther>
+    </XCUIElementTypeOther>
+  </XCUIElementTypeWindow>
+</XCUIElementTypeApplication>
+
