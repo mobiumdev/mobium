@@ -6,6 +6,15 @@ this is what is not.
 
 ## Next
 
+- **`wait --for visible` passes for an iOS element off screen** (a lead,
+  2026-10-12, CHALLENGES 307). The wait keeps any match with a size, and
+  iOS keeps rows off screen in the tree with real bounds: on Ice Cubes'
+  timeline a post's author at y −728 was "visible". Actions are not
+  affected — they scroll to what is off screen, or refuse — but a wait that
+  says visible means on screen. Measure it on a simulator and a phone, then
+  decide whether visible asks the screen's rectangle, as `centerOnScreen`
+  does for the light read.
+
 - ~~**Every check, swept.**~~ Done 2026-10-06: 28 on the iPhone 17 Pro
   simulator, 31 on the Android 15 emulator, and the nine that stay inside
   their apps on the iPhone 15 Plus, each with a fresh daemon — and then
@@ -520,11 +529,9 @@ this is what is not.
   locator gets — one match, visible, enabled, still, not covered, not
   under a dialog, a password redacted — and none is handed to the device's
   server to evaluate. In order:
-  1. **Scoping**: this, inside that — the More button within the row that
-     says Card 8. Both halves are resolved again on every poll, and after a
-     scroll the action takes the element the scroll found, as a ref's does
-     (CHALLENGES 261, 267): lists reuse their cells, and a scope resolved
-     once is the wrong-row tap again.
+  1. ~~**Scoping**~~ Done 2026-10-12, CHALLENGES 307: `label=More within
+     text=Card 8`, the target nearest the anchor and never past the list
+     holding it; both halves resolved again on every read.
   2. ~~**Exact text in the written form.**~~ Done 2026-10-12, CHALLENGES
      306: a value in double quotes is matched whole, in any case, with
      straight and curly quotes alike — `text="Internet"` is not met by

@@ -6543,6 +6543,35 @@ pressed DISCARD; on the simulator `text="dialog demo"` found its button by
 label, `text="Dialog"` found nothing, and `label="Don't Allow",role=button`,
 typed straight, pressed the location prompt's Don’t Allow.
 
+### 307. A scoped locator found the switch in the row beside it
+
+**Found by:** the first run on a device of `within`, which scopes a locator
+to a row — `label=More within text=Card 8`, the More in Card 8's row. The
+rule keeps, of the target's matches, the one nearest the anchor, climbing
+from the anchor and stopping at the list, so a row without the target finds
+nothing rather than its neighbor's. The tests passed on lists built for them,
+each marked `scrollable="true"`. On the Android 15 emulator, Settings'
+Network & internet, `find 'role=switch within "Hotspot & tethering"'`
+returned Airplane mode's switch: the Hotspot row has none, and the climb went
+on through the list, which was not marked scrollable — Android marks a
+RecyclerView scrollable only while its rows overflow it, and this one fit.
+
+**Fixed:** a list is known by its class as well as its flag — RecyclerView,
+ListView, GridView, the scroll views, and iOS's Table, CollectionView and
+ScrollView, scrolling or not — and, for one nothing names, such as a Compose
+column, the climb stops at a level whose targets all sit in children of the
+same class and width as the anchor's, which is what rows are. It also stops
+at a scroll container's only child, React Native's wrapper around every row,
+unless that is an iOS Cell. Each rule has a test shown to fail without it.
+Measured again: Hotspot & tethering finds no switch and Airplane mode finds
+its own; on the iOS simulator, Ice Cubes' live timeline, each post's Reply
+scoped by its author is that post's, on screen and off.
+
+Found on the way and not fixed here: `wait --for visible` passes for an iOS
+element entirely off screen — a post's author at y −728 — because the wait
+counts any match with a size, and iOS keeps rows off screen in the tree with
+real bounds. A lead in ROADMAP.
+
 ## Findings that were not defects
 
 Worth recording because each one closed off an approach that looked obvious.

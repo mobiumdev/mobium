@@ -33,6 +33,10 @@ type Locator struct {
 	Exact bool   `json:"exact,omitempty"`
 	Whole bool   `json:"whole,omitempty"`
 	Role  string `json:"role,omitempty"`
+	// Within scopes the locator to what it shares a row with: the target
+	// nearest the anchor in the tree, and never past the list holding the
+	// anchor. See Resolve.
+	Within *Locator `json:"within,omitempty"`
 }
 
 // String is the locator as a caller writes it, and parses back to one that
@@ -48,7 +52,28 @@ func (l Locator) String() string {
 	if l.Role != "" && l.Kind != KindRole {
 		s += "," + string(KindRole) + "=" + l.Role
 	}
+	if l.Within != nil {
+		s += withinWord + l.Within.String()
+	}
 	return s
+}
+
+const withinWord = " within "
+
+// splitWithin finds the first " within " outside a quoted value, or -1.
+func splitWithin(s string) int {
+	quoted := false
+	for i := 0; i < len(s); i++ {
+		switch {
+		case s[i] == '\\' && quoted:
+			i++
+		case s[i] == '"':
+			quoted = !quoted
+		case !quoted && strings.HasPrefix(s[i:], withinWord):
+			return i
+		}
+	}
+	return -1
 }
 
 func (l Locator) stringKind() bool {
@@ -85,7 +110,32 @@ func unquoteValue(v string) (inside, rest string, ok bool) {
 // matched whole, in any case — `text="Internet"` is not met by "Network &
 // internet", which `text=Internet` is (CHALLENGES 233) — and may contain
 // commas; \" is a quote inside it. Only ",role=" may follow the closing quote.
+//
+// "label=More within text=Card 8" is the More in the row that says Card 8:
+// the target, scoped to what it shares with the anchor. The anchor may be
+// scoped in turn. A value containing " within " is quoted.
 func ParseLocator(s string) (Locator, error) {
+	if i := splitWithin(s); i >= 0 {
+		target, anchor := strings.TrimSpace(s[:i]), strings.TrimSpace(s[i+len(withinWord):])
+		if target == "" || anchor == "" {
+			return Locator{}, mobiumerr.New(mobiumerr.InvalidArgument, "%q needs a locator on each side of \"within\"", s)
+		}
+		l, err := parseOne(target)
+		if err != nil {
+			return Locator{}, err
+		}
+		in, err := ParseLocator(anchor)
+		if err != nil {
+			return Locator{}, err
+		}
+		l.Within = &in
+		return l, nil
+	}
+	return parseOne(s)
+}
+
+// parseOne reads one locator, unscoped.
+func parseOne(s string) (Locator, error) {
 	main := s
 	var role string
 	whole := false
@@ -408,7 +458,120 @@ func (l Locator) Matches(n *Node) bool {
 //
 // text= also finds an iOS control by its label when it has no text of its
 // own, as labelOnly says.
+//
+// A scoped locator keeps, of its own matches, those nearest an anchor: from
+// each match of the anchor, up through its ancestors, the first that holds
+// any — the row the anchor is in, when the row has one. Never past the list:
+// the climb stops at a scroll container, and at a scroll container's only
+// child, the wrapper React Native puts every row in — except an iOS Cell,
+// which is a row whatever holds it — and at a level whose targets all sit in
+// rows beside the anchor's, which is a list nothing names as one. So the More in Card 8's row is found,
+// and a Card 8 with no More finds nothing, never the More of the row beside
+// it. The cost is a list of one row that is its scroll view's only child on
+// Android, which looks like a wrapper and finds nothing: a miss, never the
+// wrong row. Resolved whole on every read, as any locator is: lists reuse
+// their cells, and a row found once is not the row a moment later.
 func (l Locator) Resolve(t *Tree) []*Node {
+	if l.Within == nil {
+		return l.resolveOwn(t)
+	}
+	own := l
+	own.Within = nil
+	return nearest(own.resolveOwn(t), l.Within.Resolve(t))
+}
+
+// nearest is the scoping Resolve describes, in document order.
+func nearest(targets, anchors []*Node) []*Node {
+	keep := map[*Node]bool{}
+	for _, a := range anchors {
+		for p := a; p != nil; p = p.Parent {
+			if p != a && (isList(p) || p.Class != "XCUIElementTypeCell" && p.Parent != nil && isList(p.Parent) &&
+				len(p.Parent.Children) == 1) {
+				break
+			}
+			var found []*Node
+			for _, n := range targets {
+				if n.Within(p) && !otherRow(p, a, n) {
+					found = append(found, n)
+				}
+			}
+			if len(found) > 0 {
+				for _, n := range found {
+					keep[n] = true
+				}
+				break
+			}
+			// A level whose targets are all in the rows beside the anchor's
+			// is the list, whatever it is called: going on only crosses more.
+			if p != a && anyWithin(targets, p) {
+				break
+			}
+		}
+	}
+	var out []*Node
+	for _, n := range targets {
+		if keep[n] {
+			out = append(out, n)
+		}
+	}
+	return out
+}
+
+// isList is a node that holds rows: one that scrolls, or one whose class is
+// a list's whether or not it scrolls now — Android marks a RecyclerView
+// scrollable only while its rows overflow it, and Settings' Network &
+// internet, which fits, had no boundary: a switch was found for Hotspot &
+// tethering in Airplane mode's row, measured on the Android 15 emulator.
+func isList(n *Node) bool {
+	if n.Scrollable {
+		return true
+	}
+	for _, c := range []string{"RecyclerView", "ListView", "GridView", "ScrollView", "XCUIElementTypeTable",
+		"XCUIElementTypeCollectionView", "XCUIElementTypeScrollView"} {
+		if strings.HasSuffix(n.Class, c) {
+			return true
+		}
+	}
+	return false
+}
+
+// otherRow says a target lies in a row beside the anchor's: under p, the two
+// are in different children of the same class and width, as rows are, where
+// a row's own parts — a title and its button — differ in one or the other.
+// It catches a list nothing names as one, such as a Compose column.
+func otherRow(p, anchor, target *Node) bool {
+	var ab, tb *Node
+	for _, c := range p.Children {
+		if anchor.Within(c) {
+			ab = c
+		}
+		if target.Within(c) {
+			tb = c
+		}
+	}
+	if ab == nil || tb == nil || ab == tb {
+		return false
+	}
+	return ab.Class == tb.Class && abs(ab.Bounds.Width()-tb.Bounds.Width()) <= 2 && ab.Bounds.Width() > 0
+}
+
+func anyWithin(ns []*Node, p *Node) bool {
+	for _, n := range ns {
+		if n.Within(p) {
+			return true
+		}
+	}
+	return false
+}
+
+func abs(x int) int {
+	if x < 0 {
+		return -x
+	}
+	return x
+}
+
+func (l Locator) resolveOwn(t *Tree) []*Node {
 	var out, exact []*Node
 	byLabel := map[*Node]bool{}
 	t.Walk(func(n *Node) bool {

@@ -133,6 +133,16 @@ tap wants, since a part of a word on the screen being left would meet it at
 once. A quoted value may contain commas; `\"` is a quote inside it, and
 `,role=` may follow it: `label="Allow Paste",role=button`.
 
+`within` scopes a locator to a row: `label=More within text=Card 8` is the
+More in the row that says Card 8. Of the target's matches it keeps the one
+nearest the anchor, and never reaches past the list holding the anchor, so a
+row without the target finds nothing rather than the target of the row beside
+it. Both sides are whole locators — `text="Delete",role=button within
+label="Draft 2"` — and are resolved again on every read, since a list reuses
+its rows as it scrolls. This is what a test file uses on a list, where a ref
+is gone with the map it came from; a value containing the word "within" is
+quoted.
+
 A locator that matches more than one element is refused, never guessed at;
 append a role — `label=Apps,role=button` — or use a ref. Every action waits
 for its target to be ready before it touches it — [auto-wait](autowait.md) is
