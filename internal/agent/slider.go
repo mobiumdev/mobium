@@ -45,7 +45,12 @@ func (h *Handlers) setSlider(ctx context.Context, s *session, target string, nod
 	if was != "" {
 		msg += fmt.Sprintf(", was %q", was)
 	}
-	return Result(msg, ActionView{Action: "fill", Target: target, Value: after.Value}), nil
+	view := ActionView{Action: "fill", Target: target, Value: after.Value, Position: &pos}
+	if after.ValueSteps {
+		msg += ", in " + seekBarSteps
+		view.ValueScale = seekBarSteps
+	}
+	return Result(msg, view), nil
 }
 
 // sliderPosition reads a position from 0 to 1, and refuses anything else by

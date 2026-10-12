@@ -54,7 +54,7 @@ Run `mobium --help` to confirm, then use the resolved path throughout.
 
 ```sh
 mobium devices
-# emulator-5554   device   (android emulator, model: sdk_gphone64_arm64)
+# emulator-5554   device   (android emulator, model: sdk_gphone64_arm64, Android 15 (API 35), navigation: gestures)
 ```
 
 If nothing is listed, the user needs to start an emulator or simulator, or plug

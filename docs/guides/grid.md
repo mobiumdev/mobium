@@ -53,8 +53,8 @@ daemon, starting it there if it is not running. The node's devices:
 
 ```
 $ mobium --remote localhost devices
-emulator-5554                          device     (android emulator, model: sdk_gphone64_arm64)
-emulator-5556                          device     (android emulator, model: sdk_gphone64_arm64)
+emulator-5554                          device     (android emulator, model: sdk_gphone64_arm64, Android 15 (API 35), navigation: gestures)
+emulator-5556                          device     (android emulator, model: sdk_gphone64_arm64, Android 17 (API 37), navigation: gestures)
 457C7DC2-C706-45D9-8D68-1D26953E28B1   booted     (ios simulator, iPhone 17 Pro, iOS 26.5)
 ```
 

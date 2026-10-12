@@ -91,3 +91,52 @@ func TestFillOnASliderWithoutSupportIsRefused(t *testing.T) {
 		t.Errorf("fill on a slider with no slider support: %v, typed %q", err, d.set)
 	}
 }
+
+// seekBarScreen is an Android screen holding one seek bar whose progress, in
+// its own steps, is progress.
+func seekBarScreen(t *testing.T, progress string) *uitree.Tree {
+	t.Helper()
+	xml := `<?xml version="1.0" encoding="UTF-8"?><hierarchy rotation="0">` +
+		`<android.widget.FrameLayout class="android.widget.FrameLayout" package="dev.mobium.mobiumapp" bounds="[0,0][1080,2400]" displayed="true" enabled="true">` +
+		`<android.widget.SeekBar class="android.widget.SeekBar" package="dev.mobium.mobiumapp" text="` + progress + `" content-desc="Volume" ` +
+		`resource-id="volumeSlider" focusable="true" enabled="true" displayed="true" bounds="[36,542][972,583]"/>` +
+		`</android.widget.FrameLayout></hierarchy>`
+	tree, err := uitree.ParseAndroid([]byte(xml))
+	if err != nil {
+		t.Fatal(err)
+	}
+	return tree
+}
+
+// An Android seek bar's reading is said to be in its own steps, beside the
+// position it was moved to, in the structured answer as well as the text: an
+// agent told only `"value":"2.0"` after filling 0.2 — volume 20 — decided
+// the slider ran to 10 and gave up (CHALLENGES 302). iOS's reading is the
+// app's own and is left bare.
+func TestFillSaysWhatASeekBarsReadingIsIn(t *testing.T) {
+	fill := func(d *sliderDriver, backend Backend) (*ToolsCallResult, error) {
+		h := NewHandlers()
+		h.implicitWait, h.settleWindow = 0, 0
+		s := &session{dev: fakeDevice(), driver: d, backend: backend}
+		return h.typeTextOn(context.Background(), s, map[string]interface{}{"target": "role=slider", "text": "0.2"}, true)
+	}
+	res, err := fill(&sliderDriver{before: seekBarScreen(t, "5.0"), after: seekBarScreen(t, "2.0")}, BackendUIA2)
+	if err != nil {
+		t.Fatal(err)
+	}
+	v := res.StructuredContent.(ActionView)
+	if v.Position == nil || *v.Position != 0.2 || v.Value != "2.0" || !strings.Contains(v.ValueScale, "own steps") {
+		t.Errorf("the structured answer does not say the reading is in the seek bar's own steps: %+v", v)
+	}
+	if !strings.Contains(res.Content[0].Text, "own steps") {
+		t.Errorf("the text does not say so either: %q", res.Content[0].Text)
+	}
+
+	res, err = fill(&sliderDriver{before: sliderScreen(t, "100%"), after: sliderScreen(t, "20%")}, BackendWDA)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if v := res.StructuredContent.(ActionView); v.ValueScale != "" || v.Position == nil {
+		t.Errorf("an iOS slider's own reading is marked, or its position missing: %+v", v)
+	}
+}

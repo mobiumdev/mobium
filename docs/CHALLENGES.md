@@ -6402,6 +6402,58 @@ falls back the same way. The WebView only publishes its page to the native tree 
 an accessibility service is on — the Android 15 emulator has the
 Accessibility Menu enabled; the Android 17 one needed it turned on.
 
+### 302. A seek bar's reading, in its own steps, read as the slider's range
+
+**Found by:** the evaluation's baseline (2026-10-11): three models, 23 tasks,
+three repeats each, driving MobiumApp through `mobium mcp` on the Android 15
+emulator. Asked to set the Slider Demo's volume to 20, Sonnet 5.5 filled
+the Volume slider to 0.2 — right — and was answered `"value":"2.0"`. It
+concluded the slider ran to 10, filled 1, read `"10.0"`, and reported that
+20 was out of range; Haiku 5.5 did the same twice. The reading is the seek
+bar's progress in its own steps, which 227 found and kept — MobiumApp's
+Volume at 50 reads "5.0" — and UiAutomator2 reports no maximum, so Mobium
+cannot turn it into the app's number. What it could do was say so. It did
+not, in `map` (`Volume (slider, 5.0)`) or in `app_fill`'s answer, and the
+one place that gave the position moved to was `app_fill`'s text, which the
+agent never saw (303). **Fixed:** an Android seek bar's value is marked as
+its own steps — `Volume (slider, 5.0 in its own steps)` in `map`,
+`value_scale` beside `value` in its structured answer and in `app_fill`'s,
+which also carries `position`, the 0-to-1 the caller asked for. An iOS
+slider's value, the app's own, is left bare. Checked on the Android 15
+emulator: fill 0.2 answered `"position": 0.2, "value": "2.0"` with the
+scale, and the app read `volume: 20`.
+
+### 303. A list still loading looked ended, and map's notes never reached the agent
+
+**Found by:** the same baseline. Asked how many rows the Feed Demo holds,
+agents that swiped and mapped stopped at row 20 while the next page loaded,
+and answered 20 — two runs of three for Sonnet 5.5, one of Haiku 5.5's.
+`app_scroll_to` waits a list's busy indicator out (223), but `map` said
+nothing of one. And reading the transcripts for that showed a wider gap:
+Claude Code hands its model a tool's structured answer and not its text,
+so everything Mobium says only in the text — map's notes on a popover, a
+screen read by geometry, a lock screen; `app_fill`'s position — never
+reached an agent. **Fixed:** `map` notes a list still loading what follows
+its last row, by `busyIn`, the check `app_scroll_to` waits on, and all of
+map's notes are in its structured answer as `notes`, as well as its text.
+Checked on the Android 15 emulator: six swipes down the slow feed and a
+map listed Row 20 last with the note in `notes`, while the app read `rows:
+20, loading`; a map after the page loaded had none. Other tools' text-only
+remarks are a lead in ROADMAP's terms: any explanation an agent must act
+on belongs in the structured answer.
+
+### 304. No tool said which Android a device ran
+
+**Found by:** the same baseline. Asked what version of Android the device
+runs, Haiku 5.5 answered twice that Mobium's tools have no way to read it,
+and once went through Settings to About; the stronger models went to
+Settings each time. `app_devices` gave an iOS device's runtime — `iOS
+26.6.2` — and an Android one's model and navigation mode, and no version.
+**Fixed:** an Android device that is ready reports `Android 15 (API 35)`,
+from `ro.build.version.release` and `ro.build.version.sdk` in one shell
+call, as its `runtime` and in its line — the field every client already
+reads for iOS. Checked on the Android 15 emulator.
+
 ## Findings that were not defects
 
 Worth recording because each one closed off an approach that looked obvious.

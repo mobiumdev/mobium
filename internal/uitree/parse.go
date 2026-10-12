@@ -77,6 +77,12 @@ type Node struct {
 	// whatever the app made of it, "80%" or "1.2". Not its text: a slider
 	// labeled by its value printed as `100% (button)` (CHALLENGES 219).
 	Value string
+	// ValueSteps says Value is an Android seek bar's progress in its own
+	// steps, whose maximum UiAutomator2 does not report — not a percentage,
+	// and not the app's number: MobiumApp's Volume at 20 reads "2.0". Said
+	// wherever the value is shown, since an agent told "2.0" after filling
+	// 0.2 concluded the slider ran to 10 (CHALLENGES 302).
+	ValueSteps bool
 	// shaped is iOS's Clickable before visibility is consulted: what the
 	// node would be if it were shown. A locator asks it when deciding that a
 	// node is a control's wrapper, icon or title, which is a matter of the
@@ -366,6 +372,7 @@ func nodeFrom(e xml.StartElement, parent *Node, sibling int) *Node {
 	// state, not its name: kept as its value, as iOS's is (CHALLENGES 227).
 	if HasClassRole(n, "slider") {
 		n.Value, n.Text = n.Text, ""
+		n.ValueSteps = n.Value != ""
 	}
 	return n
 }
