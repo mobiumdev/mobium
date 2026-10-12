@@ -1,6 +1,7 @@
 package uitree
 
 import (
+	"os"
 	"strconv"
 	"testing"
 )
@@ -134,6 +135,52 @@ func TestWithinStopsAtARowNothingNamesAList(t *testing.T) {
 		l, _ = ParseLocator(`label=More within "Card 9"`)
 		if n := len(l.Resolve(tree)); n != 1 {
 			t.Errorf("%s: Card 9's More matched %d", name, n)
+		}
+	}
+}
+
+// React Native's rows arrive flat on both platforms: each row an empty node
+// the size of the row, its text and buttons beside it under the list — under
+// one wrapper on Android and two on iOS. Captured from MobiumApp's Table Demo
+// on the Android 15 emulator and the iOS 26.5 simulator, where every row has
+// a More and a Delete with the same test ID and Item 8 has no More.
+func TestWithinFindsTheRowOfAFlatList(t *testing.T) {
+	for fixture, parse := range map[string]func([]byte) (*Tree, error){
+		"testdata/mobiumapp-table-uia2.xml":  ParseAndroid,
+		"testdata/ios26-mobiumapp-table.xml": ParseIOS,
+	} {
+		raw, err := os.ReadFile(fixture)
+		if err != nil {
+			t.Fatal(err)
+		}
+		tree, err := parse(raw)
+		if err != nil {
+			t.Fatal(err)
+		}
+		resolve := func(s string) []*Node {
+			l, err := ParseLocator(s)
+			if err != nil {
+				t.Fatal(err)
+			}
+			return l.Resolve(tree)
+		}
+		titles := resolve(`text="Item 2"`)
+		more := resolve(`label=More within "Item 2"`)
+		if len(more) != 1 || len(titles) == 0 {
+			t.Errorf("%s: More within Item 2 matched %d", fixture, len(more))
+			continue
+		}
+		if row := titles[0].Bounds; more[0].Bounds.Y1 > row.Y2 || more[0].Bounds.Y2 < row.Y1 {
+			t.Errorf("%s: Item 2 is at %v and its More at %v: not one row", fixture, row, more[0].Bounds)
+		}
+		if n := len(resolve(`label=More within "Item 8"`)); n != 0 {
+			t.Errorf("%s: Item 8 has no More, and %d were found", fixture, n)
+		}
+		if n := len(resolve(`label=Delete within "Item 8"`)); n != 1 {
+			t.Errorf("%s: Item 8's Delete matched %d", fixture, n)
+		}
+		if n := len(resolve(`role=switch within "Item 3"`)); n != 1 {
+			t.Errorf("%s: Item 3's switch matched %d", fixture, n)
 		}
 	}
 }

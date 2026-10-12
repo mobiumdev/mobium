@@ -6567,6 +6567,21 @@ Measured again: Hotspot & tethering finds no switch and Airplane mode finds
 its own; on the iOS simulator, Ice Cubes' live timeline, each post's Reply
 scoped by its author is that post's, on screen and off.
 
+**Then MobiumApp's Table Demo**, built for it: thirty rows whose More and
+Delete share their test IDs. `More within "Item 2"` found nothing on the
+emulator — and the tap's own scroll, looking for it, took the list to its
+end — and found all 29 Mores on the simulator. React Native's rows arrive
+flat on both platforms: each an empty node the size of the row, its text and
+buttons beside it under the list. On Android the climb stopped at the
+wrapper, rightly, with nothing found; on iOS the list has two wrappers, and
+the scroll view's scroll bars (167) meant neither was its only child, so the
+climb reached all the rows. Now a chain of only children under a list,
+scroll bars aside, is all wrapper, and at the list a row is found by its
+rectangle: the smallest of the list's children holding the anchor, with the
+targets inside it. `docs/checks/locators.sh` asserts every case on both
+platforms, each by what the app received; the flat captures of both are
+fixtures, and the test fails without the rectangle.
+
 Found on the way and not fixed here: `wait --for visible` passes for an iOS
 element entirely off screen — a post's author at y −728 — because the wait
 counts any match with a size, and iOS keeps rows off screen in the tree with

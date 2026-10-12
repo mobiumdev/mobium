@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/mobiumdev/mobium/internal/mobiumerr"
 	"sort"
+	"strconv"
 	"strings"
 )
 
@@ -33,6 +34,9 @@ type Locator struct {
 	Exact bool   `json:"exact,omitempty"`
 	Whole bool   `json:"whole,omitempty"`
 	Role  string `json:"role,omitempty"`
+	// Nth picks one of the matches shown, counted from 1 in the order a
+	// person reads the screen; 0 means all of them.
+	Nth int `json:"nth,omitempty"`
 	// Within scopes the locator to what it shares a row with: the target
 	// nearest the anchor in the tree, and never past the list holding the
 	// anchor. See Resolve.
@@ -51,6 +55,9 @@ func (l Locator) String() string {
 	s := fmt.Sprintf("%s=%s", l.Kind, v)
 	if l.Role != "" && l.Kind != KindRole {
 		s += "," + string(KindRole) + "=" + l.Role
+	}
+	if l.Nth > 0 {
+		s += ",nth=" + strconv.Itoa(l.Nth)
 	}
 	if l.Within != nil {
 		s += withinWord + l.Within.String()
@@ -134,8 +141,25 @@ func ParseLocator(s string) (Locator, error) {
 	return parseOne(s)
 }
 
-// parseOne reads one locator, unscoped.
+// parseOne reads one locator, unscoped. A trailing ",nth=N" — last, after
+// any ",role=" — picks the Nth of its matches shown.
 func parseOne(s string) (Locator, error) {
+	nth := 0
+	if i := strings.LastIndex(s, ",nth="); i >= 0 && !strings.ContainsAny(s[i+len(",nth="):], `,"`) {
+		n, err := strconv.Atoi(s[i+len(",nth="):])
+		if err != nil || n < 1 {
+			return Locator{}, mobiumerr.New(mobiumerr.InvalidArgument, "nth must be a whole number from 1, got %q",
+				s[i+len(",nth="):])
+		}
+		nth, s = n, s[:i]
+	}
+	l, err := parseBare(s)
+	l.Nth = nth
+	return l, err
+}
+
+// parseBare reads one locator with no nth.
+func parseBare(s string) (Locator, error) {
 	main := s
 	var role string
 	whole := false
@@ -471,22 +495,61 @@ func (l Locator) Matches(n *Node) bool {
 // Android, which looks like a wrapper and finds nothing: a miss, never the
 // wrong row. Resolved whole on every read, as any locator is: lists reuse
 // their cells, and a row found once is not the row a moment later.
+//
+// With Nth, of what that leaves the Nth shown — displayed, with a size — in
+// reading order: top to bottom, and along a row left to right. Shown only:
+// iOS keeps rows off screen and buttons under a dialog in the tree, and
+// counting them would make "the second" move with every scroll.
 func (l Locator) Resolve(t *Tree) []*Node {
+	var out []*Node
 	if l.Within == nil {
-		return l.resolveOwn(t)
+		out = l.resolveOwn(t)
+	} else {
+		own := l
+		own.Within = nil
+		out = nearest(own.resolveOwn(t), l.Within.Resolve(t))
 	}
-	own := l
-	own.Within = nil
-	return nearest(own.resolveOwn(t), l.Within.Resolve(t))
+	if l.Nth == 0 {
+		return out
+	}
+	var shown []*Node
+	for _, n := range out {
+		if n.Displayed && !n.Bounds.Empty() {
+			shown = append(shown, n)
+		}
+	}
+	ReadingOrder(shown)
+	if l.Nth > len(shown) {
+		return nil
+	}
+	return []*Node{shown[l.Nth-1]}
+}
+
+// ReadingOrder sorts nodes as a person reads them: top to bottom, and left to
+// right along a row — two are one row when they overlap by more than half the
+// shorter's height.
+func ReadingOrder(ns []*Node) {
+	sort.SliceStable(ns, func(i, j int) bool {
+		a, b := ns[i].Bounds, ns[j].Bounds
+		h := min(a.Y2-a.Y1, b.Y2-b.Y1)
+		if overlap := min(a.Y2, b.Y2) - max(a.Y1, b.Y1); overlap*2 > h {
+			return a.X1 < b.X1
+		}
+		return a.Y1 < b.Y1
+	})
 }
 
 // nearest is the scoping Resolve describes, in document order.
 func nearest(targets, anchors []*Node) []*Node {
 	keep := map[*Node]bool{}
 	for _, a := range anchors {
-		for p := a; p != nil; p = p.Parent {
-			if p != a && (isList(p) || p.Class != "XCUIElementTypeCell" && p.Parent != nil && isList(p.Parent) &&
-				len(p.Parent.Children) == 1) {
+		prev := a
+		for p := a; p != nil; prev, p = p, p.Parent {
+			if p != a && (isList(p) || wrapper(p)) {
+				// At the list with nothing found: the rows may be flat.
+				for _, n := range inRowBox(p, prev, a, targets) {
+					keep[n] = true
+				}
 				break
 			}
 			var found []*Node
@@ -515,6 +578,54 @@ func nearest(targets, anchors []*Node) []*Node {
 		}
 	}
 	return out
+}
+
+// inRowBox is the scope where a list's rows are flat. React Native's rows
+// reach UiAutomator2 as empty nodes the size of the row, with the row's text
+// and buttons beside them under the list rather than inside — measured on
+// MobiumApp's Table Demo on the Android 15 emulator — so the tree joins
+// "Item 21" to its More only at the list. The row is then the smallest of
+// the list's children, other than the anchor's own, whose rectangle holds
+// the anchor; its targets are those inside that rectangle and the list.
+func inRowBox(list, top, anchor *Node, targets []*Node) []*Node {
+	var box *Node
+	for _, c := range list.Children {
+		if c == top || c.Bounds.Empty() || !enclosesRect(c.Bounds, anchor.Bounds) {
+			continue
+		}
+		if box == nil || area(c.Bounds) < area(box.Bounds) {
+			box = c
+		}
+	}
+	if box == nil {
+		return nil
+	}
+	var out []*Node
+	for _, n := range targets {
+		if n.Within(list) && !n.Bounds.Empty() && enclosesRect(box.Bounds, n.Bounds) {
+			out = append(out, n)
+		}
+	}
+	return out
+}
+
+// wrapper is a node between a list and its rows: an only child under the
+// list, or under another wrapper. React Native puts one under an Android
+// ScrollView and two under an iOS one (MobiumApp's Table Demo, iOS 26.5),
+// each holding every row. An iOS Cell is a row whatever holds it.
+//
+// Only child but for scroll indicators: an iOS scroll view also holds its
+// scroll bars (CHALLENGES 167), and counted, they hid the wrapper.
+func wrapper(n *Node) bool {
+	if n.Class == "XCUIElementTypeCell" || n.Parent == nil {
+		return false
+	}
+	for _, c := range n.Parent.Children {
+		if c != n && !isScrollIndicator(c) {
+			return false
+		}
+	}
+	return isList(n.Parent) || wrapper(n.Parent)
 }
 
 // isList is a node that holds rows: one that scrolls, or one whose class is

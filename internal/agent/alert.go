@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"github.com/mobiumdev/mobium/internal/mobiumerr"
-	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -334,15 +333,15 @@ func dialogButtons(tree *uitree.Tree) []uitree.Entry {
 			bs = append(bs, e)
 		}
 	}
-	sort.SliceStable(bs, func(i, j int) bool {
-		a, b := bs[i].Bounds, bs[j].Bounds
-		// One row when they overlap by more than half the shorter's height.
-		h := min(a.Y2-a.Y1, b.Y2-b.Y1)
-		if overlap := min(a.Y2, b.Y2) - max(a.Y1, b.Y1); overlap*2 > h {
-			return a.X1 < b.X1
-		}
-		return a.Y1 < b.Y1
-	})
+	nodes := make([]*uitree.Node, len(bs))
+	byNode := map[*uitree.Node]uitree.Entry{}
+	for i, e := range bs {
+		nodes[i], byNode[e.Node] = e.Node, e
+	}
+	uitree.ReadingOrder(nodes)
+	for i, n := range nodes {
+		bs[i] = byNode[n]
+	}
 	return bs
 }
 

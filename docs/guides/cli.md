@@ -143,6 +143,13 @@ its rows as it scrolls. This is what a test file uses on a list, where a ref
 is gone with the map it came from; a value containing the word "within" is
 quoted.
 
+`,nth=` picks one of several on purpose: `label=Delete,nth=3` is the third
+Delete shown, counted as a person reads the screen — top to bottom, then left
+to right along a row — from 1. Only what is shown counts, so the count does
+not move with rows kept off screen; past the last, nothing matches. It comes
+last, after any `,role=`. It is brittle, since a row added above moves it:
+prefer `within` where a row says which.
+
 A locator that matches more than one element is refused, never guessed at;
 append a role — `label=Apps,role=button` — or use a ref. Every action waits
 for its target to be ready before it touches it — [auto-wait](autowait.md) is

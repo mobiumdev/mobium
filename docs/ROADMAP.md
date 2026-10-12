@@ -537,10 +537,12 @@ this is what is not.
      straight and curly quotes alike — `text="Internet"` is not met by
      "Network & internet" (233) — and an exact locator prints quoted, so
      what Mobium prints can be pasted back.
-  3. **A chosen one among several**: the second Delete, counted in the
-     order a person reads the screen. A deliberate pick is not an
-     accident, which is what the refusal of an ambiguous locator is for;
-     it is brittle, and scoping is the better answer where there is one.
+  3. ~~**A chosen one among several**~~ Done 2026-10-12: `label=Delete,nth=3`,
+     the third of the matches shown, counted in reading order. Brittle by
+     nature — scoping is the better answer where there is one.
+
+  All three are asserted by `docs/checks/locators.sh` on MobiumApp's Table
+  Demo, on both platforms.
   4. **CSS selectors, and text, inside a WebView**, where only refs work
      today: CSS is the page's own way to name an element, `map` already
      derives a selector for each, and matching would go through the same
