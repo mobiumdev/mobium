@@ -6344,11 +6344,15 @@ passed. Reproduced from the command line in the WebView's context, where
 answered `app_check works on the native context — switch back with
 app_context NATIVE_APP`. Each refusal is true where it is given, but the
 WebView's remedy leads to the native refusal: a caller that follows it is
-refused again, for a different reason, and only then told to tap. Not
-fixed. Either `app_check` learns a web checkbox in the WebView's context,
-which `map` already names by role there, or its refusal there says to tap,
-as the native one does. What class the native tree gives the WebView's checkbox was not
-measured.
+refused again, for a different reason, and only then told to tap.
+**Fixed:** `app_check` works in the WebView's context, reading the page's
+own state — an input's `checked`, or `aria-checked` for a role that has
+one — tapping as `app_tap` aims there, and reading the page back; asked for
+the state it is in, it does nothing, as natively. From the native context a
+node of a WebView's page with no checked state is no longer "not a
+checkbox": the refusal says it is part of a page and names the switch to
+its context. Checked on the Android 17 emulator: check, check again (no
+tap), and uncheck, each confirmed by the page; a text field refused.
 
 ### 300. A read-only web field, typed into from the native context, was "disabled"
 
@@ -6363,10 +6367,40 @@ cannot work. From the WebView's context the refusal names the cause:
 `@e4 failed check editable: readonly attribute — app_type types into a text
 field; to press anything else, use app_tap`. The agent answered at once that
 it could not type there — the pass — repeating that the device "reported it
-as disabled"; a caller that obeys the remedy instead waits for nothing. Not
-fixed. The native tree presumably reports a read-only WebView input as not
-enabled; when the node sits inside a WebView, the refusal could say so and
-name the WebView's context rather than offering a wait.
+as disabled"; a caller that obeys the remedy instead waits for nothing.
+**Fixed:** a node of a WebView's page that reads as disabled is refused
+saying that there a read-only field reads the same as a disabled one, with
+the WebView's context as the remedy, where `app_type` names which — never a
+wait. Checked on the Android 15 emulator, where the field reads as
+disabled: the old build said "do what enables it, or wait", this one says
+a read-only field reads the same there and names the WebView's context, and
+the page kept its value. Verifying it on Android 17 found 301.
+
+### 301. A read-only web field took text typed from the native context
+
+**Found by:** verifying 300 on the Android 17 emulator. The native tree
+there reads the Web form's read-only field as enabled, not disabled as on
+Android 15, and `type @e5 x` from the native context answered `typed "x"
+into @e5` — and the page agreed: the field held `fixedx`, and counted two
+input events. A person cannot do that: tapping a read-only field raises no
+keyboard. The native type presumably sets the text through accessibility,
+and the WebView applies it whatever the attribute says — not measured. From the WebView's
+context the same call is refused, `readonly attribute`. **Fixed:** from the
+native context, `app_type` and `app_fill` into a node of a WebView's page go
+in through the page when it can be reached — the front app's inspectable
+page, the element drawn at the node's rectangle (the best overlap, two
+thirds of their union and clearly ahead of the next, or none), filled as in
+the WebView's context, which asks the page whether a person could type
+there. On the Android 17 emulator the read-only field is now refused,
+`readonly attribute`, and the page keeps `fixed`; a plain field still takes
+its text, "— through its page". With no page to reach — a shipped app that
+has not opened its WebView to debugging publishes none — or no clear match,
+the text goes in natively as before, and there a read-only field can still
+take it: nothing outside such a page can tell. Two WebViews on one screen
+are matched against the larger one's position, so a field in the other
+falls back the same way. The WebView only publishes its page to the native tree while
+an accessibility service is on — the Android 15 emulator has the
+Accessibility Menu enabled; the Android 17 one needed it turned on.
 
 ## Findings that were not defects
 

@@ -1245,7 +1245,9 @@ func GetToolSchemas() []Tool {
 				"refuses to uncheck a radio button, which is not a thing a radio does: " +
 				"a group is cleared by choosing a different member. The tap is " +
 				"confirmed by reading the state back, so a control that did not " +
-				"respond is reported rather than assumed.",
+				"respond is reported rather than assumed. Inside a WebView it reads " +
+				"the page's own state — an input's checked, or aria-checked — and " +
+				"takes a ref from that context's app_map.",
 			InputSchema: map[string]interface{}{
 				"type": "object",
 				"properties": withDevice(map[string]interface{}{

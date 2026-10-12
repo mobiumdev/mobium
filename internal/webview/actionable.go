@@ -306,3 +306,51 @@ func Fill(ctx context.Context, p Page, el Element, value string, appendText bool
 	}
 	return &f, nil
 }
+
+// checkedScript is the checked state of the index-th candidate, as the page
+// holds it: an input's own `checked` for a checkbox or radio, `aria-checked`
+// for an element whose role has one. No state at all for anything else —
+// which is a different answer from unchecked.
+const checkedScript = `(() => {
+  ` + candidatesJS + `
+  const e = __mobiumCandidates()[%d];
+  if (!e) return JSON.stringify({found: false});
+  const t = (e.getAttribute('type') || '').toLowerCase();
+  const role = (e.getAttribute('role') || '').toLowerCase();
+  if (e.tagName === 'INPUT' && (t === 'checkbox' || t === 'radio'))
+    return JSON.stringify({found: true, kind: t, checked: !!e.checked});
+  const roles = {checkbox: 'checkbox', radio: 'radio', switch: 'switch',
+                 menuitemcheckbox: 'checkbox', menuitemradio: 'radio'};
+  if (roles[role]) return JSON.stringify({found: true, kind: roles[role], checked: e.getAttribute('aria-checked') === 'true'});
+  return JSON.stringify({found: true});
+})()`
+
+// CheckState is an element's checked state as its page holds it. Checked is
+// nil for an element with no such state.
+type CheckState struct {
+	Found   bool   `json:"found"`
+	Kind    string `json:"kind"`
+	Checked *bool  `json:"checked"`
+}
+
+// Checked reads el's checked state in its own frame's context, as Fill acts
+// there (CHALLENGES 299).
+func Checked(ctx context.Context, p Page, el Element) (*CheckState, error) {
+	var in evaluator = p
+	if el.context != 0 {
+		c, ok := p.(contextual)
+		if !ok {
+			return &CheckState{}, nil
+		}
+		in = evalIn{c, el.context}
+	}
+	raw, err := in.Evaluate(ctx, fmt.Sprintf(checkedScript, el.local))
+	if err != nil {
+		return nil, err
+	}
+	var st CheckState
+	if err := json.Unmarshal([]byte(raw), &st); err != nil {
+		return nil, mobiumerr.New(mobiumerr.DeviceServer, "could not read the page's checked state %q: %w", raw, err)
+	}
+	return &st, nil
+}

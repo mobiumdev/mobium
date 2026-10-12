@@ -6,6 +6,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/mobiumdev/mobium/internal/mobiumerr"
 	"github.com/mobiumdev/mobium/internal/uitree"
 )
 
@@ -203,5 +204,53 @@ func TestAComposeRowsStateIsFoundFromItsWords(t *testing.T) {
 	}
 	if got := stateOf(words("Display language")); got.Checkable {
 		t.Error("a row with no state was given one")
+	}
+}
+
+// pageBoxDriver is a WebView whose page has a checkbox the native tree
+// carries no checked state for, as MobiumApp's Web form read on Android 15.
+type pageBoxDriver struct{ fakeDriver }
+
+func (d *pageBoxDriver) Snapshot(ctx context.Context) (*uitree.Tree, error) {
+	box := &uitree.Node{Label: "A checkbox", Class: "android.view.View", Clickable: true, Displayed: true, Enabled: true,
+		Bounds: uitree.Rect{X1: 10, Y1: 10, X2: 60, Y2: 40}}
+	web := &uitree.Node{Class: "android.webkit.WebView", Displayed: true, Enabled: true,
+		Bounds: uitree.Rect{X1: 0, Y1: 0, X2: 1080, Y2: 2000}, Children: []*uitree.Node{box}}
+	root := &uitree.Node{Class: "hierarchy", Displayed: true, Children: []*uitree.Node{web}}
+	box.Parent, web.Parent = web, root
+	return &uitree.Tree{Root: root}, nil
+}
+
+// From the native context, a checkbox of a WebView's page is sent to the
+// WebView's context, where app_check reads the page — never told it is not a
+// checkbox and left to tap (CHALLENGES 299).
+func TestCheckSendsAPageCheckboxToItsWebView(t *testing.T) {
+	h := NewHandlers()
+	h.implicitWait, h.settleWindow = 0, 0
+	s := &session{dev: fakeDevice(), driver: &pageBoxDriver{}, backend: BackendUIA2}
+	ctx, cancel := context.WithTimeout(context.Background(), callTimeout)
+	defer cancel()
+	_, err := h.checkOn(ctx, s, map[string]interface{}{"target": "label=A checkbox"})
+	if err == nil {
+		t.Fatal("checked a node with no checked state")
+	}
+	msg := err.Error()
+	if !strings.Contains(msg, "WebView") || strings.Contains(msg, "not a checkbox") {
+		t.Errorf("the refusal does not send the caller to the WebView: %s", msg)
+	}
+	if e, ok := mobiumerr.As(err); !ok || !strings.Contains(e.Remedy, "app_context") {
+		t.Errorf("the remedy does not name the context switch: %+v", err)
+	}
+}
+
+func TestInWebView(t *testing.T) {
+	d := &pageBoxDriver{}
+	tree, _ := d.Snapshot(context.Background())
+	web := tree.Root.Children[0]
+	if !inWebView(web.Children[0]) {
+		t.Error("a node under a WebView is not seen as part of its page")
+	}
+	if inWebView(web) || inWebView(nil) {
+		t.Error("the WebView itself, or nothing, is not part of a page")
 	}
 }

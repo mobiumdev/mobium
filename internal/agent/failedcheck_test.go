@@ -21,6 +21,7 @@ func TestCheckRefusalsShareOneShape(t *testing.T) {
 		err   error
 	}{
 		{checkEnabled, notEnabled(loc, 2*time.Second)},
+		{checkEnabled, notEnabledInPage(loc, 2*time.Second)},
 		{checkReceivesEvents, keyboardOver(loc, true)},
 		{checkReceivesEvents, dialogOver("Allow?", loc, true)},
 		{checkReceivesEvents, webCheckFailed("#go", &webview.Actionability{Status: "failed", Check: "receivesEvents", Reason: "covered"}, time.Second)},
@@ -50,5 +51,18 @@ func TestAMissIsNotAFailedCheck(t *testing.T) {
 		if strings.Contains(err.Error(), "failed check") {
 			t.Errorf("a miss read as a failed check: %v", err)
 		}
+	}
+}
+
+// A field of a WebView's page reported disabled may be read-only, which
+// nothing enables: its remedy names the WebView's context, where the page
+// tells the two apart, never a wait (CHALLENGES 300).
+func TestADisabledPageFieldIsSentToItsWebView(t *testing.T) {
+	e, _ := mobiumerr.As(notEnabledInPage(uitree.Locator{Kind: uitree.KindText, Value: "fixed"}, 2*time.Second))
+	if !strings.Contains(e.Message, "read-only") || !strings.Contains(e.Remedy, "app_context") {
+		t.Errorf("message %q / remedy %q do not name read-only and the WebView's context", e.Message, e.Remedy)
+	}
+	if strings.Contains(e.Remedy, "app_wait_for") {
+		t.Errorf("the remedy offers a wait, which a read-only field never ends: %q", e.Remedy)
 	}
 }
