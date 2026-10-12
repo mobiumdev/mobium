@@ -6371,9 +6371,10 @@ as disabled"; a caller that obeys the remedy instead waits for nothing.
 **Fixed:** a node of a WebView's page that reads as disabled is refused
 saying that there a read-only field reads the same as a disabled one, with
 the WebView's context as the remedy, where `app_type` names which — never a
-wait. Checked by a test only so far: the Android 15 emulator, where the
-field reads as disabled, was busy with an evaluation run, and on Android 17
-it does not read so. Verifying it there found 301.
+wait. Checked on the Android 15 emulator, where the field reads as
+disabled: the old build said "do what enables it, or wait", this one says
+a read-only field reads the same there and names the WebView's context, and
+the page kept its value. Verifying it on Android 17 found 301.
 
 ### 301. A read-only web field took text typed from the native context
 
@@ -6384,10 +6385,20 @@ into @e5` — and the page agreed: the field held `fixedx`, and counted two
 input events. A person cannot do that: tapping a read-only field raises no
 keyboard. The native type presumably sets the text through accessibility,
 and the WebView applies it whatever the attribute says — not measured. From the WebView's
-context the same call is refused, `readonly attribute`. Not fixed. A native
-target that is part of a WebView's page could be typed through the page,
-which checks what a person could do, or refused with the WebView's context
-as the remedy. The WebView only publishes its page to the native tree while
+context the same call is refused, `readonly attribute`. **Fixed:** from the
+native context, `app_type` and `app_fill` into a node of a WebView's page go
+in through the page when it can be reached — the front app's inspectable
+page, the element drawn at the node's rectangle (the best overlap, two
+thirds of their union and clearly ahead of the next, or none), filled as in
+the WebView's context, which asks the page whether a person could type
+there. On the Android 17 emulator the read-only field is now refused,
+`readonly attribute`, and the page keeps `fixed`; a plain field still takes
+its text, "— through its page". With no page to reach — a shipped app that
+has not opened its WebView to debugging publishes none — or no clear match,
+the text goes in natively as before, and there a read-only field can still
+take it: nothing outside such a page can tell. Two WebViews on one screen
+are matched against the larger one's position, so a field in the other
+falls back the same way. The WebView only publishes its page to the native tree while
 an accessibility service is on — the Android 15 emulator has the
 Accessibility Menu enabled; the Android 17 one needed it turned on.
 
