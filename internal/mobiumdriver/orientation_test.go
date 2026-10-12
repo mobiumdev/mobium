@@ -3,8 +3,11 @@ package mobiumdriver
 import (
 	"context"
 	"errors"
+	"fmt"
 	"strings"
 	"testing"
+
+	"github.com/mobiumdev/mobium/internal/mobiumerr"
 )
 
 func TestOrientationVocabularyRoundTrips(t *testing.T) {
@@ -54,11 +57,26 @@ type fakeRotator struct {
 	setErr  error
 	sets    []int
 	freed   int
+	// The request Android keeps, which a refused turn leaves behind.
+	askLocked bool
+	asked     int
+	restored  []string
+}
+
+func (f *fakeRotator) UserRotation(context.Context) (bool, int, error) {
+	return f.askLocked, f.asked, nil
+}
+func (f *fakeRotator) RestoreUserRotation(_ context.Context, locked bool, q int) error {
+	f.askLocked, f.asked = locked, q
+	f.restored = append(f.restored, fmt.Sprintf("%v %d", locked, q))
+	return nil
 }
 
 func (f *fakeRotator) Rotation(context.Context) (int, error)        { return f.quarter, nil }
 func (f *fakeRotator) RotationLocked(context.Context) (bool, error) { return f.locked, nil }
 func (f *fakeRotator) SetRotation(_ context.Context, q int) error {
+	// The lock is set whether or not the app turns, as on a device.
+	f.askLocked, f.asked = true, q
 	if f.setErr != nil {
 		return f.setErr
 	}
@@ -112,5 +130,47 @@ func TestSetOrientationPassesTheDriverError(t *testing.T) {
 	err := androidSetOrientation(context.Background(), f, OrientationLandscape)
 	if err == nil || !strings.Contains(err.Error(), "showing 0") {
 		t.Errorf("err = %v", err)
+	}
+}
+
+// A turn the app refuses leaves the device asked for it — locked, auto-rotate
+// off — and the next app opened turned: Settings, after MobiumApp refused
+// landscape on the Android 15 emulator. The request is put back as it was,
+// and the refusal says where the app stayed. CHALLENGES 308.
+func TestARefusedTurnIsTakenBack(t *testing.T) {
+	f := &fakeRotator{quarter: 0, askLocked: false, asked: 1,
+		setErr: mobiumerr.New(mobiumerr.NotConfirmed, "asked for rotation 1 and the display is still showing 0")}
+	err := androidSetOrientation(context.Background(), f, OrientationLandscape)
+	if mobiumerr.CodeOf(err) != mobiumerr.NotConfirmed {
+		t.Fatalf("err = %v", err)
+	}
+	if f.askLocked || f.asked != 1 || len(f.restored) != 1 {
+		t.Errorf("the request was left %v %d (restores %v), want following the sensor at 1", f.askLocked, f.asked, f.restored)
+	}
+	e, _ := mobiumerr.As(err)
+	if !strings.Contains(err.Error(), "still portrait") || !strings.Contains(err.Error(), "taken back") ||
+		e.Details["orientation"] != "portrait" {
+		t.Errorf("the refusal does not say where the app stayed and that it was taken back: %v %v", err, e.Details)
+	}
+	// A turn that happened is not taken back.
+	f = &fakeRotator{}
+	if err := androidSetOrientation(context.Background(), f, OrientationLandscape); err != nil || len(f.restored) != 0 {
+		t.Errorf("a turn that happened: err %v, restores %v", err, f.restored)
+	}
+}
+
+// What a session changes is put back when it ends, lock and all.
+func TestTheSessionUndoPutsTheRotationBack(t *testing.T) {
+	f := &fakeRotator{askLocked: false, asked: 0}
+	undo, err := androidSaveOrientation(context.Background(), f)
+	if err != nil {
+		t.Fatal(err)
+	}
+	_ = androidSetOrientation(context.Background(), f, OrientationLandscape)
+	if !f.askLocked || f.asked != 1 {
+		t.Fatalf("the turn did not lock to landscape: %v %d", f.askLocked, f.asked)
+	}
+	if err := undo(context.Background()); err != nil || f.askLocked || f.asked != 0 {
+		t.Errorf("after the undo: %v %d, err %v; want following the sensor at 0", f.askLocked, f.asked, err)
 	}
 }

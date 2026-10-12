@@ -10,8 +10,8 @@
 # has no "auto" — nothing outside the device hands rotation back to it — so
 # that is refused there, while Android's is checked.
 #
-# Leaves the device as it found it: portrait at the end, and on Android the
-# rotation lock put back to what it was.
+# Leaves the device as it found it, which is itself asserted: a session puts
+# the orientation back when it ends, and on Android the rotation lock too.
 set -e
 DEV="$1"
 if [ -z "$DEV" ]; then echo "usage: $0 <serial|udid>" >&2; exit 2; fi
@@ -31,7 +31,6 @@ PINNED=dev.mobium.mobiumapp
 echo "--- $DEV ($PLATFORM)"
 
 before=$($M orientation)
-case "$before" in *"(locked)"*) was_locked=1 ;; *) was_locked=0 ;; esac
 
 $M launch $TURNS >/dev/null
 for o in landscape landscape-reverse portrait; do
@@ -52,15 +51,27 @@ fi
 $M launch $PINNED >/dev/null
 out=$($M orientation landscape 2>&1) && fail "MobiumApp, which is portrait only, was reported turned: $out"
 echo "$out" | grep -q "still" || fail "the refusal did not say where it stayed: $out"
+echo "$out" | grep -q "taken back" || fail "the refusal did not say the request was taken back: $out"
 case "$($M orientation)" in portrait*) ;; *) fail "MobiumApp is no longer portrait after the refusal" ;; esac
 row "pinned" "MobiumApp refused landscape and stayed portrait"
 
-$M orientation portrait >/dev/null 2>&1 || true
-if [ "$PLATFORM" = android ] && [ "$was_locked" = 0 ]; then
-  $M orientation auto >/dev/null
-  case "$($M orientation)" in *"following the sensor"*) ;; *) fail "the rotation lock was not handed back" ;; esac
-  row "restored" "portrait, following the sensor again"
-else
-  row "restored" "portrait"
+# The refused request must not turn the next app: on Android it locked the
+# device to landscape and Settings opened sideways (CHALLENGES 308), as the
+# iPhone's next apps did before 218.
+$M launch $TURNS >/dev/null
+sleep 1
+case "$($M orientation)" in portrait*) ;; *) fail "$TURNS opened turned after MobiumApp's refusal: $($M orientation)" ;; esac
+row "taken back" "$TURNS opened upright after the refusal"
+
+# A session puts the orientation back as it found it, lock and all
+# (CHALLENGES 308): turned here, and back once the session ends.
+$M orientation landscape >/dev/null || fail "$TURNS did not turn for the session check"
+$M session end >/dev/null
+sleep 1
+after=$($M orientation)
+[ "${after%% *}" = "${before%% *}" ] || fail "after the session: $after, before it: $before"
+if [ "$PLATFORM" = android ]; then
+  [ "$after" = "$before" ] || fail "after the session the lock is not as it was: $after, before it: $before"
 fi
+row "session end" "back as it was: ${before%% *}"
 echo "PASS"

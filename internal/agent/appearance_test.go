@@ -255,6 +255,8 @@ type rotateDriver struct {
 	locked bool
 	sets   []string
 	setErr error
+	saves  int
+	undone int
 }
 
 func (r *rotateDriver) Snapshot(ctx context.Context) (*uitree.Tree, error) { return nil, nil }
@@ -945,5 +947,44 @@ func TestALiveIOSSessionIsReusedWithoutALookup(t *testing.T) {
 	d.ok = false
 	if got, err := h.iosSessionFor(context.Background(), "SIM-1"); err == nil && got == s {
 		t.Error("a session that no longer answers was reused without a lookup")
+	}
+}
+
+// SaveOrientation keeps where the fake was, and its undo puts it back.
+func (r *rotateDriver) SaveOrientation(ctx context.Context) (func(context.Context) error, error) {
+	mode, locked := r.mode, r.locked
+	r.saves++
+	return func(context.Context) error {
+		r.mode, r.locked = mode, locked
+		r.undone++
+		return nil
+	}, nil
+}
+
+// A session puts the orientation back as it found it when it ends: a turn,
+// and on Android the lock it sets, outlasted the session (CHALLENGES 308).
+// Kept once, before the first change, however many follow.
+func TestASessionPutsTheOrientationBack(t *testing.T) {
+	h, s, d := withRotation(t, mobiumdriver.OrientationPortrait, false)
+	for _, mode := range []string{"landscape", "portrait-reverse"} {
+		if _, err := callOrientation(h, s, map[string]interface{}{"orientation": mode}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if d.saves != 1 {
+		t.Errorf("kept %d times, want once, before the first change", d.saves)
+	}
+	s.close()
+	if d.undone != 1 || d.mode != mobiumdriver.OrientationPortrait || d.locked {
+		t.Errorf("after the session: %s locked=%v (undone %d), want portrait following the sensor", d.mode, d.locked, d.undone)
+	}
+	// A session that only read changes nothing at its end.
+	h, s, d = withRotation(t, mobiumdriver.OrientationLandscape, true)
+	if _, err := callOrientation(h, s, map[string]interface{}{}); err != nil {
+		t.Fatal(err)
+	}
+	s.close()
+	if d.saves != 0 || d.undone != 0 {
+		t.Errorf("a read kept %d and undid %d", d.saves, d.undone)
 	}
 }

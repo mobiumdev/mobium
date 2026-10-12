@@ -125,3 +125,21 @@ func (w *WDA) SetOrientation(ctx context.Context, mode string) error {
 		"was taken back so the next app is not turned. The usual cause is %s", mode, got, cause).
 		WithDetail("orientation", got)
 }
+
+// SaveOrientation keeps the device's orientation as it is and returns the
+// undo that turns it back. iOS keeps no lock that can be read, and a turn
+// made here holds until the phone is turned by hand, so the angle is all
+// there is to keep. An app in front that refuses it is taken back to where
+// it stayed, as any refused turn is.
+func (w *WDA) SaveOrientation(ctx context.Context) (func(context.Context) error, error) {
+	mode, _, err := w.Orientation(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return func(ctx context.Context) error {
+		if now, _, err := w.Orientation(ctx); err == nil && now == mode {
+			return nil
+		}
+		return w.SetOrientation(ctx, mode)
+	}, nil
+}

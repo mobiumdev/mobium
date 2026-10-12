@@ -140,6 +140,19 @@ func (s *session) restoreAccessibility() {
 	}
 }
 
+// restoreOrientation puts the orientation back as the session found it. A
+// turn made for a session lasted after it: on a person's phone, auto-rotate
+// left off. CHALLENGES 308.
+func (s *session) restoreOrientation() {
+	if s.orientUndo == nil {
+		return
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	defer cancel()
+	_ = s.orientUndo(ctx) // a device that has gone is a device nothing more can be done to
+	s.orientUndo = nil
+}
+
 // axRestoreTimeout bounds putting a session's accessibility settings back,
 // inside the daemon's own close budget.
 const axRestoreTimeout = 60 * time.Second

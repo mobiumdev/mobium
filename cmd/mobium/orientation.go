@@ -15,7 +15,10 @@ func newOrientationCmd() *cobra.Command {
 			"Not \"left\" and \"right\": which landscape is which depends on whether\n" +
 			"you mean the device or the image, and the platforms disagree.\n" +
 			"An activity that locks its own orientation cannot be turned from\n" +
-			"outside, and mobium says so rather than reporting a success.",
+			"outside: mobium refuses, and takes the request back so the next app\n" +
+			"does not open turned.\n\n" +
+			"For the session: when it ends, the orientation — and on Android the\n" +
+			"rotation lock, which a turn sets — goes back as the session found it.",
 		Example: `  mobium orientation              # which way is it, and is it pinned?
   mobium orientation landscape
   mobium orientation portrait
