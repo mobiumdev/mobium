@@ -953,3 +953,37 @@ func TestTheSwipeLimitSaysToGoOn(t *testing.T) {
 	}
 	t.Error("scroll-to again never went on to Row 399")
 }
+
+// How far a list moved is the middle of what its named rows moved; fewer
+// than three to go by is no measurement.
+func TestShiftIsWhatTheRowsMoved(t *testing.T) {
+	r := func(ys ...int) reading {
+		at := map[string]uitree.Rect{}
+		for i, y := range ys {
+			at[fmt.Sprintf("Row %d", i)] = uitree.Rect{X1: 0, Y1: y, X2: 100, Y2: y + 50}
+		}
+		return reading{at: at}
+	}
+	if d, ok := shift(r(0, 60, 120), r(300, 360, 420), false); !ok || d != 300 {
+		t.Errorf("shift = %d, %v; want 300", d, ok)
+	}
+	if _, ok := shift(r(0, 60), r(300, 360), false); ok {
+		t.Error("two rows were taken for a measurement")
+	}
+}
+
+// Toward the start, the miss says the last swipe may have been a pull an
+// app answered by refreshing, in the text and the structured answer; toward
+// the end it says nothing of the kind. CHALLENGES 310.
+func TestTheStartOfAListSaysItMayHaveRefreshed(t *testing.T) {
+	loc, _ := uitree.ParseLocator("text=Nowhere")
+	up, _ := mobiumerr.As(endOfList(loc, nil, "up", 6, false))
+	if !strings.Contains(up.Error(), "start of the list") || !strings.Contains(up.Error(), "refreshing") ||
+		up.Details["may_have_refreshed"] != true {
+		t.Errorf("up: %v %v", up, up.Details)
+	}
+	down, _ := mobiumerr.As(endOfList(loc, nil, "down", 3, false))
+	if !strings.Contains(down.Error(), "end of the list") || down.Details["may_have_refreshed"] != nil {
+		t.Errorf("down: %v %v", down, down.Details)
+	}
+}

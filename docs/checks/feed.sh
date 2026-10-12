@@ -20,7 +20,11 @@
 #     the negative control: a real end must still read as one;
 #   - a role nothing has is refused, rather than matching nothing: the help's
 #     own `wait role=progressbar --for hidden` was over at once before
-#     progressbar was a role (CHALLENGES 222).
+#     progressbar was a role (CHALLENGES 222);
+#   - a search back up past the start says its last swipe may have been a
+#     pull the app answered by refreshing, and pulls at most once
+#     (CHALLENGES 310) — counted by the Feed's own refreshes, which needs
+#     MobiumApp with pull to refresh.
 #
 # Passed on the simulator, the iPhone 15 Plus and the Pixel 8 Pro, where the
 # spinner is an android.widget.ProgressBar.
@@ -64,6 +68,22 @@ row "true end" "Row 70 is past the end of the list, said at once"
 out=$($M wait role=nosuchrole --for hidden --timeout 1s 2>&1) && fail "a role nothing has was waited on: $out"
 echo "$out" | grep -q "unknown role" || fail "an unknown role was refused without saying why: $out"
 row "role" "an unknown role refused, naming the roles there are"
+
+# Back up past the start, from deep in the loaded feed. At the start of a
+# list a swipe is a pull, and the Feed refreshes on one: the search said
+# only "the end of the list" while it pulled twice on an iPhone and a
+# simulator and threw the loaded rows away (CHALLENGES 310). Now it says the
+# last swipe may have refreshed, and pulls at most once — the swipe that
+# reaches the start, which on Android and a real iPhone pulls already.
+refreshes() { $M text testid=feedState | sed -n 's/.*refreshes: \([0-9]*\).*/\1/p'; }
+before=$(refreshes); before=${before:-0}
+out=$($M scroll-to "text=Nowhere" --direction up 2>&1) && fail "found what is not in the feed: $out"
+echo "$out" | grep -q "start of the list" || fail "the search up did not say it reached the start: $out"
+echo "$out" | grep -q "refreshing" || fail "the search up did not say its last swipe may have refreshed: $out"
+sleep 2
+after=$(refreshes); after=${after:-0}
+[ $(( after - before )) -le 1 ] || fail "one search up refreshed the feed $(( after - before )) times"
+row "start" "up past the start: said, and at most one pull"
 
 $M terminate "$APP" >/dev/null 2>&1 || true
 echo PASS
