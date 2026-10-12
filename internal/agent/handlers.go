@@ -2078,6 +2078,14 @@ func (h *Handlers) typeTextOn(ctx context.Context, s *session, args map[string]i
 			fmt.Sprintf("it is a %s, not a text field", role), "app_type types into a field; to press it, use app_tap").
 			WithRemedy("app_tap for a " + role + "; app_type for a text field")
 	}
+	// Part of a WebView's page, the text goes in through the page when the
+	// page can be reached, which asks it whether a person could type there
+	// (CHALLENGES 301); natively only when it cannot.
+	if inWebView(node) {
+		if res, ok, err := h.typeThroughPage(ctx, s, target, node, text, replace); ok {
+			return res, err
+		}
+	}
 
 	if text == "" {
 		if err := typer.Clear(ctx, node); err != nil {

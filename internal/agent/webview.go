@@ -735,11 +735,22 @@ func webCheckFailed(target string, a *webview.Actionability, waited time.Duratio
 // tap; a field that is not a text field at all is refused at once, as native
 // app_type refuses one. A password is never echoed.
 func (h *Handlers) webType(ctx context.Context, s *session, target, text string, replace bool) (*ToolsCallResult, error) {
+	return h.webFill(ctx, s, target, func(ctx context.Context) (webview.Element, error) {
+		_, el, _, err := h.findWeb(ctx, s, target)
+		return el, err
+	}, text, replace)
+}
+
+// webFill is webType with the element found by find, re-run on every pass:
+// a ref from the page's map for app_type in a WebView, or the page element
+// under a native target for typeThroughPage.
+func (h *Handlers) webFill(ctx context.Context, s *session, target string,
+	find func(context.Context) (webview.Element, error), text string, replace bool) (*ToolsCallResult, error) {
 	// Empty text clears for app_type as for app_fill, natively and here.
 	appendText := !replace && text != ""
 	deadline := time.Now().Add(h.implicitWait)
 	for {
-		_, el, _, err := h.findWeb(ctx, s, target)
+		el, err := find(ctx)
 		if err != nil {
 			return nil, err
 		}
@@ -818,4 +829,96 @@ func keyboardOverWebView(ctx context.Context, s *session, tree *uitree.Tree, hos
 		}
 	}
 	return false
+}
+
+// typeThroughPage is app_type and app_fill for a native target that is part
+// of a WebView's page, when the page can be reached: the text goes in
+// through the page, as webType puts it there, which asks the page whether a
+// person could type there first. Typed natively, a read-only field took the
+// text on Android 17 — the native tree reads it as enabled, and the WebView
+// applies a native set-text whatever the attribute says (CHALLENGES 301).
+//
+// ok is false when no page was reached or no element of it is the target —
+// a shipped app that has not opened its WebView to debugging publishes no
+// page at all — and the caller then types natively, the only way into such
+// a page. The session is native again when this returns.
+func (h *Handlers) typeThroughPage(ctx context.Context, s *session, target string, node *uitree.Node,
+	text string, replace bool) (res *ToolsCallResult, ok bool, err error) {
+	found, lerr := h.webContexts(ctx, s)
+	if lerr != nil {
+		return nil, false, nil
+	}
+	for _, c := range found {
+		if c.Behind {
+			continue
+		}
+		page, aerr := h.attachWeb(ctx, s, c)
+		if aerr != nil {
+			continue
+		}
+		pctx, cancel := context.WithTimeout(ctx, pageAnswerTimeout)
+		_, perr := page.Evaluate(pctx, "1")
+		cancel()
+		if perr != nil {
+			_ = page.Close()
+			continue
+		}
+		s.web, s.webCtx, s.webApp = page, c.ID, c.App
+		if s.insp != nil {
+			s.webAppID, _, _ = strings.Cut(c.Socket, "/")
+		}
+		find := func(ctx context.Context) (webview.Element, error) { return h.pageElementAt(ctx, s, node.Bounds) }
+		if _, ferr := find(ctx); ferr != nil {
+			s.closeWeb()
+			continue
+		}
+		res, err = h.webFill(ctx, s, target, find, text, replace)
+		s.closeWeb()
+		if res != nil && len(res.Content) > 0 {
+			res.Content[0].Text += " — through its page"
+		}
+		return res, true, err
+	}
+	return nil, false, nil
+}
+
+// pageElementAt is the one element of the attached page whose rectangle on
+// screen is the native node's: the best overlap, at least two thirds of
+// their union, and clearly better than the next. Anything less is not the
+// same element, and an ambiguous match is worse than none.
+func (h *Handlers) pageElementAt(ctx context.Context, s *session, want uitree.Rect) (webview.Element, error) {
+	frame, err := h.webFrame(ctx, s)
+	if err != nil {
+		return webview.Element{}, err
+	}
+	els, err := s.web.Map(ctx)
+	if err != nil {
+		return webview.Element{}, err
+	}
+	best, second, at := 0.0, 0.0, -1
+	for i, e := range els {
+		o := overlap(frame.ToDevice(e.X, e.Y, e.W, e.H), want)
+		switch {
+		case o > best:
+			best, second, at = o, best, i
+		case o > second:
+			second = o
+		}
+	}
+	if at < 0 || best < 2.0/3 || second > best*0.8 {
+		return webview.Element{}, mobiumerr.New(mobiumerr.NoSuchElement, "no element of %s is at %v", s.webCtx, want)
+	}
+	return els[at], nil
+}
+
+// overlap is the intersection of two rectangles over their union: 1 for the
+// same rectangle, 0 for two that do not touch.
+func overlap(a, b uitree.Rect) float64 {
+	ix := min(a.X2, b.X2) - max(a.X1, b.X1)
+	iy := min(a.Y2, b.Y2) - max(a.Y1, b.Y1)
+	if ix <= 0 || iy <= 0 {
+		return 0
+	}
+	inter := float64(ix * iy)
+	return inter / (float64(area(a)+area(b)) - inter)
 }
