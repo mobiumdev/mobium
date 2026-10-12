@@ -6615,6 +6615,25 @@ after a turn and `session end`, the device reads as it did before — on the
 emulator, auto-rotate back on. Passed on the Android 15 emulator and the
 iOS 26.5 simulator; each has a unit test shown to fail without it.
 
+### 309. Two scroll-to refusals named remedies that could not work
+
+**Found by:** reviewing a golden-set question about `scroll-to` and asking
+what gaps were left. After fifteen swipes it said "the list is longer than
+mobium will swipe; try a deep link with `app_open_url`" — and few apps have
+a deep link to a row of a list. Inside a WebView it refused at once, "switch
+back with app_context native", where a web ref resolves to nothing: the
+remedy left the caller with no way to the element at all. Both are the rule
+an error's remedy must keep — one that cannot work is obeyed anyway.
+
+**Fixed:** at the limit, the error says the list goes on and that
+`scroll-to` again goes on from where it stopped — a list stays where a
+scroll left it — with a deep link as the other way where there is one, and
+`scrolls` in its details; a test reaches Row 399 of 400 by calling it
+again. Inside a WebView `scroll-to` now works: the page scrolls the ref into
+view, as it already did before any web action touched an element, in a
+cross-origin frame's own context too, and the answer gives the element's
+place on the screen. No direction is needed there.
+
 ## Findings that were not defects
 
 Worth recording because each one closed off an approach that looked obvious.

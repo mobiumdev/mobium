@@ -542,7 +542,10 @@ func GetToolSchemas() []Tool {
 				"child bounds to the parent, so a horizontal pager and a vertical list " +
 				"are indistinguishable from outside. Swiping the wrong way is not a " +
 				"no-op; if it navigates instead of scrolling, mobium notices after one " +
-				"swipe and says so.",
+				"swipe and says so. It swipes at most fifteen times a call; a list longer " +
+				"than that is reached by calling it again, which goes on from where it " +
+				"stopped. Inside a WebView the page scrolls a ref into view itself, and " +
+				"no direction is needed.",
 			InputSchema: map[string]interface{}{
 				"type": "object",
 				"properties": withDevice(map[string]interface{}{
