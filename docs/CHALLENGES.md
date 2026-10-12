@@ -6329,6 +6329,45 @@ sent, saying so. Touch is refused the same way for every gesture, since
 tvOS has no touch screen. What WebDriverAgent itself does with a pointer
 action on tvOS was not measured; the refusal comes first.
 
+### 299. A web checkbox, sent between contexts by two refusals
+
+**Found by:** an agent, the first time one was graded on it: Opus 5.5 driving
+MobiumApp's Web form through `mobium mcp` on the Android 15 emulator, in an
+evaluation harness that grades what the app says rather than what the agent
+claims (2026-10-11). Asked to tick the form's checkbox, it called `app_check`
+from the native context on `text=A checkbox`, and again on its ref `@e9`
+after mapping, and was told both times that it `is not a checkbox, radio or
+switch, so it has no checked state to set — app_tap is what acts on it`. It
+then read the page's own state through `app_eval` and tapped, and the task
+passed. Reproduced from the command line in the WebView's context, where
+`map` lists the same element as `A checkbox (checkbox)`: `check @e8`
+answered `app_check works on the native context — switch back with
+app_context NATIVE_APP`. Each refusal is true where it is given, but the
+WebView's remedy leads to the native refusal: a caller that follows it is
+refused again, for a different reason, and only then told to tap. Not
+fixed. Either `app_check` learns a web checkbox in the WebView's context,
+which `map` already names by role there, or its refusal there says to tap,
+as the native one does. What class the native tree gives the WebView's checkbox was not
+measured.
+
+### 300. A read-only web field, typed into from the native context, was "disabled"
+
+**Found by:** the same run. Asked to type into the Web form's read-only
+field — a refusal task: the right answer is that it cannot be done — the
+agent called `app_type` on its ref `@e5` from the native context, and was
+told `text=fixed failed check enabled: it is disabled, and stayed disabled for 2s
+— a disabled control ignores input; do what enables it, or wait for it with
+app_wait_for and condition "enabled"`. The field is not disabled: it has the
+`readonly` attribute, and nothing enables it, so both remedies are ones that
+cannot work. From the WebView's context the refusal names the cause:
+`@e4 failed check editable: readonly attribute — app_type types into a text
+field; to press anything else, use app_tap`. The agent answered at once that
+it could not type there — the pass — repeating that the device "reported it
+as disabled"; a caller that obeys the remedy instead waits for nothing. Not
+fixed. The native tree presumably reports a read-only WebView input as not
+enabled; when the node sits inside a WebView, the refusal could say so and
+name the WebView's context rather than offering a wait.
+
 ## Findings that were not defects
 
 Worth recording because each one closed off an approach that looked obvious.
