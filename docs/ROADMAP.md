@@ -516,6 +516,26 @@ this is what is not.
   does not is a candidate. An evaluation run grading agents on MobiumApp is
   what found it, and is the way to measure each one.
 
+- **A password the agent never sees** (written down 2026-10-12). Mobium
+  never shows a password field's contents and never echoes what it typed
+  there (CHALLENGES 43, 99), but the value still passes through the agent:
+  an agent signing in writes the password itself in `app_type`'s arguments,
+  so it lands in the agent's transcript and goes to its model's provider
+  whatever Mobium does with it. A secret reference would close that: the
+  caller passes a name, say `secret:STAGING_PASSWORD`, and Mobium resolves
+  it from the environment where the caller is — the CLI's, `mobium pipe`'s,
+  or `mobium mcp`'s, which its host sets and the agent never reads — the
+  way a path is made absolute there and never in the daemon. Every place a
+  typed value goes would take one: `app_type`, `app_fill`, `app_keyboard`,
+  `app_batch` steps and `mobium test` files. The result names the
+  reference, never the value, and a name with nothing set behind it is
+  refused, never typed as itself. Measured on 2026-10-12, over the
+  evaluation runs on MobiumApp's Login Demo (36 trials, three models):
+  the agent wrote the password into `app_type` in all 36, Mobium sent it
+  back in none, and one model repeated it in its reply to the user in 5
+  of its 6 sign-ins. The same runs, given a reference in place of the
+  password, are how the feature will be measured.
+
 - **Devices served concurrently by one daemon.** Today a call holds the
   daemon's lock for its whole length, so two devices on one daemon go at the
   slower one's pace: an emulator's 15 `map` calls took 22.3s beside a
