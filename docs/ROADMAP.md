@@ -874,6 +874,12 @@ this is what is not.
      container. What to measure first is whether an emulator runs in the
      container at usable speed, which depends on hardware acceleration
      reaching it.
+- **Device clouds and device farms: planned** (decided 2026-10-12, not yet
+  built). Running Mobium on devices rented from a commercial device cloud or
+  farm is a feature to roll out as soon as the resources for it allow; until
+  then Mobium drives only devices you can reach. It was listed under "Not
+  planned" until 2026-10-12, which this entry contradicted. The first step
+  is below.
 - **MobiumApp on AWS Device Farm, on its free trial** (written down
   2026-09-28, nothing measured yet) — the first devices Mobium would drive
   that nobody here owns. What the plan rests on, and must be checked against
@@ -1061,7 +1067,5 @@ this is what is not.
   calls. Its own runner, `mobium test`, runs JSON test files of tool calls,
   and `mobium inspect` records one, but nothing generates test code in a
   client's language.
-- **Device-cloud allocation.** Mobium drives devices you can reach; renting
-  them is a separate concern.
 - **Anything that needs a runtime on the user's machine.** One static binary is
   the point.
