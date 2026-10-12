@@ -1369,13 +1369,13 @@ public final class Mobium implements AutoCloseable {
     }
 
     /**
-     * Accepts or dismisses a system dialog.
+     * Accepts or dismisses a dialog of one or two buttons.
      *
-     * <p>These answer a dialog; they do not choose an outcome. On a permission
-     * prompt they do not mean grant and deny, and on iOS they are the other
-     * way round — accept leaves it denied and dismiss leaves it granted,
-     * because W3C accept presses the affirmative button and Apple puts
-     * "Don't Allow" last. Tap the button by ref for a particular answer.
+     * <p>accept is yes and dismiss is no, so a two-button permission prompt is
+     * granted by accept and denied by dismiss, in any language. A dialog of
+     * three or more is refused, naming its buttons — more than one may mean
+     * yes, as on iOS's location prompt — so press one with
+     * {@link #pressAlertButton(String)}.
      *
      * @param accept true to accept, false to dismiss
      */
@@ -1393,6 +1393,29 @@ public final class Mobium implements AutoCloseable {
      */
     public void answerAlert(boolean accept, String text) {
         data("app_alert", args("action", accept ? "accept" : "dismiss", "text", text));
+    }
+
+    /**
+     * Presses a dialog's button by its caption, on any dialog — one of three
+     * buttons or an app's own included. A caption matches in any case and
+     * with straight or curly quotes.
+     *
+     * @param button the caption, as a read of the dialog lists it
+     * @return the caption pressed
+     */
+    public String pressAlertButton(String button) {
+        return Json.str(data("app_alert", args("button", button)), "pressed");
+    }
+
+    /**
+     * Presses a dialog's button by its position from 1, in the order the
+     * dialog shows them, which does not depend on the device's language.
+     *
+     * @param position the button's position, from 1
+     * @return the caption pressed
+     */
+    public String pressAlertButton(int position) {
+        return pressAlertButton(String.valueOf(position));
     }
 
     /**

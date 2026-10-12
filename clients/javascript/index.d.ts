@@ -338,6 +338,8 @@ export class Device {
   alert(): Promise<string>
   /** `text` is typed into a prompt's field before it is answered. */
   answerAlert(accept?: boolean, options?: { text?: string }): Promise<Data>
+  /** By caption (any case, straight or curly quotes) or position from 1; the result's `pressed` is the caption pressed. */
+  pressAlertButton(button: string | number, options?: { text?: string }): Promise<Data>
   clipboard(): Promise<string>
   setClipboard(text: string): Promise<Data>
   location(): Promise<Data>

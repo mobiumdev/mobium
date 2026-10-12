@@ -44,6 +44,14 @@
     },
     {
       "tool": "app_alert",
+      "arg": "button",
+      "type": "string",
+      "setBy": [
+        "alert"
+      ]
+    },
+    {
+      "tool": "app_alert",
       "arg": "device",
       "type": "string",
       "setBy": [
@@ -2686,10 +2694,12 @@
         "app_alert"
       ],
       "flags": [
+        "--button",
         "--text"
       ],
       "sends": [
         "action",
+        "button",
         "text"
       ]
     },
