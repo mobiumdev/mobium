@@ -6454,6 +6454,62 @@ from `ro.build.version.release` and `ro.build.version.sdk` in one shell
 call, as its `runtime` and in its line — the field every client already
 reads for iOS. Checked on the Android 15 emulator.
 
+### 305. `accept` on iOS's location prompt pressed Don't Allow, and said only "accepted"
+
+**Found by:** reviewing a golden-set question for the docs evaluation —
+"which button does `alert accept` press on an iOS permission prompt?" — whose
+right answer, Don't Allow, read as a defect rather than an answer. Measured
+on an iPhone 17 Pro simulator, iOS 26.5, on MobiumApp's Dialog Demo, and
+on the Android 15 emulator.
+
+CHALLENGES 63 and 106 found that accept and dismiss press a button the
+platform picks, and settled on saying so: "these answer a dialog; they do not
+choose an outcome." Measuring every dialog the demo raises showed where the
+picking goes wrong, and that it is one shape on both platforms:
+
+| Dialog | Buttons, as shown | accept | dismiss |
+| --- | --- | --- | --- |
+| iOS two-button alert | Keep Editing, Discard | Discard | Keep Editing |
+| iOS notification, camera prompts | Don’t Allow, Allow | Allow | Don’t Allow |
+| iOS tracking prompt (stacked) | Ask App Not to Track, Allow | Allow | Ask App Not to Track |
+| iOS location prompt | Allow Once, Allow While Using App, Don’t Allow | **Don’t Allow** | Allow Once |
+| iOS three-button alert | Don't Save, Save, Cancel | **Cancel** | Don't Save |
+| iOS action sheet | Copy Link, Delete Photo, Cancel | Copy Link | Cancel |
+| Android notification prompt (stacked) | Allow, Don’t allow | Allow | Don’t allow |
+| Android three-button alert | Cancel, Don't Save, Save | Save | **Don't Save** |
+
+With one or two buttons both verbs are what anyone would mean: iOS puts the
+cancel button first even when it stacks two long captions, and Android marks
+its buttons positive and negative by id (`android:id/button1` and `button2`,
+`permission_allow_button` and `permission_deny_button`), which is why a
+stacked Allow above Don't allow still answers right. With three or more the
+verbs stop meaning yes and no: iOS moves the cancel button to the bottom,
+where WebDriverAgent's accept, the last button, finds it; Android's camera
+and location prompts (While using the app, Only this time, Don’t allow), and
+iOS's location prompt, have two buttons that grant; and on a three-button
+alert Android's dismiss is whichever the app called negative. The tool's own
+text said "on iOS they are the other way round", which is false for every
+two-button prompt — a dismiss on the camera prompt denied it, as anyone
+would expect, and said they were reversed.
+
+And none of it reached an agent. The result said what it did only in text —
+`{"answered": "accept"}` in the structured half, which is all an agent in
+Claude Code sees (CHALLENGES 303) — and nowhere said which button it had
+pressed: "accepted" on a prompt it had just denied.
+
+**Fixed:** accept and dismiss answer a dialog of one or two buttons, as
+before, and every answer says which caption it pressed, in `pressed`. A
+dialog of three or more is refused as unsupported, naming its buttons in the
+order it shows them, before anything is pressed. `button` presses one by its
+caption — in any case, and with straight or curly quotes, since iOS writes
+Don’t Allow and a caller types Don't Allow — or by its position from 1,
+which does not depend on the device's language; it works on an app's own
+dialog too, and taps the button where the screen shows it, as a declared
+rule does (`app_dialogs`). WebDriverAgent can press a button by name, but
+only by its exact caption: a straight-apostrophe "Don't Allow" was refused.
+A read lists the buttons. `dialogs.sh` asserts all of it on both platforms,
+and passed on the simulator and the emulator.
+
 ## Findings that were not defects
 
 Worth recording because each one closed off an approach that looked obvious.

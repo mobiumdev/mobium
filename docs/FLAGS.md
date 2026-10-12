@@ -28,6 +28,7 @@ command mentions them.
 | `app_accessibility` | `setting` | string | accessibility |
 | `app_accessibility` | `value` | string | accessibility |
 | `app_alert` | `action` | string | alert |
+| `app_alert` | `button` | string | alert |
 | `app_alert` | `device` | string | _global_ --device |
 | `app_alert` | `driver` | string | _global_ --driver |
 | `app_alert` | `text` | string | alert |
@@ -351,7 +352,7 @@ arguments and the two global flags.
 | Command | Tools | Flags | Sends |
 | --- | --- | --- | --- |
 | `accessibility` | app_accessibility | — | setting, value |
-| `alert` | app_alert | --text | action, text |
+| `alert` | app_alert | --button --text | action, button, text |
 | `appearance` | app_appearance | — | appearance |
 | `apps` | app_list_apps | --system | system |
 | `audio` | app_audio | --app --expect --ignore-ms --output | action, app, expect, ignore_ms, path |

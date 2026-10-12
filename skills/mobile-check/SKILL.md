@@ -392,12 +392,16 @@ Every one of these can move the screen, so map again before acting.
 
 ### Dialogs
 
-- `mobium alert` — is a system or app dialog up, and what does it say
-- `mobium alert accept` / `dismiss` — answer it. **These do not choose an
-  outcome**: which button each presses depends on the platform and the dialog
-  (on a three-button iOS alert, `accept` pressed Cancel). To choose, tap the
-  button by its caption: `mobium tap "text=Allow,role=button"` (iOS captions
-  are labels: `label=Allow`).
+- `mobium alert` — is a system or app dialog up, what does it say, and what
+  are its buttons
+- `mobium alert accept` / `dismiss` — yes and no, on a dialog of one or two
+  buttons: a two-button permission prompt is granted by accept and denied by
+  dismiss, in any language. **A dialog of three or more is refused**, naming
+  its buttons — the location prompt has two that grant — and every answer
+  says which button it pressed.
+- `mobium alert --button "Allow While Using App"` — press one by its caption
+  (any case, straight or curly quotes) or its position from 1, on any
+  dialog.
 - `mobium dialogs --when "Save Password" --press "Not Now"` — declare an
   answer for a dialog that turns up on its own schedule. An action that meets
   it presses that button, confirms the dialog went, carries on, and says so

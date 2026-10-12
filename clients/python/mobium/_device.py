@@ -1007,18 +1007,33 @@ class Device:
         return str(data.get("text") or "")
 
     def answer_alert(self, accept: bool = True, text: str | None = None) -> dict:
-        """Accept or dismiss a system dialog.
+        """Accept or dismiss a dialog of one or two buttons.
 
-        These answer a dialog; they do not choose an outcome. On a permission
-        prompt they do not mean grant and deny, and on iOS they are the other
-        way round — accept leaves it denied and dismiss leaves it granted,
-        because W3C accept presses the affirmative button and Apple puts
-        "Don't Allow" last. Tap the button by ref for a particular answer.
+        accept is yes and dismiss is no, so a two-button permission prompt is
+        granted by accept and denied by dismiss, in any language. A dialog of
+        three or more is refused, naming its buttons — more than one may mean
+        yes, as on iOS's location prompt — so press one with
+        :meth:`press_alert_button`. The result's ``pressed`` is the caption
+        pressed.
 
         text is typed into a prompt's field first, so one call fills and
         answers it. A plain alert has no field, and the platform refuses it.
         """
         args = {"action": "accept" if accept else "dismiss"}
+        if text is not None:
+            args["text"] = text
+        return self._data("app_alert", args) or {}
+
+    def press_alert_button(self, button: str | int, text: str | None = None) -> dict:
+        """Press a dialog's button by its caption, or its position from 1.
+
+        A caption matches in any case and with straight or curly quotes; a
+        position counts in the order the dialog shows its buttons. Works on
+        any dialog, one of three buttons or an app's own included. The
+        result's ``pressed`` is the caption pressed. text is typed into a
+        prompt's field first.
+        """
+        args: dict = {"button": str(button)}
         if text is not None:
             args["text"] = text
         return self._data("app_alert", args) or {}

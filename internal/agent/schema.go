@@ -1266,32 +1266,39 @@ func GetToolSchemas() []Tool {
 		},
 		{
 			Name: "app_alert",
-			Description: "Read a system dialog, or answer it with accept or dismiss. " +
+			Description: "Read a system dialog, or answer it. " +
 				"A permission prompt is **not part of the app** — it is another " +
 				"process's window, and app_current reports that process while one is " +
-				"up. Answered through the W3C alert endpoints rather than by tapping a " +
-				"button, which means it works without knowing what the buttons say: a " +
-				"flow that taps \"While using the app\" breaks the moment the device " +
-				"is in another language. With no action it reports whether a dialog is " +
-				"up and what it says; finding none is an answer rather than an error. " +
-				"**These answer a dialog; they do not choose an outcome.** On a " +
-				"permission prompt they do not mean grant and deny, and on iOS they " +
-				"are the other way round — measured on iOS 26.5, accept left the " +
-				"permission denied and dismiss left it granted. Which button each " +
-				"presses depends on the platform and the dialog: Android presses its " +
-				"positive and negative buttons (dismiss pressed the middle of three), " +
-				"iOS an alert's last and first but an action sheet's first and last, " +
-				"so accept on a three-button iOS alert pressed Cancel. " +
-				"To choose an outcome, tap the button: app_map returns them like any " +
-				"other element. Answering discards the refs from the last app_map, " +
-				"since they named a screen with a dialog over it.",
+				"up. With no action it reports whether a dialog is up, what it says " +
+				"and its buttons, in the order it shows them; finding none is an " +
+				"answer rather than an error. " +
+				"**accept and dismiss mean yes and no, so they answer only a dialog of " +
+				"one or two buttons** — the two-button permission prompts, where " +
+				"accept grants and dismiss denies, and an alert's confirm and cancel. " +
+				"They need no knowledge of what the buttons say, so they work in any " +
+				"language. A dialog of three or more is refused, naming its buttons: " +
+				"there more than one may mean yes — iOS's location prompt has Allow " +
+				"Once and Allow While Using App, Android's camera and location prompts " +
+				"While using the app and Only this time — and on iOS accept pressed the " +
+				"cancel button, which iOS moves to the bottom. **button presses one by " +
+				"its caption or its position from 1**, on any dialog, an app's own " +
+				"included; a caption matches in any case and with straight or curly " +
+				"quotes. Every answer says in pressed which button it pressed. " +
+				"Answering discards the refs from the last app_map, since they named " +
+				"a screen with a dialog over it.",
 			InputSchema: map[string]interface{}{
 				"type": "object",
 				"properties": withDevice(map[string]interface{}{
 					"action": map[string]interface{}{
 						"type":        "string",
-						"description": "\"accept\", \"dismiss\", or omitted to read.",
+						"description": "\"accept\" (yes) or \"dismiss\" (no) on a dialog of one or two buttons, or omitted to read.",
 						"enum":        []string{"accept", "dismiss", "read"},
+					},
+					"button": map[string]interface{}{
+						"type": "string",
+						"description": "Press this button instead of accepting or dismissing: " +
+							"its caption, as a read lists it, or its position from 1 in " +
+							"that order. Not with action.",
 					},
 					"text": map[string]interface{}{
 						"type": "string",

@@ -1285,19 +1285,34 @@ export class Device {
   }
 
   /**
-   * Accepts or dismisses a system dialog.
+   * Accepts or dismisses a dialog of one or two buttons.
    *
-   * These answer a dialog; they do not choose an outcome. On a permission
-   * prompt they do not mean grant and deny, and on iOS they are the other way
-   * round — accept leaves it denied and dismiss leaves it granted, because W3C
-   * accept presses the affirmative button and Apple puts 'Don't Allow' last.
-   * Tap the button by ref for a particular answer.
+   * accept is yes and dismiss is no, so a two-button permission prompt is
+   * granted by accept and denied by dismiss, in any language. A dialog of
+   * three or more is refused, naming its buttons — more than one may mean
+   * yes, as on iOS's location prompt — so press one with pressAlertButton.
+   * The result's `pressed` is the caption pressed.
    *
    * `{ text }` is typed into a prompt's field first, so one call fills and
    * answers it. A plain alert has no field, and the platform refuses it.
    */
   async answerAlert(accept = true, { text } = {}) {
     const args = { action: accept ? 'accept' : 'dismiss' }
+    if (text !== undefined) args.text = text
+    return (await this.#data('app_alert', args)) || {}
+  }
+
+  /**
+   * Presses a dialog's button by its caption, or its position from 1.
+   *
+   * A caption matches in any case and with straight or curly quotes; a
+   * position counts in the order the dialog shows its buttons. Works on any
+   * dialog, one of three buttons or an app's own included. The result's
+   * `pressed` is the caption pressed; `{ text }` is typed into a prompt's
+   * field first.
+   */
+  async pressAlertButton(button, { text } = {}) {
+    const args = { button: String(button) }
     if (text !== undefined) args.text = text
     return (await this.#data('app_alert', args)) || {}
   }

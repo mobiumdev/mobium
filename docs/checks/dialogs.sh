@@ -6,13 +6,15 @@
 #   docs/checks/dialogs.sh <android-serial | simulator-udid>
 #   MOBIUMAPP_BUNDLE=<path to MobiumApp.app> docs/checks/dialogs.sh <iphone-udid>
 #
-# What it holds each platform to is what was measured (CHALLENGES 106):
-# accept and dismiss press a button the platform picks, and it is not the
-# same one twice — so the three-button alert and the action sheet are
-# asserted as they are, not as anyone would guess. Answering by the button's
-# caption is the way that means the same thing everywhere, and is checked
-# for every kind. Then the refusals: a target under a dialog, and under the
-# keyboard (CHALLENGES 105 and its keyboard half).
+# What it holds each platform to is what was measured (CHALLENGES 106, 305):
+# accept and dismiss are yes and no, so they answer a dialog of one or two
+# buttons and say which they pressed, and a dialog of three or more — the
+# three-button alert, the action sheet, the location prompt, and Android's
+# camera prompt — is refused, naming its buttons. alert --button presses one
+# by caption or position on any of them, and answering by the button's
+# caption with tap is checked for every kind too. Then the refusals: a
+# target under a dialog, and under the keyboard (CHALLENGES 105 and its
+# keyboard half).
 #
 # Needs MobiumApp installed (mobiumdev/mobium-app). Permissions are reset for
 # MobiumApp alone, on a phone too — except a real iPhone, which cannot reset
@@ -70,8 +72,31 @@ outcome() {
   got=$($M text testid=dialogOutcome)
   [ "$got" = "$1" ] || fail "the app received \"$got\", want \"$1\""
 }
-# verb <button> <accept|dismiss> <outcome>
-verb() { fresh; raise "$1"; $M alert "$2" >/dev/null; sleep 1; outcome "$3"; }
+# verb <button> <accept|dismiss> <outcome>: the answer must say what it pressed.
+verb() {
+  fresh; raise "$1"
+  out=$($M alert "$2" 2>&1) || fail "alert $2 on $1: $out"
+  echo "$out" | grep -q 'pressed "' || fail "alert $2 on $1 did not say what it pressed: $out"
+  sleep 1; outcome "$3"
+}
+# refused <button> <accept|dismiss>: a dialog of three or more is refused as
+# unsupported (exit 5), naming its buttons, and is still up.
+refused() {
+  fresh; raise "$1"
+  st=0; out=$($M alert "$2" 2>&1) || st=$?
+  [ $st -eq 5 ] || fail "alert $2 on $1 exited $st, want 5 (refused): $out"
+  echo "$out" | grep -q 'buttons' || fail "the refusal of $2 on $1 did not name the buttons: $out"
+  $M alert 2>/dev/null | grep -q 'a dialog is on screen' || fail "a refused $2 on $1 answered the dialog anyway"
+  # Out of the way, as dismiss cannot: the next check resets what this chose.
+  $M alert --button 1 >/dev/null
+}
+# pick <button> <caption or position> <outcome>: alert --button, which says what it pressed.
+pick() {
+  fresh; raise "$1"
+  out=$($M alert --button "$2" 2>&1) || fail "alert --button $2 on $1: $out"
+  echo "$out" | grep -q 'pressed "' || fail "alert --button $2 on $1 did not say what it pressed: $out"
+  sleep 1; outcome "$3"
+}
 # press <button> <caption> <outcome>: answer by the caption, the way that
 # means the same thing on every platform. Captions match case-insensitively,
 # since Android draws alert buttons in capitals, and are narrowed to buttons,
@@ -88,22 +113,20 @@ row "one button" "accept and dismiss both press OK"
 verb twoButtonBtn dismiss "two-button: Keep Editing"
 verb twoButtonBtn accept "two-button: Discard"
 press twoButtonBtn "Keep Editing" "two-button: Keep Editing"
-row "two buttons" "the verbs read as cancel and confirm, here only"
+row "two buttons" "accept confirms, dismiss cancels, each says which"
 
-if [ "$PLATFORM" = android ]; then
-  # The positive and negative buttons, wherever they sit: React Native puts
-  # the negative one in the middle of three.
-  verb threeButtonBtn dismiss "three-button: Don't Save"
-  verb threeButtonBtn accept "three-button: Save"
-  row "three buttons" "dismiss pressed the middle one"
-else
-  # An alert's first and last — and iOS puts Cancel last.
-  verb threeButtonBtn dismiss "three-button: Don't Save"
-  verb threeButtonBtn accept "three-button: Cancel"
-  row "three buttons" "accept pressed Cancel"
-fi
+# Three: accept pressed Save on Android and Cancel on iOS, which moves the
+# cancel button to the bottom, and dismiss the middle one on Android. Refused.
+refused threeButtonBtn accept
+refused threeButtonBtn dismiss
+pick threeButtonBtn "Save" "three-button: Save"
+pick threeButtonBtn "cancel" "three-button: Cancel"
+# By position, in the order each platform shows them: Android lays them out
+# Cancel, Don't Save, Save; iOS stacks Don't Save, Save, Cancel.
+if [ "$PLATFORM" = android ]; then pick threeButtonBtn 2 "three-button: Don't Save"
+else pick threeButtonBtn 2 "three-button: Save"; fi
 press threeButtonBtn "Cancel" "three-button: Cancel"
-row "three, by caption" "Cancel is Cancel on both"
+row "three buttons" "accept, dismiss refused; --button caption, place"
 
 fresh
 $M tap testid=lateAlertBtn >/dev/null
@@ -113,11 +136,11 @@ $M tap "$CAP=Stay,role=button" >/dev/null; sleep 1; outcome "late: Stay"
 row "late" "absent at first, answered once it came"
 
 if [ "$PLATFORM" = ios ]; then
-  # A sheet's first and last, the other way round from an alert's.
-  verb actionSheetBtn dismiss "action sheet: Cancel"
-  verb actionSheetBtn accept "action sheet: Copy Link"
-  press actionSheetBtn "Delete Photo" "action sheet: Delete Photo"
-  row "action sheet" "dismiss Cancel, accept Copy Link, reversed"
+  # Three options: accept pressed Copy Link, a sheet's first. Refused.
+  refused actionSheetBtn accept
+  pick actionSheetBtn "Delete Photo" "action sheet: Delete Photo"
+  press actionSheetBtn "Copy Link" "action sheet: Copy Link"
+  row "action sheet" "accept refused; --button and a tap press one"
 else
   fresh; $M tap testid=actionSheetBtn >/dev/null; sleep 1
   outcome "action sheet: none on android: ActionSheetIOS is iOS-only"
@@ -147,20 +170,37 @@ else
 fi
 row "share sheet" "no alert to app_alert; closed without it"
 
-# Camera, the permission both platforms reset: accept grants and dismiss
-# denies on both. Location is the one that inverts on iOS (CHALLENGES 63).
-reset_perms; verb cameraBtn dismiss "camera: denied"
-reset_perms; verb cameraBtn accept "camera: granted"
-row "camera" "dismiss denied, accept granted"
+# Permissions. A prompt of two buttons is yes or no, and accept grants and
+# dismiss denies on both platforms. Three — iOS's and Android's location,
+# Android's camera — offer two ways to say yes, and are answered with
+# --button; its caption matches with a straight apostrophe where the prompt
+# has Don’t, curly (CHALLENGES 305).
 if [ "$PLATFORM" = ios ]; then
-  reset_perms; verb locationBtn accept "location: denied"
-  row "location" "accept denied: Don't Allow is last of three"
+  reset_perms; verb cameraBtn dismiss "camera: denied"
+  reset_perms; verb cameraBtn accept "camera: granted"
+  row "camera" "two buttons: dismiss denied, accept granted"
+  reset_perms; refused locationBtn accept
+  reset_perms; pick locationBtn "Allow While Using App" "location: granted"
+  reset_perms; pick locationBtn "Don't Allow" "location: denied"
+  row "location" "three: accept refused; --button granted, denied"
   reset_perms; verb trackingBtn dismiss "tracking: denied"
   row "tracking" "App Tracking Transparency, from SpringBoard"
 else
-  reset_perms; verb locationBtn accept "location: granted"
-  row "location" "accept granted: the positive button"
+  reset_perms; verb notificationsBtn dismiss "notifications: denied"
+  reset_perms; verb notificationsBtn accept "notifications: granted"
+  row "notifications" "two, stacked Allow first: by id, not place"
+  reset_perms; refused cameraBtn accept
+  reset_perms; pick cameraBtn "Only this time" "camera: granted"
+  reset_perms; pick cameraBtn "Don't allow" "camera: denied"
+  row "camera" "three: accept refused; --button granted, denied"
+  reset_perms; refused locationBtn dismiss
+  reset_perms; pick locationBtn "While using the app" "location: granted"
+  row "location" "three: refused; --button granted it"
 fi
+# Back to asking: a later check that meets the prompt, or expects to, must
+# not find the answer this one gave last — mobium-app.sh's location section
+# failed on a denial left here.
+reset_perms
 
 # Paste: iOS asks before an app reads what another app put on the clipboard —
 # SpringBoard's prompt, Don't Allow Paste first and Allow Paste last — and

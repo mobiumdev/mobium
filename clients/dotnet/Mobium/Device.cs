@@ -845,12 +845,12 @@ namespace Mobium
         public string Alert() => Json.Str(Data("app_alert", Args()), "text");
 
         /// <summary>
-        /// Accepts or dismisses a system dialog. These answer a dialog; they
-        /// do not choose an outcome. On a permission prompt they do not mean
-        /// grant and deny, and on iOS they are the other way round — accept
-        /// leaves it denied and dismiss leaves it granted, because W3C accept
-        /// presses the affirmative button and Apple puts "Don't Allow" last.
-        /// Tap the button by ref for a particular answer.
+        /// Accepts or dismisses a dialog of one or two buttons: accept is yes
+        /// and dismiss is no, so a two-button permission prompt is granted by
+        /// accept and denied by dismiss, in any language. A dialog of three or
+        /// more is refused, naming its buttons — more than one may mean yes,
+        /// as on iOS's location prompt — so press one with
+        /// <see cref="PressAlertButton(string)"/>.
         /// </summary>
         public void AnswerAlert(bool accept) =>
             Act("app_alert", Args("action", accept ? "accept" : "dismiss"));
@@ -863,6 +863,23 @@ namespace Mobium
         /// </summary>
         public void AnswerAlert(bool accept, string text) =>
             Act("app_alert", Args("action", accept ? "accept" : "dismiss", "text", text));
+
+        /// <summary>
+        /// Presses a dialog's button by its caption, on any dialog — one of
+        /// three buttons or an app's own included — and returns the caption
+        /// pressed. A caption matches in any case and with straight or curly
+        /// quotes.
+        /// </summary>
+        public string PressAlertButton(string button) =>
+            Json.Str(Data("app_alert", Args("button", button)), "pressed");
+
+        /// <summary>
+        /// Presses a dialog's button by its position from 1, in the order the
+        /// dialog shows them, which does not depend on the device's language;
+        /// returns the caption pressed.
+        /// </summary>
+        public string PressAlertButton(int position) =>
+            PressAlertButton(position.ToString(System.Globalization.CultureInfo.InvariantCulture));
 
         /// <summary>
         /// What the device clipboard holds. iOS only: on Android 10 and later

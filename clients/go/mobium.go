@@ -1504,13 +1504,11 @@ func (d *Device) Alert(ctx context.Context) (string, error) {
 	return out.Text, nil
 }
 
-// AnswerAlert accepts or dismisses a system dialog.
-//
-// These answer a dialog; they do not choose an outcome. On a permission prompt
-// they do not mean grant and deny, and on iOS they are the other way round —
-// accept leaves it denied, dismiss leaves it granted, because W3C accept
-// presses the affirmative button and Apple puts "Don't Allow" last. Tap the
-// button by ref if you need a particular answer.
+// AnswerAlert accepts or dismisses a dialog of one or two buttons: accept is
+// yes and dismiss is no, so a two-button permission prompt is granted by
+// accept and denied by dismiss, in any language. A dialog of three or more is
+// refused, naming its buttons — more than one may mean yes, as on iOS's
+// location prompt — so press one with PressAlertButton.
 func (d *Device) AnswerAlert(ctx context.Context, accept bool) error {
 	action := "dismiss"
 	if accept {
@@ -1530,6 +1528,20 @@ func (d *Device) AnswerPrompt(ctx context.Context, text string, accept bool) err
 	}
 	var out struct{}
 	return d.data(ctx, "app_alert", map[string]any{"action": action, "text": text}, &out)
+}
+
+// PressAlertButton presses a dialog's button by its caption — in any case,
+// with straight or curly quotes — or by its position from 1 in the order the
+// dialog shows them, and returns the caption it pressed. It works on any
+// dialog, one of three buttons or an app's own included.
+func (d *Device) PressAlertButton(ctx context.Context, button string) (string, error) {
+	var out struct {
+		Pressed string `json:"pressed"`
+	}
+	if err := d.data(ctx, "app_alert", map[string]any{"button": button}, &out); err != nil {
+		return "", err
+	}
+	return out.Pressed, nil
 }
 
 // Clipboard reads the device clipboard.
