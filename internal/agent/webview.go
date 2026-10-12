@@ -29,6 +29,23 @@ type webRef struct {
 // is the origin and scale for everything the page reports.
 const webviewClass = "WebView"
 
+// inWebView says whether a native node is part of a WebView's page — a node
+// the page drew, which the native tree describes less exactly than the page
+// itself does: a read-only field reads as disabled, and a checkbox may carry
+// no checked state. A refusal for such a node names the WebView's context,
+// where the page answers (CHALLENGES 299, 300).
+func inWebView(n *uitree.Node) bool {
+	if n == nil {
+		return false
+	}
+	for p := n.Parent; p != nil; p = p.Parent {
+		if strings.HasSuffix(p.ShortClass(), webviewClass) {
+			return true
+		}
+	}
+	return false
+}
+
 // contexts lists the native context plus every attachable web context.
 func (h *Handlers) contexts(ctx context.Context, args map[string]interface{}) (*ToolsCallResult, error) {
 	s, err := h.sessionFor(ctx, args)

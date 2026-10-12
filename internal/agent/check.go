@@ -3,9 +3,11 @@ package agent
 import (
 	"context"
 	"fmt"
-	"github.com/mobiumdev/mobium/internal/mobiumerr"
+	"time"
 
+	"github.com/mobiumdev/mobium/internal/mobiumerr"
 	"github.com/mobiumdev/mobium/internal/uitree"
+	"github.com/mobiumdev/mobium/internal/webview"
 )
 
 // check is app_check: put a checkbox or switch into a state, rather than
@@ -29,10 +31,6 @@ func (h *Handlers) check(ctx context.Context, args map[string]interface{}) (*Too
 
 // checkOn is app_check once the device is resolved.
 func (h *Handlers) checkOn(ctx context.Context, s *session, args map[string]interface{}) (*ToolsCallResult, error) {
-	if s.web != nil {
-		return nil, mobiumerr.New(mobiumerr.Unsupported, "app_check works on the native context — "+
-			"switch back with app_context NATIVE_APP")
-	}
 	target := stringArg(args, "target")
 	if target == "" {
 		return nil, mobiumerr.New(mobiumerr.InvalidArgument, "app_check needs a target (\"@e2\" or \"testid=terms\")")
@@ -45,6 +43,9 @@ func (h *Handlers) checkOn(ctx context.Context, s *session, args map[string]inte
 		}
 		want = b
 	}
+	if s.web != nil {
+		return h.checkWeb(ctx, s, target, want)
+	}
 
 	resolved, _, err := h.resolveNode(ctx, s, target)
 	if err != nil {
@@ -56,6 +57,13 @@ func (h *Handlers) checkOn(ctx context.Context, s *session, args map[string]inte
 	// as checked would be the shape this project exists to not have — and the
 	// platform already says which elements have one.
 	if !node.Checkable {
+		// Part of a WebView's page, the native tree may carry no checked
+		// state for a checkbox the page has; the page does (CHALLENGES 299).
+		if inWebView(node) {
+			return nil, mobiumerr.New(mobiumerr.InvalidArgument, "%s is part of a WebView's page, and the native "+
+				"tree gives it no checked state — in the WebView's context app_check reads the page's own", target).
+				WithRemedy("app_contexts, then app_context with the WebView's name, app_map, and app_check its ref")
+		}
 		return nil, mobiumerr.New(mobiumerr.InvalidArgument, "%s is not a checkbox, radio or switch, so it has no "+
 			"checked state to set — app_tap is what acts on it", target)
 	}
@@ -101,6 +109,74 @@ func (h *Handlers) checkOn(ctx context.Context, s *session, args map[string]inte
 
 	view.Checked, view.Changed = after.Checked, true
 	return Result(fmt.Sprintf("%s is now %s", target, stateWord(want)), view), nil
+}
+
+// checkWeb is app_check inside a WebView: the same reach-a-state, with the
+// state read from the page — an input's checked, or aria-checked — rather
+// than the native tree, and the tap aimed as app_tap aims one there. It used
+// to refuse and send the caller to the native context, where the same
+// checkbox was "not a checkbox" (CHALLENGES 299).
+func (h *Handlers) checkWeb(ctx context.Context, s *session, target string, want bool) (*ToolsCallResult, error) {
+	read := func() (*webview.CheckState, error) {
+		_, el, _, err := h.findWeb(ctx, s, target)
+		if err != nil {
+			return nil, err
+		}
+		st, err := webview.Checked(ctx, s.web, el)
+		if err != nil {
+			return nil, err
+		}
+		if !st.Found {
+			return nil, mobiumerr.New(mobiumerr.NoSuchElement, "%s is no longer on the page — the content changed, run app_map again", target)
+		}
+		return st, nil
+	}
+	st, err := read()
+	if err != nil {
+		return nil, err
+	}
+	if st.Checked == nil {
+		return nil, mobiumerr.New(mobiumerr.InvalidArgument, "%s is not a checkbox, radio or switch, so it has no "+
+			"checked state to set — app_tap is what acts on it", target)
+	}
+	if !want && st.Kind == "radio" {
+		return nil, mobiumerr.New(mobiumerr.InvalidArgument, "a radio button cannot be unchecked — choose a different "+
+			"one in the group instead, which clears %s", target)
+	}
+	view := CheckView{Target: target, Role: st.Kind, Checked: *st.Checked, Wanted: want}
+	if *st.Checked == want {
+		return Result(fmt.Sprintf("%s is already %s", target, stateWord(want)), view), nil
+	}
+
+	if err := h.awaitAppIdle(ctx, s, target); err != nil {
+		return nil, err
+	}
+	x, y, _, err := h.aimWeb(ctx, s, target)
+	if err != nil {
+		return nil, err
+	}
+	if err := s.driver.Tap(ctx, x, y); err != nil {
+		return nil, err
+	}
+
+	// Read back, giving the page a moment: a framework re-renders after the
+	// event, not during it.
+	var after *webview.CheckState
+	for i := 0; i < 5; i++ {
+		if after, err = read(); err != nil {
+			return nil, mobiumerr.New(mobiumerr.NotConfirmed, "tapped %s and could not read it back to confirm: %w", target, err)
+		}
+		if after.Checked != nil && *after.Checked == want {
+			break
+		}
+		time.Sleep(200 * time.Millisecond)
+	}
+	if after.Checked == nil || *after.Checked != want {
+		return nil, mobiumerr.New(mobiumerr.NotConfirmed, "tapped %s to make it %s and the page still holds it %s — "+
+			"the control did not respond, so nothing here can make it", target, stateWord(want), stateWord(!want))
+	}
+	view.Checked, view.Changed = want, true
+	return Result(fmt.Sprintf("%s is now %s in %s", target, stateWord(want), s.webCtx), view), nil
 }
 
 // stateOf is the node whose checked state a target means: the target, or,

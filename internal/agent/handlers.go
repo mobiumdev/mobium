@@ -1249,6 +1249,21 @@ func notEnabled(loc uitree.Locator, waited time.Duration) error {
 		WithDetail("locator", loc.String())
 }
 
+// notEnabledInPage is notEnabled for a node of a WebView's page, read from
+// the native tree. There a read-only field reports itself exactly as a
+// disabled one does, so "do what enables it, or wait" can be a remedy that
+// never works — nothing enables a read-only field. Only the page can tell
+// the two apart, and in its context app_type says which (CHALLENGES 300).
+func notEnabledInPage(loc uitree.Locator, waited time.Duration) error {
+	return failedCheck(mobiumerr.Timeout, loc, checkEnabled,
+		fmt.Sprintf("the page reports it disabled, and it stayed so for %s", waited),
+		"it is part of a WebView's page, where a read-only field reports itself the same way as a disabled "+
+			"one; the page tells them apart: switch to the WebView's context and act on its ref there").
+		WithRemedy("app_contexts, then app_context with the WebView's name and app_map: app_type on its ref "+
+			"there says whether it is read-only or disabled").
+		WithDetail("locator", loc.String())
+}
+
 // nearMiss is the locator that finds exactly one element by the same words
 // under another of text, label and testid, when loc finds none. map prints a
 // node's text when it has any, so a field shown as "URL (input)" — its
@@ -1676,7 +1691,11 @@ func (h *Handlers) resolveNodeOnce(ctx context.Context, s *session, target strin
 		// success for nothing. Waited for within the same budget, since a
 		// button the app is about to enable is the ordinary case.
 		if resolveErr == nil && !node.Enabled {
-			resolveErr = notEnabled(loc, h.implicitWait)
+			if inWebView(node) {
+				resolveErr = notEnabledInPage(loc, h.implicitWait)
+			} else {
+				resolveErr = notEnabled(loc, h.implicitWait)
+			}
 			return false, nil
 		}
 		return resolveErr == nil, nil

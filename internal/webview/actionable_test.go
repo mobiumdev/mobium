@@ -85,3 +85,30 @@ func TestAFillNeverSendsTheValueBack(t *testing.T) {
 		t.Errorf("an append did not reach the page as one (%v)", err)
 	}
 }
+
+// A checkbox's state is read from the page, by the same index map uses, and
+// an element with no checked state is told apart from an unchecked one
+// (CHALLENGES 299).
+func TestCheckedReadsThePagesOwnState(t *testing.T) {
+	f := &cannedPage{answer: `{"found":true,"kind":"checkbox","checked":true}`}
+	st, err := Checked(context.Background(), f, Element{local: 4})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(f.got, "__mobiumCandidates()[4]") || !strings.Contains(f.got, candidatesJS) {
+		t.Errorf("the read does not pick its element from map's candidates by index:\n%s", f.got)
+	}
+	if !st.Found || st.Kind != "checkbox" || st.Checked == nil || !*st.Checked {
+		t.Errorf("state = %+v, want a found, checked checkbox", st)
+	}
+
+	f.answer = `{"found":true}`
+	if st, _ = Checked(context.Background(), f, Element{local: 1}); st.Checked != nil {
+		t.Errorf("an element with no checked state read as %v; it must be nil, not unchecked", *st.Checked)
+	}
+	for _, want := range []string{"aria-checked", "'checkbox'", "'radio'"} {
+		if !strings.Contains(f.got, want) {
+			t.Errorf("the read does not consider %s", want)
+		}
+	}
+}
