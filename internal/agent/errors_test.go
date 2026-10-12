@@ -460,3 +460,29 @@ func TestKeyboardOverWebViewIsReadFromItsRegion(t *testing.T) {
 		}
 	}
 }
+
+// A dialog in the way is answered by a button: since CHALLENGES 305 accept and
+// dismiss refuse a dialog of three, so a remedy naming only them did not work
+// on the location prompt. Every refusal for a dialog over the target names
+// app_alert's button, which the schema must still take.
+func TestTheDialogRemedyNamesAButton(t *testing.T) {
+	loc, _ := uitree.ParseLocator("testid=logoutBtn")
+	for name, err := range map[string]error{
+		"covered":   dialogOver("Allow MobiumApp to use your location?", loc, true),
+		"a miss":    dialogOver("Allow MobiumApp to use your location?", loc, false),
+		"app's own": appDialogOver("Delete draft?", loc, false),
+		"android":   appDialogOver("Delete draft?", loc, true),
+	} {
+		e, _ := mobiumerr.As(err)
+		if e == nil || !strings.Contains(e.Remedy, "app_alert button") {
+			t.Errorf("%s: the remedy does not name app_alert's button: %v", name, err)
+		}
+	}
+	for _, tool := range GetToolSchemas() {
+		if tool.Name == "app_alert" {
+			if _, ok := tool.InputSchema["properties"].(map[string]interface{})["button"]; !ok {
+				t.Error("app_alert no longer takes button, which the dialog remedies name")
+			}
+		}
+	}
+}

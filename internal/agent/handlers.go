@@ -1138,7 +1138,10 @@ func failedCheck(code mobiumerr.Code, target any, check, reason, advice string) 
 
 // dialogOver is the refusal for a target while a dialog is up. The remedy
 // works whatever the dialog says, which matters in a tool that pins apps to
-// other languages: answer it, by app_alert or by one of its buttons.
+// other languages: answer it, by app_alert or by one of its buttons. Not
+// accept or dismiss alone: since CHALLENGES 305 those answer a dialog of one
+// or two buttons and refuse three, so a remedy naming only them did not work
+// on the location prompt; app_alert's button works on any dialog.
 //
 // covered says the target was found underneath (iOS keeps it in the tree).
 // Otherwise nothing matched at all, and whether the caller meant something
@@ -1150,14 +1153,14 @@ func dialogOver(dialog string, loc uitree.Locator, covered bool) error {
 	if covered {
 		return failedCheck(mobiumerr.DeviceNotReady, loc, checkReceivesEvents,
 			fmt.Sprintf("a dialog is over the app — %q — and it is underneath", dialog), "answer the dialog first").
-			WithRemedy("app_alert with accept or dismiss, or tap one of the dialog's buttons from app_map").
+			WithRemedy(dialogRemedy).
 			WithDetail("locator", loc.String()).
 			WithDetail("dialog", dialog)
 	}
 	msg := "a dialog is over the app — %q — and nothing on it matches %s; if the target is behind it, " +
 		"answer the dialog first, and if it is one of the dialog's buttons, take its ref from app_map"
 	return mobiumerr.New(mobiumerr.DeviceNotReady, msg, dialog, loc).
-		WithRemedy("app_map for the dialog's buttons, or app_alert with accept or dismiss").
+		WithRemedy(dialogRemedy).
 		WithDetail("locator", loc.String()).
 		WithDetail("dialog", dialog)
 }
@@ -1182,10 +1185,15 @@ func screenOver(loc uitree.Locator, tree *uitree.Tree) error {
 		WithDetail("locator", loc.String())
 }
 
+// dialogRemedy answers a dialog in the way: app_alert's button presses one of
+// its buttons on any dialog, and accept and dismiss answer one of one or two.
+const dialogRemedy = "app_alert lists the dialog's buttons; press one with app_alert button, by its caption " +
+	"or its position from 1 (accept or dismiss answer a dialog of one or two buttons), or tap one from app_map"
+
 // appDialogOver is dialogOver for a dialog the platform's alert endpoint does
 // not know, an app's own. app_alert's accept and dismiss press the buttons
-// the platform picks, and this dialog has none it picks, so the remedy names
-// only what works: its buttons, by ref or by a rule.
+// the platform marks, and this dialog has none it marks, so the remedy names
+// only what works: its buttons, by app_alert's button, by ref or by a rule.
 //
 // On Android it may be a popup menu, which is a window of its own as a
 // dialog is and has no answer to give: its items are actions, and tapping
@@ -1197,7 +1205,8 @@ func appDialogOver(dialog string, loc uitree.Locator, android bool) error {
 	dialog = strings.TrimSpace(strings.SplitN(dialog, "\n", 2)[0])
 	msg := "a dialog is over the app — %q — and nothing on it matches %s; if the target is behind it, " +
 		"answer the dialog first, and if it is one of the dialog's buttons, take its ref from app_map"
-	remedy := "tap one of the dialog's buttons from app_map, or declare an answer with app_dialogs"
+	remedy := "press one of the dialog's buttons with app_alert button, by its caption or its position from 1, " +
+		"or declare an answer with app_dialogs"
 	if android {
 		msg += "; if it is a menu, app_press back closes it"
 		remedy = "app_press back closes a menu, or a dialog that can be canceled; otherwise " + remedy
