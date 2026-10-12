@@ -507,6 +507,49 @@ this is what is not.
 
 ## Under consideration
 
+- **Locators for when there is no ref** (written down 2026-10-12). A ref
+  from `map` lasts one map, so an agent has one and a `mobium test` file
+  does not: a hand-written test has the flat `kind=value` locators — text,
+  label, testid, role, class, path, narrowed by `,role=` — which match one
+  element or are refused. That is right on a form and leaves nothing
+  durable on a list. Every Ice Cubes post has a "…" (CHALLENGES 295), React
+  Native repeats one identifier across a component's views (`testid=
+  navigateBtn` matched 5), and a positional `path` breaks with the first
+  row added. Every addition below is resolved by Mobium against its own
+  read of the screen, as locators are now, so each keeps the checks a
+  locator gets — one match, visible, enabled, still, not covered, not
+  under a dialog, a password redacted — and none is handed to the device's
+  server to evaluate. In order:
+  1. **Scoping**: this, inside that — the More button within the row that
+     says Card 8. Both halves are resolved again on every poll, and after a
+     scroll the action takes the element the scroll found, as a ref's does
+     (CHALLENGES 261, 267): lists reuse their cells, and a scope resolved
+     once is the wrong-row tap again.
+  2. **Exact text in the written form.** A string locator matches a
+     substring, so `text=Internet` was met by "Network & internet" and a
+     wait passed on the screen it was leaving (CHALLENGES 233). The match
+     can already be exact — `map` derives its locators that way — but a
+     caller cannot say so.
+  3. **A chosen one among several**: the second Delete, counted in the
+     order a person reads the screen. A deliberate pick is not an
+     accident, which is what the refusal of an ambiguous locator is for;
+     it is brittle, and scoping is the better answer where there is one.
+  4. **CSS selectors, and text, inside a WebView**, where only refs work
+     today: CSS is the page's own way to name an element, `map` already
+     derives a selector for each, and matching would go through the same
+     checks.
+  5. **An XPath over the platform's own tree, only once an app needs
+     it** — evaluated by Mobium, so the checks still apply, and refused on
+     a platform it was not written for. XPath is what the neutral kinds
+     exist to avoid: brittle, and different on each platform.
+
+  Not planned: a platform's own query language — an iOS predicate or class
+  chain, an Android UiSelector. Each is evaluated on the device, so it
+  would skip every check above, and each runs on one platform, where a
+  locator here compiles to both. Each item is its own change — syntax,
+  `ParseLocator` and `Matches`, the clients, `apisurface`, and a check on
+  both platforms.
+
 - **Everything an agent must act on, in the structured answer**
   (written down 2026-10-11). Claude Code hands its model a tool's
   structured answer and not its text, so a remark Mobium makes only in the
