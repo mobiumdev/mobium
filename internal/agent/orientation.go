@@ -56,6 +56,17 @@ func (h *Handlers) orientationOn(ctx context.Context, s *session, args map[strin
 			OrientationView{Orientation: want, Locked: true, Device: s.dev.Serial}), nil
 	}
 
+	// Kept before the first change, so the session's end puts the device back
+	// as it found it: a turn, and on Android the lock it sets, outlasted the
+	// session (CHALLENGES 308).
+	if s.orientUndo == nil {
+		if k, ok := mobiumdriver.AsOrientationKeeper(s.driver); ok {
+			if undo, err := k.SaveOrientation(ctx); err == nil {
+				s.orientUndo = undo
+			}
+		}
+	}
+
 	if err := ctrl.SetOrientation(ctx, want); err != nil {
 		return nil, err
 	}

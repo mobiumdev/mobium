@@ -964,6 +964,69 @@ func (a *ADB) RotationLocked(ctx context.Context) (bool, error) {
 	return string(m[1]) == "lock", nil
 }
 
+// UserRotation reads the rotation the device is asked for, as Android keeps
+// it: locked or following the sensor, and to which quarter. `cmd window
+// user-rotation` answers "lock <n>" or "free"; a free one still keeps its
+// last quarter in the user_rotation setting, which a lock later uses.
+func (a *ADB) UserRotation(ctx context.Context) (locked bool, quarter int, err error) {
+	out, err := a.Shell(ctx, "cmd", "window", "user-rotation")
+	if err != nil {
+		return false, 0, err
+	}
+	m := userRotationRe.FindSubmatch(bytes.TrimSpace(out))
+	if m == nil {
+		return false, 0, mobiumerr.New(mobiumerr.DeviceServer, "could not read the rotation lock from %q",
+			strings.TrimSpace(string(out)))
+	}
+	locked = string(m[1]) == "lock"
+	if len(m[2]) > 0 {
+		quarter, _ = strconv.Atoi(string(m[2]))
+		return locked, quarter, nil
+	}
+	set, err := a.Shell(ctx, "settings", "get", "system", "user_rotation")
+	if err != nil {
+		return false, 0, err
+	}
+	if q, perr := strconv.Atoi(strings.TrimSpace(string(set))); perr == nil && q >= 0 && q <= 3 {
+		quarter = q
+	}
+	return locked, quarter, nil
+}
+
+// RestoreUserRotation puts the rotation request back as UserRotation read
+// it, and reads it back. It does not wait for the display: an app pinned to
+// another orientation holds the screen where it is, and the request is what
+// the next app opens in.
+func (a *ADB) RestoreUserRotation(ctx context.Context, locked bool, quarter int) error {
+	if quarter < 0 || quarter > 3 {
+		return mobiumerr.New(mobiumerr.InvalidArgument, "rotation must be 0, 1, 2 or 3, not %d", quarter)
+	}
+	if _, err := a.Shell(ctx, "cmd", "window", "user-rotation", "lock", strconv.Itoa(quarter)); err != nil {
+		return err
+	}
+	if !locked {
+		if _, err := a.Shell(ctx, "cmd", "window", "user-rotation", "free"); err != nil {
+			return err
+		}
+	}
+	gotLocked, gotQuarter, err := a.UserRotation(ctx)
+	if err != nil {
+		return err
+	}
+	if gotLocked != locked || gotQuarter != quarter {
+		return mobiumerr.New(mobiumerr.NotConfirmed, "put the rotation back to %s %d and the device reports %s %d",
+			lockWord(locked), quarter, lockWord(gotLocked), gotQuarter)
+	}
+	return nil
+}
+
+func lockWord(locked bool) string {
+	if locked {
+		return "lock"
+	}
+	return "free"
+}
+
 // SetRotation pins the display to a quarter turn and confirms it took.
 //
 // Pinning is deliberate rather than incidental: a rotation that the sensor can

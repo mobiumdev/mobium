@@ -95,6 +95,10 @@ type session struct {
 	driver  mobiumdriver.Driver
 	backend Backend
 
+	// orientUndo puts the orientation back as the session found it, lock and
+	// all, when it ends; set by the session's first app_orientation change.
+	orientUndo func(context.Context) error
+
 	// webCtx is the WebView context this session is switched into, empty for
 	// the native shell; web is its attachment.
 	webCtx string
@@ -211,6 +215,7 @@ func (s *session) close() {
 	}
 	s.stopRoute()
 	// Before the driver closes: an undo needs the device to reach.
+	s.restoreOrientation()
 	s.restoreAccessibility()
 	s.closeWeb()
 	if s.insp != nil {

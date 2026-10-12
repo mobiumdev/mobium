@@ -1530,7 +1530,9 @@ func GetToolSchemas() []Tool {
 				"\"auto\" hands it back to the sensor. Changing it invalidates the refs " +
 				"from the previous screen, because bounds do not survive a rotation. An " +
 				"activity that locks its own orientation cannot be turned from outside, and " +
-				"that is reported rather than silently ignored.",
+				"that is refused, the request taken back so the next app does not open turned. " +
+				"For the session: when it ends, the orientation — and on Android the rotation " +
+				"lock, which a turn sets — goes back as the session found it.",
 			InputSchema: map[string]interface{}{
 				"type": "object",
 				"properties": withDevice(map[string]interface{}{

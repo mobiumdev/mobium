@@ -155,6 +155,13 @@ func AsOrientation(d Driver) (Orientation, bool) {
 	return o, ok && has(d, CapOrientation)
 }
 
+// AsOrientationKeeper returns the driver's ability to save its orientation
+// and put it back, if it has any.
+func AsOrientationKeeper(d Driver) (OrientationKeeper, bool) {
+	k, ok := d.(OrientationKeeper)
+	return k, ok && has(d, CapOrientation)
+}
+
 // AsPincher returns the driver's two-finger gesture support, if it has any.
 func AsPincher(d Driver) (Pincher, bool) {
 	p, ok := d.(Pincher)

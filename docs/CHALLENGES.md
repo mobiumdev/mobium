@@ -6587,6 +6587,34 @@ element entirely off screen — a post's author at y −728 — because the wait
 counts any match with a size, and iOS keeps rows off screen in the tree with
 real bounds. A lead in ROADMAP.
 
+### 308. A refused turn on Android left the device turned, and no session put a turn back
+
+**Found by:** asking whether rotation had gaps left, after the golden-set
+question about CHALLENGES 218 — the iPhone's refused turn that turned the
+next app. That fix was made in WebDriverAgent's driver and never carried to
+Android's, where a turn is a device setting: `cmd window user-rotation lock`
+turns auto-rotate off and asks for the quarter, whether or not the app in
+front turns. On the Android 15 emulator MobiumApp, portrait only, refused
+landscape — "asked for rotation 1 and the display is still showing 0 …
+check with `adb shell dumpsys window displays`" — and left auto-rotate off
+with landscape asked for; Settings, opened next, came up sideways. The
+refusal named quarter turns, not orientations, and a command to run by
+hand, where iOS's said where the app stayed and that it had been taken
+back. And no session put a turn back: accessibility settings, the network
+and a location route are undone when a session ends, and a turn — on
+Android, auto-rotate off — stayed on whoever's device it was.
+
+**Fixed:** a refused turn on Android puts the request back as it was —
+locked or following the sensor, and the quarter Android keeps for a lock
+even while it follows the sensor — and refuses in iOS's words, with the
+orientation the app stayed in. A session's first change keeps the
+orientation as the session found it, lock and all on Android, and the
+session's end puts it back. `orientation.sh` asserts both on both
+platforms: after MobiumApp's refusal, Settings or Safari opens upright, and
+after a turn and `session end`, the device reads as it did before — on the
+emulator, auto-rotate back on. Passed on the Android 15 emulator and the
+iOS 26.5 simulator; each has a unit test shown to fail without it.
+
 ## Findings that were not defects
 
 Worth recording because each one closed off an approach that looked obvious.
