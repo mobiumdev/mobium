@@ -932,3 +932,24 @@ func TestATapOnARefLostAmongLookAlikesDoesNotSwipe(t *testing.T) {
 		t.Errorf("swiped %d times and tapped %v", d.swipes, d.tapped)
 	}
 }
+
+// The limit's remedy must work. It named a deep link, which few apps have
+// for a row; the list stays where a scroll left it, so scroll-to again goes
+// on from there, and in a list long enough it gets there. CHALLENGES 309.
+func TestTheSwipeLimitSaysToGoOn(t *testing.T) {
+	h, sess, _ := withList(t, rows(400))
+	_, err := scrollTo(h, sess, map[string]interface{}{"target": "text=Row 399"})
+	e, ok := mobiumerr.As(err)
+	if !ok || e.Code != mobiumerr.NoSuchElement || !strings.Contains(e.Remedy, "app_scroll_to again") {
+		t.Fatalf("at the limit: %v (remedy %q)", err, e.Remedy)
+	}
+	if e.Details["scrolls"] != maxScrolls {
+		t.Errorf("scrolls = %v, want %d", e.Details["scrolls"], maxScrolls)
+	}
+	for i := 0; i < 40; i++ {
+		if _, err := scrollTo(h, sess, map[string]interface{}{"target": "text=Row 399"}); err == nil {
+			return
+		}
+	}
+	t.Error("scroll-to again never went on to Row 399")
+}

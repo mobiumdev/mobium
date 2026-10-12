@@ -11,6 +11,7 @@ import (
 
 	"github.com/mobiumdev/mobium/internal/mobiumdriver"
 	"github.com/mobiumdev/mobium/internal/uitree"
+	"github.com/mobiumdev/mobium/internal/webview"
 )
 
 // Scrolling is a swipe-and-recheck loop rather than a call to the platform's
@@ -108,13 +109,12 @@ func (h *Handlers) scrollTo(ctx context.Context, args map[string]interface{}) (*
 
 // scrollToOn is app_scroll_to once the device is resolved.
 func (h *Handlers) scrollToOn(ctx context.Context, s *session, args map[string]interface{}) (*ToolsCallResult, error) {
-	if s.web != nil {
-		return nil, mobiumerr.New(mobiumerr.Unsupported, "app_scroll_to works on the native context — "+
-			"switch back with app_context native")
-	}
 	target := stringArg(args, "target")
 	if target == "" {
 		return nil, mobiumerr.New(mobiumerr.InvalidArgument, "app_scroll_to needs a target (\"@e5\" or \"text=Sign out\")")
+	}
+	if s.web != nil {
+		return h.scrollToWeb(ctx, s, target)
 	}
 	dir := strings.ToLower(stringArg(args, "direction"))
 	if dir == "" {
@@ -350,9 +350,14 @@ func (h *Handlers) scrollIntoView(ctx context.Context, s *session, loc uitree.Lo
 		}
 		prev = now
 	}
-	return nil, nil, maxScrolls, mobiumerr.New(mobiumerr.NoSuchElement, "%s after scrolling %s %d times — "+
-		"the list is longer than mobium will swipe; try a deep link with app_open_url",
-		whyNot(loc, lastErr), dir, maxScrolls)
+	// Its remedy must work: a deep link to a row is something few apps
+	// have, and a second scroll-to always goes on from where this one
+	// stopped, since the list stays where it was left. CHALLENGES 309.
+	return nil, nil, maxScrolls, mobiumerr.New(mobiumerr.NoSuchElement, "%s after scrolling %s %d times, and the "+
+		"list goes on — app_scroll_to again goes on from here, %d more", whyNot(loc, lastErr), dir, maxScrolls, maxScrolls).
+		WithRemedy("app_scroll_to again, which goes on from where this one stopped; or app_open_url, if the app has a "+
+			"deep link to it").
+		WithDetail("scrolls", maxScrolls)
 }
 
 // revealWhole brings the rest of a target into view once scrolling has found
@@ -904,4 +909,34 @@ func whyNot(loc uitree.Locator, err error) string {
 		return fmt.Sprintf("%s is on the screen but never scrolled fully into view", loc)
 	}
 	return fmt.Sprintf("no element matches %s", loc)
+}
+
+// scrollToWeb is app_scroll_to inside a WebView: the page scrolls the element
+// into view itself, as it does before any web action touches one, so no
+// direction is needed and none is swiped. It was refused with "switch back
+// with app_context native", where a web ref resolves to nothing — a remedy
+// that could not work. CHALLENGES 309.
+func (h *Handlers) scrollToWeb(ctx context.Context, s *session, target string) (*ToolsCallResult, error) {
+	_, el, frame, err := h.findWeb(ctx, s, target)
+	if err != nil {
+		return nil, err
+	}
+	v, err := webview.ScrollIntoView(ctx, s.web, el)
+	if err != nil {
+		return nil, err
+	}
+	if v.Status != "ok" {
+		return nil, mobiumerr.New(mobiumerr.NoSuchElement, "%s is no longer on the page — the content changed, run app_map again", target)
+	}
+	view := ScrollView{Target: target, Element: &ElementView{Ref: target, Bounds: boundsView(frame.ToDevice(v.X, v.Y, v.W, v.H)),
+		Context: s.webCtx}}
+	msg := target + " is on screen already"
+	if v.Moved {
+		view.Scrolls = 1
+		msg = "scrolled the page to bring " + target + " into view"
+	}
+	if !v.Whole {
+		msg += " — only part of it: it is larger than the viewport, or inside something that does not scroll"
+	}
+	return Result(msg, view), nil
 }
