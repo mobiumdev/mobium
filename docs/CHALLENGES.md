@@ -6510,6 +6510,14 @@ only by its exact caption: a straight-apostrophe "Don't Allow" was refused.
 A read lists the buttons. `dialogs.sh` asserts all of it on both platforms,
 and passed on the simulator and the emulator.
 
+**Then the remedies that named the old verbs.** A tap on a target under a
+dialog was refused — rightly (105) — with the remedy "app_alert with accept
+or dismiss", which since the fix above is itself refused on the location
+prompt: a remedy that cannot work, found reviewing the golden question
+about 105. Every refusal for a dialog in the way now names `app_alert`'s
+`button`, which works on any dialog, an app's own included, and a test ties
+the remedy to the argument.
+
 ## Findings that were not defects
 
 Worth recording because each one closed off an approach that looked obvious.
