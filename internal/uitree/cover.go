@@ -74,6 +74,10 @@ func isScrollIndicator(n *Node) bool {
 	return n.Class == "XCUIElementTypeOther" && !n.Clickable && percent.MatchString(n.Text)
 }
 
+// IsScrollIndicator is an iOS scroll view's scroll bar: a child of the
+// list, never one of its rows.
+func IsScrollIndicator(n *Node) bool { return isScrollIndicator(n) }
+
 var percent = regexp.MustCompile(`^\d{1,3}%$`)
 
 func isIOSClass(class string) bool {

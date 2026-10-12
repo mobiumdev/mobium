@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/mobiumdev/mobium/internal/mobiumerr"
 	"math"
+	"sort"
 	"strings"
 	"time"
 
@@ -270,6 +271,7 @@ func (h *Handlers) scrollIntoView(ctx context.Context, s *session, loc uitree.Lo
 	// button in plain sight above it. CHALLENGES 114.
 	partial, partialIn := offScreenTarget(pick, tree)
 
+	lastShift := 0 // how far the last full swipe moved the rows
 	for i := 1; i <= maxScrolls; i++ {
 		nudged, dx, dy, err := nudgeInto(ctx, gest, partialIn, partial, horizontal(dir), followTarget)
 		if err != nil {
@@ -317,6 +319,32 @@ func (h *Handlers) scrollIntoView(ctx context.Context, s *session, loc uitree.Lo
 		partial, partialIn = offScreenTarget(pick, tree)
 
 		now := read(container)
+		// Toward the start, a swipe that moved the rows clearly less than the
+		// one before it — or not at all, while something else moved, such as
+		// a refresh spinner — leaving the first row whole at the edge, has
+		// reached the start: one more swipe would only prove it, and at the
+		// start of a list that swipe is a pull. Against the swipe before,
+		// not the swipe's own length: an iPhone simulator's swipe coasts to
+		// twice its length, so the one that reached the top partway, 747
+		// pixels against 1,617 before it, was no shorter than the finger.
+		// On MobiumApp's Feed Demo the extra swipe refreshed the feed and
+		// threw away the rows it had loaded. CHALLENGES 310.
+		d, measured := shift(prev, now, horizontal(dir))
+		if !nudged && towardStart(dir) && moved(prev, now) && measured && d >= 0 {
+			base := lastShift
+			if base <= 0 {
+				base = container.Bounds.Height() / 2
+				if horizontal(dir) {
+					base = container.Bounds.Width() / 2
+				}
+			}
+			if d*10 < base*6 && atStart(container, horizontal(dir)) {
+				return nil, nil, i, endOfList(loc, resolveErr, dir, i, true)
+			}
+		}
+		if !nudged && measured && d > 0 {
+			lastShift = d
+		}
 		if !moved(prev, now) {
 			// Not the end while the list is still loading what follows. A
 			// feed fetches its next page when its end is reached, and the
@@ -342,11 +370,18 @@ func (h *Handlers) scrollIntoView(ctx context.Context, s *session, loc uitree.Lo
 					return nil, nil, i, mobiumerr.New(mobiumerr.Timeout, "%s — scrolled %s to where the list "+
 						"loads more, and it was still loading after %s", whyNot(loc, resolveErr), dir, loadWait)
 				}
-				prev = read(container)
+				after := read(container)
+				// Nothing new: the indicator was not more rows on their way.
+				// Toward the start it was the app refreshing on the pull this
+				// swipe was, and swiping on pulled again — twice on an iOS
+				// simulator, for one search. CHALLENGES 310.
+				if !moved(now, after) {
+					return nil, nil, i, endOfList(loc, resolveErr, dir, i, towardStart(dir))
+				}
+				prev = after
 				continue
 			}
-			return nil, nil, i, mobiumerr.New(mobiumerr.NoSuchElement, "%s — scrolled %s to the end of the list "+
-				"(%d scroll%s) without bringing it into view", whyNot(loc, resolveErr), dir, i, plural(i))
+			return nil, nil, i, endOfList(loc, resolveErr, dir, i, false)
 		}
 		prev = now
 	}
@@ -827,6 +862,9 @@ type reading struct {
 	geometry string
 	// texts is what everything says, in document order.
 	texts []string
+	// at is where each child that says something unique is, to measure how
+	// far a swipe moved the list.
+	at map[string]uitree.Rect
 }
 
 // read captures a container for later comparison.
@@ -840,20 +878,100 @@ func read(container *uitree.Node) reading {
 	if len(container.Children) == 0 && container.Parent != nil {
 		container = container.Parent
 	}
-	var r reading
+	r := reading{at: map[string]uitree.Rect{}}
+	seen := map[string]int{}
 	var b strings.Builder
 	var visit func(*uitree.Node)
 	visit = func(n *uitree.Node) {
 		for _, c := range n.Children {
 			fmt.Fprintf(&b, "%s\n", c.Bounds)
-			r.texts = append(r.texts, c.Text+"\x00"+c.Label)
+			key := c.Text + "\x00" + c.Label
+			r.texts = append(r.texts, key)
+			if key != "\x00" && !c.Bounds.Empty() {
+				seen[key]++
+				r.at[key] = c.Bounds
+			}
 			visit(c)
 		}
 	}
 	visit(container)
+	for k, n := range seen {
+		if n > 1 {
+			delete(r.at, k)
+		}
+	}
 	r.geometry = b.String()
 	return r
 }
+
+// shift is how far the list moved between two readings along the axis, the
+// middle of what the children that said the same thing in both moved; ok is
+// false with fewer than three to go by.
+func shift(before, after reading, horizontal bool) (int, bool) {
+	var ds []int
+	for k, a := range before.at {
+		if b, ok := after.at[k]; ok {
+			if horizontal {
+				ds = append(ds, b.X1-a.X1)
+			} else {
+				ds = append(ds, b.Y1-a.Y1)
+			}
+		}
+	}
+	if len(ds) < 3 {
+		return 0, false
+	}
+	sort.Ints(ds)
+	return ds[len(ds)/2], true
+}
+
+// atStart says the list shows its first row whole, at its top or below it —
+// or its left edge, scrolling sideways: the first child is not past that
+// edge and is as tall (or wide) as the one after it. Below it, because a
+// list refreshing pushes its rows down under its spinner (iOS, measured on
+// MobiumApp's Feed Demo). Android clips a row cut by its list to the list,
+// so flush alone would be true of any row scrolled halfway past the top;
+// whole is the second sign (CHALLENGES 169). Used only with a swipe that
+// moved the list short, never alone: a row that happens to rest flush in
+// the middle of a list looks the same.
+func atStart(container *uitree.Node, horizontal bool) bool {
+	// Down through the wrappers to the rows: an only child, scroll bars
+	// aside — an iOS scroll view holds its bars beside the one wrapper
+	// (CHALLENGES 307).
+	rows := func(n *uitree.Node) []*uitree.Node {
+		var out []*uitree.Node
+		for _, k := range n.Children {
+			if !k.Bounds.Empty() && !uitree.IsScrollIndicator(k) {
+				out = append(out, k)
+			}
+		}
+		return out
+	}
+	kids := rows(container)
+	for len(kids) == 1 {
+		kids = rows(kids[0])
+	}
+	if len(kids) < 2 {
+		return false
+	}
+	uitree.ReadingOrder(kids)
+	first, next := kids[0].Bounds, kids[1].Bounds
+	if horizontal {
+		return first.X1 >= container.Bounds.X1-2 && abs(first.Width()-next.Width()) <= 2
+	}
+	return first.Y1 >= container.Bounds.Y1-2 && abs(first.Height()-next.Height()) <= 2
+}
+
+func abs(x int) int {
+	if x < 0 {
+		return -x
+	}
+	return x
+}
+
+// towardStart is scrolling up or left, where a list begins — and where a
+// swipe past its start is a pull to refresh.
+func towardStart(dir string) bool { return dir == "up" || dir == "left" }
 
 // moved reports whether the list actually went anywhere between two readings.
 //
@@ -939,4 +1057,25 @@ func (h *Handlers) scrollToWeb(ctx context.Context, s *session, target string) (
 		msg += " — only part of it: it is larger than the viewport, or inside something that does not scroll"
 	}
 	return Result(msg, view), nil
+}
+
+// endOfList is the miss at the end of a list. Toward the start it says what
+// the last swipe may have done: at the start of a list a swipe is a pull,
+// and an app may answer it by refreshing — MobiumApp's Feed Demo reloaded,
+// losing forty rows it had loaded. On Android the swipe that reaches the
+// start pulls already, three times in three on the emulator, so nothing
+// short of knowing where the start is could spare it; on iOS only a swipe
+// past the start pulls, and the loop now stops before one. Whether a pull
+// was answered cannot be read from outside — on iOS nothing of the refresh
+// is in the tree once the screen is read — so it is said as what may have
+// happened, in the text and the structured answer both. CHALLENGES 310.
+func endOfList(loc uitree.Locator, resolveErr error, dir string, scrolls int, _ bool) error {
+	if !towardStart(dir) {
+		return mobiumerr.New(mobiumerr.NoSuchElement, "%s — scrolled %s to the end of the list (%d scroll%s) without "+
+			"bringing it into view", whyNot(loc, resolveErr), dir, scrolls, plural(scrolls)).WithDetail("scrolls", scrolls)
+	}
+	return mobiumerr.New(mobiumerr.NoSuchElement, "%s — scrolled %s to the start of the list (%d scroll%s) without "+
+		"bringing it into view; at the start of a list the last swipe is a pull, which an app may answer by "+
+		"refreshing what it shows", whyNot(loc, resolveErr), dir, scrolls, plural(scrolls)).
+		WithDetail("scrolls", scrolls).WithDetail("may_have_refreshed", true)
 }

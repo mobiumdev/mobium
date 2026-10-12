@@ -6634,6 +6634,42 @@ view, as it already did before any web action touched an element, in a
 cross-origin frame's own context too, and the answer gives the element's
 place on the screen. No direction is needed there.
 
+### 310. A search up past the start of a list refreshed the app, and said nothing
+
+**Found by:** asking what `scroll-to` still got wrong, then giving
+MobiumApp's Feed Demo pull to refresh, counted on its status line. A
+scroll loop ends a list with a swipe that moves nothing, and at the start
+of a list that swipe is a pull. From Row 45, sixty rows loaded, `scroll-to
+text=Nowhere --direction up` reached the top in eight swipes and answered
+"the end of the list": the feed had refreshed twice on the iPhone 15 Plus
+and the simulator and once on the Android 15 emulator, and its sixty rows
+were twenty. The loading wait (223) made it worse on iOS: the refresh
+spinner read as rows on their way, was waited out, and the next swipe
+pulled again. In a real app the pull is a network reload, a reset scroll
+position and lost pages, and nothing said so.
+
+What can be prevented, measured: on the simulator only a swipe past the
+start pulls, and the one that reaches it coasts there without pulling, so
+stopping before the extra swipe is enough. Its sign is a swipe that moved
+the rows clearly less than the one before it — or not at all while
+something else moved, the spinner — with the first row whole at the edge;
+against the swipe before, because a simulator's swipe coasts to twice its
+length, and the one that reached the top, 747 pixels against 1,617, was no
+shorter than the finger. On Android and the iPhone the swipe that reaches
+the start pulls already, three times in three on the emulator from 300
+pixels down, so nothing short of knowing where the start is could spare
+that one, and a list does not say. **Fixed:** the loop stops at the start
+instead of swiping again; a busy indicator that came and went with nothing
+new is no longer more rows, toward the start or the end; and a search that
+reaches the start says the last swipe there is a pull an app may answer by
+refreshing, in its text and as `may_have_refreshed` in its details. From
+Row 45: the simulator six swipes, no refresh, sixty rows kept; the iPhone
+six and one, against eight and two before; the Pixel 8 Pro (Android 17)
+six and none, sixty rows kept, against seven and two — its swipe that
+reaches the start does not pull, as the emulator's does; the emulator
+eight and one, as before, and said. `feed.sh` asserts the warning and at
+most one pull, and passed on all four.
+
 ## Findings that were not defects
 
 Worth recording because each one closed off an approach that looked obvious.
