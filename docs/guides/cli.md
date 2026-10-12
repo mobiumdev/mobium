@@ -125,6 +125,14 @@ Anything that takes a target takes either:
   script or a test should use. `testid=` is the one that survives a
   translation and a redesign.
 
+A string locator matches part of the words, in any case: `text=Internet`
+finds "Network & internet". Put the value in double quotes to match the whole
+of it — `text="Internet"` finds only an element whose text is Internet, in
+any case, so Android's capitals still match — which is what a wait after a
+tap wants, since a part of a word on the screen being left would meet it at
+once. A quoted value may contain commas; `\"` is a quote inside it, and
+`,role=` may follow it: `label="Allow Paste",role=button`.
+
 A locator that matches more than one element is refused, never guessed at;
 append a role — `label=Apps,role=button` — or use a ref. Every action waits
 for its target to be ready before it touches it — [auto-wait](autowait.md) is

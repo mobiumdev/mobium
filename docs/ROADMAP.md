@@ -525,11 +525,11 @@ this is what is not.
      scroll the action takes the element the scroll found, as a ref's does
      (CHALLENGES 261, 267): lists reuse their cells, and a scope resolved
      once is the wrong-row tap again.
-  2. **Exact text in the written form.** A string locator matches a
-     substring, so `text=Internet` was met by "Network & internet" and a
-     wait passed on the screen it was leaving (CHALLENGES 233). The match
-     can already be exact — `map` derives its locators that way — but a
-     caller cannot say so.
+  2. ~~**Exact text in the written form.**~~ Done 2026-10-12, CHALLENGES
+     306: a value in double quotes is matched whole, in any case, with
+     straight and curly quotes alike — `text="Internet"` is not met by
+     "Network & internet" (233) — and an exact locator prints quoted, so
+     what Mobium prints can be pasted back.
   3. **A chosen one among several**: the second Delete, counted in the
      order a person reads the screen. A deliberate pick is not an
      accident, which is what the refusal of an ambiguous locator is for;

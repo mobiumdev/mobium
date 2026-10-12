@@ -26,7 +26,7 @@ func TestAMissUnderOtherWordsNamesTheLocatorThatWorks(t *testing.T) {
 	}
 	loc, _ := uitree.ParseLocator("label=URL")
 	_, err = pickOne(loc, tree)
-	if mobiumerr.CodeOf(err) != mobiumerr.NoSuchElement || !strings.Contains(err.Error(), "but text=URL does") {
+	if mobiumerr.CodeOf(err) != mobiumerr.NoSuchElement || !strings.Contains(err.Error(), `but text="URL" does`) {
 		t.Fatalf("label=URL: %v", err)
 	}
 	if !isNearMiss(err) || matchedNothing(err) {

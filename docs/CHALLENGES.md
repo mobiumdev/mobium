@@ -6518,6 +6518,31 @@ about 105. Every refusal for a dialog in the way now names `app_alert`'s
 `button`, which works on any dialog, an app's own included, and a test ties
 the remedy to the argument.
 
+### 306. A locator printed as exact was pasted back as a part
+
+**Found by:** writing down what a hand-written locator cannot say, for the
+roadmap's locators entry. CHALLENGES 233's wait for `text=Internet` was met
+by "Network & internet" on the screen being left, and 185 had already noted
+"no syntax to ask for the whole of it". The locators `map` derives are exact
+— byte for byte — but a locator printed itself without saying so: a near miss
+suggested `label=Card 8`, an exact match, and pasted back it was a substring
+match again. Reproduced on the Android 15 emulator, on Settings' main screen:
+`mobium wait text=Internet` answered "visible" in 0.75s, on the row "Network
+& internet".
+
+**Fixed:** a value in double quotes is matched whole — `text="Internet"` —
+in any case, since Android draws a button's caption in capitals, and with
+straight and curly quotes alike, since Apple writes Don’t Allow. It may
+contain commas, takes `\"` for a quote, and may be followed by `,role=`. An
+exact or whole locator prints quoted, and parses back to one that matches
+the same. Unquoted is unchanged: a part, in any case, with a whole match
+preferred among several (185). Measured: on the emulator `wait
+'text="Internet"'` timed out on Settings' main screen and was met by the
+Internet row once Network & internet was open, and `text="Discard",role=button`
+pressed DISCARD; on the simulator `text="dialog demo"` found its button by
+label, `text="Dialog"` found nothing, and `label="Don't Allow",role=button`,
+typed straight, pressed the location prompt's Don’t Allow.
+
 ## Findings that were not defects
 
 Worth recording because each one closed off an approach that looked obvious.

@@ -23,34 +23,98 @@ const (
 
 // Locator is a resolvable reference to an element. Exact controls whether
 // string kinds compare by equality or by case-insensitive substring; Role
-// narrows any of the string kinds when both are set.
+// narrows any of the string kinds when both are set. Whole is what a caller
+// asks for by quoting the value: the whole of it, in any case — the derived
+// locators' Exact is byte-for-byte, and Android draws a button's caption in
+// capitals, so a whole caption typed as it reads must still match.
 type Locator struct {
 	Kind  Kind   `json:"kind"`
 	Value string `json:"value"`
 	Exact bool   `json:"exact,omitempty"`
+	Whole bool   `json:"whole,omitempty"`
 	Role  string `json:"role,omitempty"`
 }
 
+// String is the locator as a caller writes it, and parses back to one that
+// matches the same: an exact or whole value is quoted, since unquoted it
+// would match a part. A near miss printed as `label=Card 8` and pasted back
+// was a substring match again.
 func (l Locator) String() string {
-	s := fmt.Sprintf("%s=%s", l.Kind, l.Value)
+	v := l.Value
+	if (l.Exact || l.Whole) && l.stringKind() {
+		v = quoteValue(v)
+	}
+	s := fmt.Sprintf("%s=%s", l.Kind, v)
 	if l.Role != "" && l.Kind != KindRole {
 		s += "," + string(KindRole) + "=" + l.Role
 	}
 	return s
 }
 
+func (l Locator) stringKind() bool {
+	return l.Kind == KindText || l.Kind == KindLabel || l.Kind == KindTestID || l.Kind == KindClass
+}
+
+func quoteValue(v string) string {
+	return `"` + strings.NewReplacer(`\`, `\\`, `"`, `\"`).Replace(v) + `"`
+}
+
+// unquoteValue reads a value that opens with a double quote: what is inside,
+// with \" and \\ for a quote and a backslash, and what follows the closing
+// quote. ok is false with no closing quote.
+func unquoteValue(v string) (inside, rest string, ok bool) {
+	var b strings.Builder
+	for i := 1; i < len(v); i++ {
+		switch v[i] {
+		case '\\':
+			if i+1 < len(v) {
+				i++
+				b.WriteByte(v[i])
+			}
+		case '"':
+			return b.String(), v[i+1:], true
+		default:
+			b.WriteByte(v[i])
+		}
+	}
+	return "", "", false
+}
+
 // ParseLocator reads the "kind=value" form used in ref files and on the CLI.
-// A bare string with no "=" is treated as text.
+// A bare string with no "=" is treated as text. A value in double quotes is
+// matched whole, in any case — `text="Internet"` is not met by "Network &
+// internet", which `text=Internet` is (CHALLENGES 233) — and may contain
+// commas; \" is a quote inside it. Only ",role=" may follow the closing quote.
 func ParseLocator(s string) (Locator, error) {
 	main := s
 	var role string
-	// Only split a trailing ",role=" — values may legitimately contain commas.
-	if i := strings.LastIndex(s, ",role="); i >= 0 {
-		main, role = s[:i], s[i+len(",role="):]
-	}
+	whole := false
 	k, v, ok := strings.Cut(main, "=")
-	if !ok {
-		k, v = string(KindText), main
+	if strings.HasPrefix(s, `"`) {
+		k, v, ok = string(KindText), s, true
+	}
+	if ok && strings.HasPrefix(v, `"`) {
+		inside, rest, closed := unquoteValue(v)
+		if !closed {
+			return Locator{}, mobiumerr.New(mobiumerr.InvalidArgument, "the quoted value in %q has no closing quote", s)
+		}
+		if rest != "" {
+			if !strings.HasPrefix(rest, ",role=") {
+				return Locator{}, mobiumerr.New(mobiumerr.InvalidArgument, "only \",role=\" may follow a quoted value, "+
+					"and %q has %q after it", s, rest)
+			}
+			role = rest[len(",role="):]
+		}
+		v, whole = inside, true
+	} else {
+		// Only split a trailing ",role=" — values may legitimately contain commas.
+		if i := strings.LastIndex(s, ",role="); i >= 0 {
+			main, role = s[:i], s[i+len(",role="):]
+		}
+		k, v, ok = strings.Cut(main, "=")
+		if !ok {
+			k, v = string(KindText), main
+		}
 	}
 	// A role nothing has matches nothing, and a wait for nothing to be
 	// hidden is over at once: `mobium wait role=progressbar --for hidden`,
@@ -67,7 +131,11 @@ func ParseLocator(s string) (Locator, error) {
 		}
 	}
 	switch Kind(k) {
-	case KindText, KindLabel, KindTestID, KindRole, KindClass, KindPath:
+	case KindText, KindLabel, KindTestID, KindClass:
+		return Locator{Kind: Kind(k), Value: v, Whole: whole, Role: role}, nil
+	case KindRole, KindPath:
+		// Quotes change nothing here: a role is a name, and a path is
+		// compared whole already.
 		return Locator{Kind: Kind(k), Value: v, Role: role}, nil
 	default:
 		return Locator{}, mobiumerr.New(mobiumerr.InvalidArgument, "unknown locator kind %q (want text, label, testid, role, class or path)", k)
@@ -273,6 +341,24 @@ func hasNamedRole(n *Node, role string, clickableFallback bool) bool {
 	return false
 }
 
+// field compares one of a node's strings with the value, as the locator asks:
+// whole and in any case when quoted, else byte for byte when Exact, else a
+// part in any case.
+//
+// A whole value also takes straight and curly quotes as one: Apple writes
+// Don’t Allow, and a caller types Don't Allow — app_alert's button matches
+// them alike for the same reason (CHALLENGES 305).
+func (l Locator) field(s string) bool {
+	if l.Whole {
+		return l.Value != "" && strings.EqualFold(foldQuotes(strings.TrimSpace(s)), foldQuotes(strings.TrimSpace(l.Value)))
+	}
+	return match(s, l.Value, l.Exact)
+}
+
+var curlyQuotes = strings.NewReplacer("\u2019", "'", "\u2018", "'", "\u201c", "\"", "\u201d", "\"")
+
+func foldQuotes(s string) string { return curlyQuotes.Replace(s) }
+
 func match(field, value string, exact bool) bool {
 	if value == "" {
 		return false
@@ -290,17 +376,17 @@ func (l Locator) Matches(n *Node) bool {
 	}
 	switch l.Kind {
 	case KindText:
-		return match(n.Text, l.Value, l.Exact)
+		return l.field(n.Text)
 	case KindLabel:
-		return match(n.Label, l.Value, l.Exact) || (namedByHint(n) && match(n.Hint, l.Value, l.Exact))
+		return l.field(n.Label) || (namedByHint(n) && l.field(n.Hint))
 	case KindTestID:
 		// "submit_btn" should match "com.example:id/submit_btn", so compare
 		// the short form too.
-		return match(n.TestID, l.Value, l.Exact) || match(n.ShortTestID(), l.Value, l.Exact)
+		return l.field(n.TestID) || l.field(n.ShortTestID())
 	case KindRole:
 		return HasRole(n, l.Value)
 	case KindClass:
-		return match(n.Class, l.Value, l.Exact) || match(n.ShortClass(), l.Value, l.Exact)
+		return l.field(n.Class) || l.field(n.ShortClass())
 	case KindPath:
 		return n.Path == l.Value
 	}
@@ -328,7 +414,7 @@ func (l Locator) Resolve(t *Tree) []*Node {
 	t.Walk(func(n *Node) bool {
 		if l.Matches(n) {
 			out = append(out, n)
-			if l.Kind == KindTestID && !l.Exact && (n.TestID == l.Value || n.ShortTestID() == l.Value) {
+			if l.Kind == KindTestID && !l.Exact && !l.Whole && (n.TestID == l.Value || n.ShortTestID() == l.Value) {
 				exact = append(exact, n)
 			}
 		} else if l.labelOnly(n) {
@@ -379,7 +465,7 @@ func (l Locator) Resolve(t *Tree) []*Node {
 	// prompt has "Allow Paste" and "Don’t Allow Paste", and label=Allow Paste
 	// found both — with a remedy, ",role=button", that could not tell two
 	// buttons apart, and no syntax to ask for the whole of it (CHALLENGES 185).
-	if !l.Exact && len(kept) > 1 {
+	if !l.Exact && !l.Whole && len(kept) > 1 {
 		var whole []*Node
 		for _, n := range kept {
 			if l.wholeMatch(n) {
@@ -447,7 +533,7 @@ func (l Locator) labelOnly(n *Node) bool {
 	if l.Role != "" && !HasRole(n, l.Role) {
 		return false
 	}
-	return match(n.Label, l.Value, l.Exact)
+	return l.field(n.Label)
 }
 
 // containsAny reports whether any of nodes is a descendant of n.

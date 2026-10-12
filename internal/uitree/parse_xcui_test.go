@@ -476,8 +476,8 @@ func TestIOSSwitchRowIsOneEntryAimedAtItsToggle(t *testing.T) {
 	// By its name now: the row's words, a button inside the switch, are the
 	// switch's own content to a locator (CHALLENGES 244), so label=Reduce
 	// Motion is one match where it was two and the test id was needed.
-	if got := e.Locator.String(); got != "label=Reduce Motion" {
-		t.Errorf("locator %s, want label=Reduce Motion", got)
+	if got := e.Locator.String(); got != `label="Reduce Motion"` {
+		t.Errorf(`locator %s, want label="Reduce Motion"`, got)
 	}
 	// And every locator on the screen still resolves to its own node.
 	for _, m := range tree.Map() {
