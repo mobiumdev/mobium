@@ -31,7 +31,7 @@ $ mobium --version
 mobium version 0.1.0-dev
 
 $ mobium devices
-emulator-5554                          device     (android emulator, model: sdk_gphone64_arm64)
+emulator-5554                          device     (android emulator, model: sdk_gphone64_arm64, Android 15 (API 35), navigation: gestures)
 ```
 
 (Trimmed: the Mac also listed its iOS simulators, shut down, and a phone.)

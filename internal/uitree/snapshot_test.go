@@ -969,14 +969,19 @@ func TestABusyIndicatorIsAProgressbar(t *testing.T) {
 // value: on the Pixel 8 Pro neither of MobiumApp's sliders was in map —
 // Android marks a seek bar neither clickable nor scrollable — and each one's
 // text was its progress, "5.0" for a Volume the app held at 50.
-// CHALLENGES 227.
+// CHALLENGES 227. Said to be in its own steps, which are not the app's
+// number: told "2.0" for a Volume of 20, an agent decided the slider ran to
+// 10 (CHALLENGES 302).
 func TestAnAndroidSeekBarMapsAsASlider(t *testing.T) {
 	tree := loadTree(t, "mobiumapp-slider-uia2.xml")
 	lines := map[string]bool{}
 	for _, e := range tree.Map() {
 		lines[strings.TrimPrefix(e.Line(), e.Ref+" ")] = true
+		if e.Role == "slider" && !e.ValueSteps {
+			t.Errorf("%s: a seek bar's value is not marked as its own steps", e.Line())
+		}
 	}
-	for _, want := range []string{"Volume (slider, 5.0)", "Balance (slider, 64.0)"} {
+	for _, want := range []string{"Volume (slider, 5.0 in its own steps)", "Balance (slider, 64.0 in its own steps)"} {
 		if !lines[want] {
 			t.Errorf("the Slider Demo does not map %q: %v", want, lines)
 		}
@@ -1192,5 +1197,24 @@ func TestMapLeavesOutTheGrayBoxMailbox(t *testing.T) {
 	}
 	if len(tr.Map()) != 1 {
 		t.Errorf("map = %+v, want only Refresh", tr.Map())
+	}
+}
+
+// An iOS slider's value is the app's own — "80%", "1.2" — and is not marked
+// as steps: only Android's seek bar reports a count of its own.
+func TestAnIOSSliderValueIsTheApps(t *testing.T) {
+	tree := loadIOS(t, "ios26-icecubes-display-settings.xml")
+	found := false
+	for _, e := range tree.Map() {
+		if e.Role != "slider" {
+			continue
+		}
+		found = true
+		if e.ValueSteps || strings.Contains(e.Line(), "own steps") {
+			t.Errorf("%s: an iOS slider's value is marked as steps", e.Line())
+		}
+	}
+	if !found {
+		t.Fatal("the fixture maps no slider: the test proves nothing")
 	}
 }

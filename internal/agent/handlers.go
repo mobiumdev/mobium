@@ -466,11 +466,17 @@ func (h *Handlers) devices(ctx context.Context) (*ToolsCallResult, error) {
 		}
 		// The navigation mode decides what an edge swipe is, so it is worth
 		// one read per ready device. docs/BACK.md.
-		nav := ""
+		nav, osv := "", ""
 		if d.State == "device" {
 			if adb, err := device.New(d.Serial); err == nil {
 				nav, _ = adb.NavigationMode(ctx)
+				// Which Android it runs, as an iOS device's runtime says
+				// which iOS (CHALLENGES 304).
+				osv, _ = adb.OSVersion(ctx)
 			}
+		}
+		if osv != "" {
+			line += ", " + osv
 		}
 		if nav != "" {
 			line += ", navigation: " + nav
@@ -478,7 +484,7 @@ func (h *Handlers) devices(ctx context.Context) (*ToolsCallResult, error) {
 		lines = append(lines, line+")")
 		view.Devices = append(view.Devices, DeviceView{
 			ID: d.Serial, Platform: "android", State: d.State,
-			Model: d.Model, Emulator: d.Emulator, Navigation: nav,
+			Model: d.Model, Runtime: osv, Emulator: d.Emulator, Navigation: nav,
 		})
 	}
 
@@ -574,14 +580,16 @@ func (h *Handlers) mapScreen(ctx context.Context, args map[string]interface{}) (
 
 	// A popover hides everything behind it, so a map with one up is short or
 	// empty for a reason the caller cannot see from the list alone.
+	// The notes go in the structured answer as well as the text: an MCP
+	// client may hand its model only the structured one — Claude Code does
+	// — and a note in the text alone never reached an agent (CHALLENGES 303).
+	for _, note := range []string{popoverNote(tree), inferredNote(tree), h.lockedNote(ctx, s, tree), loadingNote(tree)} {
+		if note != "" {
+			view.Notes = append(view.Notes, note)
+		}
+	}
 	withNote := func(text string) string {
-		if note := popoverNote(tree); note != "" {
-			text += "\n" + note
-		}
-		if note := inferredNote(tree); note != "" {
-			text += "\n" + note
-		}
-		if note := h.lockedNote(ctx, s, tree); note != "" {
+		for _, note := range view.Notes {
 			text += "\n" + note
 		}
 		return text
@@ -607,6 +615,19 @@ func (h *Handlers) mapScreen(ctx context.Context, args map[string]interface{}) (
 		return Result(withNote("No actionable elements found"), view), nil
 	}
 	return Result(withNote(strings.Join(table.lines, "\n")), view), nil
+}
+
+// loadingNote says a list on screen is still loading what follows its last
+// row, or "" when none is. Swiped and mapped, a feed loading its next page
+// read as ended at row 20 — two agents in three answered 20 for a feed of 60
+// — where app_scroll_to waits the indicator out (CHALLENGES 223, 303).
+func loadingNote(tree *uitree.Tree) string {
+	c := scrollContainer(tree)
+	if c == nil || !busyIn(tree, c) {
+		return ""
+	}
+	return "a list on this screen is still loading what follows its last row, so it may not have ended " +
+		"where this map does — app_scroll_to waits for it to load, or map again once it has"
 }
 
 // lockedNote says a map is of the lock screen, or "" when it is not. On a

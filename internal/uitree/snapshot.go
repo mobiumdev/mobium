@@ -43,6 +43,8 @@ type Entry struct {
 	// everything else. A string because it is the app's: iOS reports
 	// "80%" or "1.2", whatever the app made of the position.
 	Value string `json:"value,omitempty"`
+	// ValueSteps is Node.ValueSteps: Value is a seek bar's own steps.
+	ValueSteps bool `json:"value_steps,omitempty"`
 	// Covered names a control drawn over every point of the element, so a
 	// tap on it is refused (AimAt's Blocker), and is empty otherwise. map
 	// listed Discover's category chips under Pocket Casts' search results,
@@ -72,7 +74,9 @@ func (e Entry) Line() string {
 	if e.Disabled {
 		states = append(states, "disabled")
 	}
-	if e.Value != "" {
+	if e.Value != "" && e.ValueSteps {
+		states = append(states, e.Value+" in its own steps")
+	} else if e.Value != "" {
 		states = append(states, e.Value)
 	}
 	if e.Covered != "" {
@@ -392,7 +396,7 @@ func (t *Tree) Map() []Entry {
 			Node:     n.node,
 		}
 		if e.Role == "slider" || e.Role == "adjustable" {
-			e.Value = n.node.Value
+			e.Value, e.ValueSteps = n.node.Value, n.node.ValueSteps
 		}
 		// Only for things that have a state to report. The platform says
 		// which: Android marks them `checkable`, and the iOS parser sets the

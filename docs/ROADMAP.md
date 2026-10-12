@@ -507,6 +507,15 @@ this is what is not.
 
 ## Under consideration
 
+- **Everything an agent must act on, in the structured answer**
+  (written down 2026-10-11). Claude Code hands its model a tool's
+  structured answer and not its text, so a remark Mobium makes only in the
+  text never reaches an agent there: map's notes did not until CHALLENGES
+  303, nor `app_fill`'s position (302). The rest of the surface has not
+  been gone through: every `Result` whose text says something its view
+  does not is a candidate. An evaluation run grading agents on MobiumApp is
+  what found it, and is the way to measure each one.
+
 - **Devices served concurrently by one daemon.** Today a call holds the
   daemon's lock for its whole length, so two devices on one daemon go at the
   slower one's pace: an emulator's 15 `map` calls took 22.3s beside a

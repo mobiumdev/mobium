@@ -32,6 +32,9 @@ type ElementView struct {
 	// Value is what a slider reads, as the app states it, and absent for
 	// everything else.
 	Value string `json:"value,omitempty"`
+	// ValueScale says what Value is counted in when it is not the app's own
+	// number: an Android seek bar's steps, whose maximum is not reported.
+	ValueScale string `json:"value_scale,omitempty"`
 	// Covered names a control drawn over all of the element, which a tap
 	// would be refused for, and is absent otherwise.
 	Covered string `json:"covered,omitempty"`
@@ -64,6 +67,10 @@ type MapView struct {
 	Device   string        `json:"device"`
 	// Diff is what changed since the last map, when diff was asked for.
 	Diff *MapDiffView `json:"diff,omitempty"`
+	// Notes are what map says about the screen beyond its elements: a
+	// popover hiding what is behind it, a screen read by geometry, a lock
+	// screen, a list still loading. The text has them too.
+	Notes []string `json:"notes,omitempty"`
 }
 
 // DeviceView is one attached device or simulator.
@@ -104,6 +111,12 @@ type ActionView struct {
 	Cover *CoverView `json:"cover,omitempty"`
 	// Value is what a slider reads after app_fill moved it.
 	Value string `json:"value,omitempty"`
+	// Position is where app_fill moved a slider to, 0 to 1 — the caller's
+	// own scale, which the reading above may not be.
+	Position *float64 `json:"position,omitempty"`
+	// ValueScale is ElementView's: what Value is counted in, when not the
+	// app's number.
+	ValueScale string `json:"value_scale,omitempty"`
 }
 
 // ScreenshotView is the result of app_screenshot when written to disk.
@@ -138,7 +151,7 @@ type ContextView struct {
 
 // elementView converts a mapped entry to its wire shape.
 func elementView(e uitree.Entry) ElementView {
-	return ElementView{
+	v := ElementView{
 		Ref:   e.Ref,
 		Label: e.Label,
 		Role:  e.Role,
@@ -155,7 +168,16 @@ func elementView(e uitree.Entry) ElementView {
 		Value:    e.Value,
 		Covered:  e.Covered,
 	}
+	if e.ValueSteps {
+		v.ValueScale = seekBarSteps
+	}
+	return v
 }
+
+// seekBarSteps is what an Android seek bar's value is counted in, said
+// beside it in map and app_fill (CHALLENGES 302).
+const seekBarSteps = "the seek bar's own steps — Android does not report their maximum, so this is not a " +
+	"percentage or the app's number; the app's own screen says what it holds"
 
 func boundsView(r uitree.Rect) BoundsView {
 	return BoundsView{X1: r.X1, Y1: r.Y1, X2: r.X2, Y2: r.Y2}
