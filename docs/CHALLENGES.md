@@ -4908,6 +4908,18 @@ refused before anything moves. Measured on the simulator and on the iPhone
 15 Plus, where the check found the owner's Font Scaling at 1.5 and put it
 back there.
 
+**Measured since, 2026-10-13: nothing says where the thumb is.** "Nothing in
+the tree says" was the tree; WebDriverAgent was asked directly
+(`docs/probes/slider-attributes-ios.sh`, read only, iPhone 17 Pro
+simulator). XCUITest's `normalizedSliderPosition` is not among its
+attributes. It has `minValue` and `maxValue`, and they do not stand in for
+one: Settings' Larger Text, a UIKit slider, reads `27%` from 0 to 11 — three
+of eleven stops, its value UIKit's default percentage — while Ice Cubes'
+SwiftUI sliders read 0 to 1 whatever their bounds, with the app's own text
+as the value, `100%` for a scale of 1.0 and `1.2` for line spacing. So a
+fill from partway still cannot be corrected, and filling 0 or 1 first stays
+the caller's way to land exactly.
+
 ### 220. A menu item below the screen's edge was "on screen already"
 
 **Found by:** Ice Cubes' long-press menu on a post, taller than the screen:
