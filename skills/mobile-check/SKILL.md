@@ -21,7 +21,7 @@ What the app is built with decides how to reach it:
 | Native (Android SDK, Jetpack Compose, UIKit, SwiftUI) | `map` and act — the default |
 | Cross-platform that renders native views (React Native) | the same as native: it renders real native views. Use the `@ref` from `map`, not a hand-written `label=` or `testid=`: one testID repeats across several views |
 | Hybrid (a WebView inside the app) | switch context into the WebView — [Hybrid apps](#hybrid-apps-webviews) |
-| A page in Chrome or Safari, or a PWA — including one from the Play Store (a Trusted Web Activity) | the same contexts: the page is `WEBVIEW_…` — pick it by the URL `contexts` prints, not by its name. `launch` of an installed PWA's package says what it is; Chrome draws it, so `current` names Chrome. On iOS act from `NATIVE_APP` — taps in Safari's or a home-screen web app's page are refused. On Android, a refusal saying Chrome stopped reporting its WebView means no tap can be placed in that page: read it, and say so |
+| A page in Chrome or Safari, or a PWA — including one from the Play Store (a Trusted Web Activity) | the same contexts: the page is `WEBVIEW_…` — pick it by the URL `contexts` prints, not by its name. `launch` of an installed PWA's package says what it is; Chrome draws it, so `current` names Chrome. On iOS a tap in Safari's or a home-screen web app's page is placed from text the page and the native tree both report, and lands; where it cannot be placed it is refused, and `NATIVE_APP` reaches the same elements. On Android, a refusal saying Chrome stopped reporting its WebView means no tap can be placed in that page: read it, and say so |
 | Cross-platform that paints (Flutter) | the same as native: Flutter publishes a semantics tree, and `map` reads it. Its text is the label, not the text — use `label=`; a `Semantics(identifier:)` is a `testid=`. A widget with no semantics (a custom painting, an icon with no tooltip) cannot be named: say so rather than retrying |
 
 If you need to test a *website* — tabs, browser sessions, a desktop browser —
@@ -57,9 +57,10 @@ mobium devices
 # emulator-5554   device   (android emulator, model: sdk_gphone64_arm64, Android 15 (API 35), navigation: gestures)
 ```
 
-If nothing is listed, the user needs to start an emulator or simulator, or plug
-in a phone (Android with USB debugging on; an iPhone trusted and unlocked) —
-you cannot do it for them from mobium. Say so rather than retrying.
+If nothing is listed, an emulator or simulator can be started with `mobium boot
+<avd-or-simulator-name>`, which answers once it has booted; a phone has to be
+plugged in by the user (Android with USB debugging on; an iPhone trusted and
+unlocked). Say so rather than retrying.
 
 ## Commands
 

@@ -29,7 +29,7 @@ it was driven once, with the result written down below, and nothing re-runs it.
 
 | Type | Driven | Where |
 | --- | --- | --- |
-| Native | Android: Settings, Calculator, Clock, Wikipedia, F-Droid, Aegis, and Seal (Jetpack Compose). iOS: Settings, Wikipedia and NetNewsWire from the App Store | checked in — most of [checks/](checks/); `third-party-app.sh`, `compose-app.sh`, `netnewswire-ios.sh` for the apps nobody at Google or Apple wrote |
+| Native | Android: Settings, Calculator, Clock, Wikipedia, F-Droid, Aegis, and Seal (Jetpack Compose). iOS: Settings; Wikipedia from the App Store on an iPhone; NetNewsWire, Ice Cubes (SwiftUI), Pocket Casts and Kiwix on a simulator and an iPhone | checked in — most of [checks/](checks/); `third-party-app.sh`, `compose-app.sh`, `third-party-app-ios.sh`, `netnewswire-ios.sh`, `icecubes-ios.sh`, `pocketcasts-ios.sh` and `kiwix-ios.sh` for the apps nobody at Google or Apple wrote |
 | Hybrid | Wikipedia's articles, and MobiumApp's WebView screens, on both platforms and on real phones | checked in — `third-party-app.sh`, `mobium-app.sh`, `web-type.sh`, `web-actionability.sh`, `web-storage.sh` |
 | Mobile web | Safari on iOS; Chrome on Android, emulator and the Pixel 8 Pro | checked in — `chrome.sh` (read, a tap counted by the page, a link followed), `ios-webview.sh`, `orientation.sh`, `shake.sh` |
 | Progressive web app | Squoosh, installed to the home screen on both platforms, and as a WebAPK on the Pixel 8 Pro; OYO Lite, a Trusted Web Activity from the Play Store, on the Pixel 8 Pro | checked in — `pwa.sh`: installed if absent, launched, standalone, and a tap counted by the page — or, on an emulator's shortcut, refused with the reason; `twa.sh`: a Play Store PWA launched, tapped, and backed through |

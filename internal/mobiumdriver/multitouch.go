@@ -141,9 +141,10 @@ const lastLenientAPI = 35
 // is the first finger's down time for the whole gesture. Android 17 accepts
 // the second finger's POINTER_DOWN and then rejects every later event as
 // "Down time went backwards" — including the lifts, so both fingers stay down
-// in the injector's state and **every gesture after it fails** until the
-// UiAutomator2 server restarts. A refusal costs one gesture; a wrong guess
-// costs the session. CHALLENGES 86.
+// in the injector's state and **every gesture after it fails** — a
+// UiAutomator2 restart does not clear it; a two-finger tap, whose lifts
+// carry both pointers, does. A refusal costs one gesture; a wrong guess
+// costs every gesture until someone knows to do that. CHALLENGES 86.
 func (u *UIA2) lateFingerAllowed(ctx context.Context) error {
 	out, err := u.adb.Shell(ctx, "getprop", "ro.build.version.sdk")
 	if err != nil {
@@ -157,7 +158,7 @@ func (u *UIA2) lateFingerAllowed(ctx context.Context) error {
 		return mobiumerr.New(mobiumerr.Unsupported, "UiAutomator2 cannot land a second finger after the first "+
 			"on Android API %d: it gives the second finger its own down time, Android 16 and later reject the "+
 			"rest of the gesture as \"down time went backwards\", and the rejected lifts leave both fingers "+
-			"down, so every later gesture would fail until the session restarts. Measured working on Android "+
+			"down, so every later gesture would fail, a restart not clearing it, until a two-finger tap. Measured working on Android "+
 			"15 and failing on 17; 16 is refused unmeasured. Multi-finger taps, where the fingers land "+
 			"together, work (app_tap with fingers)", api).
 			WithRemedy("run press and tap or press and drag on Android 15 or earlier; use app_tap with fingers for taps of several fingers").
@@ -193,8 +194,8 @@ func (w *WDA) MultiTap(ctx context.Context, fingers []Point) error {
 var errLateFinger = mobiumerr.New(mobiumerr.Unsupported, "WebDriverAgent cannot land a second finger after "+
 	"the first: XCTest adds a zero-length touch at the second finger's target at the start of the gesture, "+
 	"so the target would be touched twice — once before the press it belongs to. Multi-finger taps work "+
-	"(app_tap with fingers); press and tap and press and drag work on Android").
-	WithRemedy("run press and tap or press and drag on an Android device; on iOS use app_tap with fingers for taps of several fingers")
+	"(app_tap with fingers); press and tap and press and drag work on Android 15 or earlier").
+	WithRemedy("run press and tap or press and drag on an Android device of Android 15 or earlier; on iOS use app_tap with fingers for taps of several fingers")
 
 func (w *WDA) PressTap(ctx context.Context, hold, tap Point, lead time.Duration) error {
 	return errLateFinger
