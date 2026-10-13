@@ -6736,6 +6736,27 @@ simulator. MobiumTV has no dialog of three buttons; the check returns
 before the buttons are counted, so the two-button dialog takes the same
 line.
 
+### 314. A recording wrote locators that named less than `map` had, and refs
+
+**Found by:** writing down a recording as code (ROADMAP, #202) and reading
+the recorder's `target` for what it would emit. Two things, both measured
+after: `map` derives every native locator as the whole value and checks it
+names one element so (`uitree.Derive`), and the inspector rebuilt it
+without `Exact`. So it recorded `text=Welcome`, which "Welcome back" meets
+too: the race of CHALLENGES 233, written into a test by the tool meant to
+write tests. And a page element with no id or `data-testid` had no locator
+at all: `map` derived only a CSS selector, and the recorder fell back to
+the element's ref, which names it on that screen only. That is most of a
+real page's links: example.com's "Learn more" had only `@e1`. The guide
+said a recording was "never by ref". **Fixed:** the recorder keeps
+`Exact`, so a recording quotes each locator (`testid="username"`), and
+`map` gives a page element with no id the locator its whole text names it
+by, narrowed by role where the text names several, checked against the
+page as a locator is resolved (#204). On the iPhone 17 Pro simulator, in
+Safari: example.com's link mapped as `text="Learn more"`, a tap by it went
+to iana.org's page, and the inspector, driven through its own page's
+calls, showed that target and recorded `{"tap": "text=\"Learn more\""}`.
+
 ## Findings that were not defects
 
 Worth recording because each one closed off an approach that looked obvious.

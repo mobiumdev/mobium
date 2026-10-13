@@ -617,14 +617,12 @@ this is what is not.
   5. **The file written as it grows**, for a person who records into an
      editor, rather than downloaded at the end.
 
-  Two things to measure before any of it, both read from
-  `internal/inspect/inspect.go`'s `target` and neither yet run.
-  - It falls back to the element's ref when `map` gave no locator, and a
-    ref names an element on one screen only. The guide says a recording
-    is "never by ref".
-  - It rebuilds the locator without `Exact`, so a quoted locator from
-    `map` (CHALLENGES 306) may be recorded unquoted, matching part of a
-    text.
+  Two things to measure before any of it, both done 2026-10-12
+  (CHALLENGES 314): a recording dropped `Exact`, so `text=Welcome` was
+  recorded for an element `map` had named whole, and a page element with
+  no id or test id, most of a real page's links, had no locator and was
+  recorded by its ref. Each locator is now recorded quoted, and such an
+  element gets its whole text from `map`, narrowed by role where needed.
 
   6. **Touches made on the device itself, recorded.** How the touch is
      caught differs by device, but what it becomes does not: a locator

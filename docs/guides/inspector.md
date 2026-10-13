@@ -81,13 +81,23 @@ action is a step. Recorded on the Login Demo:
 ```
 
 (Spaced for reading.) **Download test** saves it as `recorded.test.json`, in
-the step shorthand and by locator, never by ref. It runs as it is:
+the step shorthand and by locator. It runs as it is:
 
 ```
 $ mobium test recorded.test.json
   ok    [default · emulator-5554] recorded.test.json › recorded (8.5s)
 1 passed (8.5s)
 ```
+
+Since 2026-10-12 a recording quotes each locator — `testid="username"`,
+`text="Welcome"` — because `map` derives every one as the whole value and
+checks that it names one element so; the run above predates that, and an
+unquoted `text=Welcome` is met by "Welcome back" too. A page element with
+no id or test id is recorded by its whole text, narrowed by its role where
+the text names several: example.com's link records as `text="Learn more"`.
+Only a page element nothing names alone, not even with its role, is recorded
+by its ref, which names it on that screen only — replace it before running
+the test.
 
 A recording keeps what you typed, the password included; that is the demo
 account's here, and worth remembering before recording against your own.

@@ -191,7 +191,11 @@ func target(e agent.ElementView) string {
 	if e.Locator == nil {
 		return e.Ref
 	}
-	return uitree.Locator{Kind: uitree.Kind(e.Locator.Kind), Value: e.Locator.Value, Role: e.Locator.Role}.String()
+	// Exact carried over: map derives every locator as the whole value and
+	// checks it names one element so, and without it the recording wrote
+	// text=Welcome, which "Welcome back" meets too (CHALLENGES 233).
+	return uitree.Locator{Kind: uitree.Kind(e.Locator.Kind), Value: e.Locator.Value, Exact: e.Locator.Exact,
+		Role: e.Locator.Role}.String()
 }
 
 // Found is what a locator typed on the page resolves to.

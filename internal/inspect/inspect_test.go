@@ -97,3 +97,23 @@ func TestWhatWasDoneIsATestFile(t *testing.T) {
 		t.Errorf("steps\n  %s\nwant\n  %s", got, want)
 	}
 }
+
+// A recorded step names its element by the locator map derived, as map
+// derived it: every one is the whole value, so it is recorded quoted. It was
+// recorded unquoted, and text=Welcome is met by "Welcome back" too.
+func TestARecordedLocatorKeepsItsQuotes(t *testing.T) {
+	for _, c := range []struct {
+		loc  agent.LocatorView
+		want string
+	}{
+		{agent.LocatorView{Kind: "text", Value: "Welcome", Exact: true}, `text="Welcome"`},
+		{agent.LocatorView{Kind: "label", Value: "Delete", Exact: true, Role: "button"}, `label="Delete",role=button`},
+		{agent.LocatorView{Kind: "testid", Value: "loginBtn", Exact: true}, `testid="loginBtn"`},
+		{agent.LocatorView{Kind: "css", Value: `[data-testid="wPass"]`, Exact: true}, `css=[data-testid="wPass"]`},
+	} {
+		loc := c.loc
+		if got := target(agent.ElementView{Ref: "@e3", Locator: &loc}); got != c.want {
+			t.Errorf("%+v recorded as %s, want %s", c.loc, got, c.want)
+		}
+	}
+}
