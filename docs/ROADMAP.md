@@ -544,10 +544,14 @@ this is what is not.
 
   All three are asserted by `docs/checks/locators.sh` on MobiumApp's Table
   Demo, on both platforms.
-  4. **CSS selectors, and text, inside a WebView**, where only refs work
-     today: CSS is the page's own way to name an element, `map` already
-     derives a selector for each, and matching would go through the same
-     checks.
+  4. ~~**CSS selectors, and text, inside a WebView**~~ Done 2026-10-12:
+     `css=` with an optional frame path, and text, label, testid, role and
+     class matched against the page map, quotes and `,nth=` included; the
+     element found goes through every web action's checks, and `find`
+     answers from the page (CHALLENGES 312). Checked on MobiumApp's
+     Actionability and Frames pages on the Android 15 emulator and the
+     iPhone 17 Pro simulator, cross-origin frames included. `wait` inside
+     a WebView is still refused — the next step for a test file in a page.
   5. **An XPath over the platform's own tree, only once an app needs
      it** — evaluated by Mobium, so the checks still apply, and refused on
      a platform it was not written for. XPath is what the neutral kinds

@@ -150,6 +150,15 @@ not move with rows kept off screen; past the last, nothing matches. It comes
 last, after any `,role=`. It is brittle, since a row added above moves it:
 prefer `within` where a row says which.
 
+Inside a WebView, after `mobium context WEBVIEW_…`, a locator matches what
+`map` reads of the page: `text=` and `label=` an element's accessible name,
+`testid=` its `data-testid` or `id`, `role=` its role — quotes and `,nth=` as
+above, counted down the page. `css=` takes a CSS selector: `mobium tap
+'css=button.save'`, with a frame's path before it as `map` prints one,
+`'css=iframe#f >> button'`. Only what `map` lists can be named, since that is
+what an action can touch. `within` is for native screens; a selector says
+what is inside what.
+
 A locator that matches more than one element is refused, never guessed at;
 append a role — `label=Apps,role=button` — or use a ref. Every action waits
 for its target to be ready before it touches it — [auto-wait](autowait.md) is

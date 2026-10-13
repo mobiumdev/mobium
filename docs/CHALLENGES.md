@@ -6690,6 +6690,29 @@ for an element that is there but off screen times out saying so and naming
 Table Demo: Item 25 at y 5307, `--for visible` refused "off screen",
 `--for hidden` passed, and after `scroll-to` visible passed.
 
+### 312. `find` inside a WebView answered from the native screen
+
+**Found by:** giving WebViews locators (ROADMAP, locators item 4) and
+checking them on MobiumApp's Actionability and Frames pages, each tap
+judged by what the page said it reached. With a WebView's context
+selected, every action named the page's element, but `find role=button`
+listed the app's own Back button first and then the page's buttons as
+the platform's accessibility saw them: `app_find` never asked which
+context was selected, read the native screen, and gave its refs. The
+inspector's Find goes through `app_find`, so its count of matches was
+the native screen's too, and a ref find handed out was not the one `map`
+would. **Fixed:** in a WebView `find` matches the page's elements by the
+rules an action uses and gives each the ref `map` gives it; a ref from
+`find` reached the same button on the emulator and the simulator.
+
+Two refusals there said less than they knew. Three "Tap me" buttons, one
+per frame, were refused as `"Tap me" (button)` three times, and now each
+names its frame. And `css=#sameBtn`, a selector written for a frame's own
+document, was "no element … app_map lists what it has". The button is
+there, in `iframe#sameFrame`. A selector without its frame names only
+the page's own elements, so the refusal, and `find`'s answer, now give
+the path that reaches it: `css=iframe#sameFrame >> #sameBtn`.
+
 ## Findings that were not defects
 
 Worth recording because each one closed off an approach that looked obvious.

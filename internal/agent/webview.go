@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/mobiumdev/mobium/internal/mobiumdriver"
 	"github.com/mobiumdev/mobium/internal/mobiumerr"
+	"sort"
 	"strings"
 	"time"
 
@@ -319,7 +320,40 @@ func (h *Handlers) mapWeb(ctx context.Context, s *session) (*ToolsCallResult, er
 	if err != nil {
 		return nil, err
 	}
+	return h.listWeb(ctx, s, els, unreached, nil)
+}
 
+// findInWeb is app_find inside a WebView: the page's elements a locator
+// matches, each by the ref app_map gives it. Every element still gets its
+// ref, so a ref find hands out is the one map would. It answered from the
+// native screen before, and so listed the app's own Back button.
+func (h *Handlers) findInWeb(ctx context.Context, s *session, target string) (*ToolsCallResult, error) {
+	els, unreached, err := webview.MapAll(ctx, s.web)
+	if err != nil {
+		return nil, err
+	}
+	idx, hint, err := webIndexes(ctx, s, els, target)
+	if err != nil {
+		return nil, err
+	}
+	keep := map[int]bool{}
+	for _, i := range idx {
+		keep[i] = true
+	}
+	res, err := h.listWeb(ctx, s, els, unreached, keep)
+	if err != nil || len(idx) > 0 {
+		return res, err
+	}
+	text := fmt.Sprintf("No element matches %s in %s", target, s.webCtx)
+	if hint != "" {
+		text += " — " + hint
+	}
+	return Result(text, res.StructuredContent), nil
+}
+
+// listWeb records a ref for each of a page's elements and lists them, or,
+// with keep, only those.
+func (h *Handlers) listWeb(ctx context.Context, s *session, els []webview.Element, unreached int, keep map[int]bool) (*ToolsCallResult, error) {
 	// Bounds are a bonus here, not a precondition. If the page and its host
 	// element disagree about geometry — mobile Safari, where the WebView
 	// covers the chrome too — the refs, labels and roles are still exactly
@@ -336,6 +370,9 @@ func (h *Handlers) mapWeb(ctx context.Context, s *session) (*ToolsCallResult, er
 		ref := fmt.Sprintf("@e%d", i+1)
 		role := e.NeutralRole()
 		table.web[ref] = webRef{Selector: e.Selector(), Label: e.Label, Role: role, Index: i}
+		if keep != nil && !keep[i] {
+			continue
+		}
 
 		label := e.Label
 		if label == "" {
@@ -412,25 +449,19 @@ func (h *Handlers) resolveWeb(ctx context.Context, s *session, target string) (u
 // element's index among the page's map candidates, and the frame that
 // converts page pixels to device pixels.
 func (h *Handlers) findWeb(ctx context.Context, s *session, target string) (uitree.Rect, webview.Element, *webview.Frame, error) {
+	// A locator, not a ref: matched against the page's map now, as a ref's
+	// identity is. It was refused — "locators do not work inside a WebView"
+	// — so a test file, which has no refs, could not touch a page at all
+	// (ROADMAP, locators item 4).
+	if !strings.HasPrefix(target, "@") {
+		return h.findWebByLocator(ctx, s, target)
+	}
 	table, ok := h.refs[s.dev.Serial]
 	if !ok || table.web == nil {
 		return uitree.Rect{}, webview.Element{}, nil, mobiumerr.New(mobiumerr.InvalidArgument, "no map for %s yet — run app_map first", s.webCtx)
 	}
 	ref, ok := table.web[target]
 	if !ok {
-		// A locator is not a ref, and telling someone to re-map will never
-		// help them: the web map hands out refs and matches on the CSS
-		// selector behind each one, so there is nothing for `text=…` to
-		// resolve against. Found driving Wikipedia's article WebView, where
-		// `tap text=Charles Babbage` reported "unknown ref" and reading it
-		// literally sent you back to app_map forever.
-		if !strings.HasPrefix(target, "@") {
-			return uitree.Rect{}, webview.Element{}, nil, mobiumerr.New(mobiumerr.InvalidArgument,
-				"%q is a locator, and locators do not work inside a WebView — "+
-					"use a @ref from app_map (you are in %s; `app_context NATIVE_APP` "+
-					"switches back to the app shell, where locators do work)",
-				target, s.webCtx)
-		}
 		return uitree.Rect{}, webview.Element{}, nil, mobiumerr.New(mobiumerr.InvalidArgument, "unknown ref %s in %s — run app_map again", target, s.webCtx)
 	}
 
@@ -921,4 +952,179 @@ func overlap(a, b uitree.Rect) float64 {
 	}
 	inter := float64(ix * iy)
 	return inter / (float64(area(a)+area(b)) - inter)
+}
+
+// findWebByLocator finds the one element of the page's map a locator names.
+//
+// css= takes a CSS selector, with a frame's path before it as map prints one
+// ("iframe#f >> button"). The other kinds match what the map reads of each
+// element — text and label its accessible name, testid its data-testid or id,
+// role its role, class its tag — by the rules a native locator follows: a
+// part in any case, the whole when quoted, a whole match preferred among
+// several, and ,nth= counted down the page. Only the map's elements can
+// match, since every web action picks its element from that list; one match
+// goes on through the checks every web action makes, and none or several is
+// refused saying what was found.
+func (h *Handlers) findWebByLocator(ctx context.Context, s *session, target string) (uitree.Rect, webview.Element, *webview.Frame, error) {
+	frame, err := h.webFrame(ctx, s)
+	if err != nil {
+		return uitree.Rect{}, webview.Element{}, nil, err
+	}
+	els, err := s.web.Map(ctx)
+	if err != nil {
+		return uitree.Rect{}, webview.Element{}, nil, err
+	}
+	idx, hint, err := webIndexes(ctx, s, els, target)
+	if err != nil {
+		return uitree.Rect{}, webview.Element{}, nil, err
+	}
+	switch {
+	case len(idx) == 0 && hint != "":
+		return uitree.Rect{}, webview.Element{}, nil, mobiumerr.New(mobiumerr.NoSuchElement, "no element of the page "+
+			"in %s matches %s: %s", s.webCtx, target, hint).
+			WithRemedy("the selector with the frame's path first, as app_map prints it")
+	case len(idx) == 0:
+		return uitree.Rect{}, webview.Element{}, nil, mobiumerr.New(mobiumerr.NoSuchElement, "no element of the page "+
+			"in %s matches %s — app_map lists what it has", s.webCtx, target).
+			WithRemedy("app_map for the page's elements, and a locator or ref for one of them")
+	case len(idx) > 1:
+		var names []string
+		for _, i := range idx {
+			if len(names) == 5 {
+				names = append(names, "…")
+				break
+			}
+			// The frame tells apart what reads the same: MobiumApp's three
+			// frames each hold a "Tap me".
+			name := fmt.Sprintf("%q (%s)", els[i].Label, els[i].NeutralRole())
+			if els[i].Frame != "" {
+				name += " in " + els[i].Frame
+			}
+			names = append(names, name)
+		}
+		return uitree.Rect{}, webview.Element{}, nil, mobiumerr.New(mobiumerr.AmbiguousLocator, "%s matches %d elements "+
+			"of the page: %s", target, len(idx), strings.Join(names, ", ")).
+			WithRemedy("narrow it: a role (,role=button), the whole text in quotes, ,nth= for one of them, a css= selector, or a ref from app_map").
+			WithDetail("matches", len(idx))
+	}
+	e := els[idx[0]]
+	rect := frame.ToDevice(e.X, e.Y, e.W, e.H)
+	if rect.Empty() {
+		return uitree.Rect{}, webview.Element{}, nil, mobiumerr.New(mobiumerr.ElementNotReachable, "%s has no on-screen area", target)
+	}
+	return rect, e, frame, nil
+}
+
+// webIndexes is which of a page's elements a locator names, by their index
+// in els: a css= selector, or a locator matched by webMatches with a whole
+// match preferred and ,nth= counted down the page. Several is not refused
+// here; app_find lists them and an action refuses them. When a css= selector
+// matches nothing where it looks but does inside a frame, hint names the
+// path that reaches it.
+func webIndexes(ctx context.Context, s *session, els []webview.Element, target string) (idx []int, hint string, err error) {
+	if sel, ok := strings.CutPrefix(target, "css="); ok {
+		var elsewhere []int
+		if idx, elsewhere, err = webview.MatchCSS(ctx, s.web, els, sel); err != nil {
+			return nil, "", err
+		}
+		hint = framedHint(els, elsewhere, sel)
+	} else {
+		loc, err := uitree.ParseLocator(target)
+		if err != nil {
+			return nil, "", err
+		}
+		if loc.Within != nil || loc.Kind == uitree.KindPath {
+			return nil, "", mobiumerr.New(mobiumerr.Unsupported, "%s cannot name an element "+
+				"inside a WebView: within and path are for native screens — a css= selector says what is inside what", target).
+				WithRemedy("a css= selector, as \"css=li.order:nth-child(3) button\", or a ref from app_map")
+		}
+		for i, e := range els {
+			if webMatches(loc, e) {
+				idx = append(idx, i)
+			}
+		}
+		idx = preferWhole(loc, els, idx)
+		if loc.Nth > 0 {
+			sort.SliceStable(idx, func(a, b int) bool {
+				ea, eb := els[idx[a]], els[idx[b]]
+				if ea.Y != eb.Y {
+					return ea.Y < eb.Y
+				}
+				return ea.X < eb.X
+			})
+			if loc.Nth > len(idx) {
+				idx = nil
+			} else {
+				idx = idx[loc.Nth-1 : loc.Nth]
+			}
+		}
+	}
+	return idx, hint, nil
+}
+
+// framedHint names, for a selector that matched only inside frames, the path
+// that reaches each of up to three of those elements.
+func framedHint(els []webview.Element, elsewhere []int, selector string) string {
+	if len(elsewhere) == 0 {
+		return ""
+	}
+	sel := selector
+	if i := strings.LastIndex(sel, " >> "); i >= 0 {
+		sel = sel[i+len(" >> "):]
+	}
+	sel = strings.TrimSpace(sel)
+	var paths []string
+	for _, i := range elsewhere {
+		if len(paths) == 3 {
+			paths = append(paths, "…")
+			break
+		}
+		if f := els[i].Frame; f != "" {
+			paths = append(paths, "css="+f+" >> "+sel)
+		} else {
+			paths = append(paths, "css="+sel)
+		}
+	}
+	return "it matches in another frame, and a selector names a frame's element with the frame's path first: " +
+		strings.Join(paths, ", ")
+}
+
+// webMatches says whether a page element is one a locator names.
+func webMatches(loc uitree.Locator, e webview.Element) bool {
+	if loc.Role != "" && loc.Kind != uitree.KindRole && e.NeutralRole() != strings.ToLower(loc.Role) {
+		return false
+	}
+	switch loc.Kind {
+	case uitree.KindText, uitree.KindLabel:
+		return loc.MatchesString(e.Label)
+	case uitree.KindTestID:
+		return loc.MatchesString(e.TestID) || loc.MatchesString(e.ID)
+	case uitree.KindRole:
+		return e.NeutralRole() == strings.ToLower(loc.Value)
+	case uitree.KindClass:
+		return loc.MatchesString(e.Tag)
+	}
+	return false
+}
+
+// preferWhole keeps the one whole match among several, as a native locator
+// does (CHALLENGES 185): text=Save over "Save" and "Save draft".
+func preferWhole(loc uitree.Locator, els []webview.Element, idx []int) []int {
+	if len(idx) < 2 || loc.Whole || loc.Exact {
+		return idx
+	}
+	var whole []int
+	for _, i := range idx {
+		v := els[i].Label
+		if loc.Kind == uitree.KindTestID {
+			v = els[i].TestID
+		}
+		if strings.EqualFold(strings.TrimSpace(v), strings.TrimSpace(loc.Value)) {
+			whole = append(whole, i)
+		}
+	}
+	if len(whole) == 1 {
+		return whole
+	}
+	return idx
 }

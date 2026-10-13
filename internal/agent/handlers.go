@@ -918,13 +918,17 @@ func (h *Handlers) text(ctx context.Context, args map[string]interface{}) (*Tool
 }
 
 func (h *Handlers) find(ctx context.Context, args map[string]interface{}) (*ToolsCallResult, error) {
-	dev, driver, err := h.session(ctx, args)
+	s, err := h.sessionFor(ctx, args)
 	if err != nil {
 		return nil, err
 	}
+	dev, driver := s.dev, s.driver
 	raw := stringArg(args, "locator")
 	if raw == "" {
 		return nil, mobiumerr.New(mobiumerr.InvalidArgument, "app_find needs a locator, e.g. \"text=Sign In\"")
+	}
+	if s.web != nil {
+		return h.findInWeb(ctx, s, raw)
 	}
 	loc, err := uitree.ParseLocator(raw)
 	if err != nil {
