@@ -6670,6 +6670,26 @@ reaches the start does not pull, as the emulator's does; the emulator
 eight and one, as before, and said. `feed.sh` asserts the warning and at
 most one pull, and passed on all four.
 
+### 311. `wait --for visible` passed for an element off screen
+
+**Found by:** checking `within` on Ice Cubes' live timeline (CHALLENGES 307),
+where `wait 'label=Aurora 🐌, 2h' --for visible` answered "visible" for a
+post's author at y −728, above the screen. The wait kept any match with a
+size, and iOS keeps a list's rows off screen in the tree with real bounds,
+so "visible" meant "in the tree". Actions were never fooled — they scroll
+to what is off screen, or refuse — but a wait saying visible is read as on
+screen, and `--for hidden` was the same mistake the other way: a row
+scrolled away was never hidden.
+
+**Fixed:** for visible and hidden, a match counts only with its center on
+the screen and inside the part of its list in view, the tests the light
+read and the scroll loop already make. Other conditions — checked, text,
+enabled — still read a match off screen, which iOS reports truly. A wait
+for an element that is there but off screen times out saying so and naming
+`app_scroll_to`. Measured on the iPhone 17 Pro simulator, MobiumApp's
+Table Demo: Item 25 at y 5307, `--for visible` refused "off screen",
+`--for hidden` passed, and after `scroll-to` visible passed.
+
 ## Findings that were not defects
 
 Worth recording because each one closed off an approach that looked obvious.
