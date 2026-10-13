@@ -486,3 +486,18 @@ func TestTheDialogRemedyNamesAButton(t *testing.T) {
 		}
 	}
 }
+
+// What an agent reads of a failed call is the result's text — Claude Code
+// hands it no code and no structured remedy — so the remedy is in the text
+// too, and still apart in the structured half (CHALLENGES 321).
+func TestAnErrorResultsTextCarriesTheRemedy(t *testing.T) {
+	err := mobiumerr.New(mobiumerr.Unsupported, "typed %q and nothing took it", "0.2").
+		WithRemedy("app_swipe from its thumb along its track")
+	r := ErrorResult(err)
+	if !r.IsError || !strings.Contains(r.Content[0].Text, "\nnext: app_swipe from its thumb") {
+		t.Errorf("text %q", r.Content[0].Text)
+	}
+	if p := r.StructuredContent.(mobiumerr.Payload); p.Remedy == "" || strings.Contains(p.Message, "next:") {
+		t.Errorf("structured %+v", p)
+	}
+}

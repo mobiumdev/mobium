@@ -176,8 +176,9 @@ func CallTool(params json.RawMessage, h *Handlers) (interface{}, *Error) {
 }
 
 // ErrorResult is a failed tool call as a result, the one way every front
-// door reports it. The text is unchanged, so an agent reading Content sees
-// what it always has; the structured half carries the code, the remedy and
+// door reports it. The text is the message and, when the message does not
+// say it, the remedy (mobiumerr.Text): an agent is handed a failed call's
+// text alone. The structured half carries the code, the remedy and
 // whether a retry can help, for callers that act on the failure rather than
 // read it. The codes are in docs/guides/cli.md.
 //
@@ -187,7 +188,7 @@ func CallTool(params json.RawMessage, h *Handlers) (interface{}, *Error) {
 // exception types was ever raised against a real daemon (CHALLENGES 91).
 func ErrorResult(err error) ToolsCallResult {
 	return ToolsCallResult{
-		Content:           []Content{{Type: "text", Text: err.Error()}},
+		Content:           []Content{{Type: "text", Text: mobiumerr.Text(err)}},
 		StructuredContent: mobiumerr.PayloadOf(err),
 		IsError:           true,
 	}

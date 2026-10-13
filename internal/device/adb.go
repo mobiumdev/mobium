@@ -720,7 +720,8 @@ func (a *ADB) RuntimePermissions(ctx context.Context, pkg string) (map[string]bo
 	}
 	text := string(out)
 	if strings.Contains(text, "Unable to find package") {
-		return nil, mobiumerr.New(mobiumerr.InvalidArgument, "%s is not installed", pkg)
+		return nil, mobiumerr.New(mobiumerr.InvalidArgument, "%s is not installed", pkg).
+			WithRemedy("app_list_apps lists the installed apps by package id; app_launch takes that id, not the name on the screen")
 	}
 
 	perms := map[string]bool{}
@@ -1113,7 +1114,8 @@ func (a *ADB) AppLocales(ctx context.Context, pkg string) ([]string, error) {
 	// `cmd locale` reports an unknown package in prose and exits 0, so the
 	// message is the only signal there is.
 	if strings.Contains(text, "Unknown package") {
-		return nil, mobiumerr.New(mobiumerr.InvalidArgument, "%s is not installed", pkg)
+		return nil, mobiumerr.New(mobiumerr.InvalidArgument, "%s is not installed", pkg).
+			WithRemedy("app_list_apps lists the installed apps by package id; app_launch takes that id, not the name on the screen")
 	}
 	m := appLocalesRe.FindStringSubmatch(text)
 	if m == nil {
@@ -1144,7 +1146,8 @@ func (a *ADB) SetAppLocales(ctx context.Context, pkg string, tags []string) erro
 		return err
 	}
 	if text := string(out) + string(diag); strings.Contains(text, "Unknown package") {
-		return mobiumerr.New(mobiumerr.InvalidArgument, "%s is not installed", pkg)
+		return mobiumerr.New(mobiumerr.InvalidArgument, "%s is not installed", pkg).
+			WithRemedy("app_list_apps lists the installed apps by package id; app_launch takes that id, not the name on the screen")
 	}
 
 	got, err := a.AppLocales(ctx, pkg)

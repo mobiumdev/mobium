@@ -251,7 +251,9 @@ func (u *UIA2) TypeIntoFocus(ctx context.Context, text string) (*FocusedField, e
 	}
 	after, err := u.FocusedField(ctx)
 	if err != nil || after == nil {
-		return nil, mobiumerr.New(mobiumerr.NotConfirmed, "typed into the focused field and could not read it back")
+		return nil, mobiumerr.New(mobiumerr.NotConfirmed, "typed into the focused field and could not read it back: "+
+			"no field has focus now, as when a form moves to its next field as the text goes in").
+			WithRemedy("read what landed with app_map or app_text before typing again — typing again may type it twice")
 	}
 	if after.Password {
 		if len([]rune(after.Value)) != len([]rune(want)) {
@@ -478,7 +480,9 @@ func (w *WDA) TypeIntoFocus(ctx context.Context, text string) (*FocusedField, er
 	for attempt := 1; ; attempt++ {
 		after, err := w.FocusedField(ctx)
 		if err != nil || after == nil {
-			return nil, mobiumerr.New(mobiumerr.NotConfirmed, "typed into the focused field and could not read it back")
+			return nil, mobiumerr.New(mobiumerr.NotConfirmed, "typed into the focused field and could not read it back: "+
+				"no field has focus now, as when a form moves to its next field as the text goes in").
+				WithRemedy("read what landed with app_map or app_text before typing again — typing again may type it twice")
 		}
 		if after.Value == want {
 			return after, nil
