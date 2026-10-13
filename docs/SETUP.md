@@ -254,8 +254,10 @@ emulator -avd mobium-test    -no-snapshot-save -no-boot-anim &            # 5554
 emulator -avd mobium-test-17 -no-snapshot-save -no-boot-anim -port 5556 & # 5556
 ```
 
-Then pass `--device emulator-5556` to every command, or run each one under
-its own `MOBIUM_SESSION`, or give a client the device option.
+Then pass `--device emulator-5556` to every command, or give a client the
+device option. With two ready, a call that names no device is refused, so
+`MOBIUM_SESSION` alone does not choose one: it gives each run its own daemon
+([parallel runs](#parallel-runs)), and each still names its device.
 
 ### What the images do *not* have
 

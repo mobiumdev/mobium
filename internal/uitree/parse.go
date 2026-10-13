@@ -98,8 +98,10 @@ type Node struct {
 	// same length (CHALLENGES 102).
 	Hint        string
 	ShowingHint bool
-	// Focused is Android's `focused`: this node has input focus. It is how
-	// an action knows the keyboard may be up without asking the device.
+	// Focused is Android's `focused`, and iOS's `focused` since CHALLENGES
+	// 297: this node has input focus. It is how an action knows the keyboard
+	// may be up without asking the device, and how a TV's D-pad press is
+	// read back.
 	Focused bool
 	// Virtual is Android's `drawing-order="0"`: a node an accessibility
 	// provider made up rather than a real View, which a real View's drawing

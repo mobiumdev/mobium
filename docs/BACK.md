@@ -129,7 +129,10 @@ for. MobiumApp stays opted out; the build was not kept.
 
 iOS has no system back. Going back is the app's: a navigation bar's back
 button, and, for a `UINavigationController`, a swipe. Mobium refuses
-`press back` there by design (it is not an event iOS sends).
+`press back` there by design (it is not an event iOS sends); `press back
+--gesture` sends the swipe, starting in the navigation bar, since the
+measurements below found a swipe over a list row taken by the row
+([In Mobium](#in-mobium)).
 
 | | MobiumApp | Control |
 | --- | --- | --- |
