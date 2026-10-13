@@ -1289,7 +1289,9 @@ func GetToolSchemas() []Tool {
 				"cancel button, which iOS moves to the bottom. **button presses one by " +
 				"its caption or its position from 1**, on any dialog, an app's own " +
 				"included; a caption matches in any case and with straight or curly " +
-				"quotes. Every answer says in pressed which button it pressed. " +
+				"quotes. Every answer says in pressed which button it pressed. An " +
+				"Apple TV has no touch, so there every answer is refused naming the " +
+				"remote: move focus with the D-pad and press select. " +
 				"Answering discards the refs from the last app_map, since they named " +
 				"a screen with a dialog over it.",
 			InputSchema: map[string]interface{}{

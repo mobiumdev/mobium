@@ -152,3 +152,25 @@ func TestAppleTVRefusesTouch(t *testing.T) {
 		t.Error("an iOS simulator refuses touch")
 	}
 }
+
+// TestAppleTVAlertIsAnsweredByRemote: app_alert asks before choosing accept,
+// dismiss or a button, and on a TV every one of them is the remote's; a
+// three-button refusal there once named button, which taps (CHALLENGES 313).
+func TestAppleTVAlertIsAnsweredByRemote(t *testing.T) {
+	err := AlertAnsweredByRemote(NewWDA(&device.Simctl{TV: true}))
+	if mobiumerr.CodeOf(err) != mobiumerr.Unsupported || !strings.Contains(err.Error(), "dpad") {
+		t.Errorf("an Apple TV's alert: %v", err)
+	}
+	if e, _ := mobiumerr.As(err); e != nil {
+		e.WithDetail("buttons", []string{"a"})
+	}
+	if e, _ := mobiumerr.As(AlertAnsweredByRemote(NewWDA(&device.Simctl{TV: true}))); e == nil || e.Details["buttons"] != nil {
+		t.Error("a detail added to one refusal was on the next")
+	}
+	if err := AlertAnsweredByRemote(NewWDA(&device.Simctl{})); err != nil {
+		t.Errorf("an iPhone simulator's alert: %v", err)
+	}
+	if err := AlertAnsweredByRemote(&UIA2{}); err != nil {
+		t.Errorf("an Android device's alert: %v", err)
+	}
+}

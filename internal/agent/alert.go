@@ -168,6 +168,18 @@ func (h *Handlers) alertOn(ctx context.Context, s *session, args map[string]inte
 	if treeErr != nil {
 		return nil, treeErr
 	}
+	// A device driven with its remote answers by focus, whichever way was
+	// asked. An Apple TV's three-button dialog was refused naming button,
+	// which taps, and a TV refuses every tap: the remedy sent the caller to
+	// a second refusal. Asked here, before accept, dismiss or a button is
+	// chosen, so every answer on a TV says the same thing (CHALLENGES 313).
+	if err := mobiumdriver.AlertAnsweredByRemote(s.driver); err != nil {
+		if e, ok := mobiumerr.As(err); ok {
+			title := strings.TrimSpace(strings.SplitN(text, "\n", 2)[0])
+			return nil, e.WithDetail("dialog", title).WithDetail("buttons", view.Buttons)
+		}
+		return nil, err
+	}
 	if pressing {
 		return h.pressAlertButton(ctx, s, tree, text, button, view)
 	}
