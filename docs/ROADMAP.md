@@ -564,6 +564,89 @@ this is what is not.
   `ParseLocator` and `Matches`, the clients, `apisurface`, and a check on
   both platforms.
 
+- **A recording as code** (written down 2026-10-12). `mobium inspect`
+  records what a person does on its page and downloads it as a
+  `*.test.json` that `mobium test` runs ([the inspector
+  guide](guides/inspector.md#4-record-a-test)). Someone whose tests live
+  in Go, Python, JavaScript, Java or .NET gets nothing they can paste.
+  Every step is one tool call, and every client has every tool, so this
+  is one table from step to call, not a second recorder. In order:
+  1. **Code in each client's language**, chosen at download: a script, or
+     a test in that language's usual framework. The docs site's five
+     translations of each scenario are the reference to check the table
+     against, and a check runs what it emits on a device.
+  2. **Assertions from the panel**: the element's text, its value, its
+     checked state, as well as that it is shown. Each is a `wait_for` with
+     a condition, so nothing new runs on the device. "Wait for it" is the
+     only one today.
+  3. **A password recorded as a reference.** A fill into a password field
+     is kept as typed today, and the guide only warns of it. It is written
+     as the secret reference below (`secret:NAME`), so the value never
+     reaches the file. This depends on that entry.
+  4. **A target with no locator of its own, scoped**: when `map` derives
+     none that names the element alone, the recorder tries `within` an
+     anchor and then `,nth=`, as a person writing the test would.
+  5. **The file written as it grows**, for a person who records into an
+     editor, rather than downloaded at the end.
+
+  Two things to measure before any of it, both read from
+  `internal/inspect/inspect.go`'s `target` and neither yet run.
+  - It falls back to the element's ref when `map` gave no locator, and a
+    ref names an element on one screen only. The guide says a recording
+    is "never by ref".
+  - It rebuilds the locator without `Exact`, so a quoted locator from
+    `map` (CHALLENGES 306) may be recorded unquoted, matching part of a
+    text.
+
+  6. **Touches made on the device itself, recorded.** How the touch is
+     caught differs by device, but what it becomes does not: a locator
+     step, which runs on both platforms. The hard part is that a touch is
+     a point, matched to the element under it in a read taken just
+     before. If the screen moved in between, the step names the wrong
+     element, which is the replayed-coordinates failure. Measured on
+     2026-10-12 on MobiumApp's Table Demo, each touch judged by what the
+     app said it received (`docs/probes/touch-android.sh`, `touch-sim.swift`):
+     - **The Android 15 emulator**: `adb shell getevent` read the
+       touchscreen's node with no setting changed, and saw a touch sent
+       through the emulator's virtual hardware (the console's `event
+       mouse`) at exactly the point sent. It saw **nothing** of a
+       Mobium tap, which is injected above the kernel, so a recorder
+       never records its own actions twice. The node reports 0 to 32767
+       on each axis, not pixels. `dumpsys input` gives the range scaled
+       to the display (X to 1079.97), which is the conversion to use, and
+       not `wm size`. The point scaled back to 740, 804, inside More.
+       Show taps drew its dot there in a screen recording. `sendevent` is
+       refused (the shell can read the node, not write it), so a test of
+       this needs the console or a finger. Not yet measured: a phone,
+       where the node's range is the panel's, and a turned screen, since
+       the node reports the panel's axes in every orientation.
+     - **The iPhone 17 Pro simulator**, two ways, both from two clicks by
+       hand on the Simulator window, More in Item 2 and Delete in Item 4,
+       both received.
+       1. A Mac event tap, listen-only, which needs no permission for
+          mouse events, saw both clicks with the window under them. In the
+          default window the device's points sat 1:1 at an offset of
+          (27, 80) for the bezel and title bar. A window resized or zoomed
+          changes both, so this route needs a calibration per window.
+       2. The simulator's own log: `simctl spawn <udid> log stream
+          --level debug` has backboardd's `TouchEvents` lines, with each
+          touch's point in the app's coordinates, `{269.33, 304.33}`,
+          and the app it was sent to, down and up. No calibration, and
+          no Mac permission. Both points fell inside the element clicked.
+     - **A real iPhone** (iPhone 15 Plus, iOS 26.6.2, two taps by hand,
+       both received): **when, not where**. The phone's log over
+       `syslog_relay`, which Mobium already captures, carries no
+       backboardd `TouchEvents` lines: they are debug level, and the
+       relay sent info and above (95,224 lines in the round). What it
+       does carry is AttentionAwareness noting each touch's down and up,
+       150 ms apart, with no point. So a recorder there can tell that the
+       person touched, and when, but not what. Refused by name until a
+       point is found. A debug-logging profile would be the next thing
+       to try, and it changes the phone, so it is the owner's to install.
+       `mobium logs` keeps the last 100 lines by default, and the first
+       read of the round lost the touch lines to it: read with
+       `--lines` set high.
+
 - **Everything an agent must act on, in the structured answer**
   (written down 2026-10-11). Claude Code hands its model a tool's
   structured answer and not its text, so a remark Mobium makes only in the
