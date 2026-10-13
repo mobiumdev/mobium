@@ -21,7 +21,10 @@ func newAlertCmd() *cobra.Command {
 			"App, and Android's camera and location prompts While using the app and\n" +
 			"Only this time, so more than one means yes.\n\n" +
 			"--button presses one by its caption or its position from 1, on any\n" +
-			"dialog. Every answer says which button it pressed.",
+			"dialog. Every answer says which button it pressed.\n\n" +
+			"An Apple TV has no touch, so its alert is answered with the remote:\n" +
+			"move focus with `mobium press dpad-left` or `dpad-right`, then press\n" +
+			"select. accept, dismiss and --button say so there.",
 		Example: `  mobium alert                                  # is anything asking? what are its buttons?
   mobium alert accept                           # yes, on a dialog of one or two buttons
   mobium alert dismiss                          # no

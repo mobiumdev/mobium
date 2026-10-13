@@ -36,16 +36,33 @@ func (w *WDA) AlertText(ctx context.Context) (string, error) { return w.w3c.aler
 // along the buttons, and select presses the one that has focus.
 func (w *WDA) AnswerAlert(ctx context.Context, accept bool) error {
 	if w.tv() {
-		return errTVAlert
+		return tvAlertError()
 	}
 	return w.w3c.answerAlert(ctx, accept)
 }
 
-var errTVAlert = mobiumerr.New(mobiumerr.Unsupported, "an Apple TV's alert is answered with its remote — it "+
-	"opens with focus on its cancel button. Move focus along the buttons with app_press dpad-left or "+
-	"dpad-right and press select; back answers with the cancel button").
-	WithRemedy("press dpad-left or dpad-right until the button has focus — each press reports where focus " +
-		"went — then press select")
+// tvAlertError is how an Apple TV's alert is answered, made afresh each time
+// so a caller can add details without changing anyone else's.
+func tvAlertError() *mobiumerr.Error {
+	return mobiumerr.New(mobiumerr.Unsupported, "an Apple TV's alert is answered with its remote — it "+
+		"opens with focus on its cancel button. Move focus along the buttons with app_press dpad-left or "+
+		"dpad-right and press select; back answers with the cancel button").
+		WithRemedy("press dpad-left or dpad-right until the button has focus — each press reports where focus " +
+			"went — then press select")
+}
+
+// AlertAnsweredByRemote is, for a device driven only with its remote, the
+// refusal that says how its alert is answered, and nil for any other. An
+// Apple TV has no touch: WebDriverAgent's accept left its alert up
+// (CHALLENGES 298), and pressing a button by caption is a tap, which a TV
+// refuses. app_alert asks before it chooses between accept, dismiss and a
+// button, so none of its refusals names a way a TV cannot take.
+func AlertAnsweredByRemote(d Driver) error {
+	if w, ok := d.(*WDA); ok && w.tv() {
+		return tvAlertError()
+	}
+	return nil
+}
 
 // SendAlertText types into a prompt's field.
 func (w *WDA) SendAlertText(ctx context.Context, text string) error {

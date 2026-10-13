@@ -8,18 +8,12 @@ this is what is not.
 
 - **Found reviewing the docs evaluation's golden set** (written down
   2026-10-12, read from the code, not yet run on a device):
-  1. **On an Apple TV, a dialog of three or more buttons names a remedy
-     that cannot work.** The refusal says to use `app_alert` with
-     `button` (`internal/agent/alert.go`), and `button` taps the
-     dialog's button, which a TV refuses like every touch
-     (`w3cClient.noTouch`). The tap's refusal then names the D-pad, so
-     it does not loop, but the first remedy is wrong (the rule in
-     CLAUDE.md about remedies). The two-button case is right:
-     `errTVAlert` names the D-pad. `app_alert`'s schema and `mobium
-     alert --help` also say `button` works "on any dialog". Fix: on a
-     device with no touch, name the D-pad in the three-button refusal
-     and refuse `button` with the same words, then check it on the
-     Apple TV simulator.
+  1. ~~**On an Apple TV, a dialog of three or more buttons named a remedy
+     that cannot work.**~~ Done 2026-10-12, CHALLENGES 313: `app_alert`
+     asks the driver whether the device is answered by its remote before
+     choosing accept, dismiss or a button, and on a TV every one of them
+     is refused naming the D-pad, with the dialog's buttons in details.
+     `tv-app.sh` asserts `--button` refused on the Apple TV simulator.
   2. **Nothing says how an Android-derived platform fares**: Wear OS,
      HarmonyOS before 5, Android-based BlackBerry phones. Each runs the
      Android stack Mobium drives, none has been tried, and the docs are

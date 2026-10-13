@@ -6713,6 +6713,29 @@ there, in `iframe#sameFrame`. A selector without its frame names only
 the page's own elements, so the refusal, and `find`'s answer, now give
 the path that reaches it: `css=iframe#sameFrame >> #sameBtn`.
 
+### 313. An Apple TV's dialog of three buttons was refused naming a way a TV refuses
+
+**Found by:** reviewing the docs evaluation's golden set, where two
+reviewers reading `app_alert` for different questions met the same path.
+Since CHALLENGES 305 a dialog of three or more buttons is refused, naming
+`app_alert` with `button` as the remedy, and `button` presses one by
+tapping it. An Apple TV refuses every tap (CHALLENGES 296's `noTouch`), so
+on a TV the first remedy led to a second refusal, the tap's, which named
+the D-pad. It did not loop, but a remedy that cannot work is the failure
+CLAUDE.md's rule on remedies names. A two-button dialog on a TV was
+already right: accept and dismiss were refused naming the D-pad (298).
+`app_alert`'s schema and `mobium alert --help` also said `button` works
+"on any dialog". **Fixed:** `app_alert` asks the driver
+(`mobiumdriver.AlertAnsweredByRemote`) before choosing between accept,
+dismiss and a button, and on a TV all three are refused with the same
+words — move focus with the D-pad, press select — and the dialog's
+buttons in details. The help and the schema say so. On the Apple TV
+simulator (tvOS 26.5) `tv-app.sh` passed with `--button Discard` refused
+naming the remote, and `dialogs.sh` passed unchanged on the iPhone 17 Pro
+simulator. MobiumTV has no dialog of three buttons; the check returns
+before the buttons are counted, so the two-button dialog takes the same
+line.
+
 ## Findings that were not defects
 
 Worth recording because each one closed off an approach that looked obvious.

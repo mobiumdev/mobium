@@ -143,6 +143,9 @@ $M wait "text=Discard" --timeout 15s >/dev/null || fail "select did not open the
 $M alert | grep -q "Discard the draft?" || fail "app_alert does not see the dialog"
 if [ -n "$TVOS" ]; then
   refused "answered with its remote" $M alert accept
+  # --button taps, which a TV refuses; a dialog of three named it as the
+  # remedy, which sent the caller to a second refusal (CHALLENGES 313).
+  refused "answered with its remote" $M alert --button Discard
   moved dpad-right "Discard"
   $M press select >/dev/null
   expect dialogOutcome "Dialog: Discard"
@@ -150,7 +153,7 @@ if [ -n "$TVOS" ]; then
   $M wait "text=Keep" --timeout 15s >/dev/null || fail "select did not open the dialog again"
   $M press back >/dev/null
   expect dialogOutcome "Dialog: Keep"
-  row "dialog" "app_alert sees it, accept is refused; Discard by remote, back is Keep"
+  row "dialog" "app_alert sees it, accept and --button refused; Discard by remote, back is Keep"
 else
   $M alert accept >/dev/null
   expect dialogOutcome "Dialog: Discard"
