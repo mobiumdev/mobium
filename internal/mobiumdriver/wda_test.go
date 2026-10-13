@@ -334,6 +334,45 @@ func TestWDARefusesWhenTheTextNeverLands(t *testing.T) {
 	}
 }
 
+// A control the app draws itself takes no keys at all, and saying iOS
+// dropped one sends the caller to retry what cannot work: MobiumApp's
+// Slider Demo on iOS is a plain Other with no value (CHALLENGES 318). Not
+// for a text field, which an empty read-back leaves to the keystroke rule.
+func TestWDASaysAControlThatTookNoKeysIsNoField(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		switch {
+		case strings.HasSuffix(r.URL.Path, "/attribute/value"):
+			w.Write([]byte(`{"value":null}`))
+		case strings.HasSuffix(r.URL.Path, "/element"):
+			w.Write([]byte(`{"value":{"ELEMENT":"EL1","element-6066-11e4-a52e-4f735466cecf":"EL1"}}`))
+		default:
+			w.Write([]byte(`{"value":null}`))
+		}
+	}))
+	defer srv.Close()
+	c := newW3CClient(5 * time.Second)
+	c.setBase(srv.URL)
+	c.sessionID = "S1"
+	d := &WDA{w3c: c, scale: 1}
+
+	slider := &uitree.Node{TestID: "volumeSlider", Label: "Volume", Class: "XCUIElementTypeOther"}
+	err := d.SetText(context.Background(), slider, "0.2")
+	if mobiumerr.CodeOf(err) != mobiumerr.Unsupported || strings.Contains(err.Error(), "dropped") ||
+		!strings.Contains(err.Error(), "not a text field") {
+		t.Errorf("a plain view that took no keys: %v", err)
+	}
+	if e, ok := mobiumerr.As(err); !ok || !strings.Contains(e.Remedy, "app_swipe") {
+		t.Errorf("the remedy does not name a swipe: %v", err)
+	}
+
+	field := &uitree.Node{TestID: "email", Label: "Email", Class: "XCUIElementTypeTextField"}
+	err = d.SetText(context.Background(), field, "a@b.com")
+	if mobiumerr.CodeOf(err) != mobiumerr.NotConfirmed || !strings.Contains(err.Error(), "dropped") {
+		t.Errorf("a text field that took no keys: %v", err)
+	}
+}
+
 // passwordField is a WebDriverAgent whose password field shows `held` bullets
 // once typed into — or, while empty, its placeholder in clear, as the
 // simulator and a real iPhone both do. It counts the types and notes a clear.

@@ -941,7 +941,11 @@ this is what is not.
   `docs/checks/slider.sh`. Still to come: the Slider Demo on iOS, whose
   `@react-native-community/slider` reports a plain view with no Adjustable
   trait and no value, so nothing outside the app can call it a slider and
-  WebDriverAgent will not move it; range sliders; and the phone's text
+  WebDriverAgent will not move it — measured 2026-10-13 on the iPhone 17
+  Pro simulator: `map` calls it a button, `app_fill` is refused saying so
+  (CHALLENGES 318), and a finger's drag on its thumb lands Volume exactly
+  (steps of 10) and Balance at 0.28 for 0.25, the thumb's width again;
+  range sliders; and the phone's text
   size, which is a slider in Settings. A custom control that does carry the
   Adjustable trait — Pocket Casts' scrubber — maps as `adjustable` with its
   value since 2026-10-05 (CHALLENGES 234), and `app_fill` refuses it,

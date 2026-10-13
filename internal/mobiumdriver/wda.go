@@ -723,6 +723,18 @@ func (w *WDA) SetText(ctx context.Context, n *uitree.Node, text string) error {
 			"second, did not recover them", len([]rune(text)), masked, setTextAttempts-1,
 			typingFrequencies[setTextAttempts-1])
 	}
+	// Nothing took a single key, and the target is no text field: blaming a
+	// dropped keystroke sends the caller to retry what cannot work. MobiumApp's
+	// Slider Demo on iOS is a plain Other — its library reports no slider and
+	// no value — so app_fill typed "0.2" into it and said iOS had dropped a
+	// keystroke; a finger's drag across it moves it. CHALLENGES 318.
+	if got == "" && n.Class != "" && !uitree.HasClassRole(n, "input") {
+		return mobiumerr.New(mobiumerr.Unsupported, "typed %q and nothing took it: %q is %s, not a text field or a "+
+			"slider, and holds no value after %d tries: the app draws it itself and reports nothing a tool "+
+			"outside the app can set", text, n.Label, n.Class, setTextAttempts).
+			WithRemedy("if it is a slider, move it as a finger does: app_swipe from its thumb to the point you " +
+				"want, from the bounds app_map gives it")
+	}
 	return mobiumerr.New(mobiumerr.NotConfirmed, "typed %q and the field holds %q — iOS dropped a keystroke, and "+
 		"retrying %d times, down to %d keys a second, did not recover it", text, got, setTextAttempts-1,
 		typingFrequencies[setTextAttempts-1])
