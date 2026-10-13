@@ -35,7 +35,7 @@ import (
 // through shadow roots, as Vibium does, and through frames the page can see
 // into; a cross-origin frame is itself the answer.
 const candidatesJS = `function __mobiumCandidates() {
-  const sel = 'a,button,input,select,textarea,summary,[role=button],[role=link],[role=checkbox],[role=tab],[onclick],[contenteditable=true]';
+  const sel = 'a,button,input,select,textarea,summary,[role=button],[role=link],[role=checkbox],[role=tab],[role=slider],[onclick],[contenteditable=true]';
   const out = [];
   out.paths = [];
   const visit = (doc, path) => {
@@ -123,7 +123,9 @@ const mapScript = `(() => {
       testid: e.getAttribute('data-testid') || '',
       label: label,
       disabled: !!e.disabled,
-      value: t === 'range' ? String(e.value) : '',
+      value: t === 'range' ? String(e.value) :
+        (e.getAttribute('role') || '').toLowerCase() === 'slider' ?
+          (e.getAttribute('aria-valuetext') || e.getAttribute('aria-valuenow') || '') : '',
       frame: cands.paths[i],
       x: r.x, y: r.y, w: r.width, h: r.height
     });
@@ -332,7 +334,7 @@ func (f *Frame) ToDevice(x, y, w, h float64) uitree.Rect {
 func (e Element) NeutralRole() string {
 	if e.Role != "" {
 		switch e.Role {
-		case "button", "link", "checkbox", "tab", "radio":
+		case "button", "link", "checkbox", "tab", "radio", "slider":
 			return e.Role
 		}
 	}

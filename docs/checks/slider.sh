@@ -33,6 +33,13 @@ ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 . "$ROOT/docs/checks/lib.sh"
 check_lock "$DEV"
 fail() { echo "FAIL: $*" >&2; exit 1; }
+# refused <exit> <words> <command...>: refused with that exit status, saying so.
+refused() {
+  want=$1 words=$2; shift 2
+  set +e; out=$("$@" 2>&1); got=$?; set -e
+  [ "$got" = "$want" ] || fail "$*: exit $got, want $want: $out"
+  echo "$out" | grep -q "$words" || fail "$*: refused without saying \"$words\": $out"
+}
 row() { printf '    %-12s %-58s ok\n' "$1" "$2"; }
 APP=dev.mobium.mobiumapp
 case "$DEV" in
@@ -104,6 +111,22 @@ $M map | grep -q " Range, 0 to 100 in steps of 10 (slider, 30)" || fail "the ran
 $M fill testid=webRange 0.8 >/dev/null || fail "fill the range in its page"
 $M text | grep -q "^range: 80\$" || fail "the range filled to 0.8 reads $($M text | tail -1)"
 out=$($M type testid=webRange 20 2>&1) && fail "type on the page's range was accepted: $out"
+# Two thumbs on one track, as pages build them (CHALLENGES 320): two ranges
+# laid over each other, and two ARIA sliders, which map did not list. Each
+# thumb is its own slider. A thumb pushed past the other is the page's to
+# stop, and fill says the page stopped it rather than claiming the position.
+$M map | grep -q " Minimum price (slider, 200)" || fail "Price's thumbs are not two sliders: $($M map)"
+$M map | grep -q " Start hour (slider, 9:00)" || fail "the ARIA sliders are not in map: $($M map)"
+$M fill testid=priceMin 0.5 >/dev/null || fail "fill Price's minimum"
+$M fill testid=priceMax 0.9 >/dev/null || fail "fill Price's maximum"
+$M text | grep -q "^price: 500 to 900\$" || fail "Price reads $($M text | grep '^price')"
+refused 7 "rewrote" $M fill testid=priceMax 0.3
+$M text | grep -q "^price: 500 to 500\$" || fail "the maximum pushed below the minimum left $($M text | grep '^price') — the other thumb moved"
+$M fill testid=hoursStart 0.25 >/dev/null || fail "fill the start hour"
+$M fill testid=hoursEnd 0.5 >/dev/null || fail "fill the end hour"
+$M text | grep -q "^hours: 6 to 12\$" || fail "Hours reads $($M text | grep '^hours')"
+refused 7 "stopped it at 12:00" $M fill testid=hoursStart 1
+row "two thumbs" "Price and Hours each two sliders; a crossing is the page's to stop"
 $M context NATIVE_APP >/dev/null
 row "web range" "named by its label natively; 0.3 and 0.8 land on 30 and 80"
 

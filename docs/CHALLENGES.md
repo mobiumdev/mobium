@@ -6867,6 +6867,36 @@ which had passed by timing; it waits for the screen now. `slider.sh` passed
 three times in three on the emulator and `slider-ios.sh` three in three on
 the simulator, which failed at the range with the binary before this fix.
 
+### 320. A two-thumb slider built from ARIA was not in `map`, and one built from ranges moved the wrong thumb
+
+**Found by:** measuring two-thumb sliders, as pages build them, on
+MobiumApp's Slider Demo: Price, two `<input type="range">` laid over one
+track, the minimum kept at or below the maximum by the page; and Hours, two
+`role="slider"` thumbs on a drawn track, moved by a finger or the arrow
+keys, the way component libraries build one. Hours was not in `map` at
+all: the list of a page's elements had no `[role=slider]`. Price mapped as
+two sliders by their `aria-label`s, as 319 made them, but filling the
+maximum below the minimum moved the **minimum**, and `fill` reported the
+maximum's value as landed: the page decides which thumb gives way by which
+has focus, and the fill set a value without focusing — where a finger on a
+thumb focuses it. **Fixed:** a range is focused before it is moved, so the
+page holds the thumb that was not moved, and the fill fails as
+`not_confirmed`, saying the page rewrote the value. An ARIA slider is in
+`map` by its label, with `aria-valuetext` or `aria-valuenow` as its value
+— `Start hour (slider, 9:00)` — and `app_fill` takes a position from 0 to 1
+of `aria-valuemin` to `aria-valuemax`, the one rule for every slider, and
+moves it with its arrow keys, which WAI-ARIA requires a slider to answer,
+reading `aria-valuenow` back after each: it stops on the value, or between
+two steps at the closer, or — another thumb in the way — fails, saying the
+page stopped it. One whose keys move nothing is refused as unsupported,
+naming a drag. On the iPhone 17 Pro simulator and the Android 15 emulator,
+0.25 and 0.5 of 24 hours landed on 6:00 and 12:00, and the start pushed
+toward 24 stopped at the end's 12:00 and said so; `slider-ios.sh` and
+`slider.sh` passed three times in three on each, and the iOS check failed
+at the missing ARIA sliders with the binary before. Native two-thumb
+sliders — Material's `RangeSlider`, Compose's, an iOS app's own — are not
+measured yet (ROADMAP).
+
 ## Findings that were not defects
 
 Worth recording because each one closed off an approach that looked obvious.

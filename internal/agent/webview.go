@@ -828,7 +828,8 @@ func (h *Handlers) webFill(ctx context.Context, s *session, target string,
 		// to a step, which read as "the page rewrote or refused the value".
 		// The page gives its min, max and step, so the move lands exactly
 		// (CHALLENGES 319).
-		if el.Type == "range" {
+		aria := el.Type != "range" && el.NeutralRole() == "slider"
+		if el.Type == "range" || aria {
 			if !replace {
 				return nil, failedCheck(mobiumerr.InvalidArgument, target, checkEditable, "it is a slider, not a text field",
 					"app_fill moves a slider to a position from 0 to 1").
@@ -838,19 +839,38 @@ func (h *Handlers) webFill(ctx context.Context, s *session, target string,
 			if err != nil {
 				return nil, err
 			}
-			r, err := webview.SetRange(ctx, s.web, el, pos)
+			set := webview.SetRange
+			if aria {
+				set = webview.SetARIASlider
+			}
+			r, err := set(ctx, s.web, el, pos)
 			if err != nil {
 				return nil, err
 			}
 			switch {
+			case r.Status == "failed" && r.Check == "settable":
+				return nil, failedCheck(mobiumerr.Unsupported, target, "settable", r.Reason,
+					"a slider the page draws itself is moved as a finger moves it").
+					WithRemedy("app_swipe from its thumb along its track, with x1, y1, x2, y2; then app_map to read its value")
 			case r.Status == "not_found":
 				return nil, mobiumerr.New(mobiumerr.NoSuchElement, "%s is no longer on the page — the content changed, run app_map again", target)
+			case r.Status == "ok" && !r.Matches && aria:
+				return nil, mobiumerr.New(mobiumerr.NotConfirmed, "moved %s toward position %s, which is %s on its "+
+					"track, by its arrow keys, and the page stopped it at %s — another of its thumbs, or its own "+
+					"rule, holds it there", target, formatPosition(pos), r.Want, r.Value)
 			case r.Status == "ok" && !r.Matches:
 				return nil, mobiumerr.New(mobiumerr.NotConfirmed, "moved %s to position %s, which is %s on its "+
 					"track, and the page reads %s — the page rewrote the value", target, formatPosition(pos), r.Want, r.Value)
 			case r.Status == "ok":
-				return Result(fmt.Sprintf("moved %s to position %s in %s — it reads %q, was %q", target,
-					formatPosition(pos), s.webCtx, r.Value, r.Was),
+				how := ""
+				if aria {
+					how = " by its arrow keys"
+				}
+				if r.Nearest {
+					how += fmt.Sprintf(", the closest its keys reach to %s", r.Want)
+				}
+				return Result(fmt.Sprintf("moved %s to position %s in %s%s — it reads %q, was %q", target,
+					formatPosition(pos), s.webCtx, how, r.Value, r.Was),
 					ActionView{Action: "fill", Target: target, Context: s.webCtx, Value: r.Value, Position: &pos}), nil
 			}
 			if time.Now().After(deadline) {

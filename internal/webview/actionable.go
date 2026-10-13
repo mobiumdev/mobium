@@ -336,6 +336,10 @@ const rangeScript = `(() => {
   let want = min + pos * (max - min);
   if (step > 0) want = Math.min(max, min + Math.round((want - min) / step) * step);
   want = Number(want.toPrecision(12));
+  // Focused first, as a finger on its thumb focuses it: a page with two
+  // thumbs decides which one gives way by which has focus, and unfocused,
+  // filling the maximum below the minimum moved the minimum instead.
+  el.focus();
   const was = el.value;
   Object.getOwnPropertyDescriptor(win.HTMLInputElement.prototype, 'value').set.call(el, String(want));
   el.dispatchEvent(new Event('input', {bubbles: true}));
@@ -343,6 +347,68 @@ const rangeScript = `(() => {
   return JSON.stringify({status: 'ok', value: el.value, was: was, want: String(want),
     matches: Math.abs(parseFloat(el.value) - want) < 1e-9});
 })()`
+
+// ariaSliderScript moves the index-th candidate, an ARIA slider, toward a
+// position from 0 to 1 the only way the page offers: WAI-ARIA has a slider
+// answer the arrow keys, and nothing sets its value from outside. It is
+// focused, as a finger or a keyboard would focus it, and arrows are pressed
+// toward the value at that position of aria-valuemin to aria-valuemax, each
+// read back from aria-valuenow, stopping at the closest value the keys
+// reach. A key that moves nothing is a slider that does not answer keys.
+const ariaSliderScript = `(() => {
+  ` + candidatesJS + `
+  const el = __mobiumCandidates()[%d];
+  const pos = %g;
+  if (!el) return JSON.stringify({status:'not_found'});
+  const fail = (check, reason) => JSON.stringify({status:'failed', check, reason});
+  let rect = __mobiumRect(el);
+  if (rect.top < 0 || rect.left < 0 || rect.bottom > window.innerHeight || rect.right > window.innerWidth) {
+    el.scrollIntoView({block: 'center', inline: 'center', behavior: 'instant'});
+    rect = __mobiumRect(el);
+  }
+  if (rect.width === 0 || rect.height === 0) return fail('visible', 'zero size');
+  if (el.getAttribute('aria-disabled') === 'true') return fail('enabled', 'aria-disabled');
+  const num = n => parseFloat(el.getAttribute(n));
+  const min = num('aria-valuemin'), max = num('aria-valuemax');
+  if (isNaN(min) || isNaN(max) || isNaN(num('aria-valuenow')))
+    return fail('settable', 'it has no aria-valuemin, aria-valuemax and aria-valuenow to aim by');
+  const want = min + pos * (max - min);
+  const was = el.getAttribute('aria-valuetext') || el.getAttribute('aria-valuenow');
+  el.focus();
+  const press = key => {
+    el.dispatchEvent(new KeyboardEvent('keydown', {key, code: key, bubbles: true, cancelable: true}));
+    el.dispatchEvent(new KeyboardEvent('keyup', {key, code: key, bubbles: true, cancelable: true}));
+  };
+  // Stopped by the page before the value — another thumb in the way — is
+  // the page refusing it, as a range's clamp is; stopped between two steps
+  // is the closest value the keys reach.
+  let blocked = false;
+  for (let i = 0; i < 1000; i++) {
+    const now = num('aria-valuenow');
+    if (now === want) break;
+    const key = now < want ? 'ArrowRight' : 'ArrowLeft';
+    press(key);
+    const next = num('aria-valuenow');
+    if (next === now) {
+      if (i === 0 && (key === 'ArrowRight' ? now < max : now > min)) {
+        const other = Array.from(document.querySelectorAll('[role=slider]')).some(s => s !== el);
+        if (!other) return fail('settable', 'the arrow keys do not move it');
+      }
+      blocked = true;
+      break;
+    }
+    if (Math.abs(next - want) > Math.abs(now - want)) { press(key === 'ArrowRight' ? 'ArrowLeft' : 'ArrowRight'); break; }
+  }
+  const now = num('aria-valuenow');
+  return JSON.stringify({status: 'ok', value: el.getAttribute('aria-valuetext') || String(now), was: was,
+    want: String(Number(want.toPrecision(12))), matches: !blocked, nearest: !blocked && now !== want});
+})()`
+
+// SetARIASlider moves an ARIA slider toward a position from 0 to 1 of its
+// range with the arrow keys.
+func SetARIASlider(ctx context.Context, p Page, el Element, pos float64) (*Ranged, error) {
+	return setRanged(ctx, p, el, ariaSliderScript, pos)
+}
 
 // Ranged is what a page says after one of its ranges was moved.
 type Ranged struct {
@@ -353,10 +419,17 @@ type Ranged struct {
 	Was     string `json:"was"`
 	Want    string `json:"want"`
 	Matches bool   `json:"matches"`
+	// Nearest says the keys could not reach the value at the position, and
+	// it stopped at the closest one they reach.
+	Nearest bool `json:"nearest,omitempty"`
 }
 
 // SetRange moves a range to a position from 0 to 1 of its track.
 func SetRange(ctx context.Context, p Page, el Element, pos float64) (*Ranged, error) {
+	return setRanged(ctx, p, el, rangeScript, pos)
+}
+
+func setRanged(ctx context.Context, p Page, el Element, script string, pos float64) (*Ranged, error) {
 	var in evaluator = p
 	if el.context != 0 {
 		c, ok := p.(contextual)
@@ -365,7 +438,7 @@ func SetRange(ctx context.Context, p Page, el Element, pos float64) (*Ranged, er
 		}
 		in = evalIn{c, el.context}
 	}
-	raw, err := in.Evaluate(ctx, fmt.Sprintf(rangeScript, el.local, pos))
+	raw, err := in.Evaluate(ctx, fmt.Sprintf(script, el.local, pos))
 	if err != nil {
 		return nil, err
 	}

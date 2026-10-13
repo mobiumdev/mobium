@@ -948,7 +948,9 @@ this is what is not.
   a fill that lands exactly from partway, which WebDriverAgent cannot
   support — it reports no thumb position, and its range is real for a
   UIKit slider and 0 to 1 for SwiftUI's (CHALLENGES 219, 2026-10-13);
-  range sliders, two thumbs on one track; and the phone's text
+  two-thumb sliders natively — Material's RangeSlider, Compose's, an iOS
+  app's own (a page's, two ranges or two ARIA sliders, since 2026-10-13,
+  CHALLENGES 320); and the phone's text
   size, which is a slider in Settings. A custom control that does carry the
   Adjustable trait — Pocket Casts' scrubber — maps as `adjustable` with its
   value since 2026-10-05 (CHALLENGES 234), and `app_fill` refuses it,

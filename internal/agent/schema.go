@@ -273,7 +273,8 @@ func GetToolSchemas() []Tool {
 				"as a finger would move it: from either end it lands exactly, from partway it " +
 				"can land a step past, so to land exactly there, fill 0 or 1 first. A web page's " +
 				"<input type=range> is a slider too, set from the page's own min, max and step, so " +
-				"it lands exactly.",
+				"it lands exactly; an ARIA slider (role=slider) is moved there with its arrow keys. " +
+				"A thumb the page stops short — another thumb in the way — fails as not_confirmed.",
 			InputSchema: map[string]interface{}{
 				"type": "object",
 				"properties": withDevice(map[string]interface{}{

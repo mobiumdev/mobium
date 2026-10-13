@@ -63,3 +63,32 @@ func TestAWebRangeIsFilledByPosition(t *testing.T) {
 		t.Errorf("a page that rewrote the value: %v", err)
 	}
 }
+
+// An ARIA slider is moved by its arrow keys, the only way WAI-ARIA gives,
+// and one stopped by the page short of its value is refused as a range's
+// clamp is, saying the page stopped it (CHALLENGES 320).
+func TestAnARIASliderIsMovedByItsKeys(t *testing.T) {
+	h := NewHandlers()
+	h.implicitWait = 0
+	run := func(answer string) (*ToolsCallResult, *rangePage, error) {
+		p := &rangePage{answer: answer}
+		s := &session{dev: fakeDevice(), driver: &hostDriver{}, backend: BackendUIA2, web: p, webCtx: "WEBVIEW_test"}
+		el := webview.Element{Tag: "div", Role: "slider", Label: "Start hour", TestID: "hoursStart", Value: "9:00"}
+		res, err := h.webFill(context.Background(), s, "testid=hoursStart", func(context.Context) (webview.Element, error) {
+			return el, nil
+		}, "0.25", true)
+		return res, p, err
+	}
+	res, p, err := run(`{"status":"ok","value":"6:00","was":"9:00","want":"6","matches":true}`)
+	if err != nil || !strings.Contains(p.got, "ArrowRight") || !strings.Contains(textOf(res), "by its arrow keys") {
+		t.Errorf("%q, %v", textOf(res), err)
+	}
+	if _, _, err := run(`{"status":"ok","value":"12:00","was":"9:00","want":"24","matches":false}`); mobiumerr.CodeOf(err) != mobiumerr.NotConfirmed ||
+		!strings.Contains(err.Error(), "stopped it at 12:00") {
+		t.Errorf("stopped by the page: %v", err)
+	}
+	_, _, err = run(`{"status":"failed","check":"settable","reason":"the arrow keys do not move it"}`)
+	if e, ok := mobiumerr.As(err); !ok || e.Code != mobiumerr.Unsupported || !strings.Contains(e.Remedy, "app_swipe") {
+		t.Errorf("keys that move nothing: %v", err)
+	}
+}
