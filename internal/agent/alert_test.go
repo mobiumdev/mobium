@@ -354,3 +354,44 @@ func TestPressedByOnIOS(t *testing.T) {
 		t.Errorf("three buttons named %q; accept is refused there", got)
 	}
 }
+
+// Wear OS's own dialog is no alert to UiAutomator2, and app_alert said no
+// dialog was on screen. Its ids mark ✓ positive and ✕ negative, so accept
+// and dismiss press those, and say which. CHALLENGES 317.
+func TestAWearDialogIsAnsweredByItsMarkedButtons(t *testing.T) {
+	read := dialogOn(t, "wear-alert-uia2.xml", "", false)
+	res, err := alertOn(t, read, map[string]interface{}{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	v := res.StructuredContent.(AlertView)
+	if !v.Present || !strings.Contains(v.Text, "Tilt-to-wake reduces battery life.") || strings.Join(v.Buttons, "|") != "Cancel|OK" {
+		t.Errorf("read: present %v, text %q, buttons %q", v.Present, v.Text, v.Buttons)
+	}
+	if strings.Contains(textOf(res), "not one the platform") {
+		t.Errorf("read says accept cannot answer it: %q", textOf(res))
+	}
+	after, err := os.ReadFile("../uitree/testdata/wear-gestures-uia2.xml")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for action, want := range map[string]string{"accept": "OK", "dismiss": "Cancel"} {
+		d := dialogOn(t, "wear-alert-uia2.xml", "", false)
+		gone, err := uitree.ParseAndroid(after)
+		if err != nil {
+			t.Fatal(err)
+		}
+		d.screens = append(d.screens, gone)
+		res, err := alertOn(t, d, map[string]interface{}{"action": action})
+		if err != nil {
+			t.Fatalf("%s: %v", action, err)
+		}
+		v := res.StructuredContent.(AlertView)
+		if v.Pressed != want || v.Answered != action || len(d.tapped) != 1 {
+			t.Errorf("%s: pressed %q, answered %q, tapped %v", action, v.Pressed, v.Answered, d.tapped)
+		}
+		if !strings.HasPrefix(textOf(res), action+"ed the dialog") || !strings.Contains(textOf(res), `pressed "`+want+`"`) {
+			t.Errorf("%s: the text does not say it was answered: %q", action, textOf(res))
+		}
+	}
+}

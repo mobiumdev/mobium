@@ -735,7 +735,8 @@ func (l Locator) resolveOwn(t *Tree) []*Node {
 	// its place, and asking of both removed both.
 	kept := make([]*Node, 0, len(first))
 	for _, n := range first {
-		if wrapsTarget(n, first) || l.Kind == KindLabel && contentOfTarget(n, first) {
+		if wrapsTarget(n, first) || l.Kind == KindLabel && contentOfTarget(n, first) ||
+			l.Kind == KindText && titleOfTarget(n, first) {
 			continue
 		}
 		kept = append(kept, n)
@@ -839,6 +840,24 @@ func wrapsTarget(n *Node, nodes []*Node) bool {
 func contentOfTarget(n *Node, nodes []*Node) bool {
 	if n.Class != "XCUIElementTypeImage" && n.Class != "XCUIElementTypeStaticText" &&
 		n.Class != "XCUIElementTypeButton" || targetShaped(n) {
+		return false
+	}
+	for _, m := range nodes {
+		if m != n && targetShaped(m) && isAncestor(m, n) {
+			return true
+		}
+	}
+	return false
+}
+
+// titleOfTarget reports whether n is an Android node that is no target,
+// inside one of nodes that is: text= found the control and its own title.
+// Wear OS draws a chip as a Button whose text repeats its title's
+// TextView, so text="Security" matched two on every row of Settings and
+// was refused (CHALLENGES 315). A phone's row carries no text of its own,
+// so only its title matched, and still does.
+func titleOfTarget(n *Node, nodes []*Node) bool {
+	if IsIOS(n) || targetShaped(n) {
 		return false
 	}
 	for _, m := range nodes {

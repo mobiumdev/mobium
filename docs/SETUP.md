@@ -247,6 +247,24 @@ Use the plain `google_apis` flavor to match an existing AVD; the `_ps16k`
 variants use a different memory page size, and `google_apis_playstore` images
 cannot be rooted.
 
+### A Wear OS emulator
+
+Wear OS images are on the stable channel, Wear OS 3 to 6.1, and 7.0 at API
+37. A watch is driven as any Android device, by the same backends:
+
+```sh
+sdkmanager "system-images;android-35-ext15;android-wear;arm64-v8a"   # Wear OS 5.1
+avdmanager create avd -n mobium-wear -d wearos_large_round \
+  -k "system-images;android-35-ext15;android-wear;arm64-v8a"
+emulator -avd mobium-wear -port 5558 -no-snapshot-load -no-boot-anim &
+docs/checks/wear-os.sh emulator-5558
+```
+
+`avdmanager` prints "Could not load devices" for another image's
+`devices.xml` and applies the profile anyway (454×454 at 320dpi). A watch
+goes back by swiping right, which `swipe right` does; `press back` works
+too. The crown has no command yet.
+
 ### Running two at once
 
 ```sh
