@@ -945,6 +945,9 @@ this is what is not.
   Pro simulator: `map` calls it a button, `app_fill` is refused saying so
   (CHALLENGES 318), and a finger's drag on its thumb lands Volume exactly
   (steps of 10) and Balance at 0.28 for 0.25, the thumb's width again;
+  a fill that lands exactly from partway, which WebDriverAgent cannot
+  support — it reports no thumb position, and its range is real for a
+  UIKit slider and 0 to 1 for SwiftUI's (CHALLENGES 219, 2026-10-13);
   range sliders; and the phone's text
   size, which is a slider in Settings. A custom control that does carry the
   Adjustable trait — Pocket Casts' scrubber — maps as `adjustable` with its
