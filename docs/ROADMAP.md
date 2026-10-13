@@ -6,8 +6,9 @@ this is what is not.
 
 ## Next
 
-- **`wait --for visible` passes for an iOS element off screen** (a lead,
-  2026-10-12, CHALLENGES 307). The wait keeps any match with a size, and
+- ~~**`wait --for visible` passes for an iOS element off screen**~~ Done
+  2026-10-12, CHALLENGES 311: visible and hidden ask the screen and the part
+  of the list in view. The lead, as written (CHALLENGES 307): The wait keeps any match with a size, and
   iOS keeps rows off screen in the tree with real bounds: on Ice Cubes'
   timeline a post's author at y −728 was "visible". Actions are not
   affected — they scroll to what is off screen, or refuse — but a wait that

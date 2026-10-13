@@ -379,3 +379,33 @@ func TestWaitDoesNotSeeUnderADialog(t *testing.T) {
 		t.Errorf("a target under the sheet was not hidden, as Android reports it: %v", err)
 	}
 }
+
+// Visible means on the screen. iOS keeps a list's rows off screen in the
+// tree with real bounds, and a wait for a post's author 728 pixels above the
+// top answered "visible" (CHALLENGES 311): a match below the screen does not
+// satisfy visible, says it is off screen, and counts as hidden.
+func TestAWaitForVisibleIsOnScreen(t *testing.T) {
+	tree := func(y int) *uitree.Tree {
+		tr, err := uitree.ParseAndroid([]byte(fmt.Sprintf(`<?xml version='1.0' encoding='UTF-8'?><hierarchy rotation="0">`+
+			`<node index="0" class="android.widget.FrameLayout" bounds="[0,0][1080,2400]" displayed="true" enabled="true">`+
+			`<node index="0" class="android.widget.Button" text="Author" clickable="true" bounds="[0,%d][500,%d]" displayed="true" enabled="true"/>`+
+			`</node></hierarchy>`, y, y+100)))
+		if err != nil {
+			t.Fatal(err)
+		}
+		return tr
+	}
+	h, s, _ := withFake(t, tree(3000))
+	_, err := wait(h, s, map[string]interface{}{"target": "text=Author", "condition": "visible", "timeout_ms": 300})
+	if err == nil || !strings.Contains(err.Error(), "off screen") {
+		t.Errorf("below the screen: %v", err)
+	}
+	h, s, _ = withFake(t, tree(3000))
+	if _, err := wait(h, s, map[string]interface{}{"target": "text=Author", "condition": "hidden", "timeout_ms": 300}); err != nil {
+		t.Errorf("below the screen is hidden: %v", err)
+	}
+	h, s, _ = withFake(t, tree(500))
+	if _, err := wait(h, s, map[string]interface{}{"target": "text=Author", "condition": "visible", "timeout_ms": 300}); err != nil {
+		t.Errorf("on the screen: %v", err)
+	}
+}

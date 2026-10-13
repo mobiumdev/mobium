@@ -254,6 +254,25 @@ func (h *Handlers) waitOn(ctx context.Context, s *session, args map[string]inter
 			notOnScreen = "it is behind another screen of the app — close that one first"
 		}
 		nodes = shown
+		// Visible means on the screen, where a person could see it: iOS keeps
+		// a list's rows off screen in the tree with real bounds, and a wait
+		// for a post's author 728 pixels above the top answered "visible"
+		// (CHALLENGES 311). The tests are the ones a read already uses: the
+		// center on the screen, and inside the part of its list in view.
+		// Only for visible and hidden: a checkbox's state or a field's text
+		// is read off screen as well as on.
+		if cond == condVisible || cond == condHidden {
+			var on []*uitree.Node
+			for _, n := range nodes {
+				if onScreen(t, n) {
+					on = append(on, n)
+				}
+			}
+			if len(nodes) > 0 && len(on) == 0 {
+				notOnScreen = "it is off screen — app_scroll_to brings it into view"
+			}
+			nodes = on
+		}
 		// A declared rule answers a dialog in a wait's way as it does in an
 		// action's: login.test.json's rule for "Save Password?" answered it in
 		// front of a tap and not in front of the wait for the next screen,
@@ -498,4 +517,17 @@ type WaitView struct {
 	// Element is the element that satisfied the wait, absent when waiting for
 	// something to go away or when the map filters the match out.
 	Element *ElementView `json:"element,omitempty"`
+}
+
+// onScreen says a person could see n: its center on the screen the tree was
+// read from, and inside the part of its list in view when it is in one.
+func onScreen(t *uitree.Tree, n *uitree.Node) bool {
+	if on, _ := centerOnScreen(t, n); !on {
+		return false
+	}
+	if c, v := viewOf(t, n); c != nil && !v.Empty() {
+		x, y := n.Bounds.Center()
+		return x >= v.X1 && x < v.X2 && y >= v.Y1 && y < v.Y2
+	}
+	return true
 }
