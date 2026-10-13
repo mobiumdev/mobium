@@ -379,6 +379,9 @@ func (h *Handlers) listWeb(ctx context.Context, s *session, els []webview.Elemen
 			label = e.Tag
 		}
 		line := fmt.Sprintf("%s %s (%s)", ref, label, role)
+		if e.Value != "" {
+			line = fmt.Sprintf("%s %s (%s, %s)", ref, label, role, e.Value)
+		}
 		if e.Frame != "" {
 			// Which frame it is in: MobiumApp's three frames each hold a
 			// "Tap me", and without this the three lines read the same.
@@ -388,7 +391,7 @@ func (h *Handlers) listWeb(ctx context.Context, s *session, els []webview.Elemen
 
 		// Bounds are reported in device pixels, like everything else, so a
 		// web element and a native one are directly comparable.
-		item := ElementView{Ref: ref, Label: label, Role: role, Context: s.webCtx}
+		item := ElementView{Ref: ref, Label: label, Role: role, Context: s.webCtx, Value: e.Value}
 		if frameErr == nil {
 			item.Bounds = boundsView(frame.ToDevice(e.X, e.Y, e.W, e.H))
 		}
@@ -819,6 +822,46 @@ func (h *Handlers) webFill(ctx context.Context, s *session, target string,
 		el, err := find(ctx)
 		if err != nil {
 			return nil, err
+		}
+		// A range is a slider, filled with a position as a native one is,
+		// and not typed into: fill 0.2 typed "0.2" and the page clamped it
+		// to a step, which read as "the page rewrote or refused the value".
+		// The page gives its min, max and step, so the move lands exactly
+		// (CHALLENGES 319).
+		if el.Type == "range" {
+			if !replace {
+				return nil, failedCheck(mobiumerr.InvalidArgument, target, checkEditable, "it is a slider, not a text field",
+					"app_fill moves a slider to a position from 0 to 1").
+					WithRemedy("app_fill with a position from 0 (the start of its track) to 1 (the end)")
+			}
+			pos, err := sliderPosition(text)
+			if err != nil {
+				return nil, err
+			}
+			r, err := webview.SetRange(ctx, s.web, el, pos)
+			if err != nil {
+				return nil, err
+			}
+			switch {
+			case r.Status == "not_found":
+				return nil, mobiumerr.New(mobiumerr.NoSuchElement, "%s is no longer on the page — the content changed, run app_map again", target)
+			case r.Status == "ok" && !r.Matches:
+				return nil, mobiumerr.New(mobiumerr.NotConfirmed, "moved %s to position %s, which is %s on its "+
+					"track, and the page reads %s — the page rewrote the value", target, formatPosition(pos), r.Want, r.Value)
+			case r.Status == "ok":
+				return Result(fmt.Sprintf("moved %s to position %s in %s — it reads %q, was %q", target,
+					formatPosition(pos), s.webCtx, r.Value, r.Was),
+					ActionView{Action: "fill", Target: target, Context: s.webCtx, Value: r.Value, Position: &pos}), nil
+			}
+			if time.Now().After(deadline) {
+				return nil, webCheckFailed(target, &webview.Actionability{Status: r.Status, Check: r.Check, Reason: r.Reason}, h.implicitWait)
+			}
+			select {
+			case <-ctx.Done():
+				return nil, ctx.Err()
+			case <-time.After(100 * time.Millisecond):
+			}
+			continue
 		}
 		f, err := webview.Fill(ctx, s.web, el, text, appendText)
 		if err != nil {

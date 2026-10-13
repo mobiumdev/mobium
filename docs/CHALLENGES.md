@@ -6832,6 +6832,41 @@ since it snaps to steps of 10; Balance, which is continuous, landed at 0.28
 for 0.25, because a finger on the thumb is not the thumb's center, the
 inset Android's seek bars needed (227). A tap on the track moves nothing.
 
+### 319. A web page's range was a text field to `map` and to `fill`
+
+**Found by:** giving MobiumApp's Slider Demo a web page's
+`<input type="range">` (0 to 100 in steps of 10) beside its native sliders,
+to measure every kind of slider on iOS (ROADMAP). `map` printed it as
+`50 (input)` — named by its value, the mistake CHALLENGES 65, 219 and 234
+fixed natively — and `app_fill` typed into it: `fill 20` worked, while
+`fill 0.2`, the position every native slider takes, was clamped by the
+page to a step and failed as "the page rewrote or refused the value", a
+cause that was not the case. `app_type` was accepted too, where a native
+slider refuses it. **Fixed:** a range is a slider. `map` names it by its
+label and reads its value as its state — `Range, 0 to 100 in steps of 10
+(slider, 50)` — and `role=slider` finds it. `app_fill` takes a position from
+0 to 1, as on every other slider, and anything else is refused before
+anything moves; `app_type` is refused naming `app_fill`. Unlike a native
+slider (219), a page gives its range's `min`, `max` and `step`, so the
+position is turned into the value the page would take and set through the
+native setter with the `input` and `change` events a drag causes, and it
+lands exactly: on the iPhone 17 Pro simulator 0.2, 1, 0, 0.35 and 0.5 read
+20, 100, 0, 40 and 50, and the page's own output followed each.
+
+**And from the native side, on Android.** Android's WebView draws the range
+as a `SeekBar` — but where a native seek bar's text is its progress (227),
+Chrome's carries the range's label and no progress at all, so `map` in
+`NATIVE_APP` printed `SeekBar (slider, Range, 0 to 100 in steps of 10 in its
+own steps)`: named by its class and valued by its name. A seek bar inside a
+WebView now keeps its text as its name and has no value, and `app_fill` on
+it goes through the page when the page can be reached, as a field in a page
+does (301) — on the Android 15 emulator, 0.3 read "30", through its page.
+Adding these rows to `slider.sh` found it mapping the screen before the
+Slider Demo had opened, with nothing waited for — CHALLENGES 233's race,
+which had passed by timing; it waits for the screen now. `slider.sh` passed
+three times in three on the emulator and `slider-ios.sh` three in three on
+the simulator, which failed at the range with the binary before this fix.
+
 ## Findings that were not defects
 
 Worth recording because each one closed off an approach that looked obvious.

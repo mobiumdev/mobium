@@ -271,7 +271,9 @@ func GetToolSchemas() []Tool {
 				"the value the slider then reports, as map shows it. On Android the track is " +
 				"touched at the position and the slider lands there; on iOS the thumb is moved " +
 				"as a finger would move it: from either end it lands exactly, from partway it " +
-				"can land a step past, so to land exactly there, fill 0 or 1 first.",
+				"can land a step past, so to land exactly there, fill 0 or 1 first. A web page's " +
+				"<input type=range> is a slider too, set from the page's own min, max and step, so " +
+				"it lands exactly.",
 			InputSchema: map[string]interface{}{
 				"type": "object",
 				"properties": withDevice(map[string]interface{}{

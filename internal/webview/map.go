@@ -108,8 +108,11 @@ const mapScript = `(() => {
     // label a person reads is. Only for those two: every other field keeps
     // what it shows.
     const t = (e.getAttribute('type') || '').toLowerCase();
-    const named = (t === 'checkbox' || t === 'radio') && e.labels && e.labels.length ? e.labels[0].innerText : '';
-    const label = (named || e.innerText || e.value || e.getAttribute('aria-label') ||
+    // A range's value is a position, not a name, as a checkbox's is: it
+    // printed as "50 (input)" (CHALLENGES 319).
+    const labeled = t === 'checkbox' || t === 'radio' || t === 'range';
+    const named = labeled && e.labels && e.labels.length ? e.labels[0].innerText : '';
+    const label = (named || e.innerText || (t === 'range' ? '' : e.value) || e.getAttribute('aria-label') ||
                    e.getAttribute('placeholder') || e.getAttribute('title') ||
                    e.getAttribute('alt') || '').trim().replace(/\s+/g, ' ').slice(0, 60);
     out.push({
@@ -120,6 +123,7 @@ const mapScript = `(() => {
       testid: e.getAttribute('data-testid') || '',
       label: label,
       disabled: !!e.disabled,
+      value: t === 'range' ? String(e.value) : '',
       frame: cands.paths[i],
       x: r.x, y: r.y, w: r.width, h: r.height
     });
@@ -136,6 +140,9 @@ type Element struct {
 	TestID   string `json:"testid"`
 	Label    string `json:"label"`
 	Disabled bool   `json:"disabled"`
+	// Value is a range's value as the page holds it, and empty for anything
+	// else: a slider's state, as a native one's is.
+	Value string `json:"value,omitempty"`
 	// Frame is the frame the element is in, as a path of frame selectors
 	// from the top page — "iframe#sameFrame >> iframe#nestedFrame" — or ""
 	// for the page itself.
@@ -344,6 +351,8 @@ func (e Element) NeutralRole() string {
 			return "checkbox"
 		case "radio":
 			return "radio"
+		case "range":
+			return "slider"
 		case "button", "submit", "reset", "image":
 			return "button"
 		default:
