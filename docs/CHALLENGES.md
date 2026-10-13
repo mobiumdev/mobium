@@ -6798,6 +6798,28 @@ and its ✓ and ✕ are marked positive and negative by theirs
 `docs/checks/wear-os.sh` passed three times in three, and with `main`'s
 binary failed at its first tap.
 
+### 318. `app_fill` on a slider no tool can see blamed a dropped keystroke
+
+**Found by:** testing the claim behind a golden-set answer — "on iOS a
+slider is not a slider at all" — on MobiumApp's Slider Demo, iPhone 17 Pro
+simulator, iOS 26.5. The claim holds for this demo:
+`@react-native-community/slider` reports each slider as a plain
+`XCUIElementTypeOther` with no trait and no value, and `map` lists
+`Volume (button)`. So `app_fill testid=volumeSlider 0.2` went down the text
+path, typed "0.2" into a view that takes no keys, read back nothing three
+times, and failed with "iOS dropped a keystroke, and retrying 2 times, down
+to 6 keys a second, did not recover it" — the cause of CHALLENGES 61, which
+was not the case, and a retry that could never work. **Fixed:** when not one
+key landed and the target is no text field by its type, the failure says
+so, as `unsupported`: it is no text field or slider, and holds no value.
+The remedy is to move it as a finger does, with `app_swipe` from its thumb,
+using the bounds `app_map` gives. Followed literally on the simulator, a
+swipe from 20% to 70% of the track read `volume: 70`. A text field that
+reads back empty keeps the keystroke rule. A drag lands Volume exactly,
+since it snaps to steps of 10; Balance, which is continuous, landed at 0.28
+for 0.25, because a finger on the thumb is not the thumb's center, the
+inset Android's seek bars needed (227). A tap on the track moves nothing.
+
 ## Findings that were not defects
 
 Worth recording because each one closed off an approach that looked obvious.
