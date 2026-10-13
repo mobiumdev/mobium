@@ -112,3 +112,43 @@ func TestCheckedReadsThePagesOwnState(t *testing.T) {
 		}
 	}
 }
+
+// A range is a slider to map — named by its label, not its value — and not
+// a text field to a fill (CHALLENGES 319).
+func TestARangeIsASlider(t *testing.T) {
+	if r := (Element{Tag: "input", Type: "range"}).NeutralRole(); r != "slider" {
+		t.Errorf("a range's role is %q", r)
+	}
+	if strings.Contains(fillableInputTypesJS, "'range'") {
+		t.Error("a fill would type into a range")
+	}
+	if !strings.Contains(mapScript, "t === 'range' ? '' : e.value") {
+		t.Error("map names a range by its value")
+	}
+	f := &cannedPage{answer: `{"status":"ok","value":"0.25","was":"0.5","want":"0.25","matches":true}`}
+	r, err := SetRange(context.Background(), f, Element{local: 3}, 0.25)
+	if err != nil || !r.Matches || r.Value != "0.25" {
+		t.Fatalf("%+v, %v", r, err)
+	}
+	if !strings.Contains(f.got, "el.focus();\n  const was") {
+		t.Error("the range is not focused before it is moved, as a finger on its thumb focuses it")
+	}
+	if !strings.Contains(f.got, "__mobiumCandidates()[3]") || !strings.Contains(f.got, "const pos = 0.25;") {
+		t.Errorf("the script does not move candidate 3 to 0.25:\n%.300s", f.got)
+	}
+}
+
+// An ARIA slider is a candidate, a slider by role, with its value from
+// aria-valuetext or aria-valuenow: a two-thumb slider built that way was not
+// in map at all (CHALLENGES 320).
+func TestAnARIASliderIsMapped(t *testing.T) {
+	if !strings.Contains(candidatesJS, "[role=slider]") {
+		t.Error("an ARIA slider is not a candidate")
+	}
+	if r := (Element{Tag: "div", Role: "slider"}).NeutralRole(); r != "slider" {
+		t.Errorf("an ARIA slider's role is %q", r)
+	}
+	if !strings.Contains(mapScript, "aria-valuetext") {
+		t.Error("map does not read an ARIA slider's value")
+	}
+}

@@ -2089,6 +2089,14 @@ func (h *Handlers) typeTextOn(ctx context.Context, s *session, args map[string]i
 	}
 	// A slider is filled with a position, and not typed into.
 	if uitree.HasClassRole(node, "slider") {
+		// A page's range, drawn by its WebView, is moved through the page
+		// when the page can be reached, which knows its min, max and step
+		// and lands exactly; natively only when it cannot (CHALLENGES 319).
+		if replace && inWebView(node) {
+			if res, ok, err := h.typeThroughPage(ctx, s, target, node, text, replace); ok {
+				return res, err
+			}
+		}
 		if !replace {
 			return nil, failedCheck(mobiumerr.InvalidArgument, target, checkEditable, "it is a slider, not a text field",
 				"app_fill moves a slider to a position from 0 to 1").

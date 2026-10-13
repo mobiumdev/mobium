@@ -372,11 +372,25 @@ func nodeFrom(e xml.StartElement, parent *Node, sibling int) *Node {
 	// A seek bar's text is its progress in its own units — MobiumApp's
 	// Volume, 50 to the app, read "5.0" on the Pixel 8 Pro — which is its
 	// state, not its name: kept as its value, as iOS's is (CHALLENGES 227).
-	if HasClassRole(n, "slider") {
+	// Not one a WebView draws for a page's <input type="range">: Chrome
+	// gives its seek bar the range's label as its text and no value, so
+	// the label read as "the value" and the seek bar was named SeekBar
+	// (CHALLENGES 319).
+	if HasClassRole(n, "slider") && !insideWebView(n) {
 		n.Value, n.Text = n.Text, ""
 		n.ValueSteps = n.Value != ""
 	}
 	return n
+}
+
+// insideWebView reports a node a WebView draws for its page.
+func insideWebView(n *Node) bool {
+	for p := n.Parent; p != nil; p = p.Parent {
+		if strings.HasSuffix(p.Class, "WebView") {
+			return true
+		}
+	}
+	return false
 }
 
 // Package reports the app in the foreground, taken from the hierarchy that was

@@ -35,7 +35,7 @@ import (
 // through shadow roots, as Vibium does, and through frames the page can see
 // into; a cross-origin frame is itself the answer.
 const candidatesJS = `function __mobiumCandidates() {
-  const sel = 'a,button,input,select,textarea,summary,[role=button],[role=link],[role=checkbox],[role=tab],[onclick],[contenteditable=true]';
+  const sel = 'a,button,input,select,textarea,summary,[role=button],[role=link],[role=checkbox],[role=tab],[role=slider],[onclick],[contenteditable=true]';
   const out = [];
   out.paths = [];
   const visit = (doc, path) => {
@@ -108,8 +108,11 @@ const mapScript = `(() => {
     // label a person reads is. Only for those two: every other field keeps
     // what it shows.
     const t = (e.getAttribute('type') || '').toLowerCase();
-    const named = (t === 'checkbox' || t === 'radio') && e.labels && e.labels.length ? e.labels[0].innerText : '';
-    const label = (named || e.innerText || e.value || e.getAttribute('aria-label') ||
+    // A range's value is a position, not a name, as a checkbox's is: it
+    // printed as "50 (input)" (CHALLENGES 319).
+    const labeled = t === 'checkbox' || t === 'radio' || t === 'range';
+    const named = labeled && e.labels && e.labels.length ? e.labels[0].innerText : '';
+    const label = (named || e.innerText || (t === 'range' ? '' : e.value) || e.getAttribute('aria-label') ||
                    e.getAttribute('placeholder') || e.getAttribute('title') ||
                    e.getAttribute('alt') || '').trim().replace(/\s+/g, ' ').slice(0, 60);
     out.push({
@@ -120,6 +123,9 @@ const mapScript = `(() => {
       testid: e.getAttribute('data-testid') || '',
       label: label,
       disabled: !!e.disabled,
+      value: t === 'range' ? String(e.value) :
+        (e.getAttribute('role') || '').toLowerCase() === 'slider' ?
+          (e.getAttribute('aria-valuetext') || e.getAttribute('aria-valuenow') || '') : '',
       frame: cands.paths[i],
       x: r.x, y: r.y, w: r.width, h: r.height
     });
@@ -136,6 +142,9 @@ type Element struct {
 	TestID   string `json:"testid"`
 	Label    string `json:"label"`
 	Disabled bool   `json:"disabled"`
+	// Value is a range's value as the page holds it, and empty for anything
+	// else: a slider's state, as a native one's is.
+	Value string `json:"value,omitempty"`
 	// Frame is the frame the element is in, as a path of frame selectors
 	// from the top page — "iframe#sameFrame >> iframe#nestedFrame" — or ""
 	// for the page itself.
@@ -325,7 +334,7 @@ func (f *Frame) ToDevice(x, y, w, h float64) uitree.Rect {
 func (e Element) NeutralRole() string {
 	if e.Role != "" {
 		switch e.Role {
-		case "button", "link", "checkbox", "tab", "radio":
+		case "button", "link", "checkbox", "tab", "radio", "slider":
 			return e.Role
 		}
 	}
@@ -344,6 +353,8 @@ func (e Element) NeutralRole() string {
 			return "checkbox"
 		case "radio":
 			return "radio"
+		case "range":
+			return "slider"
 		case "button", "submit", "reset", "image":
 			return "button"
 		default:
