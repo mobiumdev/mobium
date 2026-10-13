@@ -6757,6 +6757,47 @@ Safari: example.com's link mapped as `text="Learn more"`, a tap by it went
 to iana.org's page, and the inspector, driven through its own page's
 calls, showed that target and recorded `{"tap": "text=\"Learn more\""}`.
 
+### 315. On a watch, `text=` found a control and its own title
+
+**Found by:** measuring Wear OS for the docs evaluation's question about
+it (ROADMAP), on a Wear OS 5.1 emulator (API 35, 454×454 round).
+`text="Security"` on Settings matched two elements and was refused, and
+so was every row: a Wear "chip" is a `Button` whose own `text` repeats
+its title's `TextView` (`wear_chip_primary_text`). A phone's settings row
+carries no text of its own, so there only the title matched. The rule
+that makes a control and its title one match (CHALLENGES 215, 244) asked
+for iOS's element types and `label=` only. **Fixed:** on Android, a node
+that is no target, inside a target that `text=` also matched, is that
+target's title and not a second match (`titleOfTarget`). The scroll
+loop's test of an ambiguous locator had used exactly this shape as its
+fixture; it now has two rows of one name, which are two.
+
+### 316. On a watch, `map` listed every switch three times
+
+**Found by:** the same run, on Settings' Gestures. A Wear toggle chip is a
+clickable `ToggleButton` holding two more — its switch and the switch's
+container — each checkable, neither clickable, each with the chip's name
+and state. `Actionable` takes a checkable node as a target, so `map` gave
+three refs per row, and `text="Tilt-to-wake",role=switch` matched two.
+**Fixed:** a checkable node that takes no touch of its own, inside a
+clickable control that is checkable itself, is that control's switch
+(`partOfToggle`). A phone's settings row is not checkable, so its switch
+stays a target.
+
+### 317. Wear OS's own dialog was no dialog to `app_alert`
+
+**Found by:** turning Tilt-to-wake on, which asks first: "Tilt-to-wake
+reduces battery life. Turn on?" with a ✕ and a ✓. `app_alert` said no
+dialog was on screen while `map` showed only Cancel and OK. UiAutomator2's
+alert endpoint knows the framework's ids, and a watch's dialog fills its
+screen, so it is no floating window either (CHALLENGES 177). **Fixed:**
+Wear's alert layout is known by its ids (`wear_alertdialog_scroll_view`),
+and its ✓ and ✕ are marked positive and negative by theirs
+(`wear_alertdialog_positive_button`, `negative_button`), so `accept` and
+`dismiss` press those and say which. On the emulator, headed:
+`docs/checks/wear-os.sh` passed three times in three, and with `main`'s
+binary failed at its first tap.
+
 ## Findings that were not defects
 
 Worth recording because each one closed off an approach that looked obvious.

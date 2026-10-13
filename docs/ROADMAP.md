@@ -21,6 +21,12 @@ this is what is not.
      and invented an answer for Wear OS. Which answer is right — expected
      to work and untested, or refused until measured — is a decision to
      make before it goes in README's "Platforms".
+     **Wear OS measured 2026-10-13** (CHALLENGES 315–317): the Android
+     backends drive a Wear OS 5.1 emulator, after three fixes, and README
+     says so (`wear-os.sh`). Left for a watch: a real one, and the crown,
+     which `press` cannot send — Wear's lists also scroll by swipe, so
+     nothing needs it yet. HarmonyOS, KaiOS and BlackBerry: no plans to
+     implement at the moment; anyone can write a driver.
   3. **`press-tap` and `press-drag` on Android 16 and later**, refused
      since CHALLENGES 86: the refusals and comments said a restart would
      recover a device left with fingers down, which 86 measured it does

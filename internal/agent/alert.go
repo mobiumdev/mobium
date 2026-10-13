@@ -90,6 +90,19 @@ func (h *Handlers) alertOn(ctx context.Context, s *session, args map[string]inte
 				if pressing {
 					return h.pressAlertButton(ctx, s, tree, own, button, view)
 				}
+				// A dialog whose own ids say which button is yes and which
+				// is no — Wear OS's — is answered by pressing that one.
+				if answering {
+					if marked := markedBy(dialogButtons(tree), action == "accept"); marked != "" {
+						view.Answered = action
+						return h.pressAlertButton(ctx, s, tree, own, marked, view)
+					}
+				}
+				// Wear OS's: its ids say which is yes and which is no.
+				marked := markedBy(dialogButtons(tree), true) != "" && markedBy(dialogButtons(tree), false) != ""
+				if reading && marked {
+					return Result(fmt.Sprintf("a dialog is on screen: %q%s", own, buttonsLine(view.Buttons)), view), nil
+				}
 				if reading {
 					return Result(fmt.Sprintf("a dialog is on screen: %q%s\n(not one the platform's alert endpoint "+
 						"answers: press one of its buttons with app_alert button, or declare an answer with "+
@@ -266,6 +279,9 @@ func (h *Handlers) pressAlertButton(ctx context.Context, s *session, tree *uitre
 	}
 	delete(h.refs, s.dev.Serial)
 	view.Pressed = pressed
+	if view.Answered != "" {
+		return Result(fmt.Sprintf("%sed the dialog %q: pressed %q", view.Answered, text, pressed), view), nil
+	}
 	return Result(fmt.Sprintf("pressed %q on the dialog %q", pressed, text), view), nil
 }
 
@@ -408,6 +424,8 @@ func plainCaption(s string) string {
 // android:id/button1 and button2 on an alert, permission_allow_button and
 // permission_deny_button on a permission prompt — and not by position: the
 // notification prompt stacks Allow above Don't allow. Measured on Android 15.
+// Wear OS's own dialog is no alert to UiAutomator2 and is answered by
+// pressing its marked button (CHALLENGES 317).
 func pressedBy(platform string, bs []uitree.Entry, accept bool) string {
 	switch {
 	case len(bs) == 1:
@@ -419,10 +437,23 @@ func pressedBy(platform string, bs []uitree.Entry, accept bool) string {
 	case platform == "ios":
 		return strings.TrimSpace(bs[0].Label)
 	}
+	return markedBy(bs, accept)
+}
+
+// markedBy is the caption of the button whose id marks it positive, or
+// negative, on a dialog of two — Android's alert and permission ids, and
+// Wear OS's own alert, whose ✓ and ✕ are wear_alertdialog_positive_button
+// and negative_button — or "" when none does.
+func markedBy(bs []uitree.Entry, accept bool) string {
+	if len(bs) != 2 {
+		return ""
+	}
 	for _, b := range bs {
 		id := b.Node.TestID
-		if accept && (strings.HasSuffix(id, ":id/button1") || strings.Contains(id, "permission_allow")) ||
-			!accept && (strings.HasSuffix(id, ":id/button2") || strings.Contains(id, "permission_deny")) {
+		if accept && (strings.HasSuffix(id, ":id/button1") || strings.Contains(id, "permission_allow") ||
+			strings.HasSuffix(id, ":id/wear_alertdialog_positive_button")) ||
+			!accept && (strings.HasSuffix(id, ":id/button2") || strings.Contains(id, "permission_deny") ||
+				strings.HasSuffix(id, ":id/wear_alertdialog_negative_button")) {
 			return strings.TrimSpace(b.Label)
 		}
 	}

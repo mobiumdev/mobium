@@ -196,6 +196,13 @@ D-pad press is reported by where focus went. An Apple TV has no touch screen,
 so a tap there is refused, naming the remote
 ([docs/SETUP.md](docs/SETUP.md#an-apple-tv-simulator)).
 
+**Wear OS** is Android, and the Android backends drive it with nothing
+added: since 2026-10-13 on a Wear OS 5.1 emulator, through Wear's own
+Settings — its chips, its toggles and its own dialog, which `app_alert`
+answers — with swiping right as a watch's back
+([docs/checks/wear-os.sh](docs/checks/wear-os.sh)). Not yet a real watch,
+and not the crown: `press` has no rotary input.
+
 **Windows is not supported yet.** Everything that needs no device, the
 named-pipe daemon transport included, passes in CI on a Windows runner; no
 emulator or phone has been driven from Windows yet. See

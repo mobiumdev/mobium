@@ -374,13 +374,20 @@ func TestAmbiguousIsNotReportedAsMissing(t *testing.T) {
 	// the end of the list, and reported "no element matches" about something
 	// sitting on the screen in front of you. It sent me looking in the wrong
 	// place twice before I read the hierarchy.
+	//
+	// Two rows of one name: a control and its own title are one match since
+	// Wear OS's chips (CHALLENGES 315), which is what this fixture was.
 	xml := `<?xml version='1.0' encoding='UTF-8'?><hierarchy rotation="0">` +
 		`<node index="0" package="com.example.list" class="android.widget.FrameLayout" bounds="[0,0][1080,2400]">` +
 		`<node index="0" package="com.example.list" class="androidx.recyclerview.widget.RecyclerView" ` +
 		`scrollable="true" bounds="[0,200][1080,1200]">` +
-		`<node index="0" text="Privacy" class="android.widget.LinearLayout" clickable="true" ` +
+		`<node index="0" class="android.widget.LinearLayout" clickable="true" ` +
 		`enabled="true" bounds="[0,300][1080,500]">` +
 		`<node index="0" text="Privacy" class="android.widget.TextView" bounds="[40,340][600,460]" />` +
+		`</node>` +
+		`<node index="1" class="android.widget.LinearLayout" clickable="true" ` +
+		`enabled="true" bounds="[0,500][1080,700]">` +
+		`<node index="0" text="Privacy" class="android.widget.TextView" bounds="[40,540][600,660]" />` +
 		`</node></node></node></hierarchy>`
 	tree, err := uitree.ParseAndroid([]byte(xml))
 	if err != nil {

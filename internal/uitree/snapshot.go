@@ -119,6 +119,9 @@ func Actionable(n *Node) bool {
 	if !n.Displayed {
 		return false
 	}
+	if partOfToggle(n) {
+		return false
+	}
 	if !n.Clickable && !n.LongClickable && !n.Checkable && !n.Scrollable {
 		// Text inputs are frequently focusable-only until touched. And a
 		// slider: Android marks a seek bar neither clickable nor scrollable,
@@ -129,6 +132,25 @@ func Actionable(n *Node) bool {
 		}
 	}
 	return true
+}
+
+// partOfToggle reports a checkable node that takes no touch of its own,
+// inside a control that does and that has the checked state itself: the
+// switch drawn on a toggle, not a second one. Wear OS's toggle chip is a
+// clickable ToggleButton holding two more, its switch and the switch's
+// container, each with the chip's name and state and neither clickable, so
+// map listed every switch on Gestures three times (CHALLENGES 316). A
+// phone's settings row is not checkable, so its switch stays a target.
+func partOfToggle(n *Node) bool {
+	if !n.Checkable || n.Clickable || n.LongClickable || IsIOS(n) {
+		return false
+	}
+	for p := n.Parent; p != nil; p = p.Parent {
+		if p.Checkable && p.Clickable {
+			return true
+		}
+	}
+	return false
 }
 
 // maxLabel is how many runes of label `map` will print for one element.
@@ -594,6 +616,9 @@ func (t *Tree) Dialog() *Node {
 	if s := t.autofillSave(); s != nil {
 		return s
 	}
+	if w := t.wearAlert(); w != nil {
+		return w
+	}
 	var found *Node
 	t.Walk(func(n *Node) bool {
 		if found != nil {
@@ -652,6 +677,28 @@ func (t *Tree) autofillSave() *Node {
 			return false
 		}
 		if n.TestID == "android:id/autofill_save" && !n.Bounds.Empty() {
+			found = n
+			return false
+		}
+		return true
+	})
+	return found
+}
+
+// wearAlert is Wear OS's own alert dialog: an icon, a title, a message and
+// a ✕ and a ✓ named Cancel and OK by their descriptions. A watch's dialog
+// fills its screen, so it is no floating window, and UiAutomator2's alert
+// endpoint knows only the framework's ids: with Settings' "Tilt-to-wake
+// reduces battery life." up, app_alert said no dialog was on screen
+// (CHALLENGES 317). Known by its layout's ids, which Wear's library gives
+// every app that uses it.
+func (t *Tree) wearAlert() *Node {
+	var found *Node
+	t.Walk(func(n *Node) bool {
+		if found != nil {
+			return false
+		}
+		if strings.HasSuffix(n.TestID, ":id/wear_alertdialog_scroll_view") && !n.Bounds.Empty() {
 			found = n
 			return false
 		}
