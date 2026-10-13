@@ -394,6 +394,8 @@ func (h *Handlers) listWeb(ctx context.Context, s *session, els []webview.Elemen
 		}
 		if sel := e.Selector(); sel != "" {
 			item.Locator = &LocatorView{Kind: "css", Value: sel, Exact: true}
+		} else {
+			item.Locator = deriveWebLocator(els, i)
 		}
 		view.Elements = append(view.Elements, item)
 	}
@@ -423,6 +425,39 @@ func (h *Handlers) listWeb(ctx context.Context, s *session, els []webview.Elemen
 			"These elements cannot be tapped: "+firstSentence(frameErr.Error()))
 	}
 	return Result(strings.Join(lines, "\n"), view), nil
+}
+
+// deriveWebLocator is, for a page element with no id and no test id, the
+// locator its whole text gives it, narrowed by role where the text alone
+// names several, checked against the page as a locator would be resolved,
+// or nil when neither names it alone. Without it map gave such an element
+// only a ref, and a recording wrote the ref into a test that ran on another
+// screen: most of a real page's links have no id. A native element's
+// locator is derived the same way (uitree.Derive).
+func deriveWebLocator(els []webview.Element, i int) *LocatorView {
+	label := strings.TrimSpace(els[i].Label)
+	if label == "" {
+		return nil
+	}
+	names := func(loc uitree.Locator) bool {
+		var idx []int
+		for j, e := range els {
+			if webMatches(loc, e) {
+				idx = append(idx, j)
+			}
+		}
+		idx = preferWhole(loc, els, idx)
+		return len(idx) == 1 && idx[0] == i
+	}
+	loc := uitree.Locator{Kind: uitree.KindText, Value: label, Whole: true}
+	if names(loc) {
+		return &LocatorView{Kind: string(uitree.KindText), Value: label, Exact: true}
+	}
+	loc.Role = els[i].NeutralRole()
+	if loc.Role != "" && names(loc) {
+		return &LocatorView{Kind: string(uitree.KindText), Value: label, Exact: true, Role: loc.Role}
+	}
+	return nil
 }
 
 // firstSentence trims a long explanation down for a footnote, keeping the

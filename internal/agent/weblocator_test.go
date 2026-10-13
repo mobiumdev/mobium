@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/mobiumdev/mobium/internal/mobiumerr"
+	"github.com/mobiumdev/mobium/internal/uitree"
 	"github.com/mobiumdev/mobium/internal/webview"
 )
 
@@ -81,5 +82,28 @@ func TestAFramedMatchIsNamedByItsFrame(t *testing.T) {
 	}
 	if framedHint(els, nil, "#tap") != "" {
 		t.Error("a hint with nothing elsewhere")
+	}
+}
+
+// A page element with no id and no test id is given the locator its whole
+// text names it by, narrowed by role where the text names several — map
+// gave it only a ref, and a recording wrote the ref into a test.
+func TestAPageElementWithNoIDGetsALocator(t *testing.T) {
+	els := []webview.Element{
+		{Tag: "a", Label: "Learn more"},
+		{Tag: "a", Label: "More"},
+		{Tag: "button", Label: "More"},
+		{Tag: "button", Label: "Save"},
+		{Tag: "button", Label: "Save"},
+		{Tag: "div"},
+	}
+	for i, want := range []string{`text="Learn more"`, `text="More",role=link`, `text="More",role=button`, "", "", ""} {
+		got := ""
+		if v := deriveWebLocator(els, i); v != nil {
+			got = uitree.Locator{Kind: uitree.Kind(v.Kind), Value: v.Value, Exact: v.Exact, Role: v.Role}.String()
+		}
+		if got != want {
+			t.Errorf("element %d (%q): %q, want %q", i, els[i].Label, got, want)
+		}
 	}
 }
