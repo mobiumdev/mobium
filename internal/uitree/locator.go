@@ -433,6 +433,11 @@ var curlyQuotes = strings.NewReplacer("\u2019", "'", "\u2018", "'", "\u201c", "\
 
 func foldQuotes(s string) string { return curlyQuotes.Replace(s) }
 
+// MatchesString compares one string with the locator's value as a node's
+// own strings are compared — a part in any case, or the whole when quoted —
+// for what is not a node: an element of a WebView's page map.
+func (l Locator) MatchesString(s string) bool { return l.field(s) }
+
 func match(field, value string, exact bool) bool {
 	if value == "" {
 		return false

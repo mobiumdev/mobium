@@ -357,7 +357,10 @@ func GetToolSchemas() []Tool {
 			Description: "Switch between the native shell and a WebView, or report the current " +
 				"context when called with no argument. While a WebView context is active, " +
 				"app_map and app_tap operate on the page's elements; taps are still delivered " +
-				"as real touches on the device.",
+				"as real touches on the device. A locator there matches what app_map reads of " +
+				"the page — text and label an element's accessible name, testid its " +
+				"data-testid or id, role its role — and css= takes a CSS selector, with a " +
+				"frame's path before it as app_map prints one (\"iframe#f >> button\").",
 			InputSchema: map[string]interface{}{
 				"type": "object",
 				"properties": withDevice(map[string]interface{}{

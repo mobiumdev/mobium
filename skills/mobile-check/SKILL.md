@@ -499,9 +499,12 @@ parsing the sentence: `--json` prints it (`"code": "no_such_element"`, with a
   - `editable` — not a text field: use `tap` for it; `type` is for fields.
 - `no Android device or emulator is running`
   Ask the user to start one. Mobium cannot.
-- `"…" is a locator, and locators do not work inside a WebView`
-  You are in a web context. Use a `@ref` from `map`, or `mobium context
-  NATIVE_APP` to get back to the app shell.
+- `… matches N elements of the page` / `no element of the page … matches`
+  Inside a WebView a locator matches what `map` reads of the page: text and
+  label are an element's accessible name, testid its data-testid or id,
+  role its role. Narrow it with `,role=`, quotes, `,nth=`, or a CSS
+  selector: `mobium tap 'css=button.save'`, with a frame's path before it
+  as `map` prints one (`iframe#f >> button`).
 
 ## Verifying your work
 
