@@ -6944,6 +6944,24 @@ pixels alike; a chip cut off by a third is still out. The capture is
 passed 16 of 25, passed 24; the 25th tapped a button
 under the keyboard, and passed once the test put the keyboard away.
 
+### 323. An iOS 26 alert's button, named once, was ambiguous by its id
+
+**Found by:** a SwiftUI checkout app written to be tested (not published),
+on the iPhone 17 Pro simulator, iOS 26.5. Its remove-from-cart alert gives
+each button an accessibility identifier, and `testid=removeConfirm` was
+refused as ambiguous: iOS 26 reports each alert button as a button inside
+an identical button — same class, id, label and frame — as it does on the
+Face ID sheet (CHALLENGES 179's `label=Cancel`). `label=` had collapsed the
+copy since then, but `testid=` kept every match on purpose, since a test ID
+is a name the app gave and two nodes carrying one are two elements. This
+copy is iOS's, not the app's. **Fixed:** for `testid=`, a node inside
+another with its class, id and bounds is the same control; two the app
+named alike — side by side, nested at another frame, or a button and its
+image — stay two. On the Face ID capture `testid=…button.cancel` resolved
+to two before and one after, and so did the alert's, captured as
+`ios26-swiftui-alert-buttons.xml`. On the simulator `testid=removeCancel` and
+`testid=removeConfirm` each answered the alert.
+
 ## Findings that were not defects
 
 Worth recording because each one closed off an approach that looked obvious.

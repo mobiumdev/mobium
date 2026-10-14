@@ -327,6 +327,20 @@ func TestLabelOfAButtonInsideItselfIsOne(t *testing.T) {
 			t.Errorf("%s resolved to %d nodes, want 1", s, len(got))
 		}
 	}
+	// testid= too: the copy is iOS's, not a second element the app named.
+	// CHALLENGES 323.
+	for _, s := range []string{
+		"testid=com.apple.localauthentication.ax.authentication.button.cancel",
+		"testid=button.cancel",
+	} {
+		loc, err := ParseLocator(s)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if got := loc.Resolve(tree); len(got) != 1 {
+			t.Errorf("%s resolved to %d nodes, want 1", s, len(got))
+		}
+	}
 	if d := tree.Dialog(); d == nil || d.Label != "Face Not Recognized" {
 		t.Errorf("the sheet is not seen as a dialog: %+v", d)
 	}
@@ -357,5 +371,47 @@ func TestWholeLabelBeatsPart(t *testing.T) {
 	loc, _ := ParseLocator("label=Allow")
 	if n := len(loc.Resolve(tree)); n != 2 {
 		t.Errorf("label=Allow resolved to %d, want 2", n)
+	}
+}
+
+// An iOS 26 alert's buttons come the same way: testid=removeConfirm, an id
+// the app gave once, was refused as ambiguous. Captured on an iPhone 17 Pro
+// simulator, iOS 26.5, from a SwiftUI alert. CHALLENGES 323.
+func TestAnAlertButtonsTestIDIsOne(t *testing.T) {
+	tree := loadIOS(t, "ios26-swiftui-alert-buttons.xml")
+	for _, s := range []string{"testid=removeConfirm", "testid=removeCancel"} {
+		loc, err := ParseLocator(s)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if got := loc.Resolve(tree); len(got) != 1 {
+			t.Errorf("%s resolved to %d nodes, want 1", s, len(got))
+		}
+	}
+}
+
+// Only iOS's copy is collapsed. Two buttons the app gave one id stay two,
+// side by side or one inside the other at another frame, and so does a
+// button holding an image with its id. CHALLENGES 323.
+func TestTwoNodesTheAppNamedAlikeStayTwo(t *testing.T) {
+	tree, err := ParseIOS([]byte(`<?xml version="1.0" encoding="UTF-8"?>
+<XCUIElementTypeApplication type="XCUIElementTypeApplication" name="Shop" label="Shop" enabled="true" visible="true" accessible="false" x="0" y="0" width="402" height="874">
+  <XCUIElementTypeButton type="XCUIElementTypeButton" name="add" label="Add" enabled="true" visible="true" accessible="true" x="16" y="100" width="100" height="44"/>
+  <XCUIElementTypeButton type="XCUIElementTypeButton" name="add" label="Add" enabled="true" visible="true" accessible="true" x="16" y="200" width="100" height="44"/>
+  <XCUIElementTypeButton type="XCUIElementTypeButton" name="buy" label="Buy" enabled="true" visible="true" accessible="true" x="16" y="300" width="200" height="44">
+    <XCUIElementTypeButton type="XCUIElementTypeButton" name="buy" label="Buy" enabled="true" visible="true" accessible="true" x="16" y="300" width="100" height="44"/>
+  </XCUIElementTypeButton>
+  <XCUIElementTypeButton type="XCUIElementTypeButton" name="cart" label="Cart" enabled="true" visible="true" accessible="true" x="16" y="400" width="100" height="44">
+    <XCUIElementTypeImage type="XCUIElementTypeImage" name="cart" label="Cart" enabled="true" visible="true" accessible="false" x="16" y="400" width="100" height="44"/>
+  </XCUIElementTypeButton>
+</XCUIElementTypeApplication>`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, id := range []string{"add", "buy", "cart"} {
+		loc, _ := ParseLocator("testid=" + id)
+		if n := len(loc.Resolve(tree)); n != 2 {
+			t.Errorf("testid=%s resolved to %d nodes, want 2", id, n)
+		}
 	}
 }
