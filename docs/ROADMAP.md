@@ -688,6 +688,37 @@ this is what is not.
   does not is a candidate. An evaluation run grading agents on MobiumApp is
   what found it, and is the way to measure each one.
 
+- **What a session changed, in one place** (written down 2026-10-13). Every
+  change Mobium makes to a device is its own named tool — there is no shell
+  tool — so a transcript shows each change as a call. But nothing answers
+  "what has this session changed so far": a permission granted, a locale,
+  time zone or appearance set, a location or network condition, an app
+  installed or its data cleared, and which of those the session puts back
+  at its end (accessibility and orientation are restored today; the rest
+  are not). An agent's reviewer, and the evaluation harness, which diffs the
+  device's settings itself to find out, both have to reconstruct it. A
+  ledger in the session would hold it: each state-changing call records
+  what it changed, the value before where it can be read and after, and
+  whether the session restores it; `app_session` with `action: "changes"`
+  and `mobium session changes` list it. Its positive control is ready: the
+  harness's before-and-after settings diff must match the ledger on every
+  trial. From the same principle as the tool design behind it — state
+  changes through a dedicated tool, so a reviewer can see what changes.
+
+- **Every recoverable error says what to do next, as a build rule**
+  (written down 2026-10-13). Since CHALLENGES 321 an error's remedy is in
+  its text, where an agent reads it, but only an error built with one has
+  one: 109 of about 960 errors set a remedy. An audit of 193 errors agents
+  met in the evaluation's stored runs (`mobium-evals`,
+  `probes/error_remedies.py`) found 50 whose text named no next step; most
+  were right as they were — a timeout an agent used as a sleep, a missing
+  argument named in the message — and two had none and needed one (321).
+  The rule `apisurface` would check: every error with a code a caller can
+  recover from (`device_not_ready`, `no_such_element`,
+  `ambiguous_locator`, `not_confirmed`, `timeout`, `unsupported`) carries a
+  remedy, or is listed as an exemption with its reason, as arguments are;
+  backfilled by how often agents meet each, from the audit.
+
 - **A password the agent never sees** (written down 2026-10-12). Mobium
   never shows a password field's contents and never echoes what it typed
   there (CHALLENGES 43, 99), but the value still passes through the agent:

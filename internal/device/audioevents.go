@@ -109,7 +109,8 @@ func (a *ADB) PackageUID(ctx context.Context, pkg string) (int, error) {
 			}
 		}
 	}
-	return 0, mobiumerr.New(mobiumerr.NoSuchElement, "%s is not installed", pkg)
+	return 0, mobiumerr.New(mobiumerr.NoSuchElement, "%s is not installed", pkg).
+		WithRemedy("app_list_apps lists the installed apps by package id; app_launch takes that id, not the name on the screen")
 }
 
 // PackageInFront is the package of the app in front: the root of the task in

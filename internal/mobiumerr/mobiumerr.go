@@ -24,6 +24,7 @@ package mobiumerr
 import (
 	"errors"
 	"fmt"
+	"strings"
 )
 
 // Code classifies a failure. The string is what crosses the wire.
@@ -191,6 +192,27 @@ func PayloadOf(err error) Payload {
 			Retryable: e.Retryable, Details: e.Details}
 	}
 	return Payload{Code: Unclassified, Message: err.Error()}
+}
+
+// Text is the error as a reader sees it: the message, and the remedy after
+// it when the message does not already say it. The remedy was only in the
+// structured half, and an agent in Claude Code is handed a failed call's
+// text alone — no code, no remedy — so a next step kept there never reached
+// it: app_fill on a slider no tool can see said why it failed and not that
+// app_swipe moves it (CHALLENGES 321). The CLI printed the message alone
+// too. Payload.Message stays the message, for a caller that reads the two
+// apart.
+func Text(err error) string {
+	msg := err.Error()
+	e, ok := As(err)
+	if !ok || strings.TrimSpace(e.Remedy) == "" {
+		return msg
+	}
+	r := strings.TrimSpace(e.Remedy)
+	if strings.Contains(strings.ToLower(msg), strings.ToLower(strings.TrimRight(r, "."))) {
+		return msg
+	}
+	return msg + "\nnext: " + r
 }
 
 // FromPayload rebuilds an error received over the wire.

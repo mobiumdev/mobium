@@ -99,7 +99,8 @@ func (a *ADB) runtimePermissionRecords(ctx context.Context, pkg string) ([]permi
 		return nil, err
 	}
 	if strings.Contains(string(out), "Unable to find package") {
-		return nil, mobiumerr.New(mobiumerr.InvalidArgument, "%s is not installed", pkg)
+		return nil, mobiumerr.New(mobiumerr.InvalidArgument, "%s is not installed", pkg).
+			WithRemedy("app_list_apps lists the installed apps by package id; app_launch takes that id, not the name on the screen")
 	}
 	return parseRuntimePermissions(string(out)), nil
 }

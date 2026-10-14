@@ -108,3 +108,23 @@ func TestNames(t *testing.T) {
 		}
 	}
 }
+
+// A remedy kept only in the structured half never reached an agent, which
+// is handed a failed call's text alone; the text carries it when the
+// message does not already say it (CHALLENGES 321).
+func TestTextCarriesTheRemedy(t *testing.T) {
+	e := New(Unsupported, "typed %q and nothing took it", "0.2").WithRemedy("app_swipe from its thumb")
+	if got := Text(e); got != "typed \"0.2\" and nothing took it\nnext: app_swipe from its thumb" {
+		t.Errorf("Text = %q", got)
+	}
+	said := New(NoSuchElement, "no map yet — run app_map first").WithRemedy("run app_map first")
+	if got := Text(said); got != "no map yet — run app_map first" {
+		t.Errorf("a remedy the message already says was repeated: %q", got)
+	}
+	if got := Text(New(Timeout, "timed out")); got != "timed out" {
+		t.Errorf("no remedy: %q", got)
+	}
+	if p := PayloadOf(e); p.Message != "typed \"0.2\" and nothing took it" || p.Remedy != "app_swipe from its thumb" {
+		t.Errorf("the payload keeps the message and the remedy apart: %+v", p)
+	}
+}

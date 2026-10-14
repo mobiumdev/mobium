@@ -6897,6 +6897,34 @@ at the missing ARIA sliders with the binary before. Native two-thumb
 sliders — Material's `RangeSlider`, Compose's, an iOS app's own — are not
 measured yet (ROADMAP).
 
+### 321. A remedy in the structured half never reached an agent
+
+**Found by:** auditing every tool error an agent met in the evaluation's
+stored runs — 193 errors in 417 trials, 59 kinds — against the advice to
+write errors that say what to do next (`mobium-evals`,
+`probes/error_remedies.py`). In Claude Code an agent is handed a failed
+call's **text** alone: the transcripts show no code and no remedy, only
+"Error: " and the message — where a successful call is handed its
+structured half (CHALLENGES 303). And the text was the message only:
+`ErrorResult` put the remedy in the structured half and nowhere else, as
+did the CLI, whose `error:` line printed the message. So every remedy not
+also written into its message was seen by no agent and no person: none of
+the 109 that set one is repeated word for word in its message, though some
+messages paraphrase theirs. 318's own refusal was one: its
+message said the slider takes no keys, and only its remedy named
+`app_swipe`. The audit found two errors with no next step at all, too:
+`app_keyboard`'s "typed into the focused field and could not read it back",
+after which an agent typed again or gave up, and "… is not installed",
+after which one guessed a package from the app's name. **Fixed:** an
+error's text — MCP's content and the CLI's line — is the message, then
+`next: ` and the remedy when the message does not already say it
+(`mobiumerr.Text`); the structured payload keeps the two apart. The
+keyboard's says no field has focus now, as when a form moves on as the text
+goes in, and to read what landed before typing again, which could type it
+twice; "not installed" names `app_list_apps`, which gives the package id
+`app_launch` takes. Making a remedy a rule for every recoverable error is
+in ROADMAP.
+
 ## Findings that were not defects
 
 Worth recording because each one closed off an approach that looked obvious.

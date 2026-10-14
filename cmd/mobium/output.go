@@ -26,7 +26,7 @@ func printError(err error) {
 		}{err.Error(), mobiumerr.PayloadOf(err)})
 		return
 	}
-	fmt.Fprintln(os.Stderr, "error: "+err.Error())
+	fmt.Fprintln(os.Stderr, "error: "+mobiumerr.Text(err))
 }
 
 // commandRan is set once cobra accepts the command line. See main.
