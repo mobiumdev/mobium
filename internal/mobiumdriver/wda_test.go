@@ -752,3 +752,67 @@ func TestANamedTextFieldIsFoundAsEitherFieldType(t *testing.T) {
 		t.Errorf("a button: %q", p)
 	}
 }
+
+// A field that formats as it is typed holds what was typed: a card number
+// field shows 4242424242424242 as "4242 4242 4242 4242". That was retried
+// down to six keys a second and blamed on a dropped keystroke. It is
+// accepted on the first try, and what the field shows is put on the node.
+// CHALLENGES 324.
+func TestWDAAcceptsAFieldThatFormatsAsItIsTyped(t *testing.T) {
+	var posts int
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		switch {
+		case strings.HasSuffix(r.URL.Path, "/attribute/value"):
+			w.Write([]byte(`{"value":"4242 4242 4242 4242"}`))
+		case strings.HasSuffix(r.URL.Path, "/value") && r.Method == http.MethodPost:
+			posts++
+			w.Write([]byte(`{"value":null}`))
+		case strings.HasSuffix(r.URL.Path, "/element"):
+			w.Write([]byte(`{"value":{"ELEMENT":"EL1","element-6066-11e4-a52e-4f735466cecf":"EL1"}}`))
+		default:
+			w.Write([]byte(`{"value":null}`))
+		}
+	}))
+	defer srv.Close()
+
+	c := newW3CClient(5 * time.Second)
+	c.setBase(srv.URL)
+	c.sessionID = "S1"
+	d := &WDA{w3c: c, scale: 1}
+
+	node := &uitree.Node{TestID: "card"}
+	if err := d.SetText(context.Background(), node, "4242424242424242"); err != nil {
+		t.Fatalf("a formatted field was refused: %v", err)
+	}
+	if posts != 1 {
+		t.Errorf("typed %d times, want 1", posts)
+	}
+	if node.Text != "4242 4242 4242 4242" {
+		t.Errorf("the node says the field shows %q", node.Text)
+	}
+}
+
+// Separators added are formatting; anything else missing or added is not,
+// and a dropped space looks exactly like a field that strips spaces, so
+// that stays a dropped keystroke.
+func TestFormatted(t *testing.T) {
+	for _, c := range []struct {
+		text, got string
+		want      bool
+	}{
+		{"4242424242424242", "4242 4242 4242 4242", true},
+		{"1230", "12/30", true},
+		{"5551234567", "(555) 123-4567", true},
+		{"hello world", "helloworld", false},
+		{"a@b.com", "ab.com", false},
+		{"1230", "12/3", false},
+		{"1230", "12/30x", false},
+		{"abc", "a1bc", false},
+		{"", " ", false},
+	} {
+		if got := formatted(c.text, c.got); got != c.want {
+			t.Errorf("formatted(%q, %q) = %v, want %v", c.text, c.got, got, c.want)
+		}
+	}
+}

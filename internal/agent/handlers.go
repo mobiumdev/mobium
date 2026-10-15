@@ -2163,6 +2163,7 @@ func (h *Handlers) typeTextOn(ctx context.Context, s *session, args map[string]i
 			return nil, err
 		}
 	}
+	shown := node.Text
 	if err := typer.SetText(ctx, node, want); err != nil {
 		// What no class table can know, the server can: React Native's
 		// buttons are plain ViewGroups, and UiAutomator2 answered typing into
@@ -2182,6 +2183,13 @@ func (h *Handlers) typeTextOn(ctx context.Context, s *session, args map[string]i
 		// rule against printing a password field exists to stop.
 		return Result(fmt.Sprintf("typed %d characters into %s, a password field — not echoed",
 			len([]rune(text)), target), ActionView{Action: "type", Target: target}), nil
+	}
+	// A driver that read the field back puts on the node what it shows
+	// when the app formatted the text as it arrived (CHALLENGES 324): say
+	// so, or the next wait for the text as typed fails with no reason.
+	if node.Text != shown && node.Text != want {
+		return Result(fmt.Sprintf("typed %q into %s, which shows it as %q — the app formats it as it is typed",
+			text, target, node.Text), ActionView{Action: "type", Target: target}), nil
 	}
 	return Result(fmt.Sprintf("typed %q into %s", text, target),
 		ActionView{Action: "type", Target: target}), nil
