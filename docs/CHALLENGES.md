@@ -6925,6 +6925,25 @@ twice; "not installed" names `app_list_apps`, which gives the package id
 `app_launch` takes. Making a remedy a rule for every recoverable error is
 in ROADMAP.
 
+### 322. A chip in plain sight, a point past its row, was swiped for
+
+**Found by:** a SwiftUI checkout app written to be tested (not published),
+on the iPhone 17 Pro simulator, iOS 26.5. Its size and category chips are
+capsules with an outline, and SwiftUI reports each one's frame a point
+outside its horizontal scroll view: 34 points high from y=452 in a row from
+y=453 to 486, and the first chip a point past the leading edge too. A
+target had to fit inside its viewport, or run past both edges of an axis
+(241), so a tap on any size chip swiped once, met the end of the page, and
+failed "on the screen but never scrolled fully into view" with the chip in
+plain sight: every test that chose a size or a category, 9 of 25. Padding
+the row by two points made them pass, which confirmed the cause. **Fixed:**
+an edge past the viewport by a twentieth of the target's own extent or less
+is a sliver, not a cut, on either axis. A fraction holds in points and
+pixels alike; a chip cut off by a third is still out. The capture is
+`ios26-swiftui-size-chips.xml`. On the simulator the same suite, which
+passed 16 of 25, passed 24; the 25th tapped a button
+under the keyboard, and passed once the test put the keyboard away.
+
 ## Findings that were not defects
 
 Worth recording because each one closed off an approach that looked obvious.

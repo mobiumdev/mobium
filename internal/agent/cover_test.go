@@ -219,3 +219,44 @@ func TestATargetBiggerThanItsContainerIsInView(t *testing.T) {
 		t.Errorf("a chip cut off at the edge, %v, is in view in %v", cut, v)
 	}
 }
+
+// A target past its viewport's edge by a sliver is in view. A SwiftUI chip
+// with an outline reports its frame a point outside its row — 34 points high
+// from y=452 in a row from y=453 to 486, and the first one a point past the
+// leading edge too — and a tap on any size chip was swiped for and refused.
+// A chip cut off by a third is still out. CHALLENGES 322.
+func TestATargetPastItsViewByASliverIsInView(t *testing.T) {
+	raw, err := os.ReadFile("../uitree/testdata/ios26-swiftui-size-chips.xml")
+	if err != nil {
+		t.Fatal(err)
+	}
+	tree, err := uitree.ParseIOS(raw)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, id := range []string{"size_XS", "size_M", "size_XXL"} {
+		var chip *uitree.Node
+		tree.Walk(func(n *uitree.Node) bool {
+			if n.TestID == id {
+				chip = n
+			}
+			return chip == nil
+		})
+		if chip == nil {
+			t.Fatalf("%s is not in the capture", id)
+		}
+		c, v := viewOf(tree, chip)
+		if c == nil {
+			t.Fatalf("%s has no scroll container", id)
+		}
+		if !inView(v, chip.Bounds) {
+			t.Errorf("%s %v is not in view in %v", id, chip.Bounds, v)
+		}
+		cut := chip.Bounds
+		third := (cut.X2 - cut.X1) / 3
+		cut.X1, cut.X2 = v.X1-third, v.X1-third+(chip.Bounds.X2-chip.Bounds.X1)
+		if inView(v, cut) {
+			t.Errorf("%s cut off by a third, %v, is in view in %v", id, cut, v)
+		}
+	}
+}

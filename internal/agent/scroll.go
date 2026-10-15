@@ -749,9 +749,17 @@ var errOffScreen = mobiumerr.New(mobiumerr.ElementNotReachable, "the element is 
 // points high in a 34-point horizontal scroll view, a point over each edge,
 // and a tap on the Podcasts chip swiped the results down fifteen times and
 // gave up, the chip in plain sight the whole time. CHALLENGES 241.
+//
+// And an edge past the viewport by a sliver is not cut off: a SwiftUI chip
+// with an outline reports its frame a point outside its row, top and
+// leading edge, and every size chip on a product page was swiped for and
+// refused while in plain sight. A sliver is a twentieth of the target's own
+// extent, which is the same in points and pixels; a chip cut off by a third
+// is still out. CHALLENGES 322.
 func inView(view, b uitree.Rect) bool {
 	within := func(lo, hi, vlo, vhi int) bool {
-		return (lo >= vlo && hi <= vhi) || (lo < vlo && hi > vhi)
+		sliver := func(over int) bool { return over <= 0 || over*20 <= hi-lo }
+		return (sliver(vlo-lo) && sliver(hi-vhi)) || (lo < vlo && hi > vhi)
 	}
 	return within(b.X1, b.X2, view.X1, view.X2) && within(b.Y1, b.Y2, view.Y1, view.Y2)
 }
