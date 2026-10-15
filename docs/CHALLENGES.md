@@ -7011,13 +7011,16 @@ first. With a menu up the hierarchy is the menu's window alone (225), so
 its first child is the menu, [42,1123][336,1795], and anything outside it
 was "off the screen". **Fixed:** the screen is the display where the source
 names it, then the root's rectangle, then its first child's; and the
-refusal carries the screen it used in `details.screen`. **Not reproduced:**
-the same step then passed ten times in ten — alone, in the suite, and in the
-suite beside the iOS one — with the item inside the menu's window every
-time, and a probe that reported the screen on this refusal never fired. So
-the gap is measured, on a captured menu (`compose-dropdown-menu-uia2.xml`),
-but which read put the item outside the window that once is not; the next
-refusal names its screen.
+refusal carries the screen it used in `details.screen`. **Reproduced the
+next day, in a dialog:** the same step passed ten times in ten, but a
+confirm dialog's Cancel and Remove, tapped by `testid`, were refused the
+same way, centered on the display at 584,1300. An Android dialog is a
+window of its own, as a menu is. Ten rounds of twenty such taps, alternating
+the build before the fix and the one after, each with a fresh daemon:
+twelve refused in 142 before (a refusal ends its test), in eight of the
+ten rounds, and none in 200 after. Which read puts a control outside its own
+window's first child is still not known; the gap is measured on a captured
+menu (`compose-dropdown-menu-uia2.xml`), and the refusal names its screen.
 
 ## Findings that were not defects
 
