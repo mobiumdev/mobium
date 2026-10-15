@@ -702,6 +702,15 @@ func (l Locator) resolveOwn(t *Tree) []*Node {
 		}
 		return true
 	})
+	if l.Kind == KindTestID {
+		// A test ID is a name the app gave, so two nodes carrying one stay
+		// two — but not a node inside another of its kind with its id and
+		// frame. That copy is iOS's: since iOS 26 an alert's buttons, and
+		// the Face ID sheet's, each come as a button inside an identical
+		// button, and testid=removeConfirm was refused as ambiguous on an
+		// app that gave the id once. CHALLENGES 323.
+		exact, out = withoutCopies(exact), withoutCopies(out)
+	}
 	if len(exact) == 1 {
 		return exact
 	}
@@ -785,6 +794,32 @@ func namedByHint(n *Node) bool {
 // same frame and label, and this kept the wrapper — which reports itself
 // enabled — so a tap by the button's own ref was reported done on a button
 // that could not take it. CHALLENGES 247.
+// withoutCopies drops each node inside another of the list that has its
+// class, test ID and bounds: one control reported twice.
+func withoutCopies(nodes []*Node) []*Node {
+	kept := nodes[:0:0]
+	for _, n := range nodes {
+		if !copyOfAncestor(n, nodes) {
+			kept = append(kept, n)
+		}
+	}
+	return kept
+}
+
+func copyOfAncestor(n *Node, nodes []*Node) bool {
+	for p := n.Parent; p != nil; p = p.Parent {
+		if p.Bounds != n.Bounds || p.Class != n.Class || p.TestID != n.TestID {
+			continue
+		}
+		for _, m := range nodes {
+			if m == p {
+				return true
+			}
+		}
+	}
+	return false
+}
+
 func sameAsAncestor(n *Node, nodes []*Node) bool {
 	for p := n.Parent; p != nil; p = p.Parent {
 		if p.Bounds != n.Bounds {
