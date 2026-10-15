@@ -10,6 +10,7 @@ import (
 	"strings"
 	"sync"
 	"time"
+	"unicode"
 
 	"github.com/mobiumdev/mobium/internal/device"
 	"github.com/mobiumdev/mobium/internal/uitree"
@@ -684,6 +685,19 @@ func (w *WDA) SetText(ctx context.Context, n *uitree.Node, text string) error {
 		if got == text {
 			return nil
 		}
+		// A field that formats as you type is not a dropped keystroke:
+		// a card number field showed 4242424242424242 as
+		// "4242 4242 4242 4242", an expiry 1230 as "12/30", and each was
+		// retried down to six keys a second and blamed on iOS. Every
+		// character typed is there, in order, and only separators were
+		// added, so the field holds what was typed in the app's format;
+		// what it shows is put on the node for the result to say.
+		// Separators removed is not the same case: a dropped space looks
+		// exactly like it. CHALLENGES 324.
+		if formatted(text, got) {
+			n.Text = got
+			return nil
+		}
 		// A field that reads back as nothing but bullets is a password field,
 		// whatever it was when it was resolved: Flutter's obscured field is a
 		// plain TextField until it holds something, and then a
@@ -738,6 +752,23 @@ func (w *WDA) SetText(ctx context.Context, n *uitree.Node, text string) error {
 	return mobiumerr.New(mobiumerr.NotConfirmed, "typed %q and the field holds %q — iOS dropped a keystroke, and "+
 		"retrying %d times, down to %d keys a second, did not recover it", text, got, setTextAttempts-1,
 		typingFrequencies[setTextAttempts-1])
+}
+
+// formatted reports whether got is text with separators added: every
+// character of text in order, and nothing else but spaces and punctuation.
+func formatted(text, got string) bool {
+	want := []rune(text)
+	i := 0
+	for _, r := range got {
+		if i < len(want) && r == want[i] {
+			i++
+			continue
+		}
+		if unicode.IsLetter(r) || unicode.IsDigit(r) {
+			return false
+		}
+	}
+	return i == len(want) && len(want) > 0
 }
 
 // isMasked reports a value that is nothing but the bullets a secure field

@@ -6962,6 +6962,24 @@ to two before and one after, and so did the alert's, captured as
 `ios26-swiftui-alert-buttons.xml`. On the simulator `testid=removeCancel` and
 `testid=removeConfirm` each answered the alert.
 
+### 324. A field that formats as you type was blamed on a dropped keystroke
+
+**Found by:** a SwiftUI checkout app written to be tested (not published),
+on the iPhone 17 Pro simulator, iOS 26.5. Its card number field shows
+4242424242424242 as `4242 4242 4242 4242`, and its expiry 1230 as `12/30`.
+`app_fill` read the field back, found it different, retried down to six
+keys a second, and failed: "iOS dropped a keystroke" (61). Nothing was
+dropped, and the remedy that cause implies — type again, slower — could
+never work. **Fixed:** a field holding every typed character in order, with
+only spaces and punctuation added, holds what was typed in the app's
+format. It is accepted on the first read, and the result says what the
+field shows — `typed "1230" into testid=field_cardExpiry, which shows it as
+"12/30"` — so a wait for the text as typed is not a mystery. A field that
+*removed* a character is still refused, separator or not, because a dropped
+space looks exactly like it. Android was never affected: UiAutomator2 does
+not read back. On the simulator both fields took their digits on the first
+try, each result naming what the field shows.
+
 ## Findings that were not defects
 
 Worth recording because each one closed off an approach that looked obvious.
