@@ -1791,7 +1791,8 @@ func (h *Handlers) resolveNodeOnce(ctx context.Context, s *session, target strin
 					(node.Bounds.X1+node.Bounds.X2)/2, (node.Bounds.Y1+node.Bounds.Y2)/2),
 				"scroll the screen to it with app_scroll_to or app_swipe, then act on it").
 				WithRemedy("app_scroll_to with a direction, or app_swipe, then act on it").
-				WithDetail("locator", loc.String())
+				WithDetail("locator", loc.String()).
+				WithDetail("screen", displayOf(tree).String())
 		}
 		if container == nil || inView(tree.Viewport(container), node.Bounds) {
 			return h.settle(ctx, s, loc, node, tree, readTook)
@@ -2006,18 +2007,42 @@ func (h *Handlers) lightResolve(ctx context.Context, s *session, loc uitree.Loca
 	return n, t, took, true
 }
 
+// displayOf is the screen a tree was read from, as centerOnScreen takes it.
+// The refusal it leads to carries it, since which screen was used is the
+// first question when an element in plain sight is called off it.
+func displayOf(t *uitree.Tree) uitree.Rect {
+	if t == nil || t.Root == nil {
+		return uitree.Rect{}
+	}
+	// The display, where the source gives it: UiAutomator2's hierarchy has
+	// no bounds of its own, and its first window is not the screen when a
+	// popup is up — the hierarchy is a Compose DropdownMenu's window alone.
+	// CHALLENGES 326.
+	screen := t.Screen
+	if screen.Empty() {
+		screen = t.Root.Bounds
+	}
+	if screen.Empty() && len(t.Root.Children) > 0 {
+		screen = t.Root.Children[0].Bounds
+	}
+	return screen
+}
+
 // centerOnScreen says whether a node's center is on the screen a tree was
-// read from, and if not, whether it lies above it. The screen is the root's
-// rectangle, or its first child's where the root has none, as an iOS
-// hierarchy's does; with neither known, a node counts as on it.
+// read from, and if not, whether it lies above it. The screen is the
+// display the source names, else the root's rectangle, else its first
+// child's, as an iOS hierarchy's does; with none known, a node counts as on
+// it.
 func centerOnScreen(t *uitree.Tree, n *uitree.Node) (on, above bool) {
 	if t == nil || t.Root == nil {
 		return true, false
 	}
-	screen := t.Root.Bounds
-	if screen.Empty() && len(t.Root.Children) > 0 {
-		screen = t.Root.Children[0].Bounds
-	}
+	// The display, where the source gives it: UiAutomator2's hierarchy has
+	// no bounds of its own, and its first window is not the screen when a
+	// popup is up — a Compose DropdownMenu's window was taken for it, and
+	// an item of the open menu, on screen, was refused as off it.
+	// CHALLENGES 326.
+	screen := displayOf(t)
 	if screen.Empty() {
 		return true, false
 	}

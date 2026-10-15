@@ -522,3 +522,30 @@ func TestAnErrorResultsTextCarriesTheRemedy(t *testing.T) {
 		t.Errorf("structured %+v", p)
 	}
 }
+
+// With a Compose DropdownMenu up, UiAutomator2's hierarchy is the menu's
+// window alone and has no bounds of its own, and the screen was taken from
+// that window: anything outside the menu was "off the screen". The screen
+// is the display the hierarchy names. Captured on the Android 15 emulator.
+// CHALLENGES 326.
+func TestTheScreenIsTheDisplayNotAPopupsWindow(t *testing.T) {
+	raw, err := os.ReadFile("../uitree/testdata/compose-dropdown-menu-uia2.xml")
+	if err != nil {
+		t.Fatal(err)
+	}
+	tree, err := uitree.ParseAndroid(raw)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got, want := displayOf(tree), (uitree.Rect{X1: 0, Y1: 0, X2: 1080, Y2: 2400}); got != want {
+		t.Errorf("the screen is %v, want the display %v", got, want)
+	}
+	below := &uitree.Node{Bounds: uitree.Rect{X1: 42, Y1: 1800, X2: 336, Y2: 1900}}
+	if on, _ := centerOnScreen(tree, below); !on {
+		t.Error("a point on the display, below the menu's window, is called off the screen")
+	}
+	off := &uitree.Node{Bounds: uitree.Rect{X1: 42, Y1: 2450, X2: 336, Y2: 2550}}
+	if on, above := centerOnScreen(tree, off); on || above {
+		t.Errorf("a point below the display: on %v, above %v", on, above)
+	}
+}
