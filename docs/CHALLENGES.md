@@ -6996,6 +6996,29 @@ front is still found for a target the keyboard does not cover. The capture
 is `ios26-swiftui-keyboard-over-button.xml`. On the simulator the tap was
 refused naming the keyboard, and `keyboard --key enter` put it away.
 
+### 326. With a menu up, the menu's window was taken for the screen
+
+**Found by:** a 25-test Compose checkout suite (a test app, not published)
+on the Android 15 emulator, run beside the same suite on an iOS simulator.
+A tap on a state in a `DropdownMenu` was refused, once: "its center is off
+the screen, at 189,1443, and nothing it is inside scrolls", with the menu
+open and the item on screen exactly there in the screenshot after. Before a
+tap, an element with nothing around it that scrolls must have its center on
+the screen (190), and the screen was the hierarchy's rectangle, or its first
+child's. UiAutomator2's hierarchy has no rectangle; it names the display in
+`width` and `height`, which every other read of the screen here takes
+first. With a menu up the hierarchy is the menu's window alone (225), so
+its first child is the menu, [42,1123][336,1795], and anything outside it
+was "off the screen". **Fixed:** the screen is the display where the source
+names it, then the root's rectangle, then its first child's; and the
+refusal carries the screen it used in `details.screen`. **Not reproduced:**
+the same step then passed ten times in ten — alone, in the suite, and in the
+suite beside the iOS one — with the item inside the menu's window every
+time, and a probe that reported the screen on this refusal never fired. So
+the gap is measured, on a captured menu (`compose-dropdown-menu-uia2.xml`),
+but which read put the item outside the window that once is not; the next
+refusal names its screen.
+
 ## Findings that were not defects
 
 Worth recording because each one closed off an approach that looked obvious.
