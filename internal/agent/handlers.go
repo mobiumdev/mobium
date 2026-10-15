@@ -1398,11 +1398,6 @@ func pickOne(loc uitree.Locator, tree *uitree.Tree) (*uitree.Node, error) {
 		if d := tree.Dialog(); d != nil && !matches[0].Within(d) {
 			return nil, dialogOver(d.Label, loc, true)
 		}
-		// And under a screen the app put in front itself — a full-screen
-		// viewer, a sheet — which is no Alert or Sheet to Dialog.
-		if tree.CoveredByScreen(matches[0]) {
-			return nil, screenOver(loc, tree)
-		}
 		// The keyboard is the same case one layer over: on iOS what it covers
 		// stays in the tree, marked not visible, and a locator resolved it —
 		// so a tap landed on a key and reported success. Refused only where
@@ -1414,6 +1409,15 @@ func pickOne(loc uitree.Locator, tree *uitree.Tree) (*uitree.Node, error) {
 			if c, v := viewOf(tree, matches[0]); c == nil || inView(v, matches[0].Bounds) {
 				return nil, keyboardOver(loc, true)
 			}
+		}
+		// And under a screen the app put in front itself — a full-screen
+		// viewer, a sheet — which is no Alert or Sheet to Dialog. Asked
+		// after the keyboard: with the keyboard up SwiftUI reports a
+		// screen-sized view around a page's content as not visible, and a
+		// button under the keys was blamed on "another screen of the app",
+		// a remedy — close it — with nothing to close. CHALLENGES 325.
+		if tree.CoveredByScreen(matches[0]) {
+			return nil, screenOver(loc, tree)
 		}
 		if matches[0].Bounds.Empty() {
 			return nil, failedCheck(mobiumerr.ElementNotReachable, loc, checkVisible,

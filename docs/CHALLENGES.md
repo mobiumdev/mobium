@@ -6980,6 +6980,22 @@ space looks exactly like it. Android was never affected: UiAutomator2 does
 not read back. On the simulator both fields took their digits on the first
 try, each result naming what the field shows.
 
+### 325. A button under the keyboard was blamed on another screen
+
+**Found by:** checking 322's fix on a SwiftUI checkout app written to be
+tested (not published), on the iPhone 17 Pro simulator, iOS 26.5. With the
+keyboard up after typing a gift card's email, Add to Cart sat under the
+keys, and the tap was refused: "another screen of the app is in front of
+it — close the screen in front first". There was no such screen. With the
+keyboard up, SwiftUI reports a screen-sized view around the page's content
+as not visible, which is the shape 217 reads as a screen the app put in
+front, and that was asked before the keyboard. Following the remedy, an
+agent looks for a close control that is not there. **Fixed:** the keyboard
+is asked first, so the refusal names it and says to hide it; a screen in
+front is still found for a target the keyboard does not cover. The capture
+is `ios26-swiftui-keyboard-over-button.xml`. On the simulator the tap was
+refused naming the keyboard, and `keyboard --key enter` put it away.
+
 ## Findings that were not defects
 
 Worth recording because each one closed off an approach that looked obvious.

@@ -277,6 +277,27 @@ func TestATargetUnderTheKeyboardIsRefused(t *testing.T) {
 	}
 }
 
+// With the keyboard up SwiftUI reports a screen-sized view around the page
+// as not visible, and a button under the keys was refused as behind
+// "another screen of the app", naming a close that is not there. The
+// keyboard is the cause, and is named. Captured on an iPhone 17 Pro
+// simulator, iOS 26.5. CHALLENGES 325.
+func TestTheKeyboardIsNamedBeforeAScreenInFront(t *testing.T) {
+	raw, err := os.ReadFile("../uitree/testdata/ios26-swiftui-keyboard-over-button.xml")
+	if err != nil {
+		t.Fatal(err)
+	}
+	tree, err := uitree.ParseIOS(raw)
+	if err != nil {
+		t.Fatal(err)
+	}
+	loc, _ := uitree.ParseLocator("testid=addToCart")
+	_, err = pickOne(loc, tree)
+	if mobiumerr.CodeOf(err) != mobiumerr.DeviceNotReady || !strings.Contains(err.Error(), "keyboard") {
+		t.Errorf("a button under the keyboard: %v", err)
+	}
+}
+
 // regionDriver reports where the Android keyboard takes touches.
 type regionDriver struct {
 	fakeDriver
