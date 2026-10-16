@@ -232,6 +232,26 @@ func (h *Handlers) scrollIntoView(ctx context.Context, s *session, loc uitree.Lo
 		}
 	}
 	if container == nil {
+		// A dialog already up is the whole screen on Android, with nothing
+		// in it that scrolls: answer it by a rule and look again, or name it.
+		handled, derr := h.dialogOverScroll(ctx, s, loc)
+		if derr != nil {
+			return nil, nil, 0, derr
+		}
+		if handled {
+			if tree, err = s.driver.Snapshot(ctx); err != nil {
+				return nil, nil, 0, err
+			}
+			container = scrollContainer(tree)
+			if n, resolveErr = resolvedAndVisible(pick, tree, container); resolveErr == nil {
+				return n, tree, 0, nil
+			}
+			if lostAmongLookAlikes(resolveErr) || !matchedNothing(resolveErr) && !errors.Is(resolveErr, errOffScreen) {
+				return nil, nil, 0, resolveErr
+			}
+		}
+	}
+	if container == nil {
 		// Distinguish the two ways this fails. A screen with nothing
 		// scrollable cannot be searched by scrolling, and saying so is more
 		// use than reporting that fifteen swipes found nothing.
@@ -297,10 +317,24 @@ func (h *Handlers) scrollIntoView(ctx context.Context, s *session, loc uitree.Lo
 		if err != nil {
 			return nil, nil, i, err
 		}
+		answered := false // a rule answered a dialog, which took this swipe
 		if now := tree.Package(); app != "" && now != "" && now != app {
-			return nil, nil, i, mobiumerr.New(mobiumerr.ElementNotReachable, "swiping %s moved from %s to %s instead of scrolling — "+
-				"the area being swiped does not scroll that way. Nothing in the hierarchy "+
-				"says which way it does, so try the other axis, or app_swipe", dir, app, now)
+			handled, derr := h.dialogOverScroll(ctx, s, loc)
+			if derr != nil {
+				return nil, nil, i, derr
+			}
+			if handled {
+				if tree, err = s.driver.Snapshot(ctx); err != nil {
+					return nil, nil, i, err
+				}
+				now = tree.Package()
+				answered = true
+			}
+			if now != "" && now != app {
+				return nil, nil, i, mobiumerr.New(mobiumerr.ElementNotReachable, "swiping %s moved from %s to %s instead of scrolling — "+
+					"the area being swiped does not scroll that way. Nothing in the hierarchy "+
+					"says which way it does, so try the other axis, or app_swipe", dir, app, now)
+			}
 		}
 		container = scrollContainer(tree)
 		if container == nil {
@@ -317,6 +351,12 @@ func (h *Handlers) scrollIntoView(ctx context.Context, s *session, loc uitree.Lo
 		}
 		lastErr = resolveErr
 		partial, partialIn = offScreenTarget(pick, tree)
+		if answered {
+			// The swipe landed on the dialog and moved nothing, which is
+			// not the end of the list: read it afresh and swipe again.
+			prev = read(container)
+			continue
+		}
 
 		now := read(container)
 		// Toward the start, a swipe that moved the rows clearly less than the
@@ -1086,4 +1126,27 @@ func endOfList(loc uitree.Locator, resolveErr error, dir string, scrolls int, _ 
 		"bringing it into view; at the start of a list the last swipe is a pull, which an app may answer by "+
 		"refreshing what it shows", whyNot(loc, resolveErr), dir, scrolls, plural(scrolls)).
 		WithDetail("scrolls", scrolls).WithDetail("may_have_refreshed", true)
+}
+
+// dialogOverScroll is asked when a scroll finds nothing to scroll, or its
+// screen stops being the app's. A dialog is neither: a permission prompt
+// comes a moment after the tap that asked for it, mid-scroll, and was taken
+// for a swipe that navigated — "try the other axis" — or, already up, for a
+// screen that cannot scroll. A declared rule answers it and the scroll goes
+// on (app_dialogs promises any action with a target); without one the
+// refusal names the dialog. It reports whether a rule answered one, and asks
+// nothing on a scroll that found what it looked for. CHALLENGES 328.
+func (h *Handlers) dialogOverScroll(ctx context.Context, s *session, loc uitree.Locator) (bool, error) {
+	text, err := h.dialogText(ctx, s)
+	if err != nil || text == "" {
+		return false, nil
+	}
+	handled, err := h.answerByRule(ctx, s)
+	if err != nil {
+		return false, err
+	}
+	if !handled {
+		return false, dialogOver(text, loc, false)
+	}
+	return true, nil
 }

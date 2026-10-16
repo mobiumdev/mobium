@@ -7052,6 +7052,30 @@ in the run appeared nowhere in the trace. **Fixed:** the description now
 says what is so: a password is not recorded, only its length; other typed
 text is, in the call's result and the screen after it.
 
+### 328. A dialog that came up mid-scroll was blamed on the list
+
+**Found by:** turning a client script's trace back into a test (a probe,
+not published), on the Android 15 emulator. MobiumApp's Dialog Demo asks
+for the camera; Android's prompt comes a moment after the tap, and only
+while the permission is undecided. A test that declared a rule for the
+prompt — `when` "take pictures", `press` "While using the app" — then
+scrolled up to the outcome line failed three times in three: "swiping up
+moved from dev.mobium.mobiumapp to com.google.android.permissioncontroller
+instead of scrolling — the area being swiped does not scroll that way". The
+prompt had come up under the first swipe. `app_dialogs` promises a rule
+answers a dialog in the way of any action with a target, but only target
+resolution asked for one; the scroll loop took the change of app for a
+swipe that navigated, and a prompt already up, the whole screen on Android,
+for a screen with "nothing on this screen scrolls" — both remedies, the
+other axis and app_swipe, could not work. **Fixed:** when a scroll finds
+nothing to scroll, or its screen stops being the app's, it asks for a
+dialog before blaming the list. A rule answers it and the scroll goes on,
+the swipe the dialog took not counted as the end of the list; without one
+the refusal names the dialog, as a tap's does. On the emulator the rule's
+test passed three times in three with the prompt and once with the
+permission granted, and the test without a rule was refused naming the
+prompt, three in three.
+
 ## Findings that were not defects
 
 Worth recording because each one closed off an approach that looked obvious.
