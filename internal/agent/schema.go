@@ -875,8 +875,8 @@ func GetToolSchemas() []Tool {
 				"before and after, the point an action touched, a failure's error — and after each the " +
 				"screen, with the map's elements drawn over it; stop with a path saves a zip in " +
 				"Vibium's record format, which player.vibium.dev opens. Omit the " +
-				"action to ask whether one is running. Text typed into a field is not recorded, only its " +
-				"length. On a real phone the screenshots are its owner's screen; screenshots false keeps " +
+				"action to ask whether one is running. A password is not recorded, only its length; " +
+				"other typed text is, in the call's result and the screen after it. On a real phone the screenshots are its owner's screen; screenshots false keeps " +
 				"none. One trace per device; ending the session discards it.",
 			InputSchema: map[string]interface{}{
 				"type": "object",

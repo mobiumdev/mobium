@@ -1,6 +1,7 @@
 package testrun
 
 import (
+	"encoding/json"
 	"encoding/xml"
 	"fmt"
 	"os"
@@ -258,6 +259,41 @@ func TestExpectPollsAReadAndSaysWhatItSaw(t *testing.T) {
 			if r.Status != Failed || !strings.Contains(r.Failure.Message, `state is "foreground"`) {
 				t.Errorf("an expect that stayed false: %s %+v", r.Status, r.Failure)
 			}
+		}
+	}
+}
+
+// Each read an expect makes says in its _meta what the expect asserts, so a
+// trace of the test keeps the assertion; the attempts count up from 1. A
+// trace once held an expect as a bare read, and a test made from it passed
+// with the app behind Settings.
+func TestAnExpectsReadsCarryItsAssertion(t *testing.T) {
+	var metas []map[string]interface{}
+	call := func(tool string, args map[string]interface{}, meta ...map[string]interface{}) (*agent.ToolsCallResult, error) {
+		if len(meta) == 0 {
+			t.Fatal("an expect's read had no _meta")
+		}
+		metas = append(metas, meta[0])
+		state := "background"
+		if len(metas) == 2 {
+			state = "foreground"
+		}
+		return &agent.ToolsCallResult{StructuredContent: map[string]interface{}{"state": state}}, nil
+	}
+	e := Expect{Tool: "app_state", Arguments: map[string]interface{}{"app": "x"}, Field: "state", Equals: "foreground",
+		TimeoutMs: 3000}
+	same := func(a map[string]interface{}) map[string]interface{} { return a }
+	if err := expect(e, true, call, same, time.Now().Add(time.Minute)); err != nil {
+		t.Fatal(err)
+	}
+	if len(metas) != 2 {
+		t.Fatalf("%d reads, want 2", len(metas))
+	}
+	for i, m := range metas {
+		got, _ := json.Marshal(m[agent.MetaExpect])
+		want := fmt.Sprintf(`{"attempt":%d,"equals":"foreground","field":"state","soft":true,"timeout_ms":3000}`, i+1)
+		if string(got) != want {
+			t.Errorf("read %d's assertion: %s, want %s", i+1, got, want)
 		}
 	}
 }

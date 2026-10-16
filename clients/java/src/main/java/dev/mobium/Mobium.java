@@ -1772,9 +1772,10 @@ public final class Mobium implements AutoCloseable {
     /**
      * Starts recording this session as a trace: from now on every call on the
      * device is a step, with the screen after it and the map's elements drawn
-     * over it, until {@link #traceStop(String)} saves it. Text typed into a
-     * field is not recorded, only its length. On a real phone the screenshots
-     * are its owner's screen; see {@link #traceStart(String, boolean, boolean)}
+     * over it, until {@link #traceStop(String)} saves it. A password is not
+     * recorded, only its length; other typed text is, in the call's result
+     * and the screen after it. On a real phone the screenshots are its
+     * owner's screen; see {@link #traceStart(String, boolean, boolean)}
      * to keep none. One trace per device, and ending the session discards it.
      *
      * @return the {@code device} and whether it is {@code tracing}

@@ -1548,8 +1548,8 @@ export class Device {
    * Start recording the session as a trace: until traceStop(), every call on
    * this device is a step, with the screen after it and the map's elements
    * drawn over it. `name` titles the trace; `screenshots` and `maps` are true
-   * unless set. Text typed into a field is not recorded, only its length. On
-   * a real phone the screenshots are its owner's screen; screenshots: false
+   * unless set. A password is not recorded, only its length; other typed
+   * text is, in the call's result and the screen after it. On a real phone the screenshots are its owner's screen; screenshots: false
    * keeps none. One trace per device; ending the session discards it.
    */
   async traceStart({ name, screenshots, maps } = {}) {

@@ -1120,9 +1120,10 @@ namespace Mobium
         /// <see cref="TraceStop"/>, every call on the device is a step —
         /// before and after, the point an action touched, a failure's error —
         /// and after each the screen, with the map's elements drawn over it.
-        /// Text typed into a field is not recorded, only its length. On a real
-        /// phone the screenshots are its owner's screen. One trace per device;
-        /// a second start throws, and ending the session discards it.
+        /// A password is not recorded, only its length; other typed text is,
+        /// in the call's result and the screen after it. On a real phone the
+        /// screenshots are its owner's screen. One trace per device; a second
+        /// start throws, and ending the session discards it.
         /// </summary>
         /// <returns>The trace's state: <c>device</c> and <c>tracing</c>.</returns>
         public IDictionary<string, object?> TraceStart() =>
