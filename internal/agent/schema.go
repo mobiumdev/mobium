@@ -1871,7 +1871,7 @@ func GetToolSchemas() []Tool {
 						"type":        "array",
 						"description": "The calls to make, in order.",
 						"minItems":    1,
-						"maxItems":    maxBatchSteps,
+						"maxItems":    MaxBatchSteps,
 						"items": map[string]interface{}{
 							"type": "object",
 							"properties": map[string]interface{}{

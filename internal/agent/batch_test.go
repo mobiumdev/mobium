@@ -144,7 +144,7 @@ func TestBatchNeedsSteps(t *testing.T) {
 			t.Errorf("args %v: err = %v, want invalid_argument", args, err)
 		}
 	}
-	many := make([]map[string]interface{}, maxBatchSteps+1)
+	many := make([]map[string]interface{}, MaxBatchSteps+1)
 	for i := range many {
 		many[i] = step("app_current", nil)
 	}

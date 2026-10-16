@@ -10,9 +10,10 @@ import (
 	"github.com/mobiumdev/mobium/internal/mobiumerr"
 )
 
-// maxBatchSteps bounds one batch. A flow longer than this is a script, and a
-// script wants to see each answer before choosing the next call.
-const maxBatchSteps = 100
+// MaxBatchSteps bounds one batch. A flow longer than this is a script, and a
+// script wants to see each answer before choosing the next call. mobium test
+// cuts a longer run of steps into batches of this size (CHALLENGES 329).
+const MaxBatchSteps = 100
 
 // batchKeepalive is how long a batch runs without saying anything before it
 // sends a progress note. The daemon's client gives up on a call that is
@@ -161,9 +162,9 @@ func parseBatch(args map[string]interface{}) ([]batchStep, error) {
 		return nil, mobiumerr.New(mobiumerr.InvalidArgument,
 			"steps must be a non-empty list of {\"name\": tool, \"arguments\": {...}}")
 	}
-	if len(raw) > maxBatchSteps {
+	if len(raw) > MaxBatchSteps {
 		return nil, mobiumerr.New(mobiumerr.InvalidArgument,
-			"a batch takes at most %d steps, got %d", maxBatchSteps, len(raw))
+			"a batch takes at most %d steps, got %d", MaxBatchSteps, len(raw))
 	}
 
 	schemas := map[string]map[string]interface{}{}
