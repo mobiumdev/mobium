@@ -3,6 +3,7 @@ package agent
 import (
 	"context"
 	"fmt"
+	"os"
 	"strings"
 	"testing"
 	"time"
@@ -992,5 +993,112 @@ func TestTheStartOfAListSaysItMayHaveRefreshed(t *testing.T) {
 	down, _ := mobiumerr.As(endOfList(loc, nil, "down", 3, false))
 	if !strings.Contains(down.Error(), "end of the list") || down.Details["may_have_refreshed"] != nil {
 		t.Errorf("down: %v %v", down, down.Details)
+	}
+}
+
+// promptDriver is a list over which Android's permission prompt comes up —
+// after the first swipe, as a prompt comes a moment after the tap that asked
+// for it, or before any (up) — and goes when one of its buttons is tapped.
+type promptDriver struct {
+	leavingDriver
+	up, answered bool
+	prompt       *uitree.Tree
+}
+
+func (d *promptDriver) showing() bool { return (d.up || d.left) && !d.answered }
+
+func (d *promptDriver) Snapshot(ctx context.Context) (*uitree.Tree, error) {
+	if d.showing() {
+		return d.prompt, nil
+	}
+	return listAtIn(d.t, d.first, d.rows, "com.example.list"), nil
+}
+
+func (d *promptDriver) Swipe(ctx context.Context, x1, y1, x2, y2 int, t time.Duration) error {
+	if d.showing() {
+		return nil // the prompt takes the touch, and nothing moves
+	}
+	if !d.left && !d.up {
+		// The prompt comes up under this swipe, which lands on it and
+		// moves nothing, as on the emulator.
+		d.left = true
+		return nil
+	}
+	return d.scrollingDriver.Swipe(ctx, x1, y1, x2, y2, t)
+}
+
+func (d *promptDriver) Tap(ctx context.Context, x, y int) error {
+	if d.showing() {
+		d.answered = true
+	}
+	return d.scrollingDriver.Tap(ctx, x, y)
+}
+
+func (d *promptDriver) AlertText(ctx context.Context) (string, error) {
+	if d.showing() {
+		return "Allow MobiumApp to take pictures and record video?", nil
+	}
+	return "", mobiumdriver.ErrNoAlert
+}
+func (d *promptDriver) AnswerAlert(ctx context.Context, accept bool) error   { return nil }
+func (d *promptDriver) SendAlertText(ctx context.Context, text string) error { return nil }
+
+func newPromptDriver(t *testing.T, up bool) *promptDriver {
+	raw, err := os.ReadFile("../uitree/testdata/android-permission-uia2.xml")
+	if err != nil {
+		t.Fatal(err)
+	}
+	prompt, err := uitree.ParseAndroid(raw)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return &promptDriver{leavingDriver: leavingDriver{scrollingDriver: scrollingDriver{rows: rows(30), visible: 5, t: t}},
+		up: up, prompt: prompt}
+}
+
+// A dialog that comes up while scrolling, or is up when it starts, is not
+// the swipe navigating nor a screen that cannot scroll: a declared rule
+// answers it and the scroll goes on, and without one the refusal names it.
+// Measured on the Android 15 emulator: a camera prompt after the tap that
+// asked for it, with a rule declared, was "swiping up moved from
+// dev.mobium.mobiumapp to com.google.android.permissioncontroller instead of
+// scrolling", three times in three. CHALLENGES 328.
+func TestADialogWhileScrollingIsNamedOrAnswered(t *testing.T) {
+	for _, c := range []struct {
+		name     string
+		up, rule bool
+	}{
+		{"comes up, a rule", false, true},
+		{"comes up, no rule", false, false},
+		{"already up, a rule", true, true},
+		{"already up, no rule", true, false},
+	} {
+		t.Run(c.name, func(t *testing.T) {
+			d := newPromptDriver(t, c.up)
+			h := NewHandlers()
+			h.implicitWait = 0
+			h.settleWindow = 0
+			s := &session{dev: fakeDevice(), driver: d, backend: BackendDump}
+			h.sessions["fake"] = s
+			if c.rule {
+				h.dialogRules[s.dev.Serial] = []dialogRule{{When: "take pictures", Press: "While using the app"}}
+			}
+			_, err := scrollTo(h, s, map[string]interface{}{"target": "text=Row 22"})
+			if c.rule {
+				if err != nil {
+					t.Fatalf("the rule did not answer the prompt: %v", err)
+				}
+				if !d.answered || len(h.handled) != 1 {
+					t.Errorf("answered %v, handled %v", d.answered, h.handled)
+				}
+				return
+			}
+			if mobiumerr.CodeOf(err) != mobiumerr.DeviceNotReady || !strings.Contains(err.Error(), "take pictures") {
+				t.Fatalf("want device_not_ready naming the dialog, got %v", err)
+			}
+			if strings.Contains(err.Error(), "other axis") || strings.Contains(err.Error(), "nothing on this screen scrolls") {
+				t.Errorf("still blames the list: %v", err)
+			}
+		})
 	}
 }
