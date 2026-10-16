@@ -732,7 +732,7 @@ func runSteps(steps []Step, base int, deadline time.Time, call Caller,
 			start := time.Now()
 			var err error
 			if steps[i].Expect != nil {
-				err = expect(*steps[i].Expect, call, dev, deadline)
+				err = expect(*steps[i].Expect, steps[i].Soft, call, dev, deadline)
 			} else {
 				_, err = callReaching(call, steps[i].Name, dev(steps[i].argumentsOrEmpty()), deadline)
 			}
@@ -826,7 +826,10 @@ const defaultExpectTimeout = 10 * time.Second
 // the expect's time — never past the test's — runs out, and then says what
 // it last saw. A read that fails is retried too: the app being checked on
 // may not be up yet.
-func expect(e Expect, call Caller, dev func(map[string]interface{}) map[string]interface{}, deadline time.Time) error {
+//
+// Each read carries the assertion in its _meta (agent.MetaExpect), so a trace
+// of the test says what was checked, not only what was read.
+func expect(e Expect, soft bool, call Caller, dev func(map[string]interface{}) map[string]interface{}, deadline time.Time) error {
 	timeout := defaultExpectTimeout
 	if e.TimeoutMs > 0 {
 		timeout = time.Duration(e.TimeoutMs) * time.Millisecond
@@ -837,8 +840,18 @@ func expect(e Expect, call Caller, dev func(map[string]interface{}) map[string]i
 	}
 	want, _ := json.Marshal(e.Equals)
 	var saw string
-	for {
-		res, err := call(e.Tool, dev(e.Arguments))
+	for attempt := 1; ; attempt++ {
+		assertion := map[string]interface{}{"field": e.Field, "equals": e.Equals, "attempt": attempt}
+		if e.Not {
+			assertion["not"] = true
+		}
+		if soft {
+			assertion["soft"] = true
+		}
+		if e.TimeoutMs > 0 {
+			assertion["timeout_ms"] = e.TimeoutMs
+		}
+		res, err := call(e.Tool, dev(e.Arguments), map[string]interface{}{agent.MetaExpect: assertion})
 		if err != nil {
 			saw = "the call failed: " + err.Error()
 		} else {

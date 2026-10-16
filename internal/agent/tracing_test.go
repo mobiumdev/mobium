@@ -53,18 +53,19 @@ func TestACallIsTracedOnItsDevice(t *testing.T) {
 	}
 }
 
-// Typed text never reaches a trace, only its length; a tap's point does,
+// Typed text is not among a call's arguments in a trace, only its length
+// (a password is nowhere in it: its result does not echo it); a tap's point does,
 // typing's absent point does not, and a failure is recorded as one.
 func TestATraceKeepsNoTypedText(t *testing.T) {
 	st := &sessionTrace{rec: trace.New(trace.Options{})}
 	s := &session{dev: fakeDevice(), driver: &fakeDriver{}, trace: st}
 	h := NewHandlers()
 
-	id := traceBefore(st, "app_fill", map[string]interface{}{"target": "testid=password", "text": "Sup3rSecret!"})
+	id := traceBefore(st, "app_fill", map[string]interface{}{"target": "testid=password", "text": "Sup3rSecret!"}, nil)
 	h.traceAfter(s, st, id, true, Result("filled", ActionView{Action: "fill", Target: "testid=password"}), nil)
-	id = traceBefore(st, "app_tap", map[string]interface{}{"target": "@e3"})
+	id = traceBefore(st, "app_tap", map[string]interface{}{"target": "@e3"}, nil)
 	h.traceAfter(s, st, id, true, Result("tapped", ActionView{Action: "tap", X: 540, Y: 1200}), nil)
-	id = traceBefore(st, "app_tap", map[string]interface{}{"target": "@e9"})
+	id = traceBefore(st, "app_tap", map[string]interface{}{"target": "@e9"}, nil)
 	h.traceAfter(s, st, id, true, nil, errors.New("no element matches @e9"))
 
 	out := traceOf(t, st)
@@ -103,5 +104,25 @@ func TestAnUntracedCallStaysOutOfTheTrace(t *testing.T) {
 	_, _ = h.Call("app_no_such_tool", map[string]interface{}{"device": "A"})
 	if n := st.rec.Calls(); n != 1 {
 		t.Errorf("an ordinary call was not recorded: %d calls", n)
+	}
+}
+
+// What an expect asserts reaches the trace beside the read's arguments, as
+// "assertion": without it an expect was a bare read there, and a test made
+// from the trace checked nothing.
+func TestAnExpectsAssertionIsTraced(t *testing.T) {
+	h := NewHandlers()
+	st := &sessionTrace{rec: trace.New(trace.Options{})}
+	h.sessions["a"] = &session{dev: &device.Device{Serial: "A"}, trace: st}
+	assertion := map[string]interface{}{"field": "state", "equals": "foreground", "attempt": 1}
+	_, _ = h.CallMeta("app_no_such_tool", map[string]interface{}{"device": "A", "app": "x"},
+		map[string]interface{}{MetaExpect: assertion})
+	_, _ = h.Call("app_no_such_tool", map[string]interface{}{"device": "A"})
+	out := traceOf(t, st)
+	if !strings.Contains(out, `"assertion":{"attempt":1,"equals":"foreground","field":"state"}`) {
+		t.Errorf("the trace has no assertion:\n%s", out)
+	}
+	if n := strings.Count(out, `"assertion"`); n != 1 {
+		t.Errorf("%d calls carry an assertion, want the expect's one", n)
 	}
 }

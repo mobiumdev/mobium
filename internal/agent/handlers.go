@@ -260,7 +260,7 @@ func (h *Handlers) CallMeta(name string, args, meta map[string]interface{}) (*To
 	if untraced, _ := meta[MetaUntraced].(bool); name != "app_trace" && !untraced {
 		if s := h.tracedSession(args); s != nil {
 			t := s.trace
-			id := traceBefore(t, name, args)
+			id := traceBefore(t, name, args, meta[MetaExpect])
 			res, err := h.dispatch(ctx, name, args)
 			res, err = h.reportIdle(h.reportHandled(res, err))
 			// A call that ended the session ended the trace with it.

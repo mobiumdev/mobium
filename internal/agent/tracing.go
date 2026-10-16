@@ -159,13 +159,23 @@ func (h *Handlers) tracedSession(args map[string]interface{}) *session {
 	return found
 }
 
-// traceBefore opens a call in the trace. Typed text is never recorded: a
-// trace is a file made to be passed around, and the field may have been a
-// password (CHALLENGES 43); its length is kept.
-func traceBefore(t *sessionTrace, name string, args map[string]interface{}) string {
+// traceBefore opens a call in the trace. The typed text is left out of the
+// call's arguments, which cannot tell whether the field was a password
+// (CHALLENGES 43); its length is kept. A password is left out everywhere —
+// its result says "not echoed" and map redacts it — but other typed text is
+// in the call's result and the screen after it, so the help says a password
+// is not recorded, not typed text.
+//
+// assertion, when not nil, is what an expect asserts of this read
+// (MetaExpect). It is kept beside the arguments, never among them: a tool's
+// own argument may be called expect (app_audio's is).
+func traceBefore(t *sessionTrace, name string, args map[string]interface{}, assertion interface{}) string {
 	params := map[string]interface{}{}
 	for k, v := range args {
 		params[k] = v
+	}
+	if assertion != nil {
+		params["assertion"] = assertion
 	}
 	switch name {
 	case "app_type", "app_fill", "app_alert":

@@ -1284,8 +1284,9 @@ class Device:
         elements drawn over it.
 
         ``name`` is the trace's title. ``screenshots`` and ``maps`` default
-        to true. Text typed into a field is not recorded, only its length. On
-        a real phone the screenshots are its owner's screen;
+        to true. A password is not recorded, only its length; other typed
+        text is, in the call's result and the screen after it. On a real
+        phone the screenshots are its owner's screen;
         ``screenshots=False`` keeps none. One trace per device; ending the
         session discards it.
         """

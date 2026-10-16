@@ -322,7 +322,9 @@ for a test that failed. `trace` in the config sets the default. Each
 attempt is also kept as a recording in Vibium's record format, at
 `mobium-report/artifacts/trace/<project>-<file>-<test>-<attempt>/trace.zip`,
 which the report links and [player.vibium.dev](https://player.vibium.dev)
-opens.
+opens. An `expect` is recorded as each read it made, with what it asserts
+beside the read's arguments as `assertion`: `field`, `equals`, `not`,
+`soft` and `timeout_ms` when set, and `attempt`, counting from 1.
 
 ```
 $ mobium test mobiumapp/form.test.json -g checkbox --project android --trace on --reporter list,html

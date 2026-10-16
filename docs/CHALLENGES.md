@@ -7022,6 +7022,36 @@ ten rounds, and none in 200 after. Which read puts a control outside its own
 window's first child is still not known; the gap is measured on a captured
 menu (`compose-dropdown-menu-uia2.xml`), and the refusal names its screen.
 
+### 327. A trace held an expect as a bare read, and said typed text was not in it
+
+**Found by:** turning a `mobium test` trace back into a test, one step per
+traced call, and running both on MobiumApp builds with a deliberate bug
+each (a probe, not published), on the Android 15 emulator. The generated
+suite caught every bug the original did but lost one (bug, test) cell: "the
+app is in front throughout" is two `expect`s, and a trace kept each as the
+read it made — `app_state`, `app_current` and the answer — with nothing of
+the field or the value it asserted. The test made from it asserted nothing
+and passed with the app behind Settings. A suite whose only check on a
+behavior is an `expect` would lose that check entirely. Waits were never
+affected: every argument of `app_wait_for` is in the trace. **Fixed:** each
+read an expect makes carries the assertion in its `_meta`
+(`dev.mobium/expect`), and the trace keeps it beside the read's arguments
+as `assertion` — `field`, `equals`, `not`, `soft` and `timeout_ms` when
+set, and `attempt` from 1, since an expect reads until it holds. On the
+emulator the traced login tests passed, and that test's trace now holds
+`{"field":"app","equals":"dev.mobium.mobiumapp"}` and
+`{"field":"state","equals":"foreground"}`.
+
+The same probe found the trace's description promising more than it kept.
+The CLI's help, `app_trace`'s schema and all five clients said text typed
+into a field "is not recorded, only its length". The call's arguments keep
+only the length, but its result says `typed "mobium" into testid=username`
+and the map after it shows the field's value. A password is safe — its
+result says it is not echoed, `map` redacts it, and a wrong password typed
+in the run appeared nowhere in the trace. **Fixed:** the description now
+says what is so: a password is not recorded, only its length; other typed
+text is, in the call's result and the screen after it.
+
 ## Findings that were not defects
 
 Worth recording because each one closed off an approach that looked obvious.

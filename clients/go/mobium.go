@@ -1979,9 +1979,10 @@ type TraceOptions struct {
 
 // TraceStart records every call on this device from now until TraceStop as a
 // step: before and after, the point an action touched, a failure's error, and
-// after each the screen with the map's elements drawn over it. Text typed
-// into a field is not recorded, only its length. One trace per device, and
-// ending the session discards it.
+// after each the screen with the map's elements drawn over it. A password is
+// not recorded, only its length; other typed text is, in the call's result
+// and the screen after it. One trace per device, and ending the session
+// discards it.
 func (d *Device) TraceStart(ctx context.Context, opts *TraceOptions) (*Trace, error) {
 	if opts == nil {
 		opts = &TraceOptions{}

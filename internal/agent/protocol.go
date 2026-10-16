@@ -100,8 +100,8 @@ type ToolsCallParams struct {
 	Name      string                 `json:"name"`
 	Arguments map[string]interface{} `json:"arguments,omitempty"`
 	// Meta is MCP's _meta: what the caller says about the call rather than
-	// to the tool, so no tool's schema carries it. Mobium reads one key,
-	// MetaUntraced.
+	// to the tool, so no tool's schema carries it. Mobium reads two keys,
+	// MetaUntraced and MetaExpect.
 	Meta map[string]interface{} `json:"_meta,omitempty"`
 }
 
@@ -110,6 +110,13 @@ type ToolsCallParams struct {
 // takes after each step for its own report: they are the runner looking,
 // not the test acting, and a trace of the test should hold the test.
 const MetaUntraced = "dev.mobium/untraced"
+
+// MetaExpect is the _meta key mobium test sets on each read an expect makes:
+// what it asserts — field, equals, and not, soft, timeout_ms when set — and
+// attempt, from 1, since an expect reads until it holds. A trace keeps it
+// on the call as "assertion"; without it an expect was traced as a bare
+// read, and a test made from the trace asserted nothing.
+const MetaExpect = "dev.mobium/expect"
 
 // ToolsCallResult is what a tool returns to an MCP client.
 //
