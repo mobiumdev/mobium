@@ -133,9 +133,16 @@ case "$(out)" in sent*) ;; *) fail "after sending, the outcome was \"$(out)\"" ;
 row "arrives" "read from $VIA"
 
 # --- digit by digit ---------------------------------------------------------
-i=0
+# The first digit into the first box, by name; then each of the rest where
+# the app has moved focus, as a person keeps typing. Typing each into its
+# box by name assumed the boxes clear of the keyboard: on iOS, with the code
+# shown on the screen because notifications are off, they are under it, and
+# a target under the keyboard is refused (CHALLENGES 107). Each digit is
+# confirmed in the box it went into, wherever focus went next (332).
+$M type testid=otpBox0 "$(printf '%s' "$CODE" | cut -c1)" >/dev/null
+i=1
 while [ $i -lt 6 ]; do
-  $M type testid=otpBox$i "$(printf '%s' "$CODE" | cut -c$((i + 1)))" >/dev/null
+  $M keyboard --text "$(printf '%s' "$CODE" | cut -c$((i + 1)))" >/dev/null
   i=$((i + 1))
 done
 hide

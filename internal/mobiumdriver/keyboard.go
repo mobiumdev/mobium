@@ -24,6 +24,35 @@ type FocusedField struct {
 	Kind     string
 	Value    string
 	Password bool
+	// MovedTo names the field that had focus once the text was in, when the
+	// app moved focus on as it arrived — a one-time code's boxes do.
+	MovedTo string
+	// el is WebDriverAgent's element id, which names the same field on every
+	// lookup.
+	el string
+}
+
+// focusLandWait bounds the wait for focus that is moving between fields.
+const focusLandWait = time.Second
+
+// focusLanded reads the focused field, and when none has focus waits briefly
+// for one: an app that moves focus on as text arrives has it nowhere for a
+// moment, and `keyboard --text` straight after typing a one-time code's first
+// box found no field on the emulator, with the second box about to have it
+// (CHALLENGES 332). No focus after the wait is still no focus.
+func focusLanded(ctx context.Context, read func(context.Context) (*FocusedField, error)) (*FocusedField, error) {
+	deadline := time.Now().Add(focusLandWait)
+	for {
+		f, err := read(ctx)
+		if err != nil || f != nil || time.Now().After(deadline) {
+			return f, err
+		}
+		select {
+		case <-ctx.Done():
+			return nil, ctx.Err()
+		case <-time.After(100 * time.Millisecond):
+		}
+	}
 }
 
 // ErrNoFocus is returned when no field has keyboard focus.
@@ -198,7 +227,7 @@ func (u *UIA2) FocusedField(ctx context.Context) (*FocusedField, error) {
 	if focused, _ := u.w3c.elementAttribute(ctx, id, "focused"); focused != "true" {
 		return nil, nil
 	}
-	f := &FocusedField{}
+	f := &FocusedField{el: id}
 	f.ID, _ = u.w3c.elementAttribute(ctx, id, "resource-id")
 	f.Kind, _ = u.w3c.elementAttribute(ctx, id, "class")
 	pw, _ := u.w3c.elementAttribute(ctx, id, "password")
@@ -230,7 +259,7 @@ func (u *UIA2) HasFocus(_ context.Context, n *uitree.Node) (bool, error) { retur
 // it reports one bullet per character — so one that already holds something
 // is refused rather than silently replaced.
 func (u *UIA2) TypeIntoFocus(ctx context.Context, text string) (*FocusedField, error) {
-	before, err := u.FocusedField(ctx)
+	before, err := focusLanded(ctx, u.FocusedField)
 	if err != nil {
 		return nil, err
 	}
@@ -250,6 +279,13 @@ func (u *UIA2) TypeIntoFocus(ctx context.Context, text string) (*FocusedField, e
 		return nil, err
 	}
 	after, err := u.FocusedField(ctx)
+	// The app may move focus on as the text arrives, as a one-time code's
+	// boxes do: on the emulator the digit was in the box, and the read just
+	// after found focus between boxes, nowhere, and reported nothing
+	// confirmed. The field typed into is read instead (CHALLENGES 332).
+	if err == nil && !before.Password && before.el != "" && (after == nil || after.el != before.el) {
+		return u.focusMoved(ctx, before, after, text, want)
+	}
 	if err != nil || after == nil {
 		return nil, mobiumerr.New(mobiumerr.NotConfirmed, "typed into the focused field and could not read it back: "+
 			"no field has focus now, as when a form moves to its next field as the text goes in").
@@ -266,6 +302,40 @@ func (u *UIA2) TypeIntoFocus(ctx context.Context, text string) (*FocusedField, e
 		return after, mobiumerr.New(mobiumerr.NotConfirmed, "typed %q into %s and it holds %q", text, after.ID, after.Value)
 	}
 	return after, nil
+}
+
+// focusMoved confirms text typed into before once focus has left it, by
+// reading before itself, and names where focus went once it has landed.
+func (u *UIA2) focusMoved(ctx context.Context, before, after *FocusedField, text, want string) (*FocusedField, error) {
+	got, err := u.w3c.elementText(ctx, before.el)
+	if err != nil {
+		return nil, mobiumerr.New(mobiumerr.NotConfirmed, "typed %q into %s, focus left it as the text arrived, and "+
+			"it could not be read back: %w", text, before.ID, err).
+			WithRemedy("read what landed with app_map or app_text before typing again — typing again may type it twice")
+	}
+	if hint, _ := u.w3c.elementAttribute(ctx, before.el, "hint"); hint != "" && hint == got {
+		got = ""
+	}
+	// Focus in transit reads as none; give it a moment to land.
+	for i := 0; after == nil && i < 5; i++ {
+		select {
+		case <-ctx.Done():
+			return nil, ctx.Err()
+		case <-time.After(100 * time.Millisecond):
+		}
+		after, _ = u.FocusedField(ctx)
+	}
+	typed := &FocusedField{ID: before.ID, Kind: before.Kind, Value: got, el: before.el}
+	where := "nowhere yet"
+	if after != nil && after.el != before.el {
+		typed.MovedTo, where = after.ID, after.ID
+	}
+	if got == want {
+		return typed, nil
+	}
+	return typed, mobiumerr.New(mobiumerr.NotConfirmed, "typed %q into %s, which holds %q, and the app moved focus "+
+		"to %s as it arrived", text, before.ID, got, where).
+		WithRemedy("read what landed with app_map or app_text, then type what is missing into each field by name")
 }
 
 // The adb-only backend shares the device-side half and refuses the rest:
@@ -381,7 +451,7 @@ func (w *WDA) FocusedField(ctx context.Context) (*FocusedField, error) {
 	if err != nil {
 		return nil, err
 	}
-	f := &FocusedField{}
+	f := &FocusedField{el: id}
 	f.ID, _ = w.w3c.elementAttribute(ctx, id, "name")
 	f.Kind, _ = w.w3c.elementAttribute(ctx, id, "type")
 	f.Password = f.Kind == "XCUIElementTypeSecureTextField"
@@ -454,6 +524,36 @@ func (w *WDA) confirmPassword(ctx context.Context, had int, text string) (*Focus
 	}
 }
 
+// focusMoved confirms text typed into before once focus has moved to after,
+// by reading before itself.
+func (w *WDA) focusMoved(ctx context.Context, before, after *FocusedField, text, want string) (*FocusedField, error) {
+	// Found again by its name: WebDriverAgent binds an element id to what
+	// the element held, so the id read before the text went in is stale once
+	// the field holds it, as every box was on the simulator.
+	el := before.el
+	if before.ID != "" {
+		if id, err := w.elementFor(ctx, &uitree.Node{TestID: before.ID, Class: before.Kind}); err == nil {
+			el = id
+		}
+	}
+	got, err := w.w3c.elementValue(ctx, el)
+	if err != nil {
+		return nil, mobiumerr.New(mobiumerr.NotConfirmed, "typed %q into %s, the app moved focus to %s as it "+
+			"arrived, and %s could not be read back: %w", text, before.ID, after.ID, before.ID, err)
+	}
+	if ph, _ := w.w3c.elementAttribute(ctx, el, "placeholderValue"); ph != "" && ph == got {
+		got = ""
+	}
+	typed := &FocusedField{ID: before.ID, Kind: before.Kind, Value: got, MovedTo: after.ID, el: el}
+	if got == want {
+		return typed, nil
+	}
+	return typed, mobiumerr.New(mobiumerr.NotConfirmed, "typed %q into %s, which holds %q, and the app moved focus "+
+		"to %s as it arrived — not typed again, since a retry would go into %s", text, before.ID, got, after.ID,
+		after.ID).
+		WithRemedy("read what landed with app_map or app_text, then type what is missing into each field by name")
+}
+
 // TypeIntoFocus types at the cursor of the focused field and confirms it.
 //
 // iOS drops keystrokes: "mob ü\"q'" typed into the focused field on the
@@ -463,7 +563,7 @@ func (w *WDA) confirmPassword(ctx context.Context, had int, text string) (*Focus
 // length is compared, and it is retried only when it was empty before, the
 // one case where what it should hold is known (CHALLENGES 159).
 func (w *WDA) TypeIntoFocus(ctx context.Context, text string) (*FocusedField, error) {
-	before, err := w.FocusedField(ctx)
+	before, err := focusLanded(ctx, w.FocusedField)
 	if err != nil {
 		return nil, err
 	}
@@ -486,6 +586,15 @@ func (w *WDA) TypeIntoFocus(ctx context.Context, text string) (*FocusedField, er
 		}
 		if after.Value == want {
 			return after, nil
+		}
+		// The app may move focus on as the text arrives, as a one-time
+		// code's boxes do, and then the field read back is the next one,
+		// empty. Taken for a dropped keystroke, the digit was typed again
+		// into each box after it: "2" into the second of six boxes left
+		// them holding 1, 2, 2, 2. The field typed into is asked instead,
+		// and never typed into again, since a retry goes where focus is.
+		if before.el != "" && after.el != before.el {
+			return w.focusMoved(ctx, before, after, text, want)
 		}
 		if attempt >= setTextAttempts {
 			return after, mobiumerr.New(mobiumerr.NotConfirmed, "typed %q and the field holds %q — iOS dropped a "+

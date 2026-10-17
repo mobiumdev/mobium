@@ -73,6 +73,9 @@ func (h *Handlers) keyboardOn(ctx context.Context, s *session, args map[string]i
 			return nil, err
 		}
 		view.Focused = fieldView(f)
+		if f != nil {
+			view.FocusMovedTo = f.MovedTo
+		}
 		// Never echoed into a password field: the result reaches every
 		// transcript and log, and the rule is not to print a password.
 		if f == nil || !f.Password {
@@ -108,6 +111,9 @@ func (h *Handlers) keyboardOn(ctx context.Context, s *session, args map[string]i
 			len([]rune(text)), view.Focused.name(), view.Focused.shown())
 	case hasText:
 		fmt.Fprintf(&b, "typed %q into %s, which now holds %s", text, view.Focused.name(), view.Focused.shown())
+		if view.FocusMovedTo != "" {
+			fmt.Fprintf(&b, "; the app moved focus to %s", view.FocusMovedTo)
+		}
 	case key != "":
 		// Reported as sent: what a key does is the app's to decide.
 		fmt.Fprintf(&b, "pressed %s", key)
@@ -153,9 +159,11 @@ type KeyboardView struct {
 	Shown   bool         `json:"shown"`
 	Focused *FocusedView `json:"focused,omitempty"`
 	Typed   string       `json:"typed,omitempty"`
-	Key     string       `json:"key,omitempty"`
-	Hidden  bool         `json:"hidden,omitempty"`
-	Device  string       `json:"device"`
+	// FocusMovedTo is the field the app gave focus to as the text arrived.
+	FocusMovedTo string `json:"focus_moved_to,omitempty"`
+	Key          string `json:"key,omitempty"`
+	Hidden       bool   `json:"hidden,omitempty"`
+	Device       string `json:"device"`
 }
 
 // FocusedView is the field with keyboard focus.
