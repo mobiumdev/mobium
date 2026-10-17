@@ -7129,6 +7129,35 @@ the type and answered `no_such_element`. None blamed a keystroke, and each
 failed in 4.5 seconds, not 12.5. With no bug on, the suite passed 9 of 9,
 twice.
 
+### 332. Typing where focus is, into a field that moves focus on
+
+**Found by:** making `docs/checks/otp.sh` pass with MobiumApp's
+notifications off, on the iPhone 17 Pro simulator, iOS 26.5. With the code
+shown on the screen, the OTP Demo's six boxes sit under the keyboard once
+it is up, and typing each into its box by name was refused, rightly, as
+under the keyboard (107). So the check typed the first digit into the first
+box and the rest where the app had moved focus, as a person keeps typing,
+with `app_keyboard`'s `text`. That broke on both platforms. On iOS, "2"
+typed into the second box was read back from the third, which focus had
+moved to, empty, called a dropped keystroke (61), and retried: each retry
+went where focus was, and the boxes held 1, 2, 2, 2. That is 156's failure,
+the retry typing the text again into the next fields, in the path 156 never
+covered. On the Android 15 emulator the digit was in its box and the read
+just after found focus between boxes, nowhere, and answered "could not read
+it back"; straight after `app_type` into the first box, focus was still
+moving, and `text` found no field at all. **Fixed:** when focus has left
+the field typed into, that field is read itself, never typed into again,
+and the result says where focus went: `typed "2" into otpBox1, which now
+holds 2; the app moved focus to otpBox2`, with `focus_moved_to`. A field
+that did not take the text is named, and the refusal says a retry would go
+into the next one. On iOS the field is found again by name, since
+WebDriverAgent's element id for it goes stale once its value changes. And
+with no field focused, `text` waits up to a second for focus that is moving
+before answering that none has it. `otp.sh` now types the boxes that way;
+on the simulator, notifications off, and on the emulator it passed, as did
+`keyboard.sh` on both; on the emulator five digits at the focus held
+123456, three runs in three.
+
 ## Findings that were not defects
 
 Worth recording because each one closed off an approach that looked obvious.
