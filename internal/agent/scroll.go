@@ -358,6 +358,11 @@ func (h *Handlers) scrollIntoView(ctx context.Context, s *session, loc uitree.Lo
 			continue
 		}
 
+		// A list that stopped may be held by a dialog over it, which every end
+		// below asks before calling it the end: iOS keeps an alert in the
+		// app's own tree, so the app does not change, nothing goes away, and
+		// the swipe that went to the alert read as the start of the list.
+		// CHALLENGES 330.
 		now := read(container)
 		// Toward the start, a swipe that moved the rows clearly less than the
 		// one before it — or not at all, while something else moved, such as
@@ -379,6 +384,12 @@ func (h *Handlers) scrollIntoView(ctx context.Context, s *session, loc uitree.Lo
 				}
 			}
 			if d*10 < base*6 && atStart(container, horizontal(dir)) {
+				if held, derr := h.dialogOverScroll(ctx, s, loc); derr != nil {
+					return nil, nil, i, derr
+				} else if held {
+					prev = read(container) // the swipe went to the dialog: not the end
+					continue
+				}
 				return nil, nil, i, endOfList(loc, resolveErr, dir, i, true)
 			}
 		}
@@ -416,9 +427,21 @@ func (h *Handlers) scrollIntoView(ctx context.Context, s *session, loc uitree.Lo
 				// swipe was, and swiping on pulled again — twice on an iOS
 				// simulator, for one search. CHALLENGES 310.
 				if !moved(now, after) {
+					if held, derr := h.dialogOverScroll(ctx, s, loc); derr != nil {
+						return nil, nil, i, derr
+					} else if held {
+						prev = read(container) // the swipe went to the dialog: not the end
+						continue
+					}
 					return nil, nil, i, endOfList(loc, resolveErr, dir, i, towardStart(dir))
 				}
 				prev = after
+				continue
+			}
+			if held, derr := h.dialogOverScroll(ctx, s, loc); derr != nil {
+				return nil, nil, i, derr
+			} else if held {
+				prev = read(container) // the swipe went to the dialog: not the end
 				continue
 			}
 			return nil, nil, i, endOfList(loc, resolveErr, dir, i, false)

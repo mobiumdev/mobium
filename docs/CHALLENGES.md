@@ -7090,6 +7090,21 @@ runner cuts a run of steps into batches of at most `agent.MaxBatchSteps`,
 in order, and a failure still names the test's own step. On the TV emulator
 the same test, 125 steps with no `expect` among them, passed in 33.8 seconds.
 
+### 330. On iOS, a list held by an alert was called its end
+
+**Found by:** the same round trip as 328, run on the iPhone 17 Pro simulator,
+iOS 26.5 (a probe, not published). With MobiumApp's camera prompt up and no
+rule for it, a scroll up to the outcome line failed with "scrolled up to the
+start of the list (1 scroll)". 328's fix asks for a dialog when the app in
+front changes or nothing on the screen scrolls, which is how an Android
+prompt shows itself; iOS keeps an alert in the app's own tree, so neither
+happens: the list simply stops, because the alert took the swipe, and a
+list that stops is the end of it. **Fixed:** every verdict that a list has
+ended asks for a dialog first. A rule answers it and the scroll goes on;
+without one the refusal names it, as on Android. On the simulator the test
+with no rule was refused naming the prompt twice in two, the rule's test
+passed twice in two, and on the Android emulator both behaved as before.
+
 ## Findings that were not defects
 
 Worth recording because each one closed off an approach that looked obvious.

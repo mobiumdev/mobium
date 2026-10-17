@@ -1102,3 +1102,47 @@ func TestADialogWhileScrollingIsNamedOrAnswered(t *testing.T) {
 		})
 	}
 }
+
+// heldListDriver is a list an iOS alert comes up over, after the first swipe:
+// the app in front does not change, as iOS keeps an alert in the app's own
+// tree, and no swipe moves the list while it is up.
+type heldListDriver struct {
+	scrollingDriver
+	up bool
+}
+
+func (d *heldListDriver) Swipe(ctx context.Context, x1, y1, x2, y2 int, t time.Duration) error {
+	if !d.up {
+		d.up = true // the alert takes this swipe
+		return nil
+	}
+	return nil
+}
+
+func (d *heldListDriver) AlertText(ctx context.Context) (string, error) {
+	if d.up {
+		return "“MobiumApp” would like to access the Camera.", nil
+	}
+	return "", mobiumdriver.ErrNoAlert
+}
+func (d *heldListDriver) AnswerAlert(ctx context.Context, accept bool) error   { return nil }
+func (d *heldListDriver) SendAlertText(ctx context.Context, text string) error { return nil }
+
+// A list an alert holds still is not at its end: the refusal names the alert.
+// Measured on the iPhone 17 Pro simulator: a scroll up under the camera prompt
+// said "scrolled up to the start of the list (1 scroll)". CHALLENGES 330.
+func TestAListHeldByAnAlertIsNotItsEnd(t *testing.T) {
+	d := &heldListDriver{scrollingDriver: scrollingDriver{rows: rows(30), visible: 5, t: t}}
+	h := NewHandlers()
+	h.implicitWait = 0
+	h.settleWindow = 0
+	s := &session{dev: fakeDevice(), driver: d, backend: BackendDump}
+	h.sessions["fake"] = s
+	_, err := scrollTo(h, s, map[string]interface{}{"target": "text=Row 22"})
+	if mobiumerr.CodeOf(err) != mobiumerr.DeviceNotReady || !strings.Contains(err.Error(), "access the Camera") {
+		t.Fatalf("want device_not_ready naming the alert, got %v", err)
+	}
+	if strings.Contains(err.Error(), "end of the list") || strings.Contains(err.Error(), "start of the list") {
+		t.Errorf("still blames the list: %v", err)
+	}
+}
