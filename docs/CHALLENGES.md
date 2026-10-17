@@ -7076,6 +7076,20 @@ test passed three times in three with the prompt and once with the
 permission granted, and the test without a rule was refused naming the
 prompt, three in three.
 
+### 329. A test longer than a batch was refused at its first step
+
+**Found by:** a TV test of 125 steps, Morpho Market's checkout driven with a
+remote, every move a D-pad press checked by where focus went (an app under
+test, published as mobiumdev/morpho-market), on an Android TV emulator. It
+failed before anything ran: "step 1 (app_press): a batch takes at most 100
+steps, got 124". `mobium test` sends a run of consecutive tool calls as one
+`app_batch`, and a batch is capped at 100 steps; the test file says nothing
+about batches, and the step it named was not at fault. The only way round
+was to break the run with an `expect`, which runs on its own. **Fixed:** the
+runner cuts a run of steps into batches of at most `agent.MaxBatchSteps`,
+in order, and a failure still names the test's own step. On the TV emulator
+the same test, 125 steps with no `expect` among them, passed in 33.8 seconds.
+
 ## Findings that were not defects
 
 Worth recording because each one closed off an approach that looked obvious.

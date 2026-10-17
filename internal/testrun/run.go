@@ -750,9 +750,12 @@ func runSteps(steps []Step, base int, deadline time.Time, call Caller,
 			i++
 			continue
 		}
+		// Consecutive tool calls go as one app_batch, cut at its size: a test
+		// longer than a batch was refused at its first step, for a batch its
+		// author never wrote (CHALLENGES 329).
 		j := i
 		var batch []interface{}
-		for j < len(steps) && steps[j].Expect == nil && !steps[j].Soft {
+		for j < len(steps) && steps[j].Expect == nil && !steps[j].Soft && j-i < agent.MaxBatchSteps {
 			args := steps[j].Arguments
 			if args == nil {
 				args = map[string]interface{}{}

@@ -802,3 +802,40 @@ func TestGrayBoxLaunchesWithTheGrayBox(t *testing.T) {
 		t.Errorf("grayBox with no app: %v", err)
 	}
 }
+
+// A test longer than one batch runs as several, each within app_batch's
+// limit, in order. A 125-step TV checkout was refused at its first step, "a
+// batch takes at most 100 steps, got 124", for a batch nobody wrote.
+// CHALLENGES 329.
+func TestALongTestRunsAsSeveralBatches(t *testing.T) {
+	dir := t.TempDir()
+	var steps []string
+	for i := 0; i < 150; i++ {
+		steps = append(steps, fmt.Sprintf(`{"tap": "testid=b%d"}`, i))
+	}
+	p := write(t, dir, "long.test.json", `{"app": "x", "tests": [{"name": "long", "steps": [`+
+		strings.Join(steps, ",")+`]}]}`)
+	var sizes []int
+	var mu sync.Mutex
+	f := &fake{batchFails: func(steps []interface{}) (int, bool) {
+		mu.Lock()
+		sizes = append(sizes, len(steps))
+		mu.Unlock()
+		return 0, false
+	}}
+	s := run(t, &Config{Dir: dir}, Options{Files: []string{p}}, f)
+	if pass, fail, _ := s.Counts(); pass != 1 || fail != 0 {
+		t.Fatalf("passed %d, failed %d: %+v", pass, fail, s.Results)
+	}
+	total := 0
+	for _, n := range sizes {
+		if n > agent.MaxBatchSteps {
+			t.Errorf("a batch of %d steps, over the limit of %d", n, agent.MaxBatchSteps)
+		}
+		total += n
+	}
+	// The app's launch is a batch of its own before the steps.
+	if total < 150 || len(sizes) < 2 {
+		t.Errorf("batches %v: want the 150 steps in at least two", sizes)
+	}
+}
