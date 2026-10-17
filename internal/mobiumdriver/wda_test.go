@@ -793,6 +793,63 @@ func TestWDAAcceptsAFieldThatFormatsAsItIsTyped(t *testing.T) {
 	}
 }
 
+// A field whose app left the front as it was typed into reads back its
+// placeholder: "mobium" typed into the Login Demo's username read "username"
+// under a build that opens Settings, and was blamed on iOS dropping a
+// keystroke after typing it three times. With the field gone from the screen
+// the type is refused at once, naming what is in front; with it still there,
+// the same read-back is still a dropped keystroke. CHALLENGES 331.
+func TestWDANamesAnAppThatLeftTheFrontWhileTyping(t *testing.T) {
+	login := `<XCUIElementTypeApplication type="XCUIElementTypeApplication" bundleId="dev.mobium.mobiumapp" name="MobiumApp" x="0" y="0" width="402" height="874" visible="true" enabled="true">` +
+		`<XCUIElementTypeTextField type="XCUIElementTypeTextField" name="username" value="username" x="16" y="200" width="370" height="40" visible="true" enabled="true" accessible="true"/>` +
+		`</XCUIElementTypeApplication>`
+	settings := `<XCUIElementTypeApplication type="XCUIElementTypeApplication" bundleId="com.apple.Preferences" name="Settings" x="0" y="0" width="402" height="874" visible="true" enabled="true">` +
+		`<XCUIElementTypeStaticText type="XCUIElementTypeStaticText" name="Settings" label="Settings" x="16" y="100" width="200" height="40" visible="true" enabled="true" accessible="true"/>` +
+		`</XCUIElementTypeApplication>`
+	for _, tc := range []struct {
+		name, source, want, not string
+		posts                   int
+	}{
+		{"left", settings, "com.apple.Preferences is in front", "dropped", 1},
+		{"still there", login, "dropped a keystroke", "no longer on the screen", setTextAttempts},
+	} {
+		var posts int
+		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "application/json")
+			switch {
+			case strings.HasSuffix(r.URL.Path, "/source"):
+				out, _ := json.Marshal(map[string]string{"value": tc.source})
+				w.Write(out)
+			case strings.HasSuffix(r.URL.Path, "/attribute/value"):
+				w.Write([]byte(`{"value":"username"}`))
+			case strings.HasSuffix(r.URL.Path, "/value") && r.Method == http.MethodPost:
+				posts++
+				w.Write([]byte(`{"value":null}`))
+			case strings.HasSuffix(r.URL.Path, "/element"):
+				w.Write([]byte(`{"value":{"ELEMENT":"EL1","element-6066-11e4-a52e-4f735466cecf":"EL1"}}`))
+			default:
+				w.Write([]byte(`{"value":null}`))
+			}
+		}))
+		c := newW3CClient(5 * time.Second)
+		c.setBase(srv.URL)
+		c.sessionID = "S1"
+		d := &WDA{w3c: c, scale: 1}
+
+		err := d.SetText(context.Background(), &uitree.Node{TestID: "username", Class: "XCUIElementTypeTextField"}, "mobium")
+		srv.Close()
+		if mobiumerr.CodeOf(err) != mobiumerr.NotConfirmed {
+			t.Fatalf("%s: %v", tc.name, err)
+		}
+		if msg := err.Error(); !strings.Contains(msg, tc.want) || strings.Contains(msg, tc.not) {
+			t.Errorf("%s: %s", tc.name, msg)
+		}
+		if posts != tc.posts {
+			t.Errorf("%s: typed %d times, want %d", tc.name, posts, tc.posts)
+		}
+	}
+}
+
 // Separators added are formatting; anything else missing or added is not,
 // and a dropped space looks exactly like a field that strips spaces, so
 // that stays a dropped keystroke.

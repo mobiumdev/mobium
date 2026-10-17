@@ -7105,6 +7105,30 @@ without one the refusal names it, as on Android. On the simulator the test
 with no rule was refused naming the prompt twice in two, the rule's test
 passed twice in two, and on the Android emulator both behaved as before.
 
+### 331. A field whose app left the front was blamed on a dropped keystroke
+
+**Found by:** the iOS round trip of 327 (a probe, not published), on the
+iPhone 17 Pro simulator, iOS 26.5, with a MobiumApp build that opens
+Settings a moment after the Login Demo. `app_fill` typed "mobium" into the
+username field, read back "username", retried twice down to six keys a
+second, and failed: "iOS dropped a keystroke" (61). Nothing was dropped.
+The app had left the front while the field was typed into, and a field read
+behind another app answers with its placeholder. Typing again, slower, the
+remedy that cause implies, could never work. Same shape as 324 and 325.
+**Fixed:** a type whose read-back is wrong reads the screen once, as it
+already did for a code spread across boxes (156), and when the field is no
+longer on it, refuses at once, naming what is in front: `typed "mobium" and
+the field read back "username", but the field is no longer on the screen —
+com.apple.Preferences is in front now`, with `details.foreground`. The field
+is matched by its test id, else its place in the tree or its label. A read
+that names no app claims nothing, and a password's text and read-back are
+never named. With the field still there, the same read-back is still a
+dropped keystroke. On the simulator, five runs of the login tests under
+that build: 12 failures named Settings, and 3 found Settings in front before
+the type and answered `no_such_element`. None blamed a keystroke, and each
+failed in 4.5 seconds, not 12.5. With no bug on, the suite passed 9 of 9,
+twice.
+
 ## Findings that were not defects
 
 Worth recording because each one closed off an approach that looked obvious.
