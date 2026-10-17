@@ -6927,8 +6927,9 @@ in ROADMAP.
 
 ### 322. A chip in plain sight, a point past its row, was swiped for
 
-**Found by:** a SwiftUI checkout app written to be tested (not published),
-on the iPhone 17 Pro simulator, iOS 26.5. Its size and category chips are
+**Found by:** a SwiftUI checkout app written to be tested (Morpho Market,
+mobiumdev/morpho-market), on the iPhone 17 Pro simulator, iOS 26.5. Its
+size and category chips are
 capsules with an outline, and SwiftUI reports each one's frame a point
 outside its horizontal scroll view: 34 points high from y=452 in a row from
 y=453 to 486, and the first chip a point past the leading edge too. A
@@ -6946,8 +6947,9 @@ under the keyboard, and passed once the test put the keyboard away.
 
 ### 323. An iOS 26 alert's button, named once, was ambiguous by its id
 
-**Found by:** a SwiftUI checkout app written to be tested (not published),
-on the iPhone 17 Pro simulator, iOS 26.5. Its remove-from-cart alert gives
+**Found by:** a SwiftUI checkout app written to be tested (Morpho Market,
+mobiumdev/morpho-market), on the iPhone 17 Pro simulator, iOS 26.5. Its
+remove-from-cart alert gives
 each button an accessibility identifier, and `testid=removeConfirm` was
 refused as ambiguous: iOS 26 reports each alert button as a button inside
 an identical button — same class, id, label and frame — as it does on the
@@ -6964,8 +6966,9 @@ to two before and one after, and so did the alert's, captured as
 
 ### 324. A field that formats as you type was blamed on a dropped keystroke
 
-**Found by:** a SwiftUI checkout app written to be tested (not published),
-on the iPhone 17 Pro simulator, iOS 26.5. Its card number field shows
+**Found by:** a SwiftUI checkout app written to be tested (Morpho Market,
+mobiumdev/morpho-market), on the iPhone 17 Pro simulator, iOS 26.5. Its
+card number field shows
 4242424242424242 as `4242 4242 4242 4242`, and its expiry 1230 as `12/30`.
 `app_fill` read the field back, found it different, retried down to six
 keys a second, and failed: "iOS dropped a keystroke" (61). Nothing was
@@ -6983,7 +6986,7 @@ try, each result naming what the field shows.
 ### 325. A button under the keyboard was blamed on another screen
 
 **Found by:** checking 322's fix on a SwiftUI checkout app written to be
-tested (not published), on the iPhone 17 Pro simulator, iOS 26.5. With the
+tested (Morpho Market, mobiumdev/morpho-market), on the iPhone 17 Pro simulator, iOS 26.5. With the
 keyboard up after typing a gift card's email, Add to Cart sat under the
 keys, and the tap was refused: "another screen of the app is in front of
 it — close the screen in front first". There was no such screen. With the
@@ -6998,8 +7001,8 @@ refused naming the keyboard, and `keyboard --key enter` put it away.
 
 ### 326. With a menu up, the menu's window was taken for the screen
 
-**Found by:** a 25-test Compose checkout suite (a test app, not published)
-on the Android 15 emulator, run beside the same suite on an iOS simulator.
+**Found by:** a 25-test Compose checkout suite (Morpho Market's,
+mobiumdev/morpho-market) on the Android 15 emulator, run beside the same suite on an iOS simulator.
 A tap on a state in a `DropdownMenu` was refused, once: "its center is off
 the screen, at 189,1443, and nothing it is inside scrolls", with the menu
 open and the item on screen exactly there in the screenshot after. Before a
@@ -7026,7 +7029,8 @@ menu (`compose-dropdown-menu-uia2.xml`), and the refusal names its screen.
 
 **Found by:** turning a `mobium test` trace back into a test, one step per
 traced call, and running both on MobiumApp builds with a deliberate bug
-each (a probe, not published), on the Android 15 emulator. The generated
+each (the round-trip probe, mobiumdev/mobium-roundtrip), on the Android 15
+emulator. The generated
 suite caught every bug the original did but lost one (bug, test) cell: "the
 app is in front throughout" is two `expect`s, and a trace kept each as the
 read it made — `app_state`, `app_current` and the answer — with nothing of
@@ -7054,8 +7058,8 @@ text is, in the call's result and the screen after it.
 
 ### 328. A dialog that came up mid-scroll was blamed on the list
 
-**Found by:** turning a client script's trace back into a test (a probe,
-not published), on the Android 15 emulator. MobiumApp's Dialog Demo asks
+**Found by:** turning a client script's trace back into a test (the
+round-trip probe, mobiumdev/mobium-roundtrip), on the Android 15 emulator. MobiumApp's Dialog Demo asks
 for the camera; Android's prompt comes a moment after the tap, and only
 while the permission is undecided. A test that declared a rule for the
 prompt — `when` "take pictures", `press` "While using the app" — then
@@ -7093,7 +7097,7 @@ the same test, 125 steps with no `expect` among them, passed in 33.8 seconds.
 ### 330. On iOS, a list held by an alert was called its end
 
 **Found by:** the same round trip as 328, run on the iPhone 17 Pro simulator,
-iOS 26.5 (a probe, not published). With MobiumApp's camera prompt up and no
+iOS 26.5 (mobiumdev/mobium-roundtrip). With MobiumApp's camera prompt up and no
 rule for it, a scroll up to the outcome line failed with "scrolled up to the
 start of the list (1 scroll)". 328's fix asks for a dialog when the app in
 front changes or nothing on the screen scrolls, which is how an Android
@@ -7107,7 +7111,7 @@ passed twice in two, and on the Android emulator both behaved as before.
 
 ### 331. A field whose app left the front was blamed on a dropped keystroke
 
-**Found by:** the iOS round trip of 327 (a probe, not published), on the
+**Found by:** the iOS round trip of 327 (mobiumdev/mobium-roundtrip), on the
 iPhone 17 Pro simulator, iOS 26.5, with a MobiumApp build that opens
 Settings a moment after the Login Demo. `app_fill` typed "mobium" into the
 username field, read back "username", retried twice down to six keys a
