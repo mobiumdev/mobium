@@ -661,6 +661,11 @@ func (w *WDA) SetText(ctx context.Context, n *uitree.Node, text string) error {
 				return nil
 			}
 		}
+		if tree, err := w.Snapshot(ctx); err == nil {
+			if err := fieldLeft(tree, n, "", ""); err != nil {
+				return err
+			}
+		}
 		if err := w.keyboardLacks(ctx, text, want, 0, held); err != nil {
 			return err
 		}
@@ -723,6 +728,9 @@ func (w *WDA) SetText(ctx context.Context, n *uitree.Node, text string) error {
 					}
 					return w.retypeSpread(ctx, text, sp)
 				}
+				if err := fieldLeft(tree, n, text, got); err != nil {
+					return err
+				}
 			}
 		}
 		if attempt < setTextAttempts {
@@ -769,6 +777,57 @@ func formatted(text, got string) bool {
 		}
 	}
 	return i == len(want) && len(want) > 0
+}
+
+// fieldLeft refuses a type whose field is no longer on the screen, with what
+// is in front instead. A field read back after its app has left the front
+// answers with its placeholder: under a build that opens Settings a moment
+// after the Login Demo, "mobium" typed into the username field read back as
+// "username", was retried down to six keys a second, and was blamed on iOS
+// dropping a keystroke. Nothing was dropped, and typing slower could never
+// help. The tree is read after the type, so a field missing from it is gone
+// from the screen, whichever app or screen took its place. A password's
+// text and what it read back are never named, nor a field's that read back
+// as bullets.
+// CHALLENGES 331.
+func fieldLeft(tree *uitree.Tree, n *uitree.Node, text, got string) error {
+	present := false
+	tree.Walk(func(f *uitree.Node) bool {
+		if isTextEntry(f) && stillField(f, n) {
+			present = true
+			return false
+		}
+		return true
+	})
+	if present {
+		return nil
+	}
+	// A read that names no app says nothing about what is in front.
+	front := tree.Package()
+	if front == "" {
+		return nil
+	}
+	what := "typed into the field"
+	if text != "" && !n.Password {
+		what = fmt.Sprintf("typed %q and the field read back %q", text, got)
+	}
+	return mobiumerr.New(mobiumerr.NotConfirmed, "%s, but the field is no longer on the screen — %s is in front "+
+		"now, so what the field holds could not be read", what, front).
+		WithRemedy("app_map to see what is in front; once the field is back, type again").
+		WithDetail("foreground", tree.Package())
+}
+
+// stillField says whether f, read after a type, is the field n named before
+// it: by its test id when it has one, else by its place in the tree, or by
+// its label and class when the screen shifted around it.
+func stillField(f, n *uitree.Node) bool {
+	if n.TestID != "" {
+		return f.TestID == n.TestID
+	}
+	if f.Path == n.Path {
+		return true
+	}
+	return n.Label != "" && f.Label == n.Label && f.Class == n.Class
 }
 
 // isMasked reports a value that is nothing but the bullets a secure field
