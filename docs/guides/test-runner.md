@@ -398,6 +398,13 @@ cases are numbered — `[1]`, `[2]` — rather than named after values that may
 be a password. A key a case does not have is refused when the file is read,
 before anything runs.
 
+**Each case starts over**, as every test does: the file's `app` is stopped
+and launched, and `beforeEach` runs again. So steps that build on each
+other are not cases: a test that enters one value after another on the same
+screen also checks what each entry does to the one before it, and split
+into cases it no longer does. Keep a sequence in one test, and give `each`
+the inputs that are really independent.
+
 ## 10. A page to run tests from: `--ui`
 
 ```sh
