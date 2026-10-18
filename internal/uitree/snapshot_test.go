@@ -839,6 +839,52 @@ func TestCoveredByScreen(t *testing.T) {
 	}
 }
 
+// iOS 27 reports SwiftUI's screen-sized wrappers around a page as not
+// visible with nothing in front of them, so a catalog card below the fold —
+// hidden because its list has not reached it — read as behind another
+// screen, and was refused instead of scrolled for (CHALLENGES 337). Captured
+// on an iPhone 15 Plus on iOS 27.0.1. The shape is asserted first, or the
+// test could pass on a tree the old rule never refused.
+func TestCoveredByScreenNotForARowScrolledAway(t *testing.T) {
+	tree := loadIOS(t, "ios27-morpho-catalog.xml")
+	var screen Rect
+	tree.Walk(func(n *Node) bool {
+		if !n.Bounds.Empty() {
+			screen = n.Bounds
+			return false
+		}
+		return true
+	})
+	below, inView := 0, 0
+	tree.Walk(func(n *Node) bool {
+		if n.Class != "XCUIElementTypeButton" || !strings.HasPrefix(n.TestID, "product_") {
+			return true
+		}
+		wrapped := false
+		for p := n.Parent; p != nil; p = p.Parent {
+			if p.Class == "XCUIElementTypeOther" && !p.Displayed && p.Bounds.Width() >= screen.Width() &&
+				p.Bounds.Height() >= screen.Height() {
+				wrapped = true
+			}
+		}
+		if !wrapped {
+			t.Fatalf("%s is in no hidden screen-sized view: the fixture lost the shape", n.TestID)
+		}
+		if n.Displayed {
+			inView++
+		} else {
+			below++
+		}
+		if tree.CoveredByScreen(n) {
+			t.Errorf("%s (displayed=%v) reads as behind another screen", n.TestID, n.Displayed)
+		}
+		return true
+	})
+	if below == 0 || inView == 0 {
+		t.Fatalf("%d cards below the fold and %d in view, want some of each", below, inView)
+	}
+}
+
 // A picker's menu says which option is chosen, as a search scope does
 // (CHALLENGES 195): Ice Cubes' Timeline Font menu draws a checkmark beside
 // System and reports traits="Selected, Button". Its timeline menu draws no

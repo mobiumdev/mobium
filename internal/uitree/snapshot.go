@@ -792,6 +792,23 @@ func (t *Tree) CoveredByScreen(n *Node) bool {
 	if t.EditedByKeyboard(n) {
 		return false
 	}
+	// A row its list has scrolled away is hidden for that alone, and is
+	// scrolled for, not refused. iOS 27 reports SwiftUI's screen-sized
+	// wrappers around a page's content as not visible with nothing in
+	// front of them, so Morpho Market's catalog cards below the fold read
+	// as behind another screen, inside a list reported visible (CHALLENGES
+	// 337). Only outside the list's view: a target in view and hidden is
+	// still covered, and one behind a sheet all along is refused once the
+	// scroll brings it into view.
+	for p := n.Parent; p != nil; p = p.Parent {
+		if p.Scrollable && !p.Bounds.Empty() {
+			v := t.Viewport(p)
+			if x, y := n.Bounds.Center(); p.Displayed && !v.Empty() && !contains(v, x, y) {
+				return false
+			}
+			break
+		}
+	}
 	var screen Rect
 	t.Walk(func(m *Node) bool {
 		if !m.Bounds.Empty() {

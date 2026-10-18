@@ -7253,6 +7253,29 @@ since a window is on the display. A menu's or a dialog's window lies inside
 it, so 326's case is unchanged. On the emulator the three tabs tapped,
 each then read selected, and Morpho Market's Android suite passed.
 
+### 337. On iOS 27, a card below the fold was behind "another screen"
+
+**Found by:** Morpho Market's shared suite on the real iPhone 15 Plus,
+updated to iOS 27.0.1 — the first run of Mobium on iOS 27, and the app's
+first on a phone. Five tests of 25 failed alike: `tap testid=product_pins`
+(and the magnet, the stickers, the gift card) refused with "another screen
+of the app is in front of it", over a catalog with nothing in front, every
+time. Each target was a card below the fold, rightly reported not visible.
+What was new is around it: iOS 27 reports three of SwiftUI's screen-sized
+wrappers between the window and the catalog's list as `visible="false"`,
+with visible wrappers inside them and the list itself visible. That is
+exactly 217's shape — a hidden target inside a hidden screen-sized plain
+view — so a card the list had not reached was refused as covered instead of
+scrolled for. On iOS 26.5 the same suite passed 25 of 25. **Fixed:** a
+target whose scroll container is reported visible and whose center lies
+outside the container's view is hidden for that alone, and is scrolled for;
+the keyboard's refusal already made the same exception (107). A target in
+view and hidden is still covered, and one behind a sheet all along is
+refused once the scroll brings it into view. The captured page is
+`ios27-morpho-catalog.xml`. On the phone the suite then passed 24 of 25,
+and the 25th (SHIPFREE, which had passed before) failed once on a 60-second
+source read before its first step and passed three of three alone.
+
 ## Findings that were not defects
 
 Worth recording because each one closed off an approach that looked obvious.
