@@ -7234,6 +7234,25 @@ guides. On the simulator, size M read selected and L unselected, and `L`
 selected timed out saying "it is unselected"; on the Android 15 emulator
 Morpho Market's Shop tab read selected and Cart unselected.
 
+### 336. With gesture navigation, a bottom bar was off the screen
+
+**Found by:** checking `wait_for`'s `selected` (335) on Morpho Market's
+Android tabs, on the Android 15 emulator with gesture navigation. `tap
+testid=tab_cart` was refused: "its center is off the screen, at 540,2232,
+and nothing it is inside scrolls", with the tab bar on screen in the
+screenshot. Since 326 the screen is the display the source names before
+any window, and UiAutomator2 named it 1080x2201: the display without the
+gesture bar's inset, under an edge-to-edge app whose window is 1080x2400.
+So everything an app draws in the bottom 199 pixels was off the screen, in
+every app tried there (Settings, MobiumApp, Morpho Market), and a tab bar
+is exactly what an app draws there. Two captured hierarchies had the short
+display already (`settings-color-uia2.xml`, `mobiumapp-slider-uia2.xml`);
+177 noted one and only had dialogs to ask about. **Fixed:** the screen is
+the display UiAutomator2 names, widened to every window the hierarchy holds,
+since a window is on the display. A menu's or a dialog's window lies inside
+it, so 326's case is unchanged. On the emulator the three tabs tapped,
+each then read selected, and Morpho Market's Android suite passed.
+
 ## Findings that were not defects
 
 Worth recording because each one closed off an approach that looked obvious.

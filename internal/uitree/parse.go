@@ -243,8 +243,32 @@ func ParseAndroid(data []byte) (*Tree, error) {
 	if len(root.Children) == 1 {
 		root.Bounds = root.Children[0].Bounds
 	}
+	// The display UiAutomator2 names can be smaller than the app drawn on
+	// it: with gesture navigation on the Android 15 emulator it named
+	// 1080x2201, the display without the gesture bar's inset, over an
+	// edge-to-edge app's window of 1080x2400, so a bottom tab bar centered
+	// at y=2232, on screen and tappable, was refused as off the screen. A
+	// window is on the display, so the screen takes in every window it
+	// holds: a menu's or a dialog's lies inside it, and changes nothing
+	// (CHALLENGES 326, 336).
+	if !tree.Screen.Empty() {
+		for _, w := range root.Children {
+			tree.Screen = tree.Screen.union(w.Bounds)
+		}
+	}
 	foldCheckableRows(root)
 	return tree, nil
+}
+
+// union is the smallest rectangle holding both; an empty one adds nothing.
+func (r Rect) union(o Rect) Rect {
+	if o.Empty() {
+		return r
+	}
+	if r.Empty() {
+		return o
+	}
+	return Rect{min(r.X1, o.X1), min(r.Y1, o.Y1), max(r.X2, o.X2), max(r.Y2, o.Y2)}
 }
 
 // foldCheckableRows makes an Android settings row one control, named by the
