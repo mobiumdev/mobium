@@ -626,9 +626,16 @@ func (w *WDA) SetSliderPosition(ctx context.Context, n *uitree.Node, position fl
 // Android is unaffected — measured, not assumed — which is why this sits here
 // rather than in the shared client. See CHALLENGES 61.
 func (w *WDA) SetText(ctx context.Context, n *uitree.Node, text string) error {
-	elID, err := w.elementFor(ctx, n)
+	// On an Apple TV with the keyboard up for this field, the field is the
+	// keyboard's text view (CHALLENGES 333).
+	elID, _, ok, err := w.tvEditor(ctx, n)
 	if err != nil {
 		return err
+	}
+	if !ok {
+		if elID, err = w.elementFor(ctx, n); err != nil {
+			return err
+		}
 	}
 
 	// A password field cannot be compared: it reads back as bullets, so

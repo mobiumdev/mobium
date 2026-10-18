@@ -7162,6 +7162,35 @@ on the simulator, notifications off, and on the emulator it passed, as did
 `keyboard.sh` on both; on the emulator five digits at the focus held
 123456, three runs in three.
 
+### 333. Typing on an Apple TV was read back from the keyboard itself
+
+**Found by:** Morpho Market's Apple TV app (mobiumdev/morpho-market), on a
+tvOS 26.5 simulator, with the Fire TV test's checkout. tvOS has no keyboard
+under a field: select on a text field puts a screen of the keyboard's own in
+front of the app, with the field's name as its title, a text view of its
+own, and the keys, and the remote types into that. The app's field stays in
+the tree behind it, reported hidden, and follows the text view as it
+changes. Mobium asked the app's field, or the focused element, which is the
+keyboard, and every answer was wrong. `app_keyboard`'s `text` typed
+WELCOME10, read back the keyboard, which holds no text, called it a dropped
+keystroke (61), and retried: the field held WELCOME10 three times. `app_fill`
+refused the field as "behind another screen of the app" (217), with a remedy
+to tap outside it, on a device with no touch; a field level with the keys
+was refused as under the keyboard (107); and `wait --for focused` timed out
+on the field the keyboard was editing. **Fixed:** while an Apple TV's
+keyboard is up, its text view is the field being typed into: what a key
+lands in, what is read back, what a retry clears. The app's field it edits
+is the one whose placeholder or label is the keyboard's title, and it is
+the focused field, reachable behind the keyboard's screen and under its
+keys. A fill aimed at another field is refused, naming the one the keyboard
+is up for. `app_keyboard` `hide` closes it, keeping the text, and focus is
+back on the field; `enter` submits the field and leaves the keyboard up, as
+tvOS does. On the simulator the discount code, the address, the card
+number and expiry (both formatted as typed), the security code (a secure
+field) and the name on the card were each typed once and read back, and the
+order's review showed $5.64 tax and $69.23 total, the Fire TV test's
+figures.
+
 ## Findings that were not defects
 
 Worth recording because each one closed off an approach that looked obvious.
