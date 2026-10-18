@@ -451,6 +451,25 @@ func (w *WDA) FocusedField(ctx context.Context) (*FocusedField, error) {
 	if err != nil {
 		return nil, err
 	}
+	// On an Apple TV the keyboard has focus while it is up, and what is
+	// typed is in its own text view; the field is the app's one it edits.
+	if w.tvKeyboardFocused(ctx, id) {
+		el, field, ok, err := w.tvEditor(ctx, nil)
+		if err != nil {
+			return nil, err
+		}
+		if ok {
+			f := &FocusedField{el: el}
+			if field != nil {
+				f.ID, f.Kind = field.TestID, field.Class
+				f.Password = field.Class == "XCUIElementTypeSecureTextField"
+			}
+			if f.Value, err = w.w3c.elementValue(ctx, el); err != nil {
+				return nil, err
+			}
+			return f, nil
+		}
+	}
 	f := &FocusedField{el: id}
 	f.ID, _ = w.w3c.elementAttribute(ctx, id, "name")
 	f.Kind, _ = w.w3c.elementAttribute(ctx, id, "type")
@@ -483,6 +502,12 @@ func (w *WDA) HasFocus(ctx context.Context, n *uitree.Node) (bool, error) {
 	if err != nil {
 		return false, err
 	}
+	// On an Apple TV the keyboard has focus for the field it is editing.
+	if w.tvKeyboardFocused(ctx, active) {
+		if _, field, ok, err := w.tvEditor(ctx, nil); err != nil || ok {
+			return ok && field != nil && sameField(field, n), err
+		}
+	}
 	id, err := w.elementFor(ctx, n)
 	if err != nil {
 		return false, err
@@ -511,10 +536,7 @@ func (w *WDA) confirmPassword(ctx context.Context, had int, text string) (*Focus
 			return after, mobiumerr.New(mobiumerr.NotConfirmed, "typed %d characters into the password field, which "+
 				"held %d, and it holds %d — the keystrokes did not all arrive", len([]rune(text)), had, held)
 		}
-		id, err := w.w3c.activeElement(ctx)
-		if err != nil {
-			return nil, err
-		}
+		id := after.el
 		if err := w.w3c.clearElement(ctx, id); err != nil {
 			return nil, err
 		}
@@ -570,6 +592,15 @@ func (w *WDA) TypeIntoFocus(ctx context.Context, text string) (*FocusedField, er
 	if before == nil {
 		return nil, ErrNoFocus
 	}
+	// An Apple TV types only through its keyboard, which select opens.
+	if w.tv() {
+		if _, _, _, err := w.tvKeyboardFor(ctx, nil); err != nil {
+			return nil, err
+		}
+		if before, err = w.FocusedField(ctx); err != nil || before == nil {
+			return nil, ErrNoFocus
+		}
+	}
 	if err := w.typeKeys(ctx, text); err != nil {
 		return nil, err
 	}
@@ -593,17 +624,22 @@ func (w *WDA) TypeIntoFocus(ctx context.Context, text string) (*FocusedField, er
 		// into each box after it: "2" into the second of six boxes left
 		// them holding 1, 2, 2, 2. The field typed into is asked instead,
 		// and never typed into again, since a retry goes where focus is.
-		if before.el != "" && after.el != before.el {
+		// An Apple TV's keyboard is one field read afresh each time, so
+		// there the field it edits says whether focus moved.
+		moved := before.el != "" && after.el != before.el
+		if w.tv() && before.ID != "" {
+			moved = after.ID != before.ID
+		}
+		if moved {
 			return w.focusMoved(ctx, before, after, text, want)
 		}
 		if attempt >= setTextAttempts {
 			return after, mobiumerr.New(mobiumerr.NotConfirmed, "typed %q and the field holds %q — iOS dropped a "+
 				"keystroke, and retrying more slowly did not recover it", text, after.Value)
 		}
-		id, err := w.w3c.activeElement(ctx)
-		if err != nil {
-			return nil, err
-		}
+		// The field just read, which is the focused element on a phone and
+		// the keyboard's text view on an Apple TV.
+		id := after.el
 		if err := w.w3c.clearElement(ctx, id); err != nil {
 			return nil, err
 		}

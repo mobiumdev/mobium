@@ -787,6 +787,11 @@ func (t *Tree) CoveredByScreen(n *Node) bool {
 	if n == nil || n.Displayed || !isIOSClass(n.Class) {
 		return false
 	}
+	// An Apple TV's keyboard is a screen in front of the field it edits,
+	// and that field is reached through it, not closed off (CHALLENGES 333).
+	if t.EditedByKeyboard(n) {
+		return false
+	}
 	var screen Rect
 	t.Walk(func(m *Node) bool {
 		if !m.Bounds.Empty() {

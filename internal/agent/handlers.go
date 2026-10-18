@@ -1405,7 +1405,10 @@ func pickOne(loc uitree.Locator, tree *uitree.Tree) (*uitree.Node, error) {
 		// is brought into view instead, which is what a form that moves out
 		// of the keyboard's way relies on — MobiumApp's Log In, below a
 		// scroll view shrunk above the keyboard, was refused until this.
-		if k := tree.Keyboard(); k != nil && !matches[0].Within(k) && k.Bounds.Covers(matches[0]) {
+		// Not the field an Apple TV's keyboard is editing, which sits under
+		// its keys and is typed into through them (CHALLENGES 333).
+		if k := tree.Keyboard(); k != nil && !matches[0].Within(k) && k.Bounds.Covers(matches[0]) &&
+			!tree.EditedByKeyboard(matches[0]) {
 			if c, v := viewOf(tree, matches[0]); c == nil || inView(v, matches[0].Bounds) {
 				return nil, keyboardOver(loc, true)
 			}

@@ -1159,6 +1159,9 @@ this is what is not.
   - **`map` lists an alert's two `ScrollView`s** as `(list)` entries, and
     does not say which element has focus, which on a TV matters most —
     the Fire TV's open item too.
+  - **Text entry** (2026-10-17): typed through the keyboard's own screen,
+    which tvOS puts in front of the field, read back from its text view
+    (CHALLENGES 333). Found by Morpho Market's Apple TV app.
   - **Not done**: a real Apple TV (it pairs with Xcode over the network, as
     a phone does over USB, and needs WebDriverAgent built and signed for
     it); answering an alert by moving focus for the caller; what

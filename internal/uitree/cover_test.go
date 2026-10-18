@@ -69,6 +69,8 @@ var coveredCaptures = map[string]string{
 		"Downloads by a point and a half: it is touched above the tab bar (CHALLENGES 257)",
 	"ios26-pocketcasts-episode-sheet.xml": "a two-point divider runs across the row of buttons through Play's " +
 		"center, and Play is touched just above it (CHALLENGES 238)",
+	"ios-tvos26-morpho-cart.xml": "an Apple TV's focused discount field: its list row draws a plain view " +
+		"across it, which nothing presses through — tvOS has no touch",
 	"ios26-icecubes-display-settings.xml": "Ice Cubes pins a sample post at the top of Display Settings and " +
 		"scrolls the settings under it: Tint Color is wholly behind the post's button, and Theme's center is",
 }
