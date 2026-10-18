@@ -482,7 +482,7 @@ func GetToolSchemas() []Tool {
 		{
 			Name: "app_wait_for",
 			Description: "Wait until an element appears, disappears, shows particular text, or " +
-				"reaches a state — enabled, checked, focused, holding a value — then return. Use this instead of sleeping after an action that takes time — a " +
+				"reaches a state — enabled, checked, selected, focused, holding a value — then return. Use this instead of sleeping after an action that takes time — a " +
 				"login, a network fetch, a screen transition. On success the screen is remapped, " +
 				"so the element it waited for already has a ref and can be tapped straight away. " +
 				"If the condition never holds the call fails, saying what the screen showed " +
@@ -503,7 +503,9 @@ func GetToolSchemas() []Tool {
 							"a password field is refused, since its value is never read), " +
 							"\"enabled\" or \"disabled\" waits for a control to be one or " +
 							"the other — a Submit the app enables once a form is valid — " +
-							"\"checked\" or \"unchecked\" for a checkbox, radio or switch, and " +
+							"\"checked\" or \"unchecked\" for a checkbox, radio or switch, " +
+							"\"selected\" or \"unselected\" for what the platform marks selected — a tab, " +
+							"a segment, an option drawn as a button — " +
 							"\"focused\" for a field to have keyboard focus, and \"count\" until the " +
 							"locator matches count elements on screen. not inverts any of them.",
 						"enum": waitConditions,

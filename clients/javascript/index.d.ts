@@ -195,6 +195,8 @@ export interface WaitOptions {
     | 'disabled'
     | 'checked'
     | 'unchecked'
+    | 'selected'
+    | 'unselected'
     | 'focused'
     | 'count'
   /** The text the element must contain, with `condition: 'text'`; the whole value, with `'value'`, where `''` waits for an empty field. */

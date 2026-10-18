@@ -333,7 +333,8 @@ class Device:
         condition is "visible" (default), "hidden", "text" — which needs the
         text to wait for — "value", a field's whole content ("" for empty;
         a password field is refused), "enabled", "disabled", "checked",
-        "unchecked", "focused" or "count" (with count). negate waits for the
+        "unchecked", "selected", "unselected", "focused" or "count" (with
+        count). negate waits for the
         opposite; exact makes "text" match the whole text. Raises MobiumError
         if it never happens, saying what was on screen instead.
 
