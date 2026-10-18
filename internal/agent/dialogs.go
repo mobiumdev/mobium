@@ -134,9 +134,16 @@ func (h *Handlers) answerByRule(ctx context.Context, s *session) (bool, error) {
 			WithRemedy("change the rule's press to one of the dialog's buttons (app_dialogs)").
 			WithDetail("dialog", title)
 	}
-	x, y := button.Bounds.Center()
-	if err := s.driver.Tap(ctx, x, y); err != nil {
-		return false, err
+	// An Apple TV has no touch: its dialog is answered with the remote.
+	if remoteOnly(s) {
+		if err := h.selectByRemote(ctx, s, button); err != nil {
+			return false, err
+		}
+	} else {
+		x, y := button.Bounds.Center()
+		if err := s.driver.Tap(ctx, x, y); err != nil {
+			return false, err
+		}
 	}
 	// Gone, or at least replaced: a button may raise the next dialog.
 	deadline := time.Now().Add(3 * time.Second)

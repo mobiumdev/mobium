@@ -1186,7 +1186,8 @@ func screenOver(loc uitree.Locator, tree *uitree.Tree) error {
 	return failedCheck(mobiumerr.DeviceNotReady, loc, checkReceivesEvents,
 		"another screen of the app is in front of it", hint).
 		WithRemedy(remedy).
-		WithDetail("locator", loc.String())
+		WithDetail("locator", loc.String()).
+		WithDetail("screen", true)
 }
 
 // dialogRemedy answers a dialog in the way: app_alert's button presses one of
@@ -1572,14 +1573,14 @@ func (h *Handlers) resolveNode(ctx context.Context, s *session, target string) (
 			return n, t, nil
 		}
 		if i >= maxDialogsPerCall || !dialogInTheWay(err) {
-			return n, t, err
+			return n, t, forRemote(s, err)
 		}
 		handled, herr := h.answerByRule(ctx, s)
 		if herr != nil {
 			return nil, nil, herr
 		}
 		if !handled {
-			return nil, nil, err
+			return nil, nil, forRemote(s, err)
 		}
 	}
 }

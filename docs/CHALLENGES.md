@@ -7194,6 +7194,25 @@ number and expiry (both formatted as typed), the security code (a secure
 field) and the name on the card were each typed once and read back, and the
 order's review showed $5.64 tax and $69.23 total, the Fire TV test's
 figures.
+### 334. On an Apple TV, a dialog rule tapped, and refusals said to tap
+
+**Found by:** Morpho Market's Apple TV app, on a tvOS 26.5 simulator. Its
+tests start from `mobiumshop://reset`, and tvOS asks "Open in “Morpho
+Market”?" before a link opens the app, until Open is pressed once — as iOS
+does, where the phone suite answers it with a dialog rule. On the Apple
+TV the same rule failed every action it met: the rule tapped the button,
+and a TV refuses every tap (`an Apple TV has no touch screen`). The
+refusals said to tap too: a target behind a screen of the app's own was
+refused with "app_tap at x 137, y 999 is outside it on this screen", and a
+dialog in the way named app_alert's button and "tap one from app_map", none
+of which a TV can take. **Fixed:** on an Apple TV a rule's button is
+reached as a person reaches it: the D-pad toward it, each press read back
+by where focus went, then select; focus that does not move is refused, and
+nothing is selected while focus is on another button. A dialog in the way
+names the D-pad and select, or a rule, and a screen in front names back,
+the remote's Menu. On a fresh Apple TV simulator, a rule for Cancel moved
+focus right from Open and pressed Cancel, and a rule for Open answered the
+next prompt; each action that met the prompt then carried on.
 
 ## Findings that were not defects
 

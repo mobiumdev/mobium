@@ -1691,6 +1691,8 @@ func GetToolSchemas() []Tool {
 				"such as iOS's Save Password after a login. A rule names the button rather " +
 				"than accept or dismiss, because which button those press differs by " +
 				"platform and by dialog (accept on a three-button iOS alert pressed Cancel). " +
+				"On an Apple TV, which has no touch, the button is reached with the remote's " +
+				"D-pad and pressed with select. " +
 				"Captions match ignoring case. A rule whose button the dialog does not have " +
 				"is refused, listing the buttons it does have. With neither argument it " +
 				"lists the rules; clear removes them. Rules last for the daemon, per device. " +

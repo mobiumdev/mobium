@@ -1162,9 +1162,12 @@ this is what is not.
   - **Text entry** (2026-10-17): typed through the keyboard's own screen,
     which tvOS puts in front of the field, read back from its text view
     (CHALLENGES 333). Found by Morpho Market's Apple TV app.
+  - **A dialog rule answers with the remote** (2026-10-17): the D-pad to
+    its button, then select (CHALLENGES 334). `app_alert` still leaves the
+    pressing to the caller.
   - **Not done**: a real Apple TV (it pairs with Xcode over the network, as
     a phone does over USB, and needs WebDriverAgent built and signed for
-    it); answering an alert by moving focus for the caller; what
+    it); answering an alert by moving focus for `app_alert`'s caller; what
     WebDriverAgent does with a touch on tvOS, which Mobium refuses first;
     and the `devices` list shows every Apple TV simulator, including the
     three Xcode makes when the platform is installed.
