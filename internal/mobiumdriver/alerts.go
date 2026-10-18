@@ -58,11 +58,27 @@ func tvAlertError() *mobiumerr.Error {
 // refuses. app_alert asks before it chooses between accept, dismiss and a
 // button, so none of its refusals names a way a TV cannot take.
 func AlertAnsweredByRemote(d Driver) error {
-	if w, ok := d.(*WDA); ok && w.tv() {
+	if RemoteOnly(d) {
 		return tvAlertError()
 	}
 	return nil
 }
+
+// RemoteDriven is a driver for a device driven with its remote alone.
+type RemoteDriven interface {
+	RemoteOnly() bool
+}
+
+// RemoteOnly reports whether d's device is driven with its remote alone — an
+// Apple TV, which has no touch screen — so nothing on it may be tapped, and
+// its dialogs are answered by moving focus and pressing select.
+func RemoteOnly(d Driver) bool {
+	r, ok := d.(RemoteDriven)
+	return ok && r.RemoteOnly()
+}
+
+// RemoteOnly reports whether this is an Apple TV.
+func (w *WDA) RemoteOnly() bool { return w.tv() }
 
 // SendAlertText types into a prompt's field.
 func (w *WDA) SendAlertText(ctx context.Context, text string) error {

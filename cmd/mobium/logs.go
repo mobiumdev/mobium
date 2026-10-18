@@ -239,7 +239,8 @@ func newDialogsCmd() *cobra.Command {
 			"answered. With no flags, lists the rules; --clear removes them.\n\n" +
 			"A rule names a button, not accept or dismiss: which button those press differs\n" +
 			"by platform and by dialog. Captions match ignoring case. Rules last for the\n" +
-			"daemon, per device.",
+			"daemon, per device. On an Apple TV, which has no touch, the button is reached\n" +
+			"with the remote's D-pad and pressed with select.",
 		Example: `  mobium dialogs --when "Save Password" --press "Not Now"
   mobium dialogs --when "to use your location" --press "Allow While Using App"
   mobium dialogs
