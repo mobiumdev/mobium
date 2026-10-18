@@ -7213,6 +7213,26 @@ names the D-pad and select, or a rule, and a screen in front names back,
 the remote's Menu. On a fresh Apple TV simulator, a rule for Cancel moved
 focus right from Open and pressed Cancel, and a rule for Open answered the
 next prompt; each action that met the prompt then carried on.
+### 335. A selection drawn as a button had nothing to read it
+
+**Found by:** Morpho Market's Apple TV app, on a tvOS 26.5 simulator. The
+Fire TV test checks that the size chosen is checked, `wait_for` with
+`checked`, and on Android it is: Compose's FilterChip declares a checkbox,
+so UiAutomator2 reports it checkable. The same chip in SwiftUI, on an
+iPhone and on an Apple TV alike, is a button with the Selected trait, and
+`checked` refused it: "is not a checkbox, radio or switch, so it has no
+checked state to wait for". True, and nothing else could ask: `map` already
+showed `M (button, selected)`, read from the trait, but no condition read
+it. The iPhone suite only ever taps the chip, so the gap never showed.
+**Fixed:** `wait_for` has `selected` and `unselected`, what the platform
+marks selected — iOS's Selected trait, Android's `selected` — for a tab, a
+segment, an option drawn as a button. Every element is one or the other, so
+neither refuses anything; a target that is a control's words asks the
+control. `checked` on a selected element is still refused, and now names
+`selected`. The condition is in the schema, the five clients and the
+guides. On the simulator, size M read selected and L unselected, and `L`
+selected timed out saying "it is unselected"; on the Android 15 emulator
+Morpho Market's Shop tab read selected and Cart unselected.
 
 ## Findings that were not defects
 

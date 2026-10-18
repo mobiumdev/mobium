@@ -205,6 +205,7 @@ Every condition:
 | `visible` (the default), `hidden` | it is on screen, or gone |
 | `enabled`, `disabled` | it takes input, or does not |
 | `checked`, `unchecked` | a checkbox, radio or switch is in that state; anything else is refused at once |
+| `selected`, `unselected` | the platform marks it selected, or does not: a tab, a segment, an option drawn as a button (iOS's Selected trait, Android's `selected`) |
 | `focused` | a field has keyboard focus |
 | `text --text T` | its text contains T; with `--exact`, is T |
 | `value --text T` | a field holds exactly T; `--text ""` is empty. A password field is refused — its value is never read |

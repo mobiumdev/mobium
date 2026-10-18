@@ -110,15 +110,22 @@ const (
 	// content, exactly, where text is a part of what an element says.
 	condChecked   = "checked"
 	condUnchecked = "unchecked"
-	condFocused   = "focused"
-	condValue     = "value"
+	// Selected and unselected are what the platform marks selected — iOS's
+	// Selected trait, Android's selected — which a tab, a segment or an
+	// option drawn as a button reports, and which is no checked state: a
+	// SwiftUI chip is a button with the Selected trait, and "not a checkbox"
+	// left its selection with nothing to read it (CHALLENGES 335).
+	condSelected   = "selected"
+	condUnselected = "unselected"
+	condFocused    = "focused"
+	condValue      = "value"
 	// Count is how many elements the locator matches on screen.
 	condCount = "count"
 )
 
 // waitConditions is every condition, in the order an error lists them.
 var waitConditions = []string{condVisible, condHidden, condText, condValue, condEnabled, condDisabled,
-	condChecked, condUnchecked, condFocused, condCount}
+	condChecked, condUnchecked, condSelected, condUnselected, condFocused, condCount}
 
 // waitFor is app_wait_for: block until the screen says what the caller is
 // waiting for, or fail naming what it was.
@@ -162,7 +169,7 @@ func (h *Handlers) waitOn(ctx context.Context, s *session, args map[string]inter
 	count := -1
 	var focus mobiumdriver.FocusReader
 	switch cond {
-	case condVisible, condHidden, condEnabled, condDisabled, condChecked, condUnchecked:
+	case condVisible, condHidden, condEnabled, condDisabled, condChecked, condUnchecked, condSelected, condUnselected:
 	case condText:
 		if want == "" {
 			return nil, mobiumerr.New(mobiumerr.InvalidArgument, "condition \"text\" needs the text to wait for")
@@ -353,6 +360,21 @@ func visible(nodes []*uitree.Node) []*uitree.Node {
 	return out
 }
 
+// selectedOf is the element whose selection a target asks about: the target
+// when it is marked selected, else the control it is the words of, as
+// stateOf finds a checkbox's row.
+func selectedOf(n *uitree.Node) *uitree.Node {
+	if n == nil || n.Selected || n.Clickable {
+		return n
+	}
+	for p := n.Parent; p != nil; p = p.Parent {
+		if p.Clickable {
+			return p
+		}
+	}
+	return n
+}
+
 // condPhrase says what a condition waits for, after "waiting for X to":
 // "hold \"\"", "become checked". condState says it held: "is checked".
 func condPhrase(cond, want string, exact bool, count int) string {
@@ -429,10 +451,22 @@ func judge(ctx context.Context, cond string, nodes []*uitree.Node, notOnScreen s
 		// Refused at once, as app_check refuses it: nothing without a
 		// checked state will ever be checked, and waiting says nothing.
 		if !n.Checkable {
-			return false, nil, "", mobiumerr.New(mobiumerr.InvalidArgument, "%s is not a checkbox, radio or "+
-				"switch, so it has no checked state to wait for", loc)
+			e := mobiumerr.New(mobiumerr.InvalidArgument, "%s is not a checkbox, radio or switch, so it has no "+
+				"checked state to wait for", loc)
+			if selectedOf(nodes[0]).Selected {
+				e = mobiumerr.New(mobiumerr.InvalidArgument, "%s is not a checkbox, radio or switch, so it has no "+
+					"checked state to wait for; it is marked selected, which condition \"selected\" waits for",
+					loc).WithRemedy("wait for condition \"selected\" or \"unselected\"")
+			}
+			return false, nil, "", e
 		}
 		return n.Checked == (cond == condChecked), n, "it is " + stateWord(n.Checked), nil
+	case condSelected, condUnselected:
+		// Every element is selected or not, so nothing is refused: the
+		// platform marks what is selected and leaves the rest unmarked.
+		n = selectedOf(n)
+		word := map[bool]string{true: condSelected, false: condUnselected}[n.Selected]
+		return n.Selected == (cond == condSelected), n, "it is " + word, nil
 	case condFocused:
 		has, err := focus.HasFocus(ctx, n)
 		if err != nil {

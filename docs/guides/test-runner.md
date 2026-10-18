@@ -462,7 +462,8 @@ its sound: `expect` is refused there, and `interruptions` is the answer.
   translation and a redesign.
 - **Assert with `app_wait_for`**, never a sleep. `--for` in the CLI is
   `condition` in a step: `visible`, `hidden`, `text` (with `exact`), `value`,
-  `enabled`, `disabled`, `checked`, `unchecked`, `focused`, `count`, and
+  `enabled`, `disabled`, `checked`, `unchecked`, `selected`, `unselected`,
+  `focused`, `count`, and
   `"not": true` for the opposite. The [auto-wait guide](autowait.md#5-waiting-on-purpose-mobium-wait)
   has the table.
 - **Assert on anything else with `expect`**: a tool that only reads, a field

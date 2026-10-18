@@ -67,6 +67,13 @@ namespace Mobium
         /// <summary>Wait for a checkbox, radio or switch to be unchecked.</summary>
         public static Until Unchecked() => new Until("unchecked", null, null);
 
+        /// <summary>Wait for what the platform marks selected — a tab, a segment, an option drawn as a
+        /// button — to be selected.</summary>
+        public static Until Selected() => new Until("selected", null, null);
+
+        /// <summary>Wait for it to be unselected.</summary>
+        public static Until Unselected() => new Until("unselected", null, null);
+
         /// <summary>Wait for a field to have keyboard focus.</summary>
         public static Until Focused() => new Until("focused", null, null);
 

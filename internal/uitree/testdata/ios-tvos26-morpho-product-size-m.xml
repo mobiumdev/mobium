@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<XCUIElementTypeApplication type="XCUIElementTypeApplication" name="Morpho Market" label="Morpho Market" enabled="true" visible="true" accessible="false" focused="false" x="0" y="0" width="1920" height="1080" index="0" traits="" processId="57726" bundleId="dev.mobium.shop.tv">
+  <XCUIElementTypeWindow type="XCUIElementTypeWindow" enabled="true" visible="true" accessible="false" focused="false" x="0" y="0" width="1920" height="1080" index="0" traits="">
+    <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" focused="false" x="0" y="0" width="1920" height="1080" index="0" traits="">
+      <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" focused="false" x="0" y="0" width="1920" height="1080" index="0" traits="">
+        <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" focused="false" x="0" y="0" width="1920" height="1080" index="0" traits="">
+          <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" focused="false" x="0" y="0" width="1920" height="1080" index="0" traits="">
+            <XCUIElementTypeStaticText type="XCUIElementTypeStaticText" value="Logo Tee" name="screenTitle" label="Logo Tee" enabled="true" visible="true" accessible="true" focused="false" x="128" y="60" width="225" height="69" index="0" traits="StaticText"/>
+            <XCUIElementTypeButton type="XCUIElementTypeButton" name="tab_shop" label="Shop" enabled="true" visible="true" accessible="true" focused="false" x="1367" y="62" width="128" height="66" index="1" traits="Button"/>
+            <XCUIElementTypeButton type="XCUIElementTypeButton" name="tab_cart" label="Cart, 0 items" enabled="true" visible="true" accessible="true" focused="false" x="1511" y="62" width="117" height="66" index="2" traits="Button"/>
+            <XCUIElementTypeButton type="XCUIElementTypeButton" name="tab_orders" label="Orders" enabled="true" visible="true" accessible="true" focused="false" x="1644" y="62" width="148" height="66" index="3" traits="Button"/>
+            <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" focused="false" x="128" y="145" width="1664" height="935" index="4" traits="">
+              <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" focused="false" x="128" y="145" width="1664" height="935" index="0" traits="">
+                <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" focused="false" x="128" y="145" width="1664" height="935" index="0" traits="">
+                  <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" focused="false" x="128" y="145" width="1664" height="935" index="0" traits="">
+                    <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" focused="false" x="128" y="145" width="1664" height="935" index="0" traits="">
+                      <XCUIElementTypeScrollView type="XCUIElementTypeScrollView" enabled="true" visible="true" accessible="false" focused="false" x="128" y="145" width="1664" height="935" index="0" traits="">
+                        <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" focused="false" x="128" y="145" width="1664" height="592" index="0" traits="">
+                          <XCUIElementTypeStaticText type="XCUIElementTypeStaticText" value="Logo Tee" name="productTitle" label="Logo Tee" enabled="true" visible="true" accessible="true" focused="false" x="744" y="161" width="225" height="69" index="0" traits="StaticText"/>
+                          <XCUIElementTypeStaticText type="XCUIElementTypeStaticText" value="$24.00" name="productPrice" label="$24.00" enabled="true" visible="true" accessible="true" focused="false" x="744" y="242" width="163" height="58" index="1" traits="StaticText"/>
+                          <XCUIElementTypeStaticText type="XCUIElementTypeStaticText" value="The morpho on soft cotton. XXL is $2.00 more." name="The morpho on soft cotton. XXL is $2.00 more." label="The morpho on soft cotton. XXL is $2.00 more." enabled="true" visible="true" accessible="true" focused="false" x="744" y="312" width="598" height="35" index="2" traits="StaticText"/>
+                          <XCUIElementTypeStaticText type="XCUIElementTypeStaticText" value="Size" name="Size" label="Size" enabled="true" visible="true" accessible="true" focused="false" x="744" y="359" width="71" height="46" index="3" traits="StaticText"/>
+                          <XCUIElementTypeButton type="XCUIElementTypeButton" name="size_XS" label="XS" enabled="true" visible="true" accessible="true" focused="false" x="714" y="402" width="122" height="77" index="4" traits="Button"/>
+                          <XCUIElementTypeButton type="XCUIElementTypeButton" name="size_S" label="S" enabled="true" visible="true" accessible="true" focused="false" x="836" y="402" width="102" height="77" index="5" traits="Button"/>
+                          <XCUIElementTypeButton type="XCUIElementTypeButton" value="1" name="size_M" label="M" enabled="true" visible="true" accessible="true" focused="true" x="934" y="398" width="117" height="85" index="6" traits="Selected, Button"/>
+                          <XCUIElementTypeButton type="XCUIElementTypeButton" name="size_L" label="L" enabled="true" visible="true" accessible="true" focused="false" x="1047" y="402" width="100" height="77" index="7" traits="Button"/>
+                          <XCUIElementTypeButton type="XCUIElementTypeButton" name="size_XL" label="XL" enabled="true" visible="true" accessible="true" focused="false" x="1147" y="402" width="120" height="77" index="8" traits="Button"/>
+                          <XCUIElementTypeButton type="XCUIElementTypeButton" name="size_XXL" label="XXL" enabled="true" visible="true" accessible="true" focused="false" x="1267" y="402" width="139" height="77" index="9" traits="Button"/>
+                          <XCUIElementTypeStaticText type="XCUIElementTypeStaticText" value="Quantity" name="Quantity" label="Quantity" enabled="true" visible="true" accessible="true" focused="false" x="744" y="492" width="111" height="35" index="10" traits="StaticText"/>
+                          <XCUIElementTypeButton type="XCUIElementTypeButton" name="qtyMinus" label="−" enabled="false" visible="true" accessible="true" focused="false" x="867" y="476" width="79" height="66" index="11" traits="NotEnabled, Button"/>
+                          <XCUIElementTypeStaticText type="XCUIElementTypeStaticText" value="1" name="qtyValue" label="1" enabled="true" visible="true" accessible="true" focused="false" x="958" y="486" width="18" height="46" index="12" traits="StaticText"/>
+                          <XCUIElementTypeButton type="XCUIElementTypeButton" name="qtyPlus" label="+" enabled="true" visible="true" accessible="true" focused="false" x="988" y="476" width="79" height="66" index="13" traits="Button"/>
+                          <XCUIElementTypeButton type="XCUIElementTypeButton" name="addToCart" label="Add to cart" enabled="true" visible="true" accessible="true" focused="false" x="744" y="554" width="1032" height="66" index="14" traits="Button"/>
+                        </XCUIElementTypeOther>
+                        <XCUIElementTypeOther type="XCUIElementTypeOther" value="0%" name="0 pages" label="0 pages" enabled="true" visible="false" accessible="false" focused="false" x="0" y="0" width="0" height="0" index="1" traits="Adjustable">
+                          <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="false" accessible="false" focused="false" x="1786" y="431" width="3" height="586" index="0" traits=""/>
+                        </XCUIElementTypeOther>
+                        <XCUIElementTypeOther type="XCUIElementTypeOther" value="0%" name="0 pages" label="0 pages" enabled="true" visible="false" accessible="false" focused="false" x="0" y="0" width="0" height="0" index="2" traits="Adjustable">
+                          <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="false" accessible="false" focused="false" x="1786" y="431" width="3" height="586" index="0" traits=""/>
+                        </XCUIElementTypeOther>
+                      </XCUIElementTypeScrollView>
+                    </XCUIElementTypeOther>
+                  </XCUIElementTypeOther>
+                </XCUIElementTypeOther>
+              </XCUIElementTypeOther>
+            </XCUIElementTypeOther>
+          </XCUIElementTypeOther>
+        </XCUIElementTypeOther>
+      </XCUIElementTypeOther>
+    </XCUIElementTypeOther>
+  </XCUIElementTypeWindow>
+</XCUIElementTypeApplication>
+

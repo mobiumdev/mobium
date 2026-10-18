@@ -119,6 +119,21 @@ public final class WaitFor {
     public static WaitFor unchecked() { return new WaitFor("unchecked", null, null); }
 
     /**
+     * Wait for what the platform marks selected — a tab, a segment, an
+     * option drawn as a button — to be selected.
+     *
+     * @return the condition
+     */
+    public static WaitFor selected() { return new WaitFor("selected", null, null); }
+
+    /**
+     * Wait for it to be unselected.
+     *
+     * @return the condition
+     */
+    public static WaitFor unselected() { return new WaitFor("unselected", null, null); }
+
+    /**
      * Wait for a field to have keyboard focus.
      *
      * @return the condition

@@ -409,3 +409,36 @@ func TestAWaitForVisibleIsOnScreen(t *testing.T) {
 		t.Errorf("on the screen: %v", err)
 	}
 }
+
+// A SwiftUI option drawn as a button reports its choice in the Selected
+// trait, and nothing else: Morpho Market's sizes on an Apple TV, M chosen,
+// as captured on a tvOS 26.5 simulator. "selected" reads it, "unselected"
+// holds for the rest, and "checked" — which a checkbox, radio or switch has
+// and this has not — is refused naming "selected" (CHALLENGES 335).
+func TestWaitForSelected(t *testing.T) {
+	raw, err := os.ReadFile("../uitree/testdata/ios-tvos26-morpho-product-size-m.xml")
+	if err != nil {
+		t.Fatal(err)
+	}
+	tree, err := uitree.ParseIOS(raw)
+	if err != nil {
+		t.Fatal(err)
+	}
+	h, s, _ := withFake(t, tree)
+	for _, c := range []struct{ target, cond string }{
+		{"testid=size_M", "selected"},
+		{"testid=size_L", "unselected"},
+	} {
+		if _, err := wait(h, s, map[string]interface{}{"target": c.target, "condition": c.cond, "timeout_ms": 0}); err != nil {
+			t.Errorf("%s %s: %v", c.target, c.cond, err)
+		}
+	}
+	_, err = wait(h, s, map[string]interface{}{"target": "testid=size_L", "condition": "selected", "timeout_ms": 0})
+	if mobiumerr.CodeOf(err) != mobiumerr.Timeout || !strings.Contains(err.Error(), "it is unselected") {
+		t.Errorf("size_L selected: %v, want a timeout saying it is unselected", err)
+	}
+	_, err = wait(h, s, map[string]interface{}{"target": "testid=size_M", "condition": "checked", "timeout_ms": 0})
+	if mobiumerr.CodeOf(err) != mobiumerr.InvalidArgument || !strings.Contains(err.Error(), `condition "selected"`) {
+		t.Errorf("size_M checked: %v, want a refusal naming selected", err)
+	}
+}

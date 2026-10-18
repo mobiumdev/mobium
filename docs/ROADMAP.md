@@ -295,7 +295,8 @@ this is what is not.
   app drew over it ([CHALLENGES 115](CHALLENGES.md)). Every refusal from those
   checks has one shape, native and web — "X failed check C: reason", C in
   the error's details (CHALLENGES 158) — and `wait` also waits for checked,
-  unchecked, focused and a value (`docs/checks/wait-states.sh`). Still to
+  unchecked, focused and a value (`docs/checks/wait-states.sh`), and since
+  CHALLENGES 335 for selected and unselected. Still to
   come:
   - `map` lists a screen an app laid over another as if nothing covered
     it: Discover's chips under Pocket Casts' search results. On the iPhone

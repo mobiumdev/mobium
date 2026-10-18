@@ -438,6 +438,10 @@ const (
 	// Checked and Unchecked wait for a checkbox, radio or switch.
 	Checked   = "checked"
 	Unchecked = "unchecked"
+	// Selected and Unselected wait for what the platform marks selected: a
+	// tab, a segment, an option drawn as a button.
+	Selected   = "selected"
+	Unselected = "unselected"
 	// Focused waits for a field to have keyboard focus.
 	Focused = "focused"
 	// Count waits until the locator matches WaitOptions.Count elements.
@@ -447,7 +451,7 @@ const (
 // WaitOptions tunes WaitFor. A nil *WaitOptions means visible, ten seconds.
 type WaitOptions struct {
 	// Condition is Visible (the default), Hidden, HasText, HasValue,
-	// Enabled, Disabled, Checked, Unchecked or Focused.
+	// Enabled, Disabled, Checked, Unchecked, Selected, Unselected or Focused.
 	Condition string
 	// Text is what to wait for, with HasText and HasValue; with HasValue an
 	// empty Text waits for an empty field.
