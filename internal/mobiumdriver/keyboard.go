@@ -592,6 +592,15 @@ func (w *WDA) TypeIntoFocus(ctx context.Context, text string) (*FocusedField, er
 	if before == nil {
 		return nil, ErrNoFocus
 	}
+	// An Apple TV types only through its keyboard, which select opens.
+	if w.tv() {
+		if _, _, _, err := w.tvKeyboardFor(ctx, nil); err != nil {
+			return nil, err
+		}
+		if before, err = w.FocusedField(ctx); err != nil || before == nil {
+			return nil, ErrNoFocus
+		}
+	}
 	if err := w.typeKeys(ctx, text); err != nil {
 		return nil, err
 	}

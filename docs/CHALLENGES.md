@@ -7183,7 +7183,11 @@ lands in, what is read back, what a retry clears. The app's field it edits
 is the one whose placeholder or label is the keyboard's title, and it is
 the focused field, reachable behind the keyboard's screen and under its
 keys. A fill aimed at another field is refused, naming the one the keyboard
-is up for. `app_keyboard` `hide` closes it, keeping the text, and focus is
+is up for. And a type with no keyboard up waits up to three seconds for the
+one select opens, then is refused, naming select: typed into the app's field
+directly, a tvOS field took nothing and read back its placeholder, "Full
+name", blamed on a dropped keystroke — found by a fill sent straight after
+select, before the keyboard was up. `app_keyboard` `hide` closes it, keeping the text, and focus is
 back on the field; `enter` submits the field and leaves the keyboard up, as
 tvOS does. On the simulator the discount code, the address, the card
 number and expiry (both formatted as typed), the security code (a secure

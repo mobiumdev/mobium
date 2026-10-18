@@ -628,7 +628,7 @@ func (w *WDA) SetSliderPosition(ctx context.Context, n *uitree.Node, position fl
 func (w *WDA) SetText(ctx context.Context, n *uitree.Node, text string) error {
 	// On an Apple TV with the keyboard up for this field, the field is the
 	// keyboard's text view (CHALLENGES 333).
-	elID, _, ok, err := w.tvEditor(ctx, n)
+	elID, _, ok, err := w.tvKeyboardFor(ctx, n)
 	if err != nil {
 		return err
 	}

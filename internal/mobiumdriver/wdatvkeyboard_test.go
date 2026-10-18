@@ -21,8 +21,15 @@ import (
 // simulator. The keyboard is the focused element; its text view, TV1, holds
 // what has been typed. It counts what was typed into each element.
 func fakeTVKeyboard(t *testing.T) (*WDA, map[string]int, func()) {
+	return fakeTV(t, "ios-tvos26-morpho-keyboard-empty.xml")
+}
+
+// fakeTV serves the captured screen named, the keyboard focused when it is
+// up and the discount field otherwise.
+func fakeTV(t *testing.T, capture string) (*WDA, map[string]int, func()) {
 	t.Helper()
-	xml, err := os.ReadFile("../uitree/testdata/ios-tvos26-morpho-keyboard-empty.xml")
+	xml, err := os.ReadFile("../uitree/testdata/" + capture)
+	keyboard := strings.Contains(string(xml), "XCUIElementTypeKeyboard")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -38,8 +45,14 @@ func fakeTVKeyboard(t *testing.T) (*WDA, map[string]int, func()) {
 		switch {
 		case strings.HasSuffix(p, "/source"):
 			w.Write(src)
-		case strings.HasSuffix(p, "/element/active"):
+		case strings.HasSuffix(p, "/element/active") && keyboard:
 			w.Write([]byte(`{"value":{"ELEMENT":"KB"}}`))
+		case strings.HasSuffix(p, "/element/active"):
+			w.Write([]byte(`{"value":{"ELEMENT":"APPFIELD"}}`))
+		case strings.HasSuffix(p, "/APPFIELD/attribute/type"):
+			w.Write([]byte(`{"value":"XCUIElementTypeTextField"}`))
+		case strings.HasSuffix(p, "/APPFIELD/attribute/name"):
+			w.Write([]byte(`{"value":"codeField"}`))
 		case strings.HasSuffix(p, "/KB/attribute/type"):
 			w.Write([]byte(`{"value":"XCUIElementTypeKeyboard"}`))
 		case strings.HasSuffix(p, "/element") && r.Method == http.MethodPost:
@@ -130,5 +143,28 @@ func TestWDAHasFocusOnAppleTVIsTheFieldTheKeyboardEdits(t *testing.T) {
 		if err != nil || got != want {
 			t.Errorf("%s: HasFocus = %v, %v; want %v", id, got, err, want)
 		}
+	}
+}
+
+// With no keyboard up an Apple TV's field takes nothing typed into it, and
+// read back its placeholder as a dropped keystroke. A type waits for the
+// keyboard select opens, and without one is refused, naming select, with
+// nothing typed (CHALLENGES 333).
+func TestWDATypingOnAppleTVWithNoKeyboardIsRefused(t *testing.T) {
+	defer func(w time.Duration) { tvKeyboardWait = w }(tvKeyboardWait)
+	tvKeyboardWait = 300 * time.Millisecond
+	d, typed, done := fakeTV(t, "ios-tvos26-morpho-cart.xml")
+	defer done()
+	code := &uitree.Node{TestID: "codeField", Class: "XCUIElementTypeTextField"}
+	err := d.SetText(context.Background(), code, "WELCOME10")
+	if mobiumerr.CodeOf(err) != mobiumerr.DeviceNotReady || !strings.Contains(err.Error(), "no keyboard is up") {
+		t.Errorf("fill: %v", err)
+	}
+	_, err = d.TypeIntoFocus(context.Background(), "abc")
+	if mobiumerr.CodeOf(err) != mobiumerr.DeviceNotReady {
+		t.Errorf("type at the focus: %v", err)
+	}
+	if len(typed) != 0 {
+		t.Errorf("typed %v with no keyboard up", typed)
 	}
 }
