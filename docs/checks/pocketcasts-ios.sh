@@ -150,9 +150,11 @@ row 237 "the header is named by its words"
 
 echo "  an episode"
 $M swipe up >/dev/null
-# An episode row reads "SEPTEMBER 16. Title. 1 minute", or "TRAILER ,
-# SEPTEMBER 16. …", or starts TODAY or YESTERDAY.
-episode=$($M map | grep -E '^@e[0-9]+ ([A-Z]+ , )?([A-Z]{3,} [0-9]{1,2}|TODAY|YESTERDAY)\. ' | awk '{ print $1; exit }')
+# An episode row reads "SEPTEMBER 16. Title. 1 minute", or starts with a
+# weekday, TODAY or YESTERDAY, after what a show puts before it: "TRAILER ,
+# ", "S1 E5 , ", "SEASON 1 TRAILER , ". Discover's first podcast changes,
+# and a seasonal one's rows matched none of the first pattern (2026-10-18).
+episode=$($M map | grep -E '^@e[0-9]+ ([A-Z0-9 ]+ , )?[A-Z]{3,}( [0-9]{1,2})?\. ' | awk '{ print $1; exit }')
 [ -n "$episode" ] || fail "no episode row is in map"
 $M tap "$episode" >/dev/null
 $M wait "label=Download" >/dev/null || fail "the episode sheet did not come up"
