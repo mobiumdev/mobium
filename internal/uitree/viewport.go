@@ -38,7 +38,7 @@ func (t *Tree) Viewport(c *Node) Rect {
 		switch {
 		case b.Y1 <= c.Bounds.Y1 && b.Y2 > v.Y1:
 			v.Y1 = b.Y2
-		case b.Y2 >= c.Bounds.Y2 && b.Y1 < v.Y2:
+		case (b.Y2 >= c.Bounds.Y2 || floatsOverBottom(n, c)) && b.Y1 < v.Y2:
 			v.Y2 = b.Y1
 		}
 		return true
@@ -95,10 +95,17 @@ func (t *Tree) onScreen(r Rect) Rect {
 }
 
 // isBar reports a node laid across the top or bottom edge of c, as wide as
-// c, at most a third of its height, with a control in it.
+// c, at most a third of its height, with a control in it — or floating over
+// its bottom (floatsOverBottom).
 func isBar(n, c *Node) bool {
 	b, cb := n.Bounds, c.Bounds
-	if b.Empty() || b.X1 > cb.X1 || b.X2 < cb.X2 || 3*b.Height() > cb.Height() {
+	if b.Empty() || 3*b.Height() > cb.Height() {
+		return false
+	}
+	if floatsOverBottom(n, c) {
+		return holdsControl(n)
+	}
+	if b.X1 > cb.X1 || b.X2 < cb.X2 {
 		return false
 	}
 	acrossTop := b.Y1 <= cb.Y1 && b.Y2 > cb.Y1
@@ -107,6 +114,42 @@ func isBar(n, c *Node) bool {
 		return false
 	}
 	return holdsControl(n)
+}
+
+// floatsOverBottom reports a bar that floats over the bottom of c rather
+// than crossing its edge: iOS 27's Settings lays its search field over its
+// list, inset 28 points from each side and from the bottom, and the
+// General row under it — reported hidden, and with its center on the field
+// — was taken as in view, so a tap was refused as behind another screen
+// instead of scrolled out from under it (CHALLENGES 338). Inside c's
+// bottom third, at least half its width, and no further above its bottom
+// edge than the bar is tall: a control floating in the middle of a list is
+// not one. Nor the keyboard, which stops above the home indicator the same
+// way and has its own rule (107): a button under it is refused as under the
+// keyboard, not scrolled for.
+func floatsOverBottom(n, c *Node) bool {
+	b, cb := n.Bounds, c.Bounds
+	return b.Y2 < cb.Y2 && cb.Y2-b.Y2 <= b.Height() && 3*(b.Y1-cb.Y1) >= 2*cb.Height() &&
+		b.X1 >= cb.X1 && b.X2 <= cb.X2 && 2*b.Width() >= cb.Width() && !keyboardPart(n)
+}
+
+// keyboardPart reports the keyboard, a node inside it, or one holding it.
+func keyboardPart(n *Node) bool {
+	for p := n; p != nil; p = p.Parent {
+		if p.Class == "XCUIElementTypeKeyboard" {
+			return true
+		}
+	}
+	var holds func(*Node) bool
+	holds = func(m *Node) bool {
+		for _, k := range m.Children {
+			if k.Class == "XCUIElementTypeKeyboard" || holds(k) {
+				return true
+			}
+		}
+		return false
+	}
+	return holds(n)
 }
 
 func holdsControl(n *Node) bool {

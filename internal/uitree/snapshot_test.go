@@ -1,6 +1,8 @@
 package uitree
 
 import (
+	"os"
+	"regexp"
 	"strings"
 	"testing"
 	"unicode/utf8"
@@ -845,6 +847,57 @@ func TestCoveredByScreen(t *testing.T) {
 // screen, and was refused instead of scrolled for (CHALLENGES 337). Captured
 // on an iPhone 15 Plus on iOS 27.0.1. The shape is asserted first, or the
 // test could pass on a tree the old rule never refused.
+// iOS 27 reports Kiwix's own screen-sized wrappers hidden, and its Library
+// button hidden inside a toolbar that floats, visible, at the bottom of the
+// screen, with nothing in front of it: a tap was refused as behind another
+// screen (CHALLENGES 339). Behind a screen in front, everything down to the
+// target is hidden (TestCoveredByScreen); here the toolbar is not. Captured
+// on an iPhone 15 Plus on iOS 27.0.1, every name, label and value but these
+// replaced.
+func TestCoveredByScreenNotInsideAVisibleBar(t *testing.T) {
+	tree := loadIOS(t, "ios27-kiwix-toolbar.xml")
+	var library *Node
+	tree.Walk(func(n *Node) bool {
+		if n.Class == "XCUIElementTypeButton" && n.Label == "Library" {
+			library = n
+		}
+		return true
+	})
+	// Hidden as iOS reported it, read from the capture: the parser may show
+	// a bar's buttons (CHALLENGES 340), and this asks the rule, not the parser.
+	raw, err := os.ReadFile("testdata/ios27-kiwix-toolbar.xml")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if library == nil || !regexp.MustCompile(`label="Library" enabled="true" visible="false"`).Match(raw) {
+		t.Fatal("the fixture lost the hidden Library button")
+	}
+	var screen Rect
+	tree.Walk(func(n *Node) bool {
+		if !n.Bounds.Empty() {
+			screen = n.Bounds
+			return false
+		}
+		return true
+	})
+	wrapped, bar := false, false
+	for p := library.Parent; p != nil; p = p.Parent {
+		if p.Class == "XCUIElementTypeOther" && !p.Displayed && p.Bounds.Width() >= screen.Width() &&
+			p.Bounds.Height() >= screen.Height() {
+			wrapped = true
+		}
+		if p.Displayed && !wrapped {
+			bar = true
+		}
+	}
+	if !wrapped || !bar {
+		t.Fatalf("the fixture lost its shape: in a hidden screen-sized view %v, under a visible one %v", wrapped, bar)
+	}
+	if tree.CoveredByScreen(library) {
+		t.Error("Library, in the toolbar shown, reads as behind another screen")
+	}
+}
+
 func TestCoveredByScreenNotForARowScrolledAway(t *testing.T) {
 	tree := loadIOS(t, "ios27-morpho-catalog.xml")
 	var screen Rect

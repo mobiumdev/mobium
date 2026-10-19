@@ -23,7 +23,14 @@ fail() { echo "FAIL: $*" >&2; exit 1; }
 row() { printf '    %-12s %-54s ok\n' "$1" "$2"; }
 M="$ROOT/bin/mobium --device $DEV"
 P=com.apple.Preferences
-general() { $M map 2>/dev/null | grep -o -E '\b(General|一般)\b' | head -1; }
+# General's row, read from map once it is in view: on iOS 27 it opens under
+# Settings' floating search field, which map rightly leaves out (CHALLENGES
+# 338). Its id is the same in every language.
+general() {
+  $M scroll-to testid=com.apple.settings.general --direction down >/dev/null 2>&1 ||
+    $M scroll-to testid=com.apple.settings.general --direction up >/dev/null 2>&1 || true
+  $M map 2>/dev/null | grep -o -E '\b(General|一般)\b' | head -1
+}
 at_exit '$M locale $P "" >/dev/null 2>&1 || true'
 echo "--- $DEV"
 

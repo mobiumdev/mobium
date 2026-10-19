@@ -817,10 +817,21 @@ func (t *Tree) CoveredByScreen(n *Node) bool {
 		}
 		return true
 	})
+	// And hidden all the way down to the target. Behind a screen in front,
+	// everything between the screen-sized view and the target is reported
+	// hidden — Ice Cubes' tab bar and its wrappers under the image viewer.
+	// iOS 27 reports some of a page's own screen-sized wrappers hidden with
+	// visible views inside them: Kiwix's toolbar, floating at the bottom of
+	// the screen, is visible, and its Library button inside it hidden, so a
+	// tap on it was refused as behind another screen (CHALLENGES 339). A
+	// visible view between the two says the screen is the one shown.
 	for p := n.Parent; p != nil; p = p.Parent {
 		if p.Class == "XCUIElementTypeOther" && !p.Displayed && p.Bounds.Width() >= screen.Width() &&
 			p.Bounds.Height() >= screen.Height() {
 			return true
+		}
+		if p.Displayed {
+			return false
 		}
 	}
 	return false
