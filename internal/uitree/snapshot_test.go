@@ -1,6 +1,8 @@
 package uitree
 
 import (
+	"os"
+	"regexp"
 	"strings"
 	"testing"
 	"unicode/utf8"
@@ -861,7 +863,13 @@ func TestCoveredByScreenNotInsideAVisibleBar(t *testing.T) {
 		}
 		return true
 	})
-	if library == nil || library.Displayed {
+	// Hidden as iOS reported it, read from the capture: the parser may show
+	// a bar's buttons (CHALLENGES 340), and this asks the rule, not the parser.
+	raw, err := os.ReadFile("testdata/ios27-kiwix-toolbar.xml")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if library == nil || !regexp.MustCompile(`label="Library" enabled="true" visible="false"`).Match(raw) {
 		t.Fatal("the fixture lost the hidden Library button")
 	}
 	var screen Rect
