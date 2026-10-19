@@ -73,9 +73,70 @@ func ParseIOS(data []byte) (*Tree, error) {
 		root.Bounds = root.Children[0].Bounds
 	}
 	rebaseRemoteContent(root)
+	showBarControls(tree)
 	foldSwitchRows(root)
 	markIntrinsicTargets(root)
 	return tree, nil
+}
+
+// showBarControls shows what a bar on the screen holds where iOS calls it
+// hidden. iOS 27 reports Kiwix's toolbar, floating over the bottom of the
+// screen, and its glass container visible, and the buttons in it — Tabs
+// Manager, Library, List, More — hidden, so map listed none of them while
+// Library took a tap (CHALLENGES 340). A bar shown is not behind anything,
+// so what it holds is shown where it lies inside the bar's own visible
+// part and on the screen: the first visible element above it is a toolbar,
+// tab bar or navigation bar, or inside one, and holds its center. Not under
+// the keyboard, which covers a tab bar's buttons on iOS 26 and is not in
+// the bar; not in a hidden WebView (256). Behind a screen really in front
+// the bar itself is hidden — Ice Cubes' tab bar under the image viewer —
+// and nothing in it is shown.
+func showBarControls(tree *Tree) {
+	screen := tree.Root.Bounds
+	kb := tree.Keyboard()
+	tree.Walk(func(n *Node) bool {
+		if n.Displayed || n.Bounds.Empty() {
+			return true
+		}
+		var shown *Node
+		for p := n.Parent; p != nil; p = p.Parent {
+			if p.Class == "XCUIElementTypeWebView" && !p.Displayed {
+				return true
+			}
+			if p.Displayed {
+				shown = p
+				break
+			}
+		}
+		if shown == nil || !inShownBar(shown) {
+			return true
+		}
+		x, y := n.Bounds.Center()
+		if !contains(shown.Bounds, x, y) || !screen.Empty() && !contains(screen, x, y) {
+			return true
+		}
+		// The keyboard's backdrop runs below its keys to the screen's edge,
+		// and the node stops at the keys: a tab bar's buttons at y 822 sat
+		// under a keyboard node ending at 816, reported hidden, rightly.
+		if kb != nil && !n.Within(kb) &&
+			contains(Rect{X1: kb.Bounds.X1, Y1: kb.Bounds.Y1, X2: kb.Bounds.X2, Y2: max(kb.Bounds.Y2, screen.Y2)}, x, y) {
+			return true
+		}
+		n.Displayed = true
+		n.Clickable = n.shaped
+		return true
+	})
+}
+
+// inShownBar reports n, shown, as a bar or inside one that is shown.
+func inShownBar(n *Node) bool {
+	for p := n; p != nil; p = p.Parent {
+		switch p.Class {
+		case "XCUIElementTypeToolbar", "XCUIElementTypeTabBar", "XCUIElementTypeNavigationBar":
+			return p.Displayed
+		}
+	}
+	return false
 }
 
 // rebaseRemoteContent moves content drawn by another process back to where

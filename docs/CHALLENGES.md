@@ -7317,10 +7317,29 @@ captured iOS hierarchy, no target behind a presented screen changed, and
 on iOS 26 only two did at all, both under the keyboard, whose rule comes
 first (325). Kiwix's page under the Library is still refused on the phone
 (256). The captured screen is `ios27-kiwix-toolbar.xml`, redacted as 338's.
-**Still open:** the same toolbar's Tabs Manager, Library, List and More are
-reported hidden, so `map` lists none of them, though each is on the screen
-and Library took a tap; `kiwix-ios.sh` stops at the disabled List button,
-which `map` does not show.
+The same toolbar's buttons were also missing from `map`: 340.
+
+### 340. On iOS 27, a toolbar on the screen hid its own buttons from map
+
+**Found by:** `kiwix-ios.sh` on the iPhone, once 339 let the Library tap
+through: it stopped at "the disabled List button is not in map as
+disabled". iOS 27 reports Kiwix's floating toolbar and the glass container
+of each item visible, and the buttons in them hidden — Tabs Manager,
+Library, List, More — so `map`, which lists what is shown, listed none of
+them, while Library took a tap and opened the Library. The toolbar is on
+the screen with nothing over it. **Fixed:** the iOS parser shows what a
+shown bar holds where iOS called it hidden: the first visible element above
+it is a toolbar, tab bar or navigation bar, or inside one, and holds its
+center, on the screen. Not under the keyboard — on iOS 26 a tab bar's
+buttons are hidden under it, rightly, at y 822 below a keyboard node
+ending at 816, since its backdrop runs to the screen's edge — and not in a
+hidden WebView (256). Behind a screen really in front the bar itself is
+hidden, and nothing in it is shown. Compared over every captured
+hierarchy, only iOS 27's change: 23 elements of Kiwix's toolbar and title
+bar, and one plain view in Morpho Market's. An article tile running behind
+the toolbar is now aimed above it, as a post behind Ice Cubes' tab bar is
+(238). The captured screen is `ios27-kiwix-zim-toolbar.xml`, redacted as
+338's. On the phone `kiwix-ios.sh` then passed in full.
 
 ## Findings that were not defects
 

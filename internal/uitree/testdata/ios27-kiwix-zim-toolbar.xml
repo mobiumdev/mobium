@@ -1,0 +1,231 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<XCUIElementTypeApplication type="XCUIElementTypeApplication" name="Kiwix" label="Kiwix" enabled="true" visible="true" accessible="false" x="0" y="0" width="430" height="932" index="0" traits="" processId="1" bundleId="self.Kiwix">
+  <XCUIElementTypeWindow type="XCUIElementTypeWindow" enabled="true" visible="true" accessible="false" x="0" y="0" width="430" height="932" index="0" traits="">
+    <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="0" y="0" width="430" height="932" index="0" traits="">
+      <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="0" y="0" width="430" height="932" index="0" traits="">
+        <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="0" y="0" width="430" height="932" index="0" traits="">
+          <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="false" accessible="false" x="0" y="0" width="430" height="932" index="0" traits="">
+            <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="0" y="0" width="430" height="932" index="0" traits="">
+              <XCUIElementTypeNavigationBar type="XCUIElementTypeNavigationBar" name="Text 1" enabled="true" visible="true" accessible="false" x="0" y="59" width="430" height="108" index="0" traits="">
+                <XCUIElementTypeButton type="XCUIElementTypeButton" name="Search in page" label="Search in page" enabled="true" visible="true" accessible="true" x="309" y="63" width="38" height="36" index="0" traits="Button"/>
+                <XCUIElementTypeButton type="XCUIElementTypeButton" name="Settings" label="Settings" enabled="true" visible="true" accessible="true" x="363" y="63" width="43" height="36" index="1" traits="Button"/>
+                <XCUIElementTypeSearchField type="XCUIElementTypeSearchField" value="Text 2" name="Text 2" label="Text 2" enabled="true" visible="true" accessible="true" x="20" y="113" width="390" height="44" index="2" placeholderValue="Text 2" traits="SearchField">
+                  <XCUIElementTypeImage type="XCUIElementTypeImage" name="Text 3" label="Text 2" enabled="true" visible="false" accessible="false" x="32" y="125" width="21" height="20" index="0" traits="Image"/>
+                </XCUIElementTypeSearchField>
+              </XCUIElementTypeNavigationBar>
+              <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="0" y="0" width="430" height="932" index="1" traits="">
+                <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="0" y="0" width="430" height="932" index="0" traits="">
+                  <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="0" y="0" width="430" height="932" index="0" traits="">
+                    <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="false" accessible="false" x="0" y="0" width="430" height="932" index="0" traits="">
+                      <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="0" y="0" width="430" height="932" index="0" traits="">
+                        <XCUIElementTypeWebView type="XCUIElementTypeWebView" enabled="true" visible="true" accessible="false" x="0" y="0" width="430" height="932" index="0" traits="">
+                          <XCUIElementTypeWebView type="XCUIElementTypeWebView" enabled="true" visible="true" accessible="false" x="0" y="0" width="430" height="932" index="0" traits="">
+                            <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="false" accessible="false" x="0" y="0" width="430" height="932" index="0" traits="">
+                              <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="false" accessible="false" x="0" y="0" width="430" height="153" index="0" traits=""/>
+                              <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="false" accessible="false" x="0" y="806" width="430" height="126" index="1" traits=""/>
+                            </XCUIElementTypeOther>
+                            <XCUIElementTypeWebView type="XCUIElementTypeWebView" enabled="true" visible="true" accessible="false" x="0" y="0" width="430" height="932" index="1" traits="">
+                              <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="0" y="0" width="430" height="932" index="0" traits="">
+                                <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="false" accessible="false" x="0" y="0" width="430" height="932" index="0" traits="">
+                                  <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="0" y="167" width="430" height="932" index="0" traits="">
+                                    <XCUIElementTypeOther type="XCUIElementTypeOther" name="Text 4" label="Text 4" enabled="true" visible="true" accessible="false" x="0" y="167" width="430" height="932" index="0" traits="">
+                                      <XCUIElementTypeLink type="XCUIElementTypeLink" name="Text 5" label="Text 5" enabled="true" visible="true" accessible="false" x="0" y="167" width="215" height="326" index="0" traits="Link">
+                                        <XCUIElementTypeLink type="XCUIElementTypeLink" name="Text 5" label="Text 5" enabled="true" visible="true" accessible="false" x="0" y="167" width="215" height="326" index="0" traits="Link">
+                                          <XCUIElementTypeImage type="XCUIElementTypeImage" name="Text 6" label="Text 6" enabled="true" visible="true" accessible="true" x="0" y="167" width="215" height="326" index="0" traits="Link, Image"/>
+                                          <XCUIElementTypeLink type="XCUIElementTypeLink" enabled="true" visible="true" accessible="false" x="11" y="429" width="112" height="51" index="1" traits="Link">
+                                            <XCUIElementTypeStaticText type="XCUIElementTypeStaticText" value="Text 6" name="Text 6" label="Text 6" enabled="true" visible="true" accessible="true" x="11" y="429" width="112" height="51" index="0" traits="Link, StaticText"/>
+                                          </XCUIElementTypeLink>
+                                        </XCUIElementTypeLink>
+                                      </XCUIElementTypeLink>
+                                      <XCUIElementTypeLink type="XCUIElementTypeLink" name="Text 7" label="Text 7" enabled="true" visible="true" accessible="false" x="215" y="167" width="215" height="217" index="1" traits="Link">
+                                        <XCUIElementTypeLink type="XCUIElementTypeLink" name="Text 7" label="Text 7" enabled="true" visible="true" accessible="false" x="215" y="167" width="215" height="217" index="0" traits="Link">
+                                          <XCUIElementTypeImage type="XCUIElementTypeImage" name="Text 8" label="Text 8" enabled="true" visible="true" accessible="true" x="215" y="167" width="215" height="217" index="0" traits="Link, Image"/>
+                                          <XCUIElementTypeLink type="XCUIElementTypeLink" enabled="true" visible="true" accessible="false" x="226" y="347" width="185" height="25" index="1" traits="Link">
+                                            <XCUIElementTypeStaticText type="XCUIElementTypeStaticText" value="Text 8" name="Text 8" label="Text 8" enabled="true" visible="true" accessible="true" x="226" y="347" width="185" height="25" index="0" traits="Link, StaticText"/>
+                                          </XCUIElementTypeLink>
+                                        </XCUIElementTypeLink>
+                                      </XCUIElementTypeLink>
+                                      <XCUIElementTypeLink type="XCUIElementTypeLink" name="Text 9" label="Text 9" enabled="true" visible="true" accessible="false" x="215" y="383" width="215" height="285" index="2" traits="Link">
+                                        <XCUIElementTypeLink type="XCUIElementTypeLink" name="Text 9" label="Text 9" enabled="true" visible="true" accessible="false" x="215" y="383" width="215" height="285" index="0" traits="Link">
+                                          <XCUIElementTypeImage type="XCUIElementTypeImage" name="Text 10" label="Text 10" enabled="true" visible="true" accessible="true" x="215" y="383" width="215" height="285" index="0" traits="Link, Image"/>
+                                          <XCUIElementTypeLink type="XCUIElementTypeLink" enabled="true" visible="true" accessible="false" x="226" y="631" width="139" height="24" index="1" traits="Link">
+                                            <XCUIElementTypeStaticText type="XCUIElementTypeStaticText" value="Text 10" name="Text 10" label="Text 10" enabled="true" visible="true" accessible="true" x="226" y="631" width="139" height="24" index="0" traits="Link, StaticText"/>
+                                          </XCUIElementTypeLink>
+                                        </XCUIElementTypeLink>
+                                      </XCUIElementTypeLink>
+                                      <XCUIElementTypeLink type="XCUIElementTypeLink" name="Text 11" label="Text 11" enabled="true" visible="true" accessible="false" x="0" y="492" width="215" height="285" index="3" traits="Link">
+                                        <XCUIElementTypeLink type="XCUIElementTypeLink" name="Text 11" label="Text 11" enabled="true" visible="true" accessible="false" x="0" y="492" width="215" height="285" index="0" traits="Link">
+                                          <XCUIElementTypeImage type="XCUIElementTypeImage" name="Text 12" label="Text 12" enabled="true" visible="true" accessible="true" x="0" y="492" width="215" height="285" index="0" traits="Link, Image"/>
+                                          <XCUIElementTypeLink type="XCUIElementTypeLink" enabled="true" visible="true" accessible="false" x="11" y="687" width="173" height="77" index="1" traits="Link">
+                                            <XCUIElementTypeStaticText type="XCUIElementTypeStaticText" value="Text 12" name="Text 12" label="Text 12" enabled="true" visible="true" accessible="true" x="11" y="687" width="173" height="77" index="0" traits="Link, StaticText"/>
+                                          </XCUIElementTypeLink>
+                                        </XCUIElementTypeLink>
+                                      </XCUIElementTypeLink>
+                                      <XCUIElementTypeLink type="XCUIElementTypeLink" name="Text 13" label="Text 13" enabled="true" visible="true" accessible="false" x="215" y="667" width="215" height="218" index="4" traits="Link">
+                                        <XCUIElementTypeLink type="XCUIElementTypeLink" name="Text 13" label="Text 13" enabled="true" visible="true" accessible="false" x="215" y="667" width="215" height="218" index="0" traits="Link">
+                                          <XCUIElementTypeImage type="XCUIElementTypeImage" name="Text 14" label="Text 14" enabled="true" visible="true" accessible="true" x="215" y="667" width="215" height="218" index="0" traits="Link, Image"/>
+                                          <XCUIElementTypeLink type="XCUIElementTypeLink" enabled="true" visible="true" accessible="false" x="226" y="822" width="173" height="51" index="1" traits="Link">
+                                            <XCUIElementTypeStaticText type="XCUIElementTypeStaticText" value="Text 14" name="Text 14" label="Text 14" enabled="true" visible="true" accessible="true" x="226" y="822" width="173" height="51" index="0" traits="Link, StaticText"/>
+                                          </XCUIElementTypeLink>
+                                        </XCUIElementTypeLink>
+                                      </XCUIElementTypeLink>
+                                      <XCUIElementTypeLink type="XCUIElementTypeLink" name="Text 15" label="Text 15" enabled="true" visible="true" accessible="false" x="0" y="776" width="215" height="230" index="5" traits="Link">
+                                        <XCUIElementTypeLink type="XCUIElementTypeLink" name="Text 15" label="Text 15" enabled="true" visible="true" accessible="false" x="0" y="776" width="215" height="230" index="0" traits="Link">
+                                          <XCUIElementTypeImage type="XCUIElementTypeImage" name="Text 16" label="Text 16" enabled="true" visible="true" accessible="true" x="0" y="776" width="215" height="230" index="0" traits="Link, Image"/>
+                                          <XCUIElementTypeLink type="XCUIElementTypeLink" enabled="true" visible="false" accessible="false" x="11" y="917" width="157" height="77" index="1" traits="Link">
+                                            <XCUIElementTypeStaticText type="XCUIElementTypeStaticText" value="Text 16" name="Text 16" label="Text 16" enabled="true" visible="false" accessible="true" x="11" y="917" width="157" height="77" index="0" traits="Link, StaticText"/>
+                                          </XCUIElementTypeLink>
+                                        </XCUIElementTypeLink>
+                                      </XCUIElementTypeLink>
+                                      <XCUIElementTypeLink type="XCUIElementTypeLink" name="Text 17" label="Text 17" enabled="true" visible="false" accessible="false" x="215" y="884" width="215" height="217" index="6" traits="Link">
+                                        <XCUIElementTypeLink type="XCUIElementTypeLink" name="Text 17" label="Text 17" enabled="true" visible="false" accessible="false" x="215" y="884" width="215" height="217" index="0" traits="Link">
+                                          <XCUIElementTypeImage type="XCUIElementTypeImage" name="Text 18" label="Text 18" enabled="true" visible="false" accessible="true" x="215" y="884" width="215" height="217" index="0" traits="Link, Image"/>
+                                          <XCUIElementTypeLink type="XCUIElementTypeLink" enabled="true" visible="false" accessible="false" x="226" y="1038" width="140" height="50" index="1" traits="Link">
+                                            <XCUIElementTypeStaticText type="XCUIElementTypeStaticText" value="Text 18" name="Text 18" label="Text 18" enabled="true" visible="false" accessible="true" x="226" y="1038" width="140" height="50" index="0" traits="Link, StaticText"/>
+                                          </XCUIElementTypeLink>
+                                        </XCUIElementTypeLink>
+                                      </XCUIElementTypeLink>
+                                      <XCUIElementTypeLink type="XCUIElementTypeLink" name="Text 19" label="Text 19" enabled="true" visible="false" accessible="false" x="0" y="1005" width="215" height="219" index="7" traits="Link">
+                                        <XCUIElementTypeLink type="XCUIElementTypeLink" name="Text 19" label="Text 19" enabled="true" visible="false" accessible="false" x="0" y="1005" width="215" height="219" index="0" traits="Link">
+                                          <XCUIElementTypeImage type="XCUIElementTypeImage" name="Text 20" label="Text 20" enabled="true" visible="false" accessible="true" x="0" y="1005" width="215" height="219" index="0" traits="Link, Image"/>
+                                          <XCUIElementTypeLink type="XCUIElementTypeLink" enabled="true" visible="false" accessible="false" x="11" y="1161" width="143" height="51" index="1" traits="Link">
+                                            <XCUIElementTypeStaticText type="XCUIElementTypeStaticText" value="Text 20" name="Text 20" label="Text 20" enabled="true" visible="false" accessible="true" x="11" y="1161" width="143" height="51" index="0" traits="Link, StaticText"/>
+                                          </XCUIElementTypeLink>
+                                        </XCUIElementTypeLink>
+                                      </XCUIElementTypeLink>
+                                      <XCUIElementTypeLink type="XCUIElementTypeLink" name="Text 21" label="Text 21" enabled="true" visible="false" accessible="false" x="215" y="1100" width="215" height="254" index="8" traits="Link">
+                                        <XCUIElementTypeLink type="XCUIElementTypeLink" name="Text 21" label="Text 21" enabled="true" visible="false" accessible="false" x="215" y="1100" width="215" height="254" index="0" traits="Link">
+                                          <XCUIElementTypeImage type="XCUIElementTypeImage" name="Text 22" label="Text 22" enabled="true" visible="false" accessible="true" x="215" y="1100" width="215" height="254" index="0" traits="Link, Image"/>
+                                          <XCUIElementTypeLink type="XCUIElementTypeLink" enabled="true" visible="false" accessible="false" x="226" y="1317" width="112" height="25" index="1" traits="Link">
+                                            <XCUIElementTypeStaticText type="XCUIElementTypeStaticText" value="Text 22" name="Text 22" label="Text 22" enabled="true" visible="false" accessible="true" x="226" y="1317" width="112" height="25" index="0" traits="Link, StaticText"/>
+                                          </XCUIElementTypeLink>
+                                        </XCUIElementTypeLink>
+                                      </XCUIElementTypeLink>
+                                      <XCUIElementTypeLink type="XCUIElementTypeLink" name="Text 23" label="Text 23" enabled="true" visible="false" accessible="false" x="0" y="1223" width="215" height="255" index="9" traits="Link">
+                                        <XCUIElementTypeLink type="XCUIElementTypeLink" name="Text 23" label="Text 23" enabled="true" visible="false" accessible="false" x="0" y="1223" width="215" height="255" index="0" traits="Link">
+                                          <XCUIElementTypeImage type="XCUIElementTypeImage" name="Text 24" label="Text 24" enabled="true" visible="false" accessible="true" x="0" y="1223" width="215" height="255" index="0" traits="Link, Image"/>
+                                          <XCUIElementTypeLink type="XCUIElementTypeLink" enabled="true" visible="false" accessible="false" x="11" y="1414" width="114" height="51" index="1" traits="Link">
+                                            <XCUIElementTypeStaticText type="XCUIElementTypeStaticText" value="Text 24" name="Text 24" label="Text 24" enabled="true" visible="false" accessible="true" x="11" y="1414" width="114" height="51" index="0" traits="Link, StaticText"/>
+                                          </XCUIElementTypeLink>
+                                        </XCUIElementTypeLink>
+                                      </XCUIElementTypeLink>
+                                      <XCUIElementTypeLink type="XCUIElementTypeLink" name="Text 25" label="Text 25" enabled="true" visible="false" accessible="false" x="215" y="1353" width="215" height="306" index="10" traits="Link">
+                                        <XCUIElementTypeLink type="XCUIElementTypeLink" name="Text 25" label="Text 25" enabled="true" visible="false" accessible="false" x="215" y="1353" width="215" height="306" index="0" traits="Link">
+                                          <XCUIElementTypeImage type="XCUIElementTypeImage" name="Text 26" label="Text 26" enabled="true" visible="false" accessible="true" x="215" y="1353" width="215" height="306" index="0" traits="Link, Image"/>
+                                          <XCUIElementTypeLink type="XCUIElementTypeLink" enabled="true" visible="false" accessible="false" x="226" y="1596" width="167" height="51" index="1" traits="Link">
+                                            <XCUIElementTypeStaticText type="XCUIElementTypeStaticText" value="Text 26" name="Text 26" label="Text 26" enabled="true" visible="false" accessible="true" x="226" y="1596" width="167" height="51" index="0" traits="Link, StaticText"/>
+                                          </XCUIElementTypeLink>
+                                        </XCUIElementTypeLink>
+                                      </XCUIElementTypeLink>
+                                      <XCUIElementTypeLink type="XCUIElementTypeLink" name="Text 21" label="Text 21" enabled="true" visible="false" accessible="false" x="0" y="1477" width="215" height="254" index="11" traits="Link">
+                                        <XCUIElementTypeLink type="XCUIElementTypeLink" name="Text 21" label="Text 21" enabled="true" visible="false" accessible="false" x="0" y="1477" width="215" height="254" index="0" traits="Link">
+                                          <XCUIElementTypeImage type="XCUIElementTypeImage" name="Text 22" label="Text 22" enabled="true" visible="false" accessible="true" x="0" y="1477" width="215" height="254" index="0" traits="Link, Image"/>
+                                          <XCUIElementTypeLink type="XCUIElementTypeLink" enabled="true" visible="false" accessible="false" x="11" y="1693" width="112" height="25" index="1" traits="Link">
+                                            <XCUIElementTypeStaticText type="XCUIElementTypeStaticText" value="Text 22" name="Text 22" label="Text 22" enabled="true" visible="false" accessible="true" x="11" y="1693" width="112" height="25" index="0" traits="Link, StaticText"/>
+                                          </XCUIElementTypeLink>
+                                        </XCUIElementTypeLink>
+                                      </XCUIElementTypeLink>
+                                      <XCUIElementTypeLink type="XCUIElementTypeLink" name="Text 27" label="Text 27" enabled="true" visible="false" accessible="false" x="215" y="1658" width="215" height="216" index="12" traits="Link">
+                                        <XCUIElementTypeLink type="XCUIElementTypeLink" name="Text 27" label="Text 27" enabled="true" visible="false" accessible="false" x="215" y="1658" width="215" height="216" index="0" traits="Link">
+                                          <XCUIElementTypeImage type="XCUIElementTypeImage" name="Text 28" label="Text 28" enabled="true" visible="false" accessible="true" x="215" y="1658" width="215" height="216" index="0" traits="Link, Image"/>
+                                          <XCUIElementTypeLink type="XCUIElementTypeLink" enabled="true" visible="false" accessible="false" x="226" y="1837" width="186" height="25" index="1" traits="Link">
+                                            <XCUIElementTypeStaticText type="XCUIElementTypeStaticText" value="Text 28" name="Text 28" label="Text 28" enabled="true" visible="false" accessible="true" x="226" y="1837" width="186" height="25" index="0" traits="Link, StaticText"/>
+                                          </XCUIElementTypeLink>
+                                        </XCUIElementTypeLink>
+                                      </XCUIElementTypeLink>
+                                    </XCUIElementTypeOther>
+                                  </XCUIElementTypeOther>
+                                </XCUIElementTypeOther>
+                              </XCUIElementTypeOther>
+                            </XCUIElementTypeWebView>
+                            <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="0" y="0" width="430" height="932" index="2" traits="">
+                              <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="0" y="806" width="430" height="126" index="0" traits=""/>
+                            </XCUIElementTypeOther>
+                            <XCUIElementTypeOther type="XCUIElementTypeOther" value="Text 29" name="Text 30" label="Text 30" enabled="true" visible="true" accessible="false" x="397" y="113" width="30" height="764" index="3" traits="Adjustable">
+                              <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="424" y="795" width="3" height="84" index="0" traits=""/>
+                            </XCUIElementTypeOther>
+                            <XCUIElementTypeOther type="XCUIElementTypeOther" value="Text 29" name="Text 31" label="Text 31" enabled="true" visible="false" accessible="false" x="55" y="899" width="320" height="30" index="4" traits="Adjustable">
+                              <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="false" accessible="false" x="369" y="926" width="8" height="3" index="0" traits=""/>
+                            </XCUIElementTypeOther>
+                            <XCUIElementTypeOther type="XCUIElementTypeOther" value="Text 29" name="Text 30" label="Text 30" enabled="true" visible="true" accessible="false" x="397" y="113" width="30" height="764" index="5" traits="Adjustable">
+                              <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="424" y="795" width="3" height="84" index="0" traits=""/>
+                            </XCUIElementTypeOther>
+                            <XCUIElementTypeOther type="XCUIElementTypeOther" value="Text 29" name="Text 31" label="Text 31" enabled="true" visible="false" accessible="false" x="55" y="899" width="320" height="30" index="6" traits="Adjustable">
+                              <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="false" accessible="false" x="369" y="926" width="8" height="3" index="0" traits=""/>
+                            </XCUIElementTypeOther>
+                          </XCUIElementTypeWebView>
+                        </XCUIElementTypeWebView>
+                      </XCUIElementTypeOther>
+                      <XCUIElementTypeImage type="XCUIElementTypeImage" name="Text 32" label="Text 32" enabled="true" visible="false" accessible="false" x="107" y="329" width="216" height="158" index="1" traits="Image"/>
+                      <XCUIElementTypeStaticText type="XCUIElementTypeStaticText" value="Text 33" name="Text 33" label="Text 33" enabled="true" visible="false" accessible="false" x="157" y="534" width="116" height="21" index="2" traits="StaticText"/>
+                    </XCUIElementTypeOther>
+                  </XCUIElementTypeOther>
+                </XCUIElementTypeOther>
+              </XCUIElementTypeOther>
+              <XCUIElementTypeToolbar type="XCUIElementTypeToolbar" name="Toolbar" label="Toolbar" enabled="true" visible="true" accessible="false" x="0" y="0" width="430" height="932" index="2" traits="">
+                <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="0" y="0" width="430" height="932" index="0" traits="">
+                  <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="0" y="67" width="430" height="865" index="0" traits="">
+                    <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="0" y="67" width="430" height="865" index="0" traits="">
+                      <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="false" accessible="false" x="0" y="67" width="0" height="0" index="0" traits="">
+                        <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="78" y="856" width="275" height="48" index="0" traits="">
+                          <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="78" y="856" width="48" height="48" index="0" traits="">
+                            <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="83" y="861" width="38" height="38" index="0" traits="">
+                              <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="true" accessible="false" x="83" y="861" width="38" height="38" index="0" traits="">
+                                <XCUIElementTypeButton type="XCUIElementTypeButton" name="Go Back" label="Go Back" enabled="false" visible="true" accessible="true" x="83" y="861" width="38" height="38" index="0" traits="NotEnabled, Button"/>
+                              </XCUIElementTypeOther>
+                            </XCUIElementTypeOther>
+                          </XCUIElementTypeOther>
+                          <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="false" accessible="false" x="129" y="856" width="52" height="48" index="1" traits="">
+                            <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="false" accessible="false" x="134" y="861" width="42" height="38" index="0" traits="">
+                              <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="false" accessible="false" x="134" y="861" width="42" height="38" index="0" traits="">
+                                <XCUIElementTypeButton type="XCUIElementTypeButton" name="Tabs Manager" label="Tabs Manager" enabled="true" visible="false" accessible="true" x="134" y="861" width="42" height="38" index="0" traits="Button"/>
+                              </XCUIElementTypeOther>
+                            </XCUIElementTypeOther>
+                          </XCUIElementTypeOther>
+                          <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="false" accessible="false" x="184" y="856" width="57" height="48" index="2" traits="">
+                            <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="false" accessible="false" x="189" y="861" width="47" height="38" index="0" traits="">
+                              <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="false" accessible="false" x="189" y="861" width="47" height="38" index="0" traits="">
+                                <XCUIElementTypeButton type="XCUIElementTypeButton" name="Library" label="Library" enabled="true" visible="false" accessible="true" x="189" y="861" width="47" height="38" index="0" traits="Button"/>
+                              </XCUIElementTypeOther>
+                            </XCUIElementTypeOther>
+                          </XCUIElementTypeOther>
+                          <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="false" accessible="false" x="244" y="856" width="54" height="48" index="3" traits="">
+                            <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="false" accessible="false" x="249" y="862" width="45" height="36" index="0" traits="">
+                              <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="false" accessible="false" x="249" y="862" width="45" height="36" index="0" traits="">
+                                <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="false" accessible="false" x="249" y="862" width="45" height="36" index="0" traits="">
+                                  <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="false" accessible="false" x="249" y="862" width="45" height="36" index="0" traits="">
+                                    <XCUIElementTypeButton type="XCUIElementTypeButton" name="list.bullet" label="List" enabled="false" visible="false" accessible="true" x="249" y="862" width="45" height="36" index="0" traits="NotEnabled, Button"/>
+                                  </XCUIElementTypeOther>
+                                </XCUIElementTypeOther>
+                              </XCUIElementTypeOther>
+                            </XCUIElementTypeOther>
+                          </XCUIElementTypeOther>
+                          <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="false" accessible="false" x="302" y="856" width="51" height="48" index="4" traits="">
+                            <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="false" accessible="false" x="307" y="862" width="41" height="36" index="0" traits="">
+                              <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="false" accessible="false" x="307" y="862" width="41" height="36" index="0" traits="">
+                                <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="false" accessible="false" x="307" y="862" width="41" height="36" index="0" traits="">
+                                  <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="false" accessible="false" x="307" y="862" width="41" height="36" index="0" traits="">
+                                    <XCUIElementTypeButton type="XCUIElementTypeButton" name="More" label="More" enabled="true" visible="false" accessible="true" x="307" y="862" width="41" height="36" index="0" traits="Button">
+                                      <XCUIElementTypeButton type="XCUIElementTypeButton" enabled="true" visible="false" accessible="false" x="307" y="862" width="41" height="36" index="0" traits="Button">
+                                        <XCUIElementTypeImage type="XCUIElementTypeImage" name="Text 34" label="More" enabled="true" visible="false" accessible="false" x="317" y="878" width="21" height="5" index="0" traits="Image"/>
+                                      </XCUIElementTypeButton>
+                                    </XCUIElementTypeButton>
+                                  </XCUIElementTypeOther>
+                                </XCUIElementTypeOther>
+                              </XCUIElementTypeOther>
+                            </XCUIElementTypeOther>
+                          </XCUIElementTypeOther>
+                        </XCUIElementTypeOther>
+                      </XCUIElementTypeOther>
+                    </XCUIElementTypeOther>
+                  </XCUIElementTypeOther>
+                </XCUIElementTypeOther>
+              </XCUIElementTypeToolbar>
+            </XCUIElementTypeOther>
+          </XCUIElementTypeOther>
+        </XCUIElementTypeOther>
+      </XCUIElementTypeOther>
+    </XCUIElementTypeOther>
+  </XCUIElementTypeWindow>
+</XCUIElementTypeApplication>
+

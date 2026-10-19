@@ -2,6 +2,7 @@ package uitree
 
 import (
 	"os"
+	"regexp"
 	"strings"
 	"testing"
 )
@@ -586,4 +587,53 @@ func TestXCUIFocus(t *testing.T) {
 	if len(focused) != 1 || focused[0] != "Focus Grid" {
 		t.Errorf("focused = %v, want [Focus Grid]", focused)
 	}
+}
+
+// iOS 27 reports Kiwix's floating toolbar visible and the buttons in it
+// hidden, so map listed none of them, though Library took a tap and List
+// is disabled on the screen (CHALLENGES 340). Captured on an iPhone 15 Plus
+// on iOS 27.0.1, every name, label and value but the bars' replaced. The
+// negative controls: the tab bar's buttons under the keyboard on iOS 26,
+// and Ice Cubes' Timeline tab under its image viewer, stay hidden.
+func TestABarShownShowsWhatItHolds(t *testing.T) {
+	raw, err := os.ReadFile("testdata/ios27-kiwix-zim-toolbar.xml")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, label := range []string{"Tabs Manager", "Library", "List", "More"} {
+		if !regexp.MustCompile(`label="` + label + `" enabled="(true|false)" visible="false"`).Match(raw) {
+			t.Fatalf("the fixture lost the hidden %s button", label)
+		}
+	}
+	tree := loadIOS(t, "ios27-kiwix-zim-toolbar.xml")
+	lines := map[string]bool{}
+	for _, e := range tree.Map() {
+		lines[e.Line()] = true
+	}
+	for _, want := range []string{"Tabs Manager (button)", "Library (button)", "List (button, disabled)", "More (button)"} {
+		found := false
+		for l := range lines {
+			if strings.HasSuffix(l, " "+want) {
+				found = true
+			}
+		}
+		if !found {
+			t.Errorf("map has no %q", want)
+		}
+	}
+
+	kb := loadIOS(t, "ios26-swiftui-keyboard-over-button.xml")
+	kb.Walk(func(n *Node) bool {
+		if n.Class == "XCUIElementTypeButton" && (n.Label == "Shop" || n.Label == "Orders") && n.Displayed {
+			t.Errorf("the %s tab, under the keyboard, is shown", n.Label)
+		}
+		return true
+	})
+	viewer := loadIOS(t, "ios26-icecubes-image-viewer.xml")
+	viewer.Walk(func(n *Node) bool {
+		if n.Class == "XCUIElementTypeButton" && n.Label == "Timeline" && n.Displayed {
+			t.Error("the Timeline tab, under the image viewer, is shown")
+		}
+		return true
+	})
 }
