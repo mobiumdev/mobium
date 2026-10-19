@@ -4,6 +4,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strconv"
 	"testing"
 	"time"
@@ -16,6 +17,12 @@ import (
 // Mac's, a bundle id as given is kept, and so is the fallback when the
 // process runs no app. CHALLENGES 344.
 func TestBundleOfAProcessWebKitCouldNotName(t *testing.T) {
+	// A simulator runs only on a Mac, and the lookup reads macOS's ps, whose
+	// comm is the executable's whole path; Linux's is its name alone, and
+	// Windows will not run the stand-in without an .exe.
+	if runtime.GOOS != "darwin" {
+		t.Skip("simulators, and this lookup, are macOS's")
+	}
 	app := filepath.Join(t.TempDir(), "Demo.app")
 	if err := os.MkdirAll(app, 0o755); err != nil {
 		t.Fatal(err)
