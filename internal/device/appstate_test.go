@@ -56,6 +56,9 @@ func TestHostedInFront(t *testing.T) {
 	}{
 		{"activities-webapk-api37.txt", Hosted{"org.chromium.webapk.a4110a3ad6380587f_v2", "com.android.chrome", "installed web app"}, true},
 		{"activities-twa-api37.txt", Hosted{"com.oyo.consumerlite", "com.android.chrome", "Trusted Web Activity"}, true},
+		// The same app by 2026-10-19: its splash screen hands off and goes,
+		// and Chrome's custom tab is alone in the app's task (CHALLENGES 346).
+		{"activities-twa-alone-api37.txt", Hosted{"com.oyo.consumerlite", "com.android.chrome", "Trusted Web Activity"}, true},
 		{"activities-permission-prompt-api35.txt", Hosted{}, false},
 		{"activities-home-api35.txt", Hosted{}, false},
 	}

@@ -106,7 +106,22 @@ func hostedInFront(dump string) (Hosted, bool) {
 	}
 	root, rootClass := taskRoot(dump)
 	if root == "" || root == top {
-		return Hosted{}, false
+		// A browser's activity alone in another app's task: the app started
+		// it and finished, and the task still bears its affinity. OYO's TWA
+		// did this on the Pixel 8 Pro by 2026-10-19 — its splash screen
+		// handed off and went, leaving Chrome's custom tab, launched by
+		// Chrome itself, as the task's root, so a launch read as Chrome in
+		// front (CHALLENGES 346). A custom tab an app opens keeps the app's
+		// own activity under it, which the root above names; one alone in
+		// the app's task is the app as a web app.
+		owner := taskAffinity(dump, m[3])
+		if owner == "" || owner == top {
+			return Hosted{}, false
+		}
+		if kind == "app in a custom tab" {
+			kind = "Trusted Web Activity"
+		}
+		return Hosted{Owner: owner, Host: top, Kind: kind}, true
 	}
 	if kind == "app in a custom tab" && strings.Contains(rootClass, "androidbrowserhelper.trusted") {
 		kind = "Trusted Web Activity"
@@ -145,6 +160,17 @@ func taskInFront(dump string) (top, root string) {
 	}
 	root, _ = taskRoot(dump)
 	return m[1], root
+}
+
+// taskAffinity is the affinity of the task with this id, as its record names
+// it — A=<uid>:<affinity> — or "". An affinity is usually its app's package;
+// it names an owner only when nothing else in the task does.
+func taskAffinity(dump, task string) string {
+	m := regexp.MustCompile(`Task\{\S+ #` + regexp.QuoteMeta(task) + ` type=\S+ A=\d+:([^\s}]+)`).FindStringSubmatch(dump)
+	if m == nil {
+		return ""
+	}
+	return m[1]
 }
 
 // taskRoot is the package and class of the activity at the root of the task

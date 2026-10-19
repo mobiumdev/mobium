@@ -7450,6 +7450,26 @@ code and was never affected. A test holds the expression to it, and fails
 four ways without the change. On the phone `hit-test.sh` then passed in
 full: all eight cases and the refusal at launch.
 
+### 346. A Trusted Web Activity launched cold read as Chrome in front
+
+**Found by:** a sweep of every check on the Pixel 8 Pro (Android 17):
+`twa.sh` failed with "launched com.oyo.consumerlite, but com.android.chrome
+is in the foreground", two runs in two from a cold start; it had passed on
+the same phone on 2026-10-07 (#178). The activity stack after the launch
+showed why. OYO's task — affinity `A=10375:com.oyo.consumerlite` — held one
+activity, Chrome's `CustomTabActivity`, as its root, launched by Chrome
+itself (`launchedFromPackage=com.android.chrome`). The capture of October
+had a second, under it: the TWA library's `LauncherActivity`, which is how
+Mobium told a TWA's task from Chrome's. OYO's launcher is now its own
+splash screen, which hands off and finishes, so the root was the browser
+and the launch read as the browser in front. **Fixed:** a browser's custom
+tab alone in a task whose affinity names another app is that app, as a
+Trusted Web Activity; a custom tab an app opens keeps the app's activity
+under it, which the root still names, and a tab in Chrome's own task is
+Chrome's. `twa.sh` reads the stack itself and accepts either shape. The
+captured task is `activities-twa-alone-api37.txt`; the old shape's capture
+still passes. On the Pixel `twa.sh` then passed two in two from cold.
+
 ## Findings that were not defects
 
 Worth recording because each one closed off an approach that looked obvious.
