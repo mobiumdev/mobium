@@ -850,6 +850,54 @@ func TestWDANamesAnAppThatLeftTheFrontWhileTyping(t *testing.T) {
 	}
 }
 
+// The target is looked for as what it was. MobiumApp's Volume, a plain view
+// that only looks like a slider, was looked for among text fields, never
+// found, and every fill said its app had left the front — before 318 could
+// refuse it as taking no keys. A search field, which is no text field to
+// isTextEntry, the same. Both still on the screen: the plain view is
+// refused as unsupported, the search field's read-back is a dropped
+// keystroke. CHALLENGES 341.
+func TestWDALooksForATargetAsWhatItWas(t *testing.T) {
+	for _, tc := range []struct {
+		name, class, readBack string
+		code                  mobiumerr.Code
+		want                  string
+	}{
+		{"plain view", "XCUIElementTypeOther", "", mobiumerr.Unsupported, "not a text field or a slider"},
+		{"search field", "XCUIElementTypeSearchField", "mobi", mobiumerr.NotConfirmed, "dropped a keystroke"},
+	} {
+		source := `<XCUIElementTypeApplication type="XCUIElementTypeApplication" bundleId="dev.mobium.mobiumapp" name="MobiumApp" x="0" y="0" width="402" height="874" visible="true" enabled="true">` +
+			`<` + tc.class + ` type="` + tc.class + `" name="target" label="Volume" x="16" y="200" width="370" height="40" visible="true" enabled="true" accessible="true"/>` +
+			`</XCUIElementTypeApplication>`
+		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "application/json")
+			switch {
+			case strings.HasSuffix(r.URL.Path, "/source"):
+				out, _ := json.Marshal(map[string]string{"value": source})
+				w.Write(out)
+			case strings.HasSuffix(r.URL.Path, "/attribute/value"):
+				out, _ := json.Marshal(map[string]string{"value": tc.readBack})
+				w.Write(out)
+			case strings.HasSuffix(r.URL.Path, "/element"):
+				w.Write([]byte(`{"value":{"ELEMENT":"EL1","element-6066-11e4-a52e-4f735466cecf":"EL1"}}`))
+			default:
+				w.Write([]byte(`{"value":null}`))
+			}
+		}))
+		c := newW3CClient(5 * time.Second)
+		c.setBase(srv.URL)
+		c.sessionID = "S1"
+		d := &WDA{w3c: c, scale: 1}
+
+		err := d.SetText(context.Background(), &uitree.Node{TestID: "target", Label: "Volume", Class: tc.class}, "mobium")
+		srv.Close()
+		if mobiumerr.CodeOf(err) != tc.code || !strings.Contains(err.Error(), tc.want) ||
+			strings.Contains(err.Error(), "no longer on the screen") {
+			t.Errorf("%s: %v", tc.name, err)
+		}
+	}
+}
+
 // Separators added are formatting; anything else missing or added is not,
 // and a dropped space looks exactly like a field that strips spaces, so
 // that stays a dropped keystroke.

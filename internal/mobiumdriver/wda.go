@@ -797,10 +797,17 @@ func formatted(text, got string) bool {
 // text and what it read back are never named, nor a field's that read back
 // as bullets.
 // CHALLENGES 331.
+//
+// The target is looked for as what it was: a text field as any text field,
+// since one changes type (265), and anything else by its own class. Looked
+// for among text fields alone, a plain view that only looks like a slider —
+// MobiumApp's Volume, which 318 refuses as taking no keys — was never
+// found, and every fill of it said its app had left the front (CHALLENGES
+// 341); so would a search field, which is not one of them.
 func fieldLeft(tree *uitree.Tree, n *uitree.Node, text, got string) error {
 	present := false
 	tree.Walk(func(f *uitree.Node) bool {
-		if isTextEntry(f) && stillField(f, n) {
+		if (isTextEntry(f) || f.Class == n.Class) && stillField(f, n) {
 			present = true
 			return false
 		}

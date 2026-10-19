@@ -7341,6 +7341,24 @@ the toolbar is now aimed above it, as a post behind Ice Cubes' tab bar is
 (238). The captured screen is `ios27-kiwix-zim-toolbar.xml`, redacted as
 338's. On the phone `kiwix-ios.sh` then passed in full.
 
+### 341. A fill of a plain view said its app had left the front
+
+**Found by:** the iOS 27 sweep's `slider-ios.sh` on the iPhone: `fill
+testid=volumeSlider 0.2` answered exit 7, "typed "0.2" and the field read
+back "", but the field is no longer on the screen — dev.mobium.mobiumapp is
+in front now", with MobiumApp's Slider Demo on the screen and nothing else
+in front. The check wants 318's refusal, exit 5, naming a drag: Volume is a
+plain view its library draws, which takes no keys. Not iOS 27's doing:
+331 added a look for the field on the first retry, and looked among text
+fields only, so a target that never was one — the plain view, or a search
+field, which `isTextEntry` does not count — was never found, and the
+answer came before 318's could. 331 merged three days after the check
+last ran. **Fixed:** the target is looked for as what it was: a text field
+as any text field, since one changes type (265), anything else by its own
+class. A test with the plain view and a search field both still on the
+screen fails without it, with the phone's message for each; 331's own test
+still passes. On the phone the check then passed in full.
+
 ## Findings that were not defects
 
 Worth recording because each one closed off an approach that looked obvious.
