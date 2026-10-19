@@ -152,7 +152,8 @@ for _ in 1 2 3; do
 done
 $M wait "text=URL" >/dev/null
 out=$($M fill label=URL x 2>&1) && fail "label=URL was accepted: $out"
-echo "$out" | grep -q "but text=URL does" || fail "the refusal does not name the locator that works: $out"
+# Quoted, since a quoted value is the whole text (CHALLENGES 306).
+echo "$out" | grep -q 'but text="URL" does' || fail "the refusal does not name the locator that works: $out"
 echo "$out" | grep -q -i "keyboard" && fail "the refusal still blames the keyboard: $out"
 $M tap label=Cancel >/dev/null
 row "near miss" "label=URL refused, naming text=URL"
