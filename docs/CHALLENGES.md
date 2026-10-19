@@ -7276,6 +7276,52 @@ refused once the scroll brings it into view. The captured page is
 and the 25th (SHIPFREE, which had passed before) failed once on a 60-second
 source read before its first step and passed three of three alone.
 
+### 338. On iOS 27, Settings' General row was under a floating search field
+
+**Found by:** a sweep of every check on the iPhone 15 Plus on iOS 27.0.1.
+`ios-device.sh` relaunched Settings and `tap label=General,role=button`
+was refused as "another screen of the app is in front of it", every run;
+`locale-ios.sh` read no General in `map` at all. iOS 27's Settings lays a
+search field over the bottom of its list, inset 28 points from each side
+and from the bottom edge, and on a phone of this size the root opens with
+General under it, its center on the field. iOS reports the row hidden,
+rightly, and `map` rightly leaves it out. But no rule for a bar saw the
+field — a bar was something as wide as the list, across its edge — so the
+row was taken as in view, and as hidden in view it read as behind another
+screen, with a remedy, close it, that nothing could follow. **Fixed:** a
+bar that floats over a list's bottom ends the viewport too: in the list's
+bottom third, at least half its width, no further above its bottom edge
+than it is tall, and holding a control — never the keyboard, which stops
+above the home indicator the same way and has its own rule (107). General
+is then out of view, scrolled out from under the field and tapped.
+`locale-ios.sh` scrolls to General by its id, the same in every language,
+before reading it. The captured root is `ios27-settings-root-search.xml`,
+every name, label and value replaced but General's, the search field's
+and the list's. Both checks then passed on the phone.
+
+### 339. On iOS 27, a toolbar's buttons were behind "another screen"
+
+**Found by:** the same sweep. `kiwix-ios.sh`'s `tap label=Library` was
+refused as behind another screen of the app, with Kiwix's article in front
+and nothing over it. Kiwix's toolbar floats over the bottom of the screen;
+iOS 27 reports the toolbar and its glass container visible, its buttons
+hidden, and above them screen-sized wrappers of the app's own hidden too —
+217's shape, a hidden target in a hidden screen-sized plain view, met by a
+button on the screen shown. Behind a screen really in front, the captured
+hierarchies differ in one way: everything between the screen-sized view
+and the target is hidden as well (Ice Cubes' tab bar and its wrappers
+under the image viewer and the Add Account sheet). **Fixed:** a target is
+behind another screen only when it is hidden all the way up to that view;
+a visible view between them is the screen shown. Compared over every
+captured iOS hierarchy, no target behind a presented screen changed, and
+on iOS 26 only two did at all, both under the keyboard, whose rule comes
+first (325). Kiwix's page under the Library is still refused on the phone
+(256). The captured screen is `ios27-kiwix-toolbar.xml`, redacted as 338's.
+**Still open:** the same toolbar's Tabs Manager, Library, List and More are
+reported hidden, so `map` lists none of them, though each is on the screen
+and Library took a tap; `kiwix-ios.sh` stops at the disabled List button,
+which `map` does not show.
+
 ## Findings that were not defects
 
 Worth recording because each one closed off an approach that looked obvious.

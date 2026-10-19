@@ -88,3 +88,56 @@ func TestAListIsInViewOnlyInsideThePanelThatShowsIt(t *testing.T) {
 		}
 	}
 }
+
+// iOS 27's Settings floats its search field over the bottom of its list,
+// inset from each side and from the bottom edge, so no rule for a bar
+// across the edge saw it. The General row under it is reported hidden, and
+// was taken as in view: a tap was refused as behind another screen, with a
+// remedy — close it — that nothing could follow (CHALLENGES 338). Captured
+// on an iPhone 15 Plus on iOS 27.0.1, every name, label and value but these
+// replaced. The rows above the field are still in view.
+func TestARowUnderAFloatingSearchFieldIsNotInView(t *testing.T) {
+	tree := loadIOS(t, "ios27-settings-root-search.xml")
+	var list, general, field *Node
+	tree.Walk(func(n *Node) bool {
+		switch {
+		case n.TestID == "com.apple.settings.sidebar.collectionView":
+			list = n
+		case n.TestID == "com.apple.settings.general":
+			general = n
+		case n.Class == "XCUIElementTypeSearchField":
+			field = n
+		}
+		return true
+	})
+	if list == nil || general == nil || field == nil {
+		t.Fatal("the fixture no longer has the list, the General row and the search field")
+	}
+	if general.Displayed || field.Bounds.Y2 >= list.Bounds.Y2 || field.Bounds.X1 <= list.Bounds.X1 {
+		t.Fatalf("the fixture lost its shape: General displayed=%v, field %s, list %s",
+			general.Displayed, field.Bounds, list.Bounds)
+	}
+	v := tree.Viewport(list)
+	if x, y := general.Bounds.Center(); contains(v, x, y) {
+		t.Errorf("the viewport %s holds General's center under the search field %s", v, field.Bounds)
+	}
+	if v.Y2 > field.Bounds.Y1 {
+		t.Errorf("the viewport %s runs below the top of the search field %s", v, field.Bounds)
+	}
+	if tree.CoveredByScreen(general) {
+		t.Error("General, under the search field, reads as behind another screen")
+	}
+	above := 0
+	tree.Walk(func(n *Node) bool {
+		if n.Class == "XCUIElementTypeCell" && n.Displayed && n.Within(list) {
+			above++
+			if !encloses(v, n.Bounds) {
+				t.Errorf("a row reported visible, %s, is out of the viewport %s", n.Bounds, v)
+			}
+		}
+		return true
+	})
+	if above == 0 {
+		t.Fatal("no visible rows above the field: the in-view half cannot fail")
+	}
+}
