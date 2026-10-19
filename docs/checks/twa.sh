@@ -40,8 +40,17 @@ $M context NATIVE_APP >/dev/null 2>&1 || true
 $M terminate "$PKG" >/dev/null 2>&1 || true
 out=$($M launch "$PKG")
 echo "$out" | grep -q "a Trusted Web Activity" || fail "the launch did not say it is a TWA: $out"
-adb -s "$DEV" shell dumpsys activity activities | grep -m1 "Hist.*$PKG/" | grep -q "androidbrowserhelper.trusted" ||
-  fail "$PKG's task is not rooted in the TWA launcher"
+# Read from the activity stack, not from what Mobium said: either the task is
+# rooted in the TWA library's launcher, or — as OYO's was by 2026-10-19 — its
+# splash screen handed off and went, and Chrome's custom tab is alone in the
+# task that bears its affinity (CHALLENGES 346).
+acts=$(adb -s "$DEV" shell dumpsys activity activities)
+top=$(echo "$acts" | grep -m1 -o 'topResumedActivity=ActivityRecord{[^}]*}')
+task=$(echo "$top" | sed -n 's/.* t\([0-9]*\)}$/\1/p')
+echo "$acts" | grep -m1 "Hist.*$PKG/" | grep -q "androidbrowserhelper.trusted" ||
+  { echo "$top" | grep -q "com.android.chrome/.*CustomTabActivity" &&
+    echo "$acts" | grep -qE "Task\{[^ ]+ #$task type=[^ ]+ A=[0-9]+:$PKG[ }]"; } ||
+  fail "$PKG's task is neither rooted in the TWA launcher nor Chrome's custom tab alone in it"
 row "launched" "a Trusted Web Activity, drawn by Chrome in its own task"
 
 # page attaches to the TWA's visible page and prints its context — once HOST
