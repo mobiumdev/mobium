@@ -7402,6 +7402,31 @@ React Native view, while a real touch there reaches the target. A second
 attach straight after a hit test could not import UIKit, and its detach
 failed and ended MobiumApp, three times; the probe's own never did.
 
+### 344. Under Xcode 27, a simulator app's WebView was "process-MobiumApp"
+
+**Found by:** a sweep of every check on the iPhone 17 Pro simulator (iOS
+26.5) once Xcode 27.1 was installed: `mobium-app.sh`, `zoom.sh` (and
+`gestures.sh`, which runs it), `web-storage.sh` and `web-actionability.sh`
+found "no WebView context" for MobiumApp, while `contexts` listed one, as
+`WEBVIEW_process-MobiumApp`, and Kiwix's as `WEBVIEW_process-Kiwix`.
+Safari's stayed `com.apple.mobilesafari`. The simulator's webinspectord
+now names an app it did not ship by its process — measured in the raw
+application list: `WIRApplicationIdentifierKey` PID:49927,
+`WIRApplicationNameKey` MobiumApp, `WIRApplicationBundleIdentifierKey`
+process-MobiumApp — whatever its signature; signed ad hoc with its bundle
+id as identifier it was named the same. The runtime is the same iOS 26.5;
+what changed is Xcode's CoreSimulator, 1051 to 1174. Every check names a
+context by its app's bundle id, as any caller would, and switching into
+such a context compared `process-MobiumApp` with the app in front and
+would refuse it as behind, with a remedy to launch `process-MobiumApp`.
+**Fixed:** on a simulator, whose apps are processes on this Mac, a
+`process-` name with a PID identifier is resolved from the executable that
+process runs: its app's `Info.plist` gives `CFBundleIdentifier`. Not on a
+phone, whose PIDs are not this Mac's and whose webinspectord gave bundle
+ids on iOS 27.0.1. The test stands in a real process in a made-up app. On
+the simulator the context was `WEBVIEW_dev.mobium.mobiumapp` again and the
+six checks passed, Kiwix's too.
+
 ## Findings that were not defects
 
 Worth recording because each one closed off an approach that looked obvious.
