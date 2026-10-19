@@ -140,6 +140,36 @@ func Contexts(ctx context.Context, adb *device.ADB) ([]Context, error) {
 	return out, nil
 }
 
+// ContextsOf is Contexts for one app: only the sockets its name or its
+// process owns are asked. Every socket answers slowly enough to matter —
+// a Pixel 8 Pro with seven Chrome pages open behind an app took 20 seconds
+// to list them all — and a question about the app in front needs none of
+// the others (CHALLENGES 347). None found is no contexts, not an error.
+func ContextsOf(ctx context.Context, adb *device.ADB, pkg string) ([]Context, error) {
+	sockets, err := Sockets(ctx, adb)
+	if err != nil {
+		return nil, err
+	}
+	pids := map[string]bool{}
+	if out, perr := adb.Shell(ctx, "pidof", pkg); perr == nil {
+		for _, p := range strings.Fields(string(out)) {
+			pids[p] = true
+		}
+	}
+	var out []Context
+	for _, s := range sockets {
+		if s.Package != pkg && (s.PID == "" || !pids[s.PID]) {
+			continue
+		}
+		found, err := contextsOn(ctx, adb, s)
+		if err != nil {
+			continue
+		}
+		out = append(out, found...)
+	}
+	return out, nil
+}
+
 func contextsOn(ctx context.Context, adb *device.ADB, s Socket) ([]Context, error) {
 	port, err := adb.ForwardAbstract(ctx, s.Name)
 	if err != nil {

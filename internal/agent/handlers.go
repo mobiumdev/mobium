@@ -566,6 +566,7 @@ func (h *Handlers) mapScreen(ctx context.Context, args map[string]interface{}) (
 	if err != nil {
 		return nil, h.lockedRead(ctx, s, err)
 	}
+	h.nameWebSliders(ctx, s, tree)
 
 	entries := tree.Map()
 	table := &refTable{entries: map[string]uitree.Locator{}, taken: time.Now()}
@@ -1707,6 +1708,7 @@ func (h *Handlers) resolveNodeOnce(ctx context.Context, s *session, target strin
 		readTook = time.Since(readAt)
 		if err == nil {
 			s.fullReadTook = readTook
+			h.nameWebSliders(ctx, s, t)
 		}
 		if err != nil {
 			// Not fatal. UiAutomator2 fails to read the hierarchy while the

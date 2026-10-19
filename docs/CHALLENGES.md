@@ -7470,6 +7470,34 @@ Chrome's. `twa.sh` reads the stack itself and accepts either shape. The
 captured task is `activities-twa-alone-api37.txt`; the old shape's capture
 still passes. On the Pixel `twa.sh` then passed two in two from cold.
 
+### 347. On WebView 155, a web page's sliders had no names
+
+**Found by:** the same sweep: `slider.sh` failed on the Pixel 8 Pro, "the
+Slider Demo's page did not load", every run, and passed on the emulator
+with the same MobiumApp. The emulator's WebView is 124, the Pixel's 155.
+On 124 the seek bar a WebView draws for a page's range carries its
+`<label>` as its text, which 319 named it by, and an ARIA slider its
+`aria-label` and value ("9:00, Start hour"). On 155 every one of them has
+empty text: the range's label is a node of its own just before it, the
+range's HTML id (`r`) is left as its resource-id, and the two-thumb price
+and the ARIA hours have no name or value anywhere in the tree. So `map`
+listed `r`, `SeekBar`, `h0` and `h1`, and a locator by any name found
+nothing. **Fixed, in two parts:** the parser names a nameless web seek bar
+by the plain label node right before it, which costs nothing; and for one
+still nameless the agent asks the page, at `map`, a locator's resolution
+and a wait — only when such a seek bar is on screen, from the front app's
+own pages, reading the page once, and keeping the answer two seconds while
+a locator polls. The page's ranges and ARIA sliders are matched by
+rectangle; two seek bars on one rectangle — a two-thumb control's ranges —
+are paired in order, and only when the page has as many there. The first
+version listed every WebView on the device and took **22 seconds** a map
+on the Pixel, 20 of them Chrome's seven tabs behind MobiumApp; asking only
+the front app's sockets, a map took about one second, against 0.4 on a
+screen with no such slider. On the Pixel `slider.sh` then passed in full,
+"Minimum price (slider, 200)" and "Start hour (slider, 9:00)" named from
+the page; on the emulator it and `web-actionability.sh` still passed. The
+captured screen is `mobiumapp-slider-webview155-uia2.xml`.
+
 ## Findings that were not defects
 
 Worth recording because each one closed off an approach that looked obvious.

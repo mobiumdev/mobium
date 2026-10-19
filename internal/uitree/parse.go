@@ -257,7 +257,29 @@ func ParseAndroid(data []byte) (*Tree, error) {
 		}
 	}
 	foldCheckableRows(root)
+	nameWebSlidersByLabel(root)
 	return tree, nil
+}
+
+// nameWebSlidersByLabel names a seek bar a WebView draws, and left nameless,
+// by the label just before it. WebView 124 gave a page's range its
+// <label> as its text (319); WebView 155, on the Pixel 8 Pro, gives it no
+// text at all and puts the label in a node of its own just before it, so
+// MobiumApp's "Range, 0 to 100 in steps of 10" mapped as "r", its HTML id
+// (CHALLENGES 347). Only the sibling right before it, only plain text — a
+// node with nothing in it and nothing to press — and only a seek bar with
+// no name of its own. One named only by aria-label has no such node and is
+// named from the page instead.
+func nameWebSlidersByLabel(n *Node) {
+	for i, c := range n.Children {
+		if i > 0 && HasClassRole(c, "slider") && insideWebView(c) && c.Text == "" && c.Label == "" {
+			if prev := n.Children[i-1]; prev.Text != "" && len(prev.Children) == 0 && !prev.Clickable &&
+				!prev.Checkable && !HasClassRole(prev, "slider") {
+				c.Text = prev.Text
+			}
+		}
+		nameWebSlidersByLabel(c)
+	}
 }
 
 // union is the smallest rectangle holding both; an empty one adds nothing.

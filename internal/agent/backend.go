@@ -108,6 +108,11 @@ type session struct {
 	// leaves the screen, so every action that aims at it asks again.
 	webApp, webAppID string
 
+	// sliderNames is what the page last said of the seek bars its WebView
+	// drew without a name, by their rectangles: a locator polls the screen,
+	// and each read would otherwise attach to the page (nameWebSliders).
+	sliderNames sliderNameCache
+
 	// insp is the iOS session's Remote Web Inspector connection, held open
 	// for the life of the session. webinspectord answers only the first
 	// connection promptly — every later one waits a measured 10.2 seconds

@@ -1226,3 +1226,140 @@ func preferWhole(loc uitree.Locator, els []webview.Element, idx []int) []int {
 	}
 	return idx
 }
+
+// sliderNameCache holds what the page said of the nameless web sliders on a
+// screen, for a moment: their names and values, by sliderKey.
+type sliderNameCache struct {
+	key   string
+	at    time.Time
+	names map[string][2]string
+}
+
+// sliderNamesFor is how long what the page said is used again: a locator
+// polls the screen several times a second while it waits.
+const sliderNamesFor = 2 * time.Second
+
+// sliderKeys names each node by its rectangle and its place among the nodes
+// sharing that rectangle: the two thumbs of a two-thumb control share one.
+func sliderKeys(nodes []*uitree.Node) []string {
+	seen := map[uitree.Rect]int{}
+	keys := make([]string, len(nodes))
+	for i, n := range nodes {
+		keys[i] = fmt.Sprintf("%s#%d", n.Bounds, seen[n.Bounds])
+		seen[n.Bounds]++
+	}
+	return keys
+}
+
+// nameWebSliders names, from the page, each seek bar a WebView drew with no
+// name of its own and none from a label before it. WebView 155, on the Pixel
+// 8 Pro, keeps an aria-label slider's name and value only in the page:
+// MobiumApp's "Minimum price" and "9:00, Start hour" mapped as "SeekBar" and
+// "h0", and a locator by either name found nothing (CHALLENGES 347). Only
+// when such a seek bar is on screen, so every other read costs nothing;
+// never while the session is switched into a page, whose reads are its own.
+func (h *Handlers) nameWebSliders(ctx context.Context, s *session, tree *uitree.Tree) {
+	if s.web != nil || tree == nil || s.backend == BackendWDA {
+		return
+	}
+	var nameless []*uitree.Node
+	tree.Walk(func(n *uitree.Node) bool {
+		if uitree.HasClassRole(n, "slider") && inWebView(n) && n.Text == "" && n.Label == "" && !n.Bounds.Empty() {
+			nameless = append(nameless, n)
+		}
+		return true
+	})
+	if len(nameless) == 0 {
+		return
+	}
+	keys := sliderKeys(nameless)
+	all := strings.Join(keys, ",")
+	c := &s.sliderNames
+	if c.key != all || time.Since(c.at) > sliderNamesFor {
+		c.key, c.at, c.names = all, time.Now(), h.sliderNamesFromPage(ctx, s, tree.Package(), nameless, keys)
+	}
+	for i, n := range nameless {
+		if nv, ok := c.names[keys[i]]; ok {
+			n.Text, n.Value, n.ValueSteps = nv[0], nv[1], false
+		}
+	}
+}
+
+// sliderNamesFromPage reads the names and values of the nameless seek bars
+// from the front app's own page. Only its pages are listed: listing every
+// WebView on the device took 20 of a 22-second map on the Pixel 8 Pro, with
+// seven Chrome tabs open behind MobiumApp, each asked in turn.
+func (h *Handlers) sliderNamesFromPage(ctx context.Context, s *session, front string, nodes []*uitree.Node,
+	keys []string) map[string][2]string {
+	adb, err := h.adbFor(ctx, s)
+	if err != nil || front == "" {
+		return nil
+	}
+	found, err := webview.ContextsOf(ctx, adb, front)
+	if err != nil {
+		return nil
+	}
+	for _, c := range found {
+		page, aerr := h.attachWeb(ctx, s, c)
+		if aerr != nil {
+			continue
+		}
+		s.web, s.webCtx, s.webApp = page, c.ID, c.App
+		names := h.pairSliders(ctx, s, nodes, keys)
+		s.closeWeb()
+		if len(names) > 0 {
+			return names
+		}
+	}
+	return nil
+}
+
+// pairSliders matches the attached page's sliders — ranges and ARIA sliders
+// — to the nameless seek bars by rectangle, reading the page once: at least
+// two thirds of their union, as pageElementAt asks. Seek bars sharing one
+// rectangle are a two-thumb control, its ranges laid on one track —
+// MobiumApp's price was two seek bars with the same bounds, which
+// pageElementAt rightly refuses as ambiguous — and are paired in order with
+// the page's sliders there, only when there are as many of each. Anything
+// else is left nameless rather than named by a guess.
+func (h *Handlers) pairSliders(ctx context.Context, s *session, nodes []*uitree.Node, keys []string) map[string][2]string {
+	pctx, cancel := context.WithTimeout(ctx, pageAnswerTimeout)
+	defer cancel()
+	frame, err := h.webFrame(pctx, s)
+	if err != nil {
+		return nil
+	}
+	els, err := s.web.Map(pctx)
+	if err != nil {
+		return nil
+	}
+	byRect := map[uitree.Rect][]webview.Element{}
+	for _, e := range els {
+		if e.Type != "range" && e.NeutralRole() != "slider" {
+			continue
+		}
+		at := frame.ToDevice(e.X, e.Y, e.W, e.H)
+		for _, n := range nodes {
+			if overlap(at, n.Bounds) >= 2.0/3 {
+				byRect[n.Bounds] = append(byRect[n.Bounds], e)
+				break
+			}
+		}
+	}
+	count := map[uitree.Rect]int{}
+	for _, n := range nodes {
+		count[n.Bounds]++
+	}
+	names := map[string][2]string{}
+	seen := map[uitree.Rect]int{}
+	for i, n := range nodes {
+		on := byRect[n.Bounds]
+		k := seen[n.Bounds]
+		seen[n.Bounds]++
+		if len(on) != count[n.Bounds] || on[k].Label == "" {
+			continue
+		}
+		names[keys[i]] = [2]string{on[k].Label, on[k].Value}
+	}
+	return names
+}

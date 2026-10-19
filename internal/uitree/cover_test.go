@@ -71,6 +71,8 @@ var coveredCaptures = map[string]string{
 		"center, and Play is touched just above it (CHALLENGES 238)",
 	"ios-tvos26-morpho-cart.xml": "an Apple TV's focused discount field: its list row draws a plain view " +
 		"across it, which nothing presses through — tvOS has no touch",
+	"mobiumapp-slider-webview155-uia2.xml": "a two-thumb price slider is two ranges on one track, two seek " +
+		"bars with the same rectangle: one is under the other, and a fill reaches it through the page (319)",
 	"ios27-kiwix-zim-toolbar.xml": "an article tile runs down behind Kiwix's floating toolbar, whose " +
 		"buttons are over its center once shown (CHALLENGES 340): it is touched above the toolbar",
 	"ios26-icecubes-display-settings.xml": "Ice Cubes pins a sample post at the top of Display Settings and " +

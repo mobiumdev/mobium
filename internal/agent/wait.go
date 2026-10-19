@@ -228,6 +228,7 @@ func (h *Handlers) waitOn(ctx context.Context, s *session, args map[string]inter
 		if err != nil {
 			return false, err
 		}
+		h.nameWebSliders(ctx, s, t)
 		tree = t
 		nodes := visible(loc.Resolve(t))
 		// What a dialog covers is not on screen, whatever its own flag says:
