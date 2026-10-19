@@ -38,7 +38,9 @@ a() { adb -s "$DEV" shell "$@" | tr -d '\r'; }
 
 case "$DEV" in
   emulator-*) ;;
-  *) [ -n "$ALLOW_PHONE" ] || fail "$DEV is not an emulator: TalkBack would take over a person's phone. ALLOW_PHONE=1 to go ahead" ;;
+  # Refused, not failed: exit 2, as audio.sh refuses a phone, so a sweep
+  # reads it as not run rather than as broken.
+  *) [ -n "$ALLOW_PHONE" ] || { echo "$DEV is not an emulator: TalkBack would take over a person's phone. ALLOW_PHONE=1 to go ahead" >&2; exit 2; } ;;
 esac
 a pm list packages com.google.android.marvin.talkback | grep -q talkback || fail "TalkBack is not installed on $DEV"
 echo "--- $DEV"
