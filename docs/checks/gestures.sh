@@ -49,7 +49,10 @@ appContexts() { $M contexts | awk -v id="WEBVIEW_$1" \
 "$ROOT/bin/mobium" daemon stop >/dev/null 2>&1 || true
 
 echo "--- $DEV ($PLATFORM)"
-$M apps 2>/dev/null | grep -q "$APP" || fail "$APP is not installed"
+# The listing's own error is the failure: piped into grep, a device that
+# did not answer read as the app not installed (CHALLENGES 269).
+apps=$($M apps 2>&1) || fail "cannot list the apps: $(echo "$apps" | tail -1)"
+echo "$apps" | grep -q "$APP" || fail "$APP is not installed"
 
 ref() { $M map --json 2>/dev/null | python3 -c "
 import json,sys

@@ -160,11 +160,14 @@ links=$($M map | grep -c '(link)' || true)
 [ "$links" -gt 20 ] || fail "only $links links in a Wikipedia article; the page did not map"
 echo "    web map        $links links from the live page                  ok"
 
-# A locator inside a WebView is not a ref. The message used to say "unknown
-# ref … run app_map again", which is advice that can never work.
-$M tap 'text=Charles Babbage' 2>&1 | grep -q 'locators do not work inside a WebView' \
-  || fail "the WebView rejected a locator without explaining why"
-echo "    web locator    refused with the reason, not 'unknown ref'       ok"
-
+# A locator works inside a WebView since #204 (CHALLENGES 312): the link is
+# found by its text in the page and tapped there, and Android's Wikipedia
+# answers with its native preview, as it does the phone's native tap above.
+# It used to be refused, and this step asserted the refusal's reason. His
+# name is on the page more than once, hence the first.
+out=$($M tap 'text="Charles Babbage",nth=1' 2>&1) || fail "a link tapped by its text in the WebView was refused: $out"
 $M context NATIVE_APP >/dev/null
+$M wait 'text=Read article' --timeout 30s >/dev/null || fail "the link tapped by its text raised no preview: $out"
+$M press back >/dev/null
+echo "    web locator    a link tapped by its text, previewed            ok"
 echo "--- passed"

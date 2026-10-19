@@ -99,7 +99,8 @@ if [ "$PLATFORM" = iphone ]; then
   out=$($M clear-data com.example.not.installed --bundle "$MOBIUMAPP_BUNDLE" 2>&1) &&
     fail "a reset ran from another app's bundle: $out"
   echo "$out" | grep -q "is $APP, not com.example.not.installed" || fail "the refusal did not say why: $out"
-  $M apps | grep -q "^$APP " || fail "MobiumApp is gone after a refused reset"
+  apps=$($M apps 2>&1) || fail "cannot list the apps: $(echo "$apps" | tail -1)"
+  echo "$apps" | grep -q "^$APP " || fail "MobiumApp is gone after a refused reset"
   echo "    refused        another app's bundle, and nothing uninstalled      ok"
 else
   out=$($M clear-data com.example.not.installed 2>&1) && fail "an app that is not installed was cleared: $out"

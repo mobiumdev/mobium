@@ -90,8 +90,12 @@ if [ "$PLATFORM" = ios ] || [ "$PLATFORM" = iphone ]; then
   echo "    logs           a level iOS lacks is refused                         ok"
 fi
 
+# Listed once, failing on the listing's own error: which path this takes
+# depends on it, and a device that did not answer read as no MobiumApp
+# (CHALLENGES 269).
+apps=$($M apps 2>&1) || fail "cannot list the apps: $(echo "$apps" | tail -1)"
 if [ "$PLATFORM" = iphone ]; then
-  if ! $M apps | grep -q dev.mobium.mobiumapp; then
+  if ! echo "$apps" | grep -q dev.mobium.mobiumapp; then
     $M launch "$APP" >/dev/null
     sleep 2
     n=$($M logs --source device --app "$APP" --lines 1000 --json | json 'len(d["entries"])')
@@ -118,7 +122,7 @@ fi
 
 # Crashes. A crash is a record, so it is found by id rather than by being new.
 before=$($M crashes --app "$APP" --limit 1 --json | json '(d["crashes"] or [{"id":""}])[0]["id"]')
-if [ "$PLATFORM" = android ] && $M apps | grep -q dev.mobium.mobiumapp; then
+if [ "$PLATFORM" = android ] && echo "$apps" | grep -q dev.mobium.mobiumapp; then
   # MobiumApp's own crash, as on a phone, when it is installed: an
   # unhandled JavaScript error, whose text Android's report carries.
   APP=dev.mobium.mobiumapp
