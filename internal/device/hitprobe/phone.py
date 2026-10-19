@@ -20,6 +20,14 @@ import time
 
 import lldb
 
+# No CGPointMake, CGRectMake or CG struct variable anywhere in it. Xcode 27.1's
+# lldb on iOS 27 calls a symbol it finds for those inline functions, which
+# dropped the point's y — CGPointMake(259, 365) was (259, 0), so every hit
+# test asked about the top edge of the screen and named the root view — and
+# it resolves CGRect from symbols as well as headers, so a declared one was
+# refused as having "no matching constructor" (CHALLENGES 345). The point is
+# CGPointFromString's, an exported function; frames are read field by field
+# off the call that returns them.
 EXPR = r'''
 UIWindow *w = nil;
 for (UIScene *scene in [UIApplication sharedApplication].connectedScenes) {
@@ -28,24 +36,23 @@ for (UIScene *scene in [UIApplication sharedApplication].connectedScenes) {
 }
 NSString *answer = @"unknown\tthe app has no key window";
 if (w) {
-  CGRect frame = CGRectMake(%(fx)f, %(fy)f, %(fw)f, %(fh)f);
   NSMutableArray *views = [NSMutableArray array];
   for (int pass = 0; pass < 2 && views.count == 0; pass++) {
     NSString *ident = pass == 0 ? @"%(cid)s" : @"";
     NSMutableArray *stack = [NSMutableArray arrayWithObject:w];
     while (stack.count) {
       UIView *v = [stack lastObject]; [stack removeLastObject];
-      CGRect af = v.accessibilityFrame;
       BOOL match = ident.length > 0 ? [v.accessibilityIdentifier isEqualToString:ident]
-        : (v.isAccessibilityElement && fabs(af.origin.x - frame.origin.x) <= 1 && fabs(af.origin.y - frame.origin.y) <= 1
-           && fabs(af.size.width - frame.size.width) <= 1 && fabs(af.size.height - frame.size.height) <= 1);
+        : (v.isAccessibilityElement && fabs(v.accessibilityFrame.origin.x - %(fx)f) <= 1
+           && fabs(v.accessibilityFrame.origin.y - %(fy)f) <= 1 && fabs(v.accessibilityFrame.size.width - %(fw)f) <= 1
+           && fabs(v.accessibilityFrame.size.height - %(fh)f) <= 1);
       if (match) [views addObject:v];
       [stack addObjectsFromArray:v.subviews];
     }
   }
   if (views.count == 0) { answer = @"unknown\tno view in the app is that element"; }
   else {
-    UIView *hit = [w hitTest:CGPointMake(%(x)f, %(y)f) withEvent:nil];
+    UIView *hit = [w hitTest:CGPointFromString(@"{%(x)f, %(y)f}") withEvent:nil];
     if (!hit) { answer = @"nothing"; }
     else {
       BOOL reaches = NO;
@@ -59,9 +66,11 @@ if (w) {
         }
         label = [[label stringByReplacingOccurrencesOfString:@"\t" withString:@" "]
                  stringByReplacingOccurrencesOfString:@"\n" withString:@" "];
-        CGRect r = [hit convertRect:hit.bounds toView:nil];
+        UIView *top = w;
         answer = [NSString stringWithFormat:@"covered\t%%d\t%%@\t%%@\t%%.1f\t%%.1f\t%%.1f\t%%.1f", (int)hidden,
-          NSStringFromClass([hit class]), label, r.origin.x, r.origin.y, r.size.width, r.size.height];
+          NSStringFromClass([hit class]), label, [hit convertRect:hit.bounds toView:top].origin.x,
+          [hit convertRect:hit.bounds toView:top].origin.y, [hit convertRect:hit.bounds toView:top].size.width,
+          [hit convertRect:hit.bounds toView:top].size.height];
       }
     }
   }

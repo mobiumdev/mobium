@@ -7395,12 +7395,8 @@ worked. Nothing in Mobium was wrong but its answer, which named no cause.
 **Fixed:** when the attach never stops and Xcode keeps no copy of the
 phone's iOS under `~/Library/Developer/Xcode/iOS DeviceSupport`, the hit
 test is refused as `device_not_ready`, naming the missing copy and the
-Devices window — the remedy measured above. **Still open:** with the copy,
-the first case passes on the phone, and the second does not: UIKit's hit
-test at the half-covered target's clear point names the screen's root
-React Native view, while a real touch there reaches the target. A second
-attach straight after a hit test could not import UIKit, and its detach
-failed and ended MobiumApp, three times; the probe's own never did.
+Devices window — the remedy measured above. With the copy, the check
+passed its first case and failed its second: 345.
 
 ### 344. Under Xcode 27, a simulator app's WebView was "process-MobiumApp"
 
@@ -7426,6 +7422,33 @@ phone, whose PIDs are not this Mac's and whose webinspectord gave bundle
 ids on iOS 27.0.1. The test stands in a real process in a made-up app. On
 the simulator the context was `WEBVIEW_dev.mobium.mobiumapp` again and the
 six checks passed, Kiwix's too.
+
+### 345. On iOS 27, every phone hit test asked about the top of the screen
+
+**Found by:** `hit-test.sh` on the iPhone 15 Plus on iOS 27.0.1, once 343
+let its attach complete: the half-covered target was "covered" by
+`RCTSafeAreaViewComponentView`, the screen's root React Native view, at
+[0,0][1290,2796], while a real touch at the same point reached the target.
+The first case had passed only because the check does not need its cover
+named. Measured inside the app, by the probe's own path — a separate
+attach just after a hit test could not import UIKit, and its failed detach
+ended MobiumApp three times: the target's frame held the point, and
+`pointInside:` said no for the target and every ancestor up to the scroll
+view, since the point converted into each was (259, 0) at the root, not
+(259, 365). `CGPointMake(259, 365)`, evaluated by Xcode 27.1's lldb on iOS
+27, was (259, 0); built field by field the same point was (259, 365), and
+the window's hit test named the target's own text. `CGPointMake` is an
+inline function, and lldb called a symbol it found for it instead — its
+warnings say "got name from symbols". Built field by field, a declared
+`CGRect` was then refused as having "no matching constructor", in the
+lines that had compiled before: lldb resolves `CGRect` from symbols as well
+as from the SDK's headers. **Fixed:** the phone's expression has no
+`CGPointMake`, `CGRectMake` or CG struct variable at all: the point is
+`CGPointFromString`'s, an exported function, and frames are read field by
+field off the call that returns them. The simulator's probe is compiled
+code and was never affected. A test holds the expression to it, and fails
+four ways without the change. On the phone `hit-test.sh` then passed in
+full: all eight cases and the refusal at launch.
 
 ## Findings that were not defects
 
