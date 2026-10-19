@@ -30,7 +30,10 @@ row() { printf '    %-14s %-58s ok\n' "$1" "$2"; }
 
 "$ROOT/bin/mobium" daemon stop >/dev/null 2>&1 || true
 echo "--- $DEV ($PLATFORM)"
-$M apps 2>/dev/null | grep -q "$APP" || fail "$APP is not installed"
+# The listing's own error is the failure: piped into grep, a device that
+# did not answer read as the app not installed (CHALLENGES 269).
+apps=$($M apps 2>&1) || fail "cannot list the apps: $(echo "$apps" | tail -1)"
+echo "$apps" | grep -q "$APP" || fail "$APP is not installed"
 
 $M terminate $APP >/dev/null 2>&1 || true
 $M launch $APP >/dev/null
