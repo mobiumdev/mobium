@@ -112,9 +112,12 @@ row "post" "Reply, Boost, Favorite and Share are in map"
 closes_by_refusal() {
   out=$($M tap label=Trending 2>&1) && fail "a tap behind the $1 went through: $out"
   echo "$out" | grep -q "another screen" || fail "the tap behind the $1 was refused for another reason: $out"
-  XY=$(echo "$out" | sed -n 's/.*app_tap at x \([0-9]*\), y \([0-9]*\).*/\1 \2/p')
+  # The point is in the message and again in its `next:` line (321), so
+  # the first is taken: both, as four numbers, were a usage error, exit 2,
+  # which a sweep reads as not applicable.
+  XY=$(echo "$out" | sed -n 's/.*app_tap at x \([0-9]*\), y \([0-9]*\).*/\1 \2/p' | head -n 1)
   [ -n "$XY" ] || fail "the refusal behind the $1 offered no point outside it: $out"
-  $M tap $XY >/dev/null
+  $M tap $XY >/dev/null || fail "the point the refusal offered, $XY, could not be tapped"
   $M wait "label=Copy Link" --for hidden >/dev/null 2>&1 || fail "the point the refusal offered did not close the $1"
 }
 $M tap "$(ref "status.action.context-menu \(button\)")" >/dev/null
