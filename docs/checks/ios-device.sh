@@ -27,6 +27,14 @@ if [ -z "$DEV" ]; then echo "usage: $0 <udid>   (see: mobium devices)" >&2; exit
 
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 . "$ROOT/docs/checks/lib.sh"
+check_platform ios "$DEV"
+# A simulator is refused by name, as third-party-app-ios.sh refuses one: run
+# on one in a sweep, this failed launching Clock, which a simulator does not
+# have (CHALLENGES 291's rule; ios-webview.sh is the simulator's check).
+if xcrun simctl list devices 2>/dev/null | grep -q "$DEV"; then
+  echo "ios-device.sh is for a real iPhone, and $DEV is a simulator — ios-webview.sh and the rest of the iOS checks run on one" >&2
+  exit 2
+fi
 check_lock "$DEV"
 M="$ROOT/bin/mobium --driver wda --device $DEV"
 fail() { echo "FAIL: $*" >&2; exit 1; }

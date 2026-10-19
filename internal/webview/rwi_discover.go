@@ -5,12 +5,17 @@ import (
 	"fmt"
 	"github.com/mobiumdev/mobium/internal/mobiumerr"
 	"os"
+	"os/exec"
+	"path/filepath"
 	"regexp"
 	"sort"
+	"strconv"
+	"strings"
 	"sync"
 	"time"
 
 	"github.com/mobiumdev/mobium/internal/device"
+	"github.com/mobiumdev/mobium/internal/plist"
 )
 
 // iosSocketPattern matches the path launchd publishes for the simulator's
@@ -185,7 +190,7 @@ func (in *inspector) announceAndLearnApps(ctx context.Context) (map[string]strin
 				continue
 			}
 			for id, bundle := range applicationsIn(msg.Argument) {
-				bundles[id] = bundle
+				bundles[id] = in.bundleOf(id, bundle)
 			}
 			if !idle.Stop() {
 				select {
@@ -326,6 +331,74 @@ func applicationsIn(arg map[string]any) map[string]string {
 	return out
 }
 
+// bundleOf is an application's bundle identifier, as webinspectord gave it
+// or, where it gave only "process-<name>", read from the app the process
+// runs. Under Xcode 27.1 a simulator's webinspectord names every app it did
+// not ship that way — MobiumApp was "process-MobiumApp", identifier
+// PID:49927, and Kiwix "process-Kiwix" — so a context was WEBVIEW_process-
+// MobiumApp, switching into it was refused as its app not being in front,
+// and the remedy said to launch process-MobiumApp (CHALLENGES 344). Safari's
+// stayed com.apple.mobilesafari. A simulator's app is a process on this Mac,
+// so its executable's bundle says who it is; a phone's is not, and its
+// webinspectord gave bundle ids on iOS 27.0.1. Kept as given when it cannot
+// be read.
+func (in *inspector) bundleOf(id, bundle string) string {
+	if in == nil || !in.hostPIDs || !strings.HasPrefix(bundle, "process-") {
+		return bundle
+	}
+	pid, ok := strings.CutPrefix(id, "PID:")
+	if !ok {
+		return bundle
+	}
+	in.pidMu.Lock()
+	defer in.pidMu.Unlock()
+	if b, ok := in.pidApps[id]; ok {
+		return b
+	}
+	b := bundle
+	if found := bundleOfProcess(pid); found != "" {
+		b = found
+	}
+	if in.pidApps == nil {
+		in.pidApps = map[string]string{}
+	}
+	in.pidApps[id] = b
+	return b
+}
+
+// bundleOfProcess reads the bundle identifier of the app whose executable
+// the process with this id runs, or "" if it runs none.
+func bundleOfProcess(pid string) string {
+	if _, err := strconv.Atoi(pid); err != nil {
+		return ""
+	}
+	out, err := exec.Command("ps", "-p", pid, "-o", "comm=").Output()
+	if err != nil {
+		return ""
+	}
+	app := filepath.Dir(strings.TrimSpace(string(out)))
+	if !strings.HasSuffix(app, ".app") {
+		return ""
+	}
+	return bundleIDAt(app)
+}
+
+// bundleIDAt is CFBundleIdentifier from an app bundle's Info.plist, binary or
+// XML, or "".
+func bundleIDAt(app string) string {
+	data, err := os.ReadFile(filepath.Join(app, "Info.plist"))
+	if err != nil {
+		return ""
+	}
+	v, err := plist.Unmarshal(data)
+	if err != nil {
+		return ""
+	}
+	m, _ := v.(map[string]any)
+	id, _ := m["CFBundleIdentifier"].(string)
+	return id
+}
+
 // failure explains why the connection stopped, quoting the read error when
 // there is one.
 func (in *inspector) failure(doing string) error {
@@ -393,7 +466,7 @@ func (i *Inspector) watch(msgs <-chan rwiMessage, unsubscribe func()) {
 		case "_rpc_reportConnectedApplicationList:", "_rpc_applicationConnected:", "_rpc_applicationUpdated:":
 			i.mu.Lock()
 			for id, bundle := range applicationsIn(msg.Argument) {
-				i.apps[id] = bundle
+				i.apps[id] = i.in.bundleOf(id, bundle)
 			}
 			if i.states == nil {
 				i.states = map[string]appState{}
@@ -493,6 +566,7 @@ func OpenInspector(ctx context.Context, sim *device.Simctl) (*Inspector, error) 
 	if err != nil {
 		return nil, err
 	}
+	in.hostPIDs = true
 	return openWith(ctx, in)
 }
 

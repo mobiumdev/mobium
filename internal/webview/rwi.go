@@ -74,6 +74,12 @@ type inspector struct {
 	closeOnce sync.Once
 	closed    chan struct{}
 	readErr   error
+
+	// hostPIDs is set on a simulator, whose apps are processes on this Mac,
+	// so a process WebKit names only "process-<name>" can be looked up.
+	hostPIDs bool
+	pidMu    sync.Mutex
+	pidApps  map[string]string
 }
 
 func dialInspector(socket, id string) (*inspector, error) {
