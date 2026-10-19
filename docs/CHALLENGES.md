@@ -7359,6 +7359,49 @@ class. A test with the plain view and a search field both still on the
 screen fails without it, with the phone's message for each; 331's own test
 still passes. On the phone the check then passed in full.
 
+### 342. After Xcode 27, a paired iPhone on its cable was "no such device"
+
+**Found by:** the first command after Xcode 27.1 was installed: `hit-test.sh`
+on the iPhone 15 Plus said "no simulator or iPhone matching" its UDID, with
+`devicectl list devices` showing it "available (paired)". Two things were
+new. Xcode 27's list marks `hardwareProperties`, `deviceProperties` and
+`connectionProperties` deprecated, to be replaced by one `properties`
+dictionary, and lists simulators too; and a phone CoreDevice has not
+connected to since it restarted — as installing Xcode restarts it — is
+listed with no `reality`, model name, Developer Mode or tunnel, in either
+layout. Mobium kept only a device whose reality said physical, so the
+phone was dropped; let through as it was, it would have been told to turn
+Developer Mode on, which was on. **Fixed:** a device is skipped only when
+its reality says simulated; one with none is asked for once with `device
+info details`, which connects it, and the list read again — measured: every
+field is there after it — and one still unreached is not connected, told to
+connect its cable. Each field falls back to the new dictionary. The old
+parser found no phone in the measured shapes; `devices` then listed it.
+
+### 343. On iOS 27, a phone's hit test never stopped the app
+
+**Found by:** `hit-test.sh` on the iPhone on iOS 27.0.1, in the sweep:
+"the app did not stop for the debugger", every case. Measured in lldb's
+packet log: with Xcode 26.6 the phone's debugserver gives the attach no
+answer until it is interrupted, and lldb, still attaching, allows no
+interrupt but the one it sends on its way out — then kills the process; a
+batch `detach` in that state closed MobiumApp. With Xcode 27.1 the attach is
+answered at once, but lldb then reads every system library out of the app's
+memory over the cable, since Xcode had no copy of iOS 27's shared cache:
+the stop came after 215 seconds, against the probe's 20. Xcode copies the
+cache in its Devices and Simulators window when it prepares the phone; with
+the copy the stop came in 11 seconds, and the expression and the detach
+worked. Nothing in Mobium was wrong but its answer, which named no cause.
+**Fixed:** when the attach never stops and Xcode keeps no copy of the
+phone's iOS under `~/Library/Developer/Xcode/iOS DeviceSupport`, the hit
+test is refused as `device_not_ready`, naming the missing copy and the
+Devices window — the remedy measured above. **Still open:** with the copy,
+the first case passes on the phone, and the second does not: UIKit's hit
+test at the half-covered target's clear point names the screen's root
+React Native view, while a real touch there reaches the target. A second
+attach straight after a hit test could not import UIKit, and its detach
+failed and ended MobiumApp, three times; the probe's own never did.
+
 ## Findings that were not defects
 
 Worth recording because each one closed off an approach that looked obvious.

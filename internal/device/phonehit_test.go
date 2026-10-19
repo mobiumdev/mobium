@@ -2,8 +2,12 @@ package device
 
 import (
 	"encoding/json"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/mobiumdev/mobium/internal/mobiumerr"
 )
 
 // An app's process is the one whose executable is inside its bundle, as
@@ -33,5 +37,33 @@ func TestAPhoneHitAnswerReadsAsTheSimulatorsDoes(t *testing.T) {
 	}
 	if h, _ := parseHitLine("unknown\tthe app did not stop for the debugger"); h.Reason == "" {
 		t.Error("an unknown answer lost its reason")
+	}
+}
+
+// An attach that never stopped is blamed on a missing shared cache only
+// when Xcode has none for the phone's iOS on this Mac, matched by version in
+// the folder name Xcode gives it, and the refusal names the Devices window.
+// CHALLENGES 343.
+func TestHasDeviceSupport(t *testing.T) {
+	home := t.TempDir()
+	dir := filepath.Join(home, "Library", "Developer", "Xcode", "iOS DeviceSupport", "iPhone15,5 26.6.2 (23G90)")
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if !hasDeviceSupport(home, "26.6.2") {
+		t.Error("26.6.2's folder is not found")
+	}
+	for _, v := range []string{"27.0.1", "26.6", "6.6.2"} {
+		if hasDeviceSupport(home, v) {
+			t.Errorf("%s is taken as present from 26.6.2's folder", v)
+		}
+	}
+	if hasDeviceSupport(t.TempDir(), "27.0.1") {
+		t.Error("a Mac with no DeviceSupport folder has 27.0.1's")
+	}
+	err := noDeviceSupport(Phone{Model: "iPhone 15 Plus", OSVersion: "27.0.1"})
+	if mobiumerr.CodeOf(err) != mobiumerr.DeviceNotReady || !strings.Contains(err.Error(), "iOS 27.0.1") ||
+		!strings.Contains(mobiumerr.Text(err), "Devices and Simulators") {
+		t.Errorf("the refusal: %s", mobiumerr.Text(err))
 	}
 }
