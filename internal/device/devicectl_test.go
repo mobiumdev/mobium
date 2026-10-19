@@ -79,6 +79,81 @@ func TestParsePhones(t *testing.T) {
 	}
 }
 
+// Xcode 27's list, in the shapes measured on 2026-10-18 with Xcode 27.1 and
+// an iPhone 15 Plus on iOS 27.0.1; names, identifiers and addresses made up.
+// The first phone is listed before CoreDevice connected to it: no reality,
+// model name, Developer Mode or tunnel, in either layout. A simulator is
+// listed too now. The second phone is given only in the new `properties`
+// dictionary, as the deprecation notice says the list will be.
+const phonesFixtureXcode27 = `{"devices": [
+ {
+  "identifier": "11111111-2222-3333-4444-555555555555",
+  "connectionProperties": {"pairingState": "paired", "transportType": "wired", "tunnelTransportProtocol": "tcp"},
+  "deviceProperties": {"name": "Test iPhone", "osVersionNumber": "27.0.1", "bootState": "booted"},
+  "hardwareProperties": {"udid": "00008120-0000000000000001", "platform": "iOS", "productType": "iPhone15,5", "deviceType": "iPhone"},
+  "properties": {
+   "connection": {"pairingState": "paired", "state": "disconnected", "transportType": "wired"},
+   "hardware": {"udid": "00008120-0000000000000001", "platform": "iOS", "productType": "iPhone15,5", "deviceType": "iPhone"},
+   "software": {"osVersionNumber": {"stringValue": "27.0.1"}},
+   "state": {"bootState": "booted", "name": "Test iPhone"}
+  }
+ },
+ {
+  "identifier": "AAAAAAAA-BBBB-CCCC-DDDD-EEEEEEEEEEEE",
+  "properties": {
+   "connection": {"pairingState": "paired", "state": "connected", "transportType": "wired", "tunnelIPAddressString": "fd00:1:2::9"},
+   "hardware": {"udid": "00008120-0000000000000002", "platform": "iOS", "reality": "physical", "marketingName": "iPhone 15 Plus"},
+   "software": {"osVersionNumber": {"stringValue": "27.0.1"}},
+   "state": {"name": "New iPhone"}
+  }
+ },
+ {
+  "identifier": "457C7DC2-0000-0000-0000-000000000000",
+  "properties": {
+   "hardware": {"udid": "457C7DC2-0000-0000-0000-000000000000", "platform": "iOS", "reality": "simulated", "marketingName": "iPhone 17 Pro"},
+   "state": {"name": "iPhone 17 Pro"}
+  }
+ }
+]}`
+
+// A phone CoreDevice has not connected to yet is still a phone — Mobium
+// said no such device, with it paired and on its cable — but nothing about
+// it can be judged: it is not connected, and is told to be connected, never
+// that Developer Mode is off. Each field is read from the new dictionary
+// when the old place is empty; a simulator is not a phone. CHALLENGES 342.
+func TestParsePhonesXcode27(t *testing.T) {
+	phones, err := parsePhones(json.RawMessage(phonesFixtureXcode27))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(phones) != 2 {
+		t.Fatalf("got %d phones, want the two iPhones and not the simulator: %+v", len(phones), phones)
+	}
+	byUDID := map[string]Phone{}
+	for _, p := range phones {
+		byUDID[p.UDID] = p
+	}
+	early := byUDID["00008120-0000000000000001"]
+	if early.UDID == "" || early.Model != "iPhone15,5" || !early.unsettled {
+		t.Fatalf("the phone listed before CoreDevice connected: %+v", early)
+	}
+	if early.Connected() {
+		t.Error("a phone CoreDevice has not connected to reads as connected")
+	}
+	if err := early.Usable(); err == nil || strings.Contains(err.Error(), "Developer Mode") ||
+		!strings.Contains(err.Error(), "cable") {
+		t.Errorf("it is told: %v", err)
+	}
+	want := Phone{
+		UDID: "00008120-0000000000000002", Identifier: "AAAAAAAA-BBBB-CCCC-DDDD-EEEEEEEEEEEE",
+		Name: "New iPhone", Model: "iPhone 15 Plus", OSVersion: "27.0.1",
+		Transport: "wired", TunnelIP: "fd00:1:2::9", Paired: true,
+	}
+	if got := byUDID[want.UDID]; got != want {
+		t.Errorf("the phone in the new layout parsed\n %+v\nwant\n %+v", got, want)
+	}
+}
+
 // Each reason a connected phone cannot be driven is named, and names a fix,
 // because each otherwise surfaces later as an xcodebuild error about
 // something else.

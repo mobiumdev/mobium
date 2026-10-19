@@ -35,6 +35,46 @@ var phoneHitScript []byte
 // phoneHitTimeout bounds one attach, expression and detach on a phone.
 const phoneHitTimeout = 60 * time.Second
 
+// phoneNoStop is the probe's answer when the attach never stopped the app,
+// as hitprobe/phone.py words it.
+const phoneNoStop = "the app did not stop for the debugger"
+
+// hasDeviceSupport reports whether Xcode keeps the shared cache of iOS
+// version on this Mac, under ~/Library/Developer/Xcode/iOS DeviceSupport,
+// in a folder named for a model, the version and its build: "iPhone15,5
+// 26.6.2 (23G90)".
+func hasDeviceSupport(home, version string) bool {
+	if version == "" {
+		return true
+	}
+	ents, err := os.ReadDir(filepath.Join(home, "Library", "Developer", "Xcode", "iOS DeviceSupport"))
+	if err != nil {
+		return false
+	}
+	for _, e := range ents {
+		if e.IsDir() && strings.Contains(e.Name(), " "+version+" (") {
+			return true
+		}
+	}
+	return false
+}
+
+// noDeviceSupport is the refusal for an attach that did not stop because
+// Xcode has no copy of the phone's shared cache. lldb then reads every
+// system library out of the app's memory over the cable before the attach
+// completes: on the iPhone 15 Plus on iOS 27.0.1, with Xcode 27.1 and only
+// iOS 26.6.2's cache on the Mac, the stop came after 215 seconds, and the
+// expression and the detach then worked (CHALLENGES 343). Xcode copies the
+// cache when it prepares the phone for a new iOS.
+func noDeviceSupport(p Phone) *mobiumerr.Error {
+	return mobiumerr.New(mobiumerr.DeviceNotReady, "the hit test on %s could not stop the app: Xcode keeps no "+
+		"copy of iOS %s's shared cache on this Mac, so lldb reads the system libraries out of the app over "+
+		"the cable first, measured at three and a half minutes, past the %s a hit test is given", p.Label(),
+		p.OSVersion, phoneHitTimeout).
+		WithRemedy("open Xcode's Window > Devices and Simulators with the phone connected and unlocked, select " +
+			"it, and wait while Xcode copies its shared cache symbols; then run the hit test again")
+}
+
 // phoneHitModule writes the lldb module once per source, under a name of its
 // own, and returns its path.
 func phoneHitModule() (string, error) {
@@ -125,7 +165,13 @@ func (d *Devicectl) HitTest(ctx context.Context, bundleID string, x, y float64, 
 	}
 	for _, line := range bytes.Split(out, []byte("\n")) {
 		if rest, ok := bytes.CutPrefix(line, []byte("MOBIUM_HIT\t")); ok {
-			return parseHitLine(string(rest))
+			hit, err := parseHitLine(string(rest))
+			if err == nil && hit.Verdict == "unknown" && hit.Reason == phoneNoStop {
+				if home, herr := os.UserHomeDir(); herr == nil && !hasDeviceSupport(home, d.Phone.OSVersion) {
+					return Hit{}, noDeviceSupport(d.Phone)
+				}
+			}
+			return hit, err
 		}
 	}
 	if err != nil {

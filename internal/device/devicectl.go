@@ -40,11 +40,16 @@ type Phone struct {
 	TunnelIP      string `json:"tunnelIP"`
 	Paired        bool   `json:"paired"`
 	DeveloperMode bool   `json:"developerMode"`
+	// unsettled is a phone listed before CoreDevice connected to it: Xcode
+	// 27 lists one with no reality, model name, Developer Mode or tunnel,
+	// so nothing about it can be judged yet (CHALLENGES 342).
+	unsettled bool
 }
 
 // Connected reports whether the phone can be driven right now. A phone
-// devicectl remembers but cannot reach is listed with no transport.
-func (p Phone) Connected() bool { return p.Paired && p.Transport != "" }
+// devicectl remembers but cannot reach is listed with no transport; one it
+// has not connected to yet, with too little to say.
+func (p Phone) Connected() bool { return p.Paired && p.Transport != "" && !p.unsettled }
 
 // Label is how a message names the phone: its model, "iPhone 15 Plus".
 // Never its name, which is its owner's — "Lana's iPhone" — and a message
@@ -157,8 +162,34 @@ func runDevicectl(ctx context.Context, xcrun string, args ...string) (json.RawMe
 }
 
 // devicectlDevices mirrors the part of `devicectl list devices` read here.
+// Xcode 27 marks hardwareProperties, deviceProperties and
+// connectionProperties deprecated, to be removed, in favor of one
+// `properties` dictionary; each field is read from the old place and, when
+// that is empty, from the new.
 type devicectlDevices struct {
 	Devices []struct {
+		Properties struct {
+			Connection struct {
+				PairingState  string `json:"pairingState"`
+				TransportType string `json:"transportType"`
+				TunnelIPAddr  string `json:"tunnelIPAddressString"`
+			} `json:"connection"`
+			Hardware struct {
+				UDID        string `json:"udid"`
+				Platform    string `json:"platform"`
+				Reality     string `json:"reality"`
+				MarketingNm string `json:"marketingName"`
+				ProductType string `json:"productType"`
+			} `json:"hardware"`
+			Software struct {
+				OSVersionNumber struct {
+					String string `json:"stringValue"`
+				} `json:"osVersionNumber"`
+			} `json:"software"`
+			State struct {
+				Name string `json:"name"`
+			} `json:"state"`
+		} `json:"properties"`
 		Identifier           string `json:"identifier"`
 		ConnectionProperties struct {
 			PairingState  string `json:"pairingState"`
@@ -190,7 +221,37 @@ func Phones(ctx context.Context) ([]Phone, error) {
 	if err != nil {
 		return nil, err
 	}
+	phones, err := parsePhones(raw)
+	if err != nil {
+		return nil, err
+	}
+	// A phone CoreDevice has not connected to yet is asked for once, which
+	// connects it, as WakeTunnel does, and the list is read again: after
+	// Xcode 27.1 was installed the iPhone was listed with no reality and
+	// Mobium said no such device, with it paired and on its cable. One that
+	// still cannot be reached stays unsettled, and is not connected.
+	woke := false
+	for _, p := range phones {
+		if p.unsettled {
+			_, _ = runDevicectl(ctx, xcrun, "device", "info", "details", "--device", p.UDID)
+			woke = true
+		}
+	}
+	if !woke {
+		return phones, nil
+	}
+	if raw, err = runDevicectl(ctx, xcrun, "list", "devices"); err != nil {
+		return nil, err
+	}
 	return parsePhones(raw)
+}
+
+// or is a, or b when a is empty.
+func or(a, b string) string {
+	if a != "" {
+		return a
+	}
+	return b
 }
 
 func parsePhones(raw json.RawMessage) ([]Phone, error) {
@@ -200,26 +261,27 @@ func parsePhones(raw json.RawMessage) ([]Phone, error) {
 	}
 	var out []Phone
 	for _, d := range list.Devices {
-		hw := d.HardwareProperties
-		// devicectl also lists watches, Vision Pros and paired Macs. Only a
-		// physical iPhone or iPad is something WebDriverAgent runs on.
-		if hw.Platform != "iOS" || hw.Reality != "physical" {
+		hw, nw := d.HardwareProperties, d.Properties.Hardware
+		cp, nc := d.ConnectionProperties, d.Properties.Connection
+		platform, reality := or(hw.Platform, nw.Platform), or(hw.Reality, nw.Reality)
+		// devicectl also lists watches, Vision Pros and paired Macs, and
+		// since Xcode 27 simulators too. Only a physical iPhone or iPad is
+		// something WebDriverAgent runs on — and one CoreDevice has not
+		// connected to yet says nothing of its reality at all.
+		if platform != "iOS" || reality != "physical" && reality != "" {
 			continue
 		}
-		model := hw.MarketingNm
-		if model == "" {
-			model = hw.ProductType
-		}
 		out = append(out, Phone{
-			UDID:          hw.UDID,
+			UDID:          or(hw.UDID, nw.UDID),
 			Identifier:    d.Identifier,
-			Name:          d.DeviceProperties.Name,
-			Model:         model,
-			OSVersion:     d.DeviceProperties.OSVersionNumber,
-			Transport:     d.ConnectionProperties.TransportType,
-			TunnelIP:      d.ConnectionProperties.TunnelIPAddr,
-			Paired:        d.ConnectionProperties.PairingState == "paired",
+			Name:          or(d.DeviceProperties.Name, d.Properties.State.Name),
+			Model:         or(or(hw.MarketingNm, nw.MarketingNm), or(hw.ProductType, nw.ProductType)),
+			OSVersion:     or(d.DeviceProperties.OSVersionNumber, d.Properties.Software.OSVersionNumber.String),
+			Transport:     or(cp.TransportType, nc.TransportType),
+			TunnelIP:      or(cp.TunnelIPAddr, nc.TunnelIPAddr),
+			Paired:        or(cp.PairingState, nc.PairingState) == "paired",
 			DeveloperMode: d.DeviceProperties.DeveloperModeStatus == "enabled",
+			unsettled:     reality == "",
 		})
 	}
 	sort.SliceStable(out, func(i, j int) bool {
