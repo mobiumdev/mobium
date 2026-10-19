@@ -67,3 +67,23 @@ func TestHasDeviceSupport(t *testing.T) {
 		t.Errorf("the refusal: %s", mobiumerr.Text(err))
 	}
 }
+
+// The phone's expression has no CGPointMake, CGRectMake or CG struct
+// variable: Xcode 27.1's lldb on iOS 27 turned CGPointMake(259, 365) into
+// (259, 0), so every hit test asked about the top edge of the screen, and
+// refused a declared CGRect as having no matching constructor. CHALLENGES 345.
+func TestThePhoneProbeMakesNoPointWithCGPointMake(t *testing.T) {
+	_, body, ok := strings.Cut(string(phoneHitScript), "EXPR = r'''")
+	expr, _, closed := strings.Cut(body, "'''")
+	if !ok || !closed {
+		t.Fatal("the probe's expression is not where it was")
+	}
+	for _, bad := range []string{"CGPointMake(", "CGRectMake(", "CGSizeMake(", "CGRect ", "CGPoint ", "CGSize "} {
+		if strings.Contains(expr, bad) {
+			t.Errorf("the expression has %q", bad)
+		}
+	}
+	if !strings.Contains(expr, `CGPointFromString(@"{%(x)f, %(y)f}")`) {
+		t.Error("the expression no longer makes its point with CGPointFromString")
+	}
+}
