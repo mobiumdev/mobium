@@ -270,7 +270,7 @@ func (h *Handlers) pressAlertButton(ctx context.Context, s *session, tree *uitre
 			WithDetail("dialog", title).WithDetail("buttons", captionsOf(buttons))
 	}
 	x, y := target.Bounds.Center()
-	if err := s.driver.Tap(ctx, x, y); err != nil {
+	if err := h.touch(ctx, s, x, y, strings.TrimSpace(target.Label)); err != nil {
 		return nil, err
 	}
 	pressed := strings.TrimSpace(target.Label)

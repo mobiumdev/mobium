@@ -37,6 +37,9 @@ type w3cClient struct {
 	// no touch screen, where a pointer action would be an event the
 	// platform never sends.
 	noTouch error
+	// touchGuard, when set, is asked before every touch, and refuses one the
+	// device's state would take for something else — VoiceOver, on iOS.
+	touchGuard func(context.Context) error
 }
 
 type longerCallKey struct{}
@@ -161,6 +164,11 @@ func (c *w3cClient) pointerSequence(ctx context.Context, actions []map[string]in
 	if c.noTouch != nil {
 		return c.noTouch
 	}
+	if c.touchGuard != nil {
+		if err := c.touchGuard(ctx); err != nil {
+			return err
+		}
+	}
 	body := map[string]interface{}{
 		"actions": []map[string]interface{}{{
 			"type":       "pointer",
@@ -181,6 +189,11 @@ func (c *w3cClient) pointerSequence(ctx context.Context, actions []map[string]in
 func (c *w3cClient) pointerSequences(ctx context.Context, chains ...[]map[string]interface{}) error {
 	if c.noTouch != nil {
 		return c.noTouch
+	}
+	if c.touchGuard != nil {
+		if err := c.touchGuard(ctx); err != nil {
+			return err
+		}
 	}
 	var sources []map[string]interface{}
 	for i, chain := range chains {
@@ -440,6 +453,11 @@ func dragActions(x1, y1, x2, y2 int, d time.Duration) []map[string]interface{} {
 // WebDriverAgent-only: there is no such endpoint on UiAutomator2, which is
 // why this is called from the WDA backend rather than offered to both.
 func (c *w3cClient) wdaDoubleTap(ctx context.Context, x, y int) error {
+	if c.touchGuard != nil {
+		if err := c.touchGuard(ctx); err != nil {
+			return err
+		}
+	}
 	return c.do(ctx, http.MethodPost, c.sessionPath("/wda/doubleTap"),
 		map[string]interface{}{"x": x, "y": y}, nil)
 }

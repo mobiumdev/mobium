@@ -13,6 +13,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"sort"
 	"strconv"
 	"strings"
@@ -190,10 +191,12 @@ func PhoneWDALog(team, udid string) string {
 func EnsurePhoneWDA(ctx context.Context, team, udid string, progress func(string)) (string, error) {
 	dir := phoneWDADir(team, udid)
 	derived := filepath.Join(dir, "build")
-	if run, err := findXCTestRun(derived); err == nil && builtAtCurrentPatch(dir) {
+	if run, err := findXCTestRun(derived); err == nil && builtAtCurrentPatch(dir) &&
+		builtWithSDK(run, iphoneSDKVersion(ctx)) {
 		return run, nil
 	}
-	// Built before the current patch, or not at all: from scratch.
+	// Built before the current patch, by another Xcode, or not at all: from
+	// scratch.
 	_ = os.RemoveAll(derived)
 
 	src, err := ensureWDASource(ctx, progress)
@@ -300,6 +303,35 @@ func findXCTestRun(derived string) (string, error) {
 	}
 	sort.Strings(matches)
 	return matches[len(matches)-1], nil
+}
+
+// iphoneSDKVersion is the iPhoneOS SDK the installed Xcode builds with —
+// "27.1" — or "" when it cannot say, which leaves a build as it is.
+var iphoneSDKVersion = func(ctx context.Context) string {
+	out, err := exec.CommandContext(ctx, "xcrun", "--sdk", "iphoneos", "--show-sdk-version").Output()
+	if err != nil {
+		return ""
+	}
+	return strings.TrimSpace(string(out))
+}
+
+// xctestrunSDK reads the SDK a run description was built with from its
+// name, WebDriverAgentRunner_iphoneos27.1-arm64.xctestrun.
+var xctestrunSDK = regexp.MustCompile(`_iphoneos([0-9.]+)-[^/]*\.xctestrun$`)
+
+// builtWithSDK reports whether a runner was built with the SDK the installed
+// Xcode has. A runner keeps the XCTest frameworks of the Xcode that built
+// it, and those decide what it can do: one built by Xcode 26.6 answered
+// every VoiceOver route on an iOS 27 phone with "requires an iOS 27+
+// runtime", because its XCUIAutomation has no VoiceOver service, and it was
+// kept through the update to Xcode 27.1 because nothing asked. An SDK that
+// cannot be read keeps the build.
+func builtWithSDK(xctestrun, sdk string) bool {
+	if sdk == "" {
+		return true
+	}
+	m := xctestrunSDK.FindStringSubmatch(filepath.Base(xctestrun))
+	return m == nil || m[1] == sdk
 }
 
 // ensureWDASource downloads and unpacks the pinned source release, returning

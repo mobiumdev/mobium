@@ -731,7 +731,10 @@ func (h *Handlers) tapOn(ctx context.Context, s *session, args map[string]interf
 
 	// touch is the one line that differs, resolved once so every path below
 	// reads the same.
-	touch := driver.Tap
+	// name is the target's, once it is resolved, so a screen reader's cursor
+	// can be checked against it before anything is activated.
+	name := ""
+	touch := func(ctx context.Context, x, y int) error { return h.touch(ctx, s, x, y, name) }
 	verb, action := "tapped", "tap"
 	if boolArg(args, "double") {
 		dt, ok := mobiumdriver.AsDoubleTapper(driver)
@@ -822,10 +825,11 @@ func (h *Handlers) tapOn(ctx context.Context, s *session, args map[string]interf
 	//
 	// And aim where the touch will reach it: the app may have drawn
 	// something over its center (CHALLENGES 115).
-	_, aim, err := h.resolveAim(ctx, s, target)
+	node, aim, err := h.resolveAim(ctx, s, target)
 	if err != nil {
 		return nil, err
 	}
+	name = accessibleName(node)
 	tx, ty := aim.X, aim.Y
 	if err := touch(ctx, tx, ty); err != nil {
 		return nil, err
