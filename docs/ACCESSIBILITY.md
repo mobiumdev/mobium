@@ -6,12 +6,14 @@ that do a task without it. What was measured, what it found, and the plan
 to build on it, in the order it should be built. Each step names the control
 that shows it can fail before its result counts.
 
-**Status on 2026-10-20.** TalkBack stays on through a session (CHALLENGES 208)
-and the accessibility settings are a tool (`mobium accessibility`). VoiceOver
-was measured on the iPhone 15 Plus on iOS 27.0.1 the same day: it can be
-turned on, walked and heard, and **with it on, a Mobium tap moves VoiceOver's
-cursor and reports the tap done** — the first step below. Apple's audit and
-Siri were measured on 2026-09-23 and are not tools. Nothing has been measured
+**Status on 2026-10-20.** TalkBack stays on through a session (CHALLENGES 208),
+the accessibility settings are a tool (`mobium accessibility`), and Apple's
+audit is one (`mobium audit`, #80). VoiceOver was measured on the iPhone 15
+Plus on iOS 27.0.1 and an iOS 27 simulator: it can be turned on, walked and
+heard, and **with it on, a Mobium tap moved VoiceOver's cursor and was
+reported done** (CHALLENGES 348). Step 1 below fixes that, in #243; with
+TalkBack on the same paths already landed, on the emulator and the Pixel.
+Siri was measured on 2026-09-23 and is not a tool. Nothing has been measured
 of Gemini, Alexa, Voice Control or Voice Access.
 
 ## Who it is for
@@ -96,9 +98,26 @@ read back off after every run.
   the cursor was on "Accept terms", not where the double tap had left it.
   Which call moved it is not measured.
 
-Not measured: a simulator (it needs an iOS 27 runtime, not installed here); `in` and
-`out`; a screen that scrolls under the cursor; a WebView; a system alert;
-iPadOS and tvOS, where the routes exist too.
+- **The same on a simulator.** On an iPhone 18 Pro simulator, iOS 27.0, with
+  a runner built by Xcode 27 by hand — Mobium's simulator runner is
+  WebDriverAgent's prebuilt release, built against the iOS 18.4 SDK, which
+  answers as 26.6's did — a touch on Settings' General moved the cursor to
+  "General Button" and opened nothing, and a double tap opened it. That
+  runtime crashed MobiumApp at launch on this Mac (macOS 26.6), in
+  libdispatch, so Settings stood in.
+- **Everything else, on the phone.** With VoiceOver on, a one-finger swipe
+  moved the cursor and scrolled nothing, and `scroll-to` blamed the end of
+  the list; typing reached no field and was blamed on a dropped keystroke,
+  while VoiceOver said "Double tap to edit." — a touch and a double tap on
+  the field, then typing, landed. An alert's button and a WebView's checkbox
+  behaved as the tap did. Moving the cursor forward scrolls the list to keep
+  it in view.
+- **A VoiceOver touch is slow.** XCTest's touch takes about 5.5 seconds with
+  VoiceOver on — by W3C actions or WebDriverAgent's own tap, with its idle
+  and animation waits at zero or not — and its double tap 0.7. Asking
+  whether VoiceOver is on takes 5 to 22ms.
+
+Not measured: `in` and `out`; iPadOS and tvOS, where the routes exist too.
 
 ### TalkBack — 2026-10-05
 
@@ -110,7 +129,16 @@ injected rather than explored — the opposite of VoiceOver above.
 `docs/checks/screen-reader.sh` holds it. What TalkBack *says* is not read by
 anything.
 
-### Apple's accessibility audit — 2026-09-23
+On 2026-10-20 the rest of step 1's paths were driven with TalkBack on, on the
+Android 15 emulator and the Pixel 8 Pro on Android 17: a radio, `check`,
+`scroll-to`, an alert's button and a WebView's checkbox landed too, at their
+usual speed. TalkBack's own notification prompt, raised as it comes on, lost
+the first press of "Don't allow" three times in three on the Pixel — refused,
+never reported done; why is not measured. And turning TalkBack off, the
+system wrote `accessibility_enabled` back after the phone's value had been
+put back, which `screen-reader.sh` now waits out.
+
+### Apple's accessibility audit — 2026-09-23, a tool since #80
 
 WebDriverAgent's `/wda/performAccessibilityAudit` runs XCUITest's audit on
 the app in front: 2.4 seconds on the simulator's Settings, 5 findings — a
@@ -118,9 +146,9 @@ hit area too small (an 18×22pt Dictate button), a label that repeats its
 traits, three contrast failures. On MobiumApp eleven screens came back clean
 and the Wide Viewport screen gave three hit-region findings, its links 38×10pt
 — the positive control that makes the zeros answers. The phone gave the same.
-A tool would have to say that contrast findings name no element, that the
-audit's rectangles are points where `map`'s are pixels, and that it audits
-only what is on screen.
+`mobium audit` (`app_audit`) runs it on a simulator or an iPhone, in pixels
+as `map` is, keeping a contrast finding that names no element; Android is
+refused, naming `screen --inspect`. `docs/checks/audit.sh` holds it.
 
 ### Siri — 2026-09-23
 
@@ -136,10 +164,17 @@ simulator, an app's own App Shortcut.
 Built in this order. Each step is one PR, with its CHALLENGES entry where it
 fixes something, and is done when its check passes on the devices named.
 
-### 1. A tap with VoiceOver on lands, or is refused
+### 1. A tap with VoiceOver on lands, or is refused — built, #243
 
 The defect above, fixed before anything is built on VoiceOver, since every
-later step drives a screen with it on.
+later step drives a screen with it on. As built: VoiceOver is asked about
+before every touch, since it costs milliseconds and a person can turn it on
+mid-session; tap, `check`, an alert's button and a dialog rule touch, read the
+cursor back, and double-tap; typing focuses the field that way; every other
+touch is refused naming VoiceOver; a phone's runner built for another SDK is
+rebuilt. `voiceover.sh` passes on the iPhone and fails with `main`'s binary.
+Left from it: Mobium's simulator runner, scrolling with VoiceOver on through
+its cursor's moves, and the 5.5-second touch. The plan as written:
 
 - Before an iOS action, know whether VoiceOver is on — `/wda/voiceOver/enabled`,
   once per session and again after anything that can change it, never per
@@ -180,11 +215,10 @@ the `map` entry it lands on.
   icon button, a status line that is not live, a focus order against reading
   order — gives each finding, and the Form Demo gives none.
 
-### 3. The platform's own audit: `app_audit`
+### 3. The platform's own audit on Android
 
-Reads only. Apple's audit on iOS, with the three caveats above stated in
-each answer, its rectangles converted to pixels so a finding can be matched
-to a ref, and contrast findings reported without one.
+`app_audit` is built for iOS (#80). What is left is Android, which it
+refuses today.
 
 - **Android needs measuring first.** Google's Accessibility Test Framework
   is a library run inside a test, not a service on the device. Whether
