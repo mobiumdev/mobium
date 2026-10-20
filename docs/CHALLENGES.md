@@ -7534,6 +7534,15 @@ against 1. `voiceover.sh` passed on the iPhone in two minutes, and with
 WebDriverAgent's prebuilt release and cannot reach VoiceOver; scrolling with
 VoiceOver on, which its cursor's moves do; and the five seconds.
 
+Android needed nothing. With TalkBack on, on the Android 15 emulator, a tap,
+a radio, `check` and `uncheck`, `scroll-to`, typing, an alert's button and a
+WebView's checkbox all landed at their usual speed: Mobium's touches are
+injected, and TalkBack explores only a finger's (208). One thing seen once
+and not again: TalkBack's own notification prompt, raised as it came on,
+kept its "Don't allow" pressed once with TalkBack on and refused — read back
+and reported, never as done — then took it in four of four, at once and ten
+seconds in.
+
 ## Findings that were not defects
 
 Worth recording because each one closed off an approach that looked obvious.

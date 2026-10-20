@@ -359,6 +359,8 @@ work, more slowly — and refuses any other gesture, saying so (CHALLENGES
 348). It can tell only with iOS 27 and a runner built by Xcode 27, which a
 phone's is once Mobium rebuilds it; a simulator's is not.
 `docs/checks/voiceover.sh` checks it on an iPhone.
+TalkBack is not that case: Mobium's touches land with it on, at their usual
+speed, since it explores only a finger's.
 
 `MOBIUM_DUMP_READER=mobium` uses Mobium's reader for every read, and
 `=uiautomator` uses `uiautomator dump` for every read. **It is read by the
