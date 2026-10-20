@@ -23,7 +23,7 @@ import (
 // cursor too and scrolled nothing, and scroll-to blamed the end of the list.
 // Typing reached no field, and was blamed on a dropped keystroke: the field
 // never had focus, and VoiceOver said "Double tap to edit." With VoiceOver
-// off, every one of them landed.
+// off, every one of them landed (CHALLENGES 348).
 //
 // WebDriverAgent's /wda/voiceOver routes reach XCUIAutomation's VoiceOver
 // service, which a runner built by Xcode 27 has and one built earlier does

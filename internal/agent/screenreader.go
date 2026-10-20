@@ -13,7 +13,7 @@ import (
 // screen reader on, a touch that moves its cursor there and a double tap
 // that activates what the cursor landed on. With VoiceOver on, a plain tap
 // only moves the cursor, and was reported done while the app received
-// nothing (docs/ACCESSIBILITY.md, step 1).
+// nothing (CHALLENGES 348).
 //
 // name is what the target is called, when the caller knows: the cursor is
 // read back before anything is activated, and a cursor that landed on
