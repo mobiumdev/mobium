@@ -7534,14 +7534,19 @@ against 1. `voiceover.sh` passed on the iPhone in two minutes, and with
 WebDriverAgent's prebuilt release and cannot reach VoiceOver; scrolling with
 VoiceOver on, which its cursor's moves do; and the five seconds.
 
-Android needed nothing. With TalkBack on, on the Android 15 emulator, a tap,
-a radio, `check` and `uncheck`, `scroll-to`, typing, an alert's button and a
-WebView's checkbox all landed at their usual speed: Mobium's touches are
-injected, and TalkBack explores only a finger's (208). One thing seen once
-and not again: TalkBack's own notification prompt, raised as it came on,
-kept its "Don't allow" pressed once with TalkBack on and refused — read back
-and reported, never as done — then took it in four of four, at once and ten
-seconds in.
+Android needed nothing. With TalkBack on, on the Android 15 emulator and the
+Pixel 8 Pro on Android 17, a tap, a radio, `check` and `uncheck`,
+`scroll-to`, typing, an alert's button and a WebView's checkbox all landed
+at their usual speed: Mobium's touches are injected, and TalkBack explores
+only a finger's (208). One thing it did not take: the permission prompt
+TalkBack's own app raises as it comes on. The first press of its "Don't
+allow" left it up, three times in three on the Pixel and once in five on
+the emulator, and the second press took it — read back, and refused, never
+reported done. Why the first is lost is not measured. And turning TalkBack
+off, the system wrote `accessibility_enabled` back to 1 after the check had
+put back the phone's 0, while TalkBack was still unbinding:
+`screen-reader.sh` now waits for touch exploration to end before putting it
+back, and reads it back after a pause.
 
 ## Findings that were not defects
 
