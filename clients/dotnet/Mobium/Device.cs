@@ -635,8 +635,8 @@ namespace Mobium
         /// on iOS, Apple's, on a simulator or an iPhone (iOS 17 and later).
         /// The answer holds <c>findings</c>, each with its type, summary,
         /// detail, element, a locator when it has one, and bounds in device
-        /// pixels when the audit names an element. Android throws: its audits
-        /// run inside the app.
+        /// pixels when the audit names an element. On Android it is Mobium's
+        /// checks on the hierarchy, contrast not among them.
         /// </summary>
         public IDictionary<string, object?> Audit() =>
             Data("app_audit", Args());

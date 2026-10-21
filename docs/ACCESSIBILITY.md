@@ -147,8 +147,8 @@ traits, three contrast failures. On MobiumApp eleven screens came back clean
 and the Wide Viewport screen gave three hit-region findings, its links 38×10pt
 — the positive control that makes the zeros answers. The phone gave the same.
 `mobium audit` (`app_audit`) runs it on a simulator or an iPhone, in pixels
-as `map` is, keeping a contrast finding that names no element; Android is
-refused, naming `screen --inspect`. `docs/checks/audit.sh` holds it.
+as `map` is, keeping a contrast finding that names no element. Android's is
+Mobium's own, on the hierarchy (step 3). `docs/checks/audit.sh` holds both.
 
 ### Gemini and Google Assistant — 2026-10-20
 
@@ -247,18 +247,37 @@ the `map` entry it lands on.
   icon button, a status line that is not live, a focus order against reading
   order — gives each finding, and the Form Demo gives none.
 
-### 3. The platform's own audit on Android
+### 3. The platform's own audit on Android — built
 
-`app_audit` is built for iOS (#80). What is left is Android, which it
-refuses today.
+`app_audit` is built for iOS (#80), and since this step runs on Android too.
+Android has no audit a tool outside the app can run — Google's
+Accessibility Test Framework is a library inside an instrumented test — but
+most of its checks need nothing but the hierarchy Mobium already reads, so
+they run there under the framework's names (`formflux.AuditAndroid`):
 
-- **Android needs measuring first.** Google's Accessibility Test Framework
-  is a library run inside a test, not a service on the device. Whether
-  Mobium can run its checks on the hierarchy it already reads — touch target
-  size in dp, missing labels, duplicate descriptions — is the question;
-  formflux's units (FORMFLUX.md) are the place it would land.
-- **Control:** MobiumApp's Wide Viewport screen and its eleven clean screens,
-  on both platforms once Android has an answer.
+- `TouchTargetSize`, under 48dp either way, in dp from the device's density,
+  not judged when there is none;
+- `SpeakableTextPresent`, a control with no text, description or hint in it
+  or anything inside it — a resource id is not spoken, which is where it
+  differs from `screen --inspect`'s "unlabeled";
+- `DuplicateSpeakableText`, controls that say the same thing, one finding
+  per name with the count;
+- `DuplicateClickableBounds`, two controls on one rectangle;
+- `RedundantDescription`, a description ending with the control's own kind
+  ("Save button" on a button — not "One-button alert", which flagged on the
+  first version);
+- `EditableContentDesc`, a text field with a description.
+
+Look-alike findings on repeated rows are one, with a count: the Table Demo
+was 46 findings row by row. Contrast needs the pixels and is not checked;
+the result names it in `unchecked`. On real captures: Aegis's Previous and
+Next icon buttons have nothing to say, Settings' Display screen has two
+"Make smaller", and F-Droid's list and Seal's look screen have nothing.
+
+- **Control:** MobiumApp's Screen Reader Demo — a nameless icon and a
+  "Save button", each beside its twin built right — gives exactly those
+  two, and the home screen none (`audit.sh`, on the emulator, both
+  drivers).
 
 ### 4. Label in Name, from `map`
 

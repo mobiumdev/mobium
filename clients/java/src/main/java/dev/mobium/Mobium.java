@@ -1059,8 +1059,8 @@ public final class Mobium implements AutoCloseable {
 
     /**
      * Runs the platform's own accessibility audit on the screen in front: on
-     * iOS, Apple's, on a simulator or an iPhone (iOS 17 and later). Android
-     * throws: its audits run inside the app.
+     * iOS, Apple's, on a simulator or an iPhone (iOS 17 and later); on
+     * Android, Mobium's checks on the hierarchy, contrast not among them.
      *
      * @return {@code findings}, each with its type, summary, detail, element,
      *     a locator when it has one, and bounds in device pixels when the

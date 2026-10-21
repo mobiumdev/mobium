@@ -1029,8 +1029,9 @@ this is what is not.
   eight findings in about six seconds, seven of them contrast findings that
   name no element, which a simulator's do; MobiumApp's Layout Demo gave
   none, because Apple's hit-region rule is far below the 44 pt guideline
-  that `screen --inspect` holds. Android refuses: its audits run inside the
-  app. Running it as a side effect would cost those seconds on every
+  that `screen --inspect` holds. On Android since 2026-10-20 it is Mobium's
+  checks on the hierarchy, under the Accessibility Test Framework's names,
+  contrast not among them (ACCESSIBILITY.md, step 3). Running it as a side effect would cost those seconds on every
   action, so it stays a call.
 - ~~**The iPad's home screen, sometimes.**~~ Done 2026-10-04 (CHALLENGES
   224): once an app has been used, WebDriverAgent names the Dock's

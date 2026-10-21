@@ -804,8 +804,8 @@ class Device:
         on iOS, Apple's, on a simulator or an iPhone (iOS 17 and later).
         ``findings`` lists each with its ``type``, ``summary``, ``detail``,
         ``element``, a ``locator`` when it has one, and ``bounds`` in device
-        pixels when the audit names an element. Android raises: its audits
-        run inside the app.
+        pixels when the audit names an element. On Android it is Mobium's
+        checks on the hierarchy, contrast not among them.
         """
         return self._data("app_audit", {}) or {}
 
