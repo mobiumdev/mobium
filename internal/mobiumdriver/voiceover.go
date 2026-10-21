@@ -137,6 +137,50 @@ func (w *WDA) ActivateFocused(ctx context.Context, x, y int) error {
 	return w.w3c.wdaDoubleTap(ScreenReaderAsked(ctx), w.toPoints(x), w.toPoints(y))
 }
 
+// ScreenReaderSpeech is implemented by a backend that can say what the
+// screen reader says and move its cursor through the screen in its own
+// order. Built in only, as ScreenReader is.
+type ScreenReaderSpeech interface {
+	// Speech is what the screen reader says about the element its cursor
+	// is on.
+	Speech(ctx context.Context) (string, error)
+	// MoveCursor moves the cursor to the next element, or the one before,
+	// and returns what the screen reader says there. At either end it does
+	// not move, and says the same again.
+	MoveCursor(ctx context.Context, forward bool) (string, error)
+}
+
+// AsScreenReaderSpeech returns the driver's screen reader speech, if it has
+// any.
+func AsScreenReaderSpeech(d Driver) (ScreenReaderSpeech, bool) {
+	s, ok := d.(ScreenReaderSpeech)
+	return s, ok
+}
+
+// Speech is what VoiceOver says about the element its cursor is on.
+func (w *WDA) Speech(ctx context.Context) (string, error) { return w.voiceOverSpeech(ctx) }
+
+// MoveCursor is a VoiceOver swipe right or left, through XCUIAutomation's
+// VoiceOver service: 0.58 seconds a move on the iPhone 15 Plus, the list
+// scrolling to keep the cursor in view. Past the last element it stays and
+// says the same again, after about 2.4 seconds.
+func (w *WDA) MoveCursor(ctx context.Context, forward bool) (string, error) {
+	direction := "backward"
+	if forward {
+		direction = "forward"
+	}
+	var resp struct {
+		Value struct {
+			Utterance string `json:"utterance"`
+		} `json:"value"`
+	}
+	if err := w.w3c.do(ctx, http.MethodPost, "/wda/voiceOver/move", map[string]interface{}{"direction": direction},
+		&resp); err != nil {
+		return "", err
+	}
+	return resp.Value.Utterance, nil
+}
+
 // voiceOverSpeech is what VoiceOver says about the element its cursor is on.
 func (w *WDA) voiceOverSpeech(ctx context.Context) (string, error) {
 	var resp struct {

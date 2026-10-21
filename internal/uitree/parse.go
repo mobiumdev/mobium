@@ -103,6 +103,11 @@ type Node struct {
 	// may be up without asking the device, and how a TV's D-pad press is
 	// read back.
 	Focused bool
+	// ReaderFocused is UiAutomator2's `a11y-focused`: the screen reader's
+	// cursor is on this node — TalkBack's green rectangle, which is not
+	// input focus. app_speech pairs what TalkBack said with the node it said
+	// it about through it. The dump format and iOS have no such attribute.
+	ReaderFocused bool
 	// Virtual is Android's `drawing-order="0"`: a node an accessibility
 	// provider made up rather than a real View, which a real View's drawing
 	// order is never 0. Flutter's are; MobiumApp's React Native fields read 10
@@ -403,6 +408,7 @@ func nodeFrom(e xml.StartElement, parent *Node, sibling int) *Node {
 		Hint:          attr(e, "hint"),
 		ShowingHint:   boolAttr(e, "showing-hint"),
 		Focused:       boolAttr(e, "focused"),
+		ReaderFocused: boolAttr(e, "a11y-focused"),
 		Virtual:       attr(e, "drawing-order") == "0",
 		Depth:         parent.Depth + 1,
 		Index:         idx,

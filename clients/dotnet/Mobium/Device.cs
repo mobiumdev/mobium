@@ -661,6 +661,24 @@ namespace Mobium
         }
 
         /// <summary>
+        /// What the screen reader says: VoiceOver on a real iPhone, TalkBack on
+        /// Android. The screen reader must be on. The answer holds the
+        /// <c>screen_reader</c> and its <c>steps</c>, each the sentence
+        /// <c>said</c> and the <c>element</c> it was said about when that can be
+        /// told. <c>target</c> puts the cursor on an element first; <c>walk</c>
+        /// moves forward through the screen until it goes no further, comes
+        /// back round or makes <c>limit</c> moves, which <c>ended</c> says.
+        /// </summary>
+        public IDictionary<string, object?> Speech(string? target = null, bool walk = false, int limit = 0)
+        {
+            var args = Args();
+            if (!string.IsNullOrWhiteSpace(target)) args["target"] = target;
+            if (walk) args["walk"] = true;
+            if (limit > 0) args["limit"] = limit;
+            return Data("app_speech", args);
+        }
+
+        /// <summary>
         /// One app's state, for any app: <c>state</c> is not_installed,
         /// not_running, background or foreground. An app under its own
         /// permission prompt is still in front, and <c>covered_by</c> names

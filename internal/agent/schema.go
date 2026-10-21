@@ -1961,6 +1961,39 @@ func GetToolSchemas() []Tool {
 			},
 		},
 		{
+			Name: "app_speech",
+			Description: "What the screen reader says — VoiceOver on a real iPhone (iOS 27, a runner built by Xcode " +
+				"27), TalkBack on Android. With nothing else, the sentence for the element its cursor is on; with " +
+				"`target`, the cursor is put on that element first; with `walk`, it moves forward in the screen " +
+				"reader's own order, a swipe right at a time, until it goes no further, comes back round, or `limit` " +
+				"moves are made. Each sentence is beside the element it was said about, with its locator and whether " +
+				"map lists it — a heading or a status line is spoken and not listed. It answers what map cannot: the " +
+				"order a screen reader user meets things in, what a control's state and hint sound like, and " +
+				"whether a status is spoken at all. The screen reader must be on (app_accessibility screen_reader " +
+				"on). TalkBack is moved with a USB keyboard Android makes for the call and read from its log, which " +
+				"holds what it says only with TalkBack's Developer settings, Log output level, at VERBOSE. A " +
+				"sentence about a password field is not shown. A simulator's runner cannot reach VoiceOver and is " +
+				"refused.",
+			InputSchema: map[string]interface{}{
+				"type": "object",
+				"properties": withDevice(map[string]interface{}{
+					"target": map[string]interface{}{
+						"type":        "string",
+						"description": "An element to put the screen reader's cursor on first (\"@e5\" or a locator). On iOS a touch, as a VoiceOver user's; on Android the cursor is moved forward until it is there.",
+					},
+					"walk": map[string]interface{}{
+						"type":        "boolean",
+						"description": "Move forward through the screen, reporting each sentence.",
+					},
+					"limit": map[string]interface{}{
+						"type":        "integer",
+						"description": "How many moves a walk makes at most, or putting the cursor on target takes on Android. Default 40, at most 200.",
+					},
+				}),
+				"additionalProperties": false,
+			},
+		},
+		{
 			Name: "app_assistant",
 			Description: "Ask the platform's assistant in typed text, and report what came back: Gemini or " +
 				"Google Assistant on Android, opened with the assist key, its field typed into and sent; Siri on a " +

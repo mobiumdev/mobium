@@ -157,6 +157,7 @@ func main() {
 		newHookCmd(),
 		newAuditCmd(),
 		newAssistantCmd(),
+		newSpeechCmd(),
 		newNetworkCmd(),
 		newTestCmd(),
 		newShowReportCmd(),

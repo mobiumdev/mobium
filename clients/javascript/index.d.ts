@@ -319,6 +319,8 @@ export class Device {
   audit(): Promise<Data>
   /** Ask the platform's assistant in typed text; `app` is the app expected to come forward. */
   assistant(request: string, options?: { app?: string; timeout?: number }): Promise<Data>
+  /** What the screen reader says; `walk` moves through the screen in its order. */
+  speech(options?: { target?: string; walk?: boolean; limit?: number }): Promise<Data>
   /** One app's state: not_installed, not_running, background or foreground. */
   appState(app: string): Promise<Data>
   /** Sends the app in front away for seconds and brings it back. */

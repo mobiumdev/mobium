@@ -828,6 +828,27 @@ class Device:
             args["timeout"] = timeout
         return self._data("app_assistant", args) or {}
 
+    def speech(self, target: str | None = None, walk: bool = False, limit: int | None = None) -> dict:
+        """What the screen reader says: VoiceOver on a real iPhone, TalkBack on
+        Android. The screen reader must be on (``accessibility("screen_reader",
+        "on")``).
+
+        Returns the ``screen_reader`` and ``steps``, each the sentence ``said``
+        and the ``element`` it was said about — its ``label``, ``role``,
+        ``locator`` and ``in_map`` — when that can be told. With ``target`` the
+        cursor is put on that element first; with ``walk`` it moves forward
+        through the screen until it goes no further, comes back round or makes
+        ``limit`` moves, and ``ended`` says which.
+        """
+        args: dict = {}
+        if target:
+            args["target"] = target
+        if walk:
+            args["walk"] = True
+        if limit is not None:
+            args["limit"] = limit
+        return self._data("app_speech", args) or {}
+
     def app_state(self, app: str) -> dict:
         """One app's state: ``not_installed``, ``not_running``, ``background``
         or ``foreground``, for any app.
