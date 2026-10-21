@@ -17,7 +17,15 @@
 #     Apple's hit-region rule is its own and far below the 44pt guideline.
 #     The two disagree by design, and the check holds them to it.
 #
-# Android refuses, saying why: its audits run inside the app.
+# On Android it is Mobium's own, on the hierarchy, under the Accessibility
+# Test Framework's names, since Android has no audit a tool outside the app
+# can run:
+#
+#   - MobiumApp's Screen Reader Demo, the positive control: exactly its
+#     nameless icon and its "Save button", each beside a twin built right
+#     that gives nothing; each finding's locator resolves; contrast is named
+#     as not checked.
+#   - MobiumApp's home screen, the negative control: no findings.
 set -e
 DEV="$1"
 if [ -z "$DEV" ]; then echo "usage: $0 <serial|udid>" >&2; exit 2; fi
@@ -36,10 +44,24 @@ esac
 echo "--- $DEV ($KIND)"
 
 if [ "$KIND" = android ]; then
-  out=$($M audit 2>&1) && fail "Android ran an audit: $out"
-  echo "$out" | grep -q "outside the app" || fail "the refusal did not say why: $out"
-  echo "$out" | grep -q -- "--inspect" || fail "the refusal did not name what Android has instead: $out"
-  row "refused" "Android, whose audits run inside the app"
+  APP=dev.mobium.mobiumapp
+  $M terminate $APP >/dev/null 2>&1 || true
+  $M launch $APP >/dev/null
+  $M wait 'label="Form Demo"' >/dev/null
+  n=$($M audit --json | json 'len(d["findings"])')
+  [ "$n" = 0 ] || fail "MobiumApp's home screen gave $n finding(s): $($M audit)"
+  row "home" "no findings"
+  $M scroll-to 'label="Screen Reader Demo"' --direction down >/dev/null
+  $M tap 'label="Screen Reader Demo"' >/dev/null
+  $M wait testid=iconNamed >/dev/null
+  out=$($M audit --json)
+  got=$(echo "$out" | json '",".join(f["type"] + ":" + f.get("locator", "") for f in d["findings"])')
+  [ "$got" = "RedundantDescription:testid=saveRedundant,SpeakableTextPresent:testid=iconUnnamed" ] ||
+    fail "the Screen Reader Demo's findings were $got, want its nameless icon and its Save button alone"
+  echo "$out" | json '",".join(d.get("unchecked", []))' | grep -q TextContrast || fail "contrast is not named as unchecked"
+  $M find testid=iconUnnamed >/dev/null && $M find testid=saveRedundant >/dev/null || fail "a finding's locator does not resolve"
+  row "spoken" "the nameless icon and the Save button, not their twins"
+  $M terminate $APP >/dev/null 2>&1 || true
   echo PASS; exit 0
 fi
 
