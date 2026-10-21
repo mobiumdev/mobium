@@ -1086,6 +1086,22 @@ export class Device {
   }
 
   /**
+   * What the screen reader says: VoiceOver on a real iPhone, TalkBack on
+   * Android. The screen reader must be on. `steps` holds each sentence
+   * `said` and the `element` it was said about; with `target` the cursor is
+   * put on that element first, and with `walk` it moves forward through the
+   * screen until it goes no further, comes back round or makes `limit`
+   * moves, which `ended` says.
+   */
+  async speech({ target, walk, limit } = {}) {
+    const args = {}
+    if (target) args.target = target
+    if (walk) args.walk = true
+    if (limit !== undefined) args.limit = limit
+    return (await this.#data('app_speech', args)) || {}
+  }
+
+  /**
    * One app's state: `not_installed`, `not_running`, `background` or
    * `foreground`, for any app. An app under its own permission prompt is
    * still in front, and `covered_by` names the prompt's process. On iOS a

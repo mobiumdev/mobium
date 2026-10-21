@@ -126,8 +126,8 @@ service while it was open, so a read of the screen turned TalkBack off for as
 long as it ran. Both drivers now leave it running (CHALLENGES 208), and with
 TalkBack on, taps, scrolls and typing land, because Mobium's touches are
 injected rather than explored — the opposite of VoiceOver above.
-`docs/checks/screen-reader.sh` holds it. What TalkBack *says* is not read by
-anything.
+`docs/checks/screen-reader.sh` holds it. What TalkBack *says* is read by
+`app_speech`, from its log (step 2).
 
 On 2026-10-20 the rest of step 1's paths were driven with TalkBack on, on the
 Android 15 emulator and the Pixel 8 Pro on Android 17: a radio, `check`,
@@ -227,25 +227,77 @@ its cursor's moves, and the 5.5-second touch. The plan as written:
   `docs/checks/voiceover.sh`, on the iPhone, turning VoiceOver on and reading
   it back off at exit, registered in an `at_exit` before it is turned on.
 
-### 2. Hear the screen reader: `app_speech`
+### 2. Hear the screen reader: `app_speech` — built
 
-A new tool — the CLI, MCP and all five clients — that returns what the
-screen reader says: the element in focus, or a walk of the screen in its
-order (`forward` until it repeats or a limit), each step's utterance beside
-the `map` entry it lands on.
+`mobium speech` and `app_speech` in all five clients: what the screen reader
+says about the element its cursor is on; with a target, the cursor put on
+it first; with `walk`, a move forward at a time in the screen reader's own
+order until it goes no further, comes back round, or `limit` moves are made.
+Each sentence is beside the element it was said about, its locator, and
+whether `map` lists it — a heading, a caption and a status line are spoken
+and not listed. The screen reader must be on (`accessibility screen_reader
+on`, step 5). `speech.sh` passes on the Android 15 emulator, the Pixel 8 Pro
+(Android 17, TalkBack 17.1) and the iPhone 15 Plus (iOS 27.0.1), and
+refuses the simulator.
 
-- **iOS 27 and later**, phones first. Anything earlier is refused, naming
-  the version.
-- It answers questions `map` cannot: the focus order (2.4.3), whether a
-  heading or a status line is spoken (1.3.1, 4.1.3), what a control's hint
-  says, and every element spoken that no ref reaches.
-- **Android needs measuring first.** TalkBack's speech is not in the
-  accessibility tree. Candidates: TalkBack's developer setting that shows
-  speech output on screen, and its log. Neither is measured, and the tool
-  refuses Android until one is.
-- **Control:** a MobiumApp screen built to be spoken wrong — an unlabeled
-  icon button, a status line that is not live, a focus order against reading
-  order — gives each finding, and the Form Demo gives none.
+- **VoiceOver**, through WebDriverAgent's `/wda/voiceOver/move` and
+  `/currentSpeech`: 0.58 seconds a move on the iPhone, the list scrolling to
+  keep the cursor in view. Past the last element it stays and says the same
+  again, after about 2.4 seconds — the walk's end, told from a neighbor
+  spoken alike by that wait. A target is touched, as step 1 touches. Which
+  element a sentence is about is found by its name: the element whose name
+  the sentence starts with, the longest. Reading the screen did not move the
+  cursor (`map`, a screenshot, `text`). A simulator's runner, WebDriverAgent's
+  prebuilt release, cannot reach VoiceOver and is refused.
+- **VoiceOver drops a label's own kind.** A button named "Save button" is
+  spoken "Save Button", exactly as its twin named "Save" — so the redundant
+  name the Android audit finds cannot be heard on iOS, and the first
+  version paired both sentences with the redundant button. A shorter name
+  followed only by a kind is now a rival, and rivals name nobody. VoiceOver
+  also says a back button as the screen it goes to and "Back" ("MobiumApp
+  Back Button"), which no element is named.
+- **TalkBack's cursor is moved with a keyboard.** An injected touch passes
+  through TalkBack as a click, `input keycombination` Alt+Right reaches no
+  TalkBack shortcut, and writing to the touchscreen with `sendevent` is
+  refused by SELinux without root. Android's `hid` command makes a USB
+  keyboard over `/dev/uhid`, which the shell may open on a user build — the
+  emulator and the Pixel both — and TalkBack takes its Alt+Right as the next
+  item. It registers in a tenth of a second and is gone once the call ends.
+  On the Pixel, TalkBack 17.1 answers a keyboard's arrival with "New keymap
+  available"; the call answers it, Got it, which switches nothing, and says
+  so.
+- **TalkBack's sentence is read from its log**, which holds it only with
+  TalkBack's Developer settings' Log output level at VERBOSE: `Speaking
+  fragment text="…"`, the one a move causes marked
+  `TYPE_VIEW_ACCESSIBILITY_FOCUSED`, about 70ms after the press. An
+  utterance is told from the last time's by when it was logged: TalkBack
+  numbers them from 1 again each time it is turned on, in the same process.
+  Mobium does not set the level — it is TalkBack's preference, set in its
+  own settings — and refuses, naming it, while nothing is logged.
+  `speech.sh` sets it there and back as found. Verbose logging puts
+  everything TalkBack says in the device log while it is on.
+- **The element on Android is TalkBack's own cursor**, UiAutomator2's
+  `a11y-focused`, taken only when the sentence holds its name: on the Pixel
+  the tree's cursor lagged, and a move that said "Back. Button" read the
+  heading it had left. A target is reached by moving forward until the
+  cursor is on it, found again in each read — connecting the keyboard puts
+  the on-screen one away and the fields move. A walk comes back round at
+  the first element. TalkBack said its sentence in the order its "Element
+  description order" setting gives, state first by default ("not checked.
+  Email me. Check box").
+- **Never a password.** A sentence about a password field, or one in which
+  VoiceOver names its secure text field, is replaced: TalkBack's "Speak
+  passwords" is on by default. Measured, TalkBack said a typed field's
+  length, "16 characters", and VoiceOver a bullet a character — neither the
+  value; the replacement is the rule anyway.
+- **On the Screen Reader Demo** both platforms speak the icon with no name
+  as a bare "Button" and Send as "Submit form"; TalkBack says "Save button.
+  Button". The fourth row — a cart count changed with no word, beside one in
+  a live region — is not heard by a walk: it needs what is said after a tap,
+  a listening mode not built.
+
+Not measured: TalkBack's other keymap, VoiceOver's `in` and `out`, a walk
+backward, and the speech of a WebView's page on either platform.
 
 ### 3. The platform's own audit on Android — built
 

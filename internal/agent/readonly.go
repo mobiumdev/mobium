@@ -22,6 +22,9 @@ var readOnlyTools = map[string]bool{
 // with one: app_network reports the conditions, and sets them given offline.
 var readUnless = map[string][]string{
 	"app_accessibility": {"value"},
+	// app_speech reads what the cursor is on, and moves the cursor — which
+	// scrolls a list to keep it in view — given a target or a walk.
+	"app_speech":        {"target", "walk"},
 	"app_alert":         {"action", "button", "text"},
 	"app_appearance":    {"appearance"},
 	"app_clipboard":     {"text"},

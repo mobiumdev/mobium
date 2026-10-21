@@ -1233,6 +1233,66 @@ func (d *Device) Assistant(ctx context.Context, request string, opts AssistantOp
 	return out, err
 }
 
+// Speech is what Speech reports.
+type Speech struct {
+	Device string `json:"device"`
+	// ScreenReader is "VoiceOver" or "TalkBack".
+	ScreenReader string `json:"screen_reader"`
+	// Steps is what was said, in order: one for the element the cursor is
+	// on, or a walk's every move.
+	Steps []SpeechStep `json:"steps"`
+	// Ended says why a walk stopped: "end", "wrapped" or "limit"; empty when
+	// nothing walked.
+	Ended string `json:"ended,omitempty"`
+}
+
+// SpeechStep is one sentence and the element it was said about.
+type SpeechStep struct {
+	// Said is the sentence; empty when the screen reader said nothing.
+	Said string `json:"said"`
+	// Element is nil when it cannot be told which element it was.
+	Element *SpokenElement `json:"element,omitempty"`
+}
+
+// SpokenElement is the element a sentence was said about.
+type SpokenElement struct {
+	Label   string   `json:"label"`
+	Role    string   `json:"role,omitempty"`
+	Locator *Locator `json:"locator,omitempty"`
+	// InMap says Map lists it; a heading or a status line is not listed.
+	InMap bool `json:"in_map"`
+}
+
+// SpeechOptions are Speech's optional arguments.
+type SpeechOptions struct {
+	// Target is an element to put the screen reader's cursor on first.
+	Target string
+	// Walk moves forward through the screen, reporting each sentence.
+	Walk bool
+	// Limit is the most moves a walk makes; zero is 40.
+	Limit int
+}
+
+// Speech reports what the screen reader says — VoiceOver on a real iPhone,
+// TalkBack on Android — about the element its cursor is on, or with
+// opts.Walk about each element in its own order. The screen reader must be
+// on: Accessibility(ctx, "screen_reader", "on").
+func (d *Device) Speech(ctx context.Context, opts SpeechOptions) (Speech, error) {
+	args := map[string]any{}
+	if opts.Target != "" {
+		args["target"] = opts.Target
+	}
+	if opts.Walk {
+		args["walk"] = true
+	}
+	if opts.Limit > 0 {
+		args["limit"] = opts.Limit
+	}
+	var out Speech
+	err := d.data(ctx, "app_speech", args, &out)
+	return out, err
+}
+
 // AppStatus is one app's state, from AppState.
 type AppStatus struct {
 	// State is "not_installed", "not_running", "background" or "foreground".

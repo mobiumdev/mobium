@@ -64,7 +64,11 @@ _check_exit() {
 }" ;;
       *) _check_rest="" ;;
     esac
-    [ -n "$_check_cmd" ] && eval "$_check_cmd" || true
+    # In a subshell: a handler that fails and exits — a check's own fail —
+    # ends only itself. One did, restoring TalkBack's log level behind a
+    # dialog, and the handler after it, the one turning TalkBack off on a
+    # phone, never ran.
+    [ -n "$_check_cmd" ] && (eval "$_check_cmd") || true
   done
   if [ -n "${CHECK_OWN_DAEMON:-}" ] && [ -n "${ROOT:-}" ] && [ -x "$ROOT/bin/mobium" ]; then
     "$ROOT/bin/mobium" daemon stop >/dev/null 2>&1 || true

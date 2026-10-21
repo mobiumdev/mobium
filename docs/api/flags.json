@@ -2126,6 +2126,48 @@
       "global": true
     },
     {
+      "tool": "app_speech",
+      "arg": "device",
+      "type": "string",
+      "setBy": [
+        "--device"
+      ],
+      "global": true
+    },
+    {
+      "tool": "app_speech",
+      "arg": "driver",
+      "type": "string",
+      "setBy": [
+        "--driver"
+      ],
+      "global": true
+    },
+    {
+      "tool": "app_speech",
+      "arg": "limit",
+      "type": "integer",
+      "setBy": [
+        "speech"
+      ]
+    },
+    {
+      "tool": "app_speech",
+      "arg": "target",
+      "type": "string",
+      "setBy": [
+        "speech"
+      ]
+    },
+    {
+      "tool": "app_speech",
+      "arg": "walk",
+      "type": "boolean",
+      "setBy": [
+        "speech"
+      ]
+    },
+    {
       "tool": "app_state",
       "arg": "app",
       "type": "string",
@@ -3501,6 +3543,21 @@
       "command": "source",
       "tools": [
         "app_source"
+      ]
+    },
+    {
+      "command": "speech",
+      "tools": [
+        "app_speech"
+      ],
+      "flags": [
+        "--limit",
+        "--walk"
+      ],
+      "sends": [
+        "limit",
+        "target",
+        "walk"
       ]
     },
     {

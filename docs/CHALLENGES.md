@@ -7620,6 +7620,23 @@ the iPhone the panel goes by itself about eight seconds after Siri answers
 (349); Home there is the platform's own way to close Siri and was not
 measured separately.
 
+### 352. A check's restore that failed stopped every restore after it, and TalkBack stayed on a phone
+
+**Found by:** `speech.sh` on the Pixel 8 Pro (ACCESSIBILITY.md, step 2).
+TalkBack 17.1 answered the keyboard `app_speech` connects with a dialog,
+"New keymap available", which the emulator's TalkBack never raised. It sat
+over TalkBack's own settings, so the exit handler putting TalkBack's log
+output level back could not find the row, and called the check's `fail` —
+which exits. `lib.sh` ran each handler with `eval`, so that exit ended the
+handler chain, and the next handler, the one turning TalkBack off, never
+ran: the phone was left with TalkBack on and verbose logging, until both
+were put back by hand and every setting compared with the baseline taken
+before the run. **Fixed:** each handler runs in a subshell, so one that
+exits ends only itself; a handler that exits followed by one that echoes
+runs both, and with the old `lib.sh` the second never ran. `speech.sh`
+also registers turning TalkBack off last, so it runs first, and the tool
+answers the keymap dialog it causes. Every check's handlers run this way.
+
 ## Findings that were not defects
 
 Worth recording because each one closed off an approach that looked obvious.

@@ -18,11 +18,11 @@ differently.
 
 | | |
 | --- | --- |
-| Tools | **74** |
-| CLI commands registered | 83 |
-| …visible in `mobium --help` | 82 |
+| Tools | **75** |
+| CLI commands registered | 84 |
+| …visible in `mobium --help` | 83 |
 | …hidden | 1 (pipe) |
-| Command constructors in source | 89 (includes `daemon start`, `stop`, `status`) |
+| Command constructors in source | 90 (includes `daemon start`, `stop`, `status`) |
 | Client libraries | 5 |
 
 Those three command counts differ on purpose, and the arithmetic is asserted
@@ -94,30 +94,31 @@ been wrong twice.
 | 58 | `app_shutdown` | `shutdown` | `Shutdown` | `shutdown` | `shutdown` | `shutdown` |
 | 59 | `app_sms` | `sms` | `SendSMS` | `sms` | `sms` | `sms` |
 | 60 | `app_source` | `source` | `Source` | `source` | `source` | `source` |
-| 61 | `app_state` | `state` | `AppState` | `app_state` | `appState` | `appState` |
-| 62 | `app_storage` | `storage` | `Storage` | `storage` | `storage` | `storage` |
-| 63 | `app_swipe` | `swipe` | `Swipe` | `swipe` | `swipe` | `swipe` |
-| 64 | `app_tap` | `tap, double-tap` | `Tap` | `tap` | `tap` | `tap` |
-| 65 | `app_terminate` | `terminate` | `Terminate` | `terminate` | `terminate` | `terminate` |
-| 66 | `app_text` | `text` | `Text` | `text` | `text` | `text` |
-| 67 | `app_time` | `time` | `DeviceTime` | `device_time` | `deviceTime` | `deviceTime` |
-| 68 | `app_timezone` | `timezone` | `Timezone` | `timezone` | `timezone` | `timezone` |
-| 69 | `app_trace` | `trace` | `TraceStart` | `trace_start` | `traceStart` | `traceStart` |
-| 70 | `app_type` | `type` | `Type` | `type` | `type` | `type` |
-| 71 | `app_uninstall` | `uninstall` | `Uninstall` | `uninstall` | `uninstall` | `uninstall` |
-| 72 | `app_upload` | `upload` | `PushPath` | `upload` | `upload` | `upload` |
-| 73 | `app_wait_for` | `wait` | `WaitFor` | `wait_for` | `waitFor` | `waitFor` |
-| 74 | `app_zoom` | `zoom` | `Zoom` | `zoom` | `zoom` | `zoom` |
+| 61 | `app_speech` | `speech` | `Speech` | `speech` | `speech` | `speech` |
+| 62 | `app_state` | `state` | `AppState` | `app_state` | `appState` | `appState` |
+| 63 | `app_storage` | `storage` | `Storage` | `storage` | `storage` | `storage` |
+| 64 | `app_swipe` | `swipe` | `Swipe` | `swipe` | `swipe` | `swipe` |
+| 65 | `app_tap` | `tap, double-tap` | `Tap` | `tap` | `tap` | `tap` |
+| 66 | `app_terminate` | `terminate` | `Terminate` | `terminate` | `terminate` | `terminate` |
+| 67 | `app_text` | `text` | `Text` | `text` | `text` | `text` |
+| 68 | `app_time` | `time` | `DeviceTime` | `device_time` | `deviceTime` | `deviceTime` |
+| 69 | `app_timezone` | `timezone` | `Timezone` | `timezone` | `timezone` | `timezone` |
+| 70 | `app_trace` | `trace` | `TraceStart` | `trace_start` | `traceStart` | `traceStart` |
+| 71 | `app_type` | `type` | `Type` | `type` | `type` | `type` |
+| 72 | `app_uninstall` | `uninstall` | `Uninstall` | `uninstall` | `uninstall` | `uninstall` |
+| 73 | `app_upload` | `upload` | `PushPath` | `upload` | `upload` | `upload` |
+| 74 | `app_wait_for` | `wait` | `WaitFor` | `wait_for` | `waitFor` | `waitFor` |
+| 75 | `app_zoom` | `zoom` | `Zoom` | `zoom` | `zoom` | `zoom` |
 
 ## Client coverage
 
 | Client | Source | Tools reached |
 | --- | --- | --- |
-| go | [clients/go/mobium.go](../clients/go/mobium.go) | 74 / 74 |
-| python | [clients/python/mobium/_device.py](../clients/python/mobium/_device.py) | 74 / 74 |
-| javascript | [clients/javascript/index.js](../clients/javascript/index.js) | 74 / 74 |
-| java | [clients/java/src/main/java/dev/mobium/Mobium.java](../clients/java/src/main/java/dev/mobium/Mobium.java) | 74 / 74 |
-| dotnet | [clients/dotnet/Mobium/Device.cs](../clients/dotnet/Mobium/Device.cs) | 74 / 74 |
+| go | [clients/go/mobium.go](../clients/go/mobium.go) | 75 / 75 |
+| python | [clients/python/mobium/_device.py](../clients/python/mobium/_device.py) | 75 / 75 |
+| javascript | [clients/javascript/index.js](../clients/javascript/index.js) | 75 / 75 |
+| java | [clients/java/src/main/java/dev/mobium/Mobium.java](../clients/java/src/main/java/dev/mobium/Mobium.java) | 75 / 75 |
+| dotnet | [clients/dotnet/Mobium/Device.cs](../clients/dotnet/Mobium/Device.cs) | 75 / 75 |
 
 ## Commands that dispatch no tool
 

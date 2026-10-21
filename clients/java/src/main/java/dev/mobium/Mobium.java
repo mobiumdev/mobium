@@ -1094,6 +1094,28 @@ public final class Mobium implements AutoCloseable {
     }
 
     /**
+     * What the screen reader says: VoiceOver on a real iPhone, TalkBack on
+     * Android. The screen reader must be on. The answer holds the
+     * {@code screen_reader} and its {@code steps}, each the sentence
+     * {@code said} and the {@code element} it was said about when that can
+     * be told; a walk also says why it {@code ended}.
+     *
+     * @param target an element to put the cursor on first, or null for
+     *     wherever it is
+     * @param walk whether to move forward through the screen, reporting each
+     *     sentence
+     * @param limit the most moves a walk makes; 0 is 40
+     * @return the screen reader, and what it said about what
+     */
+    public Map<String, Object> speech(String target, boolean walk, int limit) {
+        Map<String, Object> args = new LinkedHashMap<>();
+        if (target != null && !target.isBlank()) args.put("target", target);
+        if (walk) args.put("walk", true);
+        if (limit > 0) args.put("limit", limit);
+        return data("app_speech", args);
+    }
+
+    /**
      * One app's state, for any app: {@code state} is not_installed,
      * not_running, background or foreground. An app under its own permission
      * prompt is still in front, and {@code covered_by} names the prompt's
