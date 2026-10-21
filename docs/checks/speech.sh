@@ -225,6 +225,7 @@ if [ "$KIND" = phone ]; then
 else
   sleep 3
   got=$(MOBIUM_SESSION=speechcheck-read $M accessibility screen_reader 2>/dev/null)
+  MOBIUM_SESSION=speechcheck-read $M daemon stop >/dev/null 2>&1 || true
 fi
 [ "$got" = "screen_reader off" ] || fail "after the session the screen reader reads '$got'"
 row "restored" "the screen reader off when the session ended"
