@@ -1744,6 +1744,18 @@ func siriOver(loc uitree.Locator, waited time.Duration) error {
 		WithDetail("siri", true)
 }
 
+// assistantOver is the refusal for a target behind Gemini's or Google
+// Assistant's overlay. It used to say only that nothing matched and to map
+// again, which cannot help while the overlay is up — and it does not go by
+// itself, so nothing waits for it.
+func assistantOver(name string, loc uitree.Locator) error {
+	return mobiumerr.New(mobiumerr.DeviceNotReady, "%s is open over the app, and nothing on it matches %s; "+
+		"it stays until it is closed", name, loc).
+		WithRemedy("app_press back closes it, then try again").
+		WithDetail("locator", loc.String()).
+		WithDetail("assistant", name)
+}
+
 // siriInTheWay reports the refusal siriOver makes, which resolveNode waits on.
 func siriInTheWay(err error) bool {
 	e, ok := mobiumerr.As(err)
@@ -1844,6 +1856,12 @@ func (h *Handlers) resolveNodeOnce(ctx context.Context, s *session, target strin
 		// and resolveNode waits for it (CHALLENGES 349).
 		if uitree.SiriPanel(tree) {
 			return nil, nil, siriOver(loc, 0)
+		}
+		// Gemini's or Google Assistant's overlay, the same on Android, except
+		// that it stays until closed: refused at once, naming it and back,
+		// which closes it (CHALLENGES 350).
+		if name := uitree.AssistantOverlay(tree); name != "" {
+			return nil, nil, assistantOver(name, loc)
 		}
 		// An app's own dialog, which the platform's alert endpoint does not
 		// know: a Jetpack Compose dialog is a window of its own that the

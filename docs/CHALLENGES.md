@@ -7574,6 +7574,33 @@ timing — so it reads only what is in front. On iOS 27 Siri's answer to a sum
 is plain text ("15 × 3 =", "45"), which `text` reads and `map` does not
 list; on 26.6.2 `map` read it as one button.
 
+### 350. A tap behind Gemini's overlay found nothing, and said to map again
+
+**Found by:** measuring Gemini for the assistive-technology plan, after
+Siri's panel (349). On the Pixel 8 Pro, Android 17, signed in, the assist key
+opens Gemini's floating overlay from the Google app (17.66; there is no
+Gemini app of its own); on the Android 15 emulator, signed out, the same key
+opens Google Assistant's panel. While either is up, UiAutomator2 reads its
+window alone, the app under it absent: a tap on MobiumApp's Pro radio behind
+Gemini took 5.6 seconds to answer "run app_map again", never naming Gemini.
+Unlike Siri's panel the overlay does not go by itself — it was still up
+sixteen seconds later — and back closes it, the app intact. **Fixed:** a
+target not found on a tree holding the overlay's root —
+`assistant_robin_floaty_root_container` for Gemini, the panel's
+`assistant_fragment_host_container` or `assistant_root` for Google Assistant,
+the first two there from the moment it opens and the last only once it has
+answered, which the first version keyed on and missed — is refused at once as
+`device_not_ready`, naming the assistant and back as the remedy, before the
+scroll a miss would make. `assistant-overlay.sh` opens the overlay without
+asking it anything: it fails with `main`'s binary and passes with this on the
+emulator and twice on the Pixel, refused in two to three seconds, and back
+then closes the overlay and the tap lands. Measured on the way: typed
+requests reach both, through Google Assistant's Keyboard and Gemini's "Ask
+Gemini" field; Gemini's answer to a sum is in the tree's text, Google
+Assistant's calculator card has none; Enter closes Gemini's overlay and Send
+keeps it; "Open MobiumApp" brought the app forward in five seconds through
+Gemini, and was a web search signed out.
+
 ## Findings that were not defects
 
 Worth recording because each one closed off an approach that looked obvious.

@@ -421,6 +421,37 @@ func IsNotificationBanner(n *Node) bool {
 	return n != nil && n.TestID == "NotificationShortLookView"
 }
 
+// assistantRoots are the resource ids of the Google app's assistant
+// overlays, and what each is called: Gemini's floating panel on the Pixel 8
+// Pro (Android 17, the Google app 17.66), and Google Assistant's panel on the
+// Android 15 emulator, signed out (15.22) — its fragment host, there while it
+// listens and while it answers, and its root, there only once it answers.
+var assistantRoots = map[string]string{
+	"com.google.android.googlequicksearchbox:id/assistant_robin_floaty_root_container": "Gemini",
+	"com.google.android.googlequicksearchbox:id/assistant_fragment_host_container":     "Google Assistant",
+	"com.google.android.googlequicksearchbox:id/assistant_root":                        "Google Assistant",
+}
+
+// AssistantOverlay names the assistant overlay in front, or "". While Gemini
+// or Google Assistant is up, UiAutomator2 reads its window alone, so the app
+// under it is not in the tree; unlike Siri's panel it stays until it is
+// closed, and back closes it. CHALLENGES 350.
+func AssistantOverlay(t *Tree) string {
+	if t == nil || t.Root == nil {
+		return ""
+	}
+	name := ""
+	t.Walk(func(n *Node) bool {
+		if n.Displayed {
+			if a, ok := assistantRoots[n.TestID]; ok {
+				name = a
+			}
+		}
+		return name == ""
+	})
+	return name
+}
+
 // siriWindow is the name SpringBoard gives the window Siri answers in.
 const siriWindow = "siri-interface-window"
 
