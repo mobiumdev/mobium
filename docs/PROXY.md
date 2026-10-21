@@ -168,6 +168,28 @@ Android 15 emulator.
   exclusion list and PAC URL cleared it. The restore reads all of them
   back, not the one written.
 
+- **On the simulator** (iPhone 17 Pro, iOS 26.5, the Network Demo built
+  for iOS): with no proxy both requests reached the Mac's server — App
+  Transport Security's `NSAllowsLocalNetworking` lets plain HTTP to
+  `127.0.0.1` through — from CFNetwork and from WebKit.
+- **A reverse proxy needs no proxy setting at all.** Charles's Reverse
+  Proxies tool (`reverseProxies` with `active`, and a `reverseProxy` of
+  `enabled`, `sourcePort`, `destHost`, `destPort`, `preserveHostHeader`,
+  `rewriteRedirects`) listened on 8865 and forwarded to the server on 8765:
+  the demo pointed at 8865 had both requests recorded, the WebView's too,
+  with the Mac's own proxy off throughout. It serves an app whose address a
+  test sets — the demo — not somebody's app, which still needs the device's
+  proxy; for the simulator that is the whole Mac's, so this is the way to put
+  the simulator behind Charles without touching the Mac.
+- **`simctl keychain add-root-cert` trusts a root at once, and `simctl
+  keychain reset` does not take it away.** The demo's HTTPS to a self-signed
+  server failed ("A TLS error caused the secure connection to fail") until
+  the server's certificate was added, then succeeded without a relaunch. A
+  keychain reset, a relaunch and a reboot all left it trusted: the root is a
+  row of trustd's `TrustStore.sqlite3` (`tsettings`, keyed by the
+  certificate's SHA-256), which the reset leaves alone. Deleting that row
+  with the simulator shut down restored the refusal. That is the undo.
+
 Not measured: the system store (the image is `userdebug`, so `adb root`
 works; Android 14 and later keep it in a module); a Flutter app's requests,
 for which MobiumApp's `flutter/` demo needs the same screen;
@@ -193,9 +215,11 @@ and asserts the requests arrived.
 
 ### 3. The simulator
 
-The Mac's proxy for the simulator, set and restored, and the certificate
-through `simctl keychain`. The Mac's proxy is the whole Mac's: the result
-says so, and nothing is left set.
+The certificate through `simctl keychain add-root-cert`, and out again by
+its row in trustd's trust store, measured above. For an app whose address
+the test sets, a reverse proxy, measured above; for any other app, the
+Mac's proxy, which is the whole Mac's — set only when the caller asks for
+it, the result saying so, and nothing left set.
 
 ### 4. Charles as an opt-in
 
