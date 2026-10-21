@@ -81,6 +81,11 @@ func TestATapBehindSiriThatStaysIsRefusedNamingSiri(t *testing.T) {
 		!strings.Contains(err.Error(), "still there after") {
 		t.Fatalf("tap with Siri staying answered %v, want device_not_ready naming Siri's panel and the wait", err)
 	}
+	// A panel that outlasted the wait will not go — on a simulator it never
+	// does — so the remedy is Home, never waiting again. CHALLENGES 351.
+	if text := mobiumerr.Text(err); !strings.Contains(text, "app_press home") || strings.Contains(text, "next: wait") {
+		t.Errorf("the remedy for a panel that stays is not Home: %s", text)
+	}
 	if len(d.tapped) != 0 {
 		t.Errorf("sent %d taps with Siri's panel in front", len(d.tapped))
 	}
