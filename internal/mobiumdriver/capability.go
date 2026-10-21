@@ -69,6 +69,7 @@ const (
 	CapSlider           = "slider"
 	CapGrayBox          = "grayBox"
 	CapAudio            = "audio"
+	CapAssistant        = "assistant"
 )
 
 // KnownCapabilities is every capability Mobium understands, for diagnostics
@@ -82,6 +83,7 @@ var KnownCapabilities = []string{
 	CapDoubleTap, CapDrag, CapMultiTouch, CapDeviceLogs, CapCrashes, CapKeyboard, CapRecording,
 	CapClearData, CapSource, CapAccessibility, CapAppState, CapBattery, CapDeviceClock, CapShake,
 	CapNetwork, CapFiles, CapBiometric, CapHitTest, CapAudit, CapSlider, CapGrayBox, CapAudio,
+	CapAssistant,
 }
 
 // has reports whether d claims the capability. A driver that does not report
@@ -433,6 +435,12 @@ func AsHitProbeLauncher(d Driver) (HitProbeLauncher, bool) {
 func AsLoadedHitTester(d Driver) (LoadedHitTester, bool) {
 	t, ok := d.(LoadedHitTester)
 	return t, ok && has(d, CapHitTest)
+}
+
+// AsSiriAsker returns the driver's typed Siri request, if any.
+func AsSiriAsker(d Driver) (SiriAsker, bool) {
+	a, ok := d.(SiriAsker)
+	return a, ok && has(d, CapAssistant)
 }
 
 // AsAuditor returns the driver's accessibility audit, if any.

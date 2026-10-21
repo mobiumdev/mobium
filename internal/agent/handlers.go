@@ -417,6 +417,8 @@ func (h *Handlers) dispatch(ctx context.Context, name string, args map[string]in
 		return h.hook(ctx, args)
 	case "app_audit":
 		return h.audit(ctx, args)
+	case "app_assistant":
+		return h.assistant(ctx, args)
 	case "app_network":
 		return h.network(ctx, args)
 	case "app_state":

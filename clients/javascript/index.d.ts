@@ -317,6 +317,8 @@ export class Device {
   hitTest(target: string): Promise<Data>
   hook(name: string, ...args: string[]): Promise<unknown>
   audit(): Promise<Data>
+  /** Ask the platform's assistant in typed text; `app` is the app expected to come forward. */
+  assistant(request: string, options?: { app?: string; timeout?: number }): Promise<Data>
   /** One app's state: not_installed, not_running, background or foreground. */
   appState(app: string): Promise<Data>
   /** Sends the app in front away for seconds and brings it back. */

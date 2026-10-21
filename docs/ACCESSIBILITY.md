@@ -336,25 +336,49 @@ from a device with nothing enabled, by hand); on a simulator, the refusal.
   phone left with VoiceOver on answers touch differently for its owner.
   Turning it off reads back off, or the session says it could not.
 
-### 6. Voice assistants: `app_assistant`
+### 6. Voice assistants: `app_assistant` — built for Android and the iPhone
 
-A new tool that asks the platform's assistant in text and answers with what
-came back and what is in front afterward, for the task-based test above. Its
-result always says the request was typed, not spoken.
+A tool that asks the platform's assistant in text and answers with what
+came back and what is in front afterward, for the task-based test above.
+Its result always says the request was typed, not spoken (`typed`).
 
-- **Siri**: measured, to be built as above, on simulators and phones once the
-  simulator is measured. Requests with side effects (a message, a call, a
-  purchase) are refused unless the caller names the app they are for, and
-  nothing is asked that reads the owner's data aloud into a log.
-- **Gemini and Google Assistant**: measured (above). The assist key opens
-  them and a typed request reaches both; Gemini's answer is readable and
-  Google Assistant's calculator card is not, which a result has to say.
-- **Alexa on a Fire TV**: unmeasured, and possibly unreachable — it listens
-  through the remote's microphone, and nothing known injects a request. A
-  refusal that says so is a result.
-- **Control:** MobiumApp publishing one App Shortcut and one App Action whose
-  screen shows the request it received; a phrasing for a task it does not
-  offer must not be reported as done.
+As built (`mobium assistant "Open Calculator" --app com.google.android.calculator`):
+- **Gemini and Google Assistant**: the assist key opens them; Google
+  Assistant's Keyboard button, or Gemini's field, takes the request, and
+  Gemini's Send or the keyboard's enter sends it — Enter closes Gemini's
+  overlay unsent, measured. It waits up to 15 seconds for an app to come
+  forward or the answer to settle, and closes a panel still up with back.
+- **Siri on an iPhone**: WebDriverAgent's typed request; a panel still up
+  afterward is closed with Home.
+- **`app` and `reached`**: `reached` is true only when the assistant handed
+  the request to the app named. The app in front once the panel closes
+  proves nothing — "Open MobiumApp", a web search signed out, read as
+  MobiumApp coming forward when it had been under the panel all along, in
+  the first version.
+- **The answer** is new text the assistant shows that is not one of its own
+  controls. Google Assistant's calculator card has none, so a sum asked
+  there answers with no text, and says so.
+- **Refused**: a request that acts for the owner (call, text, message,
+  send, email, pay, buy, order, book, post, share, delete, transfer) unless
+  `app` names the app it is for; Siri on a simulator, which answers nothing
+  (CHALLENGES 351); a TV's assistant.
+
+`assistant.sh` passes on the emulator (Google Assistant, signed out) and
+refuses the simulator; **not yet run on the Pixel's Gemini or the iPhone's
+Siri** — each request goes to the owner's account, so a phone needs
+`ALLOW_PHONE=1`.
+
+Still to do:
+- **Alexa on a Fire TV**: measured, and unreachable — it listens only
+  through the remote's microphone, which opens only for the physical
+  button, and it opens only apps in Amazon's catalog. Not refused by name
+  yet: the assist key brings nothing forward there, and the refusal says
+  the device has no Gemini or Google Assistant. Unmeasured through the tool.
+- **Control:** MobiumApp publishing one App Shortcut and one App Action
+  whose screen shows the request it received; a phrasing for a task it
+  does not offer must not be reported as done. Signed out, Google Assistant
+  could not open MobiumApp at all.
+- Requests are never asked that read the owner's data aloud into a log.
 
 ### 7. Speech that drives the screen: Voice Control and Voice Access
 

@@ -1961,6 +1961,39 @@ func GetToolSchemas() []Tool {
 			},
 		},
 		{
+			Name: "app_assistant",
+			Description: "Ask the platform's assistant in typed text, and report what came back: Gemini or " +
+				"Google Assistant on Android, opened with the assist key, its field typed into and sent; Siri on a " +
+				"real iPhone. It waits for an app to come forward or the answer to settle, closes the assistant's " +
+				"panel if it is still up (back on Android, Home on an iPhone), and answers with the text the " +
+				"assistant showed and the app in front. The request is typed, never spoken, and `typed` says so. " +
+				"For testing an app through the assistant: whether the task was done is for the app to show, so " +
+				"`app` names the app expected to come forward and `reached` says whether it did. A request that " +
+				"acts for the device's owner — a call, a message, a purchase — is refused without `app`. A " +
+				"simulator's Siri answers nothing and a TV's assistant listens only through its remote: both are " +
+				"refused. Google Assistant signed out cannot open an app it does not know, and its calculator " +
+				"card has no text to read.",
+			InputSchema: map[string]interface{}{
+				"type": "object",
+				"properties": withDevice(map[string]interface{}{
+					"request": map[string]interface{}{
+						"type":        "string",
+						"description": "What to ask, as a person would type it, such as \"Open Clock\".",
+					},
+					"app": map[string]interface{}{
+						"type":        "string",
+						"description": "The app expected to come forward, by package or bundle id; reports whether it did.",
+					},
+					"timeout": map[string]interface{}{
+						"type":        "number",
+						"description": "Seconds to wait for an app or an answer. Default 15.",
+					},
+				}),
+				"required":             []string{"request"},
+				"additionalProperties": false,
+			},
+		},
+		{
 			Name: "app_hit_test",
 			Description: "Ask the platform's own hit test, below accessibility, whether a touch at " +
 				"the point app_tap would use reaches the target — and if not, what it would reach. " +
