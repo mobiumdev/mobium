@@ -61,6 +61,16 @@ case "$KIND" in
   phone | android-phone) [ -n "$ALLOW_PHONE" ] || { echo "$DEV is a phone: a screen reader takes over its owner's touch. ALLOW_PHONE=1 to go ahead" >&2; exit 2; } ;;
 esac
 
+# The keys as found, read before any session: while a UiAutomator2 session is
+# open Android sets accessibility_enabled to 1 — measured on the Pixel 8 Pro,
+# where it is 0 — and a check that read it after its first call expected
+# the 1 back and failed on the phone's own 0 (CHALLENGES 353).
+if [ "$KIND" != phone ]; then
+  a() { adb -s "$DEV" shell "$@" | tr -d '\r'; }
+  was_svc=$(a settings get secure enabled_accessibility_services)
+  was_on=$(a settings get secure accessibility_enabled)
+fi
+
 state=$($M accessibility screen_reader 2>/dev/null) || fail "the screen reader could not be read: $($M accessibility screen_reader 2>&1)"
 [ "$state" = "screen_reader off" ] || { echo "the screen reader is already on ($state): left alone" >&2; exit 2; }
 out=$($M speech 2>&1) && fail "speech answered with the screen reader off: $out"
@@ -71,9 +81,6 @@ row "refused" "with the screen reader off, naming screen_reader on"
 if [ "$KIND" = phone ]; then
   at_exit "$M daemon stop >/dev/null 2>&1; MOBIUM_SESSION=speechcheck-restore $M accessibility screen_reader off >/dev/null 2>&1; MOBIUM_SESSION=speechcheck-restore $M daemon stop >/dev/null 2>&1"
 else
-  a() { adb -s "$DEV" shell "$@" | tr -d '\r'; }
-  was_svc=$(a settings get secure enabled_accessibility_services)
-  was_on=$(a settings get secure accessibility_enabled)
   backstop() {
     $M daemon stop >/dev/null 2>&1 || true
     if [ "$(a settings get secure enabled_accessibility_services)" != "$was_svc" ]; then

@@ -7637,6 +7637,36 @@ runs both, and with the old `lib.sh` the second never ran. `speech.sh`
 also registers turning TalkBack off last, so it runs first, and the tool
 answers the keymap dialog it causes. Every check's handlers run this way.
 
+### 353. Two phone checks no phone had run: not executable, and comparing against their own session
+
+**Found by:** running ACCESSIBILITY.md's steps 5 and 6 on the iPhone 15
+Plus and the Pixel 8 Pro for the first time. Three defects in the checks,
+none in Mobium:
+
+- `screen-reader-setting.sh` and `assistant.sh` were committed without the
+  executable bit (#251, #252): `docs/checks/<name>.sh` was "permission
+  denied", so neither had been run as the README shows. `lib.sh` is sourced
+  and has none on purpose.
+- On an iPhone, `screen-reader-setting.sh` compared the read-back with
+  `screen_reader on` exactly, and in the session that changed it the line is
+  `screen_reader on   (changed by this session; …)`: it failed on VoiceOver
+  that was on. Only the Android branch, which reads `dumpsys`, had run.
+- On the Pixel it failed with "accessibility_enabled is 0, found 1" — while
+  every settings baseline taken that day, before and after, read 0. The check
+  read the key after its first `mobium` call had opened a UiAutomator2
+  session, and **while that session is open Android sets
+  `accessibility_enabled` to 1**: 0 with no session, 1 with one open, 0
+  half a second after it closed, measured. So the "found" value was the
+  session's, and the phone's own 0 after it read as a failed restore. The
+  emulator never showed it: its Accessibility Menu service keeps the key at
+  1. `speech.sh` read it the same way, and its backstop could have written
+  the 1 back.
+
+**Fixed:** both checks are executable; the iPhone read-back matches the
+line's start; and both checks read the keys before any session. On the
+Pixel `screen-reader-setting.sh` and `speech.sh` then passed, every setting
+as found against a baseline taken with no session open.
+
 ## Findings that were not defects
 
 Worth recording because each one closed off an approach that looked obvious.
