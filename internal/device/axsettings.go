@@ -35,12 +35,17 @@ const (
 	// same thing under two names: iOS picks from categories and Android
 	// multiplies, and mapping one onto the other would be a guess.
 	AXTextScale = "text_scale"
+	// AXScreenReader is TalkBack on Android and VoiceOver on an iPhone. It
+	// changes how the device answers touch, so it is a setting like the
+	// rest: confirmed by reading it back, and put back when the session ends.
+	AXScreenReader = "screen_reader"
 )
 
 // AXSettings is every setting, in the order they are reported.
 var AXSettings = []string{
 	AXReduceMotion, AXBoldText, AXIncreaseContrast, AXReduceTransparency, AXButtonShapes,
 	AXDifferentiateWithoutColor, AXInvertColors, AXGrayscale, AXTextSize, AXTextScale,
+	AXScreenReader,
 }
 
 // AXOn and AXOff are the values of every setting that is a switch.
@@ -271,6 +276,8 @@ func (a *ADB) AccessibilitySetting(ctx context.Context, name string) (string, er
 			return "1.0", nil
 		}
 		return v, nil
+	case AXScreenReader:
+		return a.screenReader(ctx)
 	}
 	return "", unknownAXSetting(name)
 }
@@ -284,6 +291,13 @@ func (a *ADB) AccessibilitySetting(ctx context.Context, name string) (string, er
 func (a *ADB) SetAccessibilitySetting(ctx context.Context, name, value string) (AXUndo, error) {
 	if reason, ok := androidLacks[name]; ok {
 		return nil, mobiumerr.New(mobiumerr.Unsupported, "%s", reason)
+	}
+	if name == AXScreenReader {
+		on, err := switchValue(name, value)
+		if err != nil {
+			return nil, err
+		}
+		return a.setScreenReader(ctx, on)
 	}
 	var keys []androidKey
 	var writes map[androidKey]string
@@ -586,4 +600,177 @@ func sameAXValue(name, got, want string) bool {
 func unknownAXSetting(name string) error {
 	return mobiumerr.New(mobiumerr.InvalidArgument, "unknown accessibility setting %q — one of %s",
 		name, strings.Join(AXSettings, ", "))
+}
+
+// ---- Android's screen reader -------------------------------------------------
+
+// TalkBack is on when its service is among the enabled ones, and Android
+// says so by binding it and turning touch exploration on, a second or two
+// after the setting is written. Measured on the Android 15 emulator and a
+// Pixel 8 Pro on Android 17 (screen-reader.sh, CHALLENGES 208 and 348).
+const talkBackService = "com.google.android.marvin.talkback/com.google.android.marvin.talkback.TalkBackService"
+
+var (
+	a11yServicesKey = androidKey{"secure", "enabled_accessibility_services"}
+	a11yEnabledKey  = androidKey{"secure", "accessibility_enabled"}
+)
+
+// screenReaderWait bounds waiting for TalkBack to come up or go: up to 30
+// seconds on the first enable after a boot, measured.
+const screenReaderWait = 30 * time.Second
+
+func (a *ADB) talkBackInstalled(ctx context.Context) (bool, error) {
+	out, err := a.Shell(ctx, "pm", "path", "com.google.android.marvin.talkback")
+	if err != nil {
+		return false, err
+	}
+	return strings.Contains(string(out), "package:"), nil
+}
+
+// noTalkBack is the refusal on a device without Google's TalkBack.
+const noTalkBack = "this device has no TalkBack (com.google.android.marvin.talkback) — a Fire TV's screen " +
+	"reader is VoiceView and a Samsung phone's is its own TalkBack, neither of which Mobium sets yet"
+
+func (a *ADB) screenReader(ctx context.Context) (string, error) {
+	ok, err := a.talkBackInstalled(ctx)
+	if err != nil {
+		return "", err
+	}
+	if !ok {
+		return "", mobiumerr.New(mobiumerr.Unsupported, "%s", noTalkBack)
+	}
+	v, err := a.rawGet(ctx, a11yServicesKey)
+	if err != nil {
+		return "", err
+	}
+	return onOff(hasService(v, talkBackService)), nil
+}
+
+// hasService says whether a colon-separated service list holds svc.
+func hasService(list, svc string) bool {
+	for _, s := range strings.Split(list, ":") {
+		if strings.EqualFold(strings.TrimSpace(s), svc) {
+			return true
+		}
+	}
+	return false
+}
+
+// withService is list with svc added or taken out, the others kept in order.
+func withService(list, svc string, on bool) string {
+	var out []string
+	for _, s := range strings.Split(list, ":") {
+		s = strings.TrimSpace(s)
+		if s == "" || s == "null" || strings.EqualFold(s, svc) {
+			continue
+		}
+		out = append(out, s)
+	}
+	if on {
+		out = append(out, svc)
+	}
+	return strings.Join(out, ":")
+}
+
+// talkBackState is what the accessibility manager says: whether TalkBack is
+// bound, and whether touch exploration is on.
+func (a *ADB) talkBackState(ctx context.Context) (bound, exploring bool, err error) {
+	out, err := a.Shell(ctx, "dumpsys", "accessibility")
+	if err != nil {
+		return false, false, err
+	}
+	s := string(out)
+	if i := strings.Index(s, "Bound services:{"); i >= 0 {
+		rest := s[i:]
+		if j := strings.Index(rest, "Enabled services"); j >= 0 {
+			rest = rest[:j]
+		}
+		bound = strings.Contains(rest, "label=TalkBack")
+	}
+	exploring = strings.Contains(s, "touchExplorationEnabled=true")
+	return bound, exploring, nil
+}
+
+// awaitTalkBack waits until TalkBack is bound with touch exploration on, or
+// gone with it off.
+func (a *ADB) awaitTalkBack(ctx context.Context, on bool) bool {
+	deadline := time.Now().Add(screenReaderWait)
+	for {
+		bound, exploring, err := a.talkBackState(ctx)
+		if err == nil && bound == on && exploring == on {
+			return true
+		}
+		if time.Now().After(deadline) {
+			return false
+		}
+		select {
+		case <-ctx.Done():
+			return false
+		case <-time.After(300 * time.Millisecond):
+		}
+	}
+}
+
+// setScreenReader turns TalkBack on or off, waits for Android to bind or
+// unbind it, and returns how to put both keys back as they were found.
+func (a *ADB) setScreenReader(ctx context.Context, on bool) (AXUndo, error) {
+	ok, err := a.talkBackInstalled(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if !ok {
+		return nil, mobiumerr.New(mobiumerr.Unsupported, "%s", noTalkBack)
+	}
+	was, err := a.rawGet(ctx, a11yServicesKey)
+	if err != nil {
+		return nil, err
+	}
+	wasEnabled, err := a.rawGet(ctx, a11yEnabledKey)
+	if err != nil {
+		return nil, err
+	}
+	undo := func(ctx context.Context) error {
+		if err := a.rawPut(ctx, a11yServicesKey, was); err != nil {
+			return err
+		}
+		// While TalkBack unbinds the system writes accessibility_enabled
+		// itself: on the Pixel 8 Pro it was 1 again after the phone's 0 had
+		// been put back (CHALLENGES 348). So it is put back once TalkBack
+		// is as found, and read back, three times at most.
+		a.awaitTalkBack(ctx, hasService(was, talkBackService))
+		for i := 0; i < 3; i++ {
+			if err := a.rawPut(ctx, a11yEnabledKey, wasEnabled); err != nil {
+				return err
+			}
+			select {
+			case <-ctx.Done():
+				return ctx.Err()
+			case <-time.After(time.Second):
+			}
+			if got, err := a.rawGet(ctx, a11yEnabledKey); err == nil && got == wasEnabled {
+				return nil
+			}
+		}
+		return mobiumerr.New(mobiumerr.NotConfirmed, "accessibility_enabled did not stay at %s after the screen reader was put back", wasEnabled)
+	}
+	list := withService(was, talkBackService, on)
+	if list == "" {
+		err = a.rawPut(ctx, a11yServicesKey, "")
+	} else {
+		err = a.rawPut(ctx, a11yServicesKey, list)
+	}
+	if err != nil {
+		return undo, err
+	}
+	if on {
+		if err := a.rawPut(ctx, a11yEnabledKey, "1"); err != nil {
+			return undo, err
+		}
+	}
+	if !a.awaitTalkBack(ctx, on) {
+		return undo, mobiumerr.New(mobiumerr.NotConfirmed,
+			"wrote TalkBack %s and Android did not %s it within %s", onOff(on),
+			map[bool]string{true: "bind", false: "unbind"}[on], screenReaderWait)
+	}
+	return undo, nil
 }

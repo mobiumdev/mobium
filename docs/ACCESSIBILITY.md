@@ -305,13 +305,32 @@ none.
 - **Control:** MobiumApp's Screen Reader Demo — "Submit form" on a button
   showing Send, beside "Send message" — gives the first alone (`audit.sh`).
 
-### 5. A screen reader as a setting
+### 5. A screen reader as a setting — built
 
-`mobium accessibility screen_reader on` — TalkBack on Android, as
-`screen-reader.sh` sets it, and VoiceOver on iOS 27 through the routes
-above — confirmed by reading back, and put back when the session ends, as
-the other settings are. It makes "run this test with the screen reader on" a
-line in a test file.
+`mobium accessibility screen_reader on` — TalkBack on Android and
+VoiceOver on an iPhone on iOS 27 — confirmed by reading back, and put back
+when the session ends, as the other settings are. It makes "run this test
+with the screen reader on" a line in a test file.
+
+As built:
+- **Android:** TalkBack's service added to the enabled ones, the others
+  kept, and `accessibility_enabled` on. Confirmed by Android binding
+  TalkBack with touch exploration on — 0.55 seconds on the emulator. The
+  undo puts both keys back exactly, unset included, and puts
+  `accessibility_enabled` back again once TalkBack has gone, since the
+  system rewrites it while TalkBack unbinds (CHALLENGES 348). A device
+  without Google's TalkBack is refused, naming VoiceView on a Fire TV and
+  Samsung's own TalkBack, which Mobium does not set yet.
+- **iPhone:** WebDriverAgent's `/wda/voiceOver/enable` and `disable`,
+  confirmed by its `enabled`, and set back as found.
+- **Simulator and Apple TV:** refused, naming why — the simulator's runner
+  is WebDriverAgent's prebuilt one, built before Xcode 27 — and the
+  simulator's Settings switch instead.
+
+`screen-reader-setting.sh` holds it: on the emulator, on, a tap that lands
+with it on, and both keys as found three seconds after the session (also
+from a device with nothing enabled, by hand); on a simulator, the refusal.
+**Not yet run on a phone** — the Pixel and the iPhone need `ALLOW_PHONE=1`.
 
 - On a phone, the session's restore is the only safe way to turn it on: a
   phone left with VoiceOver on answers touch differently for its owner.

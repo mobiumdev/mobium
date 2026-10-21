@@ -12,11 +12,14 @@ func newAccessibilityCmd() *cobra.Command {
 			"Settings: reduce_motion, bold_text, increase_contrast, reduce_transparency,\n" +
 			"button_shapes, differentiate_without_color, invert_colors, grayscale, and text\n" +
 			"size — text_size (a category) on iOS, text_scale (a number) on Android.\n" +
+			"screen_reader is TalkBack on Android and VoiceOver on an iPhone (iOS 27); it\n" +
+			"changes how the device answers touch, and is put back like the rest.\n" +
 			"A switch takes \"on\" or \"off\". A platform that lacks one says so.\n\n" +
 			"On a real iPhone, where nothing outside can change them, Mobium goes through\n" +
 			"the Settings app for the six switches and comes back to the app in front.",
 		Example: `  mobium accessibility                       # everything, as it is now
   mobium accessibility bold_text on
+  mobium accessibility screen_reader on              # TalkBack or VoiceOver
   mobium accessibility text_size accessibility-large   # iOS
   mobium accessibility text_scale 1.3                   # Android`,
 		Args: cobra.MaximumNArgs(2),

@@ -1623,7 +1623,10 @@ func GetToolSchemas() []Tool {
 			Description: "Read the device's accessibility settings, or change one for the rest of the " +
 				"session: reduce_motion, bold_text, increase_contrast, reduce_transparency, " +
 				"button_shapes, differentiate_without_color, invert_colors, grayscale, and text size — " +
-				"text_size, a named category, on iOS, and text_scale, a number, on Android. Call with no " +
+				"text_size, a named category, on iOS, and text_scale, a number, on Android — and " +
+				"screen_reader: TalkBack on Android, VoiceOver on an iPhone on iOS 27, confirmed by the " +
+				"platform reporting it on (TalkBack bound with touch exploration), refused on a simulator. " +
+				"Call with no " +
 				"argument to read them all, with a setting to read one, and with a setting and a value " +
 				"to change it; each change is confirmed by reading it back and put back exactly as it " +
 				"was when the session ends. Settings a platform lacks are refused with the reason. On a " +
@@ -1638,7 +1641,7 @@ func GetToolSchemas() []Tool {
 						"description": "Which setting. Omit to read them all.",
 						"enum": []string{"reduce_motion", "bold_text", "increase_contrast", "reduce_transparency",
 							"button_shapes", "differentiate_without_color", "invert_colors", "grayscale",
-							"text_size", "text_scale"},
+							"text_size", "text_scale", "screen_reader"},
 					},
 					"value": map[string]interface{}{
 						"type": "string",
