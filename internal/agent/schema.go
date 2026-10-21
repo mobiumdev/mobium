@@ -1948,7 +1948,9 @@ func GetToolSchemas() []Tool {
 				"which checks 44pt, can name what this does not. On Android, which has no audit a tool outside the app " +
 				"can run, it is Mobium's checks on the hierarchy under the Accessibility Test Framework's names: " +
 				"TouchTargetSize (48dp), SpeakableTextPresent, DuplicateSpeakableText, DuplicateClickableBounds, " +
-				"RedundantDescription and EditableContentDesc; contrast is not checked, and `unchecked` says so.",
+				"RedundantDescription and EditableContentDesc, and LabelInName (WCAG 2.5.3): a control whose " +
+				"description leaves out the words it shows, which a person using speech says. Contrast is not " +
+				"checked, and `unchecked` says so.",
 			InputSchema: map[string]interface{}{
 				"type":                 "object",
 				"properties":           withDevice(map[string]interface{}{}),

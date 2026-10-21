@@ -22,7 +22,8 @@
 # can run:
 #
 #   - MobiumApp's Screen Reader Demo, the positive control: exactly its
-#     nameless icon and its "Save button", each beside a twin built right
+#     nameless icon, its "Save button" and its "Submit form" captioned Send
+#     (Label in Name), each beside a twin built right
 #     that gives nothing; each finding's locator resolves; contrast is named
 #     as not checked.
 #   - MobiumApp's home screen, the negative control: no findings.
@@ -56,11 +57,11 @@ if [ "$KIND" = android ]; then
   $M wait testid=iconNamed >/dev/null
   out=$($M audit --json)
   got=$(echo "$out" | json '",".join(f["type"] + ":" + f.get("locator", "") for f in d["findings"])')
-  [ "$got" = "RedundantDescription:testid=saveRedundant,SpeakableTextPresent:testid=iconUnnamed" ] ||
-    fail "the Screen Reader Demo's findings were $got, want its nameless icon and its Save button alone"
+  [ "$got" = "LabelInName:testid=sendMismatch,RedundantDescription:testid=saveRedundant,SpeakableTextPresent:testid=iconUnnamed" ] ||
+    fail "the Screen Reader Demo's findings were $got, want its nameless icon, its Save button and its Submit form alone"
   echo "$out" | json '",".join(d.get("unchecked", []))' | grep -q TextContrast || fail "contrast is not named as unchecked"
   $M find testid=iconUnnamed >/dev/null && $M find testid=saveRedundant >/dev/null || fail "a finding's locator does not resolve"
-  row "spoken" "the nameless icon and the Save button, not their twins"
+  row "spoken" "the nameless icon, Save button and Submit form, not twins"
   $M terminate $APP >/dev/null 2>&1 || true
   echo PASS; exit 0
 fi

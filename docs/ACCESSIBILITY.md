@@ -279,17 +279,31 @@ Next icon buttons have nothing to say, Settings' Display screen has two
   two, and the home screen none (`audit.sh`, on the emulator, both
   drivers).
 
-### 4. Label in Name, from `map`
+### 4. Label in Name — built, in `app_audit`
 
 What speech that drives the screen depends on (2.5.3): a person says what
 they see, so the spoken name must contain the visible words. On Android the
-two are separate — a node's `text` and its `content-desc` — so a mismatch is
-visible in the tree Mobium already reads, and `app_audit` reports it. On iOS
-there is usually one `label`, so the visible text cannot be told apart
-without reading the pixels; refuse there until something can.
+two are separate — a node's `text`, or a text view inside it, and its
+`content-desc` — so a mismatch is visible in the tree Mobium already reads,
+and `app_audit` reports it as `LabelInName`. On iOS there is usually one
+`label`, so the visible text cannot be told apart without reading the
+pixels; Apple's audit stands there, and Mobium adds nothing.
 
-- **Control:** a MobiumApp button whose description says something other
-  than its caption.
+As built: a control with a description, and exactly one caption — its own
+text or the one text inside it that is not a control of its own — is
+reported when the description does not hold the caption's words, in order,
+whatever their case and punctuation ("Resend" does not hold "Send"). Left
+alone: a caption with no letter or digit (a glyph, "×" named "multiply"),
+a card's several lines, a switch's own "ON" or "OFF", a text field, and a
+control with no description, which is named by its text. **A caption the
+app draws is not seen**: Google's Calculator draws its keys, so its "AC"
+named "all clear" has no text in the tree to compare. Ten apps on the
+emulator (Settings, Clock, Calculator, Contacts, Phone, Wikipedia,
+F-Droid, Seal, Files, Chrome) and every captured Android hierarchy gave
+none.
+
+- **Control:** MobiumApp's Screen Reader Demo — "Submit form" on a button
+  showing Send, beside "Send message" — gives the first alone (`audit.sh`).
 
 ### 5. A screen reader as a setting
 

@@ -17,7 +17,8 @@ func newAuditCmd() *cobra.Command {
 			"checks on the hierarchy, named as Google's Accessibility Test Framework names\n" +
 			"them: touch targets under 48dp, controls with nothing to say, controls that say\n" +
 			"the same thing, two controls on one rectangle, a description that names its own\n" +
-			"kind, a text field with a description. Contrast is not checked.",
+			"kind, a text field with a description — and, after WCAG 2.5.3, a control whose\n" +
+			"description leaves out the words it shows. Contrast is not checked.",
 		Example: "  mobium audit\n  mobium audit --json",
 		Args:    cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {

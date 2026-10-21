@@ -166,3 +166,55 @@ func TestAuditSkipsWhatIsOffScreen(t *testing.T) {
 		t.Errorf("findings about a control below the screen: %v", fs)
 	}
 }
+
+// MobiumApp's Screen Reader Demo: "Submit form" on a button showing Send is
+// the one name without its words; its twin "Send message" holds them, and
+// "Save button" holds Save.
+func TestAuditLabelInNameOnTheScreenReaderDemo(t *testing.T) {
+	got := rules(audit(t, "mobiumapp-spoken-uia2.xml"))[RuleLabelInName]
+	if len(got) != 1 || got[0].Locator() != "testid=sendMismatch" {
+		t.Fatalf("label in name findings %v, want sendMismatch alone", got)
+	}
+	if !strings.Contains(got[0].Detail, `shows "Send" and is named "Submit form"`) {
+		t.Errorf("detail %q does not say what it shows and what it is named", got[0].Detail)
+	}
+}
+
+func TestAuditLabelInNameCases(t *testing.T) {
+	cases := []struct {
+		name        string
+		class, desc string
+		text        string   // the control's own text
+		inner       []string // texts inside it
+		checkable   bool
+		want        bool
+	}{
+		{"caption left out", "android.widget.Button", "Submit form", "", []string{"Send"}, false, true},
+		{"caption held", "android.widget.Button", "Send message", "", []string{"Send"}, false, false},
+		{"case and punctuation", "android.widget.Button", "send, now!", "", []string{"Send now"}, false, false},
+		{"part of a word is not the word", "android.widget.Button", "Resend code", "", []string{"Send"}, false, true},
+		{"own text left out", "android.widget.Button", "Close dialog", "Done", nil, false, true},
+		{"a glyph says no word", "android.widget.Button", "multiply", "", []string{"×"}, false, false},
+		{"a card's several lines have no one caption", "android.view.ViewGroup", "Article", "", []string{"Title", "Summary"}, false, false},
+		{"no description is no mismatch", "android.widget.Button", "", "", []string{"Send"}, false, false},
+		{"a switch's state is not its caption", "android.widget.Switch", "Wi-Fi", "ON", nil, true, false},
+		{"a switch's caption is", "android.widget.Switch", "Wireless", "Wi-Fi", nil, true, true},
+	}
+	for _, c := range cases {
+		inner := ""
+		for _, t := range c.inner {
+			inner += fmt.Sprintf(`<node class="android.widget.TextView" text="%s" content-desc="" clickable="false" enabled="true" bounds="[10,110][500,190]" />`, t)
+		}
+		xml := `<hierarchy><node class="android.widget.FrameLayout" bounds="[0,0][1080,2400]">` +
+			fmt.Sprintf(`<node class="%s" content-desc="%s" text="%s" resource-id="x" clickable="true" checkable="%v" enabled="true" bounds="[0,100][1080,300]">%s</node>`,
+				c.class, c.desc, c.text, c.checkable, inner) + `</node></hierarchy>`
+		tr, err := uitree.ParseAndroid([]byte(xml))
+		if err != nil {
+			t.Fatal(err)
+		}
+		got := len(rules(AuditAndroid(tr, uitree.Rect{X2: 1080, Y2: 2400}, 420))[RuleLabelInName]) == 1
+		if got != c.want {
+			t.Errorf("%s: flagged %v, want %v", c.name, got, c.want)
+		}
+	}
+}

@@ -5,6 +5,7 @@ import (
 	"regexp"
 	"sort"
 	"strings"
+	"unicode"
 
 	"github.com/mobiumdev/mobium/internal/uitree"
 )
@@ -46,6 +47,13 @@ const (
 	// RuleEditableContentDesc is a text field with a content description,
 	// which TalkBack reads in place of what was typed.
 	RuleEditableContentDesc AuditRule = "EditableContentDesc"
+	// RuleLabelInName is a control whose description leaves out the words it
+	// shows (WCAG 2.5.3): a person using speech says what they see, and
+	// "tap Send" finds nothing on a button named "Submit form". Not one of
+	// the framework's checks, so it takes WCAG's name. Android only: there
+	// the shown text and the description are separate in the tree, where on
+	// iOS one label usually stands for both.
+	RuleLabelInName AuditRule = "LabelInName"
 )
 
 // AuditFinding is one thing an Android audit found.
@@ -147,6 +155,17 @@ func AuditAndroid(t *uitree.Tree, screen uitree.Rect, dpi int) []AuditFinding {
 					Rule: RuleRedundantDescription, Node: n,
 					Summary: "a description that names the kind of control",
 					Detail:  fmt.Sprintf("%q ends with %q, which TalkBack says again after it", trimTo(desc, 60), w),
+				})
+			}
+		}
+
+		if control && !editable(n) && !n.Password {
+			if shown := shownText(n); shown != "" && !containsWords(n.Label, shown) {
+				out = append(out, AuditFinding{
+					Rule: RuleLabelInName, Node: n,
+					Summary: "a name without the words shown",
+					Detail: fmt.Sprintf("shows %q and is named %q: a person who says what they see is not understood",
+						trimTo(shown, 60), trimTo(strings.TrimSpace(n.Label), 60)),
 				})
 			}
 		}
@@ -309,6 +328,75 @@ func namedAbove(n *uitree.Node) bool {
 		}
 	}
 	return false
+}
+
+// shownText is the one piece of text a control shows as its caption — its
+// own text, or the one text inside it that is not a control of its own —
+// when it also has a description that might leave it out. Empty when there
+// is no description, no caption, or more than one text: a card's several
+// lines have no single caption to be named by. A caption with no letter or
+// digit is an icon drawn with a glyph, and says no word.
+func shownText(n *uitree.Node) string {
+	if strings.TrimSpace(n.Label) == "" {
+		return ""
+	}
+	var texts []string
+	if t := strings.TrimSpace(n.Text); t != "" && !(n.Checkable && stateWord(t)) {
+		texts = append(texts, t)
+	}
+	var under func(*uitree.Node)
+	under = func(p *uitree.Node) {
+		for _, c := range p.Children {
+			if !c.Displayed || ((c.Clickable || c.LongClickable) && c.Enabled) {
+				continue
+			}
+			if t := strings.TrimSpace(c.Text); t != "" {
+				texts = append(texts, t)
+			}
+			under(c)
+		}
+	}
+	under(n)
+	if len(texts) != 1 || len(words(texts[0])) == 0 {
+		return ""
+	}
+	return texts[0]
+}
+
+// stateWord is a switch's own text when it shows its state, not a caption.
+func stateWord(t string) bool {
+	switch strings.ToLower(t) {
+	case "on", "off":
+		return true
+	}
+	return false
+}
+
+// containsWords says whether name holds the words of shown, in order and
+// next to each other, whatever their case and punctuation: "Send message"
+// holds "Send", "Submit form" does not, and "Resend" does not hold "Send".
+func containsWords(name, shown string) bool {
+	n, w := words(name), words(shown)
+	for i := 0; i+len(w) <= len(n); i++ {
+		match := true
+		for j := range w {
+			if n[i+j] != w[j] {
+				match = false
+				break
+			}
+		}
+		if match {
+			return true
+		}
+	}
+	return false
+}
+
+// words splits s into lower-case words of letters and digits.
+func words(s string) []string {
+	return strings.FieldsFunc(strings.ToLower(s), func(r rune) bool {
+		return !unicode.IsLetter(r) && !unicode.IsDigit(r)
+	})
 }
 
 // editable is a text field, by class.
