@@ -135,14 +135,42 @@ Android 15 emulator.
   the APK before it runs, and the result can say so. **Control:** with the
   certificate uninstalled, Chrome was refused again
   (`NET::ERR_CERT_AUTHORITY_INVALID`) and F-Droid's HTTPS left no entry.
-- **MobiumApp sends nothing.** No screen makes a request — its WebViews
-  load HTML it carries — so it is no control for any of this yet: a Network
-  Demo screen, with a native request, a WebView page from the network and a
-  Flutter request, each saying what it got, is the next thing to build for
-  it.
+- **MobiumApp's Network Demo** (mobium-app, branch `network-demo`): a native
+  `fetch` (OkHttp) and a WebView page, both to an address that defaults to
+  a server the check runs on the Mac — bound to `127.0.0.1`, reached
+  through `adb reverse` — each saying what came back, and a count of
+  presses. Its network security configuration permits plain HTTP to the
+  Mac's addresses only and trusts user certificates. With no proxy both
+  reached the server, `200` and "loaded", and the server logged OkHttp's and
+  the WebView's user agents.
+- **A loopback address goes round the proxy for a WebView, not for OkHttp.**
+  Through Charles, the native fetch to `127.0.0.1:8765` was in the session
+  and the WebView's page was not — it reached the server directly. By the
+  name `localhost.charlesproxy.com`, which resolves to `127.0.0.1`, both
+  went through Charles, the page's favicon too. A test that wants a WebView
+  behind a proxy needs a name, and the app's configuration has to permit
+  it: a host it did not list was refused as cleartext by both, "not
+  permitted by network security policy" and `ERR_CLEARTEXT_NOT_PERMITTED`.
+- **Charles decrypts the ports it is told to, and does not check the server
+  it forwards to.** HTTPS to the demo's port 8766, with Charles's root in the
+  user store, was a `CONNECT` tunnel, and the app refused the server's own
+  self-signed certificate — the configuration named port 443 only. With
+  `localhost.charlesproxy.com:8766` added to `sslLocations` both requests
+  were decrypted, bodies and all, and Charles accepted the self-signed
+  server. Without the root installed both refused Charles's certificate
+  (`Trust anchor for certification path not found`, "The certificate
+  authority is not trusted") and nothing reached the server.
+- **Deleting `http_proxy` does not take the proxy off.** Setting it writes
+  `global_http_proxy_host` and `global_http_proxy_port` as well, and those
+  stay in force: after `settings delete global http_proxy` read back `null`,
+  OkHttp still went to `127.0.0.1:8888` and failed to connect. Putting
+  `http_proxy` to `:0` and deleting all of `http_proxy`, its host, port,
+  exclusion list and PAC URL cleared it. The restore reads all of them
+  back, not the one written.
 
 Not measured: the system store (the image is `userdebug`, so `adb root`
-works; Android 14 and later keep it in a module); a Flutter app's requests;
+works; Android 14 and later keep it in a module); a Flutter app's requests,
+for which MobiumApp's `flutter/` demo needs the same screen;
 throttling, Map Local and Rewrite switched by the Web Interface with rules
 in place.
 
@@ -150,8 +178,8 @@ in place.
 
 ### 1. Measure the shape on the emulator — measured, above
 
-The certificate measured too. Left of it: MobiumApp's Network Demo, which
-step 2's check needs, and a Flutter request missing from the session.
+The certificate and MobiumApp's Network Demo measured too. Left of it: a
+Flutter request missing from the session.
 
 ### 2. `--proxy` on Android
 
