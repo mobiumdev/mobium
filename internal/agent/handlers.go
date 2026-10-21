@@ -1735,11 +1735,18 @@ func (h *Handlers) waitOutSiri(ctx context.Context, s *session) (bool, error) {
 func siriOver(loc uitree.Locator, waited time.Duration) error {
 	msg := fmt.Sprintf("Siri's panel is in front of the app, and nothing on it matches %s; it closes by itself "+
 		"about eight seconds after Siri answers", loc)
+	remedy := "wait for Siri's panel to close, or close it with app_press home, which brings the app back, then try again"
 	if waited > 0 {
+		// A panel that outlasts the wait is one that will not go: on a
+		// simulator a typed request draws nothing, answers nothing and
+		// leaves the panel in front for good, and waiting again is a remedy
+		// that cannot work. Home closes it and the app comes back
+		// (CHALLENGES 351).
 		msg += fmt.Sprintf(", and was still there after %s", waited)
+		remedy = "close Siri's panel with app_press home, which brings the app back, then try again"
 	}
 	return mobiumerr.New(mobiumerr.DeviceNotReady, "%s", msg).
-		WithRemedy("wait for Siri's panel to close, then try again").
+		WithRemedy(remedy).
 		WithDetail("locator", loc.String()).
 		WithDetail("siri", true)
 }

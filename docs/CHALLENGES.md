@@ -7601,6 +7601,25 @@ Assistant's calculator card has none; Enter closes Gemini's overlay and Send
 keeps it; "Open MobiumApp" brought the app forward in five seconds through
 Gemini, and was a web search signed out.
 
+### 351. Siri's panel on a simulator never closed, and the refusal said to wait for it
+
+**Found by:** measuring Siri on the simulator for `app_assistant`
+(ACCESSIBILITY.md, step 6). On an iPhone 17 Pro simulator, iOS 26.5,
+WebDriverAgent's typed Siri request (`/wda/siri/activate`) answered at once
+and drew nothing: the screenshot showed MobiumApp, while WebDriverAgent
+reported SpringBoard in front holding only a "Listen" button — and it stayed
+so for more than forty seconds. It is the first request after the simulator
+boots: twice, each time after a fresh boot; three later requests in the same
+boot raised no panel at all and the next tap landed. A tap was refused naming Siri's panel, as
+349 made it, with the remedy "wait for Siri's panel to close": a remedy that
+cannot work, since on a simulator the panel never goes. **Fixed:** the
+refusal says Home closes the panel, and once the panel has outlasted the
+twelve-second wait Home is the only remedy it names. Home closed it on the
+simulator and brought MobiumApp back at once, and the next tap landed. On
+the iPhone the panel goes by itself about eight seconds after Siri answers
+(349); Home there is the platform's own way to close Siri and was not
+measured separately.
+
 ## Findings that were not defects
 
 Worth recording because each one closed off an approach that looked obvious.
