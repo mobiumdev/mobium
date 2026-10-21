@@ -402,7 +402,12 @@ As built:
 `screen-reader-setting.sh` holds it: on the emulator, on, a tap that lands
 with it on, and both keys as found three seconds after the session (also
 from a device with nothing enabled, by hand); on a simulator, the refusal.
-**Not yet run on a phone** — the Pixel and the iPhone need `ALLOW_PHONE=1`.
+On the phones, with `ALLOW_PHONE=1`, on 2026-10-21: the iPhone 15 Plus
+turned VoiceOver on, read it back, took a tap with it on and was off after
+the session; the Pixel 8 Pro bound TalkBack with touch exploration, took the
+tap, and had both keys as found after the session. While a UiAutomator2
+session is open Android sets `accessibility_enabled` to 1 — the Pixel's is
+0 — so the keys as found are read before any session (CHALLENGES 353).
 
 - On a phone, the session's restore is the only safe way to turn it on: a
   phone left with VoiceOver on answers touch differently for its owner.
@@ -436,9 +441,16 @@ As built (`mobium assistant "Open Calculator" --app com.google.android.calculato
   (CHALLENGES 351); a TV's assistant.
 
 `assistant.sh` passes on the emulator (Google Assistant, signed out) and
-refuses the simulator; **not yet run on the Pixel's Gemini or the iPhone's
-Siri** — each request goes to the owner's account, so a phone needs
-`ALLOW_PHONE=1`.
+refuses the simulator. On the phones, with `ALLOW_PHONE=1`, on 2026-10-21 —
+each request goes to the owner's account: on the Pixel 8 Pro, Gemini's
+"Open Calculator" brought Calculator forward and the control was not
+reached; on the iPhone 15 Plus, Siri's "Open MobiumApp" reached MobiumApp
+three times in four. The first request of the run left the home screen in
+front — Siri handed nothing to the app within the wait, and its panel was
+closed with Home — and a request by hand and two whole runs after it passed.
+A first request failing is what the simulator's Siri (CHALLENGES 351) and
+the emulator's Google Assistant did too; whether Siri was slow or answered
+without opening the app was not seen.
 
 Still to do:
 - **Alexa on a Fire TV**: measured, and unreachable — it listens only

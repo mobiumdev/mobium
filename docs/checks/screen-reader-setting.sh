@@ -49,6 +49,15 @@ case "$KIND" in
   phone | android-phone) [ -n "$ALLOW_PHONE" ] || { echo "$DEV is a phone: a screen reader takes over its owner's touch. ALLOW_PHONE=1 to go ahead" >&2; exit 2; } ;;
 esac
 
+# The keys as found, read before any session: while a UiAutomator2 session is
+# open Android sets accessibility_enabled to 1 — measured on the Pixel 8 Pro,
+# where it is 0 — and a check that read it after its first call expected
+# the 1 back and failed on the phone's own 0 (CHALLENGES 353).
+if [ "$KIND" != phone ]; then
+  was_svc=$(a settings get secure enabled_accessibility_services)
+  was_on=$(a settings get secure accessibility_enabled)
+fi
+
 state=$($M accessibility screen_reader 2>/dev/null) || fail "the screen reader could not be read: $($M accessibility screen_reader 2>&1)"
 [ "$state" = "screen_reader off" ] || { echo "the screen reader is already on ($state): left alone" >&2; exit 2; }
 
@@ -56,8 +65,6 @@ if [ "$KIND" = phone ]; then
   # The backstop, if the session's own restore never runs: VoiceOver off.
   at_exit "$M daemon stop >/dev/null 2>&1; MOBIUM_SESSION=srsetting-restore $M accessibility screen_reader off >/dev/null 2>&1; MOBIUM_SESSION=srsetting-restore $M daemon stop >/dev/null 2>&1"
 else
-  was_svc=$(a settings get secure enabled_accessibility_services)
-  was_on=$(a settings get secure accessibility_enabled)
   explore() { a dumpsys accessibility | grep -o -m1 'touchExplorationEnabled=[a-z]*' | cut -d= -f2; }
   talkback() { a dumpsys accessibility | sed -n '/Bound services:{/,/Enabled services/p' | grep -c 'label=TalkBack' || true; }
   backstop() {
@@ -78,7 +85,9 @@ fi
 out=$($M accessibility screen_reader on 2>/dev/null) || fail "turning the screen reader on failed: $($M accessibility screen_reader on 2>&1)"
 echo "$out" | grep -q "^screen_reader on (was off)" || fail "the answer was not on, from off: $out"
 if [ "$KIND" = phone ]; then
-  [ "$($M accessibility screen_reader)" = "screen_reader on" ] || fail "VoiceOver does not read back on"
+  # The session's own read says it changed the setting: "screen_reader on
+  # (changed by this session; …)".
+  case "$($M accessibility screen_reader)" in "screen_reader on"*) ;; *) fail "VoiceOver does not read back on" ;; esac
   row "on" "VoiceOver, as WebDriverAgent reports it"
 else
   [ "$(talkback)" -ge 1 ] && [ "$(explore)" = true ] || fail "Mobium said on, and TalkBack is not bound with touch exploration"
