@@ -1082,6 +1082,8 @@ public final class Mobium implements AutoCloseable {
      *     says whether the assistant handed the request to it. Required for a
      *     request that acts for the owner — a call, a message, a purchase
      * @param timeoutSeconds how long to wait for an app or an answer; 0 is 15
+     * @return the assistant, its answer, the app in front, and with an app
+     *     named, whether it was reached
      */
     public Map<String, Object> assistant(String request, String app, double timeoutSeconds) {
         Map<String, Object> args = new LinkedHashMap<>();
