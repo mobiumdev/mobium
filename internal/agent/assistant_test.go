@@ -64,3 +64,33 @@ func TestNewTextsLeavesOutControlsAndTheRequest(t *testing.T) {
 		t.Errorf("answer %v, want [45]", got)
 	}
 }
+
+// A read during Siri's hand-off can come back as SpringBoard with no Siri
+// window, the app not yet in front: it is never the hand-off, unless the
+// request was made from SpringBoard.
+func TestSiriSettledWaitsOutSpringBoard(t *testing.T) {
+	springboard := fixture(t, "ios-springboard.xml")
+	settings := fixture(t, "ios26-settings-root.xml")
+	const prefs, app = "com.apple.Preferences", "dev.mobium.mobiumapp"
+	cases := []struct {
+		name      string
+		tree      *uitree.Tree
+		was       string
+		panel     bool
+		done      bool
+		wantFront string
+	}{
+		{"SpringBoard before the hand-off", springboard, prefs, false, false, ""},
+		{"SpringBoard after the panel", springboard, prefs, true, false, ""},
+		{"another app came forward", settings, app, false, true, prefs},
+		{"the panel closed and the app came back", settings, prefs, true, true, prefs},
+		{"nothing yet", settings, prefs, false, false, ""},
+		{"asked from the home screen, the panel closed", springboard, "com.apple.springboard", true, true, "com.apple.springboard"},
+	}
+	for _, c := range cases {
+		done, front := siriSettled(c.tree, c.was, c.panel)
+		if done != c.done || front != c.wantFront {
+			t.Errorf("%s: done %v front %q, want %v %q", c.name, done, front, c.done, c.wantFront)
+		}
+	}
+}
