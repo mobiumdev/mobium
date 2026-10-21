@@ -117,21 +117,49 @@ Android 15 emulator.
   decrypting it, was. An empty session is not a quiet app: the result has to
   say so from the device's side.
 
-Not measured: the certificate in the emulator's user store and which apps
-then trust it; MobiumApp's own requests and a Flutter screen's; throttling,
-Map Local and Rewrite switched by the Web Interface with rules in place.
+- **The certificate goes into the user store through Settings, and only
+  there.** `charles ssl export` wrote Charles's root; pushed to Downloads and
+  opened with `android.credentials.INSTALL`, Android answered "Install CA
+  certificates in Settings". Settings' search for "CA certificate", Install
+  anyway, the file — all driven by Mobium — put it in the user store, named
+  by its subject hash (`477e5098.0`, which `openssl x509 -subject_hash_old`
+  gives for Charles's root). Android 15 asked for no screen lock. It comes
+  out the same way: Trusted credentials, User, the certificate, Uninstall.
+- **Each app's own configuration decides, not whether it is a release
+  build.** With the certificate in: Chrome's HTTPS page loaded and was
+  decrypted; F-Droid's refresh was decrypted, five requests to `f-droid.org`;
+  Wikipedia showed "An error occurred" and left no entry. Their
+  `networkSecurityConfig`, read from the APKs with `aapt2`: F-Droid's trust
+  anchors are `system` and `user`; Wikipedia's are two certificates it ships
+  and `system`. So whether a test will see an app's HTTPS is answerable from
+  the APK before it runs, and the result can say so. **Control:** with the
+  certificate uninstalled, Chrome was refused again
+  (`NET::ERR_CERT_AUTHORITY_INVALID`) and F-Droid's HTTPS left no entry.
+- **MobiumApp sends nothing.** No screen makes a request — its WebViews
+  load HTML it carries — so it is no control for any of this yet: a Network
+  Demo screen, with a native request, a WebView page from the network and a
+  Flutter request, each saying what it got, is the next thing to build for
+  it.
+
+Not measured: the system store (the image is `userdebug`, so `adb root`
+works; Android 14 and later keep it in a module); a Flutter app's requests;
+throttling, Map Local and Rewrite switched by the Web Interface with rules
+in place.
 
 ## The plan
 
 ### 1. Measure the shape on the emulator — measured, above
 
-Left of it: the certificate in the user store, MobiumApp's own requests,
-and a Flutter screen's request missing from the session.
+The certificate measured too. Left of it: MobiumApp's Network Demo, which
+step 2's check needs, and a Flutter request missing from the session.
 
 ### 2. `--proxy` on Android
 
 The setting, its read-back and its restore, on the emulator and the Pixel,
-with `adb reverse`. A check that drives MobiumApp through any proxy —
+with `adb reverse`; the certificate into the user store through Settings,
+and out again; and each app's trust read from its APK's network security
+configuration, so a result says in advance whether the app's HTTPS can be
+seen. A check that drives MobiumApp through any proxy —
 mitmproxy's, since it needs no license, or a tiny one of the check's own —
 and asserts the requests arrived.
 
