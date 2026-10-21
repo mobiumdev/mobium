@@ -420,3 +420,26 @@ func Describe(n *Node) string {
 func IsNotificationBanner(n *Node) bool {
 	return n != nil && n.TestID == "NotificationShortLookView"
 }
+
+// siriWindow is the name SpringBoard gives the window Siri answers in.
+const siriWindow = "siri-interface-window"
+
+// SiriPanel reports Siri's panel in front. While it is up WebDriverAgent
+// reads SpringBoard, whose tree holds a full-screen window of that name with
+// Siri's answer inside, and the app under it is not in the tree at all —
+// measured on the iPhone 15 Plus, iOS 27.0.1, where an app's own read never
+// had one. It goes by itself about eight seconds after Siri answers.
+// CHALLENGES 349.
+func SiriPanel(t *Tree) bool {
+	if t == nil || t.Root == nil {
+		return false
+	}
+	found := false
+	t.Walk(func(n *Node) bool {
+		if n.TestID == siriWindow && n.Displayed {
+			found = true
+		}
+		return !found
+	})
+	return found
+}
