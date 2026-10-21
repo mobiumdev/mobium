@@ -150,6 +150,32 @@ and the Wide Viewport screen gave three hit-region findings, its links 38×10pt
 as `map` is, keeping a contrast finding that names no element; Android is
 refused, naming `screen --inspect`. `docs/checks/audit.sh` holds it.
 
+### Gemini and Google Assistant — 2026-10-20
+
+The assist key (`input keyevent KEYCODE_ASSIST`) opens the device's
+assistant; both measured are the Google app's, version 17.66 on the Pixel 8
+Pro (Android 17, signed in), where it is **Gemini**, and 15.22 on the Android
+15 emulator (signed out), where it is **Google Assistant**. Neither device
+has a Gemini app of its own.
+
+- **Typed requests reach both.** Google Assistant's panel has a Keyboard
+  button and then a field; Gemini's overlay has an "Ask Gemini" field and a
+  Send button. Enter closes Gemini's overlay, Send keeps it open.
+- **Gemini's answer is readable; Google Assistant's calculator card is
+  not.** "What is 15 times 3": Gemini's 45 was in the tree's text about seven
+  seconds after Send; Google Assistant drew "15 * 3 = 45" in a card whose
+  nodes carry no text, with either driver — the screenshot shows it, the tree
+  does not. Its web results are readable.
+- **"Open MobiumApp" brought MobiumApp forward through Gemini in five
+  seconds**, the task-based case working; signed out, Google Assistant ran it
+  as a web search and offered to sign in.
+- **Its overlay stays until closed, and back closes it.** A tap behind it
+  found nothing and said to map again until it was refused naming the
+  assistant (CHALLENGES 350, `assistant-overlay.sh`).
+
+Requests to Gemini on a phone are saved to the account's Gemini activity:
+ask nothing personal, and say what was asked.
+
 ### Siri — 2026-09-23, and on iOS 27 since 2026-10-20
 
 On iOS 27.0.1 it is the same, with two differences: a sum's answer is plain
@@ -268,10 +294,9 @@ result always says the request was typed, not spoken.
   simulator is measured. Requests with side effects (a message, a call, a
   purchase) are refused unless the caller names the app they are for, and
   nothing is asked that reads the owner's data aloud into a log.
-- **Gemini and Google Assistant**: unmeasured. Whether an adb intent opens
-  the assistant, whether it takes typed text, and whether its answer is in
-  the hierarchy are each a device's answer, on the emulator and on the
-  Pixel.
+- **Gemini and Google Assistant**: measured (above). The assist key opens
+  them and a typed request reaches both; Gemini's answer is readable and
+  Google Assistant's calculator card is not, which a result has to say.
 - **Alexa on a Fire TV**: unmeasured, and possibly unreachable — it listens
   through the remote's microphone, and nothing known injects a request. A
   refusal that says so is a result.
