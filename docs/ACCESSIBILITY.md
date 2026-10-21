@@ -380,13 +380,43 @@ Still to do:
   could not open MobiumApp at all.
 - Requests are never asked that read the owner's data aloud into a log.
 
-### 7. Speech that drives the screen: Voice Control and Voice Access
+### 7. Speech that drives the screen: Voice Control and Voice Access — measured, not built
 
-Unmeasured, and last, because both take speech, which Mobium does not send.
-The question to measure first: whether either can be given a command
-without a microphone — Voice Control's command list on iOS, Voice Access's
-on Android — and whether an emulator's virtual microphone carrying generated
-speech is enough. Until then step 4 is what Mobium checks for these users.
+Both take speech, which Mobium does not send. The question was whether
+either can be given a command without a microphone. Measured on 2026-10-20:
+
+- **An emulator can be spoken to with no microphone and no room.** The
+  emulator's control port — the one `mobium audio` captures from — has
+  `injectAudio`, which plays PCM into the virtual microphone. Speech made
+  by macOS's `say` (16 kHz, mono) and injected while Google Assistant
+  listened was heard: "Open Calculator" opened Calculator 3 times in 3,
+  and "Open Clock" 4 times in 4 once the injection waited for the
+  assistant's "Tap to stop listening" control. Sent a fixed 1.5 seconds
+  after the assist key it opened Clock 4 times in 6 — speech that arrives
+  before listening begins is lost, so wait for it. Two seconds of silence,
+  the control, opened nothing.
+  `docs/probes/emulator-inject-audio.go` is the probe.
+- **It crashes the emulator, sometimes.** Emulator 37.1.11 died twice in
+  seventeen injections — SIGSEGV in `audio_forwarder_enable`, under
+  `injectAudio` — and each next boot sat behind a crash-report consent
+  dialog until the pending report was moved aside. A tool built on it has
+  to say so and recover the device, or wait for a fixed emulator.
+- **Voice Access is not on the emulator image.** The image has the Play
+  Store and no Google account, so installing it needs a sign-in, which is
+  the owner's call. The Pixel was not reachable when this was measured.
+  Unmeasured: Voice Access hearing injected speech, and whether its
+  command list can be driven any other way.
+- **iOS has no such route.** Voice Control takes speech only; a simulator
+  listens through the Mac's own input device, with nothing to inject into
+  short of a virtual audio device installed on the Mac; a phone hears the
+  room. Unmeasured.
+
+What this means for the plan: on an emulator, "say this" is possible as a
+tool — `injectAudio` with speech the caller supplies, since `say` is the
+Mac's and no runtime dependency may be assumed — once the crash is either
+fixed upstream or survived. Until then step 4, Label in Name, is what Mobium
+checks for these users, and the probe is the way to try a spoken command by
+hand.
 
 ## Rules for this work
 
