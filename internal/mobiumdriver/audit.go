@@ -6,7 +6,8 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/mobiumdev/mobium/internal/mobiumerr"
+	"github.com/mobiumdev/mobium/internal/device"
+	"github.com/mobiumdev/mobium/internal/formflux"
 	"github.com/mobiumdev/mobium/internal/uitree"
 )
 
@@ -40,6 +41,9 @@ type AuditFinding struct {
 	Element string `json:"element,omitempty"`
 	Label   string `json:"label,omitempty"`
 	TestID  string `json:"testid,omitempty"`
+	// Locator finds the element as map's locators do. Android's audit sets
+	// it; Apple's is built from TestID and Label.
+	Locator string `json:"locator,omitempty"`
 	// Bounds are in device pixels, as map's are.
 	Bounds uitree.Rect `json:"bounds"`
 }
@@ -91,17 +95,44 @@ func (w *WDA) Audit(ctx context.Context) ([]AuditFinding, error) {
 	return out, nil
 }
 
-// androidHasNoAudit is why Android refuses.
-const androidHasNoAudit = "Android has no accessibility audit that can be run from outside the app — Google's " +
-	"Accessibility Scanner and the Accessibility Test Framework run inside it. app_screen with inspect " +
-	"(mobium screen --inspect) checks touch targets, truncated text and controls with nothing to announce"
+// What an Android audit is: Mobium's own checks on the hierarchy, under the
+// Accessibility Test Framework's names (formflux.AuditAndroid), since Android
+// has no audit a tool outside the app can run. Contrast needs the pixels and
+// is not checked.
 
-// Audit refuses on Android, saying why.
-func (a *Android) Audit(context.Context) ([]AuditFinding, error) {
-	return nil, mobiumerr.New(mobiumerr.Unsupported, "%s", androidHasNoAudit)
+// Audit runs the hierarchy checks on the screen in front.
+func (a *Android) Audit(ctx context.Context) ([]AuditFinding, error) {
+	return androidAudit(ctx, a.adb, a.Snapshot)
 }
 
-// Audit refuses on Android, saying why.
-func (u *UIA2) Audit(context.Context) ([]AuditFinding, error) {
-	return nil, mobiumerr.New(mobiumerr.Unsupported, "%s", androidHasNoAudit)
+// Audit runs the hierarchy checks on the screen in front.
+func (u *UIA2) Audit(ctx context.Context) ([]AuditFinding, error) {
+	return androidAudit(ctx, u.adb, u.Snapshot)
+}
+
+func androidAudit(ctx context.Context, adb *device.ADB, snapshot func(context.Context) (*uitree.Tree, error)) ([]AuditFinding, error) {
+	// The density is what turns 48dp into pixels. A screen that cannot be
+	// read is an error, not a pass with the touch target check left out.
+	screen, err := formflux.Read(ctx, adb)
+	if err != nil {
+		return nil, fmt.Errorf("read the screen's density for the touch target check: %w", err)
+	}
+	tree, err := snapshot(ctx)
+	if err != nil {
+		return nil, err
+	}
+	found := formflux.AuditAndroid(tree, tree.Root.Bounds, screen.DPI)
+	out := make([]AuditFinding, 0, len(found))
+	for _, f := range found {
+		label := f.Node.Label
+		if masked, ok := uitree.Redact(f.Node); ok {
+			label = masked
+		}
+		out = append(out, AuditFinding{
+			Type: string(f.Rule), Summary: f.Summary, Detail: f.Detail,
+			Element: f.Element(), Label: label, TestID: f.Node.ShortTestID(),
+			Locator: f.Locator(), Bounds: f.Node.Bounds,
+		})
+	}
+	return out, nil
 }

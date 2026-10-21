@@ -1178,8 +1178,8 @@ type AuditResult struct {
 }
 
 // Audit runs the platform's own accessibility audit on the screen in front:
-// on iOS, Apple's, on a simulator or an iPhone (iOS 17 and later). Android
-// refuses: its audits run inside the app.
+// on iOS, Apple's, on a simulator or an iPhone (iOS 17 and later); on
+// Android, Mobium's checks on the hierarchy, contrast not among them.
 func (d *Device) Audit(ctx context.Context) (AuditResult, error) {
 	var out AuditResult
 	err := d.data(ctx, "app_audit", map[string]any{}, &out)

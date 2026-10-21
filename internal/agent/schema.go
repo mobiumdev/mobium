@@ -1945,7 +1945,10 @@ func GetToolSchemas() []Tool {
 				"the element, a locator for it when it has a test id or a label, and its bounds in device " +
 				"pixels, as map's are. It audits only what is on screen. Its hit-region rule is Apple's own and " +
 				"far below the 44pt design guideline — a 24x25pt target passed it — so app_screen with inspect, " +
-				"which checks 44pt, can name what this does not. Android refuses: its audits run inside the app.",
+				"which checks 44pt, can name what this does not. On Android, which has no audit a tool outside the app " +
+				"can run, it is Mobium's checks on the hierarchy under the Accessibility Test Framework's names: " +
+				"TouchTargetSize (48dp), SpeakableTextPresent, DuplicateSpeakableText, DuplicateClickableBounds, " +
+				"RedundantDescription and EditableContentDesc; contrast is not checked, and `unchecked` says so.",
 			InputSchema: map[string]interface{}{
 				"type":                 "object",
 				"properties":           withDevice(map[string]interface{}{}),

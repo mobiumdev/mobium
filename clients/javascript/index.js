@@ -1062,7 +1062,8 @@ export class Device {
    * iOS, Apple's, on a simulator or an iPhone (iOS 17 and later). Resolves to
    * `findings`, each with its type, summary, detail, element, a locator when
    * it has one, and bounds in device pixels when the audit names an element.
-   * Android rejects: its audits run inside the app.
+   * On Android it is Mobium's checks on the hierarchy, contrast not among
+   * them.
    */
   async audit() {
     return (await this.#data('app_audit', {})) || {}
