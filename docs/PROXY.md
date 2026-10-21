@@ -190,6 +190,27 @@ Android 15 emulator.
   certificate's SHA-256), which the reset leaves alone. Deleting that row
   with the simulator shut down restored the refusal. That is the undo.
 
+- **On the real iPhone, over its USB tunnel.** The CoreDevice tunnel Mobium
+  reaches WebDriverAgent through gives the phone and the Mac an address each
+  (`fda9:7046:6460::1` and `::2` on `utun6`); a server bound to the Mac's
+  end is reachable from the phone and from nothing on the Wi-Fi. The Network
+  Demo on the iPhone 15 Plus, iOS 27.0.1, fetched and loaded from
+  `http://[fda9:7046:6460::2]:8765/` — App Transport Security's local
+  networking took the IPv6 literal — and the server logged the phone's end
+  as the client. Nothing on the phone was changed.
+- **Charles refuses the phone by its Access Control list, and says so only
+  in its log.** Through the reverse proxy on the tunnel, both requests
+  failed "The network connection was lost", and Charles logged "Denying
+  access from address not on ACL" for the phone's address: headless, there
+  is no prompt to allow it. An `accessControlConfiguration` entry for the
+  address did not take — its format is not known. A forwarder on the Mac,
+  from the tunnel's address to `127.0.0.1`, which Charles allows, put both
+  requests in Charles's session, CFNetwork's and WebKit's.
+- **MobiumApp did not launch on iOS 27 until it adopted the scene life
+  cycle** (mobium-app, branch `ios27-scene-lifecycle`): built by Xcode 27.1
+  it trapped in `_UIApplicationEvaluateRuntimeIssueForNoSceneLifecycleAdoption`
+  at every launch, Network Demo or not.
+
 Not measured: the system store (the image is `userdebug`, so `adb root`
 works; Android 14 and later keep it in a module); a Flutter app's requests,
 for which MobiumApp's `flutter/` demo needs the same screen;
@@ -232,8 +253,13 @@ interface is said, or bound where Charles allows.
 
 ### 5. A real iPhone
 
-The Wi-Fi proxy through Settings, put back and read back; the certificate's
-one manual step written down, and refused clearly when it has not been done.
+For an app whose address the test sets, the USB tunnel, measured above:
+a server or a forwarder on the Mac's end, and nothing on the phone or the
+Wi-Fi. For any other app, the Wi-Fi proxy through Settings, put back and
+read back — and since the phone then connects from the network, Charles's
+Access Control list has to admit it, or every request is "lost" with the
+reason only in Charles's log; the certificate's one manual step written
+down, and refused clearly when it has not been done.
 
 ### 6. Fiddler and mitmproxy
 
