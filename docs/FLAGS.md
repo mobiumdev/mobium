@@ -35,6 +35,11 @@ command mentions them.
 | `app_appearance` | `appearance` | string | appearance |
 | `app_appearance` | `device` | string | _global_ --device |
 | `app_appearance` | `driver` | string | _global_ --driver |
+| `app_assistant` | `app` | string | assistant |
+| `app_assistant` | `device` | string | _global_ --device |
+| `app_assistant` | `driver` | string | _global_ --driver |
+| `app_assistant` | `request` | string | assistant |
+| `app_assistant` | `timeout` | number | assistant |
 | `app_audio` | `action` | string | audio |
 | `app_audio` | `app` | string | audio |
 | `app_audio` | `device` | string | _global_ --device |
@@ -355,6 +360,7 @@ arguments and the two global flags.
 | `alert` | app_alert | --button --text | action, button, text |
 | `appearance` | app_appearance | — | appearance |
 | `apps` | app_list_apps | --system | system |
+| `assistant` | app_assistant | --app --timeout | app, request, timeout |
 | `audio` | app_audio | --app --expect --ignore-ms --output | action, app, expect, ignore_ms, path |
 | `audit` | app_audit | — | — |
 | `background` | app_background | --app | app, seconds |

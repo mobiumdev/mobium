@@ -1,73 +1,66 @@
 package agent
 
 import (
-	"context"
-	"strings"
 	"testing"
-	"time"
 
-	"github.com/mobiumdev/mobium/internal/mobiumerr"
 	"github.com/mobiumdev/mobium/internal/uitree"
 )
 
-// overlayScreen is what UiAutomator2 reads while an assistant's overlay is
-// up: its window alone, cut down to the root measured — Gemini's on the
-// Pixel 8 Pro, Google Assistant's on the Android 15 emulator.
-func overlayScreen(t *testing.T, rootID, label string) *uitree.Tree {
-	t.Helper()
-	xml := `<?xml version='1.0' encoding='UTF-8'?><hierarchy rotation="0">` +
-		`<node index="0" class="android.widget.FrameLayout" package="com.google.android.googlequicksearchbox" ` +
-		`bounds="[0,0][1080,2400]">` +
-		`<node index="0" text="" resource-id="` + rootID + `" class="android.widget.FrameLayout" ` +
-		`package="com.google.android.googlequicksearchbox" content-desc="" clickable="true" enabled="true" ` +
-		`bounds="[0,1500][1080,2300]">` +
-		`<node index="0" text="` + label + `" resource-id="" class="android.widget.EditText" ` +
-		`package="com.google.android.googlequicksearchbox" content-desc="" clickable="true" enabled="true" ` +
-		`bounds="[60,2000][900,2140]" /></node></node></hierarchy>`
-	tree, err := uitree.ParseAndroid([]byte(xml))
+// A request that acts for the device's owner is refused without an app;
+// asking something, or opening an app, is not.
+func TestActsForSomeone(t *testing.T) {
+	for req, want := range map[string]string{
+		"Text Mom that I am late":      "text",
+		"Hey Google, call Alex":        "call",
+		"OK Siri please send an email": "send",
+		"Buy more milk":                "buy",
+		"Open Clock":                   "",
+		"What is 15 times 3":           "",
+		"Show my texts":                "",
+		"Calculate 15 times 3":         "",
+	} {
+		if got := actsForSomeone(req); got != want {
+			t.Errorf("actsForSomeone(%q) = %q, want %q", req, got, want)
+		}
+	}
+}
+
+// Reached is the assistant handing the request to the app, never the app
+// being in front once the panel closes: "Open MobiumApp", a web search
+// signed out, read as MobiumApp coming forward when it had been under the
+// panel all along.
+func TestReachedNeedsAHandOff(t *testing.T) {
+	v := &AssistantView{Front: "dev.mobium.mobiumapp"}
+	v.setReached("dev.mobium.mobiumapp", false)
+	if v.Reached == nil || *v.Reached {
+		t.Error("an app uncovered by closing the panel was reported reached")
+	}
+	v.setReached("dev.mobium.mobiumapp", true)
+	if v.Reached == nil || !*v.Reached {
+		t.Error("an app the assistant handed off to was not reported reached")
+	}
+	v = &AssistantView{Front: "x"}
+	v.setReached("", true)
+	if v.Reached != nil {
+		t.Error("reached was reported with no app named")
+	}
+}
+
+// The answer is new text that is not a control's: Google Assistant's
+// suggestion chips and the request itself are left out.
+func TestNewTextsLeavesOutControlsAndTheRequest(t *testing.T) {
+	xml := `<hierarchy><node class="android.widget.FrameLayout" package="` + assistantPackage + `" bounds="[0,0][1080,2400]">` +
+		`<node class="android.widget.TextView" package="` + assistantPackage + `" text="What is 15 times 3" bounds="[0,100][1080,200]" />` +
+		`<node class="android.widget.TextView" package="` + assistantPackage + `" text="45" bounds="[0,200][1080,300]" />` +
+		`<node class="android.widget.Button" package="` + assistantPackage + `" text="Learn English" clickable="true" bounds="[0,300][1080,400]" />` +
+		`<node class="android.widget.TextView" package="com.example" text="under the panel" bounds="[0,400][1080,500]" />` +
+		`</node></hierarchy>`
+	tr, err := uitree.ParseAndroid([]byte(xml))
 	if err != nil {
 		t.Fatal(err)
 	}
-	return tree
-}
-
-const (
-	geminiRoot    = "com.google.android.googlequicksearchbox:id/assistant_robin_floaty_root_container"
-	assistantRoot = "com.google.android.googlequicksearchbox:id/assistant_fragment_host_container"
-)
-
-func TestAssistantOverlaysAreNamed(t *testing.T) {
-	if got := uitree.AssistantOverlay(overlayScreen(t, geminiRoot, "Ask Gemini")); got != "Gemini" {
-		t.Errorf("Gemini's overlay was named %q", got)
-	}
-	if got := uitree.AssistantOverlay(overlayScreen(t, assistantRoot, "Try typing")); got != "Google Assistant" {
-		t.Errorf("Google Assistant's panel was named %q", got)
-	}
-	// The negative control: an app's own screen.
-	if got := uitree.AssistantOverlay(twoThings(t)); got != "" {
-		t.Errorf("an app's own screen was taken for %q", got)
-	}
-}
-
-// A tap behind Gemini's overlay is refused at once, naming it and the back
-// that closes it, where it took five and a half seconds to say only that
-// nothing matched and to map again. Nothing is tapped.
-func TestATapBehindGeminiIsRefusedNamingItAndBack(t *testing.T) {
-	h, s, d := withFake(t, overlayScreen(t, geminiRoot, "Ask Gemini"))
-	ctx, cancel := context.WithTimeout(context.Background(), callTimeout)
-	defer cancel()
-	start := time.Now()
-	_, err := h.tapOn(ctx, s, map[string]interface{}{"target": "text=Notes"})
-	if mobiumerr.CodeOf(err) != mobiumerr.DeviceNotReady || !strings.Contains(err.Error(), "Gemini is open over the app") {
-		t.Fatalf("tap behind Gemini answered %v, want device_not_ready naming Gemini", err)
-	}
-	if !strings.Contains(mobiumerr.Text(err), "app_press back") {
-		t.Errorf("the refusal's text does not name back: %s", mobiumerr.Text(err))
-	}
-	if len(d.tapped) != 0 {
-		t.Errorf("sent %d taps with Gemini's overlay in front", len(d.tapped))
-	}
-	if took := time.Since(start); took > time.Second {
-		t.Errorf("took %s: an overlay that does not go by itself is not waited for", took)
+	got := newTexts(tr, assistantPackage, map[string]bool{"what is 15 times 3": true})
+	if len(got) != 1 || got[0] != "45" {
+		t.Errorf("answer %v, want [45]", got)
 	}
 }

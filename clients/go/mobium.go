@@ -1186,6 +1186,53 @@ func (d *Device) Audit(ctx context.Context) (AuditResult, error) {
 	return out, err
 }
 
+// AssistantAnswer is what Assistant reports.
+type AssistantAnswer struct {
+	Device string `json:"device"`
+	// Assistant is "Gemini", "Google Assistant" or "Siri".
+	Assistant string `json:"assistant"`
+	Request   string `json:"request"`
+	// Typed is always true: the request was typed, not spoken.
+	Typed bool `json:"typed"`
+	// Answer is the text the assistant showed, in screen order; empty when
+	// it showed none a screen read can see.
+	Answer []string `json:"answer"`
+	// Front is the app in front once the assistant was done.
+	Front string `json:"front"`
+	// App is the app named in AssistantOptions, and Reached whether the
+	// assistant handed the request to it; nil when no app was named.
+	App     string `json:"app,omitempty"`
+	Reached *bool  `json:"reached,omitempty"`
+	// Closed says the assistant's panel was closed afterward.
+	Closed bool `json:"closed"`
+}
+
+// AssistantOptions are Assistant's optional arguments.
+type AssistantOptions struct {
+	// App is the app expected to come forward, by package or bundle id.
+	// Required for a request that acts for the device's owner.
+	App string
+	// Timeout is how long to wait for an app or an answer; zero is 15s.
+	Timeout time.Duration
+}
+
+// Assistant asks the platform's assistant in typed text — Gemini or Google
+// Assistant on Android, Siri on a real iPhone — and reports the text it
+// showed and the app in front afterward. Whether a task was done is for the
+// app to show: name it in opts.App and read Reached.
+func (d *Device) Assistant(ctx context.Context, request string, opts AssistantOptions) (AssistantAnswer, error) {
+	args := map[string]any{"request": request}
+	if opts.App != "" {
+		args["app"] = opts.App
+	}
+	if opts.Timeout > 0 {
+		args["timeout"] = opts.Timeout.Seconds()
+	}
+	var out AssistantAnswer
+	err := d.data(ctx, "app_assistant", args, &out)
+	return out, err
+}
+
 // AppStatus is one app's state, from AppState.
 type AppStatus struct {
 	// State is "not_installed", "not_running", "background" or "foreground".

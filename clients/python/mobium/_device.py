@@ -809,6 +809,25 @@ class Device:
         """
         return self._data("app_audit", {}) or {}
 
+    def assistant(self, request: str, app: str | None = None, timeout: float | None = None) -> dict:
+        """Ask the platform's assistant in typed text: Gemini or Google
+        Assistant on Android, Siri on a real iPhone.
+
+        Returns the ``assistant``, the ``answer`` text it showed (a list, empty
+        when it showed none a screen read can see), the app in ``front``
+        afterward, ``typed`` (always true: never spoken) and ``closed``. Whether
+        a task was done is for the app to show: ``app`` names the app expected
+        to come forward and ``reached`` says whether the assistant handed the
+        request to it. A request that acts for the owner — a call, a message,
+        a purchase — raises InvalidArgumentError without ``app``.
+        """
+        args: dict = {"request": request}
+        if app:
+            args["app"] = app
+        if timeout is not None:
+            args["timeout"] = timeout
+        return self._data("app_assistant", args) or {}
+
     def app_state(self, app: str) -> dict:
         """One app's state: ``not_installed``, ``not_running``, ``background``
         or ``foreground``, for any app.

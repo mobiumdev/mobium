@@ -103,6 +103,48 @@
       "global": true
     },
     {
+      "tool": "app_assistant",
+      "arg": "app",
+      "type": "string",
+      "setBy": [
+        "assistant"
+      ]
+    },
+    {
+      "tool": "app_assistant",
+      "arg": "device",
+      "type": "string",
+      "setBy": [
+        "--device"
+      ],
+      "global": true
+    },
+    {
+      "tool": "app_assistant",
+      "arg": "driver",
+      "type": "string",
+      "setBy": [
+        "--driver"
+      ],
+      "global": true
+    },
+    {
+      "tool": "app_assistant",
+      "arg": "request",
+      "type": "string",
+      "setBy": [
+        "assistant"
+      ]
+    },
+    {
+      "tool": "app_assistant",
+      "arg": "timeout",
+      "type": "number",
+      "setBy": [
+        "assistant"
+      ]
+    },
+    {
       "tool": "app_audio",
       "arg": "action",
       "type": "string",
@@ -2722,6 +2764,21 @@
       ],
       "sends": [
         "system"
+      ]
+    },
+    {
+      "command": "assistant",
+      "tools": [
+        "app_assistant"
+      ],
+      "flags": [
+        "--app",
+        "--timeout"
+      ],
+      "sends": [
+        "app",
+        "request",
+        "timeout"
       ]
     },
     {

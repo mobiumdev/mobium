@@ -642,6 +642,25 @@ namespace Mobium
             Data("app_audit", Args());
 
         /// <summary>
+        /// Asks the platform's assistant in typed text: Gemini or Google
+        /// Assistant on Android, Siri on a real iPhone. The answer holds the
+        /// <c>assistant</c>, the <c>answer</c> text it showed (empty when it
+        /// showed none a screen read can see), the app in <c>front</c>
+        /// afterward, <c>typed</c> (always true) and <c>closed</c>. <c>app</c>
+        /// names the app expected to come forward, and <c>reached</c> says
+        /// whether the assistant handed the request to it; a request that acts
+        /// for the owner — a call, a message, a purchase — throws without it.
+        /// </summary>
+        public IDictionary<string, object?> Assistant(string request, string? app = null, double timeoutSeconds = 0)
+        {
+            var args = Args();
+            args["request"] = request;
+            if (!string.IsNullOrWhiteSpace(app)) args["app"] = app;
+            if (timeoutSeconds > 0) args["timeout"] = timeoutSeconds;
+            return Data("app_assistant", args);
+        }
+
+        /// <summary>
         /// One app's state, for any app: <c>state</c> is not_installed,
         /// not_running, background or foreground. An app under its own
         /// permission prompt is still in front, and <c>covered_by</c> names

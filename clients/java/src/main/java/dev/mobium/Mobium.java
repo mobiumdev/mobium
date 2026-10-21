@@ -1071,6 +1071,27 @@ public final class Mobium implements AutoCloseable {
     }
 
     /**
+     * Asks the platform's assistant in typed text: Gemini or Google Assistant
+     * on Android, Siri on a real iPhone. The answer holds the
+     * {@code assistant}, the {@code answer} text it showed (empty when it
+     * showed none a screen read can see), the app in {@code front}
+     * afterward, {@code typed} (always true) and {@code closed}.
+     *
+     * @param request what to ask, as a person would type it
+     * @param app the app expected to come forward, or null; {@code reached}
+     *     says whether the assistant handed the request to it. Required for a
+     *     request that acts for the owner — a call, a message, a purchase
+     * @param timeoutSeconds how long to wait for an app or an answer; 0 is 15
+     */
+    public Map<String, Object> assistant(String request, String app, double timeoutSeconds) {
+        Map<String, Object> args = new LinkedHashMap<>();
+        args.put("request", request);
+        if (app != null && !app.isBlank()) args.put("app", app);
+        if (timeoutSeconds > 0) args.put("timeout", timeoutSeconds);
+        return data("app_assistant", args);
+    }
+
+    /**
      * One app's state, for any app: {@code state} is not_installed,
      * not_running, background or foreground. An app under its own permission
      * prompt is still in front, and {@code covered_by} names the prompt's

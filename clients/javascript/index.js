@@ -1070,6 +1070,22 @@ export class Device {
   }
 
   /**
+   * Asks the platform's assistant in typed text: Gemini or Google Assistant
+   * on Android, Siri on a real iPhone. Resolves to the `assistant`, the
+   * `answer` text it showed (empty when it showed none a screen read can
+   * see), the app in `front` afterward, `typed` (always true) and `closed`.
+   * `app` names the app expected to come forward, and `reached` says whether
+   * the assistant handed the request to it; a request that acts for the
+   * owner — a call, a message, a purchase — rejects without it.
+   */
+  async assistant(request, { app, timeout } = {}) {
+    const args = { request }
+    if (app) args.app = app
+    if (timeout !== undefined) args.timeout = timeout
+    return (await this.#data('app_assistant', args)) || {}
+  }
+
+  /**
    * One app's state: `not_installed`, `not_running`, `background` or
    * `foreground`, for any app. An app under its own permission prompt is
    * still in front, and `covered_by` names the prompt's process. On iOS a
