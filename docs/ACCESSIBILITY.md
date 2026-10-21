@@ -292,9 +292,29 @@ refuses the simulator.
   value; the replacement is the rule anyway.
 - **On the Screen Reader Demo** both platforms speak the icon with no name
   as a bare "Button" and Send as "Submit form"; TalkBack says "Save button.
-  Button". The fourth row — a cart count changed with no word, beside one in
-  a live region — is not heard by a walk: it needs what is said after a tap,
-  a listening mode not built.
+  Button".
+- **Listening: what an action makes it say.** `speech --listen start`, the
+  action, then `--listen stop`, which answers with every sentence said in
+  between. It starts before the action because a live region's change was
+  said 0.4 seconds after the tap, before a later call could arrive. On
+  Android it is TalkBack's log after a mark, each sentence with its cause —
+  `focus`, `announcement` or `change` — from the event TalkBack logs. A stop
+  waits until TalkBack has stopped talking, not until its log goes quiet: a
+  sentence is logged when its turn comes, and a polite live region's "Live
+  cart: 1" waited about five seconds behind a paragraph TalkBack was still
+  reading; TalkBack logs each word as it begins it, and a new word is talk.
+  On an iPhone, which keeps no log, VoiceOver is asked what it is saying
+  every quarter second: through a wrong sign-in it gave "Log In Button",
+  "Signing in… dimmed" and the app's announcement "Incorrect username or
+  password." in turn. WebDriverAgent does not say why, so iOS steps have no
+  cause, and a sentence over in less than a poll can fall between two.
+- **What listening heard on MobiumApp.** A wrong sign-in's announcement
+  (`announceForAccessibility`) on both platforms. On Android "Live cart: 1",
+  a change on screen, while "Add quietly"'s count was never said — though
+  its re-render made TalkBack say the unchanged "Live cart: 0" again. On an
+  iPhone neither cart is said: React Native's `accessibilityLiveRegion` is
+  Android's alone, so MobiumApp's live cart is silent there — the app's gap,
+  reported as heard.
 
 Not measured: TalkBack's other keymap, VoiceOver's `in` and `out`, a walk
 backward, and the speech of a WebView's page on either platform.

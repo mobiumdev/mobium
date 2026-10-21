@@ -1116,6 +1116,31 @@ public final class Mobium implements AutoCloseable {
     }
 
     /**
+     * Starts listening to what the screen reader says, before an action.
+     *
+     * @return that it is listening
+     */
+    public Map<String, Object> listenStart() {
+        Map<String, Object> args = new LinkedHashMap<>();
+        args.put("listen", "start");
+        return data("app_speech", args);
+    }
+
+    /**
+     * Stops listening, after an action: waits for the screen reader to go quiet and
+     * answers with every sentence it said since {@link #listenStart()}, each
+     * step with its {@code cause} on Android — {@code focus}, {@code announcement} or
+     * {@code change}.
+     *
+     * @return what TalkBack said while listening
+     */
+    public Map<String, Object> listenStop() {
+        Map<String, Object> args = new LinkedHashMap<>();
+        args.put("listen", "stop");
+        return data("app_speech", args);
+    }
+
+    /**
      * One app's state, for any app: {@code state} is not_installed,
      * not_running, background or foreground. An app under its own permission
      * prompt is still in front, and {@code covered_by} names the prompt's

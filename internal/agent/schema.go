@@ -1973,7 +1973,7 @@ func GetToolSchemas() []Tool {
 				"on). TalkBack is moved with a USB keyboard Android makes for the call and read from its log, which " +
 				"holds what it says only with TalkBack's Developer settings, Log output level, at VERBOSE. A " +
 				"sentence about a password field is not shown. A simulator's runner cannot reach VoiceOver and is " +
-				"refused.",
+				"refused. With `listen`, it hears what an action makes the screen reader say: start, act, stop.",
 			InputSchema: map[string]interface{}{
 				"type": "object",
 				"properties": withDevice(map[string]interface{}{
@@ -1988,6 +1988,14 @@ func GetToolSchemas() []Tool {
 					"limit": map[string]interface{}{
 						"type":        "integer",
 						"description": "How many moves a walk makes at most, or putting the cursor on target takes on Android. Default 40, at most 200.",
+					},
+					"listen": map[string]interface{}{
+						"type": "string",
+						"enum": []string{"start", "stop"},
+						"description": "Listen to what the screen reader says while you act: \"start\" before the action, \"stop\" after, " +
+							"which waits for quiet and answers with every sentence said since, each with its cause — the cursor " +
+							"moving, an announcement, or a change on screen such as a live region's. On an iPhone, what VoiceOver " +
+							"said, asked every quarter second, with no cause.",
 					},
 				}),
 				"additionalProperties": false,

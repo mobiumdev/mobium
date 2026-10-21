@@ -2153,6 +2153,14 @@
     },
     {
       "tool": "app_speech",
+      "arg": "listen",
+      "type": "string",
+      "setBy": [
+        "speech"
+      ]
+    },
+    {
+      "tool": "app_speech",
       "arg": "target",
       "type": "string",
       "setBy": [
@@ -3552,10 +3560,12 @@
       ],
       "flags": [
         "--limit",
+        "--listen",
         "--walk"
       ],
       "sends": [
         "limit",
+        "listen",
         "target",
         "walk"
       ]

@@ -1091,13 +1091,15 @@ export class Device {
    * `said` and the `element` it was said about; with `target` the cursor is
    * put on that element first, and with `walk` it moves forward through the
    * screen until it goes no further, comes back round or makes `limit`
-   * moves, which `ended` says.
+   * moves, which `ended` says. `listen: 'start'` before an action and
+   * `listen: 'stop'` after it answer with what the screen reader said in between.
    */
-  async speech({ target, walk, limit } = {}) {
+  async speech({ target, walk, limit, listen } = {}) {
     const args = {}
     if (target) args.target = target
     if (walk) args.walk = true
     if (limit !== undefined) args.limit = limit
+    if (listen) args.listen = listen
     return (await this.#data('app_speech', args)) || {}
   }
 
