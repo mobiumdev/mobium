@@ -7498,6 +7498,56 @@ screen with no such slider. On the Pixel `slider.sh` then passed in full,
 the page; on the emulator it and `web-actionability.sh` still passed. The
 captured screen is `mobiumapp-slider-webview155-uia2.xml`.
 
+### 348. With VoiceOver on, a tap moved its cursor and was reported done
+
+**Found by:** measuring what WebDriverAgent's VoiceOver routes give, on the
+iPhone 15 Plus on iOS 27.0.1, for a plan of what Mobium could do for people
+who use a screen reader. With VoiceOver on, a touch is not a tap: it moves
+VoiceOver's cursor to what it touches, as a person's single tap does, and a
+double tap anywhere activates what the cursor is on. So on MobiumApp
+`tap "label=Pro"` answered `tapped label=Pro` and the radio stayed
+unchecked; `check` read back and refused, and so did an alert's button; a
+swipe moved the cursor and scrolled nothing, and `scroll-to` blamed the end
+of the list; typing reached no field — VoiceOver said "Double tap to edit."
+— and was blamed on a dropped keystroke (61). In a WebView, the same. With
+VoiceOver off every one of them landed, and on an iPhone 18 Pro simulator on
+iOS 27.0 Settings did the same: a touch on General moved the cursor there,
+a double tap opened it.
+
+The routes were there all along and answered "This API requires an iOS 27+
+runtime" — on an iOS 27 phone. The phone's runner had been built by Xcode
+26.6 and kept through the update to 27.1, and a runner keeps the XCTest
+frameworks of the Xcode that built it: 26.6's XCUIAutomation has no VoiceOver
+service. Rebuilt, every route answered, and asking whether VoiceOver is on
+took 5 to 22ms. **Fixed:** before a touch, iOS asks. With VoiceOver on, a
+tap, `check`, an alert's button and a dialog rule touch, read VoiceOver's
+cursor back and match it against the target's name — a cursor that landed on
+something else is refused before anything is activated — and double-tap;
+typing gives the field focus that way first; every other touch is refused,
+saying VoiceOver is on. A phone's runner built for another SDK than the
+installed Xcode's is rebuilt. With VoiceOver off, or a runner that cannot
+tell, nothing changes. Measured cost: XCTest's touch takes about 5.5 seconds
+with VoiceOver on — by W3C actions or WebDriverAgent's own tap, with its idle
+and animation waits at zero or not — so a VoiceOver tap is about 7 seconds
+against 1. `voiceover.sh` passed on the iPhone in two minutes, and with
+`main`'s binary failed at its first tap. Left: a simulator, whose runner is
+WebDriverAgent's prebuilt release and cannot reach VoiceOver; scrolling with
+VoiceOver on, which its cursor's moves do; and the five seconds.
+
+Android needed nothing. With TalkBack on, on the Android 15 emulator and the
+Pixel 8 Pro on Android 17, a tap, a radio, `check` and `uncheck`,
+`scroll-to`, typing, an alert's button and a WebView's checkbox all landed
+at their usual speed: Mobium's touches are injected, and TalkBack explores
+only a finger's (208). One thing it did not take: the permission prompt
+TalkBack's own app raises as it comes on. The first press of its "Don't
+allow" left it up, three times in three on the Pixel and once in five on
+the emulator, and the second press took it — read back, and refused, never
+reported done. Why the first is lost is not measured. And turning TalkBack
+off, the system wrote `accessibility_enabled` back to 1 after the check had
+put back the phone's 0, while TalkBack was still unbinding:
+`screen-reader.sh` now waits for touch exploration to end before putting it
+back, and reads it back after a pause.
+
 ## Findings that were not defects
 
 Worth recording because each one closed off an approach that looked obvious.

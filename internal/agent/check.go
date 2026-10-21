@@ -85,11 +85,11 @@ func (h *Handlers) checkOn(ctx context.Context, s *session, args map[string]inte
 
 	// Aimed like any tap, so a control the app drew over this one is not
 	// pressed in its place (CHALLENGES 115).
-	_, aim, err := h.resolveAim(ctx, s, target)
+	aimed, aim, err := h.resolveAim(ctx, s, target)
 	if err != nil {
 		return nil, err
 	}
-	if err := s.driver.Tap(ctx, aim.X, aim.Y); err != nil {
+	if err := h.touch(ctx, s, aim.X, aim.Y, accessibleName(aimed)); err != nil {
 		return nil, err
 	}
 
@@ -155,7 +155,7 @@ func (h *Handlers) checkWeb(ctx context.Context, s *session, target string, want
 	if err != nil {
 		return nil, err
 	}
-	if err := s.driver.Tap(ctx, x, y); err != nil {
+	if err := h.touch(ctx, s, x, y, ""); err != nil {
 		return nil, err
 	}
 

@@ -70,3 +70,21 @@ func TestPhoneWDANameRenamesOnlyTheRunner(t *testing.T) {
 		}
 	}
 }
+
+// A runner keeps the frameworks of the Xcode that built it: one built by
+// Xcode 26.6 could not reach VoiceOver on an iOS 27 phone, and was kept
+// through the update to 27.1. So a build for another SDK is rebuilt.
+func TestARunnerIsRebuiltForAnotherSDK(t *testing.T) {
+	run := "/x/build/Build/Products/WebDriverAgentRunner_iphoneos26.5-arm64.xctestrun"
+	for _, c := range []struct {
+		sdk  string
+		want bool
+	}{{"26.5", true}, {"27.1", false}, {"", true}} {
+		if got := builtWithSDK(run, c.sdk); got != c.want {
+			t.Errorf("builtWithSDK(%q, %q) = %v, want %v", run, c.sdk, got, c.want)
+		}
+	}
+	if !builtWithSDK("/x/odd-name.xctestrun", "27.1") {
+		t.Error("a run description whose name gives no SDK was rebuilt")
+	}
+}

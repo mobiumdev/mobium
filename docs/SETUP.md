@@ -352,6 +352,16 @@ on, taps, scrolls and typing still land: Mobium's touches are injected, not
 explored. Nothing in the device's settings changes either way.
 `docs/checks/screen-reader.sh` checks it on an emulator.
 
+On iOS, VoiceOver changes what a touch is: it moves VoiceOver's cursor, and
+a double tap activates what the cursor is on. With VoiceOver on, Mobium taps
+as a VoiceOver user does — `tap`, `check`, `type` and a dialog's button
+work, more slowly — and refuses any other gesture, saying so (CHALLENGES
+348). It can tell only with iOS 27 and a runner built by Xcode 27, which a
+phone's is once Mobium rebuilds it; a simulator's is not.
+`docs/checks/voiceover.sh` checks it on an iPhone.
+TalkBack is not that case: Mobium's touches land with it on, at their usual
+speed, since it explores only a finger's.
+
 `MOBIUM_DUMP_READER=mobium` uses Mobium's reader for every read, and
 `=uiautomator` uses `uiautomator dump` for every read. **It is read by the
 daemon**, so it takes effect only if it is set when the daemon starts — set

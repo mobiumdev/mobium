@@ -141,7 +141,7 @@ func (h *Handlers) answerByRule(ctx context.Context, s *session) (bool, error) {
 		}
 	} else {
 		x, y := button.Bounds.Center()
-		if err := s.driver.Tap(ctx, x, y); err != nil {
+		if err := h.touch(ctx, s, x, y, accessibleName(button)); err != nil {
 			return false, err
 		}
 	}

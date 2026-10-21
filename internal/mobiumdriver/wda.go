@@ -88,6 +88,9 @@ type WDA struct {
 	axPend axPending
 
 	mu sync.Mutex
+	// voiceOverUnsupported is set once the runner has said it cannot answer
+	// whether VoiceOver is on: built before Xcode 27. See voiceover.go.
+	voiceOverUnsupported bool
 	// scale converts WebDriverAgent's points to device pixels. Mobium's
 	// coordinate space is pixels on both platforms, so this is applied to
 	// every tree read and undone for every gesture sent.
@@ -100,6 +103,8 @@ func NewWDA(sim *device.Simctl) *WDA {
 	w := &WDA{sim: sim, w3c: newW3CClient(requestTimeout), scale: 1}
 	if sim != nil && sim.TV {
 		w.w3c.noTouch = errTVNoTouch
+	} else {
+		w.w3c.touchGuard = w.voiceOverGuard
 	}
 	return w
 }
@@ -116,7 +121,9 @@ var errTVNoTouch = mobiumerr.New(mobiumerr.Unsupported, "an Apple TV has no touc
 // NewWDAPhone prepares a driver for a real iPhone. Nothing touches the phone
 // until Start.
 func NewWDAPhone(phone *device.Devicectl) *WDA {
-	return &WDA{phone: phone, w3c: newW3CClient(requestTimeout), scale: 1}
+	w := &WDA{phone: phone, w3c: newW3CClient(requestTimeout), scale: 1}
+	w.w3c.touchGuard = w.voiceOverGuard
+	return w
 }
 
 func (w *WDA) Name() string { return "ios/wda" }
@@ -626,6 +633,9 @@ func (w *WDA) SetSliderPosition(ctx context.Context, n *uitree.Node, position fl
 // Android is unaffected — measured, not assumed — which is why this sits here
 // rather than in the shared client. See CHALLENGES 61.
 func (w *WDA) SetText(ctx context.Context, n *uitree.Node, text string) error {
+	if err := w.focusFieldForVoiceOver(ctx, n); err != nil {
+		return err
+	}
 	// On an Apple TV with the keyboard up for this field, the field is the
 	// keyboard's text view (CHALLENGES 333).
 	elID, _, ok, err := w.tvKeyboardFor(ctx, n)

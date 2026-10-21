@@ -63,8 +63,17 @@ restore() {
   $M daemon stop >/dev/null 2>&1 || true
   if [ "$was_svc" = null ]; then a settings delete secure enabled_accessibility_services >/dev/null
   else a "settings put secure enabled_accessibility_services '$was_svc'"; fi
-  if [ "$was_on" = null ]; then a settings delete secure accessibility_enabled >/dev/null
-  else a "settings put secure accessibility_enabled '$was_on'"; fi
+  # While TalkBack unbinds the system writes accessibility_enabled itself: on
+  # the Pixel 8 Pro it was 1 again after the phone's 0 had been put back
+  # (CHALLENGES 348). So it is put back once touch exploration has ended,
+  # and read back after a pause.
+  _i=0; until [ "$(exploring)" != true ] || [ $_i -ge 15 ]; do _i=$((_i + 1)); sleep 1; done
+  for _k in 1 2 3; do
+    if [ "$was_on" = null ]; then a settings delete secure accessibility_enabled >/dev/null
+    else a "settings put secure accessibility_enabled '$was_on'"; fi
+    sleep 2
+    [ "$(a settings get secure accessibility_enabled)" = "$was_on" ] && break
+  done
 }
 at_exit restore
 
