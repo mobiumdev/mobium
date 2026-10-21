@@ -7667,6 +7667,28 @@ line's start; and both checks read the keys before any session. On the
 Pixel `screen-reader-setting.sh` and `speech.sh` then passed, every setting
 as found against a baseline taken with no session open.
 
+### 354. Siri opened the app, and a read during the hand-off said it had not
+
+**Found by:** `assistant.sh` on the iPhone 15 Plus (ACCESSIBILITY.md, step
+6), which once in four runs reported "Open MobiumApp did not reach
+dev.mobium.mobiumapp: com.apple.springboard in front", while a request by
+hand and two whole runs after it reached the app. It looked like a cold Siri
+— a first request failing was what the simulator (351) and the emulator's
+Google Assistant had done — and it was not: timed by the app in front every
+quarter second, a request after more than half an hour idle and two straight
+after it alike put SpringBoard in front at 0.6 to 0.8 seconds and MobiumApp
+at 1.4. Siri's window is SpringBoard's, and `app_assistant` read the screen
+every 0.7 seconds and stopped at the first read with no Siri panel and an app
+other than the one it started in. A read begun just after the request
+blocked until about 4 seconds and came back as SpringBoard with no Siri
+window — three times in three, the next read MobiumApp — so a read that
+landed there took SpringBoard for the hand-off. Mobium's own reads missed
+the window 8 times in 8 that afternoon, which is why it was one run in four.
+**Fixed:** SpringBoard in front is never where Siri handed off, unless the
+request was made from it; a request whose answer leaves SpringBoard in front
+is still reported so when the wait ends. A test of the decision fails on the
+old rule; `assistant.sh` then passed three runs of three on the iPhone.
+
 ## Findings that were not defects
 
 Worth recording because each one closed off an approach that looked obvious.

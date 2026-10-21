@@ -354,9 +354,9 @@ func (h *Handlers) askSiri(ctx context.Context, s *session, request, app string,
 			continue
 		}
 		if !uitree.SiriPanel(t) {
-			if panel || t.Package() != was {
-				view.Front = t.Package()
-				handedOff = t.Package() != was || !panel
+			if done, front := siriSettled(t, was, panel); done {
+				view.Front = front
+				handedOff = front != was || !panel
 				break
 			}
 			continue
@@ -386,6 +386,25 @@ func (h *Handlers) askSiri(ctx context.Context, s *session, request, app string,
 	}
 	view.setReached(app, handedOff)
 	return view, nil
+}
+
+// siriSettled decides one read with no Siri panel in it: whether Siri is
+// done, and the app in front once it is. SpringBoard in front is never where
+// Siri handed off, unless the request was made from it: Siri runs in
+// SpringBoard, and on the iPhone a read begun just after the request blocked
+// until the hand-off and came back as SpringBoard with no Siri window — three
+// times in three, the next read MobiumApp. Taken for the hand-off, it was
+// reported as "not reached", one run in four of assistant.sh. A request whose
+// answer leaves SpringBoard in front is still reported so when the wait ends.
+func siriSettled(t *uitree.Tree, was string, panel bool) (done bool, front string) {
+	pkg := t.Package()
+	if pkg == springboardBundleID && was != springboardBundleID {
+		return false, ""
+	}
+	if panel || pkg != was {
+		return true, pkg
+	}
+	return false, ""
 }
 
 // siriChrome are the controls Siri's panel shows beside an answer, measured

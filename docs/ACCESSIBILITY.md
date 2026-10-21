@@ -445,12 +445,12 @@ refuses the simulator. On the phones, with `ALLOW_PHONE=1`, on 2026-10-21 —
 each request goes to the owner's account: on the Pixel 8 Pro, Gemini's
 "Open Calculator" brought Calculator forward and the control was not
 reached; on the iPhone 15 Plus, Siri's "Open MobiumApp" reached MobiumApp
-three times in four. The first request of the run left the home screen in
-front — Siri handed nothing to the app within the wait, and its panel was
-closed with Home — and a request by hand and two whole runs after it passed.
-A first request failing is what the simulator's Siri (CHALLENGES 351) and
-the emulator's Google Assistant did too; whether Siri was slow or answered
-without opening the app was not seen.
+three times in four. The fourth was Mobium's, not Siri's (CHALLENGES 354):
+a read taken during Siri's hand-off can come back as SpringBoard with no
+Siri window, and was taken for where Siri had handed off. Timed, a cold
+request and warm ones alike put SpringBoard in front at about 0.6 seconds and
+MobiumApp at 1.4; SpringBoard is now never the hand-off unless the request
+was made from it, and `assistant.sh` passed three runs after.
 
 Still to do:
 - **Alexa on a Fire TV**: measured, and unreachable — it listens only
