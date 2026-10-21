@@ -150,7 +150,13 @@ and the Wide Viewport screen gave three hit-region findings, its links 38×10pt
 as `map` is, keeping a contrast finding that names no element; Android is
 refused, naming `screen --inspect`. `docs/checks/audit.sh` holds it.
 
-### Siri — 2026-09-23
+### Siri — 2026-09-23, and on iOS 27 since 2026-10-20
+
+On iOS 27.0.1 it is the same, with two differences: a sum's answer is plain
+text ("15 × 3 =", "45", with copy and Listen), which `text` reads and `map`
+does not list, and a tap behind Siri's panel found nothing until Mobium
+learned to wait for it (CHALLENGES 349, `siri.sh`). The panel stays 8.2 to
+8.3 seconds; "Open MobiumApp" brought the app forward in about a second.
 
 WebDriverAgent's `/wda/siri/activate` with `{"text": …}` hands Siri typed
 text and answers in 0.4 seconds on the phone. The answer is SpringBoard's —

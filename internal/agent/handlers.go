@@ -1566,6 +1566,7 @@ func (h *Handlers) resolveNode(ctx context.Context, s *session, target string) (
 	// A dialog in the way is refused below; a declared rule for it answers
 	// it instead, and the target is resolved again. Bounded, because a rule
 	// whose button raises another dialog must not loop forever.
+	waitedForSiri := false
 	for i := 0; ; i++ {
 		n, t, err := h.resolveNodeOnce(ctx, s, target)
 		if err == nil {
@@ -1576,6 +1577,23 @@ func (h *Handlers) resolveNode(ctx context.Context, s *session, target string) (
 				return nil, nil, cerr
 			}
 			return n, t, nil
+		}
+		// Siri's panel closes by itself, so it is waited for once, as the
+		// clipboard's preview is, and the target resolved again.
+		if siriInTheWay(err) && !waitedForSiri {
+			waitedForSiri = true
+			gone, werr := h.waitOutSiri(ctx, s)
+			if werr != nil {
+				return nil, nil, werr
+			}
+			if gone {
+				continue
+			}
+			loc, lerr := h.locatorFor(s.dev.Serial, target)
+			if lerr != nil {
+				loc = uitree.Locator{Kind: uitree.KindText, Value: target}
+			}
+			return nil, nil, siriOver(loc, siriPanelTimeout)
 		}
 		if i >= maxDialogsPerCall || !dialogInTheWay(err) {
 			return n, t, forRemote(s, err)
@@ -1683,6 +1701,55 @@ func (h *Handlers) waitOutClipboardPreview(ctx context.Context, s *session, n *u
 	}
 }
 
+// siriPanelPoll is how often a target behind Siri's panel looks again, and
+// siriPanelTimeout how long it waits: its own budget, since the panel stayed
+// 8.2 to 8.3 seconds after "What time is it", three times in three, and an
+// action's implicit wait is two. A variable so a test can shorten it.
+const siriPanelPoll = 300 * time.Millisecond
+
+var siriPanelTimeout = 12 * time.Second
+
+// waitOutSiri waits, up to siriPanelTimeout, for Siri's panel to go, and
+// reports whether it went. A read that fails is not taken as gone.
+func (h *Handlers) waitOutSiri(ctx context.Context, s *session) (bool, error) {
+	deadline := time.Now().Add(siriPanelTimeout)
+	for {
+		if t, err := s.driver.Snapshot(ctx); err == nil && !uitree.SiriPanel(t) {
+			return true, nil
+		}
+		if !time.Now().Before(deadline) {
+			return false, nil
+		}
+		select {
+		case <-ctx.Done():
+			return false, ctx.Err()
+		case <-time.After(siriPanelPoll):
+		}
+	}
+}
+
+// siriOver is the refusal for a target behind Siri's panel: it names Siri,
+// where it used to say only that nothing matched and to map again, which
+// cannot help while the panel is up. waited is how long it was waited for,
+// zero before the wait.
+func siriOver(loc uitree.Locator, waited time.Duration) error {
+	msg := fmt.Sprintf("Siri's panel is in front of the app, and nothing on it matches %s; it closes by itself "+
+		"about eight seconds after Siri answers", loc)
+	if waited > 0 {
+		msg += fmt.Sprintf(", and was still there after %s", waited)
+	}
+	return mobiumerr.New(mobiumerr.DeviceNotReady, "%s", msg).
+		WithRemedy("wait for Siri's panel to close, then try again").
+		WithDetail("locator", loc.String()).
+		WithDetail("siri", true)
+}
+
+// siriInTheWay reports the refusal siriOver makes, which resolveNode waits on.
+func siriInTheWay(err error) bool {
+	e, ok := mobiumerr.As(err)
+	return ok && e.Code == mobiumerr.DeviceNotReady && e.Details["siri"] != nil
+}
+
 // resolveNodeOnce is resolveNode without the dialog rules.
 func (h *Handlers) resolveNodeOnce(ctx context.Context, s *session, target string) (*uitree.Node, *uitree.Tree, error) {
 	loc, err := h.locatorFor(s.dev.Serial, target)
@@ -1771,6 +1838,12 @@ func (h *Handlers) resolveNodeOnce(ctx context.Context, s *session, target strin
 			if text, aerr := a.AlertText(ctx); aerr == nil {
 				return nil, nil, dialogOver(text, loc, false)
 			}
+		}
+		// Siri's panel, which is SpringBoard's and no alert, so the target is
+		// not found and a scroll would swipe Siri's panel; it goes by itself,
+		// and resolveNode waits for it (CHALLENGES 349).
+		if uitree.SiriPanel(tree) {
+			return nil, nil, siriOver(loc, 0)
 		}
 		// An app's own dialog, which the platform's alert endpoint does not
 		// know: a Jetpack Compose dialog is a window of its own that the

@@ -7548,6 +7548,32 @@ put back the phone's 0, while TalkBack was still unbinding:
 `screen-reader.sh` now waits for touch exploration to end before putting it
 back, and reads it back after a pause.
 
+### 349. A tap behind Siri's panel found nothing, and said to map again
+
+**Found by:** measuring Siri on the iPhone 15 Plus, iOS 27.0.1, for the
+assistive-technology plan (`docs/ACCESSIBILITY.md`), asking only "What time
+is it" and sums. Siri's panel over MobiumApp's Form Demo stayed 8.2 to 8.3
+seconds, three times in three, and while it was up `current` said SpringBoard
+and `map` listed neither the app nor Siri's answer: WebDriverAgent reads
+SpringBoard then, and the app under the panel is not in its tree. A tap on
+the Pro radio sent a second and a half in took about eight seconds and
+answered "no element matches label=Pro … run app_map again", three times in
+three, with Pro unchanged — a remedy that cannot help while the panel is up,
+and a cause that never named Siri. SpringBoard's tree holds a visible,
+full-screen window named `siri-interface-window` with Siri's card in it; an
+app's own read never had one. **Fixed:** a target not found on a tree with
+that window waits for it to go, up to twelve seconds of its own, as Android's
+clipboard preview is waited out (113), and is resolved again; a panel that
+stays is refused as `device_not_ready`, naming Siri's panel and the wait. It
+is asked before the scroll a miss would make, which would have swiped Siri.
+`siri.sh` taps a second and a half into the panel: it fails with `main`'s
+binary twice in two and passes with this twice in two, waiting about six
+seconds. Its first version read the screen twice before tapping, which put
+the tap five seconds in, and then it passed without the fix too — by
+timing — so it reads only what is in front. On iOS 27 Siri's answer to a sum
+is plain text ("15 × 3 =", "45"), which `text` reads and `map` does not
+list; on 26.6.2 `map` read it as one button.
+
 ## Findings that were not defects
 
 Worth recording because each one closed off an approach that looked obvious.
