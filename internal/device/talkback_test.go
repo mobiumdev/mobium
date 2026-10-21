@@ -28,8 +28,11 @@ func TestTalkBackSpokenReadsEachUtterance(t *testing.T) {
 	if got[1].Text != "not checked. Email me. Check box Double-tap to toggle" || !got[1].Focus || got[1].ID != 5 {
 		t.Errorf("an utterance's fragments are not joined: %+v", got[1])
 	}
-	if got[2].Focus {
+	if got[2].Focus || got[2].Event != "TYPE_ANNOUNCEMENT" {
 		t.Errorf("an announcement read as a move of the cursor: %+v", got[2])
+	}
+	if got[3].Event != "" {
+		t.Errorf("a line with no event has one: %+v", got[3])
 	}
 	if got[3].Focus || got[3].ID != 17 {
 		t.Errorf("a line with no event: %+v", got[3])
@@ -47,5 +50,21 @@ func TestTalkBackSpokenEmptyIsNone(t *testing.T) {
 	got, err := parseTalkBackSpoken([]byte("--------- beginning of main\n"))
 	if err != nil || len(got) != 0 {
 		t.Fatalf("got %v, %v; want none", got, err)
+	}
+}
+
+// TalkBack logs each word as it begins it: the last one's time says whether
+// it is still talking.
+func TestTalkBackHeardKnowsTheLastWord(t *testing.T) {
+	log := talkBackLog + "         1792605255.775  1406  4899 V talkback: FeedbackFragmentsIterator: onFragmentRangeStarted ,  speak word = off\n"
+	spoken, last, err := parseTalkBackHeard([]byte(log))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if last != 1792605255775 {
+		t.Errorf("last word at %d, want 1792605255775", last)
+	}
+	if len(spoken) != 5 {
+		t.Errorf("a word line was read as an utterance: %d utterances", len(spoken))
 	}
 }

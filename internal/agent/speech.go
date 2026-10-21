@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"sync"
 	"time"
 	"unicode"
 
@@ -34,6 +35,13 @@ func (h *Handlers) speech(ctx context.Context, args map[string]interface{}) (*To
 	if target != "" && s.web != nil {
 		return nil, mobiumerr.New(mobiumerr.Unsupported, "a screen reader's cursor is put on a native element; "+
 			"switch to NATIVE_APP with app_context first, and the walk reads the page's content too")
+	}
+	if listen := stringArg(args, "listen"); listen != "" {
+		if target != "" || boolArg(args, "walk") {
+			return nil, mobiumerr.New(mobiumerr.InvalidArgument, "listen is on its own: start it, act, and stop it — "+
+				"not with a target or a walk")
+		}
+		return h.speechListen(ctx, s, listen)
 	}
 	walk := boolArg(args, "walk")
 	limit := intArgOr(args, "limit", speechLimit)
@@ -75,11 +83,18 @@ type SpeechView struct {
 	Steps []SpeechStep `json:"steps"`
 	// Ended says why a walk stopped: "end", the cursor would go no further;
 	// "wrapped", it came back round to the first element; "limit", the moves
-	// ran out. Absent when nothing walked.
+	// ran out; "listened", a listen stopped, and Steps is what was said since
+	// it started. Absent when nothing walked.
 	Ended string `json:"ended,omitempty"`
 	// Answered names a notice the call itself raised and answered: TalkBack
 	// 17 tells of its new keymap when a keyboard connects.
 	Answered string `json:"answered,omitempty"`
+	// Listening says the screen reader is being listened to, after a listen
+	// start; a stop answers with what it said since, in Steps.
+	Listening bool `json:"listening,omitempty"`
+	// StillTalking says a listen stopped at its limit while the screen
+	// reader was still speaking: what it says next is not in Steps.
+	StillTalking bool `json:"still_talking,omitempty"`
 }
 
 // SpeechStep is one sentence and what it was said about.
@@ -87,6 +102,11 @@ type SpeechStep struct {
 	// Said is the screen reader's sentence, as it said it; empty when it
 	// said nothing there.
 	Said string `json:"said"`
+	// Cause is what made it speak, while listening: "focus", the cursor
+	// moved; "announcement", the app asked for it to be said; "change",
+	// something on the screen changed, as a live region does. Absent for a
+	// walk's steps, which are all the cursor's moves.
+	Cause string `json:"cause,omitempty"`
 	// Element is what the cursor was on. Absent when that cannot be told:
 	// on iOS the element is found by the name the sentence starts with, and
 	// a name several elements share names none of them.
@@ -105,7 +125,17 @@ type SpokenElement struct {
 
 func (v *SpeechView) text() string {
 	var b strings.Builder
-	fmt.Fprintf(&b, "%s says:", v.ScreenReader)
+	if v.Listening {
+		return fmt.Sprintf("listening to %s — act, then stop it with listen stop", v.ScreenReader)
+	}
+	if v.Ended == "listened" {
+		if len(v.Steps) == 0 && !v.StillTalking {
+			return fmt.Sprintf("%s said nothing since listening started", v.ScreenReader)
+		}
+		fmt.Fprintf(&b, "%s said, since listening started:", v.ScreenReader)
+	} else {
+		fmt.Fprintf(&b, "%s says:", v.ScreenReader)
+	}
 	for i, st := range v.Steps {
 		said := fmt.Sprintf("%q", st.Said)
 		if st.Said == "" {
@@ -125,6 +155,9 @@ func (v *SpeechView) text() string {
 				b.WriteString(", not in map")
 			}
 		}
+		if c := causeWords[st.Cause]; c != "" {
+			fmt.Fprintf(&b, " [%s]", c)
+		}
 	}
 	if v.Answered != "" {
 		fmt.Fprintf(&b, "\n(%s)", v.Answered)
@@ -136,6 +169,10 @@ func (v *SpeechView) text() string {
 		b.WriteString("\nended: the cursor came back round to the first element")
 	case "limit":
 		b.WriteString("\nended: the moves ran out before the screen did — raise limit to go on")
+	}
+	if v.StillTalking {
+		fmt.Fprintf(&b, "\n(%s was still talking when listening stopped, after %s: what it says next is not here)",
+			v.ScreenReader, listenWait)
 	}
 	return b.String()
 }
@@ -599,4 +636,264 @@ func saysName(said string, n *uitree.Node) bool {
 		return true
 	}
 	return strings.Contains(" "+wordsOf(said)+" ", " "+w+" ")
+}
+
+// ---- Listening ---------------------------------------------------------------
+
+// speechListen is a listen's mark. On Android, every utterance in TalkBack's
+// log when it started, so anything else is said since. On iOS, which keeps
+// no log, a poller asking VoiceOver what it is saying, and what it heard.
+type speechListen struct {
+	heard map[[3]int64]bool
+
+	mu     sync.Mutex
+	said   []string  // each new sentence VoiceOver said, in order
+	last   time.Time // when one last came
+	cancel context.CancelFunc
+	done   chan struct{}
+}
+
+// end stops an iOS poller, if there is one.
+func (l *speechListen) end() {
+	if l.cancel != nil {
+		l.cancel()
+		<-l.done
+	}
+}
+
+// voiceOverPoll is how often a listen asks VoiceOver what it is saying, and
+// voiceOverListenMax how long a forgotten listen goes on. Measured on the
+// iPhone: polled every quarter second through a wrong sign-in, it gave "Log
+// In Button", "Signing in… dimmed" and the app's announcement "Incorrect
+// username or password." in turn — /currentSpeech is what VoiceOver is
+// saying now, an announcement included. A sentence over in less than a poll
+// can fall between two.
+const (
+	voiceOverPoll      = 250 * time.Millisecond
+	voiceOverListenMax = 10 * time.Minute
+)
+
+// listenVoiceOver starts polling what VoiceOver says, recording each new
+// sentence after the one it was saying at the start.
+func listenVoiceOver(sp mobiumdriver.ScreenReaderSpeech, first string) *speechListen {
+	ctx, cancel := context.WithTimeout(context.Background(), voiceOverListenMax)
+	l := &speechListen{cancel: cancel, done: make(chan struct{}), last: time.Now()}
+	go func() {
+		defer close(l.done)
+		prev := first
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case <-time.After(voiceOverPoll):
+			}
+			said, err := sp.Speech(ctx)
+			if err != nil || said == "" || said == prev {
+				continue
+			}
+			prev = said
+			l.mu.Lock()
+			l.said = append(l.said, said)
+			l.last = time.Now()
+			l.mu.Unlock()
+		}
+	}()
+	return l
+}
+
+// Listening waits for TalkBack to stop talking before it answers: on the
+// Android 15 emulator a live region's change was said 0.4 seconds after the
+// tap, and the re-render of a tap beside it 1.25 seconds after — but behind a
+// paragraph TalkBack was still reading, the polite change waited about five
+// seconds, logged only once its turn came. Quiet is listenQuiet with no new
+// sentence and no new word begun; it never waits past listenWait.
+const (
+	listenQuiet = 1500 * time.Millisecond
+	listenWait  = 20 * time.Second
+)
+
+// causes maps TalkBack's event types to what app_speech calls them.
+var causes = map[string]string{
+	"TYPE_VIEW_ACCESSIBILITY_FOCUSED": "focus",
+	"TYPE_ANNOUNCEMENT":               "announcement",
+	"TYPE_WINDOW_CONTENT_CHANGED":     "change",
+	"TYPE_WINDOW_STATE_CHANGED":       "change",
+}
+
+// causeWords is how the text says a cause.
+var causeWords = map[string]string{
+	"focus":        "the cursor moved",
+	"announcement": "announced by the app",
+	"change":       "a change on screen",
+}
+
+// cause is what app_speech calls the event behind an utterance.
+func cause(event string) string {
+	if c, ok := causes[event]; ok {
+		return c
+	}
+	return strings.ToLower(strings.TrimPrefix(event, "TYPE_"))
+}
+
+// speechListen starts listening, or stops and answers with what the screen
+// reader said in between. It is how a test hears what an action makes it
+// say — a live region's new count, an app's announcement, or nothing: a
+// change no one is told of is the failure step 2's control is built for.
+func (h *Handlers) speechListen(ctx context.Context, s *session, action string) (*ToolsCallResult, error) {
+	if s.backend != BackendUIA2 && s.backend != BackendDump {
+		return h.voiceOverListen(ctx, s, action)
+	}
+	adb, err := h.adbFor(ctx, s)
+	if err != nil {
+		return nil, err
+	}
+	view := &SpeechView{Device: s.dev.Serial, ScreenReader: "TalkBack", Steps: []SpeechStep{}}
+	switch action {
+	case "start":
+		if s.listening != nil {
+			return nil, mobiumerr.New(mobiumerr.InvalidArgument, "already listening — stop it with listen stop first")
+		}
+		on, err := adb.TalkBackOn(ctx)
+		if err != nil {
+			return nil, err
+		}
+		if !on {
+			return nil, screenReaderOff("TalkBack")
+		}
+		spoken, err := adb.TalkBackSpoken(ctx)
+		if err != nil {
+			return nil, err
+		}
+		if len(spoken) == 0 {
+			return nil, device.ErrTalkBackQuiet
+		}
+		mark := &speechListen{heard: map[[3]int64]bool{}}
+		for _, sp := range spoken {
+			mark.heard[sp.Key()] = true
+		}
+		s.listening = mark
+		view.Listening = true
+		return Result(view.text(), view), nil
+
+	case "stop":
+		mark := s.listening
+		if mark == nil {
+			return nil, mobiumerr.New(mobiumerr.InvalidArgument, "not listening — start with listen start, act, "+
+				"then stop")
+		}
+		s.listening = nil
+		var said []device.Spoken
+		start, last := time.Now(), time.Now()
+		word := int64(-1)
+		for time.Since(last) < listenQuiet && time.Since(start) < listenWait {
+			if err := sleepCtx(ctx, 200*time.Millisecond); err != nil {
+				return nil, err
+			}
+			spoken, lastWord, err := adb.TalkBackHeard(ctx)
+			if err != nil {
+				return nil, err
+			}
+			if word >= 0 && lastWord != word {
+				last = time.Now() // a word begun since the last read: still talking
+			}
+			word = lastWord
+			for _, sp := range spoken {
+				if !mark.heard[sp.Key()] {
+					mark.heard[sp.Key()] = true
+					said = append(said, sp)
+					last = time.Now()
+				}
+			}
+		}
+		if time.Since(last) < listenQuiet {
+			view.StillTalking = true
+		}
+		tree, err := s.driver.Snapshot(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, sp := range said {
+			n := readerFocused(tree, sp.Text)
+			if !sp.Focus {
+				// Not the cursor's: the element whose words were said.
+				n = spokenNode(tree, sp.Text)
+			} else if n != nil && !saysName(sp.Text, n) {
+				n = nil
+			}
+			st := spokenStep(sp.Text, n, tree)
+			st.Cause = cause(sp.Event)
+			view.Steps = append(view.Steps, st)
+		}
+		view.Ended = "listened"
+		return Result(view.text(), view), nil
+	}
+	return nil, mobiumerr.New(mobiumerr.InvalidArgument, "listen is \"start\" or \"stop\", got %q", action)
+}
+
+// voiceOverListen is listening on an iPhone: what VoiceOver says, polled.
+// WebDriverAgent does not say why it spoke, so the steps carry no cause.
+func (h *Handlers) voiceOverListen(ctx context.Context, s *session, action string) (*ToolsCallResult, error) {
+	view := &SpeechView{Device: s.dev.Serial, ScreenReader: "VoiceOver", Steps: []SpeechStep{}}
+	switch action {
+	case "start":
+		if s.listening != nil {
+			return nil, mobiumerr.New(mobiumerr.InvalidArgument, "already listening — stop it with listen stop first")
+		}
+		sp, ok := mobiumdriver.AsScreenReaderSpeech(s.driver)
+		reader, rok := mobiumdriver.AsScreenReader(s.driver)
+		if !ok || !rok {
+			return nil, mobiumerr.New(mobiumerr.Unsupported, "the %s driver cannot read what a screen reader says", s.backend)
+		}
+		on, known := reader.ScreenReaderOn(ctx)
+		if !known {
+			return nil, mobiumerr.New(mobiumerr.Unsupported, "VoiceOver's speech is read through WebDriverAgent's "+
+				"VoiceOver routes, which need a runner built by Xcode 27 on iOS 27 or later; a simulator's runner "+
+				"is WebDriverAgent's prebuilt release, which has none")
+		}
+		if !on {
+			return nil, screenReaderOff("VoiceOver")
+		}
+		first, err := sp.Speech(ctx)
+		if err != nil {
+			return nil, err
+		}
+		s.listening = listenVoiceOver(sp, first)
+		view.Listening = true
+		return Result(view.text(), view), nil
+
+	case "stop":
+		l := s.listening
+		if l == nil || l.cancel == nil {
+			return nil, mobiumerr.New(mobiumerr.InvalidArgument, "not listening — start with listen start, act, "+
+				"then stop")
+		}
+		start := time.Now()
+		for {
+			l.mu.Lock()
+			quiet := time.Since(l.last) >= listenQuiet && time.Since(start) >= listenQuiet
+			l.mu.Unlock()
+			if quiet || time.Since(start) >= listenWait {
+				break
+			}
+			if err := sleepCtx(ctx, voiceOverPoll); err != nil {
+				return nil, err
+			}
+		}
+		l.end()
+		s.listening = nil
+		l.mu.Lock()
+		said := append([]string(nil), l.said...)
+		view.StillTalking = time.Since(l.last) < listenQuiet
+		l.mu.Unlock()
+		tree, err := s.driver.Snapshot(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, text := range said {
+			view.Steps = append(view.Steps, spokenStep(text, spokenNode(tree, text), tree))
+		}
+		view.Ended = "listened"
+		return Result(view.text(), view), nil
+	}
+	return nil, mobiumerr.New(mobiumerr.InvalidArgument, "listen is \"start\" or \"stop\", got %q", action)
 }

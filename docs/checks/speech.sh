@@ -20,6 +20,9 @@
 #     password. TalkBack said "16 characters" and VoiceOver its kind, neither
 #     the value, so this shows the stand-in is applied on the device; that
 #     it can fail is speech_test.go's;
+#   - listening around an action hears what it makes the screen reader say:
+#     a wrong sign-in's announcement on both platforms, and on Android the
+#     live cart's new count, while the quiet cart's change is never said;
 #   - ending the session puts the screen reader back off;
 #   - a simulator is refused: its runner cannot reach VoiceOver.
 #
@@ -141,6 +144,7 @@ screen_reader_on() {
 $M terminate $APP >/dev/null 2>&1 || true
 $M launch $APP >/dev/null
 $M tap 'label="Login Demo"' >/dev/null
+$M type testid=username mobium >/dev/null
 $M type testid=password "$PASSWORD" >/dev/null
 screen_reader_on
 got=$($M speech testid=password --json 2>&1) || fail "the cursor could not be put on the password field: $got"
@@ -151,6 +155,16 @@ case "$said" in
   *) fail "what was said about the password field is shown: $said" ;;
 esac
 row "password" "the cursor on a typed password field: the sentence withheld"
+
+# Listening around a wrong sign-in: the app announces it, on both platforms.
+$M speech --listen start >/dev/null
+$M tap testid=loginBtn >/dev/null
+ann=$($M speech --listen stop --json) || fail "listening around Log in failed: $ann"
+echo "$ann" | grep -q "$PASSWORD" && fail "the password is in what listening answered"
+if [ "$KIND" = phone ]; then want="any(s['said'] == 'Incorrect username or password.' for s in d['steps'])"
+else want="any(s['said'] == 'Incorrect username or password.' and s.get('cause') == 'announcement' for s in d['steps'])"; fi
+[ "$(echo "$ann" | json "print($want)")" = True ] || fail "the app's announcement was not heard: $ann"
+row "announced" "a wrong sign-in's \"Incorrect username or password.\" heard"
 
 # The Screen Reader Demo, walked. Reached with the screen reader off: with
 # VoiceOver on a swipe is refused (CHALLENGES 348).
@@ -185,6 +199,25 @@ else
   row "paired" "each sentence beside its element, iconUnnamed's \"Button\" too"
 fi
 row "ended" "the walk ended $ended"
+
+# Listening around a tap: the live region's count is said, the quiet one's
+# never is. On an iPhone neither is: React Native's accessibilityLiveRegion
+# is Android's alone, so MobiumApp's live cart is as silent there as its
+# quiet one — the app's gap, heard as it is.
+heard() { $M speech --listen start >/dev/null; $M tap "testid=$1" >/dev/null; $M speech --listen stop --json; }
+if [ "$KIND" = phone ]; then
+  live=$(heard addLive) || fail "listening around Add aloud failed: $live"
+  [ "$($M text testid=liveStatus)" = "Live cart: 1" ] || fail "Add aloud did not count: $($M text testid=liveStatus)"
+  echo "$live" | grep -q "Live cart: 1" && fail "the live cart's change was said on iOS, where React Native has no live region: $live"
+  row "silent" "\"Live cart: 1\" never said: React Native's live region is Android's"
+else
+  quiet=$(heard addQuiet) || fail "listening around Add quietly failed: $quiet"
+  echo "$quiet" | grep -q "Quiet cart: 1" && fail "the quiet cart's change was said: $quiet"
+  live=$(heard addLive) || fail "listening around Add aloud failed: $live"
+  [ "$(echo "$live" | json "print(any(s['said'] == 'Live cart: 1' and s.get('cause') == 'change' for s in d['steps']))")" = True ] ||
+    fail "the live cart's change was not heard as a change on screen: $live"
+  row "listened" "\"Live cart: 1\" said as a change; the quiet cart's never"
+fi
 
 $M daemon stop >/dev/null
 if [ "$KIND" = phone ]; then

@@ -1241,15 +1241,25 @@ type Speech struct {
 	// Steps is what was said, in order: one for the element the cursor is
 	// on, or a walk's every move.
 	Steps []SpeechStep `json:"steps"`
-	// Ended says why a walk stopped: "end", "wrapped" or "limit"; empty when
-	// nothing walked.
+	// Ended says why a walk stopped: "end", "wrapped" or "limit"; "listened"
+	// after a listen stop; empty when nothing walked.
 	Ended string `json:"ended,omitempty"`
+	// Answered names a notice the call raised and answered.
+	Answered string `json:"answered,omitempty"`
+	// Listening is true after a listen start.
+	Listening bool `json:"listening,omitempty"`
+	// StillTalking says a listen stopped at its limit while the screen
+	// reader was still speaking.
+	StillTalking bool `json:"still_talking,omitempty"`
 }
 
 // SpeechStep is one sentence and the element it was said about.
 type SpeechStep struct {
 	// Said is the sentence; empty when the screen reader said nothing.
 	Said string `json:"said"`
+	// Cause is, while listening, what made it speak: "focus",
+	// "announcement" or "change".
+	Cause string `json:"cause,omitempty"`
 	// Element is nil when it cannot be told which element it was.
 	Element *SpokenElement `json:"element,omitempty"`
 }
@@ -1271,6 +1281,9 @@ type SpeechOptions struct {
 	Walk bool
 	// Limit is the most moves a walk makes; zero is 40.
 	Limit int
+	// Listen is "start", before an action, or "stop", after it, which
+	// answers with what the screen reader said in between.
+	Listen string
 }
 
 // Speech reports what the screen reader says — VoiceOver on a real iPhone,
@@ -1287,6 +1300,9 @@ func (d *Device) Speech(ctx context.Context, opts SpeechOptions) (Speech, error)
 	}
 	if opts.Limit > 0 {
 		args["limit"] = opts.Limit
+	}
+	if opts.Listen != "" {
+		args["listen"] = opts.Listen
 	}
 	var out Speech
 	err := d.data(ctx, "app_speech", args, &out)

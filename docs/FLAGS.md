@@ -280,6 +280,7 @@ command mentions them.
 | `app_speech` | `device` | string | _global_ --device |
 | `app_speech` | `driver` | string | _global_ --driver |
 | `app_speech` | `limit` | integer | speech |
+| `app_speech` | `listen` | string | speech |
 | `app_speech` | `target` | string | speech |
 | `app_speech` | `walk` | boolean | speech |
 | `app_state` | `app` | string | state |
@@ -428,7 +429,7 @@ arguments and the two global flags.
 | `shutdown` | app_shutdown | — | name |
 | `sms` | app_sms | --from | from, text |
 | `source` | app_source | — | — |
-| `speech` | app_speech | --limit --walk | limit, target, walk |
+| `speech` | app_speech | --limit --listen --walk | limit, listen, target, walk |
 | `start` | — | --idle-timeout | — |
 | `state` | app_state | — | app |
 | `status` | — | — | running |

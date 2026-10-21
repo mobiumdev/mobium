@@ -165,6 +165,9 @@ type session struct {
 	// audio is an audio capture in progress (app_audio), or nil. Ending the
 	// session discards it, as it does a recording.
 	audio device.AudioRecording
+	// listening is app_speech's mark while it listens: what the screen
+	// reader had said when listening started.
+	listening *speechListen
 
 	// closeWhy is why the session is closing, for what it discards to say.
 	closeWhy string
@@ -206,6 +209,10 @@ func (s *session) close() {
 		s.recording.Discard(ctx)
 		cancel()
 		s.recording = nil
+	}
+	if s.listening != nil {
+		s.listening.end()
+		s.listening = nil
 	}
 	if s.audio != nil {
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)

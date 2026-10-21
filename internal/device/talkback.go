@@ -160,6 +160,10 @@ type Spoken struct {
 	// Focus says a move of the cursor caused it, rather than an
 	// announcement or a change on the screen.
 	Focus bool
+	// Event is what caused it, as TalkBack logs it — TYPE_ANNOUNCEMENT,
+	// TYPE_WINDOW_CONTENT_CHANGED for a live region — or "" when it logged
+	// none ("TalkBack on").
+	Event string
 }
 
 // Key tells one utterance from every other.
@@ -170,25 +174,56 @@ func (s Spoken) Key() [3]int64 { return [3]int64{s.At, int64(s.PID), int64(s.ID)
 var spokenRe = regexp.MustCompile(`^\s*(\d+)\.(\d{3})\s+(\d+)\s+\d+\s+V\s.*?Speaking fragment text="(.*?)", ` +
 	`utteranceId=talkback_(\d+), .*?event=(.*)$`)
 
+// subtypeRe reads the event's type out of TalkBack's event description.
+var subtypeRe = regexp.MustCompile(`subtype:([A-Z_]+)`)
+
 // TalkBackSpoken reads what TalkBack logged it said, oldest first. None at
 // all is TalkBack's log output level short of VERBOSE: it logs its speech
 // at no other, and it speaks as it comes on ("TalkBack on"). The lines are
 // picked by their message — their tag is "talkback: SpeechControllerImpl",
 // which logcat's tag filter does not match as "talkback".
 func (a *ADB) TalkBackSpoken(ctx context.Context) ([]Spoken, error) {
-	out, err := a.Shell(ctx, "logcat", "-d", "-v", "epoch", "-e", "Speaking fragment")
-	if err != nil {
-		return nil, err
-	}
-	return parseTalkBackSpoken(out)
+	spoken, _, err := a.TalkBackHeard(ctx)
+	return spoken, err
 }
 
+// TalkBackHeard is TalkBackSpoken, and when TalkBack last began a word, by
+// the device's clock in milliseconds: it logs each word as it speaks it, so
+// a word logged since the last read means it is still talking. A sentence is
+// logged when it is queued, not when it is said — a live region's polite
+// change waited about five seconds behind a paragraph TalkBack was reading.
+func (a *ADB) TalkBackHeard(ctx context.Context) (spoken []Spoken, lastWord int64, err error) {
+	// Quoted: adb shell hands the line to the device's shell, where the bar
+	// is a pipe and the space splits the pattern in two.
+	out, err := a.Shell(ctx, "logcat", "-d", "-v", "epoch", "-e", shellQuote("Speaking fragment|onFragmentRangeStarted"))
+	if err != nil {
+		return nil, 0, err
+	}
+	return parseTalkBackHeard(out)
+}
+
+// wordRe reads the line TalkBack logs as it begins saying a word.
+var wordRe = regexp.MustCompile(`^\s*(\d+)\.(\d{3})\s.*onFragmentRangeStarted`)
+
 func parseTalkBackSpoken(out []byte) ([]Spoken, error) {
+	spoken, _, err := parseTalkBackHeard(out)
+	return spoken, err
+}
+
+func parseTalkBackHeard(out []byte) ([]Spoken, int64, error) {
 	var spoken []Spoken
+	var lastWord int64
 	sc := bufio.NewScanner(bytes.NewReader(out))
 	sc.Buffer(make([]byte, 64*1024), 1024*1024)
 	for sc.Scan() {
-		m := spokenRe.FindStringSubmatch(strings.TrimRight(sc.Text(), "\r"))
+		line := strings.TrimRight(sc.Text(), "\r")
+		if w := wordRe.FindStringSubmatch(line); w != nil {
+			sec, _ := strconv.ParseInt(w[1], 10, 64)
+			ms, _ := strconv.ParseInt(w[2], 10, 64)
+			lastWord = sec*1000 + ms
+			continue
+		}
+		m := spokenRe.FindStringSubmatch(line)
 		if m == nil {
 			continue
 		}
@@ -196,16 +231,20 @@ func parseTalkBackSpoken(out []byte) ([]Spoken, error) {
 		ms, _ := strconv.ParseInt(m[2], 10, 64)
 		pid, _ := strconv.Atoi(m[3])
 		id, _ := strconv.Atoi(m[5])
-		focus := strings.Contains(m[6], "TYPE_VIEW_ACCESSIBILITY_FOCUSED")
+		event := ""
+		if e := subtypeRe.FindStringSubmatch(m[6]); e != nil {
+			event = e[1]
+		}
+		focus := event == "TYPE_VIEW_ACCESSIBILITY_FOCUSED"
 		// One utterance's fragments are logged one after another.
 		if n := len(spoken); n > 0 && spoken[n-1].PID == pid && spoken[n-1].ID == id {
 			spoken[n-1].Text = strings.TrimSpace(spoken[n-1].Text + " " + m[4])
 			spoken[n-1].Focus = spoken[n-1].Focus || focus
 			continue
 		}
-		spoken = append(spoken, Spoken{At: sec*1000 + ms, PID: pid, ID: id, Text: m[4], Focus: focus})
+		spoken = append(spoken, Spoken{At: sec*1000 + ms, PID: pid, ID: id, Text: m[4], Focus: focus, Event: event})
 	}
-	return spoken, sc.Err()
+	return spoken, lastWord, sc.Err()
 }
 
 // ErrTalkBackQuiet refuses reading TalkBack's speech while its log output

@@ -679,6 +679,29 @@ namespace Mobium
         }
 
         /// <summary>
+        /// Starts listening to what the screen reader says, before an action.
+        /// </summary>
+        public IDictionary<string, object?> ListenStart()
+        {
+            var args = Args();
+            args["listen"] = "start";
+            return Data("app_speech", args);
+        }
+
+        /// <summary>
+        /// Stops listening, after an action: waits for the screen reader to go quiet and
+        /// answers with every sentence it said since <see cref="ListenStart"/>,
+        /// each step with its <c>cause</c> on Android — <c>focus</c>, <c>announcement</c> or
+        /// <c>change</c>.
+        /// </summary>
+        public IDictionary<string, object?> ListenStop()
+        {
+            var args = Args();
+            args["listen"] = "stop";
+            return Data("app_speech", args);
+        }
+
+        /// <summary>
         /// One app's state, for any app: <c>state</c> is not_installed,
         /// not_running, background or foreground. An app under its own
         /// permission prompt is still in front, and <c>covered_by</c> names

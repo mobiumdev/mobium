@@ -170,3 +170,39 @@ func TestSaysName(t *testing.T) {
 		}
 	}
 }
+
+// Listening names what made the screen reader speak, from TalkBack's event.
+func TestListenCauses(t *testing.T) {
+	for event, want := range map[string]string{
+		"TYPE_VIEW_ACCESSIBILITY_FOCUSED": "focus",
+		"TYPE_ANNOUNCEMENT":               "announcement",
+		"TYPE_WINDOW_CONTENT_CHANGED":     "change",
+		"TYPE_VIEW_CLICKED":               "view_clicked",
+		"":                                "",
+	} {
+		if got := cause(event); got != want {
+			t.Errorf("cause(%q) = %q, want %q", event, got, want)
+		}
+	}
+}
+
+func TestListenText(t *testing.T) {
+	quiet := (&SpeechView{ScreenReader: "TalkBack", Ended: "listened"}).text()
+	if quiet != "TalkBack said nothing since listening started" {
+		t.Errorf("nothing said reads %q", quiet)
+	}
+	v := &SpeechView{ScreenReader: "TalkBack", Ended: "listened", Steps: []SpeechStep{
+		{Said: "Live cart: 1", Cause: "change", Element: &SpokenElement{Label: "Live cart: 1"}},
+	}}
+	if got := v.text(); !strings.Contains(got, `"Live cart: 1"`) || !strings.Contains(got, "[a change on screen]") ||
+		strings.Contains(got, "ended:") {
+		t.Errorf("a listen reads %q", got)
+	}
+}
+
+func TestListenTextSaysItWasStillTalking(t *testing.T) {
+	v := &SpeechView{ScreenReader: "TalkBack", Ended: "listened", StillTalking: true}
+	if got := v.text(); !strings.Contains(got, "still talking") {
+		t.Errorf("a listen cut off mid-speech reads %q", got)
+	}
+}
