@@ -569,7 +569,15 @@ namespace Mobium
         public IDictionary<string, object?> ShapeNetwork(int latencyMs = 0, int downloadKbps = 0, int uploadKbps = 0) =>
             Data("app_network", Args("latency_ms", latencyMs, "download_kbps", downloadKbps, "upload_kbps", uploadKbps));
 
-        /// <summary>Removes the shaping and turns airplane mode off.</summary>
+        /// <summary>
+        /// Points the device's HTTP proxy at <c>host:port</c> — <c>127.0.0.1</c>
+        /// is this machine's, through adb reverse — or takes it off with an
+        /// empty string. Any Android device.
+        /// </summary>
+        public IDictionary<string, object?> SetProxy(string hostport) =>
+            Data("app_network", Args("proxy", hostport));
+
+        /// <summary>Removes the shaping and the proxy and turns airplane mode off.</summary>
         public IDictionary<string, object?> ResetNetwork() => Data("app_network", Args("reset", true));
 
         /// <summary>

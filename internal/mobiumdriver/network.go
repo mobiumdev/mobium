@@ -14,6 +14,13 @@ type Networker interface {
 	SetOffline(ctx context.Context, offline bool) error
 	// Shape replaces the latency and rate limits; zeros remove them.
 	Shape(ctx context.Context, latencyMs, downloadKbps, uploadKbps int) (device.NetworkConditions, error)
+	// SetProxy points the device's HTTP proxy at host:port, or takes it off
+	// for "", and waits for it to be in force.
+	SetProxy(ctx context.Context, hostport string) error
+	// ReversePort makes the device's port on its loopback reach the same
+	// port on this machine, or stops it, and says whether it changed
+	// anything: a reverse already there is not added again.
+	ReversePort(ctx context.Context, port int, on bool) (changed bool, err error)
 }
 
 // NetworkConditions reads airplane mode, the default network and the shaping.
@@ -46,6 +53,33 @@ func (a *Android) Shape(ctx context.Context, latencyMs, downloadKbps, uploadKbps
 	return androidShape(ctx, a.adb, latencyMs, downloadKbps, uploadKbps)
 }
 
+// SetProxy writes the device's proxy setting and reads it back.
+func (u *UIA2) SetProxy(ctx context.Context, hostport string) error {
+	return u.adb.SetProxy(ctx, hostport)
+}
+
+// ReversePort adds or removes an adb reverse.
+func (u *UIA2) ReversePort(ctx context.Context, port int, on bool) (bool, error) {
+	return reversePort(ctx, u.adb, port, on)
+}
+
+// SetProxy writes the device's proxy setting and reads it back.
+func (a *Android) SetProxy(ctx context.Context, hostport string) error {
+	return a.adb.SetProxy(ctx, hostport)
+}
+
+// ReversePort adds or removes an adb reverse.
+func (a *Android) ReversePort(ctx context.Context, port int, on bool) (bool, error) {
+	return reversePort(ctx, a.adb, port, on)
+}
+
+func reversePort(ctx context.Context, adb *device.ADB, port int, on bool) (bool, error) {
+	if on {
+		return adb.Reverse(ctx, port)
+	}
+	return true, adb.Unreverse(ctx, port)
+}
+
 // androidShape refuses where there is no root to shape with: a phone's user
 // build — the Pixel 8 Pro's — has no su, and airplane mode is all it takes.
 func androidShape(ctx context.Context, adb *device.ADB, latencyMs, downloadKbps, uploadKbps int) (device.NetworkConditions, error) {
@@ -73,6 +107,12 @@ func (w *WDA) SetOffline(context.Context, bool) error { return iosNoNetwork() }
 func (w *WDA) Shape(context.Context, int, int, int) (device.NetworkConditions, error) {
 	return device.NetworkConditions{}, iosNoNetwork()
 }
+
+// SetProxy is refused on iOS; see NetworkConditions.
+func (w *WDA) SetProxy(context.Context, string) error { return iosNoNetwork() }
+
+// ReversePort is refused on iOS; see NetworkConditions.
+func (w *WDA) ReversePort(context.Context, int, bool) (bool, error) { return false, iosNoNetwork() }
 
 func iosNoNetwork() error {
 	return mobiumerr.New(mobiumerr.Unsupported, "iOS has no outside control of the network: simctl has no network "+

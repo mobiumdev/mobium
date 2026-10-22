@@ -222,7 +222,7 @@ vouches for none of them. What each proves, and the devices it runs on, is in
 - [ ] A mobile browser and a PWA: `chrome.sh <emulator-serial | android-serial>`
       and `pwa.sh <emulator-serial | android-serial | simulator-udid>`, both
       with the network
-- [ ] Device state: `orientation.sh`, `network.sh <android-serial>`,
+- [ ] Device state: `orientation.sh`, `network.sh <android-serial>`, `proxy.sh <android-serial>`,
       `shake.sh`, and on iOS `locale-ios.sh`, `timezone-ios.sh`,
       `notifications-ios.sh` and `audit.sh`
 - [ ] Recording: `record.sh` and `trace.sh`

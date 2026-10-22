@@ -1440,6 +1440,14 @@
     },
     {
       "tool": "app_network",
+      "arg": "proxy",
+      "type": "string",
+      "setBy": [
+        "network"
+      ]
+    },
+    {
+      "tool": "app_network",
       "arg": "reset",
       "type": "boolean",
       "setBy": [
@@ -3305,8 +3313,10 @@
       "flags": [
         "--download",
         "--latency",
+        "--no-proxy",
         "--offline",
         "--online",
+        "--proxy",
         "--reset",
         "--upload"
       ],
@@ -3314,6 +3324,7 @@
         "download_kbps",
         "latency_ms",
         "offline",
+        "proxy",
         "reset",
         "upload_kbps"
       ]

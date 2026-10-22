@@ -41,6 +41,11 @@ type NetworkConditions struct {
 	// zero is no limit.
 	DownloadKbps int `json:"download_kbps"`
 	UploadKbps   int `json:"upload_kbps"`
+	// Proxy is the HTTP proxy in force, host:port, and "" for none.
+	// ProxyReversed says its port on the device's loopback reaches this
+	// machine through adb reverse; false for a proxy elsewhere.
+	Proxy         string `json:"proxy,omitempty"`
+	ProxyReversed bool   `json:"proxy_reversed,omitempty"`
 }
 
 // Shaped says whether any latency or rate limit is in place.
@@ -114,6 +119,14 @@ func (a *ADB) NetworkConditions(ctx context.Context) (NetworkConditions, error) 
 	// download limit nothing was applying, measured on the emulator.
 	if c.DownloadKbps > 0 && !a.redirecting(ctx, c.Interface) {
 		c.DownloadKbps = 0
+	}
+	if c.Proxy, err = a.Proxy(ctx); err != nil {
+		return c, err
+	}
+	if c.Proxy != "" && IsLoopback(c.Proxy) {
+		if c.ProxyReversed, err = a.Reversed(ctx, ProxyPort(c.Proxy)); err != nil {
+			return c, err
+		}
 	}
 	return c, nil
 }

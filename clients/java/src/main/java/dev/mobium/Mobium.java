@@ -971,7 +971,19 @@ public final class Mobium implements AutoCloseable {
     }
 
     /**
-     * Removes the shaping and turns airplane mode off.
+     * Points the device's HTTP proxy at {@code host:port} — {@code 127.0.0.1}
+     * is this machine's, through adb reverse — or takes it off with an empty
+     * string. Any Android device.
+     *
+     * @param hostport the proxy, or empty for none
+     * @return the network, read back
+     */
+    public Map<String, Object> setProxy(String hostport) {
+        return data("app_network", args("proxy", hostport));
+    }
+
+    /**
+     * Removes the shaping and the proxy and turns airplane mode off.
      *
      * @return the network, read back
      */

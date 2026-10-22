@@ -33,13 +33,18 @@ type NetworkView struct {
 	LatencyMs    int `json:"latency_ms"`
 	DownloadKbps int `json:"download_kbps"`
 	UploadKbps   int `json:"upload_kbps"`
+	// Proxy is the HTTP proxy in force, host:port, absent for none, and
+	// ProxyReversed says the device's loopback port reaches this machine.
+	Proxy         string `json:"proxy,omitempty"`
+	ProxyReversed bool   `json:"proxy_reversed,omitempty"`
 	// Changed says whether this call changed anything.
 	Changed bool `json:"changed"`
 }
 
 func networkView(serial string, c device.NetworkConditions, changed bool) NetworkView {
 	return NetworkView{Device: serial, Airplane: c.Airplane, Online: c.Online, Interface: c.Interface,
-		LatencyMs: c.LatencyMs, DownloadKbps: c.DownloadKbps, UploadKbps: c.UploadKbps, Changed: changed}
+		LatencyMs: c.LatencyMs, DownloadKbps: c.DownloadKbps, UploadKbps: c.UploadKbps,
+		Proxy: c.Proxy, ProxyReversed: c.ProxyReversed, Changed: changed}
 }
 
 // networkBaseline is a device's conditions before Mobium first changed them,
@@ -51,6 +56,11 @@ type networkBaseline struct {
 	// latency, down and up are the shaping last asked for, which coming
 	// back online puts back: airplane mode removes part of it on the way.
 	latency, down, up int
+	// proxy is the proxy in force before, put back at the end; reversed
+	// are the loopback ports Mobium reversed, removed when nothing needs
+	// them. A reverse that was there before is not Mobium's to remove.
+	proxy    string
+	reversed []int
 }
 
 func (h *Handlers) network(ctx context.Context, args map[string]interface{}) (*ToolsCallResult, error) {
@@ -92,7 +102,20 @@ func (h *Handlers) network(ctx context.Context, args map[string]interface{}) (*T
 		*k.into = v
 		shaping = true
 	}
-	if reset && (hasOffline || shaping) {
+	proxy, hasProxy := "", false
+	if raw, given := args["proxy"]; given {
+		str, ok := raw.(string)
+		if !ok {
+			return nil, mobiumerr.New(mobiumerr.InvalidArgument, "proxy must be host:port, or empty to take it off")
+		}
+		if str != "" {
+			if proxy, err = device.ParseProxy(str); err != nil {
+				return nil, err
+			}
+		}
+		hasProxy = true
+	}
+	if reset && (hasOffline || shaping || hasProxy) {
 		return nil, mobiumerr.New(mobiumerr.InvalidArgument, "reset puts everything back, so it takes nothing else")
 	}
 
@@ -100,12 +123,12 @@ func (h *Handlers) network(ctx context.Context, args map[string]interface{}) (*T
 	if err != nil {
 		return nil, err
 	}
-	if !reset && !hasOffline && !shaping {
+	if !reset && !hasOffline && !shaping && !hasProxy {
 		return Result(describeNetwork(before), networkView(s.dev.Serial, before, false)), nil
 	}
 	base, kept := h.netBaseline[s.dev.Serial]
 	if !kept {
-		base = networkBaseline{airplane: before.Airplane}
+		base = networkBaseline{airplane: before.Airplane, proxy: before.Proxy}
 	}
 	if shaping {
 		base.latency, base.down, base.up = latency, down, up
@@ -120,6 +143,13 @@ func (h *Handlers) network(ctx context.Context, args map[string]interface{}) (*T
 	if reset {
 		shaping, latency, down, up = before.Shaped(), 0, 0, 0
 		hasOffline, offline = before.Airplane, false
+		hasProxy, proxy = before.Proxy != "", ""
+	}
+	if hasProxy && proxy != before.Proxy {
+		if err := h.setProxy(ctx, n, &base, proxy); err != nil {
+			h.netBaseline[s.dev.Serial] = base
+			return nil, err
+		}
 	}
 	// Shaping needs a network to shape, so it goes on before going offline
 	// and after coming back.
@@ -142,6 +172,8 @@ func (h *Handlers) network(ctx context.Context, args map[string]interface{}) (*T
 	}
 	if reset {
 		delete(h.netBaseline, s.dev.Serial)
+	} else {
+		h.netBaseline[s.dev.Serial] = base
 	}
 
 	after, err := n.NetworkConditions(ctx)
@@ -150,6 +182,56 @@ func (h *Handlers) network(ctx context.Context, args map[string]interface{}) (*T
 	}
 	changed := after != before
 	return Result(describeNetwork(after), networkView(s.dev.Serial, after, changed)), nil
+}
+
+// setProxy points the device at proxy, "" for none: a loopback proxy's
+// port reversed first, so the device is never pointed at a port that goes
+// nowhere, and the reverses Mobium added that nothing needs now removed
+// after.
+func (h *Handlers) setProxy(ctx context.Context, n mobiumdriver.Networker, base *networkBaseline, proxy string) error {
+	if proxy != "" && device.IsLoopback(proxy) {
+		port := device.ProxyPort(proxy)
+		added, err := n.ReversePort(ctx, port, true)
+		if err != nil {
+			return err
+		}
+		if added && !containsInt(base.reversed, port) {
+			base.reversed = append(base.reversed, port)
+		}
+	}
+	if err := n.SetProxy(ctx, proxy); err != nil {
+		return err
+	}
+	return dropReverses(ctx, n, base, proxy)
+}
+
+// dropReverses removes the reverses Mobium added, but the one proxy needs.
+func dropReverses(ctx context.Context, n mobiumdriver.Networker, base *networkBaseline, proxy string) error {
+	need := 0
+	if proxy != "" && device.IsLoopback(proxy) {
+		need = device.ProxyPort(proxy)
+	}
+	var kept []int
+	for _, port := range base.reversed {
+		if port == need {
+			kept = append(kept, port)
+			continue
+		}
+		if _, err := n.ReversePort(ctx, port, false); err != nil {
+			return err
+		}
+	}
+	base.reversed = kept
+	return nil
+}
+
+func containsInt(xs []int, x int) bool {
+	for _, v := range xs {
+		if v == x {
+			return true
+		}
+	}
+	return false
 }
 
 // boolParam reads an optional boolean, saying whether it was given and
@@ -194,6 +276,15 @@ func describeNetwork(c device.NetworkConditions) string {
 	} else if c.Online {
 		parts = append(parts, "no shaping")
 	}
+	switch {
+	case c.Proxy != "" && c.ProxyReversed:
+		parts = append(parts, "proxy "+c.Proxy+", which is this machine's through adb reverse")
+	case c.Proxy != "" && device.IsLoopback(c.Proxy):
+		parts = append(parts, "proxy "+c.Proxy+", the device's own loopback, which nothing reverses to this "+
+			"machine, so the device's HTTP goes nowhere unless something listens there on the device")
+	case c.Proxy != "":
+		parts = append(parts, "proxy "+c.Proxy)
+	}
 	return strings.Join(parts, "; ")
 }
 
@@ -201,8 +292,9 @@ func describeNetwork(c device.NetworkConditions) string {
 const networkRestoreTimeout = 40 * time.Second
 
 // restoreNetwork puts back what app_network changed on the session's device:
-// no shaping, and airplane mode as it was before the first change. Best
-// effort, as the rest of a session's end is; it says whether it did.
+// no shaping, airplane mode and the proxy as they were before the first
+// change, and none of Mobium's reverses. Best effort, as the rest of a
+// session's end is; it says whether it did.
 func (h *Handlers) restoreNetwork(s *session) bool {
 	base, changed := h.netBaseline[s.dev.Serial]
 	if !changed {
@@ -228,6 +320,14 @@ func (h *Handlers) restoreNetwork(s *session) bool {
 		if _, err := n.Shape(ctx, 0, 0, 0); err != nil {
 			return false
 		}
+	}
+	if now.Proxy != base.proxy {
+		if err := n.SetProxy(ctx, base.proxy); err != nil {
+			return false
+		}
+	}
+	if err := dropReverses(ctx, n, &base, ""); err != nil {
+		return false
 	}
 	return true
 }
