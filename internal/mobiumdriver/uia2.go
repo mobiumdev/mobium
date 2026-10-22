@@ -396,9 +396,26 @@ func (u *UIA2) Swipe(ctx context.Context, x1, y1, x2, y2 int, d time.Duration) e
 // and 0.8 of the Volume bar read 20, 50 and 80. The track is inset from the
 // bar by 16dp at each end, Android's own padding: without it, the
 // continuous Balance read 0.23 for 0.25 and 0.77 for 0.75. CHALLENGES 227.
+//
+// A thumb of a two-thumb slider is dragged instead (range.go): Material's
+// RangeSlider reports each thumb as a seek bar the size of the thumb, so a
+// touch inside it moved nothing, and a touch on the track moves whichever
+// thumb is nearer — at 0.5 of a full range, the two were 502 and 503 pixels
+// away. Measured on Morpho Market's price range, Compose Material 3, on the
+// Android 15 emulator.
 func (u *UIA2) SetSliderPosition(ctx context.Context, n *uitree.Node, position float64) error {
 	if position < 0 || position > 1 {
 		return mobiumerr.New(mobiumerr.InvalidArgument, "a slider position is from 0 to 1, not %g", position)
+	}
+	if _, _, ok := uitree.RangeThumb(n); ok {
+		return dragThumb(ctx, n, position, thumbDrive{
+			inset: func(*uitree.Node) int { return u.dp(ctx, rangeTrackInsetDp) },
+			slop:  u.dp(ctx, touchSlopDp), edge: u.dp(ctx, edgeGestureDp),
+			drag: func(x1, y1, x2, y2 int) error {
+				return u.w3c.pointerSequence(ctx, thumbDrag(x1, y1, x2, y2))
+			},
+			snapshot: u.Snapshot,
+		})
 	}
 	x, y := sliderTouch(n.Bounds, u.dp(ctx, 16), position)
 	return u.Tap(ctx, x, y)

@@ -7733,6 +7733,77 @@ that element alone. Item 2's More records as `label="More",role=button
 within text="Item 2"`, and `codegen.sh` runs that recording in all five
 languages on the Android 15 emulator and the iPhone 17 Pro simulator.
 
+### 357. A two-thumb slider: a fill that moved nothing said it moved, and a thumb at the edge closed the app
+
+**Found by:** native two-thumb sliders (ROADMAP, "Sliders"), on a price
+range added to Morpho Market for them — Material 3's `RangeSlider` on
+Android, and on iOS a control the app draws, since SwiftUI has none. Three
+things, each measured on the Android 15 emulator and the iPhone 17 Pro
+simulator:
+
+- **A fill that moved nothing was reported as moved.** Material reports
+  each thumb as a seek bar the size of the thumb — "Range start" at
+  `[6,667][69,783]` under the track's view `[32,662][1048,788]` — and the
+  seek bar fill touches its own bar's track, so it touched inside a thumb.
+  Nothing moved, the value read back the same, and `fill` said "moved
+  label="Range end" to position 0.5 — it reads "60.0", was "60.0"".
+- **A thumb at the screen's edge closed the app.** With gesture navigation
+  a drag that starts at a side is the system's back gesture, and a full
+  range puts both thumbs there: dragging either one put the previous app in
+  front, and the fill's read-back failed with "no element matches".
+- **On iOS the track was not where its frame said.** The app's thumbs are
+  two adjustable elements under the range's view, the same shape as
+  Android's, but SwiftUI frames a container as the union of what it holds:
+  with only the thumbs in it, the range's frame moved with them, 15 to 387
+  points with both at the ends and 30 to 387 with one at $15.
+
+**Fixed:** a fill whose value reads the same after says it still reads it,
+never that it moved. A slider or adjustable element that is one of two
+under one parent is a thumb of a range (`uitree.RangeThumb`), filled by
+dragging the thumb itself — a touch on the track moves the nearer thumb,
+and at 0.5 of a full range the two were 502 and 503 pixels away — taking
+hold 32dp in from the screen's sides on Android (20 points on iOS), which
+the slider still gives to the thumb nearer the press, and refusing when
+that point is nearer the other thumb. The drag allows for the touch slop
+and is read back from the thumb's own bounds, and a drag that fell short —
+long ones trailed a step or two — is corrected with a shorter one. A range
+whose view holds only its two thumbs, framed as the two, is refused: where
+its track ends is not known. Morpho Market's iOS track is an element of its
+own, the control's full width. A thumb stopped against the other one is
+drawn under it on Android, where only the other is then in the tree: the
+read-back looked for it the way an action looks for a target, by
+scrolling, so a thumb is now read back from one read of the screen, and
+when it is under the other the answer says so, with the value both read.
+Fifteen fills of each thumb landed exactly
+on both platforms, ends included; the first drags, with neither the slop
+nor the read-back, missed by a step or more in five of seven on Android and
+five of eleven on iOS.
+
+### 358. A sideways scroll swiped the list below the row it was for
+
+**Found by:** Morpho Market's Price chip, past the right edge of its
+category row, on the Android 15 emulator: `scroll-to testid=priceFilter
+--direction right` said "scrolled right to the end of the list (1 scroll)
+without bringing it into view", and the row had not moved. Compose leaves a
+chip off the row's edge out of the tree, so the loop had no node to ask
+which container held it, took the largest scrollable on the screen — the
+catalog grid — and swiped it sideways, which moves nothing. iOS lists the
+off-screen chip, and found its row from it.
+
+**Fixed:** a scroll the caller gave a direction swipes the largest
+scrollable whose class says it scrolls that way — Compose reports a
+`horizontalScroll` row as `HorizontalScrollView` — and an up or down scroll
+never one that says it scrolls sideways. Nothing infers an axis that no
+class states. The chip is on screen after one scroll right, and the grid
+still scrolls down to the gift card and back up.
+
+The same choice went wrong the other way: with the catalog emptied by a
+price range, the chip row was the only scrollable left, and a read that
+scrolled down to look for a missing thumb swiped it vertically, which
+Compose took as a press on the Accessories chip — the catalog was then
+filtered by a category nobody chose. An up or down scroll now never swipes
+a row that says it scrolls sideways; with nothing else, nothing is swiped.
+
 ## Findings that were not defects
 
 Worth recording because each one closed off an approach that looked obvious.
