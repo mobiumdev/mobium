@@ -33,6 +33,10 @@ func TestDoctorRunsWithNothingAvailable(t *testing.T) {
 	t.Setenv("MOBIUM_XCRUN_PATH", "")
 	t.Setenv("ANDROID_SDK_ROOT", "")
 	t.Setenv("ANDROID_HOME", "")
+	// adb is also looked for under the home directory, where Android Studio
+	// puts the SDK: HOME on Unix, USERPROFILE on Windows.
+	t.Setenv("HOME", t.TempDir())
+	t.Setenv("USERPROFILE", t.TempDir())
 
 	view := runDoctor(t)
 	if len(view.Checks) == 0 {
