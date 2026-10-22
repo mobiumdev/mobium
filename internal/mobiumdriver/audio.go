@@ -93,14 +93,34 @@ func (f forApp) Stop(ctx context.Context) (device.AudioCapture, error) {
 	return c, err
 }
 
-// StartAudio is refused on iOS: neither a simulator's audio nor a phone's is
-// captured yet.
+// StartAudio captures what an app in a simulator plays — the app given, or
+// the one in front — through a process tap on the Mac (device.
+// StartSimulatorAudio). An iPhone is refused: its sound is captured only by
+// taking over its audio route, which silences the phone (ROADMAP, "Audio").
 func (w *WDA) StartAudio(ctx context.Context, app string) (device.AudioRecording, error) {
 	if w.phone != nil {
 		return nil, mobiumerr.New(mobiumerr.Unsupported, "an iPhone's audio is not captured yet — nothing "+
-			"outside the phone hears what it plays. Capture on an Android emulator")
+			"outside the phone hears what it plays but its USB audio route, which silences the phone while it "+
+			"runs. Capture on an iOS simulator or an Android emulator")
 	}
-	return nil, mobiumerr.New(mobiumerr.Unsupported, "a simulator's audio is not captured yet — it plays "+
-		"through the Mac's own audio device for simulators, which Mobium does not read. Capture on an "+
-		"Android emulator")
+	if w.sim != nil && w.sim.TV {
+		return nil, mobiumerr.New(mobiumerr.Unsupported, "an Apple TV simulator's audio is not captured yet; "+
+			"an iPhone or iPad simulator's is")
+	}
+	if app == "" {
+		front, err := w.ForegroundApp(ctx)
+		if err != nil {
+			return nil, err
+		}
+		if front == "" || front == "com.apple.springboard" {
+			return nil, mobiumerr.New(mobiumerr.InvalidArgument, "no app is in front to capture, only the home "+
+				"screen").WithRemedy("launch the app first, or name it with app")
+		}
+		app = front
+	}
+	r, err := device.StartSimulatorAudio(ctx, w.sim.UDID, app)
+	if err != nil {
+		return nil, err
+	}
+	return forApp{r, app}, nil
 }

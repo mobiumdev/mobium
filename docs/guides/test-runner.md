@@ -445,8 +445,19 @@ on level: the level follows the device's media volume, which the result
 reports, and at its lowest an app that plays is heard as silence. A sound
 of 200ms or less on its own does not count (`ignore_ms`): with touch sounds
 on, a tap is a tenth of a second of sound. Short sounds that run on into
-each other do — a melody, a sweep, a beeping alarm. `tests/audio/` is a suite of it, run
-with `--project android` on an emulator.
+each other do — a melody, a sweep, a beeping alarm. `tests/audio/` is a suite of it, and
+the same file passes with `--project android` on an emulator and `--project
+ios` on an iOS simulator.
+
+On a simulator the capture is of the app alone, through a process tap on
+the Mac: nothing else the Mac or the simulator plays is in it, and the app
+is muted on the Mac's speakers while it is tapped. The tap needs macOS's
+System Audio Recording allowed for the terminal or app that runs mobium
+(System Settings › Privacy & Security › Screen & System Audio Recording);
+without it the stop is refused, naming it, rather than answering silence.
+An app that never opened audio while the capture ran is said to have
+never opened it. The helper behind the tap is built with Xcode's `swiftc`
+the first time, in about two seconds, and kept.
 
 The stop's result also has `interruptions`: what cut across the app's
 audio — the app muted for a call or by a volume, a ringtone, alarm,

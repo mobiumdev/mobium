@@ -815,9 +815,11 @@ func GetToolSchemas() []Tool {
 				"silence and pitch, not level: the result gives the media volume, and at its lowest a " +
 				"playing app is silence. Everything the device played is in the sound, the system's " +
 				"too: with touch sounds on, a tap is a tenth of a second of it. An Android emulator " +
-				"captures the sound; an Android phone, whose sound nothing outside it hears, records " +
-				"only the interruptions; iOS is refused. One capture per device; ending the session " +
-				"discards it.",
+				"captures the sound; an iOS simulator captures the app's own sound alone, through a " +
+				"tap on the Mac that needs macOS's System Audio Recording allowed for what runs " +
+				"mobium, and says when the app never opened audio; an Android phone, whose sound " +
+				"nothing outside it hears, records only the interruptions; an iPhone is refused. One " +
+				"capture per device; ending the session discards it.",
 			InputSchema: map[string]interface{}{
 				"type": "object",
 				"properties": withDevice(map[string]interface{}{

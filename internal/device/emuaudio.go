@@ -80,6 +80,9 @@ type AudioCapture struct {
 	// the app they were read for.
 	Interruptions []AudioInterruption
 	App           string
+	// Note says what the samples cannot: that nothing of the app was heard
+	// because it never played, rather than that it played silence.
+	Note string
 }
 
 // VolumeReader reads a device's volumes.

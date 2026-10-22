@@ -379,7 +379,7 @@ export class Device {
   crashes(options?: { app?: string; limit?: number }): Promise<Data[]>
   crash(id: string): Promise<Data>
   record(options?: { action?: 'start' | 'stop'; path?: string }): Promise<Data>
-  /** Capture what the device plays; stop with a path saves a WAV and resolves to its timeline. Android emulator only. */
+  /** Capture what the device plays; stop with a path saves a WAV and resolves to its timeline. An Android emulator or an iOS simulator. */
   audio(options?: { action?: 'start' | 'stop'; path?: string; expect?: { hz: number; min_ms?: number; max_ms?: number }[]; ignoreMs?: number; app?: string }): Promise<Data>
   /** Start, stop or ask about a trace; stop with a path saves a zip in Vibium's record format. */
   traceStart(options?: { name?: string; screenshots?: boolean; maps?: boolean }): Promise<Trace>

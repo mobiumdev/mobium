@@ -862,7 +862,19 @@ this is what is not.
     not the tap's click, which is the system's; and at -15 dBFS, what the
     app wrote, since it taps the app before the volume. Not built yet: a
     pinned helper on the phone for `--app`.
-  - **iOS, measured, not built** (2026-10-07; `docs/probes/ios-audio-sim.swift`,
+  - **An iOS simulator, built 2026-10-22**: `mobium audio` captures the
+    app alone through the process tap measured below, with a Swift helper
+    built by Xcode's `swiftc` on first use and kept by its source's hash
+    (Mobium is built without cgo). The tap's stereo float becomes the same
+    mono samples an emulator's capture gives, so the timeline, `expect` and
+    `tests/audio/` are shared and pass unchanged; a tap with no audio at all
+    is refused naming System Audio Recording, and an app that never opened
+    audio is said so. `docs/checks/audio-sim.sh` holds it, three runs of
+    three on the iPhone 17 Pro simulator. Not yet: two simulators running
+    the same app at once (the helper tells them apart by the UDID in the
+    process's path, unmeasured), an Apple TV simulator, and the iPhone,
+    whose route capture silences the phone.
+  - **iOS, measured** (2026-10-07; `docs/probes/ios-audio-sim.swift`,
     `ios-audio-phone.swift`, `audio-runs.py`). Both heard the Audio Demo's
     440 Hz, a second of silence and 880 Hz, two seconds each, at -15.1
     dBFS — what the app writes — and its silence as zeros while audio kept

@@ -119,7 +119,7 @@ func (h *Handlers) audioOn(ctx context.Context, s *session, args map[string]inte
 			return nil, err
 		}
 		samples := got.Samples
-		view.App, view.Interruptions = got.App, got.Interruptions
+		view.App, view.Interruptions, view.Note = got.App, got.Interruptions, got.Note
 		view.Volumes = got.VolumesAtEnd
 		if !sameVolumes(got.VolumesAtStart, got.VolumesAtEnd) {
 			view.VolumesAtStart = got.VolumesAtStart
@@ -355,6 +355,14 @@ func AudioHeard(v AudioView) string {
 // at if that was different: what arrives follows it, and at its lowest a
 // playing app is heard as silence.
 func volumeNote(v AudioView) string {
+	note := ""
+	if v.Note != "" {
+		note = " — " + v.Note
+	}
+	return note + mediaVolumeNote(v)
+}
+
+func mediaVolumeNote(v AudioView) string {
 	media := func(vols []device.StreamVolume) (device.StreamVolume, bool) {
 		for _, s := range vols {
 			if s.Stream == "media" {
@@ -416,6 +424,9 @@ type AudioView struct {
 	// phone, where the sound itself is not captured, too.
 	App           string                     `json:"app,omitempty"`
 	Interruptions []device.AudioInterruption `json:"interruptions,omitempty"`
+	// Note says what the timeline cannot: that the app never played, on a
+	// simulator, rather than that it played silence.
+	Note string `json:"note,omitempty"`
 	// Data is the WAV, base64, when it was returned rather than saved.
 	Data   string `json:"data,omitempty"`
 	Device string `json:"device"`
