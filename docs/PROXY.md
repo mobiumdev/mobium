@@ -9,9 +9,9 @@ off. What was measured, and the plan, in the order it should be built.
 **Status on 2026-10-22.** Step 1 is measured (below), and step 2's
 setting is built: `mobium network --proxy host:port` and `--no-proxy`, read
 back, put back at the end of the session, a loopback proxy reached through
-`adb reverse`, held by `docs/checks/proxy.sh` on the emulator. Left of
-step 2: the certificate, each app's trust read from its APK, and a run on
-the Pixel. `mobium network` sets airplane mode on any Android device and
+`adb reverse`, held by `docs/checks/proxy.sh` on the emulator and the
+Pixel 8 Pro. Left of step 2: the certificate, and each app's trust read
+from its APK. `mobium network` sets airplane mode on any Android device and
 shapes latency and bandwidth on an emulator, and refuses iOS; the proxy is
 a setting of that tool, not a tool of its own.
 
@@ -237,7 +237,9 @@ before the device points at it, and only Mobium's reverses removed. A
 reverse that was there before is left — a test caught the first version
 taking it as its own. `proxy.sh` fetches a port nothing on the device
 listens on, so the body can only be the proxy's: failed with none, the
-proxy's own body with it, failed again after. Not yet on the Pixel.
+proxy's own body with it, failed again after. On the Pixel 8 Pro
+(Android 17) too, its 612 settings compared before and after: all as
+found, and no reverse left.
 
 The setting, its read-back and its restore, on the emulator and the Pixel,
 with `adb reverse`; the certificate into the user store through Settings,

@@ -25,7 +25,7 @@ which says so.
 | | Offline | Latency and bandwidth | A proxy |
 | --- | --- | --- | --- |
 | **Android emulator** | yes | yes | yes |
-| **Android phone** | yes | no — shaping traffic needs root, which a phone does not give | the same setting, no root; not yet run on a phone |
+| **Android phone** | yes | no — shaping traffic needs root, which a phone does not give | yes — the same setting, no root (Pixel 8 Pro, Android 17) |
 | **iOS simulator or iPhone** | no | no — nothing outside iOS controls its network | no |
 
 Offline is airplane mode, which any Android device takes. Latency and
