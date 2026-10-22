@@ -226,6 +226,7 @@ vouches for none of them. What each proves, and the devices it runs on, is in
       `shake.sh`, and on iOS `locale-ios.sh`, `timezone-ios.sh`,
       `notifications-ios.sh` and `audit.sh`
 - [ ] Recording: `record.sh`, `trace.sh` and `codegen.sh`
+- [ ] Audio: `audio.sh <emulator-serial>` and `audio-sim.sh <simulator-udid>`
 - [ ] Devices started and stopped: `boot.sh <avd> [simulator-udid]`
 - [ ] The test runner: `test-runner.sh`, `test-ui.sh` (needs Vibium), and
       `MOBIUM_GRID=<node> test-grid.sh`
