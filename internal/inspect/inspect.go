@@ -18,10 +18,15 @@ import (
 	"image/png"
 	"net"
 	"net/http"
+	"os"
+	"path/filepath"
+	"sort"
+	"strconv"
 	"strings"
 	"sync"
 
 	"github.com/mobiumdev/mobium/internal/agent"
+	"github.com/mobiumdev/mobium/internal/codegen"
 	"github.com/mobiumdev/mobium/internal/mobiumerr"
 	"github.com/mobiumdev/mobium/internal/testrun"
 	"github.com/mobiumdev/mobium/internal/uitree"
@@ -48,9 +53,17 @@ type Server struct {
 	// addr is where it listens, which a request's Host must name.
 	addr string
 
+	// Out is where the recording is written as it grows, after every step:
+	// a *.test.json, or a program in a client's language by its extension.
+	// Empty writes nothing; the page's download is always there.
+	Out string
+
 	mu    sync.Mutex
 	app   string
 	steps []map[string]interface{}
+	// last is what the page's last map found, which an element with no
+	// locator of its own is scoped against before it is recorded.
+	last []agent.ElementView
 }
 
 // New makes a server for a caller, with a token only its printed URL holds.
@@ -180,6 +193,10 @@ func (s *Server) state(w http.ResponseWriter, r *http.Request) {
 	if s.app == "" && st.Context == "" {
 		s.app = st.App
 	}
+	s.last = nil
+	for _, e := range st.Elements {
+		s.last = append(s.last, e.ElementView)
+	}
 	st.Steps = len(s.steps)
 	s.mu.Unlock()
 	reply(w, st)
@@ -250,8 +267,18 @@ func (s *Server) act(w http.ResponseWriter, r *http.Request) {
 		in.Arguments = map[string]interface{}{}
 	}
 	// Recorded as asked, before the call can add a device or a driver to
-	// the arguments: a test names neither.
-	step := testrun.Shorthand(in.Tool, copyArgs(in.Arguments))
+	// the arguments: a test names neither. A ref lasts one map, and a path
+	// moves with every row a list adds or reuses, so an element map named by
+	// either is recorded by a locator scoped to it, found before the action
+	// moves the screen.
+	recorded := copyArgs(in.Arguments)
+	scoped := ""
+	if t, _ := recorded["target"].(string); strings.HasPrefix(t, "@") || strings.HasPrefix(t, "path=") {
+		if loc := s.scope(t); loc != "" {
+			recorded["target"], scoped = loc, loc
+		}
+	}
+	step := testrun.Shorthand(in.Tool, recorded)
 	res, err := s.call(in.Tool, in.Arguments)
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -266,13 +293,194 @@ func (s *Server) act(w http.ResponseWriter, r *http.Request) {
 	if len(res.Content) > 0 {
 		out.Text = res.Content[0].Text
 	}
+	if scoped != "" {
+		out.Text += " — recorded as " + scoped
+	}
+	if err := s.write(); err != nil {
+		out.Error = err.Error()
+	}
 	reply(w, out)
 }
 
-// test is what was done, as a test file `mobium test` runs.
-func (s *Server) test(w http.ResponseWriter, r *http.Request) {
+// scope finds a locator that names the element a ref or a path points at
+// and nothing else, for an element map could name no better — one of
+// several look-alikes, every row's "More". As a person writing the test
+// would: its name within the nearest element that has a locator of its own,
+// or within a text on the screen — a row's title is no target, so map does
+// not list it — then its name and its place among the look-alikes. Each is
+// checked with app_find, by the rectangle of the match; "" when none names
+// it alone, and it is recorded as map named it.
+func (s *Server) scope(t string) string {
 	s.mu.Lock()
-	defer s.mu.Unlock()
+	last := append([]agent.ElementView{}, s.last...)
+	s.mu.Unlock()
+	var el *agent.ElementView
+	for i := range last {
+		if last[i].Ref == t || target(last[i]) == t {
+			el = &last[i]
+		}
+	}
+	if el == nil || el.Label == "" || el.Context != "" {
+		return ""
+	}
+	names := s.lookalikes(*el)
+	if len(names) == 0 {
+		return ""
+	}
+	base := names[0]
+	// within the nearest anchors first: a row's own title is closer than a
+	// heading above the list.
+	anchors := []agent.ElementView{}
+	for _, a := range last {
+		if a.Ref != el.Ref && a.Locator != nil && a.Locator.Kind != "path" {
+			anchors = append(anchors, a)
+		}
+	}
+	cx, cy := center(el.Bounds)
+	sort.SliceStable(anchors, func(i, j int) bool {
+		return distance(anchors[i].Bounds, cx, cy) < distance(anchors[j].Bounds, cx, cy)
+	})
+	for i, a := range anchors {
+		if i == maxAnchors {
+			break
+		}
+		if loc := base + " within " + target(a); s.namesOnly(loc, el.Bounds) {
+			return loc
+		}
+	}
+	for i, line := range s.lines(el.Label) {
+		if i == maxLines {
+			break
+		}
+		anchor := uitree.Locator{Kind: "text", Value: line, Exact: true}.String()
+		if loc := base + " within " + anchor; s.namesOnly(loc, el.Bounds) {
+			return loc
+		}
+	}
+	for _, name := range names {
+		matches := s.matches(name)
+		for i, m := range matches {
+			if m.Bounds == el.Bounds {
+				if loc := name + ",nth=" + strconv.Itoa(i+1); s.namesOnly(loc, el.Bounds) {
+					return loc
+				}
+			}
+		}
+	}
+	return ""
+}
+
+// maxAnchors and maxLines bound how many neighbors and texts scope tries
+// within, each a read of the screen.
+const (
+	maxAnchors = 5
+	maxLines   = 40
+)
+
+// lines are the screen's texts, once each, but the element's own.
+func (s *Server) lines(own string) []string {
+	res, err := s.call("app_text", map[string]interface{}{})
+	if err != nil || len(res.Content) == 0 {
+		return nil
+	}
+	seen := map[string]bool{own: true, "": true}
+	var out []string
+	for _, l := range strings.Split(res.Content[0].Text, "\n") {
+		if l = strings.TrimSpace(l); !seen[l] {
+			seen[l] = true
+			out = append(out, l)
+		}
+	}
+	return out
+}
+
+// lookalikes are the locators that name an element by what it says — its
+// label, then its text, with its role — each matching it among others.
+func (s *Server) lookalikes(el agent.ElementView) []string {
+	var out []string
+	for _, kind := range []uitree.Kind{"label", "text"} {
+		loc := uitree.Locator{Kind: kind, Value: el.Label, Exact: true, Role: el.Role}.String()
+		for _, m := range s.matches(loc) {
+			if m.Bounds == el.Bounds {
+				out = append(out, loc)
+				break
+			}
+		}
+	}
+	return out
+}
+
+// matches is app_find's answer for a locator, none when it fails.
+func (s *Server) matches(loc string) []agent.ElementView {
+	res, err := s.call("app_find", map[string]interface{}{"locator": loc})
+	if err != nil {
+		return nil
+	}
+	var v struct {
+		Elements []agent.ElementView `json:"elements"`
+	}
+	decode(res.StructuredContent, &v)
+	return v.Elements
+}
+
+// namesOnly reports whether loc matches one element, the one at bounds.
+func (s *Server) namesOnly(loc string, bounds agent.BoundsView) bool {
+	m := s.matches(loc)
+	return len(m) == 1 && m[0].Bounds == bounds
+}
+
+func center(b agent.BoundsView) (int, int) { return (b.X1 + b.X2) / 2, (b.Y1 + b.Y2) / 2 }
+
+func distance(b agent.BoundsView, x, y int) int {
+	bx, by := center(b)
+	dx, dy := bx-x, by-y
+	return dx*dx + dy*dy
+}
+
+// write saves the recording to Out, when it is set, as the page's download
+// would give it.
+func (s *Server) write() error {
+	if s.Out == "" {
+		return nil
+	}
+	body, err := s.recording(languageOf(s.Out))
+	if err != nil {
+		return mobiumerr.New(mobiumerr.Unsupported, "%s was not written: %w", s.Out, err)
+	}
+	if dir := filepath.Dir(s.Out); dir != "" {
+		if err := os.MkdirAll(dir, 0o755); err != nil {
+			return mobiumerr.New(mobiumerr.Unsupported, "%s was not written: %w", s.Out, err)
+		}
+	}
+	if err := os.WriteFile(s.Out, body, 0o644); err != nil {
+		return mobiumerr.New(mobiumerr.Unsupported, "%s was not written: %w", s.Out, err)
+	}
+	return nil
+}
+
+// languageOf is the client language a path's extension names, "" for a
+// test file.
+func languageOf(path string) string {
+	for lang, ext := range codegen.Extension {
+		if strings.HasSuffix(path, ext) {
+			return lang
+		}
+	}
+	return ""
+}
+
+// recording is what was done, as a test file for "" and as a program in a
+// client's language otherwise. Called with s.mu held.
+func (s *Server) recording(lang string) ([]byte, error) {
+	if lang != "" {
+		raw, _ := json.Marshal(s.steps)
+		var steps []testrun.Step
+		if err := json.Unmarshal(raw, &steps); err != nil {
+			return nil, err
+		}
+		src, err := codegen.Program(lang, s.app, steps)
+		return []byte(src), err
+	}
 	file := map[string]interface{}{
 		"description": "Recorded with mobium inspect.",
 		"tests": []interface{}{map[string]interface{}{
@@ -283,10 +491,31 @@ func (s *Server) test(w http.ResponseWriter, r *http.Request) {
 	if s.app != "" {
 		file["app"] = s.app
 	}
-	w.Header().Set("Content-Disposition", `attachment; filename="recorded.test.json"`)
-	w.Header().Set("Content-Type", "application/json")
 	b, _ := json.MarshalIndent(file, "", "  ")
-	_, _ = w.Write(append(b, '\n'))
+	return append(b, '\n'), nil
+}
+
+// test is what was done, as a test file `mobium test` runs, or with
+// ?lang= as a program in that client's language.
+func (s *Server) test(w http.ResponseWriter, r *http.Request) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	lang := r.URL.Query().Get("lang")
+	body, err := s.recording(lang)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		return
+	}
+	name, kind := "recorded.test.json", "application/json"
+	if lang != "" {
+		name, kind = "recorded"+codegen.Extension[lang], "text/plain; charset=utf-8"
+		if lang == "java" {
+			name = "Recorded.java" // the class it declares
+		}
+	}
+	w.Header().Set("Content-Disposition", `attachment; filename="`+name+`"`)
+	w.Header().Set("Content-Type", kind)
+	_, _ = w.Write(body)
 }
 
 func (s *Server) clear(w http.ResponseWriter, r *http.Request) {
@@ -296,8 +525,16 @@ func (s *Server) clear(w http.ResponseWriter, r *http.Request) {
 	}
 	s.mu.Lock()
 	s.steps, s.app = nil, ""
+	err := s.write()
 	s.mu.Unlock()
-	reply(w, Acted{})
+	reply(w, Acted{Error: errString(err)})
+}
+
+func errString(err error) string {
+	if err == nil {
+		return ""
+	}
+	return err.Error()
 }
 
 // fresh starts a recording where a test starts: the app in front stopped and
@@ -322,8 +559,9 @@ func (s *Server) fresh(w http.ResponseWriter, r *http.Request) {
 	}
 	s.mu.Lock()
 	s.steps, s.app = nil, app
+	err = s.write()
 	s.mu.Unlock()
-	reply(w, Acted{Text: "started " + app + " fresh; recording from here"})
+	reply(w, Acted{Text: "started " + app + " fresh; recording from here", Error: errString(err)})
 }
 
 func errText(err error) string {

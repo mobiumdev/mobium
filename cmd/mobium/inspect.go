@@ -18,6 +18,7 @@ import (
 func newInspectCmd() *cobra.Command {
 	var port int
 	var open bool
+	var record string
 	cmd := &cobra.Command{
 		Use:   "inspect",
 		Short: "See the screen, the locator for anything on it, and record what you do as a test",
@@ -25,13 +26,16 @@ func newInspectCmd() *cobra.Command {
 			"map finds outlined. Click one for its locator — the one a test should name it\n" +
 			"by — and act on it: tap, type, check, wait for it. Type a locator to see what\n" +
 			"it matches. What you do is kept as steps, and downloads as a *.test.json that\n" +
-			"mobium test runs. It calls the same tools as every command, through the same\n" +
+			"mobium test runs, or as a program in Python, JavaScript, Go, Java or .NET.\n" +
+			"--record writes it to a file after every step, by its extension: .test.json,\n" +
+			".py, .mjs, .go, .java or .cs. It calls the same tools as every command, through the same\n" +
 			"daemon, so a terminal and the page drive one session.\n\n" +
 			"It listens on 127.0.0.1 only, and answers only requests carrying the token in\n" +
 			"the URL it prints — any other page in the browser can reach 127.0.0.1. See\n" +
 			"docs/guides/inspector.md.",
 		Example: `  mobium inspect                       # the only device running
   mobium inspect --device emulator-5554 --open
+  mobium inspect --record login_test.py    # written as it grows
   mobium inspect --driver wda --device <simulator-udid>`,
 		Args: cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -39,6 +43,7 @@ func newInspectCmd() *cobra.Command {
 			if err != nil {
 				return err
 			}
+			srv.Out = record
 			ln, err := srv.Listen(strconv.Itoa(port))
 			if err != nil {
 				return err
@@ -64,5 +69,6 @@ func newInspectCmd() *cobra.Command {
 	}
 	cmd.Flags().IntVar(&port, "port", 0, "port on 127.0.0.1 (default: any free one)")
 	cmd.Flags().BoolVar(&open, "open", false, "open the page in the browser")
+	cmd.Flags().StringVar(&record, "record", "", "write the recording here after every step: a .test.json, or a program by its extension")
 	return cmd
 }

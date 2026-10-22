@@ -398,7 +398,7 @@ arguments and the two global flags.
 | `grid` | — | --holder --want | — |
 | `hit-test` | app_hit_test | — | target |
 | `hook` | app_hook | --timeout-ms | args, hook, timeout_ms |
-| `inspect` | — | --open --port | darwin, windows |
+| `inspect` | — | --open --port --record | darwin, windows |
 | `install` | app_install | — | path |
 | `keyboard` | app_keyboard | --hide --key --text | hide, key, text |
 | `launch` | app_launch | --gray-box --hit-test | app, gray_box, hit_test |

@@ -16,6 +16,7 @@ Android 15 emulator; the output is what mobium printed. Before this guide:
 - [2. Find the locator for anything](#2-find-the-locator-for-anything)
 - [3. Try a locator](#3-try-a-locator)
 - [4. Record a test](#4-record-a-test)
+- [5. Download it as code](#5-download-it-as-code)
 - [Who can reach it](#who-can-reach-it)
 
 ## 1. Start it
@@ -101,6 +102,62 @@ the test.
 
 A recording keeps what you typed, the password included; that is the demo
 account's here, and worth remembering before recording against your own.
+
+**An element with no locator of its own is recorded scoped to it.** `map`
+names one of several look-alikes — every row's More — by its ref or its
+path, and both are this screen's only: a ref lasts one map, and a path moves
+whenever the list adds or reuses a row. So before the action, the recorder
+tries what a person writing the test would: the element's name `within` the
+nearest element that has a locator, or within a text on the screen — a
+row's title is no target, so `map` does not list it — and then its place
+among the look-alikes, `,nth=`. Each is checked against the screen with
+`find`, and kept only if it names that element and nothing else. On the
+Table Demo, Item 2's More, which `map` lists as `path=0/0/0/0/0/0/4/0/8`:
+
+```
+tapped path=0/0/0/0/0/0/4/0/8 at (740, 804) — recorded as label="More",role=button within text="Item 2"
+```
+
+**Expect, as it is now.** Under the text box, three buttons record an
+assertion: the element's text (the box's text, or its label), its value
+(for a field or a slider) and its checked state. Each is a `wait_for` that
+runs at once, and is recorded only if it holds, so a recorded expectation
+is one the screen met.
+
+**`--record <file>`** writes the recording after every step, for a person
+recording into an editor: a `.test.json`, or a program by its extension —
+`.py`, `.mjs`, `.go`, `.java` or `.cs`. It is the same file the download
+gives.
+
+## 5. Download it as code
+
+Next to **Download**, pick the language: the test file, or a program in
+Python, JavaScript, Go, Java or .NET. Every step is one tool call and every
+client has every tool, so the program is the same steps through the
+client's own methods, starting from the app launched fresh. The Table Demo
+recording above, as Python:
+
+```python
+# Recorded with mobium inspect.
+from mobium import start
+
+with start() as device:
+    device.terminate("dev.mobium.mobiumapp")
+    device.launch("dev.mobium.mobiumapp")
+    device.scroll_to("text=\"Table Demo\"")
+    device.tap("text=\"Table Demo\"")
+    device.tap("label=\"More\",role=button within text=\"Item 2\"")
+    device.wait_for("testid=\"tableOutcome\"", condition="text", text="More: Item 2", exact=True)
+```
+
+The program names no device; `start()` takes the only one running, and
+`start(device=...)` names one. A step the table cannot write exactly — a
+two-finger tap, a wait for a count — is refused when you download, naming
+the step, rather than written as a different one: download the test file
+for that recording. [`docs/checks/codegen.sh`](../checks/codegen.sh)
+records this flow, downloads it in all five languages and runs each on the
+device; it passed on the Android 15 emulator and the iPhone 17 Pro
+simulator on 2026-10-22.
 
 ## Who can reach it
 
