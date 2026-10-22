@@ -1055,6 +1055,10 @@ type NetworkStatus struct {
 	LatencyMs    int `json:"latency_ms"`
 	DownloadKbps int `json:"download_kbps"`
 	UploadKbps   int `json:"upload_kbps"`
+	// Proxy is the HTTP proxy in force, host:port, empty for none;
+	// ProxyReversed says its loopback port is this machine's.
+	Proxy         string `json:"proxy,omitempty"`
+	ProxyReversed bool   `json:"proxy_reversed,omitempty"`
 	// Changed says whether the call changed anything.
 	Changed bool `json:"changed"`
 }
@@ -1078,7 +1082,13 @@ func (d *Device) ShapeNetwork(ctx context.Context, latencyMs, downloadKbps, uplo
 		"upload_kbps": uploadKbps})
 }
 
-// ResetNetwork removes the shaping and turns airplane mode off.
+// SetProxy points the device's HTTP proxy at host:port — 127.0.0.1 is this
+// machine's, through adb reverse — and "" takes it off. Any Android device.
+func (d *Device) SetProxy(ctx context.Context, hostport string) (NetworkStatus, error) {
+	return d.network(ctx, map[string]any{"proxy": hostport})
+}
+
+// ResetNetwork removes the shaping and the proxy and turns airplane mode off.
 func (d *Device) ResetNetwork(ctx context.Context) (NetworkStatus, error) {
 	return d.network(ctx, map[string]any{"reset": true})
 }

@@ -2,7 +2,7 @@
 
 How an app behaves with no network, or a bad one, is where a lot of its bugs
 live, and the one thing a desk never reproduces by itself. `mobium network`
-takes an Android device offline, or slows it down, reads back what the device
+takes an Android device offline, slows it down or points it at a proxy, reads back what the device
 actually has, and puts it back when the session ends.
 
 Every command, line of output and picture below is what an Android 15
@@ -16,16 +16,17 @@ which says so.
 - [2. Offline, and back](#2-offline-and-back)
 - [3. A slow network](#3-a-slow-network)
 - [4. In a test](#4-in-a-test)
+- [5. Through a proxy](#5-through-a-proxy)
 - [Why not the emulator's own throttling](#why-not-the-emulators-own-throttling)
 - [The commands](#the-commands)
 
 ## What each device can do
 
-| | Offline | Latency and bandwidth |
-| --- | --- | --- |
-| **Android emulator** | yes | yes |
-| **Android phone** | yes | no — shaping traffic needs root, which a phone does not give |
-| **iOS simulator or iPhone** | no | no — nothing outside iOS controls its network |
+| | Offline | Latency and bandwidth | A proxy |
+| --- | --- | --- | --- |
+| **Android emulator** | yes | yes | yes |
+| **Android phone** | yes | no — shaping traffic needs root, which a phone does not give | the same setting, no root; not yet run on a phone |
+| **iOS simulator or iPhone** | no | no — nothing outside iOS controls its network | no |
 
 Offline is airplane mode, which any Android device takes. Latency and
 bandwidth shape the device's own traffic with Linux's traffic control, which
@@ -176,6 +177,46 @@ session puts the network back as the session found it. The `beforeEach`
 reset is still worth having — it keeps one test's network from reaching the
 next inside a run.
 
+## 5. Through a proxy
+
+`--proxy host:port` points the device's HTTP proxy at a debugging proxy —
+Charles, Fiddler, mitmproxy, anything that listens on a port — so it sees
+what the app sends and receives. A proxy on `127.0.0.1` or `localhost` is
+this machine's: Mobium reverses its port with `adb reverse` before pointing
+the device at it, so there is no address on the network to find and no
+firewall in the way. Measured on the emulator on 2026-10-22, with a proxy
+of the check's own on port 18899 that answers every request itself:
+
+```
+$ mobium network --proxy 127.0.0.1:18899
+online; no shaping; proxy 127.0.0.1:18899, which is this machine's through adb reverse
+$ mobium network --no-proxy
+online; no shaping
+```
+
+What is read back is the proxy **in force**, not the setting written.
+Android derives `global_http_proxy_host` and `_port` from `http_proxy`, and
+deleting `http_proxy` leaves them, and the proxy, in place; a device left
+that way reads as what it is:
+
+```
+$ mobium network
+online; no shaping; proxy 127.0.0.1:8888, the device's own loopback, which nothing reverses to this machine, so the device's HTTP goes nowhere unless something listens there on the device
+```
+
+`--no-proxy` takes it off the way that sticks — `:0`, then every proxy key
+deleted — and removes the reverse Mobium added, never one that was there
+before. The end of the session puts back the proxy it found. A proxy given
+with a scheme or a path is refused before anything changes: Android's
+setting would take `http://` as part of a host name.
+
+The proxy is the device's whole HTTP, and an app sees it only if it uses
+the system proxy: React Native, native networking and WebViews do; Flutter
+does not. HTTPS needs the proxy's certificate trusted as well, which is the
+next step in [PROXY.md](../PROXY.md).
+[`docs/checks/proxy.sh`](../checks/proxy.sh) holds it to what MobiumApp's
+Network Demo receives.
+
 ## Why not the emulator's own throttling
 
 The Android emulator's console has `network speed` and `network delay`, and
@@ -195,9 +236,11 @@ above was measured from the traffic, not the setting
 | `mobium network --online` | airplane mode off, and waits for the network to come back |
 | `mobium network --latency 300` | adds 300ms to every round trip (emulator) |
 | `mobium network --download 1600 --upload 750` | caps the rates, in kbit/s (emulator) |
-| `mobium network --reset` | no shaping, airplane mode off |
+| `mobium network --proxy 127.0.0.1:8888` | the device's HTTP proxy; on 127.0.0.1 it is this machine's, through adb reverse |
+| `mobium network --no-proxy` | takes the proxy off |
+| `mobium network --reset` | no shaping, no proxy, airplane mode off |
 
-In a client, the same four calls: Python's `network()`, `set_offline()`,
-`shape_network()` and `reset_network()`, and their equivalents in
+In a client, the same five calls: Python's `network()`, `set_offline()`,
+`shape_network()`, `set_proxy()` and `reset_network()`, and their equivalents in
 JavaScript, Go, Java and .NET. [`docs/checks/network.sh`](../checks/network.sh)
 holds all of it to the traffic on an emulator and to airplane mode on a phone.

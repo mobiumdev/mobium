@@ -725,8 +725,8 @@ class Device:
 
     def network(self) -> dict:
         """The network: ``airplane``, ``online``, and the shaping —
-        ``latency_ms``, ``download_kbps``, ``upload_kbps``, zero for none.
-        Android only."""
+        ``latency_ms``, ``download_kbps``, ``upload_kbps``, zero for none —
+        and ``proxy``, absent for none. Android only."""
         return self._data("app_network") or {}
 
     def set_offline(self, offline: bool = True) -> dict:
@@ -741,8 +741,14 @@ class Device:
         return self._data("app_network", {"latency_ms": latency_ms, "download_kbps": download_kbps,
                                           "upload_kbps": upload_kbps}) or {}
 
+    def set_proxy(self, hostport: str) -> dict:
+        """Point the device's HTTP proxy at ``host:port`` — ``127.0.0.1`` is
+        this machine's, through adb reverse — or take it off with ``""``.
+        Any Android device."""
+        return self._data("app_network", {"proxy": hostport}) or {}
+
     def reset_network(self) -> dict:
-        """Remove the shaping and turn airplane mode off."""
+        """Remove the shaping and the proxy and turn airplane mode off."""
         return self._data("app_network", {"reset": True}) or {}
 
     def battery(self) -> dict:

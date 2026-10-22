@@ -297,13 +297,15 @@ export class Device {
   downloads(options?: { app?: string }): Promise<Data[]>
   /** Runs several tools in order in one call; stops at the first failure. */
   batch(steps: BatchStep[]): Promise<BatchStepResult[]>
-  /** The network: airplane, online, latency_ms, download_kbps, upload_kbps. Android only. */
+  /** The network: airplane, online, latency_ms, download_kbps, upload_kbps, proxy. Android only. */
   network(): Promise<Data>
   /** Airplane mode on (or off), waiting for the network to follow. Android. */
   setOffline(offline?: boolean): Promise<Data>
   /** Latency and download/upload limits in kbit/s, replacing any set before; zero is none. Emulator only. */
   shapeNetwork(options?: { latencyMs?: number; downloadKbps?: number; uploadKbps?: number }): Promise<Data>
-  /** Removes the shaping and turns airplane mode off. */
+  /** The device's HTTP proxy, host:port (127.0.0.1 is this machine's); '' takes it off. Android. */
+  setProxy(hostport: string): Promise<Data>
+  /** Removes the shaping and the proxy and turns airplane mode off. */
   resetNetwork(): Promise<Data>
   /** The battery: level, state, and on Android what it is plugged into. */
   battery(): Promise<Data>

@@ -2117,13 +2117,18 @@ func GetToolSchemas() []Tool {
 		},
 		{
 			Name: "app_network",
-			Description: "Read or set the device's network conditions: offline, latency and " +
-				"bandwidth. With no arguments, reports what is in place, read from the device. " +
+			Description: "Read or set the device's network conditions: offline, latency, " +
+				"bandwidth and an HTTP proxy. With no arguments, reports what is in place, read from the device. " +
 				"offline switches airplane mode and waits for the device to lose, or regain, its " +
 				"network — on an emulator and on a real Android phone. latency_ms, download_kbps " +
 				"and upload_kbps shape the device's traffic on an emulator (they need root, which " +
 				"a phone does not give); together they replace any shaping set before, and an " +
-				"omitted one is no limit. reset removes the shaping and turns airplane mode off. " +
+				"omitted one is no limit. proxy points the device's HTTP proxy at host:port, on " +
+				"any Android device, and an empty one takes it off; a proxy on 127.0.0.1 or " +
+				"localhost is this machine's, through adb reverse, so a proxy listening here needs " +
+				"no address on the network. It is the device's whole HTTP, read by apps that use " +
+				"the system proxy — not Flutter's, which ignores it. reset removes the shaping and " +
+				"the proxy and turns airplane mode off. " +
 				"Whatever is set is read back, and the end of the session puts the network back " +
 				"as it found it. iOS refuses: nothing outside it controls its network.",
 			InputSchema: map[string]interface{}{
@@ -2145,9 +2150,14 @@ func GetToolSchemas() []Tool {
 						"type":        "integer",
 						"description": "Upload limit in kilobits a second; 0 or omitted is none. Emulator only.",
 					},
+					"proxy": map[string]interface{}{
+						"type": "string",
+						"description": "The device's HTTP proxy, host:port such as 127.0.0.1:8888; " +
+							"empty takes it off. Android only.",
+					},
 					"reset": map[string]interface{}{
 						"type":        "boolean",
-						"description": "Remove the shaping and turn airplane mode off. Takes nothing else.",
+						"description": "Remove the shaping and the proxy and turn airplane mode off. Takes nothing else.",
 					},
 				}),
 				"additionalProperties": false,

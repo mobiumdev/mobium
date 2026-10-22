@@ -989,7 +989,16 @@ export class Device {
     })) || {}
   }
 
-  /** Removes the shaping and turns airplane mode off. */
+  /**
+   * Points the device's HTTP proxy at `host:port` — `127.0.0.1` is this
+   * machine's, through adb reverse — or takes it off with `''`. Any Android
+   * device.
+   */
+  async setProxy(hostport) {
+    return (await this.#data('app_network', { proxy: hostport })) || {}
+  }
+
+  /** Removes the shaping and the proxy and turns airplane mode off. */
   async resetNetwork() {
     return (await this.#data('app_network', { reset: true })) || {}
   }
