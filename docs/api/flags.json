@@ -3170,7 +3170,8 @@
       "command": "inspect",
       "flags": [
         "--open",
-        "--port"
+        "--port",
+        "--record"
       ],
       "sends": [
         "darwin",

@@ -80,9 +80,15 @@ code,.mono{font-family:ui-monospace,Menlo,monospace;font-size:12.5px}
           <button data-act="scroll">Scroll to it</button>
         </div>
         <div class="row">
-          <input id="text" placeholder="Text to enter" style="flex:1">
+          <input id="text" placeholder="Text to enter, or to expect" style="flex:1">
           <button data-act="type">Type</button>
           <button data-act="fill">Fill</button>
+        </div>
+        <div class="row">
+          <span class="muted" style="font-size:12px">Expect, as it is now:</span>
+          <button data-act="expectText" title="The text above, or the element's label: a wait for it">Its text</button>
+          <button data-act="expectValue" id="bValue" title="The text above, or the slider's value: a wait for the whole value">Its value</button>
+          <button data-act="expectChecked" id="bExpectChecked" title="A wait for the state it is in">Its checked state</button>
         </div>
       </div>
       <div id="point" hidden>
@@ -106,7 +112,15 @@ code,.mono{font-family:ui-monospace,Menlo,monospace;font-size:12.5px}
       <h2>Recorded</h2>
       <p class="muted" style="font-size:12px;margin:0 0 6px">A test starts from a freshly launched app, so a recording should too.</p>
       <div class="row"><button class="primary" id="fresh">Start from a fresh app</button><span id="stepCount">0 steps</span>
-        <a id="download" href="test" download="recorded.test.json"><button>Download test</button></a>
+        <select id="lang" title="What to download the recording as">
+          <option value="">Test file (mobium test)</option>
+          <option value="python">Python</option>
+          <option value="javascript">JavaScript</option>
+          <option value="go">Go</option>
+          <option value="java">Java</option>
+          <option value="dotnet">.NET</option>
+        </select>
+        <button id="download">Download</button>
         <button id="clear">Clear</button></div>
       <pre id="steps" hidden></pre>
     </section>
@@ -172,7 +186,7 @@ code,.mono{font-family:ui-monospace,Menlo,monospace;font-size:12.5px}
       const b = sel.bounds;
       $('dBounds').textContent = `[${b.x1},${b.y1}][${b.x2},${b.y2}]`;
       $('dChecked').textContent = sel.checked === undefined ? 'no checked state' : sel.checked ? 'checked' : 'unchecked';
-      $('bCheck').hidden = $('bUncheck').hidden = sel.checked === undefined;
+      $('bCheck').hidden = $('bUncheck').hidden = $('bExpectChecked').hidden = sel.checked === undefined;
     }
     document.querySelectorAll('#list div').forEach((d) => d.classList.toggle('sel', !!sel && d.dataset.ref === sel.ref));
     draw();
@@ -222,7 +236,7 @@ code,.mono{font-family:ui-monospace,Menlo,monospace;font-size:12.5px}
 
   async function steps(n) {
     $('stepCount').textContent = n + (n === 1 ? ' step' : ' steps');
-    $('download').style.pointerEvents = n ? '' : 'none';
+    $('download').disabled = !n;
     if (!n) { $('steps').hidden = true; return; }
     try {
       const f = await (await fetch('test')).json();
@@ -265,6 +279,11 @@ code,.mono{font-family:ui-monospace,Menlo,monospace;font-size:12.5px}
       case 'scroll': return act('app_scroll_to', {target: t});
       case 'type': return act('app_type', {target: t, text});
       case 'fill': return act('app_fill', {target: t, text});
+      // An expectation is a wait that holds now: recorded only if it does.
+      case 'expectText': return act('app_wait_for', {target: t, condition: 'text', text: text || sel.label});
+      case 'expectValue': return act('app_wait_for', {target: t, condition: 'value', text: text || sel.value || ''});
+      case 'expectChecked':
+        return act('app_wait_for', {target: t, condition: sel.checked ? 'checked' : 'unchecked'});
     }
   });
   $('tapPoint').onclick = () => point && act('app_tap', {x: point.x, y: point.y});
@@ -288,6 +307,21 @@ code,.mono{font-family:ui-monospace,Menlo,monospace;font-size:12.5px}
   };
   $('loc').onkeydown = (e) => { if (e.key === 'Enter') $('find').click(); };
   $('clear').onclick = async () => { await post('clear', {}); steps(0); };
+  // Fetched first, so a recording a language cannot hold says why instead
+  // of downloading the refusal as the file.
+  $('download').onclick = async () => {
+    const lang = $('lang').value;
+    try {
+      const r = await fetch('test' + (lang ? '?lang=' + encodeURIComponent(lang) : ''));
+      if (!r.ok) { log(await r.text(), 'bad'); return; }
+      const name = (/filename="([^"]+)"/.exec(r.headers.get('Content-Disposition') || '') || [])[1] || 'recorded';
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(await r.blob());
+      a.download = name;
+      a.click();
+      URL.revokeObjectURL(a.href);
+    } catch (e) { log(String(e), 'bad'); }
+  };
   $('fresh').onclick = async () => {
     try {
       const r = await post('fresh', {});

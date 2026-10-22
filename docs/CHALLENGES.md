@@ -7710,6 +7710,29 @@ fixture's email field now shows; four checks that matched `(input)` or
 `(password)` exactly after typing match the role alone. `tv-app.sh` asserts
 Card 10 focused once nine presses reach it, and passes on both TVs.
 
+### 356. A recorded look-alike was named by its path, which the next row moves
+
+**Found by:** building the recording as code (ROADMAP, "A recording as
+code", item 4) and recording a tap on MobiumApp's Table Demo, where every
+row has a More and a Delete. `map` names a look-alike by `path=` when
+nothing else names it alone — Item 2's More was
+`path=0/0/0/0/0/0/4/0/8` — and the recorder kept whatever `map` gave, so
+the test held the More's place in the tree. A path is the element's index
+under each parent; a list that adds a row above, or reuses its cells as it
+scrolls, moves it, and the replay taps another row's More or none. The
+roadmap's item had planned for a ref only, and a ref is what a page
+element with no locator got (314); a native look-alike never reached that
+case.
+
+**Fixed:** before the action, a target `map` named by a ref or a path is
+scoped as a person writing the test would: its name within the nearest
+element that has a locator, or within a text on the screen — the row's
+title is no target, so `map` does not list it — then its place among the
+look-alikes, `,nth=`. Each is checked with `find` and kept only if it names
+that element alone. Item 2's More records as `label="More",role=button
+within text="Item 2"`, and `codegen.sh` runs that recording in all five
+languages on the Android 15 emulator and the iPhone 17 Pro simulator.
+
 ## Findings that were not defects
 
 Worth recording because each one closed off an approach that looked obvious.

@@ -605,7 +605,14 @@ this is what is not.
   guide](guides/inspector.md#4-record-a-test)). Someone whose tests live
   in Go, Python, JavaScript, Java or .NET gets nothing they can paste.
   Every step is one tool call, and every client has every tool, so this
-  is one table from step to call, not a second recorder. In order:
+  is one table from step to call, not a second recorder. **Items 1, 2, 4
+  and 5 done 2026-10-22** (`internal/codegen`, the inspector guide's
+  section 5, `docs/checks/codegen.sh`, CHALLENGES 356): a program in each
+  language at download, each run on the Android emulator and the iPhone
+  simulator; expectations from the panel; a look-alike recorded `within`
+  its row or by `,nth=`; and `--record <file>`. Left: the password as a
+  secret reference (3), a test in each language's framework rather than a
+  script (1), and touches made on the device (6). In order:
   1. **Code in each client's language**, chosen at download: a script, or
      a test in that language's usual framework. The docs site's five
      translations of each scenario are the reference to check the table

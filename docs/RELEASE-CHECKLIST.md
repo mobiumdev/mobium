@@ -225,7 +225,7 @@ vouches for none of them. What each proves, and the devices it runs on, is in
 - [ ] Device state: `orientation.sh`, `network.sh <android-serial>`, `proxy.sh <android-serial>`,
       `shake.sh`, and on iOS `locale-ios.sh`, `timezone-ios.sh`,
       `notifications-ios.sh` and `audit.sh`
-- [ ] Recording: `record.sh` and `trace.sh`
+- [ ] Recording: `record.sh`, `trace.sh` and `codegen.sh`
 - [ ] Devices started and stopped: `boot.sh <avd> [simulator-udid]`
 - [ ] The test runner: `test-runner.sh`, `test-ui.sh` (needs Vibium), and
       `MOBIUM_GRID=<node> test-grid.sh`
