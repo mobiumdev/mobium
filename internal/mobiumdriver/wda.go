@@ -272,6 +272,18 @@ func (w *WDA) readScale(ctx context.Context) (float64, error) {
 
 // toPoints converts a device-pixel coordinate to the points WebDriverAgent
 // expects for input.
+// iosEdgePoints is how far from the screen's sides a thumb's drag takes
+// hold on iOS: a pushed screen goes back with a swipe from its left edge.
+const iosEdgePoints = 20
+
+// toPixels is toPoints the other way.
+func (w *WDA) toPixels(v int) int {
+	if w.scale <= 0 {
+		return v
+	}
+	return int(float64(v)*w.scale + 0.5)
+}
+
 func (w *WDA) toPoints(v int) int {
 	if w.scale <= 0 || w.scale == 1 {
 		return v
@@ -611,6 +623,21 @@ func (w *WDA) PointScale() float64 { return w.scale }
 func (w *WDA) SetSliderPosition(ctx context.Context, n *uitree.Node, position float64) error {
 	if position < 0 || position > 1 {
 		return mobiumerr.New(mobiumerr.InvalidArgument, "a slider position is from 0 to 1, not %g", position)
+	}
+	// A thumb of a slider with two is an app's own control, an adjustable
+	// element WebDriverAgent cannot set: it is dragged (range.go). Its frame
+	// stays inside the track's, so at either end its center is half its
+	// width in; the drag takes hold at once, and a drag gesture with a
+	// distance of its own is corrected by the read-back.
+	if _, _, ok := uitree.RangeThumb(n); ok {
+		return dragThumb(ctx, n, position, thumbDrive{
+			inset: func(t *uitree.Node) int { return t.Bounds.Width() / 2 },
+			edge:  w.toPixels(iosEdgePoints),
+			drag: func(x1, y1, x2, y2 int) error {
+				return w.w3c.pointerSequence(ctx, thumbDrag(w.toPoints(x1), w.toPoints(y1), w.toPoints(x2), w.toPoints(y2)))
+			},
+			snapshot: w.Snapshot,
+		})
 	}
 	elID, err := w.elementFor(ctx, n)
 	if err != nil {

@@ -2228,8 +2228,10 @@ func (h *Handlers) typeTextOn(ctx context.Context, s *session, args map[string]i
 	if err != nil {
 		return nil, err
 	}
-	// A slider is filled with a position, and not typed into.
-	if uitree.HasClassRole(node, "slider") {
+	// A slider is filled with a position, and not typed into — a thumb of a
+	// slider with two too, which an iOS app draws as adjustable elements.
+	_, _, thumb := uitree.RangeThumb(node)
+	if uitree.HasClassRole(node, "slider") || thumb {
 		// A page's range, drawn by its WebView, is moved through the page
 		// when the page can be reached, which knows its min, max and step
 		// and lands exactly; natively only when it cannot (CHALLENGES 319).

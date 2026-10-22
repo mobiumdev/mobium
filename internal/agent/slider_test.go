@@ -140,3 +140,24 @@ func TestFillSaysWhatASeekBarsReadingIsIn(t *testing.T) {
 		t.Errorf("an iOS slider's own reading is marked, or its position missing: %+v", v)
 	}
 }
+
+// What moved is what was read: a fill whose slider reads the same after
+// says it still reads that, never that it moved it. A touch inside a range
+// slider's thumb moved nothing, and was reported as moved (CHALLENGES 357).
+func TestAFillThatMovedNothingSaysSo(t *testing.T) {
+	d := &sliderDriver{before: sliderScreen(t, "60%"), after: sliderScreen(t, "60%")}
+	h := NewHandlers()
+	h.implicitWait, h.settleWindow = 0, 0
+	s := &session{dev: fakeDevice(), driver: d, backend: BackendWDA}
+	res, err := h.typeTextOn(context.Background(), s, map[string]interface{}{"target": "role=slider", "text": "0.5"}, true)
+	if err != nil {
+		t.Fatal(err)
+	}
+	text := res.Content[0].Text
+	if strings.Contains(text, "moved") && !strings.Contains(text, "nothing moved") {
+		t.Errorf("reported as moved: %s", text)
+	}
+	if !strings.Contains(text, `still reads "60%"`) {
+		t.Errorf("does not say what it still reads: %s", text)
+	}
+}

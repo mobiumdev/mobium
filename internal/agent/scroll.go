@@ -194,7 +194,7 @@ func (h *Handlers) scrollIntoView(ctx context.Context, s *session, loc uitree.Lo
 
 	// Already there? Resolve against the container it will be measured
 	// against, so "visible" means the same thing before and after scrolling.
-	container := scrollContainer(tree)
+	container := scrollContainerFor(tree, dir)
 	n, resolveErr := resolvedAndVisible(pick, tree, container)
 	if resolveErr == nil {
 		return n, tree, 0, nil
@@ -223,7 +223,7 @@ func (h *Handlers) scrollIntoView(ctx context.Context, s *session, loc uitree.Lo
 		if tree, err = s.driver.Snapshot(ctx); err != nil {
 			return nil, nil, 0, err
 		}
-		container = scrollContainer(tree)
+		container = scrollContainerFor(tree, dir)
 		if n, resolveErr = resolvedAndVisible(pick, tree, container); resolveErr == nil {
 			return n, tree, 0, nil
 		}
@@ -242,7 +242,7 @@ func (h *Handlers) scrollIntoView(ctx context.Context, s *session, loc uitree.Lo
 			if tree, err = s.driver.Snapshot(ctx); err != nil {
 				return nil, nil, 0, err
 			}
-			container = scrollContainer(tree)
+			container = scrollContainerFor(tree, dir)
 			if n, resolveErr = resolvedAndVisible(pick, tree, container); resolveErr == nil {
 				return n, tree, 0, nil
 			}
@@ -336,7 +336,7 @@ func (h *Handlers) scrollIntoView(ctx context.Context, s *session, loc uitree.Lo
 					"says which way it does, so try the other axis, or app_swipe", dir, app, now)
 			}
 		}
-		container = scrollContainer(tree)
+		container = scrollContainerFor(tree, dir)
 		if container == nil {
 			return nil, nil, i, mobiumerr.New(mobiumerr.ElementNotReachable, "the scrollable area went away while scrolling %s for %s — "+
 				"the swipe changed the screen instead of scrolling it, so it does not "+
@@ -410,7 +410,7 @@ func (h *Handlers) scrollIntoView(ctx context.Context, s *session, loc uitree.Lo
 					return nil, nil, i, err
 				}
 				tree = waited
-				if container = scrollContainer(tree); container == nil {
+				if container = scrollContainerFor(tree, dir); container == nil {
 					return nil, nil, i, mobiumerr.New(mobiumerr.ElementNotReachable, "the scrollable area went away "+
 						"while it loaded, scrolling %s for %s", dir, loc)
 				}
@@ -876,6 +876,50 @@ func scrollContainer(tree *uitree.Tree) *uitree.Node {
 		return true
 	})
 	return best
+}
+
+// scrollContainerFor is scrollContainer for a scroll the caller gave a
+// direction: the largest scrollable whose class says it scrolls that way,
+// if one does, else the largest one that does not say it scrolls the other.
+//
+// Nothing in the hierarchy says which way a container scrolls — except a
+// class that is named for it. Android's HorizontalScrollView is, and
+// Compose reports a row with horizontalScroll as one: Morpho Market's
+// category chips. A chip off the row's right edge is not in Compose's
+// tree, so the loop had no node to ask, took the largest scrollable — the
+// catalog grid below — swiped it sideways, saw nothing move and reported
+// the end of the list (CHALLENGES 358). iOS lists the off-screen chip, and
+// its own row is found from it.
+func scrollContainerFor(tree *uitree.Tree, dir string) *uitree.Node {
+	var named, other *uitree.Node
+	tree.Walk(func(n *uitree.Node) bool {
+		if !n.Scrollable || n.Bounds.Empty() {
+			return true
+		}
+		sideways := strings.HasSuffix(n.Class, "HorizontalScrollView")
+		switch {
+		case horizontal(dir) && sideways:
+			if named == nil || area(n.Bounds) > area(named.Bounds) {
+				named = n
+			}
+		case !sideways:
+			if other == nil || area(n.Bounds) > area(other.Bounds) {
+				other = n
+			}
+		}
+		return true
+	})
+	if named != nil {
+		return named
+	}
+	if other != nil || !horizontal(dir) {
+		// Never a row that says it scrolls sideways for an up or down
+		// scroll: with the catalog emptied by a filter, the chip row was the
+		// only scrollable left, and a vertical swipe across it pressed the
+		// Accessories chip (CHALLENGES 358).
+		return other
+	}
+	return scrollContainer(tree)
 }
 
 // swipeWithin drags inside the container rather than across the whole screen.

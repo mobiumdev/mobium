@@ -1146,3 +1146,29 @@ func TestAListHeldByAnAlertIsNotItsEnd(t *testing.T) {
 		t.Errorf("still blames the list: %v", err)
 	}
 }
+
+// A scroll the caller gave a direction swipes the container whose class
+// says it scrolls that way: Morpho Market's chip row is Compose's
+// HorizontalScrollView, and a chip off its edge is not in the tree, so the
+// largest scrollable — the catalog grid — was swiped sideways, and the
+// scroll reported the end of the list (CHALLENGES 358).
+func TestASidewaysScrollSwipesTheRowThatSaysItScrollsSideways(t *testing.T) {
+	data, err := os.ReadFile("../uitree/testdata/android-compose-range-slider-uia2.xml")
+	if err != nil {
+		t.Fatal(err)
+	}
+	tree, err := uitree.ParseAndroid(data)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for dir, want := range map[string]string{"right": "HorizontalScrollView", "left": "HorizontalScrollView",
+		"down": "catalogList", "up": "catalogList"} {
+		c := scrollContainerFor(tree, dir)
+		if c == nil || !strings.HasSuffix(c.Class, want) && c.TestID != want {
+			t.Errorf("%s swiped %+v, want %s", dir, c, want)
+		}
+	}
+	if c := scrollContainer(tree); c == nil || c.TestID != "catalogList" {
+		t.Errorf("with no direction the largest is still the grid: %+v", c)
+	}
+}
