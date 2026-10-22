@@ -40,6 +40,7 @@ type WireNode struct {
 	// tap), and a driver that never sent it must not have every tap refused.
 	Enabled  *bool `json:"enabled,omitempty"`
 	Selected bool  `json:"selected,omitempty"`
+	Focused  bool  `json:"focused,omitempty"`
 	Password bool  `json:"password,omitempty"`
 
 	// Displayed defaults to true when absent, because a driver that does not
@@ -83,6 +84,7 @@ func toWire(n *Node) WireNode {
 		Focusable:     n.Focusable,
 		Enabled:       &enabled,
 		Selected:      n.Selected,
+		Focused:       n.Focused,
 		Password:      n.Password,
 		Displayed:     &displayed,
 	}
@@ -128,6 +130,7 @@ func fromWire(w WireNode) *Node {
 		Focusable:     w.Focusable,
 		Enabled:       w.Enabled == nil || *w.Enabled,
 		Selected:      w.Selected,
+		Focused:       w.Focused,
 		Password:      w.Password,
 		Displayed:     displayed,
 	}

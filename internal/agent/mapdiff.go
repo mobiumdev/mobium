@@ -96,6 +96,9 @@ func diffMaps(before, after []ElementView) MapDiffView {
 		if b.Selected != a.Selected {
 			what = append(what, "selected")
 		}
+		if b.Focused != a.Focused {
+			what = append(what, "focused")
+		}
 		if b.Disabled != a.Disabled {
 			what = append(what, "disabled")
 		}
@@ -176,6 +179,9 @@ func elementLine(e ElementView, withRef bool) string {
 	}
 	if e.Selected {
 		tags = append(tags, "selected")
+	}
+	if e.Focused {
+		tags = append(tags, "focused")
 	}
 	if e.Disabled {
 		tags = append(tags, "disabled")
@@ -258,6 +264,12 @@ func diffText(d MapDiffView, total int) string {
 					was = append(was, "was selected")
 				} else {
 					was = append(was, "was not selected")
+				}
+			case "focused":
+				if c.Before.Focused {
+					was = append(was, "was focused")
+				} else {
+					was = append(was, "was not focused")
 				}
 			case "disabled":
 				if c.Before.Disabled {

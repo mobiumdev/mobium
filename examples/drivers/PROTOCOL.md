@@ -119,6 +119,10 @@ read back masked with only its length kept. Android puts a password field's
 typed value straight into `text`, and mobium leaked one until it honored this
 ([CHALLENGES 43](../../docs/CHALLENGES.md)). Nothing downstream can infer it.
 
+`focused` is the node holding input focus, and `map` says so: `(button,
+focused)`. On a device with a D-pad, a TV, it is what select will press and
+how a D-pad press is read back, so a driver for one should send it.
+
 `displayed` and `enabled` are the two fields that default to **true** when
 absent, so a driver that does not track them does not accidentally report an
 empty screen or a screen of dead controls. `enabled` is acted on since

@@ -119,6 +119,22 @@ func TestDiffMapsSaysWhatWasSelected(t *testing.T) {
 	}
 }
 
+// Focus moved is a change, said both ways: a D-pad press down on MobiumTV's
+// home screen takes focus from Focus Grid to Focus or Select, and nothing
+// else about either tile changes.
+func TestDiffMapsSaysWhereFocusWent(t *testing.T) {
+	foc := func(e ElementView) ElementView { e.Focused = true; return e }
+	before := []ElementView{foc(el("@e1", "Focus Grid", "button", 516, 337)), el("@e2", "Focus or Select", "button", 516, 437)}
+	after := []ElementView{el("@e1", "Focus Grid", "button", 516, 337), foc(el("@e2", "Focus or Select", "button", 516, 437))}
+	text := diffText(diffMaps(before, after), len(after))
+	for _, want := range []string{"~ @e1 Focus Grid (button) — was focused",
+		"~ @e2 Focus or Select (button, focused) — was not focused"} {
+		if !strings.Contains(text, want) {
+			t.Errorf("the text has no %q:\n%s", want, text)
+		}
+	}
+}
+
 // A slider moved is a change, said with what it read before.
 func TestDiffMapsSaysWhatASliderRead(t *testing.T) {
 	val := func(e ElementView, v string) ElementView { e.Value = v; return e }

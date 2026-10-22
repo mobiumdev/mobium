@@ -19,7 +19,7 @@
 #     is why a tap on a TV has to be read back. The other opens by select,
 #     or by touch when tapped.
 #   - Row: nine presses right reach Card 10, scrolled into view by focus
-#     alone, and select selects it.
+#     alone and mapped as focused, and select selects it.
 #   - Dialog: app_alert sees it, accept presses the positive button
 #     (Discard), and back cancels it.
 #   - Player Keys: play-pause, fast-forward and stop each arrive, as the app
@@ -131,7 +131,7 @@ expect focusState "Focused: Card 1"
 i=0
 while [ "$i" -lt 9 ]; do $M press dpad-right >/dev/null; i=$((i + 1)); done
 expect focusState "Focused: Card 10"
-$M map | grep -q " Card 10 (button)" || fail "Card 10 has focus but map does not list it on the screen"
+$M map | grep -q " Card 10 (button, focused)" || fail "Card 10 has focus but map does not list it on the screen as focused"
 $M press select >/dev/null
 expect selectState "Selected: Card 10, by select"
 row "row" "focus scrolls Card 10 into view, and select selects it"

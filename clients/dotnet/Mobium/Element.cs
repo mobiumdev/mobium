@@ -35,13 +35,16 @@ namespace Mobium
         /// <summary>True for what the platform reports not enabled: an action on it waits, then is refused.</summary>
         public bool Disabled { get; }
 
+        /// <summary>True for what the platform reports holding input focus: the field typed into, a TV's tile.</summary>
+        public bool Focused { get; }
+
         /// <summary>Builds an element record.</summary>
         public Element(string @ref, string label, string role, string locator, Bounds bounds, string context,
-            bool? @checked = null, bool selected = false, string value = "", bool disabled = false)
+            bool? @checked = null, bool selected = false, string value = "", bool disabled = false, bool focused = false)
         {
             Ref = @ref; Label = label; Role = role;
             Locator = locator; Bounds = bounds; Context = context; Checked = @checked; Selected = selected;
-            Value = value; Disabled = disabled;
+            Value = value; Disabled = disabled; Focused = focused;
         }
 
         internal static Element From(IDictionary<string, object?> m)
@@ -58,7 +61,8 @@ namespace Mobium
                 m.TryGetValue("checked", out var c) && c is bool isChecked ? isChecked : (bool?)null,
                 m.TryGetValue("selected", out var s) && s is bool isSelected && isSelected,
                 Json.Str(m, "value"),
-                m.TryGetValue("disabled", out var d) && d is bool isDisabled && isDisabled);
+                m.TryGetValue("disabled", out var d) && d is bool isDisabled && isDisabled,
+                m.TryGetValue("focused", out var f) && f is bool isFocused && isFocused);
         }
 
         /// <summary>The ref and label, with the role in brackets when there is one.</summary>

@@ -54,7 +54,7 @@ row() { printf '    %-12s %-58s ok\n' "$1" "$2"; }
 ref() { $M map | grep -E "^@e[0-9]+ $1" | awk '{ print $1; exit }'; }
 # signed_out: cancel the Add Account sheet if it is up.
 signed_out() {
-  if $M map | grep -q "^@e[0-9]* Instance URL (input)"; then
+  if $M map | grep -q "^@e[0-9]* Instance URL (input"; then
     $M tap label=Cancel >/dev/null
   fi
   $M wait "label=Timeline,role=button" >/dev/null || fail "the timeline did not come up"

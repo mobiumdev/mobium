@@ -111,7 +111,7 @@ row "swipe" "refused, naming VoiceOver"
 $M tap 'label=Back' >/dev/null 2>&1 || fail "tap Back"
 out=$($M tap 'label="Login Demo"' 2>&1) || fail "tap Login Demo: $out"
 out=$($M type testid=username tomsmith 2>&1) || fail "type: $out"
-entry "tomsmith (input)" | grep -q . || fail "the field does not hold what was typed: $(entry '(input)')"
+entry "tomsmith (input" | grep -q . || fail "the field does not hold what was typed: $(entry '(input)')"
 $M keyboard --key enter >/dev/null 2>&1 || true
 row "type" "username holds what was typed"
 

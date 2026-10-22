@@ -45,6 +45,8 @@ class Element:
     """A checkbox, radio or switch's state; None for anything with no such state."""
     selected: bool = False
     """True for what the platform reports chosen: the current tab, a segment."""
+    focused: bool = False
+    """True for what the platform reports holding input focus: the field typed into, a TV's tile."""
     disabled: bool = False
     """True for what the platform reports not enabled; an action on it waits, then is refused."""
     value: str = ""
@@ -264,7 +266,7 @@ class Device:
         Returns a dict with ``added`` and ``removed`` as lists of the same
         Elements map() returns, ``changed`` as a list of dicts with ``before``
         and ``after`` Elements and ``what`` changed (``label``, ``checked``,
-        ``selected``, ``disabled``, ``value``, ``moved`` or ``resized``), ``since`` as the time of the map compared with, and
+        ``selected``, ``focused``, ``disabled``, ``value``, ``moved`` or ``resized``), ``since`` as the time of the map compared with, and
         ``first`` true when there was no earlier map to compare with — then the
         whole screen is in ``added``. Refs are the new map's, so an added or
         changed element can be acted on at once; a removed element's ref is
@@ -1524,6 +1526,7 @@ def _element(e: dict[str, Any]) -> Element:
         context=e.get("context", ""),
         checked=e.get("checked"),
         selected=bool(e.get("selected")),
+        focused=bool(e.get("focused")),
         disabled=bool(e.get("disabled")),
         value=e.get("value", ""),
     )
