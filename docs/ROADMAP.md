@@ -1158,9 +1158,9 @@ this is what is not.
     absorbs it, as on Android, with two presses up.
   - **A tvOS alert's text is the platform's**: its first line reads
     "Discard the draft?." — UIKit's label, period and all.
-  - **`map` lists an alert's two `ScrollView`s** as `(list)` entries, and
-    does not say which element has focus, which on a TV matters most —
-    the Fire TV's open item too.
+  - **`map` lists an alert's two `ScrollView`s** as `(list)` entries.
+    Which element has focus it says since 2026-10-22 (CHALLENGES 355):
+    `(button, focused)`, and `map --diff` says where focus went.
   - **Text entry** (2026-10-17): typed through the keyboard's own screen,
     which tvOS puts in front of the field, read back from its text view
     (CHALLENGES 333). Found by Morpho Market's Apple TV app.
@@ -1256,8 +1256,11 @@ this is what is not.
     - **`terminate` of a protected package** fails with Android's raw
       `SecurityException` and stack trace — Fire OS will not force-stop
       its own packages. A one-line refusal saying so is what it should be.
-    - **`map` does not say what has focus**, which on a TV is the state
-      that matters most; the hierarchy has it.
+    - ~~**`map` does not say what has focus**~~. Done 2026-10-22
+      (CHALLENGES 355): `(button, focused)` on every device, `focused` in
+      every client's element, and `map --diff` says where a D-pad press
+      took it. `tv-app.sh` asserts it on the Android TV emulator and the
+      Apple TV simulator; not yet run on the Fire TV.
     - **The next row of tiles maps as `settings_card_view`**: five empty
       containers 44 pixels tall at the bottom edge, with nothing rendered
       in them yet, labeled by resource id.
@@ -1290,8 +1293,8 @@ this is what is not.
       tile, Help, went to its first, Inputs — so a focus strategy has to
       notice a cycle, not only a stop.
 
-  What it takes, in order, after CHALLENGES 209 to 211 and the D-pad:
-  `map` showing focus; a tap on a TV read back — focus moved, or the
+  What it takes, in order, after CHALLENGES 209 to 211, the D-pad and
+  `map` showing focus (355): a tap on a TV read back — focus moved, or the
   screen changed — rather than reported as "tapped"; a way to open an activity by
   action, for Settings; then the focus strategy — D-pad presses until the
   target reports `focused`, then select, each step read back and refused

@@ -26,6 +26,10 @@ type ElementView struct {
 	// Selected is true for what the platform reports chosen — the current
 	// tab, a segment — and absent otherwise.
 	Selected bool `json:"selected,omitempty"`
+	// Focused is true for what the platform reports holding input focus —
+	// the field typed into, the tile a TV's D-pad reached — and absent
+	// otherwise.
+	Focused bool `json:"focused,omitempty"`
 	// Disabled is true for what the platform reports not enabled, which an
 	// action would wait for and then refuse, and absent otherwise.
 	Disabled bool `json:"disabled,omitempty"`
@@ -164,6 +168,7 @@ func elementView(e uitree.Entry) ElementView {
 		Bounds:   boundsView(e.Bounds),
 		Checked:  e.Checked,
 		Selected: e.Selected,
+		Focused:  e.Focused,
 		Disabled: e.Disabled,
 		Value:    e.Value,
 		Covered:  e.Covered,

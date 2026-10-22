@@ -7689,6 +7689,27 @@ request was made from it; a request whose answer leaves SpringBoard in front
 is still reported so when the wait ends. A test of the decision fails on the
 old rule; `assistant.sh` then passed three runs of three on the iPhone.
 
+### 355. A TV's map did not say which tile select would press
+
+**Found by:** the Fire TV and Apple TV entries in ROADMAP, then MobiumTV's
+home screen on the Android TV emulator and the Apple TV simulator. A TV is
+driven by focus: the D-pad moves it and select presses what has it. Both
+platforms report it on the node — Android's `focused`, and iOS's since 297 —
+and a D-pad press already read it back ("focus moved to Focus or Select").
+But `map` built its entries without it, so after the press every tile's line
+was the same `(button)`, and the one state that says what select will do was
+not in the screen's description. The wire protocol had no field for it
+either, so an external driver for a TV could not have sent it.
+
+**Fixed:** an element with focus maps as `(button, focused)` on every
+device, `focused` is in the structured result and in all five clients'
+element, a driver can send it, and `map --diff` reports focus moving — on
+the Apple TV with the focused tile's growth beside it, since tvOS enlarges
+it. On a phone the same word marks the field being typed into, which a
+fixture's email field now shows; four checks that matched `(input)` or
+`(password)` exactly after typing match the role alone. `tv-app.sh` asserts
+Card 10 focused once nine presses reach it, and passes on both TVs.
+
 ## Findings that were not defects
 
 Worth recording because each one closed off an approach that looked obvious.

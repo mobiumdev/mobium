@@ -207,6 +207,8 @@ function toElement(e) {
     checked: typeof e.checked === 'boolean' ? e.checked : null,
     // What the platform reports chosen: the current tab, a segment.
     selected: e.selected === true,
+    // What the platform reports holding input focus: the field typed into, a TV's tile.
+    focused: e.focused === true,
     // What the platform reports not enabled: an action on it waits, then is refused.
     disabled: e.disabled === true,
     // What a slider reads, as the app states it; empty for anything else.
@@ -539,7 +541,7 @@ export class Device {
    * in each change's `after` are the new map's; those in `removed` and in
    * `before` are stale. `first` is true when there was no earlier map to
    * compare with, and then the whole screen is in `added`. A change's `what` names the fields that differ:
-   * "label", "checked", "selected", "disabled", "value", "moved" or "resized".
+   * "label", "checked", "selected", "focused", "disabled", "value", "moved" or "resized".
    */
   async mapDiff() {
     const diff = ((await this.#data('app_map', { diff: true })) || {}).diff || {}

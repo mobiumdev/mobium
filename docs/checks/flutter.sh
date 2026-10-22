@@ -41,7 +41,7 @@ echo "$apps" | grep -q "$APP" || fail "$APP is not installed — build and insta
 $M terminate "$APP" >/dev/null 2>&1 || true
 $M launch "$APP" >/dev/null; sleep 2
 MAP=$($M map)
-for want in "Username (input)" "Settings (button)" "Sign In (button)" "Remember me (" "Notifications (switch, checked)"; do
+for want in "Username (input" "Settings (button)" "Sign In (button)" "Remember me (" "Notifications (switch, checked)"; do
   echo "$MAP" | grep -qF "$want" || fail "map lacks \"$want\": $MAP"
 done
 row "map" "fields by label, a tooltip, a checkbox and a switch with state"
@@ -51,7 +51,7 @@ echo "$out" | grep -q 'typed "lana"' || fail "typing the username: $out"
 out=$($M type testid=password secret12 2>&1) || fail "typing the password: $out"
 echo "$out" | grep -q "not echoed" || fail "the password was not reported as one: $out"
 echo "$out" | grep -q secret12 && fail "the password was echoed: $out"
-$M map | grep -q "(password)" || fail "the password field does not map as a password once it holds one"
+$M map | grep -q "(password" || fail "the password field does not map as a password once it holds one"
 if [ "$PLATFORM" = ios ]; then $M keyboard --key enter >/dev/null 2>&1 || true; fi
 $M tap testid=signIn >/dev/null
 sleep 1

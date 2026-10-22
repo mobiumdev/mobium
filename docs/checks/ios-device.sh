@@ -94,7 +94,7 @@ for _ in 1 2 3; do
   $M tap @e1 >/dev/null
 done
 $M fill 'label=Search,role=input' 'wallpaper' >/dev/null || fail "typing into Search failed"
-$M map | grep -q 'wallpaper (input)' || fail "the search field does not hold what was typed"
+$M map | grep -q 'wallpaper (input' || fail "the search field does not hold what was typed"
 echo "    type           search field holds what was typed                      ok"
 
 # A screenshot in pixels, like the simulator's — devicectl has none, so it

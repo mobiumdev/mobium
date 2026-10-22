@@ -14,7 +14,8 @@ func TestMapOutput(t *testing.T) {
 
 	want := []string{
 		"@e1 Navigate up (button)",
-		"@e2 Email address (input)",
+		// The field the fixture has focus on says so.
+		"@e2 Email address (input, focused)",
 		// Not "Password (input)": the platform marks this field
 		// password="true", so it is named by its resource id and carries its
 		// own role. Here the text was only the hint and printing it was
@@ -1315,5 +1316,39 @@ func TestAnIOSSliderValueIsTheApps(t *testing.T) {
 	}
 	if !found {
 		t.Fatal("the fixture maps no slider: the test proves nothing")
+	}
+}
+
+// A TV is driven by focus, so map says which element has it: on MobiumTV's
+// home screen on the Android TV emulator after one D-pad press down, and on
+// Morpho Market's size picker on the Apple TV simulator. The tree had focus
+// since CHALLENGES 297 and map dropped it, so the line for the tile select
+// would press read like every other tile's.
+func TestMapSaysWhatHasFocus(t *testing.T) {
+	for _, c := range []struct {
+		tree      *Tree
+		want      string
+		unfocused string
+	}{
+		{loadFixture(t, "android-tv-mobiumtv-home-uia2.xml"), "Focus or Select (button, focused)", "Focus Grid (button)"},
+		{loadIOS(t, "ios-tvos26-morpho-product-size-m.xml"), "M (button, selected, focused)", ""},
+	} {
+		focused := 0
+		lines := map[string]bool{}
+		for _, e := range c.tree.Map() {
+			lines[strings.TrimPrefix(e.Line(), e.Ref+" ")] = true
+			if e.Focused {
+				focused++
+			}
+		}
+		if !lines[c.want] {
+			t.Errorf("map has no %q: %v", c.want, lines)
+		}
+		if c.unfocused != "" && !lines[c.unfocused] {
+			t.Errorf("map has no %q: %v", c.unfocused, lines)
+		}
+		if focused != 1 {
+			t.Errorf("%d elements map as focused, want 1", focused)
+		}
 	}
 }

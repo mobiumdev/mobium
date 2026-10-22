@@ -142,6 +142,7 @@ def to_wire(element):
         ("focusable", "focusable"),
         ("enabled", "enabled"),
         ("selected", "selected"),
+        ("focused", "focused"),
         ("password", "password"),
     ):
         if get(attribute) == "true":

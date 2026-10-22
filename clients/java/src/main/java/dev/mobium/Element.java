@@ -20,10 +20,12 @@ import java.util.Map;
  * @param disabled true for what the platform reports not enabled: an action
  *                 on it waits for it to be enabled, and is refused if it stays
  *                 disabled
+ * @param focused  true for what the platform reports holding input focus:
+ *                 the field typed into, the tile a TV's D-pad reached
  */
 public record Element(String ref, String label, String role,
                       String locator, Bounds bounds, String context, Boolean checked,
-                      boolean selected, String value, boolean disabled) {
+                      boolean selected, String value, boolean disabled, boolean focused) {
 
     static Element from(Map<String, Object> m) {
         Map<String, Object> loc = Json.asObject(m.get("locator"));
@@ -38,7 +40,8 @@ public record Element(String ref, String label, String role,
                 m.get("checked") instanceof Boolean c ? c : null,
                 Boolean.TRUE.equals(m.get("selected")),
                 Json.str(m, "value"),
-                Boolean.TRUE.equals(m.get("disabled")));
+                Boolean.TRUE.equals(m.get("disabled")),
+                Boolean.TRUE.equals(m.get("focused")));
     }
 
     @Override public String toString() {

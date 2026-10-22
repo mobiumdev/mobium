@@ -33,6 +33,12 @@ type Entry struct {
 	// sign of which of Here and All Articles was chosen until it was read
 	// from iOS's traits.
 	Selected bool `json:"selected,omitempty"`
+	// Focused is set on the element the platform reports holding input
+	// focus: the field typed into, and on a TV, where nothing is touched,
+	// the tile the D-pad has reached and select would press. The tree had it
+	// since CHALLENGES 297 and map dropped it, so on a TV the one state that
+	// says what select will do was missing from the screen's description.
+	Focused bool `json:"focused,omitempty"`
 	// Disabled is set when the platform reports the element not enabled. An
 	// action waits for such a target to be enabled and refuses it if it
 	// stays disabled, so map says so first: Pocket Casts' onboarding button
@@ -70,6 +76,9 @@ func (e Entry) Line() string {
 	}
 	if e.Selected {
 		states = append(states, "selected")
+	}
+	if e.Focused {
+		states = append(states, "focused")
 	}
 	if e.Disabled {
 		states = append(states, "disabled")
@@ -414,6 +423,7 @@ func (t *Tree) Map() []Entry {
 			Locator:  Derive(n.node, t),
 			Bounds:   n.node.Bounds,
 			Selected: n.node.Selected,
+			Focused:  n.node.Focused,
 			Disabled: !n.node.Enabled,
 			Node:     n.node,
 		}
