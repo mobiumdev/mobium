@@ -123,6 +123,17 @@ func CheckDevicePath(p string, absolute bool) error {
 			return mobiumerr.New(mobiumerr.InvalidArgument, "%q climbs out with \"..\" — name the path itself", p)
 		}
 	}
+	// No device path starts with a drive. Git Bash rewrites an argument that
+	// starts with / into its own install folder before mobium sees it:
+	// /data/local/tmp/x arrives as C:/Program Files/Git/data/local/tmp/x.
+	if len(p) > 2 && p[1] == ':' && (p[2] == '/' || p[2] == '\\') &&
+		(p[0] >= 'A' && p[0] <= 'Z' || p[0] >= 'a' && p[0] <= 'z') {
+		return mobiumerr.New(mobiumerr.InvalidArgument, "%q is a Windows path, not a device path — Git Bash "+
+			"rewrites an argument that starts with / into a path under its own folder before mobium sees it", p).
+			WithRemedy("in Git Bash, set MSYS2_ARG_CONV_EXCL=\"/data/;/sdcard/\" to leave device paths alone, " +
+				"or MSYS_NO_PATHCONV=1 for the one command with any path on this machine written C:/...; " +
+				"or run it from PowerShell or cmd")
+	}
 	if absolute && !strings.HasPrefix(p, "/") {
 		return mobiumerr.New(mobiumerr.InvalidArgument, "%q is not an absolute path — without app, a device "+
 			"path is the shell's, from the root: /sdcard/... or /data/local/tmp/...", p).

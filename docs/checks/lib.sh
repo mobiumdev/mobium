@@ -19,6 +19,12 @@
 #     first, before the daemon stops, since they often still need it.
 #     at_exit_clear drops the check's handlers — where it once wrote
 #     `trap - EXIT` — and keeps this file's.
+#   - On Windows, under Git Bash: MSYS2_ARG_CONV_EXCL, or a device path such
+#     as /data/local/tmp/x reaches adb as C:/Program Files/Git/data/local/tmp/x
+#     — device prefixes only, since a check's own /tmp paths must still be
+#     converted for mobium.exe, and MSYS_NO_PATHCONV stopped both; and
+#     PYTHONUTF8, or a check's Python reads Mobium's UTF-8 output as cp1252.
+#     Both mean nothing anywhere else.
 #
 # POSIX sh, as every check is.
 
@@ -31,6 +37,7 @@ if [ -z "${MOBIUM_SESSION:-}" ]; then
   CHECK_OWN_DAEMON=1
 fi
 export MOBIUM_SESSION
+export MSYS2_ARG_CONV_EXCL="/data/;/sdcard/;/storage/;/system/;/proc/" PYTHONUTF8=1
 
 CHECK_TMP="$(mktemp -d "${TMPDIR:-/tmp}/mobium-check.XXXXXX")"
 CHECK_LOCK=""

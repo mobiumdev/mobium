@@ -22,6 +22,12 @@ M="$ROOT/bin/mobium --device $DEV"
 MOBIUM_DRIVER_ADB="$ROOT/examples/drivers/mobium-driver-adb"
 export MOBIUM_DRIVER_ADB
 [ -x "$MOBIUM_DRIVER_ADB" ] || { echo "the reference driver is not executable" >&2; exit 1; }
+# Windows runs a file by its extension, never its #! line, so the driver
+# runs through the .cmd wrapper examples/drivers/README.md describes.
+case "$(uname -s)" in MINGW*|MSYS*|CYGWIN*)
+  printf '@python "%s" %%*\r\n' "$(cygpath -w "$MOBIUM_DRIVER_ADB")" > "$CHECK_TMP/mobium-driver-adb.cmd"
+  MOBIUM_DRIVER_ADB="$(cygpath -w "$CHECK_TMP/mobium-driver-adb.cmd")" ;;
+esac
 
 # The daemon looks the driver up, in the environment it started with. One
 # left running by an earlier check never sees the variable above, and every

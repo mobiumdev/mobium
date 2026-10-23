@@ -126,7 +126,11 @@ row "javascript" "ran, and its wait for Item 2's outcome held"
 reset
 mkdir -p "$TMP/go" && cp "$TMP/go.src" "$TMP/go/main.go"
 point "$TMP/go/main.go" "mobium.Start(ctx)" "mobium.Start(ctx, mobium.WithDevice(\"$DEV\")$WDA_GO)"
-printf 'module recorded\n\ngo 1.22\n\nrequire github.com/mobiumdev/mobium/clients/go v0.0.0\n\nreplace github.com/mobiumdev/mobium/clients/go => %s/go\n' "$CLIENTS" > "$TMP/go/go.mod"
+# go reads go.mod itself, so Git Bash never converts the path in it: on
+# Windows it is written C:/..., not /c/....
+GOCLIENTS="$CLIENTS"
+case "$(uname -s)" in MINGW*|MSYS*|CYGWIN*) GOCLIENTS="$(cygpath -m "$CLIENTS")" ;; esac
+printf 'module recorded\n\ngo 1.22\n\nrequire github.com/mobiumdev/mobium/clients/go v0.0.0\n\nreplace github.com/mobiumdev/mobium/clients/go => %s/go\n' "$GOCLIENTS" > "$TMP/go/go.mod"
 (cd "$TMP/go" && GOFLAGS=-mod=mod GOWORK=off go run .) || fail "the Go program failed"
 row "go" "ran, and its wait for Item 2's outcome held"
 
