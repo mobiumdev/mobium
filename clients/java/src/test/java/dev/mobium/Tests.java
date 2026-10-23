@@ -1,5 +1,7 @@
 package dev.mobium;
 
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
@@ -33,6 +35,7 @@ public final class Tests {
         boundsComputeTheirCenter();
         waitForBuildsItsArguments();
         findBinaryRejectsSomethingThatIsNotOne();
+        findBinaryTakesAPathWithoutItsSuffix();
         pathSearchSkipsRelativeDirectories();
         everyErrorCodeHasItsException();
         try {
@@ -185,6 +188,21 @@ public final class Tests {
             throw new AssertionError(e);
         }
         yes("a path with no binary at it is refused", threw);
+    }
+
+    static void findBinaryTakesAPathWithoutItsSuffix() {
+        // Written without .exe, a path names mobium.exe on Windows, as it
+        // would for the shell; everywhere else, the file as written.
+        try {
+            Path dir = Files.createTempDirectory("mobium-test");
+            boolean windows = System.getProperty("os.name", "").startsWith("Windows");
+            Path planted = dir.resolve(windows ? "mobium.exe" : "mobium");
+            Files.write(planted, "#!/bin/sh\nexit 99\n".getBytes(StandardCharsets.UTF_8));
+            planted.toFile().setExecutable(true);
+            eq("a path without .exe", planted.toString(), Connection.findBinary(dir.resolve("mobium").toString()));
+        } catch (IOException e) {
+            throw new AssertionError(e);
+        }
     }
 
     static void pathSearchSkipsRelativeDirectories() {

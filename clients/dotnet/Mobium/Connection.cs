@@ -410,6 +410,9 @@ namespace Mobium
             {
                 if (string.IsNullOrWhiteSpace(candidate)) continue;
                 if (File.Exists(candidate)) return candidate!;
+                // Spelled as on Unix, without .exe: Windows would run the file
+                // it names, so a check's MOBIUM_BIN_PATH=.../bin/mobium is taken.
+                if (IsWindows && !Path.HasExtension(candidate) && File.Exists(candidate + ".exe")) return candidate + ".exe";
                 throw new MobiumException(candidate + " is not an executable mobium binary");
             }
 

@@ -304,6 +304,9 @@ namespace Mobium.Tests
                 // The positive control: the same file, by its absolute directory.
                 Environment.SetEnvironmentVariable("PATH", Path.Combine(tmp, "bin"));
                 Eq("an absolute PATH entry is searched", Path.Combine(tmp, "bin", name), Connection.FindBinary(null));
+                // Written without .exe, a path names mobium.exe on Windows, as
+                // it would for the shell; everywhere else, the file as written.
+                Eq("a path without .exe", Path.Combine(tmp, "bin", name), Connection.FindBinary(Path.Combine(tmp, "bin", "mobium")));
             }
             finally
             {

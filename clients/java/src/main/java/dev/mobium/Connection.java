@@ -310,6 +310,13 @@ final class Connection implements AutoCloseable {
         for (String candidate : new String[] { explicit, System.getenv("MOBIUM_BIN_PATH") }) {
             if (candidate == null || candidate.isBlank()) continue;
             if (executable(Paths.get(candidate))) return candidate;
+            // Spelled as on Unix, without .exe: Windows would run the file it
+            // names, so a check's MOBIUM_BIN_PATH=.../bin/mobium is taken.
+            Path name = Paths.get(candidate).getFileName();
+            if (System.getProperty("os.name", "").startsWith("Windows") && name != null
+                    && !name.toString().contains(".") && executable(Paths.get(candidate + ".exe"))) {
+                return candidate + ".exe";
+            }
             throw new MobiumException(candidate + " is not an executable mobium binary");
         }
         String name = System.getProperty("os.name", "").startsWith("Windows") ? "mobium.exe" : "mobium";

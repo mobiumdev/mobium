@@ -59,6 +59,10 @@ check(o.constructor === m.MobiumError && o.code === 'error', 'text-only failure 
     // The positive control: the same file, by its absolute directory.
     process.env.PATH = join(tmp, 'bin')
     check(m.findBinary() === join(tmp, 'bin', name), 'an absolute PATH entry was not searched')
+    // Written without .exe, a path names mobium.exe on Windows, as it would
+    // for the shell; everywhere else, the file as written.
+    const bare = join(tmp, 'bin', 'mobium')
+    check(m.findBinary(bare) === join(tmp, 'bin', name), `${bare} was not taken for ${name}`)
   } finally {
     process.chdir(saved.cwd)
     process.env.PATH = saved.path

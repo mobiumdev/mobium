@@ -56,6 +56,12 @@ func FindBinary(explicit string) (string, error) {
 		if executable(candidate) {
 			return candidate, nil
 		}
+		// Spelled as on Unix, without .exe: Windows would run the file it
+		// names, and os.Stat does not add the suffix, so a check's
+		// MOBIUM_BIN_PATH=.../bin/mobium was refused there.
+		if runtime.GOOS == "windows" && filepath.Ext(candidate) == "" && executable(candidate+".exe") {
+			return candidate + ".exe", nil
+		}
 		return "", fmt.Errorf("%s is not an executable mobium binary", candidate)
 	}
 	// PATH's directories one by one, rather than exec.LookPath("mobium"):

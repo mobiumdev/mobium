@@ -35,6 +35,11 @@ def find_binary(explicit: str | None = None) -> str:
         if candidate:
             if os.path.isfile(candidate) and os.access(candidate, os.X_OK):
                 return candidate
+            # Spelled as on Unix, without .exe: Windows would run the file it
+            # names, so a check's MOBIUM_BIN_PATH=.../bin/mobium is taken.
+            exe = candidate + ".exe"
+            if sys.platform == "win32" and not os.path.splitext(candidate)[1] and os.path.isfile(exe):
+                return exe
             raise MobiumError(f"{candidate} is not an executable mobium binary")
 
     name = "mobium.exe" if sys.platform == "win32" else "mobium"
