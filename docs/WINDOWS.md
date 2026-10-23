@@ -1,8 +1,25 @@
 # Windows support
 
-**Status: not supported — everything but a device is verified.** Android
-development on Windows is common, so this is a real gap rather than a
-theoretical one. Since 2026-09-27 CI runs on a GitHub-hosted Windows runner:
+**Status: devices driven from Windows since 2026-10-22; not yet declared
+supported.** On a Windows 11 laptop (24H2, i7-8565U, 8 GB), an Android 15
+emulator and a Pixel 8 Pro over USB were driven through `mobium mcp`, the CLI
+over the named pipe, and all five clients, which passed every step on both.
+A sweep of the checks on the emulator found six things, all fixed: the
+daemon dying with the SSH session that started it (#264, CHALLENGES 359),
+tests that a real Windows development machine broke (#265), two checks that
+raced a slow emulator (#266), clients refusing a path without `.exe` (#267),
+a frozen emulator `mobium shutdown` could not end (#268, 360), and Git Bash
+rewriting device paths (#269, 361). Left before Windows is supported: the
+checks a person at the machine runs (installing, consoles, Ctrl-C, closing
+the window, a windowed emulator, Claude Desktop), and seven checks whose
+failures are not yet explained — dialogs, mobium-app, tv-app, speech,
+graybox-edges, assistant and codegen — and `external-driver`, which passed
+one run in two (the reference driver does not retry a read taken
+mid-transition). That laptop's emulator also froze under
+Chrome four times in one evening, with plain adb dropping it as well: an 8 GB
+machine is short of what a headless emulator and Chrome need together.
+
+Before that, since 2026-09-27 CI runs on a GitHub-hosted Windows runner:
 both modules' tests pass there, the named-pipe transport's acceptance tests
 below pass five times a run, and the built `mobium.exe` answers `doctor` and
 `mcp` and auto-starts, reports and stops its daemon. Getting there found four
@@ -13,6 +30,8 @@ stays unsupported.
 Everything, the daemon transport now included, compiles, vets and
 cross-compiles for `windows/amd64`. This document is written for anyone who
 wants to try it on a Windows machine, and for picking the work up there.
+Below, what was written before a device was driven is kept as it was, with
+what the first run found.
 
 ## Android only. iOS is not possible on Windows.
 
@@ -42,15 +61,17 @@ route other projects take and is not this project's architecture today; it
 would be a driver, not a flag.
 
 Everything that needs no device is verified in CI on Windows, `mobium mcp`
-answering `tools/list` included (the `go-windows` job). What has never run is
-a tool call against a device — and everything this project has learned says
-that unverified means wrong. The list below is ordered so the first hour on a
+answering `tools/list` included (the `go-windows` job). What had never run,
+until 2026-10-22, was a tool call against a device — and everything this
+project has learned says that unverified means wrong. The list below is ordered so the first hour on a
 Windows machine is spent finding out what is broken rather than setting up.
 
 **The first thing to do on Windows is not to write code.** It is to run
 `mobium mcp` and a client against a connected Android device and find out
 whether the claim above — that the MCP path already works on Windows — holds
-for a tool call that reaches a device. That has never been run. If it holds,
+for a tool call that reaches a device. (It held on 2026-10-22: `app_map`
+reached the emulator through `mobium mcp`, UiAutomator2 installed from
+Windows.) If it holds,
 Windows users have a working tool today and the daemon is an improvement
 rather than a rescue; if it does not, the gap is much bigger than a transport
 and the plan changes.
@@ -321,7 +342,7 @@ nobody suspected, which is the most valuable thing this exercise can find.
 ```powershell
 '{"jsonrpc":"2.0","id":1,"method":"tools/list"}' | .\bin\mobium.exe mcp
 ```
-Expect 73 tools — [API.md](API.md) is generated from the source and is the
+Expect 75 tools — [API.md](API.md) is generated from the source and is the
 live number if this one has drifted again. It has before.
 
 Then, with an emulator running:
