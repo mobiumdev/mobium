@@ -204,9 +204,10 @@ answers — with swiping right as a watch's back
 and not the crown: `press` has no rotary input.
 
 **Windows is not supported yet.** Everything that needs no device, the
-named-pipe daemon transport included, passes in CI on a Windows runner; no
-emulator or phone has been driven from Windows yet. See
-[docs/WINDOWS.md](docs/WINDOWS.md).
+named-pipe daemon transport included, passes in CI on a Windows runner, and
+since 2026-10-22 an Android emulator and a phone have been driven from a
+Windows laptop, through the CLI, MCP and all five clients. What is left
+before it is supported is in [docs/WINDOWS.md](docs/WINDOWS.md).
 
 Both device-side agents are pinned by version, verified against checksums
 compiled into the binary, and refused on a mismatch.

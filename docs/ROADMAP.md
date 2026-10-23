@@ -265,9 +265,12 @@ this is what is not.
   Windows runner, every run: both modules' tests, the named-pipe daemon
   transport's acceptance tests five times over, and the built `mobium.exe` —
   `doctor`, `mcp`, and a daemon auto-started, read back and stopped. Getting
-  there found four defects (CHALLENGES 139–142). No device has been driven
-  from Windows, and until one has, Windows is unsupported.
-  [WINDOWS.md](WINDOWS.md) is the state of it.
+  there found four defects (CHALLENGES 139–142). Since 2026-10-22 devices
+  are driven from a Windows laptop — an Android 15 emulator and a Pixel 8
+  Pro, through the CLI, MCP and all five clients — and that run found three
+  more (359–361, #264–#269). Windows is not yet declared supported: left are
+  the checks a person at the machine runs and eight check failures not yet
+  explained. [WINDOWS.md](WINDOWS.md) is the state of it.
 - **Published client packages.** Every client builds, as its registry would
   receive it, into a package that carries the LICENSE, a README and full
   metadata, and each has been installed from that package into a clean project
