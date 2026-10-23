@@ -72,11 +72,13 @@ if [ "$PLATFORM" = android ]; then
 
     $M launch com.android.settings >/dev/null; sleep 1
     $M map | grep -q "Navigate up" && { $M press back >/dev/null; sleep 1; }
-    $M tap "text=Network & internet" >/dev/null 2>&1 || $M tap "text=Display" >/dev/null; sleep 1
-    $M map | grep -q "Navigate up" || fail "Settings did not open a sub-page"
+    $M tap "text=Network & internet" >/dev/null 2>&1 || $M tap "text=Display" >/dev/null
+    # Waited for, not slept for: on a Windows laptop's emulator the sub-page
+    # took 1.9 to 2.9 seconds to open, and a fixed second read the page before.
+    $M wait "label=Navigate up" --for visible --timeout 15s >/dev/null || fail "Settings did not open a sub-page"
     out=$($M press back --gesture)
     echo "$out" | grep -q "com.android.settings is still in the foreground" || fail "the gesture in Settings: $out"
-    $M map | grep -q "Navigate up" && fail "the gesture left Settings on its sub-page"
+    $M wait "label=Navigate up" --for hidden --timeout 15s >/dev/null || fail "the gesture left Settings on its sub-page"
     row "control" "Settings sub-page to its parent, by the gesture"
   fi
 

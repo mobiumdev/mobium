@@ -58,7 +58,9 @@ fi
 $M terminate $APP >/dev/null 2>&1 || true
 $M launch $START >/dev/null
 at_exit "$M terminate $APP >/dev/null 2>&1 || true"
-got=$($M assistant "$REQ" --app $APP --json)
+# The call's own error, not set -e: captured, a refusal ended the check with
+# exit 5 and not a word, on an emulator with no Calculator.
+got=$($M assistant "$REQ" --app $APP --json 2>&1) || fail "asking \"$REQ\": $got"
 [ "$(echo "$got" | json 'd["typed"]')" = True ] || fail "the answer does not say the request was typed"
 [ "$(echo "$got" | json 'd["reached"]')" = True ] || fail "\"$REQ\" did not reach $APP: $(echo "$got" | json 'd["front"]') in front"
 [ "$($M current)" = "$APP" ] || fail "$APP is not in front after the assistant said so"
@@ -66,7 +68,7 @@ row "reached" "\"$REQ\" brought $APP forward ($(echo "$got" | json 'd["assistant
 
 $M terminate $APP >/dev/null 2>&1 || true
 $M launch $START >/dev/null
-got=$($M assistant "$REQ" --app $START --json)
+got=$($M assistant "$REQ" --app $START --json 2>&1) || fail "asking \"$REQ\" again: $got"
 [ "$(echo "$got" | json 'd["reached"]')" = False ] || fail "\"$REQ\" was reported as reaching $START"
 row "control" "the same request, naming the app it left, is not reached"
 echo PASS
