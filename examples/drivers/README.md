@@ -59,8 +59,9 @@ its extension. Name the driver `mobium-driver-mything.exe`, or give a script a
 wrapper named `mobium-driver-mything.cmd` containing
 `@python "%~dp0mobium-driver-mything.py"` — anything listed in `PATHEXT`
 is found the same way. That is the rule the lookup uses, and `mobium doctor`
-reports a driver as `mything` either way. Written from how Go finds a program
-on Windows and not yet run there; see [WINDOWS.md](../../docs/WINDOWS.md).
+reports a driver as `mything` either way. Run on Windows 11 on 2026-10-22:
+the reference driver through such a wrapper mapped the same 11 elements as
+the built-in backend; `docs/checks/external-driver.sh` writes the wrapper.
 
 ## The five rules
 

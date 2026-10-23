@@ -7851,6 +7851,29 @@ drop, and `network.sh` alone passed its offline step, so the freeze is this
 adb during a 15 MB `logcat` while busy, with no Mobium running — and not
 something `network` does.
 
+### 361. In Git Bash, a device path was rewritten into a Windows one, and refused as not absolute
+
+**Found by:** `device-paths.sh` and `network.sh` on the Windows laptop, run
+under Git Bash. `mobium shell --upload x /data/local/tmp/x` answered
+`"C:/Program Files/Git/data/local/tmp/x" is not an absolute path`, and its
+remedy — give an absolute path — was the one the caller had given. Git
+Bash rewrites any argument that starts with `/` into a path under its own
+install folder before a Windows program sees it, measured on `/data/...` and
+`/sdcard/...`; with `app` the same path would have been taken as relative
+to the app's data. A check's `adb push` to `/data/local/tmp` failed the same
+way, under Mobium's notice.
+
+**Fixed:** no device path starts with a drive, so one that does is refused
+as a Windows path, naming Git Bash's rewrite, with or without `app`. The
+remedy names `MSYS2_ARG_CONV_EXCL`, measured to leave `/data/` and
+`/sdcard/` alone while still converting `/tmp/...` and `/c/...`. The first
+draft named `MSYS_NO_PATHCONV=1` alone, and the checks exported it: four
+then failed for the opposite reason, their own temp files reaching
+`mobium.exe` as `C:\tmp\...`. It is in the remedy as the one-command form,
+with local paths written `C:/...`. The checks export the prefixes in
+`lib.sh`, and `PYTHONUTF8=1` with them: Windows' Python reads a file as
+cp1252, and `source.sh` read Mobium's UTF-8 bullets as something else.
+
 ## Findings that were not defects
 
 Worth recording because each one closed off an approach that looked obvious.

@@ -194,6 +194,17 @@ how.
   Xcode genuinely absent on a non-Mac.
 - Paths in `app_install` and `screenshot -o` take Windows separators; nothing
   obviously assumes `/`, but nothing has tested it either.
+- **Git Bash rewrites a device path** (measured 2026-10-22): an argument
+  that starts with `/` is turned into one under Git's own folder before
+  `mobium` sees it, so `/data/local/tmp/x` arrives as
+  `C:/Program Files/Git/data/local/tmp/x`. Mobium refuses such a path naming
+  the rewrite. `MSYS2_ARG_CONV_EXCL="/data/;/sdcard/"` leaves those prefixes
+  alone and still converts a path on this machine; `MSYS_NO_PATHCONV=1`
+  stops every conversion, so a local `/c/...` or `/tmp/...` then reaches
+  `mobium` unconverted and is not found. PowerShell and cmd never rewrite.
+  The checks set the first in `lib.sh`, with `PYTHONUTF8=1`, since Windows'
+  Python reads a file as cp1252 by default.
+  CHALLENGES 361.
 
 ---
 

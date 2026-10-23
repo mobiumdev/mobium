@@ -5,7 +5,10 @@ import (
 	"bytes"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
+
+	"github.com/mobiumdev/mobium/internal/mobiumerr"
 )
 
 // A device path that climbs out is refused, and one without app must be the
@@ -21,6 +24,14 @@ func TestCheckDevicePath(t *testing.T) {
 	} {
 		if err := CheckDevicePath(c.p, c.abs); (err == nil) != c.okay {
 			t.Errorf("CheckDevicePath(%q, %v) = %v", c.p, c.abs, err)
+		}
+	}
+	// What Git Bash makes of /data/local/tmp/x, measured: refused naming
+	// the rewrite, with or without app, which would take it as relative.
+	for _, abs := range []bool{true, false} {
+		err := CheckDevicePath("C:/Program Files/Git/data/local/tmp/x", abs)
+		if err == nil || !strings.Contains(mobiumerr.Text(err), "Git Bash") || !strings.Contains(mobiumerr.Text(err), "MSYS2_ARG_CONV_EXCL") {
+			t.Errorf("a path Git Bash rewrote (absolute %v): %v", abs, err)
 		}
 	}
 }
