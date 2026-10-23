@@ -126,6 +126,11 @@ process was reused.
 ### 4. `device.Detach` — `internal/device/detach_windows.go` (and `detach_unix.go`)
 `CREATE_NEW_PROCESS_GROUP | DETACHED_PROCESS`: a Ctrl-C does not reach the
 daemon, and with no console it does not die when the terminal window closes.
+Neither leaves a job object, and Windows' OpenSSH server kills every process
+of a session's job when the session ends, so `Detach` also adds
+`CREATE_BREAKAWAY_FROM_JOB` when the job allows it — measured over SSH on a
+Windows 11 laptop, where the daemon otherwise died with its session
+(CHALLENGES 359).
 
 ### 5. Test helpers — `t.TempDir()` on Windows
 `internal/daemon/daemon_test.go` and `internal/device/wdainstall_network_test.go`

@@ -7804,6 +7804,26 @@ Compose took as a press on the Accessories chip — the catalog was then
 filtered by a category nobody chose. An up or down scroll now never swipes
 a row that says it scrolls sideways; with nothing else, nothing is swiped.
 
+### 359. On Windows, the daemon died with the SSH session that started it
+
+**Found by:** the first device run from Windows, a Windows 11 laptop driven
+from a Mac over OpenSSH. Every command in one session reused the daemon; the
+next session found "Daemon is not running" and no `mobium` process. The SSH
+server runs each session in a job object with `KILL_ON_JOB_CLOSE` (limit
+flags `0x2800`), and `DETACHED_PROCESS` leaves the console, not the job, so
+ending the session ended the daemon — and with it the device session it
+held. On Unix `setsid` outlives a logout. GitHub's Windows runner never
+showed it: its steps run in one session, and the daemon is stopped before it
+ends.
+
+**Fixed:** `Detach` asks the job this process is in, and when it allows
+breakaway (`JOB_OBJECT_LIMIT_BREAKAWAY_OK`, set in the SSH server's), starts
+the process with `CREATE_BREAKAWAY_FROM_JOB` too — only then, since asking to
+leave a job that does not allow it fails the start. Before, a new session
+found no daemon; after, it found the same one, mapped the emulator through
+it in 0.2 seconds, and a stop left no process and no pipe. `mobium boot`'s
+emulator is started through the same `Detach`.
+
 ## Findings that were not defects
 
 Worth recording because each one closed off an approach that looked obvious.
