@@ -1,5 +1,3 @@
-//go:build !windows
-
 package device
 
 import (
@@ -7,6 +5,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 	"time"
@@ -19,16 +18,32 @@ func TestKillEmulatorProcess(t *testing.T) {
 	dir := t.TempDir()
 	start := func(name string) *exec.Cmd {
 		bin := filepath.Join(t.TempDir(), name)
-		sleep, err := exec.LookPath("sleep")
-		if err != nil {
-			t.Skip("no sleep")
+		args := []string{"30"}
+		if runtime.GOOS == "windows" {
+			// Windows names a process by its image, so a copy of ping
+			// waiting 30 echoes is a process of the given name.
+			ping := filepath.Join(os.Getenv("SystemRoot"), "System32", "PING.EXE")
+			b, err := os.ReadFile(ping)
+			if err != nil {
+				t.Skip("no ping")
+			}
+			bin += ".exe"
+			if err := os.WriteFile(bin, b, 0o700); err != nil {
+				t.Fatal(err)
+			}
+			args = []string{"-n", "30", "127.0.0.1"}
+		} else {
+			sleep, err := exec.LookPath("sleep")
+			if err != nil {
+				t.Skip("no sleep")
+			}
+			// A link, not a copy: macOS will not run a copy of a signed system
+			// binary, and ps names a process for the path it was started by.
+			if err := os.Symlink(sleep, bin); err != nil {
+				t.Fatal(err)
+			}
 		}
-		// A link, not a copy: macOS will not run a copy of a signed system
-		// binary, and ps names a process for the path it was started by.
-		if err := os.Symlink(sleep, bin); err != nil {
-			t.Fatal(err)
-		}
-		cmd := exec.Command(bin, "30")
+		cmd := exec.Command(bin, args...)
 		if err := cmd.Start(); err != nil {
 			t.Fatal(err)
 		}
