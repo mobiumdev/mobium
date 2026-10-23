@@ -6,7 +6,6 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"runtime"
 	"strconv"
 	"strings"
 	"time"
@@ -400,20 +399,19 @@ func contains(xs []string, x string) bool {
 }
 
 // killEmulatorProcess ends the emulator adb calls serial through its process,
-// the one its discovery file names — only once ps says that process is an
-// emulator, since a file left by one that died can name a number reused.
+// the one its discovery file names — only once the system says that process
+// is an emulator, since a file left by one that died can name a number
+// reused. Windows too: refusing there left a frozen emulator that only
+// taskkill could end, while the error said to run `mobium shutdown`.
 func killEmulatorProcess(serial string, dirs []string) error {
-	if runtime.GOOS == "windows" {
-		return mobiumerr.New(mobiumerr.Unsupported, "ending an emulator by its process is not done on Windows")
-	}
 	pid := emulatorPID(serial, dirs)
 	if pid == 0 {
 		return mobiumerr.New(mobiumerr.DeviceServer, "its process is not named by any discovery file")
 	}
 	// The program's name, not its path: macOS's ps gives the whole path, and
 	// a directory named for an emulator made a plain sleep look like one.
-	comm, err := exec.Command("ps", "-p", strconv.Itoa(pid), "-o", "comm=").Output()
-	name := strings.ToLower(filepath.Base(strings.TrimSpace(string(comm))))
+	path, err := processPath(pid)
+	name := strings.ToLower(filepath.Base(path))
 	if err != nil || !strings.Contains(name, "qemu") && !strings.Contains(name, "emulator") {
 		return mobiumerr.New(mobiumerr.DeviceServer, "its discovery file names pid %d, which is not an emulator", pid)
 	}

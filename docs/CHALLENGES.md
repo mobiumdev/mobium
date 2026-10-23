@@ -7824,6 +7824,33 @@ found no daemon; after, it found the same one, mapped the emulator through
 it in 0.2 seconds, and a stop left no process and no pipe. `mobium boot`'s
 emulator is started through the same `Detach`.
 
+### 360. On Windows, a frozen emulator could not be shut down, and the error said to shut it down
+
+**Found by:** a sweep of the checks on the Windows laptop's emulator, which
+froze under `network.sh` twice — adb listed it as `device` and every shell
+call timed out. Every check after it was refused as "not answering adb",
+and the refusal's remedy was 285's: `mobium shutdown emulator-5554`. On
+Windows that answered "ending an emulator by its process is not done on
+Windows", and `boot.sh`, which shuts its AVD down first, failed without a
+word. Only `taskkill` on the processes ended it. A remedy that cannot work
+is obeyed all the same.
+
+**Fixed:** the process the discovery file names is read with
+`QueryFullProcessImageName` on Windows, where it is ps on Unix, and ended
+when its program is qemu or an emulator, as before. The discovery file there
+(`%LOCALAPPDATA%\Temp\avd\running`) names `qemu-system-x86_64-headless`.
+With that process suspended (`NtSuspendProcess`, Windows' SIGSTOP), `adb
+shell` timed out; before, `mobium shutdown` refused in 10 seconds and left
+it running; after, it shut it down in 11 seconds and left no emulator
+process. 285's test runs on Windows now, with a copy of `PING.EXE` under an
+emulator's name.
+
+Plain adb switched airplane mode ten times on the same emulator without a
+drop, and `network.sh` alone passed its offline step, so the freeze is this
+8 GB laptop's emulator under a long sweep — the same emulator dropped plain
+adb during a 15 MB `logcat` while busy, with no Mobium running — and not
+something `network` does.
+
 ## Findings that were not defects
 
 Worth recording because each one closed off an approach that looked obvious.
