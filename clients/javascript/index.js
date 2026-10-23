@@ -11,7 +11,7 @@
 
 import { spawn } from 'node:child_process'
 import { accessSync, constants, readFileSync, statSync } from 'node:fs'
-import { delimiter, isAbsolute, join, resolve } from 'node:path'
+import { delimiter, extname, isAbsolute, join, resolve } from 'node:path'
 import { createInterface } from 'node:readline'
 
 /**
@@ -148,9 +148,16 @@ export function findBinary(explicit) {
     try {
       accessSync(candidate, constants.X_OK)
       return candidate
-    } catch {
-      throw new MobiumError(`${candidate} is not an executable mobium binary`)
+    } catch {}
+    // Spelled as on Unix, without .exe: Windows would run the file it names,
+    // so a check's MOBIUM_BIN_PATH=.../bin/mobium is taken.
+    if (process.platform === 'win32' && !extname(candidate)) {
+      try {
+        accessSync(candidate + '.exe', constants.X_OK)
+        return candidate + '.exe'
+      } catch {}
     }
+    throw new MobiumError(`${candidate} is not an executable mobium binary`)
   }
   const name = process.platform === 'win32' ? 'mobium.exe' : 'mobium'
   for (const dir of (process.env.PATH || '').split(delimiter)) {

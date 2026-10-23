@@ -77,6 +77,10 @@ with tempfile.TemporaryDirectory() as tmp:
         # The positive control: the same file, by its absolute directory.
         os.environ["PATH"] = os.path.join(tmp, "bin")
         check(find_binary() == os.path.join(tmp, "bin", name), "an absolute PATH entry was not searched")
+        # Written without .exe, a path names mobium.exe on Windows, as it
+        # would for the shell; everywhere else, the file as written.
+        bare = os.path.join(tmp, "bin", "mobium")
+        check(find_binary(bare) == os.path.join(tmp, "bin", name), f"{bare} was not taken for {name}")
     finally:
         os.chdir(saved[0])
         if saved[1] is None:

@@ -669,6 +669,16 @@ func plantMobium(t *testing.T, dir string) string {
 
 var exeSuffix = map[bool]string{true: ".exe"}[runtime.GOOS == "windows"]
 
+// A path written without .exe names mobium.exe on Windows, as it would for
+// the shell; everywhere else it names the file as written.
+func TestFindBinaryTakesAPathWithoutItsSuffix(t *testing.T) {
+	dir := t.TempDir()
+	want := plantMobium(t, dir)
+	if found, err := FindBinary(filepath.Join(dir, "mobium")); err != nil || found != want {
+		t.Errorf("%s: found %q, %v; want %s", filepath.Join(dir, "mobium"), found, err, want)
+	}
+}
+
 func TestFindBinaryNeverSearchesTheCurrentDirectory(t *testing.T) {
 	t.Setenv("MOBIUM_BIN_PATH", "")
 	dir := t.TempDir()
