@@ -8237,6 +8237,18 @@ its cause.
   the match anchored to the end of the line. An integrity check that fails for
   the wrong reason is no better than one that passes for the wrong reason,
   because the next person learns to ignore it.
+- **On a Windows machine set up for Android, three tests failed for the
+  machine.** Found on the first Windows laptop, 2026-10-22. Git for Windows
+  puts only `Git\cmd` on PATH, so every fake command — they run under Git's
+  `sh` — failed with "a fake command needs sh on PATH": put
+  `C:\Program Files\Git\usr\bin` on PATH for `go test`. `python3` there
+  is the Microsoft Store's placeholder, which exits 9009 saying Python is not
+  installed, while python.org's installer provides `python` alone; the plist
+  and codegen tests now look for a Python that runs. And doctor's
+  empty-machine test emptied PATH and `ANDROID_HOME` but not the home
+  directory, where Android Studio puts the SDK, so it found adb there; it
+  now hides `HOME` and `USERPROFILE` too. GitHub's Windows runner has none
+  of the three.
 - **`brew install --cask dotnet-sdk` exits 0 after failing.** It needs `sudo`
   to run the `.pkg` installer, there is no TTY in an agent session, and the
   cask purges itself and returns success. Nothing is installed and nothing

@@ -75,8 +75,8 @@ func TestEveryProgramCompiles(t *testing.T) {
 		lang, tool string
 		check      func(dir, file string) *exec.Cmd
 	}{
-		{"python", "python3", func(dir, file string) *exec.Cmd {
-			return exec.Command("python3", "-I", "-m", "py_compile", file)
+		{"python", python(), func(dir, file string) *exec.Cmd {
+			return exec.Command(python(), "-I", "-m", "py_compile", file)
 		}},
 		{"javascript", "node", func(dir, file string) *exec.Cmd { return exec.Command("node", "--check", file) }},
 		{"go", "go", func(dir, file string) *exec.Cmd {
@@ -92,7 +92,7 @@ func TestEveryProgramCompiles(t *testing.T) {
 	} {
 		t.Run(c.lang, func(t *testing.T) {
 			if _, err := exec.LookPath(c.tool); err != nil {
-				t.Skipf("no %s here", c.tool)
+				t.Skipf("no %s here", c.lang)
 			}
 			dir := t.TempDir()
 			file := filepath.Join(dir, "recorded"+Extension[c.lang])
@@ -202,4 +202,16 @@ func TestWhatCannotBeWrittenIsRefused(t *testing.T) {
 	if _, err := Program("ruby", "", nil); mobiumerr.CodeOf(err) != mobiumerr.InvalidArgument {
 		t.Errorf("an unknown language: %v", err)
 	}
+}
+
+// python names a Python that runs. On Windows, python3 is usually the
+// Store's placeholder, which exits 9009 saying Python is not installed,
+// while python.org's installer provides python alone.
+func python() string {
+	for _, name := range []string{"python3", "python"} {
+		if p, err := exec.LookPath(name); err == nil && exec.Command(p, "-c", "").Run() == nil {
+			return name
+		}
+	}
+	return ""
 }

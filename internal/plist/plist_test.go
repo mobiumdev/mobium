@@ -234,13 +234,18 @@ func manyKeys(n int) map[string]any {
 	return m
 }
 
+// lookPython finds a Python that runs. On Windows, python3 is usually the
+// Store's placeholder, which exits 9009 saying Python is not installed,
+// while python.org's installer provides python alone.
 func lookPython(t *testing.T) string {
 	t.Helper()
-	p, err := exec.LookPath("python3")
-	if err != nil {
-		t.Skip("no python3, so Apple's own reader cannot be consulted")
+	for _, name := range []string{"python3", "python"} {
+		if p, err := exec.LookPath(name); err == nil && exec.Command(p, "-c", "").Run() == nil {
+			return p
+		}
 	}
-	return p
+	t.Skip("no python that runs, so Apple's own reader cannot be consulted")
+	return ""
 }
 
 func run(t *testing.T, name string, args ...string) string {

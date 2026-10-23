@@ -279,6 +279,13 @@ go test ./...
 cd clients/go; go test ./...; cd ../..
 ```
 
+The tests' fake commands run under Git's `sh`, and Git for Windows puts
+only `Git\cmd` on PATH; without its `usr\bin` about thirty fail saying so:
+
+```powershell
+$env:PATH += ";C:\Program Files\Git\usr\bin"
+```
+
 There is a `Makefile` but no `make` on Windows by default. These are the
 build and test it runs, near enough: `make build` also stamps the version
 through `-ldflags`, and `make test` runs `clients/go` because it is a module
