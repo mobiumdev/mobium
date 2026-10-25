@@ -410,6 +410,10 @@ export class Device {
   doctor(): Promise<Data>
   /** An independent model's verdict on a claim about a recording (the .zip a trace saved). */
   check(claim: string, record: string, options?: { model?: string }): Promise<Data>
+  /** Read a recording through the verifier's views. */
+  recording(record: string, read: 'summary' | 'calls' | 'call' | 'screen' | 'screenshot' | 'search', options?: { id?: string; offset?: number; query?: string; path?: string }): Promise<Data>
+  /** A verdict on a claim about a recording, held to the verifier's rules. */
+  verdict(claim: string, record: string, status: 'passed' | 'failed' | 'inconclusive', summary: string, evidence?: string[]): Promise<Data>
   /** The sessions open on the daemon. */
   sessions(): Promise<{ device: string; platform: string; driver: string }[]>
   /**

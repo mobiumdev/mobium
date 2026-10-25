@@ -1896,6 +1896,35 @@ func (d *Device) Check(ctx context.Context, claim, record string) (CheckVerdict,
 	return out, err
 }
 
+// Recording reads a recording through the verifier's views: read is summary,
+// calls, call, screen, screenshot or search, and args carries id, offset,
+// query or a screenshot's path. With Verdict it lets the caller judge a
+// claim itself, with no model credential.
+func (d *Device) Recording(ctx context.Context, record, read string, args map[string]any) (map[string]any, error) {
+	call := map[string]any{"record": record, "read": read}
+	for k, v := range args {
+		call[k] = v
+	}
+	out := map[string]any{}
+	err := d.data(ctx, "app_recording", call, &out)
+	return out, err
+}
+
+// Verdict gives a verdict on a claim about a recording and has it held to
+// the verifier's rules: passed or failed needs evidence citing a call the
+// recording holds, by id (call@3). Each observation is one string.
+func (d *Device) Verdict(ctx context.Context, claim, record, status, summary string, evidence ...string) (map[string]any, error) {
+	ev := make([]map[string]any, 0, len(evidence))
+	for _, e := range evidence {
+		ev = append(ev, map[string]any{"type": "observation", "summary": e})
+	}
+	out := map[string]any{}
+	err := d.data(ctx, "app_verdict", map[string]any{
+		"claim": claim, "record": record, "status": status, "summary": summary, "evidence": ev,
+	}, &out)
+	return out, err
+}
+
 // CheckVerdict is Check's answer.
 type CheckVerdict struct {
 	Status   string `json:"status"`

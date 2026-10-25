@@ -240,6 +240,12 @@ command mentions them.
 | `app_record` | `driver` | string | _global_ --driver |
 | `app_record` | `path` | string | record |
 | `app_record` | `return_data` | boolean | — |
+| `app_recording` | `id` | string | recording |
+| `app_recording` | `offset` | integer | recording |
+| `app_recording` | `path` | string | recording |
+| `app_recording` | `query` | string | recording |
+| `app_recording` | `read` | string | recording |
+| `app_recording` | `record` | string | recording |
 | `app_reset_permissions` | `app` | string | reset-permissions |
 | `app_reset_permissions` | `device` | string | _global_ --device |
 | `app_reset_permissions` | `driver` | string | _global_ --driver |
@@ -343,6 +349,11 @@ command mentions them.
 | `app_upload` | `driver` | string | _global_ --driver |
 | `app_upload` | `name` | string | upload |
 | `app_upload` | `path` | string | upload |
+| `app_verdict` | `claim` | string | verdict |
+| `app_verdict` | `evidence` | array | verdict |
+| `app_verdict` | `record` | string | verdict |
+| `app_verdict` | `status` | string | verdict |
+| `app_verdict` | `summary` | string | verdict |
 | `app_wait_for` | `condition` | string | wait |
 | `app_wait_for` | `count` | integer | wait |
 | `app_wait_for` | `device` | string | _global_ --device |
@@ -421,6 +432,7 @@ arguments and the two global flags.
 | `press-drag` | app_press_drag | --duration-ms --lead-ms | duration_ms, from, hold, lead_ms, to, x1, x2, x3, y1, y2, y3 |
 | `press-tap` | app_press_tap | --lead-ms | hold, lead_ms, tap, x1, x2, y1, y2 |
 | `record` | app_record | --output | action, path |
+| `recording` | app_recording | --input --offset --output | id, offset, path, query, read, record |
 | `reset-permissions` | app_reset_permissions | — | app |
 | `revoke` | app_revoke | — | app, permissions |
 | `rotate` | app_rotate | --degrees --radius --target | degrees, radius, target |
@@ -455,5 +467,6 @@ arguments and the two global flags.
 | `unset` | app_set | — | target, value |
 | `up` | — | — | — |
 | `upload` | app_upload | --app --device-path --name | app, device_path, name, path |
+| `verdict` | app_verdict | --input --status --summary | claim, evidence, record, status, summary |
 | `wait` | app_wait_for | --count --exact --for --not --text --timeout | condition, count, exact, not, target, text, timeout_ms |
 | `zoom` | app_zoom | --from --target --to | direction, from, target, to |

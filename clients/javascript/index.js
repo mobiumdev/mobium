@@ -1540,6 +1540,25 @@ export class Device {
   }
 
   /**
+   * Read a recording through the verifier's views: read is summary, calls,
+   * call, screen, screenshot or search; options are id, offset, query or a
+   * screenshot's path. With verdict() it lets the caller judge a claim itself.
+   */
+  async recording(record, read, options = {}) {
+    return (await this.#data('app_recording', { record, read, ...options })) || {}
+  }
+
+  /**
+   * Give a verdict on a claim about a recording, held to the verifier's
+   * rules: passed or failed needs evidence citing a call the recording
+   * holds, by id (call@3). Each observation is one string.
+   */
+  async verdict(claim, record, status, summary, evidence = []) {
+    const ev = evidence.map((summary) => ({ type: 'observation', summary }))
+    return (await this.#data('app_verdict', { claim, record, status, summary, evidence: ev })) || {}
+  }
+
+  /**
    * Console output from the current WebView since the last call, including
    * uncaught errors and unhandled promise rejections.
    *

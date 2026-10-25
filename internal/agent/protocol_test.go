@@ -70,11 +70,13 @@ func TestEveryDeviceToolAcceptsDeviceArg(t *testing.T) {
 	// pinned to. Each is listed by name rather than the rule being relaxed,
 	// so a new tool that forgets the device argument still fails here.
 	deviceless := map[string]string{
-		"app_devices":  "lists all devices; pinning one would be meaningless",
-		"app_doctor":   "checks the environment, and must work when no device exists",
-		"app_check":    "judges a recording, which is a file; no device is touched",
-		"app_boot":     "starts a device by name; none is running to pin it to",
-		"app_shutdown": "names its device by name, since a pipe pins every call to its own device",
+		"app_devices":   "lists all devices; pinning one would be meaningless",
+		"app_doctor":    "checks the environment, and must work when no device exists",
+		"app_check":     "judges a recording, which is a file; no device is touched",
+		"app_recording": "reads a recording, which is a file; no device is touched",
+		"app_verdict":   "validates a verdict on a recording, which is a file; no device is touched",
+		"app_boot":      "starts a device by name; none is running to pin it to",
+		"app_shutdown":  "names its device by name, since a pipe pins every call to its own device",
 	}
 	for _, tool := range GetToolSchemas() {
 		if _, skip := deviceless[tool.Name]; skip {

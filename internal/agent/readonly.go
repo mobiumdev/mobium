@@ -11,7 +11,7 @@ package agent
 // app_map a ref table, app_screenshot a file on the Mac, app_logs its place
 // in the log — but none changes the device or the app.
 var readOnlyTools = map[string]bool{
-	"app_devices": true, "app_doctor": true, "app_check": true, "app_current": true, "app_state": true,
+	"app_devices": true, "app_doctor": true, "app_check": true, "app_recording": true, "app_verdict": true, "app_current": true, "app_state": true,
 	"app_map": true, "app_find": true, "app_text": true, "app_source": true,
 	"app_screenshot": true, "app_wait_for": true, "app_contexts": true, "app_list_apps": true,
 	"app_battery": true, "app_time": true, "app_hit_test": true, "app_audit": true, "app_logs": true, "app_crashes": true,

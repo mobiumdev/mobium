@@ -175,3 +175,23 @@ func TestTheLoopEndsInconclusive(t *testing.T) {
 		t.Error("an empty claim was accepted")
 	}
 }
+
+func TestAVerdictMustCiteCallsTheRecordingHolds(t *testing.T) {
+	tr, _ := Open(context.Background(), recording(t))
+	defer tr.Close()
+	id := tr.Calls[0].ID
+	for name, c := range map[string]struct {
+		input string
+		ok    bool
+	}{
+		"cites a real call":   {`{"status":"passed","summary":"s","evidence":[{"type":"observation","summary":"` + id + ` shows it checked"}]}`, true},
+		"cites no call":       {`{"status":"failed","summary":"s","evidence":[{"type":"observation","summary":"it looked unchecked"}]}`, false},
+		"cites a call absent": {`{"status":"passed","summary":"s","evidence":[{"type":"observation","summary":"call@99 shows it"}]}`, false},
+		"inconclusive, none":  {`{"status":"inconclusive","summary":"cannot tell","evidence":[]}`, true},
+	} {
+		_, err := Validate(tr, "the box is ticked", json.RawMessage(c.input))
+		if (err == nil) != c.ok {
+			t.Errorf("%s: err = %v", name, err)
+		}
+	}
+}

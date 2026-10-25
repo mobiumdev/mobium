@@ -2172,6 +2172,43 @@ public final class Mobium implements AutoCloseable {
         return data("app_check", args("claim", claim, "record", record));
     }
 
+    /**
+     * Reads a recording through the verifier's views. With {@link #verdict}
+     * it lets the caller judge a claim itself, with no model credential.
+     *
+     * @param record the .zip a trace saved
+     * @param read summary, calls, call, screen, screenshot or search
+     * @param id a call's id for call, screen and screenshot, such as {@code "call@3"}; or null
+     * @return the view
+     */
+    public Map<String, Object> recording(String record, String read, String id) {
+        Map<String, Object> a = args("record", record, "read", read);
+        if (id != null) {
+            a.put("search".equals(read) ? "query" : "id", id);
+        }
+        return data("app_recording", a);
+    }
+
+    /**
+     * Gives a verdict on a claim about a recording, held to the verifier's
+     * rules: passed or failed needs evidence citing a call the recording
+     * holds, by id (call@3).
+     *
+     * @param claim the claim judged
+     * @param record the recording it was judged on
+     * @param status passed, failed or inconclusive
+     * @param summary the verdict in a sentence or two
+     * @param evidence each observation, citing its call
+     * @return the verdict as accepted
+     */
+    public Map<String, Object> verdict(String claim, String record, String status, String summary, String... evidence) {
+        java.util.List<Object> ev = new java.util.ArrayList<>();
+        for (String e : evidence) {
+            ev.add(args("type", "observation", "summary", e));
+        }
+        return data("app_verdict", args("claim", claim, "record", record, "status", status, "summary", summary, "evidence", ev));
+    }
+
     // -- plumbing ----------------------------------------------------------
 
     /**

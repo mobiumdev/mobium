@@ -120,6 +120,8 @@ func main() {
 		newAlertCmd(),
 		newSetCmd(),
 		newClaimCheckCmd(),
+		newRecordingCmd(),
+		newVerdictCmd(),
 		newUnsetCmd(),
 		newZoomCmd(),
 		newRotateCmd(),

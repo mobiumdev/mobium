@@ -1403,6 +1403,30 @@ namespace Mobium
         public IDictionary<string, object?> Check(string claim, string record) =>
             Data("app_check", Args("claim", claim, "record", record));
 
+        /// <summary>
+        /// Reads a recording through the verifier's views: read is summary, calls,
+        /// call, screen, screenshot or search; id is a call's id, or a search's
+        /// query. With Verdict it lets the caller judge a claim itself.
+        /// </summary>
+        public IDictionary<string, object?> Recording(string record, string read, string? id = null)
+        {
+            var a = Args("record", record, "read", read);
+            if (id != null) a[read == "search" ? "query" : "id"] = id;
+            return Data("app_recording", a);
+        }
+
+        /// <summary>
+        /// Gives a verdict on a claim about a recording, held to the verifier's
+        /// rules: passed or failed needs evidence citing a call the recording
+        /// holds, by id (call@3). Each observation is one string.
+        /// </summary>
+        public IDictionary<string, object?> Verdict(string claim, string record, string status, string summary, params string[] evidence)
+        {
+            var ev = new List<object?>();
+            foreach (var e in evidence) ev.Add(Args("type", "observation", "summary", e));
+            return Data("app_verdict", Args("claim", claim, "record", record, "status", status, "summary", summary, "evidence", ev));
+        }
+
         // -- plumbing ----------------------------------------------------------
 
         /// <summary>

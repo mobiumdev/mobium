@@ -1252,6 +1252,23 @@ class Device:
             args["model"] = model
         return self._data("app_check", args) or {}
 
+    def recording(self, record: str, read: str, **args: Any) -> dict:
+        """Read a recording through the verifier's views.
+
+        read is summary, calls, call, screen, screenshot or search; args are
+        id, offset, query or a screenshot's path. With verdict() it lets the
+        caller judge a claim itself, with no model credential.
+        """
+        return self._data("app_recording", {"record": record, "read": read, **args}) or {}
+
+    def verdict(self, claim: str, record: str, status: str, summary: str, *evidence: str) -> dict:
+        """Give a verdict on a claim about a recording, held to the verifier's
+        rules: passed or failed needs evidence citing a call the recording
+        holds, by id (call@3). Each observation is one string."""
+        ev = [{"type": "observation", "summary": e} for e in evidence]
+        return self._data("app_verdict", {"claim": claim, "record": record, "status": status,
+                                          "summary": summary, "evidence": ev}) or {}
+
     def logs(self, level: str | None = None) -> list[dict]:
         """Console output from the current WebView since the last call.
 

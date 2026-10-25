@@ -2252,6 +2252,58 @@ func GetToolSchemas() []Tool {
 			},
 		},
 		{
+			Name: "app_recording",
+			Description: "Read a recording — the .zip app_trace saved — through the views a verifier uses: " +
+				"summary (title, how many calls, which tools, which failed), calls (in order, a page at a " +
+				"time), call (one in full: arguments, result or error, where it touched), screen (the " +
+				"map's elements after a call, as text), screenshot (the image after a call) and search. " +
+				"Read-only: nothing is extracted, run or fetched. With app_verdict it lets you be the " +
+				"judge of a claim yourself, with no model credential on the machine: read, then give a " +
+				"verdict that cites the calls it rests on. Needs no device.",
+			InputSchema: map[string]interface{}{
+				"type": "object",
+				"properties": map[string]interface{}{
+					"record": map[string]interface{}{"type": "string", "description": "The recording: the .zip `app_trace` with action stop saved."},
+					"read": map[string]interface{}{"type": "string", "enum": []string{"summary", "calls", "call", "screen", "screenshot", "search"},
+						"description": "Which view."},
+					"id":     map[string]interface{}{"type": "string", "description": "A call's id (\"call@3\"), for call, screen and screenshot."},
+					"offset": map[string]interface{}{"type": "integer", "description": "Where a page of calls or search hits starts, from 0."},
+					"query":  map[string]interface{}{"type": "string", "description": "What to search for, any case, for search."},
+					"path":   map[string]interface{}{"type": "string", "description": "Where to save a screenshot; without one it comes back inline."},
+				},
+				"required":             []string{"record", "read"},
+				"additionalProperties": false,
+			},
+		},
+		{
+			Name: "app_verdict",
+			Description: "Give a verdict on a claim about a recording, and have it held to the rules " +
+				"app_check holds a model to: status passed, failed or inconclusive; a summary; at most " +
+				"12 observations; and evidence for passed or failed that cites at least one call the " +
+				"recording holds, by id (call@3). Inconclusive when the recording cannot settle the " +
+				"claim — missing evidence is never success. Read the recording with app_recording " +
+				"first. Answers the verdict as accepted, or why it was not. Needs no device and no credential.",
+			InputSchema: map[string]interface{}{
+				"type": "object",
+				"properties": map[string]interface{}{
+					"claim":   map[string]interface{}{"type": "string", "description": "The claim judged."},
+					"record":  map[string]interface{}{"type": "string", "description": "The recording it was judged on."},
+					"status":  map[string]interface{}{"type": "string", "enum": []string{"passed", "failed", "inconclusive"}},
+					"summary": map[string]interface{}{"type": "string", "description": "The verdict in a sentence or two."},
+					"evidence": map[string]interface{}{"type": "array", "maxItems": 12, "items": map[string]interface{}{
+						"type": "object",
+						"properties": map[string]interface{}{
+							"type":    map[string]interface{}{"type": "string", "enum": []string{"observation"}},
+							"summary": map[string]interface{}{"type": "string", "description": "What was recorded, citing the call: \"call@3: the screen shows Accept terms checked\"."},
+						},
+						"required": []string{"type", "summary"}, "additionalProperties": false,
+					}},
+				},
+				"required":             []string{"claim", "record", "status", "summary", "evidence"},
+				"additionalProperties": false,
+			},
+		},
+		{
 			Name: "app_find",
 			Description: "Find elements matching a locator and return their refs, without " +
 				"tapping. Locator kinds: text, label, testid, role, class, path. Roles: " +
@@ -2299,6 +2351,8 @@ var PathArguments = map[string][]string{
 	"app_audio":      {"path"},
 	"app_trace":      {"path"},
 	"app_check":      {"record"},
+	"app_recording":  {"record", "path"},
+	"app_verdict":    {"record"},
 	"app_upload":     {"path"},
 	"app_download":   {"path"},
 }

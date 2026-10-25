@@ -403,6 +403,10 @@ func (h *Handlers) dispatch(ctx context.Context, name string, args map[string]in
 		return h.doctor(ctx, args)
 	case "app_check":
 		return h.claimCheck(ctx, args)
+	case "app_recording":
+		return h.recording(ctx, args)
+	case "app_verdict":
+		return h.verdict(ctx, args)
 	case "app_batch":
 		return h.batch(ctx, args)
 	case "app_battery":

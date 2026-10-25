@@ -73,7 +73,7 @@ func (t *Trace) Execute(ctx context.Context, name string, input json.RawMessage)
 	}
 	switch name {
 	case "trace_summary":
-		var failed []string
+		failed := []string{}
 		for _, c := range t.Calls {
 			if c.Error != "" {
 				failed = append(failed, c.ID+" "+c.Tool)

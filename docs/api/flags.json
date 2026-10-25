@@ -1806,6 +1806,54 @@
       "type": "boolean"
     },
     {
+      "tool": "app_recording",
+      "arg": "id",
+      "type": "string",
+      "setBy": [
+        "recording"
+      ]
+    },
+    {
+      "tool": "app_recording",
+      "arg": "offset",
+      "type": "integer",
+      "setBy": [
+        "recording"
+      ]
+    },
+    {
+      "tool": "app_recording",
+      "arg": "path",
+      "type": "string",
+      "setBy": [
+        "recording"
+      ]
+    },
+    {
+      "tool": "app_recording",
+      "arg": "query",
+      "type": "string",
+      "setBy": [
+        "recording"
+      ]
+    },
+    {
+      "tool": "app_recording",
+      "arg": "read",
+      "type": "string",
+      "setBy": [
+        "recording"
+      ]
+    },
+    {
+      "tool": "app_recording",
+      "arg": "record",
+      "type": "string",
+      "setBy": [
+        "recording"
+      ]
+    },
+    {
       "tool": "app_reset_permissions",
       "arg": "app",
       "type": "string",
@@ -2677,6 +2725,46 @@
       ]
     },
     {
+      "tool": "app_verdict",
+      "arg": "claim",
+      "type": "string",
+      "setBy": [
+        "verdict"
+      ]
+    },
+    {
+      "tool": "app_verdict",
+      "arg": "evidence",
+      "type": "array",
+      "setBy": [
+        "verdict"
+      ]
+    },
+    {
+      "tool": "app_verdict",
+      "arg": "record",
+      "type": "string",
+      "setBy": [
+        "verdict"
+      ]
+    },
+    {
+      "tool": "app_verdict",
+      "arg": "status",
+      "type": "string",
+      "setBy": [
+        "verdict"
+      ]
+    },
+    {
+      "tool": "app_verdict",
+      "arg": "summary",
+      "type": "string",
+      "setBy": [
+        "verdict"
+      ]
+    },
+    {
       "tool": "app_wait_for",
       "arg": "condition",
       "type": "string",
@@ -3466,6 +3554,25 @@
       ]
     },
     {
+      "command": "recording",
+      "tools": [
+        "app_recording"
+      ],
+      "flags": [
+        "--input",
+        "--offset",
+        "--output"
+      ],
+      "sends": [
+        "id",
+        "offset",
+        "path",
+        "query",
+        "read",
+        "record"
+      ]
+    },
+    {
       "command": "reset-permissions",
       "tools": [
         "app_reset_permissions"
@@ -3829,6 +3936,24 @@
         "device_path",
         "name",
         "path"
+      ]
+    },
+    {
+      "command": "verdict",
+      "tools": [
+        "app_verdict"
+      ],
+      "flags": [
+        "--input",
+        "--status",
+        "--summary"
+      ],
+      "sends": [
+        "claim",
+        "evidence",
+        "record",
+        "status",
+        "summary"
       ]
     },
     {
