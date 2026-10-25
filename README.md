@@ -4,7 +4,7 @@
 
 *Mutatis mutandis.*
 
-**Mobile app automation for AI agents and humans.** Android emulators, Android
+**Mobile app automation for AI agents and people.** Android emulators, Android
 phones, iOS simulators and iPhones, driven through one tool layer from a single
 Go binary with no runtime dependencies.
 
