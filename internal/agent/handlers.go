@@ -1631,7 +1631,7 @@ func (h *Handlers) keyboardOverTarget(ctx context.Context, s *session, n *uitree
 		return nil
 	}
 	focused := false
-	t.Walk(func(x *uitree.Node) bool {
+	t.WalkFront(func(x *uitree.Node) bool {
 		if x.Focused {
 			focused = true
 		}
@@ -2175,7 +2175,7 @@ func centerOnScreen(t *uitree.Tree, n *uitree.Node) (on, above bool) {
 // the action's own checks turn on.
 func hasDialogOrKeyboard(t *uitree.Tree) bool {
 	found := false
-	t.Walk(func(n *uitree.Node) bool {
+	t.WalkFront(func(n *uitree.Node) bool {
 		switch n.Class {
 		case "XCUIElementTypeAlert", "XCUIElementTypeSheet", "XCUIElementTypeKeyboard", "XCUIElementTypePopover":
 			found = true

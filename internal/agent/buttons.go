@@ -164,7 +164,7 @@ func (h *Handlers) awaitLauncher(ctx context.Context, s *session, before string)
 // focusedNode is the innermost node that has input focus, or nil.
 func focusedNode(t *uitree.Tree) *uitree.Node {
 	var f *uitree.Node
-	t.Walk(func(n *uitree.Node) bool {
+	t.WalkFront(func(n *uitree.Node) bool {
 		if n.Focused {
 			f = n
 		}

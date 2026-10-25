@@ -106,7 +106,7 @@ func (h *Handlers) readThumbBack(ctx context.Context, s *session, target string,
 			WithRemedy("bring the app back and fill the slider with a position away from the screen's edge")
 	}
 	var thumb, beside *uitree.Node
-	tree.Walk(func(n *uitree.Node) bool {
+	tree.WalkFront(func(n *uitree.Node) bool {
 		if _, _, ok := uitree.RangeThumb(n); ok || uitree.HasClassRole(n, "slider") || uitree.HasClassRole(n, "adjustable") {
 			switch n.Label {
 			case node.Label:

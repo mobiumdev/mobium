@@ -480,25 +480,29 @@ func (t *Tree) Walk(fn func(*Node) bool) {
 	if t == nil || t.Root == nil {
 		return
 	}
-	var visit func(*Node) bool
-	visit = func(n *Node) bool {
-		for _, c := range n.Children {
-			if !fn(c) {
-				return false
-			}
-			if !visit(c) {
-				return false
-			}
+	walkBelow(t.Root, fn)
+}
+
+func walkBelow(n *Node, fn func(*Node) bool) bool {
+	for _, c := range n.Children {
+		if !fn(c) || !walkBelow(c, fn) {
+			return false
 		}
-		return true
 	}
-	visit(t.Root)
+	return true
 }
 
 // All returns every node below the root in document order.
 func (t *Tree) All() []*Node {
 	var out []*Node
 	t.Walk(func(n *Node) bool { out = append(out, n); return true })
+	return out
+}
+
+// AllFront is All over the app in front (WalkFront).
+func (t *Tree) AllFront() []*Node {
+	var out []*Node
+	t.WalkFront(func(n *Node) bool { out = append(out, n); return true })
 	return out
 }
 

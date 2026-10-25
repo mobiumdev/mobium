@@ -69,7 +69,7 @@ const (
 // on to load the page. A stopped indicator hides itself and leaves the tree.
 func busyIn(tree *uitree.Tree, container *uitree.Node) bool {
 	busy := false
-	tree.Walk(func(n *uitree.Node) bool {
+	tree.WalkFront(func(n *uitree.Node) bool {
 		if !n.Bounds.Empty() && n.Within(container) && uitree.HasClassRole(n, "progressbar") {
 			busy = true
 		}
@@ -637,7 +637,7 @@ func (f *follower) pick(t *uitree.Tree) (*uitree.Node, error) {
 		return n, err
 	}
 	var found []*uitree.Node
-	t.Walk(func(m *uitree.Node) bool {
+	t.WalkFront(func(m *uitree.Node) bool {
 		if m.Clickable && !m.Bounds.Empty() && uitree.Describe(m) == f.name {
 			found = append(found, m)
 		}
@@ -687,7 +687,7 @@ func nearestNamed(t *uitree.Tree, name string, want uitree.Rect) *uitree.Node {
 		return math.Hypot(float64((r.X1+r.X2)/2-cx), float64((r.Y1+r.Y2)/2-cy))
 	}
 	var best, second *uitree.Node
-	t.Walk(func(m *uitree.Node) bool {
+	t.WalkFront(func(m *uitree.Node) bool {
 		if !m.Clickable || m.Bounds.Empty() || uitree.Describe(m) != name {
 			return true
 		}
@@ -866,7 +866,7 @@ func scrollContainerOf(n *uitree.Node) *uitree.Node {
 // node to ask about ancestry. Once a node is in hand, use scrollContainerOf.
 func scrollContainer(tree *uitree.Tree) *uitree.Node {
 	var best *uitree.Node
-	tree.Walk(func(n *uitree.Node) bool {
+	tree.WalkFront(func(n *uitree.Node) bool {
 		if !n.Scrollable || n.Bounds.Empty() {
 			return true
 		}
@@ -892,7 +892,7 @@ func scrollContainer(tree *uitree.Tree) *uitree.Node {
 // its own row is found from it.
 func scrollContainerFor(tree *uitree.Tree, dir string) *uitree.Node {
 	var named, other *uitree.Node
-	tree.Walk(func(n *uitree.Node) bool {
+	tree.WalkFront(func(n *uitree.Node) bool {
 		if !n.Scrollable || n.Bounds.Empty() {
 			return true
 		}

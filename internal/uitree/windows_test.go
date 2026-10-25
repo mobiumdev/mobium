@@ -174,3 +174,41 @@ func appDialogWords(d *Node) string {
 	walk(d)
 	return b.String()
 }
+
+// What asks the screen for its largest list or its focused field walks the
+// app in front. Morpho Market's catalog over the browser: the largest
+// scrollable of every window was the browser's page, a swipe there only
+// brought the browser forward, and every product below the fold was "no
+// element matches".
+func largestScrollable(walk func(func(*Node) bool)) *Node {
+	var best *Node
+	walk(func(n *Node) bool {
+		if n.Scrollable && !n.Bounds.Empty() && (best == nil || area(n.Bounds) > area(best.Bounds)) {
+			best = n
+		}
+		return true
+	})
+	return best
+}
+
+func TestWalkFrontKeepsToTheAppInFront(t *testing.T) {
+	tree := windowedFixture(t, "quest-shop-over-browser.xml")
+	if all := largestScrollable(tree.Walk); all == nil || all.Package == "dev.mobium.shop" {
+		t.Fatalf("control: the largest scrollable of every window should be another app's, got %v", all)
+	}
+	front := largestScrollable(tree.WalkFront)
+	if front == nil || front.TestID != "catalogList" {
+		t.Errorf("largest scrollable in front: %v, want the catalog", front)
+	}
+	for _, n := range tree.AllFront() {
+		if n.Package != "dev.mobium.shop" {
+			t.Fatalf("AllFront holds %s's %s", n.Package, n.Path)
+		}
+	}
+	// And where the app in front scrolls nothing, nothing: MobiumApp's
+	// Interruption Demo over the browser, whose page scrolls.
+	other := windowedFixture(t, "quest-mobiumapp-over-browser.xml")
+	if n := largestScrollable(other.WalkFront); n != nil {
+		t.Errorf("MobiumApp in front scrolls nothing, got %s's %s", n.Package, n.Path)
+	}
+}

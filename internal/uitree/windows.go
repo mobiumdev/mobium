@@ -15,7 +15,7 @@ package uitree
 // decides by document order being drawing order — a cover is a later node —
 // so MarkWindows puts them bottom first, and a window, which takes every
 // touch inside its bounds, covers whatever lies under it in a lower one.
-// CHALLENGES 364-366.
+// CHALLENGES 364-367.
 
 // MarkWindows turns a hierarchy of every window, top first, into one in
 // drawing order: bottom first, each window's root marked Window. Paths are
@@ -135,4 +135,28 @@ func (t *Tree) inFrontOnly(ns []*Node) []*Node {
 		}
 	}
 	return out
+}
+
+// WalkFront is Walk over the app in front: on a windowed hierarchy, the
+// windows of the app in front alone, as a phone's hierarchy holds. Whatever
+// asks the screen for its largest list, its focused field or its bar wants
+// these: the largest scrollable on a Quest was the browser's page behind
+// Morpho Market's panel, and a swipe there only brought the browser
+// forward. Only the dialog rule and the covers want every window, and they
+// use Walk. A real headset's keyboard, which may be a window of its own,
+// has not been seen: the simulator has no input method at all.
+func (t *Tree) WalkFront(fn func(*Node) bool) {
+	front := t.frontWindow()
+	if front == nil {
+		t.Walk(fn)
+		return
+	}
+	for _, w := range t.Root.Children {
+		if w.Package != front.Package {
+			continue
+		}
+		if !fn(w) || !walkBelow(w, fn) {
+			return
+		}
+	}
 }

@@ -131,7 +131,7 @@ func (h *Handlers) taskOwner(ctx context.Context, s *session, pkg string) string
 // navigationBar is the iOS navigation bar on screen — the visible one, since a
 // sheet leaves the bar beneath it in the tree, hidden.
 func navigationBar(tree *uitree.Tree) *uitree.Node {
-	for _, n := range tree.All() {
+	for _, n := range tree.AllFront() {
 		if n.ShortClass() == "NavigationBar" && n.Displayed && !n.Bounds.Empty() {
 			return n
 		}

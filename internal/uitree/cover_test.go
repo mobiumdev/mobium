@@ -84,6 +84,8 @@ var coveredCaptures = map[string]string{
 		"panel, both over the browser's",
 	"quest-settings-stub-over-browser.xml": "Horizon OS, every window: the Settings stub over the browser's " +
 		"panel, over MobiumApp's",
+	"quest-shop-over-browser.xml": "Horizon OS, every window: Morpho Market's panel over MobiumApp's, the " +
+		"browser's and Gallery's",
 }
 
 func TestTheCoverRuleLeavesOrdinaryScreensAlone(t *testing.T) {

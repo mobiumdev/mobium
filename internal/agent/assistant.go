@@ -264,7 +264,7 @@ const assistantPackage = "com.google.android.googlequicksearchbox"
 // assistantField is the assistant's text field, by class and package.
 func assistantField(t *uitree.Tree) *uitree.Node {
 	var out *uitree.Node
-	t.Walk(func(n *uitree.Node) bool {
+	t.WalkFront(func(n *uitree.Node) bool {
 		if n.Displayed && n.Package == assistantPackage && strings.HasSuffix(n.Class, "EditText") && n.ShortTestID() != "" {
 			out = n
 		}
@@ -275,7 +275,7 @@ func assistantField(t *uitree.Tree) *uitree.Node {
 
 func findByLabel(t *uitree.Tree, label string) *uitree.Node {
 	var out *uitree.Node
-	t.Walk(func(n *uitree.Node) bool {
+	t.WalkFront(func(n *uitree.Node) bool {
 		if n.Displayed && strings.EqualFold(strings.TrimSpace(n.Label), label) {
 			out = n
 		}
@@ -287,7 +287,7 @@ func findByLabel(t *uitree.Tree, label string) *uitree.Node {
 // textsOf is every text shown in pkg, lower case, as a set.
 func textsOf(t *uitree.Tree, pkg string) map[string]bool {
 	out := map[string]bool{}
-	t.Walk(func(n *uitree.Node) bool {
+	t.WalkFront(func(n *uitree.Node) bool {
 		if n.Displayed && n.Package == pkg {
 			for _, s := range []string{n.Text, n.Label} {
 				if s = strings.TrimSpace(s); s != "" {
@@ -305,7 +305,7 @@ func textsOf(t *uitree.Tree, pkg string) map[string]bool {
 // and never a password field's.
 func newTexts(t *uitree.Tree, pkg string, seen map[string]bool) []string {
 	out := []string{}
-	t.Walk(func(n *uitree.Node) bool {
+	t.WalkFront(func(n *uitree.Node) bool {
 		if !n.Displayed || n.Package != pkg || n.Clickable || n.Password {
 			return true
 		}
@@ -415,7 +415,7 @@ var siriChrome = map[string]bool{"listen": true, "copy": true}
 // controls or the request repeated.
 func siriTexts(t *uitree.Tree, request string) []string {
 	out := []string{}
-	t.Walk(func(n *uitree.Node) bool {
+	t.WalkFront(func(n *uitree.Node) bool {
 		if !n.Displayed || !inSiriWindow(n) || n.Password {
 			return true
 		}
