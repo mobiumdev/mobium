@@ -273,8 +273,8 @@ code,.mono{font-family:ui-monospace,Menlo,monospace;font-size:12.5px}
       case 'tap': return act('app_tap', {target: t});
       case 'double': return act('app_tap', {target: t, double: true});
       case 'long': return act('app_long_press', {target: t});
-      case 'check': return act('app_check', {target: t});
-      case 'uncheck': return act('app_check', {target: t, checked: false});
+      case 'check': return act('app_set', {target: t});
+      case 'uncheck': return act('app_set', {target: t, value: false});
       case 'wait': return act('app_wait_for', {target: t});
       case 'scroll': return act('app_scroll_to', {target: t});
       case 'type': return act('app_type', {target: t, text});

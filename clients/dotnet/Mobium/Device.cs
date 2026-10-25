@@ -902,8 +902,11 @@ namespace Mobium
         /// no checked state is refused rather than tapped, and a radio cannot
         /// be unchecked — a group is cleared by choosing a different member.
         /// </summary>
-        public void Check(string target, bool checkedState = true) =>
-            Act("app_check", Args("target", target, "checked", checkedState));
+        public void Set(string target, bool value = true) =>
+            Act("app_set", Args("target", target, "value", value));
+
+        /// <summary>Set(target, false): a checkbox cleared, a switch turned off.</summary>
+        public void Unset(string target) => Set(target, false);
 
         /// <summary>
         /// What a system dialog says, or an empty string when none is up. A

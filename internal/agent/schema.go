@@ -1087,7 +1087,7 @@ func GetToolSchemas() []Tool {
 			Description: "Pinch two fingers apart or together, about an element or the " +
 				"middle of the screen. **It reports that the gesture was delivered and " +
 				"nothing more.** Neither platform puts a zoom level in the " +
-				"accessibility hierarchy, so unlike app_check there is no state to read " +
+				"accessibility hierarchy, so unlike app_set there is no state to read " +
 				"back — confirming a zoom means asking the thing that was zoomed, and a " +
 				"WebView can answer with visualViewport.scale through app_eval. " +
 				"Pinching about the wrong point scales the right amount in the wrong " +
@@ -1247,7 +1247,7 @@ func GetToolSchemas() []Tool {
 			},
 		},
 		{
-			Name: "app_check",
+			Name: "app_set",
 			Description: "Put a checkbox or switch into a state, rather than toggling " +
 				"whatever it is in. **Idempotent**: asking for a state it is already " +
 				"in does nothing and says so, which is what makes it safe to call " +
@@ -1268,9 +1268,9 @@ func GetToolSchemas() []Tool {
 						"type":        "string",
 						"description": "A ref from app_map (\"@e2\") or a locator (\"testid=terms\").",
 					},
-					"checked": map[string]interface{}{
+					"value": map[string]interface{}{
 						"type":        "boolean",
-						"description": "The state to put it in. Defaults to true.",
+						"description": "The state to put it in: true checked or on, false unchecked or off. Defaults to true.",
 					},
 				}),
 				"required":             []string{"target"},

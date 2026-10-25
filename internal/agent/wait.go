@@ -106,7 +106,7 @@ const (
 	condEnabled  = "enabled"
 	condDisabled = "disabled"
 	// Checked and unchecked are a checkbox, radio or switch's state, read as
-	// app_check reads it; focused is keyboard focus; value is a field's whole
+	// app_set reads it; focused is keyboard focus; value is a field's whole
 	// content, exactly, where text is a part of what an element says.
 	condChecked   = "checked"
 	condUnchecked = "unchecked"
@@ -447,9 +447,9 @@ func judge(ctx context.Context, cond string, nodes []*uitree.Node, notOnScreen s
 		word := map[bool]string{true: condEnabled, false: condDisabled}[n.Enabled]
 		return n.Enabled == (cond == condEnabled), n, "it is " + word, nil
 	case condChecked, condUnchecked:
-		// The row, when the target is its words, as app_check reads it.
+		// The row, when the target is its words, as app_set reads it.
 		n = stateOf(n)
-		// Refused at once, as app_check refuses it: nothing without a
+		// Refused at once, as app_set refuses it: nothing without a
 		// checked state will ever be checked, and waiting says nothing.
 		if !n.Checkable {
 			e := mobiumerr.New(mobiumerr.InvalidArgument, "%s is not a checkbox, radio or switch, so it has no "+

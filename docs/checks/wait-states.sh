@@ -77,9 +77,9 @@ holds "the radio it replaced" testid=planFree --for unchecked --timeout 3s
 row "radio" "chosen one checked, the other unchecked"
 
 times_out "a switch that is off" "it is unchecked" testid=darkSwitch --for checked
-$M check testid=darkSwitch >/dev/null
+$M set testid=darkSwitch >/dev/null
 holds "a switch turned on" testid=darkSwitch --for checked --timeout 3s
-$M uncheck testid=darkSwitch >/dev/null
+$M unset testid=darkSwitch >/dev/null
 holds "the switch put back" testid=darkSwitch --for unchecked --timeout 3s
 row "switch" "on and back off, each seen"
 

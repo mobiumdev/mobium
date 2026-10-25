@@ -184,7 +184,7 @@ else
   [ "$(state)" = "mCallState=0" ] || fail "the call did not end"
   echo "    call           rang, answered and ended, read back each time  ok"
 
-  $M sms "mobium check message" >/dev/null
+  $M sms "mobium set message" >/dev/null
   echo "    sms            delivered                                       ok"
 fi
 
@@ -201,7 +201,7 @@ echo "    timezone       changed, rejected nonsense, restored             ok"
 # Notifications. Posting is confirmed by reading the shade back — `cmd
 # notification post` prints what it thinks it built and says nothing about
 # whether the system accepted it.
-$M notifications --post "mobium check notification" --title "MobiumCheck" >/dev/null
+$M notifications --post "mobium set notification" --title "MobiumCheck" >/dev/null
 $M notifications | grep -q "MobiumCheck" || fail "the posted notification is not in the shade"
 echo "    notify         posted and read back                            ok"
 

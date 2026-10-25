@@ -62,12 +62,12 @@ row "toggle" "map lists Tilt-to-wake once, as a switch, $was"
 # Put back as found: off is an uncheck; on asks first, and is accepted.
 restore() {
   $M alert dismiss >/dev/null 2>&1 || true
-  if [ "$was" = off ]; then $M uncheck "$SWITCH" >/dev/null 2>&1 || true; return; fi
-  $M check "$SWITCH" >/dev/null 2>&1 || $M alert accept >/dev/null 2>&1 || true
+  if [ "$was" = off ]; then $M unset "$SWITCH" >/dev/null 2>&1 || true; return; fi
+  $M set "$SWITCH" >/dev/null 2>&1 || $M alert accept >/dev/null 2>&1 || true
 }
 at_exit restore
 if [ "$was" = on ]; then
-  $M uncheck "$SWITCH" >/dev/null || fail "uncheck by locator was refused"
+  $M unset "$SWITCH" >/dev/null || fail "uncheck by locator was refused"
   [ "$(state)" = off ] || fail "uncheck left Tilt-to-wake on"
 fi
 

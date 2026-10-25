@@ -98,9 +98,9 @@ $M tap 'label=Free' >/dev/null 2>&1 || fail "tap Free"
 entry "Free (radio" | grep -q "checked)" || fail "Free is not selected after a tap: $(entry 'Free (radio')"
 row "tap" "Pro, then Free, selected"
 
-out=$($M check 'label=Email me' 2>&1) || fail "check: $out"
+out=$($M set 'label=Email me' 2>&1) || fail "check: $out"
 echo "$out" | grep -q "is now checked" || fail "check answered: $out"
-out=$($M uncheck 'label=Email me' 2>&1) || fail "uncheck: $out"
+out=$($M unset 'label=Email me' 2>&1) || fail "uncheck: $out"
 echo "$out" | grep -q "is now unchecked" || fail "uncheck answered: $out"
 row "check" "Email me checked and unchecked"
 

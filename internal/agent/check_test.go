@@ -63,7 +63,7 @@ func checkOn(t *testing.T, d *boxDriver, args map[string]interface{}) (*ToolsCal
 // exists.
 func TestCheckIsIdempotent(t *testing.T) {
 	d := &boxDriver{class: "android.widget.CheckBox", checked: true}
-	res, err := checkOn(t, d, map[string]interface{}{"target": "testid=box", "checked": true})
+	res, err := checkOn(t, d, map[string]interface{}{"target": "testid=box", "value": true})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -84,7 +84,7 @@ func TestCheckIsIdempotent(t *testing.T) {
 
 func TestCheckTapsOnlyWhenItMustAndConfirms(t *testing.T) {
 	d := &boxDriver{class: "android.widget.CheckBox", checked: false}
-	res, err := checkOn(t, d, map[string]interface{}{"target": "testid=box", "checked": true})
+	res, err := checkOn(t, d, map[string]interface{}{"target": "testid=box", "value": true})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -98,7 +98,7 @@ func TestCheckTapsOnlyWhenItMustAndConfirms(t *testing.T) {
 
 func TestUncheckIsTheSameToolTheOtherWay(t *testing.T) {
 	d := &boxDriver{class: "android.widget.CheckBox", checked: true}
-	if _, err := checkOn(t, d, map[string]interface{}{"target": "testid=box", "checked": false}); err != nil {
+	if _, err := checkOn(t, d, map[string]interface{}{"target": "testid=box", "value": false}); err != nil {
 		t.Fatal(err)
 	}
 	if d.checked || d.taps != 1 {
@@ -110,7 +110,7 @@ func TestUncheckIsTheSameToolTheOtherWay(t *testing.T) {
 // difference between this and app_tap, which would return perfectly happily.
 func TestCheckReportsAControlThatDidNotRespond(t *testing.T) {
 	d := &boxDriver{class: "android.widget.CheckBox", checked: false, stuck: true}
-	_, err := checkOn(t, d, map[string]interface{}{"target": "testid=box", "checked": true})
+	_, err := checkOn(t, d, map[string]interface{}{"target": "testid=box", "value": true})
 	if err == nil {
 		t.Fatal("a control that ignored the tap was reported as checked")
 	}
@@ -125,7 +125,7 @@ func TestCheckReportsAControlThatDidNotRespond(t *testing.T) {
 // project refuses to do.
 func TestCheckRefusesSomethingWithNoState(t *testing.T) {
 	d := &boxDriver{class: "android.widget.Button"}
-	_, err := checkOn(t, d, map[string]interface{}{"target": "testid=box", "checked": true})
+	_, err := checkOn(t, d, map[string]interface{}{"target": "testid=box", "value": true})
 	if err == nil {
 		t.Fatal("a button was accepted as a checkbox")
 	}
@@ -142,7 +142,7 @@ func TestCheckRefusesSomethingWithNoState(t *testing.T) {
 // that is never coming.
 func TestCheckRefusesToUncheckARadio(t *testing.T) {
 	d := &boxDriver{class: "android.widget.RadioButton", checked: true}
-	_, err := checkOn(t, d, map[string]interface{}{"target": "testid=box", "checked": false})
+	_, err := checkOn(t, d, map[string]interface{}{"target": "testid=box", "value": false})
 	if err == nil {
 		t.Fatal("unchecking a radio was accepted")
 	}
@@ -154,7 +154,7 @@ func TestCheckRefusesToUncheckARadio(t *testing.T) {
 	}
 	// Checking one is fine, and must still work.
 	d2 := &boxDriver{class: "android.widget.RadioButton", checked: false}
-	if _, err := checkOn(t, d2, map[string]interface{}{"target": "testid=box", "checked": true}); err != nil {
+	if _, err := checkOn(t, d2, map[string]interface{}{"target": "testid=box", "value": true}); err != nil {
 		t.Errorf("checking a radio was refused: %v", err)
 	}
 }
@@ -165,7 +165,7 @@ func TestCheckDefaultsToChecked(t *testing.T) {
 		t.Fatal(err)
 	}
 	if !d.checked {
-		t.Error("app_check with no state did not check it")
+		t.Error("app_set with no state did not check it")
 	}
 }
 
@@ -222,7 +222,7 @@ func (d *pageBoxDriver) Snapshot(ctx context.Context) (*uitree.Tree, error) {
 }
 
 // From the native context, a checkbox of a WebView's page is sent to the
-// WebView's context, where app_check reads the page — never told it is not a
+// WebView's context, where app_set reads the page — never told it is not a
 // checkbox and left to tap (CHALLENGES 299).
 func TestCheckSendsAPageCheckboxToItsWebView(t *testing.T) {
 	h := NewHandlers()

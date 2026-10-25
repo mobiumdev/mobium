@@ -71,7 +71,7 @@ func screenReaderWasAsked(ctx context.Context) bool {
 // errVoiceOverOn refuses a touch VoiceOver would take for its own.
 var errVoiceOverOn = mobiumerr.New(mobiumerr.DeviceNotReady, "VoiceOver is on, and with it on a touch moves "+
 	"VoiceOver's cursor instead of reaching the app — a swipe moves the cursor too, and scrolls nothing. "+
-	"app_tap, app_check, app_type and a dialog's button are made as a VoiceOver user makes them, a touch and "+
+	"app_tap, app_set, app_type and a dialog's button are made as a VoiceOver user makes them, a touch and "+
 	"then a double tap; this gesture is not").
 	WithRemedy("turn VoiceOver off on the device — Settings, Accessibility, VoiceOver, or the Accessibility " +
 		"Shortcut — and call again, or use app_tap, which works with it on")

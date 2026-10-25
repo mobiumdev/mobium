@@ -380,42 +380,6 @@
       ]
     },
     {
-      "tool": "app_check",
-      "arg": "checked",
-      "type": "boolean",
-      "setBy": [
-        "check",
-        "uncheck"
-      ]
-    },
-    {
-      "tool": "app_check",
-      "arg": "device",
-      "type": "string",
-      "setBy": [
-        "--device"
-      ],
-      "global": true
-    },
-    {
-      "tool": "app_check",
-      "arg": "driver",
-      "type": "string",
-      "setBy": [
-        "--driver"
-      ],
-      "global": true
-    },
-    {
-      "tool": "app_check",
-      "arg": "target",
-      "type": "string",
-      "setBy": [
-        "check",
-        "uncheck"
-      ]
-    },
-    {
       "tool": "app_clear_data",
       "arg": "app",
       "type": "string",
@@ -2056,6 +2020,42 @@
       ]
     },
     {
+      "tool": "app_set",
+      "arg": "device",
+      "type": "string",
+      "setBy": [
+        "--device"
+      ],
+      "global": true
+    },
+    {
+      "tool": "app_set",
+      "arg": "driver",
+      "type": "string",
+      "setBy": [
+        "--driver"
+      ],
+      "global": true
+    },
+    {
+      "tool": "app_set",
+      "arg": "target",
+      "type": "string",
+      "setBy": [
+        "set",
+        "unset"
+      ]
+    },
+    {
+      "tool": "app_set",
+      "arg": "value",
+      "type": "boolean",
+      "setBy": [
+        "set",
+        "unset"
+      ]
+    },
+    {
       "tool": "app_shake",
       "arg": "device",
       "type": "string",
@@ -2928,16 +2928,6 @@
       ]
     },
     {
-      "command": "check",
-      "tools": [
-        "app_check"
-      ],
-      "sends": [
-        "checked",
-        "target"
-      ]
-    },
-    {
       "command": "clear-data",
       "tools": [
         "app_clear_data"
@@ -3525,6 +3515,16 @@
       ]
     },
     {
+      "command": "set",
+      "tools": [
+        "app_set"
+      ],
+      "sends": [
+        "target",
+        "value"
+      ]
+    },
+    {
       "command": "shake",
       "tools": [
         "app_shake"
@@ -3754,22 +3754,22 @@
       ]
     },
     {
-      "command": "uncheck",
-      "tools": [
-        "app_check"
-      ],
-      "sends": [
-        "checked",
-        "target"
-      ]
-    },
-    {
       "command": "uninstall",
       "tools": [
         "app_uninstall"
       ],
       "sends": [
         "app"
+      ]
+    },
+    {
+      "command": "unset",
+      "tools": [
+        "app_set"
+      ],
+      "sends": [
+        "target",
+        "value"
       ]
     },
     {

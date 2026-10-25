@@ -1041,15 +1041,20 @@ class Device:
             args["target"] = target
         return self._data("app_zoom", args) or {}
 
-    def check(self, target: str, checked: bool = True) -> dict:
-        """Put a checkbox or switch into a state, rather than toggling it.
+    def set(self, target: str, value: bool = True) -> dict:
+        """Put a checkbox or switch into a state, rather than toggling it:
+        value True checks it or turns it on, False clears it or turns it off.
 
         Idempotent: asking for a state it is already in does nothing, which
         is what makes it safe to call without reading first. Anything with no
         checked state is refused rather than tapped, and a radio cannot be
-        unchecked — a group is cleared by choosing a different member.
+        unset — a group is cleared by choosing a different member.
         """
-        return self._data("app_check", {"target": target, "checked": checked}) or {}
+        return self._data("app_set", {"target": target, "value": value}) or {}
+
+    def unset(self, target: str) -> dict:
+        """set(target, False): a checkbox cleared, a switch turned off."""
+        return self.set(target, False)
 
     def alert(self) -> str:
         """What a system dialog says, or "" when none is up.

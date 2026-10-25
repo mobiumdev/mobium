@@ -79,7 +79,7 @@ var shapes = map[string][][]string{
 	"app_type":       {{"target", "text"}},
 	"app_fill":       {{"target", "text"}},
 	"app_long_press": {{"target"}, {"target", "duration_ms"}},
-	"app_check":      {{"target"}, {"target", "checked"}},
+	"app_set":        {{"target"}, {"target", "value"}},
 	"app_swipe":      {{"direction"}, {"direction", "target"}},
 	"app_press":      {{"button"}},
 	"app_scroll_to":  {{"target"}, {"target", "direction"}},

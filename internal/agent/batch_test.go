@@ -34,15 +34,15 @@ func batchOf(steps ...map[string]interface{}) map[string]interface{} {
 }
 
 // Each step is the call it would be alone, in order, and the answer carries
-// each one's text and data. app_check is the witness because its second call
+// each one's text and data. app_set is the witness because its second call
 // must see what the first did: asked for the state it is already in, it does
 // not tap.
 func TestBatchRunsEachStepInOrder(t *testing.T) {
 	h, d := withBox(t)
 	res, err := h.Call("app_batch", batchOf(
-		step("app_check", map[string]interface{}{"target": "testid=box"}),
-		step("app_check", map[string]interface{}{"target": "testid=box"}),
-		step("app_check", map[string]interface{}{"target": "testid=box", "checked": false}),
+		step("app_set", map[string]interface{}{"target": "testid=box"}),
+		step("app_set", map[string]interface{}{"target": "testid=box"}),
+		step("app_set", map[string]interface{}{"target": "testid=box", "value": false}),
 	))
 	if err != nil {
 		t.Fatalf("batch: %v", err)
@@ -55,12 +55,12 @@ func TestBatchRunsEachStepInOrder(t *testing.T) {
 		t.Fatalf("structured = %#v, want three steps", res.StructuredContent)
 	}
 	for i, s := range v.Steps {
-		if s.Name != "app_check" || s.Text == "" || s.Data == nil {
+		if s.Name != "app_set" || s.Text == "" || s.Data == nil {
 			t.Errorf("step %d = %+v, want its name, text and data", i+1, s)
 		}
 	}
 	text := res.Content[0].Text
-	if !strings.HasPrefix(text, "1. app_check: ") || !strings.Contains(text, "\n3. app_check: ") {
+	if !strings.HasPrefix(text, "1. app_set: ") || !strings.Contains(text, "\n3. app_set: ") {
 		t.Errorf("text = %q, want each step numbered", text)
 	}
 }
@@ -71,9 +71,9 @@ func TestBatchRunsEachStepInOrder(t *testing.T) {
 func TestBatchStopsAtTheFirstFailure(t *testing.T) {
 	h, d := withBox(t)
 	_, err := h.Call("app_batch", batchOf(
-		step("app_check", map[string]interface{}{"target": "testid=box"}),
+		step("app_set", map[string]interface{}{"target": "testid=box"}),
 		step("app_tap", map[string]interface{}{"target": "text=Not on this screen"}),
-		step("app_check", map[string]interface{}{"target": "testid=box", "checked": false}),
+		step("app_set", map[string]interface{}{"target": "testid=box", "value": false}),
 	))
 	if err == nil {
 		t.Fatal("a batch with a failing step succeeded")
@@ -100,7 +100,7 @@ func TestBatchStopsAtTheFirstFailure(t *testing.T) {
 // mistake in the fourth leaves the app where it was rather than three steps
 // into a flow.
 func TestBatchRefusesBadStepsBeforeRunningAny(t *testing.T) {
-	good := step("app_check", map[string]interface{}{"target": "testid=box"})
+	good := step("app_set", map[string]interface{}{"target": "testid=box"})
 	cases := []struct {
 		name string
 		bad  map[string]interface{}
@@ -108,7 +108,7 @@ func TestBatchRefusesBadStepsBeforeRunningAny(t *testing.T) {
 	}{
 		{"unknown tool", step("app_tapp", nil), `"app_tapp", which is not a tool`},
 		{"misspelled argument", step("app_tap", map[string]interface{}{"targt": "@e1"}), `argument "targt"`},
-		{"required missing", step("app_check", map[string]interface{}{}), `missing "target"`},
+		{"required missing", step("app_set", map[string]interface{}{}), `missing "target"`},
 		{"device in a step", step("app_tap", map[string]interface{}{"target": "@e1", "device": "x"}), "give it to the batch"},
 		{"nested batch", step("app_batch", nil), "cannot contain another"},
 		{"extra key", map[string]interface{}{"name": "app_tap", "args": map[string]interface{}{}}, `has "args"`},
@@ -179,7 +179,7 @@ func TestBatchGivesItsDeviceToEachStep(t *testing.T) {
 func TestBatchKeepsAStepsImage(t *testing.T) {
 	h, _ := withBox(t)
 	res, err := h.Call("app_batch", batchOf(
-		step("app_check", map[string]interface{}{"target": "testid=box"}),
+		step("app_set", map[string]interface{}{"target": "testid=box"}),
 		step("app_screenshot", nil),
 	))
 	if err != nil {

@@ -41,7 +41,7 @@ type Caller func(tool string, args map[string]interface{}) (*agent.ToolsCallResu
 // actions are the tools the page may ask for, and nothing else: it cannot
 // uninstall an app or run a script in a page by naming the tool.
 var actions = map[string]bool{
-	"app_tap": true, "app_type": true, "app_fill": true, "app_long_press": true, "app_check": true,
+	"app_tap": true, "app_type": true, "app_fill": true, "app_long_press": true, "app_set": true,
 	"app_swipe": true, "app_press": true, "app_scroll_to": true, "app_wait_for": true,
 	"app_launch": true, "app_context": true, "app_keyboard": true,
 }

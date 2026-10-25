@@ -268,7 +268,9 @@ export class Device {
   fill(target: string, text: string): Promise<void>
   swipe(direction?: 'up' | 'down' | 'left' | 'right', options?: { durationMs?: number; from?: Point; to?: Point; target?: string }): Promise<void>
   longPress(target: string | Point, options?: { durationMs?: number }): Promise<void>
-  check(target: string, checked?: boolean): Promise<Data>
+  set(target: string, value?: boolean): Promise<Data>
+  /** set(target, false): a checkbox cleared, a switch turned off. */
+  unset(target: string): Promise<Data>
   rotate(degrees?: number, target?: string): Promise<Data>
   zoom(direction?: 'in' | 'out', target?: string): Promise<Data>
 

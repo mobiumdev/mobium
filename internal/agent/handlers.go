@@ -359,7 +359,7 @@ func (h *Handlers) dispatch(ctx context.Context, name string, args map[string]in
 		return h.clipboard(ctx, args)
 	case "app_alert":
 		return h.alert(ctx, args)
-	case "app_check":
+	case "app_set":
 		return h.check(ctx, args)
 	case "app_zoom":
 		return h.zoom(ctx, args)

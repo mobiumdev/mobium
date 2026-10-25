@@ -54,14 +54,14 @@ row "unchanged" "nothing done, nothing changed"
 
 was=$($M map | grep 'Accept terms' | grep -o 'unchecked\|checked' | head -1)
 [ "$was" = checked ] && want=unchecked || want=checked
-[ "$want" = checked ] && $M check testid=termsCheck >/dev/null || $M uncheck testid=termsCheck >/dev/null
+[ "$want" = checked ] && $M set testid=termsCheck >/dev/null || $M unset testid=termsCheck >/dev/null
 out=$($M map --diff)
 # The box's state changed. On iOS its row also grows, and what is under it
 # moves down together, which is one more line and nothing else.
 echo "$out" | head -1 | grep -q "^~ @e[0-9]* Accept terms (checkbox, $want) — was $was" || fail "the check read as: $out"
 extra=$(echo "$out" | sed 1d | grep -v '^~ [0-9]* elements moved together, ' || true)
 [ -z "$extra" ] || fail "checking one box changed more than it: $out"
-[ "$was" = checked ] && $M check testid=termsCheck >/dev/null || $M uncheck testid=termsCheck >/dev/null
+[ "$was" = checked ] && $M set testid=termsCheck >/dev/null || $M unset testid=termsCheck >/dev/null
 $M map >/dev/null
 row "checked" "one box checked is one change: its state, and what it was"
 

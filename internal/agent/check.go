@@ -10,7 +10,7 @@ import (
 	"github.com/mobiumdev/mobium/internal/webview"
 )
 
-// check is app_check: put a checkbox or switch into a state, rather than
+// check is app_set: put a checkbox or switch into a state, rather than
 // toggling whatever it is in.
 //
 // The distinction is the whole tool. Tapping a checkbox flips it, so a caller
@@ -29,17 +29,17 @@ func (h *Handlers) check(ctx context.Context, args map[string]interface{}) (*Too
 	return h.checkOn(ctx, s, args)
 }
 
-// checkOn is app_check once the device is resolved.
+// checkOn is app_set once the device is resolved.
 func (h *Handlers) checkOn(ctx context.Context, s *session, args map[string]interface{}) (*ToolsCallResult, error) {
 	target := stringArg(args, "target")
 	if target == "" {
-		return nil, mobiumerr.New(mobiumerr.InvalidArgument, "app_check needs a target (\"@e2\" or \"testid=terms\")")
+		return nil, mobiumerr.New(mobiumerr.InvalidArgument, "app_set needs a target (\"@e2\" or \"testid=terms\")")
 	}
 	want := true
-	if raw, ok := args["checked"]; ok {
+	if raw, ok := args["value"]; ok {
 		b, isBool := raw.(bool)
 		if !isBool {
-			return nil, mobiumerr.New(mobiumerr.InvalidArgument, "checked must be true or false")
+			return nil, mobiumerr.New(mobiumerr.InvalidArgument, "value must be true or false")
 		}
 		want = b
 	}
@@ -61,8 +61,8 @@ func (h *Handlers) checkOn(ctx context.Context, s *session, args map[string]inte
 		// state for a checkbox the page has; the page does (CHALLENGES 299).
 		if inWebView(node) {
 			return nil, mobiumerr.New(mobiumerr.InvalidArgument, "%s is part of a WebView's page, and the native "+
-				"tree gives it no checked state — in the WebView's context app_check reads the page's own", target).
-				WithRemedy("app_contexts, then app_context with the WebView's name, app_map, and app_check its ref")
+				"tree gives it no checked state — in the WebView's context app_set reads the page's own", target).
+				WithRemedy("app_contexts, then app_context with the WebView's name, app_map, and app_set its ref")
 		}
 		return nil, mobiumerr.New(mobiumerr.InvalidArgument, "%s is not a checkbox, radio or switch, so it has no "+
 			"checked state to set — app_tap is what acts on it", target)
@@ -111,7 +111,7 @@ func (h *Handlers) checkOn(ctx context.Context, s *session, args map[string]inte
 	return Result(fmt.Sprintf("%s is now %s", target, stateWord(want)), view), nil
 }
 
-// checkWeb is app_check inside a WebView: the same reach-a-state, with the
+// checkWeb is app_set inside a WebView: the same reach-a-state, with the
 // state read from the page — an input's checked, or aria-checked — rather
 // than the native tree, and the tap aimed as app_tap aims one there. It used
 // to refuse and send the caller to the native context, where the same
@@ -208,7 +208,7 @@ func stateWord(checked bool) string {
 	return "unchecked"
 }
 
-// CheckView is the result of app_check.
+// CheckView is the result of app_set.
 type CheckView struct {
 	Target string `json:"target"`
 	Role   string `json:"role,omitempty"`
