@@ -408,7 +408,7 @@ func IsMailbox(n *Node) bool {
 func (t *Tree) Map() []Entry {
 	var actionable []*Node
 	t.Walk(func(n *Node) bool {
-		if Actionable(n) && !IsMailbox(n) {
+		if Actionable(n) && !IsMailbox(n) && t.InFront(n) {
 			actionable = append(actionable, n)
 		}
 		return true
@@ -590,7 +590,7 @@ func (t *Tree) Text() string {
 	var lines []string
 	seen := map[string]bool{}
 	t.Walk(func(n *Node) bool {
-		if n.Bounds.Empty() {
+		if n.Bounds.Empty() || !t.InFront(n) {
 			return true
 		}
 		s := strings.TrimSpace(n.Text)
@@ -723,6 +723,9 @@ func encloses(outer, inner Rect) bool {
 func (t *Tree) floatingWindow() *Node {
 	if t.Screen.Empty() || t.Root == nil {
 		return nil
+	}
+	if t.Windowed {
+		return t.windowedDialog()
 	}
 	for _, w := range t.Root.Children {
 		if w.Bounds.Empty() {

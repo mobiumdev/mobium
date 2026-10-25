@@ -241,6 +241,12 @@ func (h *Handlers) webFrame(ctx context.Context, s *session) (*webview.Frame, er
 	}
 	var host *uitree.Node
 	for _, n := range tree.All() {
+		// Every window is read where apps are windows over one another, and
+		// the largest WebView there was another app's: the browser's page
+		// behind MobiumApp's panel, and a tap in MobiumApp's page was refused.
+		if tree.Windowed && s.webApp != "" && n.Package != s.webApp {
+			continue
+		}
 		if strings.HasSuffix(n.ShortClass(), webviewClass) && !n.Bounds.Empty() {
 			// The largest WebView on screen is the one being driven; a page
 			// can contain small nested ones.

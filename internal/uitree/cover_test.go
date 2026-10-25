@@ -77,6 +77,13 @@ var coveredCaptures = map[string]string{
 		"buttons are over its center once shown (CHALLENGES 340): it is touched above the toolbar",
 	"ios26-icecubes-display-settings.xml": "Ice Cubes pins a sample post at the top of Display Settings and " +
 		"scrolls the settings under it: Tint Color is wholly behind the post's button, and Theme's center is",
+	"quest-browser-over-home.xml": "Horizon OS, every window: the browser's panel and MobiumApp's lie over " +
+		"the shell's home screen, and Gallery is under both",
+	"quest-mobiumapp-over-browser.xml": "Horizon OS, every window: MobiumApp's panel lies over the browser's",
+	"quest-permission-over-mobiumapp.xml": "Horizon OS, every window: the location prompt over MobiumApp's " +
+		"panel, both over the browser's",
+	"quest-settings-stub-over-browser.xml": "Horizon OS, every window: the Settings stub over the browser's " +
+		"panel, over MobiumApp's",
 }
 
 func TestTheCoverRuleLeavesOrdinaryScreensAlone(t *testing.T) {

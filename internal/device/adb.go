@@ -1161,6 +1161,19 @@ func (a *ADB) SetAppLocales(ctx context.Context, pkg string, tags []string) erro
 	return nil
 }
 
+// HorizonOS reports whether the device runs Meta's Horizon OS, the Android
+// under a Quest, where every app is a panel over the shell's own windows and
+// several are resumed at once. Known by the build property the Meta Spatial
+// Simulator sets, `ro.vros.build.version` (207 on its first release
+// measured); a real headset's properties have not been read.
+func (a *ADB) HorizonOS(ctx context.Context) (bool, error) {
+	out, err := a.Shell(ctx, "getprop", "ro.vros.build.version")
+	if err != nil {
+		return false, err
+	}
+	return strings.TrimSpace(string(out)) != "", nil
+}
+
 // DeviceLocale reports the device's own locale, which an app follows unless it
 // has been pinned.
 func (a *ADB) DeviceLocale(ctx context.Context) (string, error) {
