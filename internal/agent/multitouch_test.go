@@ -186,3 +186,54 @@ func TestMultiTouchRefusalOnAOneFingerBackend(t *testing.T) {
 		t.Errorf("tapped anyway: %v", f.tapped)
 	}
 }
+
+// A backend without an ability names one that has it only where one does.
+// The uiautomator backend is Android's, so uiautomator2 is the answer there;
+// a third-party driver drives whatever it drives — a TV, a Roku — so its
+// refusal says what a driver can do about it instead, and never names
+// uiautomator2.
+func TestRefusalNamesABackendOnlyWhereOneCanDoIt(t *testing.T) {
+	calls := map[string]func(h *Handlers, s *session) error{
+		"type": func(h *Handlers, s *session) error {
+			_, err := h.typeTextOn(ctxFor(t), s, map[string]interface{}{"target": "text=Work", "text": "x"}, false)
+			return err
+		},
+		"double tap": func(h *Handlers, s *session) error {
+			_, err := h.tapOn(ctxFor(t), s, map[string]interface{}{"target": "text=Work", "double": true})
+			return err
+		},
+		"two-finger tap": func(h *Handlers, s *session) error {
+			_, err := h.tapOn(ctxFor(t), s, map[string]interface{}{"target": "text=Work", "fingers": 2})
+			return err
+		},
+		"press-tap": func(h *Handlers, s *session) error {
+			_, err := h.pressTapOn(ctxFor(t), s, map[string]interface{}{"hold": "text=Notes", "tap": "text=Work"})
+			return err
+		},
+		"drag": func(h *Handlers, s *session) error {
+			_, err := h.dragOn(ctxFor(t), s, map[string]interface{}{"from": "text=Notes", "to": "text=Work"})
+			return err
+		},
+	}
+	for name, call := range calls {
+		for _, b := range []Backend{BackendDump, "roku"} {
+			h, s, f := withFake(t, twoThings(t))
+			s.backend = b
+			err := call(h, s)
+			if mobiumerr.CodeOf(err) != mobiumerr.Unsupported {
+				t.Errorf("%s on %s: %v, want unsupported", name, b, err)
+				continue
+			}
+			named := strings.Contains(err.Error(), "uiautomator2")
+			if b == BackendDump && !named {
+				t.Errorf("%s on uiautomator does not name uiautomator2: %v", name, err)
+			}
+			if b != BackendDump && (named || !strings.Contains(err.Error(), "PROTOCOL.md")) {
+				t.Errorf("%s on a third-party driver: %v", name, err)
+			}
+			if len(f.tapped) != 0 {
+				t.Errorf("%s on %s tapped anyway: %v", name, b, f.tapped)
+			}
+		}
+	}
+}

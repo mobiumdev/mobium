@@ -7890,6 +7890,24 @@ given a setting is now named as one that reads — which device, and what to
 read — and a test fails on an argument in neither list, so the next
 setting added to such a tool has to be decided where it is added.
 
+### 363. A third-party driver without an ability was told to switch to uiautomator2
+
+**Found by:** reading the code while drafting questions about drivers from
+the docs. A backend that cannot type, double-tap, drag or put several
+fingers down is refused, and the refusal's remedy was always `--driver
+uiautomator2`. That is right for the `uiautomator` backend, the only
+built-in one without these: it is Android's, and uiautomator2 does all
+four. A third-party driver drives whatever it drives — a TV, a Roku — and
+for it the remedy could not work, which CONTRIBUTING rules out for a
+remedy.
+
+**Fixed:** a third-party driver's refusal says what a driver can do about
+it. Typing is on the wire: a driver lists the `text` capability and
+answers `setText`. Double-tap, drag and several fingers are not — the
+protocol has no method for them (PROTOCOL.md says so) — so the refusal
+says no third-party driver can yet. A test runs all five refusals on both
+kinds of backend.
+
 ## Findings that were not defects
 
 Worth recording because each one closed off an approach that looked obvious.
