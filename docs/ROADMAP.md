@@ -1333,7 +1333,8 @@ this is what is not.
 
 - **Test code generation.** Mobium is a tool an agent or a test framework
   calls. Its own runner, `mobium test`, runs JSON test files of tool calls,
-  and `mobium inspect` records one, but nothing generates test code in a
-  client's language.
+  and `mobium inspect` records one and downloads it as a program in each
+  client's language (a recording as code, above); nothing else generates
+  test code.
 - **Anything that needs a runtime on the user's machine.** One static binary is
   the point.

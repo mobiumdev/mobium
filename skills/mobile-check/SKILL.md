@@ -115,10 +115,11 @@ before believing one of them. It exits non-zero if it found anything.
 
 ### Waiting
 
-Never sleep. Every action already retries for two seconds while the screen
-settles, so a tap straight after a launch or another tap is fine. When
-something takes longer than that — a login, a network fetch — wait for the
-thing itself rather than for a duration:
+Never sleep. Every action already waits for its target — up to two seconds
+to be there and enabled, up to five to hold still — so a tap straight after
+a launch or another tap is fine. When something takes longer than that — a
+login, a network fetch — wait for the thing itself rather than for a
+duration:
 
 - `mobium wait "text=Welcome back"` — until it is on screen
 - `mobium wait 'text="Wi-Fi"'` — quoted: the whole text, so a part of it on
@@ -151,9 +152,9 @@ needed — reach for `scroll-to` to look without acting, or to go back up:
 - `mobium scroll-to "text=Sign out"` — bring it into view and get a ref
 - `mobium scroll-to "text=Network & internet" --direction up`
 
-Vertical lists only. For a horizontal pager or carousel use `mobium swipe
-left`. If a scroll reports that the swipe changed the screen instead of
-scrolling it, the thing being swiped was not a vertical list.
+For a horizontal pager, carousel or row of chips, give `--direction left`
+or `right`. If a scroll reports that the swipe changed the screen instead
+of scrolling it, the thing being swiped was not a list.
 
 ### Permissions
 
@@ -251,9 +252,9 @@ change restarts the running app's screen, so map again afterwards.
 
 ### Acting
 
-Every action waits, for up to two seconds, until its target is on screen,
-**enabled** and holding still, and refuses — with a reason and a remedy —
-rather than tapping something a user could not: a target under a system
+Every action waits until its target is on screen and **enabled** (up to two
+seconds) and holding still (up to five), and refuses — with a reason and a
+remedy — rather than tapping something a user could not: a target under a system
 dialog or under the keyboard, a control that stays disabled, or a button
 passed to `type`.
 

@@ -158,7 +158,9 @@ file somewhere, and it makes the failure legible: "no built-in backend named
 roku, and no `mobium-driver-roku` on your PATH".
 
 `MOBIUM_DRIVER_<NAME>` overrides the path for one backend, which is how you
-develop a driver without installing it.
+develop a driver without installing it. Run `mobium daemon stop` after
+setting it: the daemon is what looks for drivers, and a running one keeps
+the environment it started with.
 
 `mobium doctor` lists the drivers it can find, so "is it installed" has an
 answer that is not "run it and see".
