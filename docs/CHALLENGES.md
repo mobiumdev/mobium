@@ -7972,6 +7972,27 @@ MobiumApp, and a tap in MobiumApp's page was refused. Five captured
 hierarchies are the tests; `mobium-app.sh` passes on an ordinary emulator
 unchanged.
 
+### 367. On a Quest, what a screen's largest list was came from another app
+
+**Found by:** Morpho Market's suite on the Meta Spatial Simulator, after
+CHALLENGES 364–366: 1 of 26 passed. Every product below the catalog's fold
+was "no element matches". An action that cannot find its target scrolls
+the screen's largest list, and with every window read the largest list was
+the browser's page behind Morpho Market's panel. The swipe went there, and
+a touch on another app's panel only brings it forward (366). The same walk
+over every window chose a WebView's host, the focused field, the
+navigation bar and a busy indicator: twenty places in all. A WebView's
+host was found the same way first, and fixed alone.
+
+**Fixed:** what asks the screen for one of its things walks the app in
+front (`WalkFront`), which is all a phone's hierarchy holds. Only the dialog
+rule and the covers walk every window. The suite then passed 24 of 26. Of
+the two left, one was the test's: on a panel, Add to Cart sat below the
+fold (morpho-market#5). The other is a drag on a Quest panel moving a slider's
+thumb about 2.5 times as far as the finger — the app's window is 500x800
+pixels, drawn 2.48 times that size — and a thumb's node clipped to its
+track. Not fixed: being measured.
+
 ## Findings that were not defects
 
 Worth recording because each one closed off an approach that looked obvious.

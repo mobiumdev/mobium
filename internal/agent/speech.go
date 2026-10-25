@@ -314,7 +314,7 @@ func spokenNode(t *uitree.Tree, said string) *uitree.Node {
 	}
 	var cands []candidate
 	longest := 0
-	t.Walk(func(n *uitree.Node) bool {
+	t.WalkFront(func(n *uitree.Node) bool {
 		// The application is named for the app and is the whole screen, and
 		// the cursor is never on it: a back button VoiceOver calls
 		// "MobiumApp Back Button" is labeled Back.
@@ -572,7 +572,7 @@ func (h *Handlers) talkBackSpeech(ctx context.Context, s *session, target string
 // the sentence, as on iOS.
 func readerFocused(t *uitree.Tree, said string) *uitree.Node {
 	var found *uitree.Node
-	t.Walk(func(n *uitree.Node) bool {
+	t.WalkFront(func(n *uitree.Node) bool {
 		if n.ReaderFocused {
 			found = n
 		}

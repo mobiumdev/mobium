@@ -240,13 +240,7 @@ func (h *Handlers) webFrame(ctx context.Context, s *session) (*webview.Frame, er
 			WithDetail("app", s.webApp)
 	}
 	var host *uitree.Node
-	for _, n := range tree.All() {
-		// Every window is read where apps are windows over one another, and
-		// the largest WebView there was another app's: the browser's page
-		// behind MobiumApp's panel, and a tap in MobiumApp's page was refused.
-		if tree.Windowed && s.webApp != "" && n.Package != s.webApp {
-			continue
-		}
+	for _, n := range tree.AllFront() {
 		if strings.HasSuffix(n.ShortClass(), webviewClass) && !n.Bounds.Empty() {
 			// The largest WebView on screen is the one being driven; a page
 			// can contain small nested ones.
@@ -945,7 +939,7 @@ func keyboardOverWebView(ctx context.Context, s *session, tree *uitree.Tree, hos
 		return false
 	}
 	focused := false
-	tree.Walk(func(x *uitree.Node) bool {
+	tree.WalkFront(func(x *uitree.Node) bool {
 		if x.Focused {
 			focused = true
 		}
@@ -1269,7 +1263,7 @@ func (h *Handlers) nameWebSliders(ctx context.Context, s *session, tree *uitree.
 		return
 	}
 	var nameless []*uitree.Node
-	tree.Walk(func(n *uitree.Node) bool {
+	tree.WalkFront(func(n *uitree.Node) bool {
 		if uitree.HasClassRole(n, "slider") && inWebView(n) && n.Text == "" && n.Label == "" && !n.Bounds.Empty() {
 			nameless = append(nameless, n)
 		}
