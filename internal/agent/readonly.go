@@ -19,7 +19,8 @@ var readOnlyTools = map[string]bool{
 }
 
 // readUnless read when called without any of their listed arguments and act
-// with one: app_network reports the conditions, and sets them given offline.
+// with one: app_network reports the conditions, and sets them given offline
+// or a proxy. Every other argument they take is in readArgs.
 var readUnless = map[string][]string{
 	"app_accessibility": {"value"},
 	// app_speech reads what the cursor is on, and moves the cursor — which
@@ -33,10 +34,21 @@ var readUnless = map[string][]string{
 	"app_keyboard":      {"hide", "key", "text"},
 	"app_locale":        {"locale"},
 	"app_location":      {"clear", "gpx", "gpx_data", "latitude", "longitude", "speed", "waypoints"},
-	"app_network":       {"download_kbps", "latency_ms", "offline", "reset", "upload_kbps"},
+	"app_network":       {"download_kbps", "latency_ms", "offline", "proxy", "reset", "upload_kbps"},
 	"app_notifications": {"shade", "tag", "text", "title"},
 	"app_orientation":   {"orientation"},
 	"app_timezone":      {"timezone"},
+}
+
+// readArgs are the arguments a readUnless tool takes that leave it reading:
+// which device, and what to read. An argument in neither list is undecided,
+// and a test fails on it — a setting argument added without a word here
+// would make every call that sets it count as a read.
+var readArgs = map[string][]string{
+	"*":                 {"device", "driver"},
+	"app_accessibility": {"setting"},
+	"app_locale":        {"app"},
+	"app_speech":        {"limit", "listen"},
 }
 
 // actingTools change the device or the app with every call.
