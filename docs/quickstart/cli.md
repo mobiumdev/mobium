@@ -60,20 +60,20 @@ Settings is on every Android and iOS device with nothing to install. The row and
 MOBIUM_PLATFORM=android sh quickstart.sh
 ```
 
-What it printed on an Android 15 emulator:
+What it printed on an Android 17 emulator:
 
 ```
 waiting for the UiAutomator2 server to start...
-session started on emulator-5554 (android, uiautomator2); com.android.settings was launched fresh and is in the foreground
-@e1 settings_homepage_container (list)
-@e2 Profile picture, double tap to open Google Account (button)
-@e3 Search settings (button)
-@e4 main_content_scrollable_container (list)
-@e5 Network & internet Mobile, Wi‑Fi, hotspot (button)
-tapped @e5 at (540, 893)
-text=Airplane mode is visible after 711ms — @e5 Airplane mode (switch, unchecked)
-saved /tmp/quickstart/quickstart-android.png (151524 bytes)
-session ended on emulator-5554; anything it changed for the session is put back; com.android.settings, which the session launched, was stopped
+session started on emulator-5556 (android, uiautomator2); com.android.settings was launched fresh and is in the foreground
+@e1 Search Settings (button)
+@e2 main_content_scrollable_container (list)
+@e3 Google Services & preferences (button)
+@e4 Network & internet Mobile, Wi‑Fi, hotspot (button)
+@e5 Connected devices Bluetooth, pairing (button)
+tapped @e4 at (540, 713)
+text=Airplane mode is visible after 1.156s — @e5 Airplane mode (switch, unchecked)
+saved /tmp/quickstart/quickstart-android.png (131411 bytes)
+session ended on emulator-5556; anything it changed for the session is put back; com.android.settings, which the session launched, was stopped
 ```
 
 | After start | After the tap |
@@ -86,20 +86,21 @@ session ended on emulator-5554; anything it changed for the session is put back;
 MOBIUM_PLATFORM=ios sh quickstart.sh
 ```
 
-What it printed on an iOS 26.5 simulator:
+What it printed on an iOS 27.0 simulator:
 
 ```
 waiting for WebDriverAgent to start...
-session started on 457C7DC2-C706-45D9-8D68-1D26953E28B1 (ios, wda); com.apple.Preferences was launched fresh and is in the foreground
-@e1 Apple Account, Sign in to access your iCloud data, the App Store, Apple services, and more. (button)
-@e2 General (button)
-@e3 Accessibility (button)
-@e4 Action Button (button)
-@e5 Apple Intelligence & Siri (button)
-tapped @e2 at (603, 958)
-label=About,role=button is visible after 413ms — @e5 About (button)
-saved /tmp/quickstart/quickstart-ios.png (333954 bytes)
-session ended on 457C7DC2-C706-45D9-8D68-1D26953E28B1; anything it changed for the session is put back; com.apple.Preferences, which the session launched, was stopped
+the simulator is on its home screen: a new session starts WebDriverAgent, whose runner takes the foreground and leaves it to the home screen, not to the app that was in front — app_launch brings an app back...
+session started on B2580DC0-1C76-4B2E-ADD3-802A58033078 (ios, wda); com.apple.Preferences was launched fresh and is in the foreground
+@e1 com.apple.settings.sidebar.collectionView (list)
+@e2 Apple Account, Sign in to access your iCloud data, the App Store, Apple services, and more. (button)
+@e3 Optimizing Search and Siri (button)
+@e4 General (button)
+@e5 Accessibility (button)
+tapped @e4 at (603, 1219)
+label=About,role=button is visible after 447ms — @e2 About (button)
+saved /tmp/quickstart/quickstart-ios.png (309298 bytes)
+session ended on B2580DC0-1C76-4B2E-ADD3-802A58033078; anything it changed for the session is put back; com.apple.Preferences, which the session launched, was stopped
 ```
 
 | After start | After the tap |

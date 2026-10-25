@@ -1,10 +1,11 @@
 waiting for WebDriverAgent to start...
-session on 457C7DC2-C706-45D9-8D68-1D26953E28B1 (ios, wda)
-  @e1 Apple Account, Sign in to access your iCloud data, the App Store, Apple services, and more. (button)
-  @e2 General (button)
-  @e3 Accessibility (button)
-  @e4 Action Button (button)
-  @e5 Apple Intelligence & Siri (button)
+the simulator is on its home screen: a new session starts WebDriverAgent, whose runner takes the foreground and leaves it to the home screen, not to the app that was in front — app_launch brings an app back...
+session on B2580DC0-1C76-4B2E-ADD3-802A58033078 (ios, wda)
+  @e1 com.apple.settings.sidebar.collectionView (list)
+  @e2 Apple Account, Sign in to access your iCloud data, the App Store, Apple services, and more. (button)
+  @e3 Optimizing Search and Siri (button)
+  @e4 General (button)
+  @e5 Accessibility (button)
 opened General
 saved quickstart-ios.png
 session ended

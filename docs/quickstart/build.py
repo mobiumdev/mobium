@@ -248,7 +248,7 @@ def page(c):
             c["run"]["cmd"].format(p=p),
             "```",
             "",
-            f"What it printed on {'an Android 15 emulator' if p == 'android' else 'an iOS 26.5 simulator'}:",
+            f"What it printed on {'an Android 17 emulator' if p == 'android' else 'an iOS 27.0 simulator'}:",
             "",
             "```",
             out,

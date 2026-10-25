@@ -84,16 +84,16 @@ Settings is on every Android and iOS device with nothing to install. The row and
 MOBIUM_PLATFORM=android dotnet run
 ```
 
-What it printed on an Android 15 emulator:
+What it printed on an Android 17 emulator:
 
 ```
 waiting for the UiAutomator2 server to start...
-session on emulator-5554 (android, uiautomator2)
-  @e1 settings_homepage_container (list)
-  @e2 Profile picture, double tap to open Google Account (button)
-  @e3 Search settings (button)
-  @e4 main_content_scrollable_container (list)
-  @e5 Network & internet Mobile, Wi‑Fi, hotspot (button)
+session on emulator-5556 (android, uiautomator2)
+  @e1 Search Settings (button)
+  @e2 main_content_scrollable_container (list)
+  @e3 Google Services & preferences (button)
+  @e4 Network & internet Mobile, Wi‑Fi, hotspot (button)
+  @e5 Connected devices Bluetooth, pairing (button)
 opened Network & internet
 saved quickstart-android.png
 session ended
@@ -109,16 +109,17 @@ session ended
 MOBIUM_PLATFORM=ios dotnet run
 ```
 
-What it printed on an iOS 26.5 simulator:
+What it printed on an iOS 27.0 simulator:
 
 ```
 waiting for WebDriverAgent to start...
-session on 457C7DC2-C706-45D9-8D68-1D26953E28B1 (ios, wda)
-  @e1 Apple Account, Sign in to access your iCloud data, the App Store, Apple services, and more. (button)
-  @e2 General (button)
-  @e3 Accessibility (button)
-  @e4 Action Button (button)
-  @e5 Apple Intelligence & Siri (button)
+the simulator is on its home screen: a new session starts WebDriverAgent, whose runner takes the foreground and leaves it to the home screen, not to the app that was in front — app_launch brings an app back...
+session on B2580DC0-1C76-4B2E-ADD3-802A58033078 (ios, wda)
+  @e1 com.apple.settings.sidebar.collectionView (list)
+  @e2 Apple Account, Sign in to access your iCloud data, the App Store, Apple services, and more. (button)
+  @e3 Optimizing Search and Siri (button)
+  @e4 General (button)
+  @e5 Accessibility (button)
 opened General
 saved quickstart-ios.png
 session ended
