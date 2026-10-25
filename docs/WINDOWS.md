@@ -24,8 +24,7 @@ both modules' tests pass there, the named-pipe transport's acceptance tests
 below pass five times a run, and the built `mobium.exe` answers `doctor` and
 `mcp` and auto-starts, reports and stops its daemon. Getting there found four
 defects, CHALLENGES 139–142 — a daemon stop that never returned among them.
-No emulator or phone has been driven from Windows, and until one has, Windows
-stays unsupported.
+No emulator or phone had been driven from Windows then.
 
 Everything, the daemon transport now included, compiles, vets and
 cross-compiles for `windows/amd64`. This document is written for anyone who

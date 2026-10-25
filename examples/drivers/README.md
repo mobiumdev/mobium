@@ -136,6 +136,10 @@ scroll, and most screens are longer than the screen.
 MOBIUM_DRIVER_MYTHING=./mobium-driver-mything mobium map --driver mything
 ```
 
+If a daemon is already running, run `mobium daemon stop` first: the daemon
+is what looks for drivers, and a running one keeps the environment it
+started with.
+
 `mobium doctor` lists every `mobium-driver-*` it can find on your `PATH`, so
 "did it install" has an answer that is not "run it and see".
 

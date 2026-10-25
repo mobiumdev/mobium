@@ -38,7 +38,7 @@ what it printed.
 | --- | --- | --- |
 | **macOS** | Yes | Yes — needs Xcode |
 | **Linux** | Yes — every page below run on Ubuntu 24.04, x86_64, against an Android 15 emulator. [SETUP.md](../SETUP.md#on-linux) has the emulator's Linux steps | No — iOS needs Xcode, which runs only on macOS |
-| **Windows** | Not yet: everything that needs no device, the named-pipe daemon transport included, passes in CI on a Windows runner; no emulator or phone has been driven from Windows. See [WINDOWS.md](../WINDOWS.md) | No — no Xcode |
+| **Windows** | Not yet supported: everything that needs no device, the named-pipe daemon transport included, passes in CI on a Windows runner, and since 2026-10-22 an Android emulator and a phone have been driven from a Windows laptop through the CLI, MCP and all five clients. What is left is in [WINDOWS.md](../WINDOWS.md) | No — no Xcode |
 
 ## 1. Install mobium
 

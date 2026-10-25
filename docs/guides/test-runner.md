@@ -318,8 +318,9 @@ soft `tap` is refused before anything runs.
 
 `--trace on` keeps a screenshot and the map after every step, and the HTML
 report shows them as a filmstrip; `--trace retain-on-failure` keeps them only
-for a test that failed. `trace` in the config sets the default. Each
-attempt is also kept as a recording in Vibium's record format, at
+for a test that failed. `trace` in the config sets the default. The
+attempt reported — a pass, a failed test's last attempt, a flaky test's
+failure — is also kept as a recording in Vibium's record format, at
 `mobium-report/artifacts/trace/<project>-<file>-<test>-<attempt>/trace.zip`,
 which the report links and [player.vibium.dev](https://player.vibium.dev)
 opens. An `expect` is recorded as each read it made, with what it asserts
@@ -503,7 +504,7 @@ its sound: `expect` is refused there, and `interruptions` is the answer.
 | `mobium test --project android` | runs on the named projects only |
 | `mobium test --workers 4` | how many devices run at once — at most one per device |
 | `mobium test --retries 2` | runs a failed test again, up to twice; a pass after a failure is flaky; `retries` in the config sets the default |
-| `mobium test --timeout 30s` | the time for each test; `timeout` in the config is milliseconds |
+| `mobium test --timeout 30s` | the time for each test, 60 seconds unless set; `timeout` in the config is milliseconds |
 | `mobium test --reporter list,json,junit,html` | which reports to write, comma-separated |
 | `mobium test --config ci.config.json` | uses this config, not `mobium.config.json` here or above |
 | `mobium test --output out` | where reports go; `mobium-report` beside the config by default, `outputDir` in the config |

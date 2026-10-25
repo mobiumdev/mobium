@@ -87,8 +87,9 @@ behind — so do it only for an emulator that no longer answers. A frozen one
 ignores its console, and `mobium shutdown` gives `adb emu kill` ten seconds,
 then ends the process the emulator's discovery file names, once `ps` calls
 it an emulator by name; a frozen emulator was gone in 10.9 s, where the
-same command had hung six minutes (CHALLENGES 285). On Windows it does not
-end the process, and says so.
+same command had hung six minutes (CHALLENGES 285). On Windows the process
+is read with `QueryFullProcessImageName` where Unix uses `ps`, and ended
+the same way (CHALLENGES 360).
 
 ### 3. `adb kill-server` last
 

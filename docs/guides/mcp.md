@@ -123,8 +123,9 @@ The handshake, as sent and answered:
 }
 ```
 
-`tools/list` answered with 71 tools, 19 of them marked read-only. One, with
-its description cut short and its schema reduced to the argument names:
+`tools/list` answered with 71 tools, 19 of them marked read-only (on
+2026-10-24 it answers 75, still 19 read-only). One, with its description
+cut short and its schema reduced to the argument names:
 
 ```json
 {
@@ -293,5 +294,5 @@ disconnects.
 | Runs as | `mobium <command>` through the daemon | `mobium mcp`, in its own process | `mobium pipe`, spawned by the client, through the daemon |
 | Answers | text, or `--json` | `content` and `structuredContent` | typed results and exceptions |
 
-The same 71 tools behind each, checked by the build: a tool reachable from one
+The same 75 tools behind each, checked by the build: a tool reachable from one
 front door and not another fails it ([API.md](../API.md)).
