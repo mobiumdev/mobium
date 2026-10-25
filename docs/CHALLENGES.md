@@ -7874,6 +7874,22 @@ with local paths written `C:/...`. The checks export the prefixes in
 `lib.sh`, and `PYTHONUTF8=1` with them: Windows' Python reads a file as
 cp1252, and `source.sh` read Mobium's UTF-8 bullets as something else.
 
+### 362. A call that set the device's proxy counted as one that only reads
+
+**Found by:** reading the code while drafting questions about the proxy
+(#260) from the docs. `app_network` takes `proxy` to set the device's HTTP
+proxy, or to take it off when empty, but the list of arguments that make
+the tool act named only `offline`, the speeds, the latency and `reset`. So
+`app_network` with only `proxy` was a read: a test file's `expect` on it
+was accepted, and retrying until it matched would have set the proxy again
+on every try; the trace took the screen after it without letting it
+settle; and the gray-box wait gave the app no grace after it.
+
+**Fixed:** `proxy` acts. Every other argument of a tool that reads unless
+given a setting is now named as one that reads — which device, and what to
+read — and a test fails on an argument in neither list, so the next
+setting added to such a tool has to be decided where it is added.
+
 ## Findings that were not defects
 
 Worth recording because each one closed off an approach that looked obvious.

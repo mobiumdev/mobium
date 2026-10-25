@@ -33,6 +33,22 @@ func TestEveryToolIsReadOrActDecided(t *testing.T) {
 			}
 		}
 	}
+	for name, acts := range readUnless {
+		decided := map[string]bool{}
+		for _, a := range append(append(append([]string{}, acts...), readArgs["*"]...), readArgs[name]...) {
+			decided[a] = true
+		}
+		for a := range props[name] {
+			if !decided[a] {
+				t.Errorf("%s takes %q, which is in neither readUnless nor readArgs — decide whether it acts", name, a)
+			}
+		}
+	}
+	for name := range readArgs {
+		if _, ok := readUnless[name]; !ok && name != "*" {
+			t.Errorf("readArgs names %s, which is not a readUnless tool", name)
+		}
+	}
 	for _, sets := range []map[string]bool{readOnlyTools, actingTools} {
 		for name := range sets {
 			if _, ok := props[name]; !ok {
@@ -51,6 +67,8 @@ func TestIsReadCall(t *testing.T) {
 		{"app_state", map[string]interface{}{"app": "x"}, true},
 		{"app_network", map[string]interface{}{}, true},
 		{"app_network", map[string]interface{}{"offline": true}, false},
+		{"app_network", map[string]interface{}{"proxy": "10.0.2.2:8888"}, false},
+		{"app_network", map[string]interface{}{"proxy": ""}, false},
 		{"app_accessibility", map[string]interface{}{"setting": "bold_text"}, true},
 		{"app_accessibility", map[string]interface{}{"setting": "bold_text", "value": "on"}, false},
 		{"app_tap", map[string]interface{}{"target": "@e1"}, false},
