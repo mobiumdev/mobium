@@ -127,26 +127,26 @@ Settings is on every Android and iOS device with nothing to install. The row and
 MOBIUM_PLATFORM=android python3 quickstart.py
 ```
 
-What it printed on an Android 15 emulator:
+What it printed on an Android 17 emulator:
 
 ```
 waiting for the UiAutomator2 server to start...
-71 tools, among them app_session, app_map, app_tap
+75 tools, among them app_session, app_map, app_tap
 → app_session {"action": "start", "platform": "android", "app": "com.android.settings"}
-  session started on emulator-5554 (android, uiautomator2); com.android.settings was launched fresh and is in the foreground
+  session started on emulator-5556 (android, uiautomator2); com.android.settings was launched fresh and is in the foreground
 → app_map {}
-  @e1 settings_homepage_container (list)
-  @e2 Profile picture, double tap to open Google Account (button)
-  @e3 Search settings (button)
-  @e4 main_content_scrollable_container (list)
-  @e5 Network & internet Mobile, Wi‑Fi, hotspot (button)
-→ app_tap {"target": "@e5"}
+  @e1 Search Settings (button)
+  @e2 main_content_scrollable_container (list)
+  @e3 Google Services & preferences (button)
+  @e4 Network & internet Mobile, Wi‑Fi, hotspot (button)
+  @e5 Connected devices Bluetooth, pairing (button)
+→ app_tap {"target": "@e4"}
 → app_wait_for {"target": "text=Airplane mode"}
-  text=Airplane mode is visible after 1.301s — @e5 Airplane mode (switch, unchecked)
+  text=Airplane mode is visible after 1.629s — @e5 Airplane mode (switch, unchecked)
 → app_screenshot {"path": "quickstart-android.png"}
   saved quickstart-android.png
 → app_session {"action": "end"}
-  session ended on emulator-5554; anything it changed for the session is put back; com.android.settings, which the session launched, was stopped
+  session ended on emulator-5556; anything it changed for the session is put back; com.android.settings, which the session launched, was stopped
 ```
 
 | After start | After the tap |
@@ -159,26 +159,27 @@ waiting for the UiAutomator2 server to start...
 MOBIUM_PLATFORM=ios python3 quickstart.py
 ```
 
-What it printed on an iOS 26.5 simulator:
+What it printed on an iOS 27.0 simulator:
 
 ```
 waiting for WebDriverAgent to start...
-71 tools, among them app_session, app_map, app_tap
+the simulator is on its home screen: a new session starts WebDriverAgent, whose runner takes the foreground and leaves it to the home screen, not to the app that was in front — app_launch brings an app back...
+75 tools, among them app_session, app_map, app_tap
 → app_session {"action": "start", "platform": "ios", "app": "com.apple.Preferences"}
-  session started on 457C7DC2-C706-45D9-8D68-1D26953E28B1 (ios, wda); com.apple.Preferences was launched fresh and is in the foreground
+  session started on B2580DC0-1C76-4B2E-ADD3-802A58033078 (ios, wda); com.apple.Preferences was launched fresh and is in the foreground
 → app_map {}
-  @e1 Apple Account, Sign in to access your iCloud data, the App Store, Apple services, and more. (button)
-  @e2 General (button)
-  @e3 Accessibility (button)
-  @e4 Action Button (button)
-  @e5 Apple Intelligence & Siri (button)
-→ app_tap {"target": "@e2"}
+  @e1 com.apple.settings.sidebar.collectionView (list)
+  @e2 Apple Account, Sign in to access your iCloud data, the App Store, Apple services, and more. (button)
+  @e3 General (button)
+  @e4 Accessibility (button)
+  @e5 Action Button (button)
+→ app_tap {"target": "@e3"}
 → app_wait_for {"target": "label=About,role=button"}
-  label=About,role=button is visible after 410ms — @e5 About (button)
+  label=About,role=button is visible after 448ms — @e2 About (button)
 → app_screenshot {"path": "quickstart-ios.png"}
   saved quickstart-ios.png
 → app_session {"action": "end"}
-  session ended on 457C7DC2-C706-45D9-8D68-1D26953E28B1; anything it changed for the session is put back; com.apple.Preferences, which the session launched, was stopped
+  session ended on B2580DC0-1C76-4B2E-ADD3-802A58033078; anything it changed for the session is put back; com.apple.Preferences, which the session launched, was stopped
 ```
 
 | After start | After the tap |

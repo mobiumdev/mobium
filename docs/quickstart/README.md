@@ -19,7 +19,7 @@ For an agent, MCP: register `mobium mcp` and the agent drives the device
 with Mobium's tools itself.
 
 Every page runs the same program, and every one was run, unchanged, on an
-Android 15 emulator and an iOS 26.5 simulator; the output shown on each is
+Android 17 emulator and an iOS 27.0 simulator; the output shown on each is
 what it printed.
 
 ## Contents
@@ -113,8 +113,8 @@ mobium devices    # lists what is attached
 
 ```
 $ mobium devices
-emulator-5554                          device     (android emulator, model: sdk_gphone64_arm64, Android 15 (API 35), navigation: gestures)
-457C7DC2-C706-45D9-8D68-1D26953E28B1   booted     (ios simulator, iPhone 17 Pro, iOS 26.5)
+emulator-5556                          device     (android emulator, model: sdk_gphone64_arm64, Android 17 (API 37), navigation: gestures)
+B2580DC0-1C76-4B2E-ADD3-802A58033078   booted     (ios simulator, iPhone 18 Pro, iOS 27.0)
 …                                      shutdown   (every other simulator Xcode has)
 ```
 
