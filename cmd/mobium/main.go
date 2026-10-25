@@ -31,7 +31,7 @@ func main() {
 
 	root := &cobra.Command{
 		Use:           progName,
-		Short:         "Mobile app automation for AI agents and humans",
+		Short:         "Mobile app automation for AI agents and people",
 		Version:       version,
 		SilenceUsage:  true,
 		SilenceErrors: true,

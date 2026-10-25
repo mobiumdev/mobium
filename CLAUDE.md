@@ -1,6 +1,6 @@
 # CLAUDE.md
 
-Mobile app automation for AI agents and humans: native, hybrid and
+Mobile app automation for AI agents and people: native, hybrid and
 cross-platform apps, and pages in a mobile browser or installed as a PWA, on
 Android emulators and phones, iOS simulators and iPhones — one Go binary,
 driven from a CLI, an MCP server, or five language clients. docs/APP-TYPES.md
