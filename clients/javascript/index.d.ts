@@ -408,6 +408,8 @@ export class Device {
 
   // diagnostics and lifecycle
   doctor(): Promise<Data>
+  /** An independent model's verdict on a claim about a recording (the .zip a trace saved). */
+  check(claim: string, record: string, options?: { model?: string }): Promise<Data>
   /** The sessions open on the daemon. */
   sessions(): Promise<{ device: string; platform: string; driver: string }[]>
   /**

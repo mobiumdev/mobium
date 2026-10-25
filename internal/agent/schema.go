@@ -2222,6 +2222,36 @@ func GetToolSchemas() []Tool {
 			},
 		},
 		{
+			Name: "app_check",
+			Description: "Check a claim about a recorded session: a model with a fresh context — none of " +
+				"yours — reads the recording (each call, its result or error, and the screen and screenshot " +
+				"after it) through read-only tools, and answers passed, failed or inconclusive with the " +
+				"observations it rests on. Inconclusive means the recording cannot settle it; nothing missing " +
+				"is taken for success. A model's judgment is not proof: keep deterministic assertions " +
+				"(app_wait_for) for what can be asserted directly, and use this for claims about what a " +
+				"person would have seen. Needs no device. Needs an Anthropic credential on the machine " +
+				"running mobium, and each check is a paid model call. A live check is not built yet.",
+			InputSchema: map[string]interface{}{
+				"type": "object",
+				"properties": map[string]interface{}{
+					"claim": map[string]interface{}{
+						"type":        "string",
+						"description": "What should be true, precisely: \"the terms box was ticked after the tap\".",
+					},
+					"record": map[string]interface{}{
+						"type":        "string",
+						"description": "A recording: the .zip `app_trace` with action stop saved.",
+					},
+					"model": map[string]interface{}{
+						"type":        "string",
+						"description": "The model that judges. Defaults to claude-opus-5-5.",
+					},
+				},
+				"required":             []string{"claim", "record"},
+				"additionalProperties": false,
+			},
+		},
+		{
 			Name: "app_find",
 			Description: "Find elements matching a locator and return their refs, without " +
 				"tapping. Locator kinds: text, label, testid, role, class, path. Roles: " +
@@ -2268,6 +2298,7 @@ var PathArguments = map[string][]string{
 	"app_record":     {"path"},
 	"app_audio":      {"path"},
 	"app_trace":      {"path"},
+	"app_check":      {"record"},
 	"app_upload":     {"path"},
 	"app_download":   {"path"},
 }

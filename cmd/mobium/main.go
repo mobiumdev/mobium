@@ -119,6 +119,7 @@ func main() {
 		newClipboardCmd(),
 		newAlertCmd(),
 		newSetCmd(),
+		newClaimCheckCmd(),
 		newUnsetCmd(),
 		newZoomCmd(),
 		newRotateCmd(),

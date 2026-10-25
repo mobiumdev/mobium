@@ -77,7 +77,7 @@ func (h *Handlers) checkOn(ctx context.Context, s *session, args map[string]inte
 			"one in the group instead, which clears %s", target)
 	}
 
-	view := CheckView{Target: target, Role: role, Checked: node.Checked, Wanted: want}
+	view := SetView{Target: target, Role: role, Checked: node.Checked, Wanted: want}
 	if node.Checked == want {
 		view.Changed = false
 		return Result(fmt.Sprintf("%s is already %s", target, stateWord(want)), view), nil
@@ -143,7 +143,7 @@ func (h *Handlers) checkWeb(ctx context.Context, s *session, target string, want
 		return nil, mobiumerr.New(mobiumerr.InvalidArgument, "a radio button cannot be unchecked — choose a different "+
 			"one in the group instead, which clears %s", target)
 	}
-	view := CheckView{Target: target, Role: st.Kind, Checked: *st.Checked, Wanted: want}
+	view := SetView{Target: target, Role: st.Kind, Checked: *st.Checked, Wanted: want}
 	if *st.Checked == want {
 		return Result(fmt.Sprintf("%s is already %s", target, stateWord(want)), view), nil
 	}
@@ -208,8 +208,8 @@ func stateWord(checked bool) string {
 	return "unchecked"
 }
 
-// CheckView is the result of app_set.
-type CheckView struct {
+// SetView is the result of app_set.
+type SetView struct {
 	Target string `json:"target"`
 	Role   string `json:"role,omitempty"`
 	// Checked is the state afterwards.

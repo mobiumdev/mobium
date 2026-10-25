@@ -1393,6 +1393,16 @@ namespace Mobium
         /// </summary>
         public string Doctor() => Prose("app_doctor", Args());
 
+        /// <summary>
+        /// Asks an independent model whether a claim holds in a recording (the
+        /// .zip a trace saved). The model reads only the recording, in a fresh
+        /// context, and answers with status (passed, failed or inconclusive),
+        /// summary and evidence. A model's judgment is not proof, and each
+        /// check is a paid call; it needs an Anthropic credential where mobium runs.
+        /// </summary>
+        public IDictionary<string, object?> Check(string claim, string record) =>
+            Data("app_check", Args("claim", claim, "record", record));
+
         // -- plumbing ----------------------------------------------------------
 
         /// <summary>

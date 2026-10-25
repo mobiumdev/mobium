@@ -2157,6 +2157,21 @@ public final class Mobium implements AutoCloseable {
      */
     public String doctor() { return prose("app_doctor", args()); }
 
+    /**
+     * Asks an independent model whether a claim holds in a recording. The
+     * model reads only the recording, in a fresh context, and answers with
+     * {@code status} (passed, failed or inconclusive), {@code summary} and
+     * {@code evidence}. A model's judgment is not proof, and each check is a
+     * paid call; it needs an Anthropic credential where mobium runs.
+     *
+     * @param claim what should be true, precisely
+     * @param record the .zip a trace saved
+     * @return the verdict
+     */
+    public Map<String, Object> check(String claim, String record) {
+        return data("app_check", args("claim", claim, "record", record));
+    }
+
     // -- plumbing ----------------------------------------------------------
 
     /**

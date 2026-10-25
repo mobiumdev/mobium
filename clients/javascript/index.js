@@ -1527,6 +1527,19 @@ export class Device {
   }
 
   /**
+   * Ask an independent model whether a claim holds in a recording: the .zip
+   * a trace saved. The model reads only the recording, in a fresh context,
+   * and answers { status: 'passed' | 'failed' | 'inconclusive', summary,
+   * evidence, ... }. A model's judgment is not proof, and each check is a
+   * paid call; it needs an Anthropic credential where mobium runs.
+   */
+  async check(claim, record, options = {}) {
+    const args = { claim, record }
+    if (options.model) args.model = options.model
+    return (await this.#data('app_check', args)) || {}
+  }
+
+  /**
    * Console output from the current WebView since the last call, including
    * uncaught errors and unhandled promise rejections.
    *

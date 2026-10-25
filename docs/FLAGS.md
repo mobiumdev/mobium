@@ -68,6 +68,9 @@ command mentions them.
 | `app_call` | `device` | string | _global_ --device |
 | `app_call` | `driver` | string | _global_ --driver |
 | `app_call` | `number` | string | call |
+| `app_check` | `claim` | string | check |
+| `app_check` | `model` | string | check |
+| `app_check` | `record` | string | check |
 | `app_clear_data` | `app` | string | clear-data |
 | `app_clear_data` | `content` | string | — |
 | `app_clear_data` | `device` | string | _global_ --device |
@@ -376,6 +379,7 @@ arguments and the two global flags.
 | `biometric` | app_biometric | — | action |
 | `boot` | app_boot | --window | name, window |
 | `call` | app_call | --number | action, number |
+| `check` | app_check | --input --model | claim, model, record |
 | `clear-data` | app_clear_data | --bundle | app, path |
 | `clipboard` | app_clipboard | — | text |
 | `context` | app_context | — | context |

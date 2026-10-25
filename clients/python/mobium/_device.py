@@ -1238,6 +1238,20 @@ class Device:
         """
         return self._data("app_doctor") or {}
 
+    def check(self, claim: str, record: str, model: str | None = None) -> dict:
+        """Ask an independent model whether claim holds in a recording.
+
+        record is the .zip a trace saved. The model reads only the recording,
+        in a fresh context, and answers {status: passed | failed |
+        inconclusive, summary, evidence, ...}. A model's judgment is not
+        proof, and each check is a paid call; it needs an Anthropic
+        credential where mobium runs, and no device.
+        """
+        args: dict[str, Any] = {"claim": claim, "record": record}
+        if model is not None:
+            args["model"] = model
+        return self._data("app_check", args) or {}
+
     def logs(self, level: str | None = None) -> list[dict]:
         """Console output from the current WebView since the last call.
 

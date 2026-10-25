@@ -380,6 +380,30 @@
       ]
     },
     {
+      "tool": "app_check",
+      "arg": "claim",
+      "type": "string",
+      "setBy": [
+        "check"
+      ]
+    },
+    {
+      "tool": "app_check",
+      "arg": "model",
+      "type": "string",
+      "setBy": [
+        "check"
+      ]
+    },
+    {
+      "tool": "app_check",
+      "arg": "record",
+      "type": "string",
+      "setBy": [
+        "check"
+      ]
+    },
+    {
       "tool": "app_clear_data",
       "arg": "app",
       "type": "string",
@@ -2925,6 +2949,21 @@
       "sends": [
         "action",
         "number"
+      ]
+    },
+    {
+      "command": "check",
+      "tools": [
+        "app_check"
+      ],
+      "flags": [
+        "--input",
+        "--model"
+      ],
+      "sends": [
+        "claim",
+        "model",
+        "record"
       ]
     },
     {

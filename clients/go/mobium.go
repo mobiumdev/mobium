@@ -1885,6 +1885,31 @@ func (d *Device) SendSMS(ctx context.Context, from, text string) error {
 	return d.data(ctx, "app_sms", args, &out)
 }
 
+// Check asks an independent model whether claim holds in a recording: the
+// .zip a trace saved. The model reads only the recording, in a fresh
+// context, and answers passed, failed or inconclusive with the observations
+// it rests on. A model's judgment is not proof, and each check is a paid
+// call; it needs an Anthropic credential where mobium runs, and no device.
+func (d *Device) Check(ctx context.Context, claim, record string) (CheckVerdict, error) {
+	var out CheckVerdict
+	err := d.data(ctx, "app_check", map[string]any{"claim": claim, "record": record}, &out)
+	return out, err
+}
+
+// CheckVerdict is Check's answer.
+type CheckVerdict struct {
+	Status   string `json:"status"`
+	Claim    string `json:"claim"`
+	Summary  string `json:"summary"`
+	Evidence []struct {
+		Type    string `json:"type"`
+		Summary string `json:"summary"`
+	} `json:"evidence"`
+	Record string `json:"record"`
+	Model  string `json:"model"`
+	Steps  int    `json:"steps"`
+}
+
 // Doctor checks the environment and returns its report.
 //
 // Needs no device: its whole job is to be runnable when nothing works yet, so

@@ -72,6 +72,7 @@ func TestEveryDeviceToolAcceptsDeviceArg(t *testing.T) {
 	deviceless := map[string]string{
 		"app_devices":  "lists all devices; pinning one would be meaningless",
 		"app_doctor":   "checks the environment, and must work when no device exists",
+		"app_check":    "judges a recording, which is a file; no device is touched",
 		"app_boot":     "starts a device by name; none is running to pin it to",
 		"app_shutdown": "names its device by name, since a pipe pins every call to its own device",
 	}

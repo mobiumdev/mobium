@@ -73,7 +73,7 @@ func TestCheckIsIdempotent(t *testing.T) {
 	if !d.checked {
 		t.Error("the control was toggled away from the state that was asked for")
 	}
-	v := res.StructuredContent.(CheckView)
+	v := res.StructuredContent.(SetView)
 	if v.Changed || !v.Checked {
 		t.Errorf("view = %+v", v)
 	}
@@ -91,7 +91,7 @@ func TestCheckTapsOnlyWhenItMustAndConfirms(t *testing.T) {
 	if d.taps != 1 {
 		t.Errorf("tapped %d times, want exactly 1", d.taps)
 	}
-	if v := res.StructuredContent.(CheckView); !v.Changed || !v.Checked {
+	if v := res.StructuredContent.(SetView); !v.Changed || !v.Checked {
 		t.Errorf("view = %+v", v)
 	}
 }
