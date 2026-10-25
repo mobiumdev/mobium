@@ -49,6 +49,9 @@ type UIA2 struct {
 	cancel   context.CancelFunc
 	// gray hears an app launched with the gray-box library on.
 	gray grayBox
+	// windowed is a device whose apps are windows over one another, read
+	// every window at once (uitree.MarkWindows).
+	windowed bool
 }
 
 // NewUIA2 prepares a driver. Nothing touches the device until Start.
@@ -120,6 +123,12 @@ func (u *UIA2) Start(ctx context.Context, progress func(string)) error {
 		u.teardownLocked(ctx)
 		return err
 	}
+	windowed, err := u.adb.HorizonOS(ctx)
+	if err != nil {
+		u.teardownLocked(ctx)
+		return err
+	}
+	u.windowed = windowed
 	if err := u.configure(ctx); err != nil {
 		u.teardownLocked(ctx)
 		return err
@@ -159,14 +168,19 @@ const idleWaitCap = 500
 const listenForToasts = false
 
 // configure sets the server's idle wait to idleWaitCap and turns its toast
-// listener off, and confirms both by reading them back.
+// listener off, and on a device whose apps are windows over one another has
+// it read every window, and confirms each by reading it back.
 func (u *UIA2) configure(ctx context.Context) error {
 	path := u.w3c.sessionPath("/appium/settings")
+	settings := map[string]interface{}{
+		"waitForIdleTimeout":         idleWaitCap,
+		"enableNotificationListener": listenForToasts,
+	}
+	if u.windowed {
+		settings["enableMultiWindows"] = true
+	}
 	if err := u.w3c.do(ctx, http.MethodPost, path, map[string]interface{}{
-		"settings": map[string]interface{}{
-			"waitForIdleTimeout":         idleWaitCap,
-			"enableNotificationListener": listenForToasts,
-		},
+		"settings": settings,
 	}, nil); err != nil {
 		return fmt.Errorf("configure the UiAutomator2 server: %w", err)
 	}
@@ -183,6 +197,10 @@ func (u *UIA2) configure(ctx context.Context) error {
 	if got.Value["enableNotificationListener"] != interface{}(listenForToasts) {
 		return mobiumerr.New(mobiumerr.NotConfirmed, "UiAutomator2 accepted enableNotificationListener %v and reads back %v",
 			listenForToasts, got.Value["enableNotificationListener"])
+	}
+	if u.windowed && got.Value["enableMultiWindows"] != interface{}(true) {
+		return mobiumerr.New(mobiumerr.NotConfirmed, "UiAutomator2 accepted enableMultiWindows true and reads back %v",
+			got.Value["enableMultiWindows"])
 	}
 	return nil
 }
@@ -291,7 +309,14 @@ func (u *UIA2) Snapshot(ctx context.Context) (*uitree.Tree, error) {
 	if err != nil {
 		return nil, err
 	}
-	return uitree.ParseAndroid([]byte(xml))
+	tree, err := uitree.ParseAndroid([]byte(xml))
+	if err != nil {
+		return nil, err
+	}
+	if u.windowed {
+		tree.MarkWindows()
+	}
+	return tree, nil
 }
 
 // Source is the hierarchy as the UiAutomator2 server sent it, in pixels.

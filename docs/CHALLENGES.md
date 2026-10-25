@@ -7908,6 +7908,70 @@ protocol has no method for them (PROTOCOL.md says so) — so the refusal
 says no third-party driver can yet. A test runs all five refusals on both
 kinds of backend.
 
+### 364. On a Quest, the home screen mapped as nothing
+
+**Found by:** driving the Meta Spatial Simulator (Horizon OS, Android 14,
+207.0.0.83.331), the Quest emulator Meta ships for 2D apps, on the Mac.
+`map` on its home screen answered "No actionable elements found" while
+Browser, Gallery, Store and Files were on screen. Horizon OS keeps every app
+open as a panel smaller than the display, over its shell's own windows — a
+full-screen one with the home screen, a 200x200 one with the settings gear
+and a 1x1 one — all resumed at once, in an order that changed from one boot
+to the next. UiAutomator2 reads the window in front alone: on one boot the
+1x1 one, so nothing; on the next the gear's, so the gear alone. The dump
+backend read the same 1x1 window.
+
+**Fixed:** on Horizon OS, known by `ro.vros.build.version`, the session
+turns on UiAutomator2's `enableMultiWindows` and reads it back. Every window
+is in the hierarchy, top first; the parser puts them bottom first, so
+document order is drawing order as everything else assumes, and marks each
+window's root. The home screen maps its six icons, named. The dump backend
+still reads one window; a real headset's properties have not been read.
+
+### 365. A panel was a dialog, and a check passed on it
+
+**Found by:** the same simulator. An app's panel does not fill the screen,
+and on Android a window that does not fill the screen is a dialog
+(CHALLENGES 177, 326). So the browser's panel over Gallery refused a tap as
+"a dialog is over the app — "" —", naming `app_alert`, which has nothing to
+answer; and MobiumApp itself was "a dialog — Popup —", its screen's
+heading. `mobium-app.sh`'s "popup: the system dialog is seen" passed on
+that: no permission dialog was up — Horizon OS suppresses it while the
+device's Location is off, and says so only in the log ("Suppressing
+permission dialog … because the feature is not currently enabled").
+
+**Fixed:** with every window read, the window in front is a dialog only
+when a lower window that does not fill the screen encloses it: the
+location prompt, whose window has MobiumApp's panel's very bounds, and the
+simulator's Settings stub inside the browser's panel. A panel over the
+home screen, or beside another, is not. The check now fails there, saying
+no dialog appeared, which is so. A small panel placed wholly over a larger
+one would read as a dialog; not yet seen.
+
+### 366. A tap on another app's panel only brought it forward
+
+**Found by:** reading every window. `map` listed the browser's panel and
+MobiumApp's behind it, so `text=Back` matched both apps' Back, and a check's
+tap on Back went to the browser's. And a tap on the browser's Reload, under
+nothing, while MobiumApp was in front, pressed nothing: the injection
+failed ("Input event injection … failed") and the browser's panel came
+forward, moved. The same tap again then landed. Between windows of one app
+it does not happen: the shell's home screen took taps while its gear's
+window was in front.
+
+**Fixed:** `map`, `text` and every locator see the windows of the app in
+front only, as a phone's hierarchy only ever holds. The other windows stay
+in the tree for the dialog rule, and a window counts as a cover: a node in
+another app's window, reached by a stale ref, is refused as "in a window
+behind <app>'s window, the app in front", with the two remedies measured to
+work — `app_press home` brought the home screen in front of every panel,
+and Gallery, under the browser, then opened on a tap; `app_launch` brings
+an app's panel in front. A WebView's host is looked for in the driven
+page's app: the largest WebView on screen was the browser's, behind
+MobiumApp, and a tap in MobiumApp's page was refused. Five captured
+hierarchies are the tests; `mobium-app.sh` passes on an ordinary emulator
+unchanged.
+
 ## Findings that were not defects
 
 Worth recording because each one closed off an approach that looked obvious.

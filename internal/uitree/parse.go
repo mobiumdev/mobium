@@ -114,6 +114,10 @@ type Node struct {
 	// and 12. A virtual field may take text only once it has focus
 	// (CHALLENGES 206).
 	Virtual bool
+	// Window is the root of one of several windows a hierarchy holds, on a
+	// device where apps are windows over one another (MarkWindows). A window
+	// takes every touch inside its bounds, whatever is drawn there.
+	Window bool
 
 	// Displayed is the platform's own visibility answer.
 	//
@@ -150,6 +154,9 @@ type Tree struct {
 	// VisibilityInferred is set when which elements are shown was worked out
 	// from where they are rather than read from the platform (InferVisibility).
 	VisibilityInferred bool
+	// Windowed is set when the hierarchy holds every window on the display,
+	// bottom first, each root marked Window (MarkWindows).
+	Windowed bool
 }
 
 var boundsRe = regexp.MustCompile(`\[(-?\d+),(-?\d+)\]\[(-?\d+),(-?\d+)\]`)
@@ -453,6 +460,9 @@ func insideWebView(n *Node) bool {
 func (t *Tree) Package() string {
 	if t == nil || t.Root == nil {
 		return ""
+	}
+	if w := t.frontWindow(); w != nil {
+		return w.Package
 	}
 	var pkg string
 	t.Walk(func(n *Node) bool {

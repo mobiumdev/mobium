@@ -514,6 +514,7 @@ func (l Locator) Resolve(t *Tree) []*Node {
 		own.Within = nil
 		out = nearest(own.resolveOwn(t), l.Within.Resolve(t))
 	}
+	out = t.inFrontOnly(out)
 	if l.Nth == 0 {
 		return out
 	}

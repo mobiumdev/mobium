@@ -126,11 +126,32 @@ func (h *Handlers) coveredBy(s *session, target string, cover *uitree.Node, wait
 		loc = uitree.Locator{Kind: uitree.KindText, Value: target}
 	}
 	name := uitree.Describe(cover)
+	if cover.Window {
+		return windowCovers(loc, name, waited)
+	}
 	return failedCheck(mobiumerr.ElementNotReachable, loc, checkReceivesEvents,
 		fmt.Sprintf("it is covered by %q (%s), and was for %s", name, uitree.RoleOf(cover), waited.Round(100*time.Millisecond)),
 		"a touch there would press that instead; wait for it to go, dismiss it, or tap its own ref from app_map "+
 			"if it is what you meant").
 		WithRemedy("dismiss what is over it, wait for it to go, or tap the cover's own ref from app_map").
+		WithDetail("locator", loc.String()).
+		WithDetail("cover", name)
+}
+
+// windowCovers is coveredBy for a target in another app's window than the
+// one in front, on a device where apps are windows over one another: under
+// it, or beside it, since a touch on a window not in front only brings that
+// window forward (uitree.behindFront). A window has no ref and cannot be
+// dismissed from inside another app, so the remedies are the two measured
+// on the Meta Spatial Simulator: Home brought the shell's home screen in
+// front of every panel, and Gallery, under the browser's panel, then opened
+// on a tap; a launch brings an app's own panel in front.
+func windowCovers(loc uitree.Locator, name string, waited time.Duration) error {
+	return failedCheck(mobiumerr.ElementNotReachable, loc, checkReceivesEvents,
+		fmt.Sprintf("it is in a window behind %s, the app in front, and was for %s", name, waited.Round(100*time.Millisecond)),
+		"a touch there would land on that window, or only bring its own window forward; app_press home brings "+
+			"the home screen in front of every window, and app_launch brings an app's own window in front").
+		WithRemedy("app_press home to bring the home screen in front, or app_launch the app whose window you meant").
 		WithDetail("locator", loc.String()).
 		WithDetail("cover", name)
 }

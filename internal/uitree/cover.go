@@ -55,7 +55,7 @@ func IsControl(n *Node) bool {
 	if n == nil {
 		return false
 	}
-	if IsNotificationBanner(n) {
+	if IsNotificationBanner(n) || n.Window {
 		return true
 	}
 	if isIOSClass(n.Class) {
@@ -118,7 +118,29 @@ func (t *Tree) DrawnOver(target *Node, x, y int) []*Node {
 		}
 		return true
 	})
-	return over
+	return topWindowOnly(over)
+}
+
+// topWindowOnly keeps, of the windows over a point, the one in front: it
+// takes the touch. A Quest's Gallery icon lay under MobiumApp's panel and
+// the browser's over that, and was "covered by" MobiumApp's.
+func topWindowOnly(over []*Node) []*Node {
+	top := -1
+	for i, n := range over {
+		if n.Window {
+			top = i
+		}
+	}
+	if top < 0 {
+		return over
+	}
+	out := over[:0:0]
+	for i, n := range over {
+		if !n.Window || i == top {
+			out = append(out, n)
+		}
+	}
+	return out
 }
 
 // namesTheSameControl reports a sibling that is the control a target names
@@ -177,6 +199,9 @@ const aimCols, aimRows = 9, 5
 // which.
 func (t *Tree) AimAt(target *Node) Aim {
 	cx, cy := target.Bounds.Center()
+	if front := t.behindFront(target); front != nil {
+		return Aim{X: cx, Y: cy, Blocker: front}
+	}
 	// The keyboard has a refusal of its own, and its keys abut: a key's
 	// neighbor reads as a control over its edge.
 	if k := t.Keyboard(); k != nil && target.Within(k) {
@@ -407,6 +432,9 @@ func contains(r Rect, x, y int) bool {
 // field's value never shown — falling back to its class, since an overlay
 // often carries no name at all.
 func Describe(n *Node) string {
+	if n.Window {
+		return windowName(n)
+	}
 	if d := describe(n); d != "" {
 		return d
 	}
