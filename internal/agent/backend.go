@@ -77,6 +77,21 @@ func ParseBackend(s string) (Backend, error) {
 	return name, nil
 }
 
+// cannotOnDriver refuses an action a third-party driver has no way to do.
+// Its remedy is never a built-in backend: the driver drives whatever it
+// drives — a TV, a Roku — and uiautomator2 is an answer only on Android.
+// Typing is on the wire and a driver can add it; double-tap, drag and
+// several fingers are not, so no third-party driver can do them yet.
+func cannotOnDriver(b Backend, verb, capability string) error {
+	if capability == mobiumdriver.CapText {
+		return mobiumerr.New(mobiumerr.Unsupported, "the %s driver cannot %s: it does not list the `text` "+
+			"capability — a driver types by listing it and answering `setText` (examples/drivers/PROTOCOL.md)",
+			b, verb)
+	}
+	return mobiumerr.New(mobiumerr.Unsupported, "the %s driver cannot %s: the driver protocol has no method "+
+		"for `%s` yet, so no third-party driver can (examples/drivers/PROTOCOL.md)", b, verb, capability)
+}
+
 // isBuiltin reports whether a backend is compiled in.
 func (b Backend) isBuiltin() bool {
 	for _, known := range builtinBackends {

@@ -742,6 +742,9 @@ func (h *Handlers) tapOn(ctx context.Context, s *session, args map[string]interf
 	verb, action := "tapped", "tap"
 	if boolArg(args, "double") {
 		dt, ok := mobiumdriver.AsDoubleTapper(driver)
+		if !ok && !s.backend.isBuiltin() {
+			return nil, cannotOnDriver(s.backend, "double-tap", mobiumdriver.CapDoubleTap)
+		}
 		if !ok {
 			return nil, mobiumerr.New(mobiumerr.Unsupported, "the %s backend cannot double-tap: it taps through "+
 				"one adb call at a time, and nothing there controls the interval "+
@@ -761,6 +764,9 @@ func (h *Handlers) tapOn(ctx context.Context, s *session, args map[string]interf
 			return nil, mobiumerr.New(mobiumerr.InvalidArgument, "fingers is how many touch at once, 1 to 5, got %d", fingers)
 		}
 		mt, ok := mobiumdriver.AsMultiToucher(driver)
+		if !ok && !s.backend.isBuiltin() {
+			return nil, cannotOnDriver(s.backend, "put several fingers down at once", mobiumdriver.CapMultiTouch)
+		}
 		if !ok {
 			return nil, mobiumerr.New(mobiumerr.Unsupported, "the %s backend cannot put several fingers down at once — "+
 				"switch to --driver uiautomator2 on Android, or use an iOS device", s.backend)
@@ -2210,6 +2216,9 @@ func (h *Handlers) typeTextOn(ctx context.Context, s *session, args map[string]i
 		return h.webType(ctx, s, target, text, replace)
 	}
 	typer, ok := mobiumdriver.AsTextEntry(s.driver)
+	if !ok && !s.backend.isBuiltin() {
+		return nil, cannotOnDriver(s.backend, "type into an element", mobiumdriver.CapText)
+	}
 	if !ok {
 		return nil, mobiumerr.New(mobiumerr.Unsupported, "the %s backend cannot type into an element — "+
 			"use the uiautomator2 backend (`--driver uiautomator2`, the default)", s.backend)

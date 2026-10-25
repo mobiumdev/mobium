@@ -48,6 +48,9 @@ func (h *Handlers) drag(ctx context.Context, args map[string]interface{}) (*Tool
 // dragOn is app_drag once the device is resolved.
 func (h *Handlers) dragOn(ctx context.Context, s *session, args map[string]interface{}) (*ToolsCallResult, error) {
 	dragger, ok := mobiumdriver.AsDragger(s.driver)
+	if !ok && !s.backend.isBuiltin() {
+		return nil, cannotOnDriver(s.backend, "drag", mobiumdriver.CapDrag)
+	}
 	if !ok {
 		return nil, mobiumerr.New(mobiumerr.Unsupported, "the %s backend cannot drag: it can swipe, but a swipe "+
 			"has no hold at either end and a drag is mostly the holds — switch to "+

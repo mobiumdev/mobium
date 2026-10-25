@@ -109,6 +109,9 @@ func (h *Handlers) pressDragOn(ctx context.Context, s *session, args map[string]
 }
 
 func noMultiTouch(backend Backend, gesture string) error {
+	if !backend.isBuiltin() {
+		return cannotOnDriver(backend, gesture, mobiumdriver.CapMultiTouch)
+	}
 	return mobiumerr.New(mobiumerr.Unsupported, "the %s backend cannot put a second finger down while the first "+
 		"holds, so it cannot %s — switch to --driver uiautomator2 on Android, or use an iOS device",
 		backend, gesture)
