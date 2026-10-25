@@ -1617,17 +1617,23 @@ func (d *Device) Zoom(ctx context.Context, in bool, target string) error {
 	return d.data(ctx, "app_zoom", args, &out)
 }
 
-// Check puts a checkbox or switch into a state, rather than toggling it.
+// Set puts a checkbox or switch into a state, rather than toggling it:
+// value true checks it or turns it on, false clears it or turns it off.
 //
 // Idempotent: asking for a state it is already in does nothing, which is what
 // makes it safe to call without reading first. Anything with no checked state
-// is refused rather than tapped, and a radio cannot be unchecked — a group is
+// is refused rather than tapped, and a radio cannot be unset — a group is
 // cleared by choosing a different member.
-func (d *Device) Check(ctx context.Context, target string, checked bool) error {
+func (d *Device) Set(ctx context.Context, target string, value bool) error {
 	var out struct{}
-	return d.data(ctx, "app_check", map[string]any{
-		"target": target, "checked": checked,
+	return d.data(ctx, "app_set", map[string]any{
+		"target": target, "value": value,
 	}, &out)
+}
+
+// Unset is Set(ctx, target, false): a checkbox cleared, a switch turned off.
+func (d *Device) Unset(ctx context.Context, target string) error {
+	return d.Set(ctx, target, false)
 }
 
 // Alert reports what a system dialog says, or "" when none is up.

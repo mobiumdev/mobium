@@ -1432,10 +1432,19 @@ public final class Mobium implements AutoCloseable {
      * unchecked — a group is cleared by choosing a different member.
      *
      * @param target a ref from {@link #map()} such as {@code "@e5"}, or a locator such as {@code "text=Sign in"}
-     * @param checked true to check it, false to uncheck it
+     * @param value true to check it or turn it on, false to clear it or turn it off
      */
-    public void check(String target, boolean checked) {
-        data("app_check", args("target", target, "checked", checked));
+    public void set(String target, boolean value) {
+        data("app_set", args("target", target, "value", value));
+    }
+
+    /**
+     * {@code set(target, false)}: a checkbox cleared, a switch turned off.
+     *
+     * @param target a ref from {@link #map()} such as {@code "@e5"}, or a locator such as {@code "text=Sign in"}
+     */
+    public void unset(String target) {
+        set(target, false);
     }
 
     /**

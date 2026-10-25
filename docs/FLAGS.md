@@ -68,10 +68,6 @@ command mentions them.
 | `app_call` | `device` | string | _global_ --device |
 | `app_call` | `driver` | string | _global_ --driver |
 | `app_call` | `number` | string | call |
-| `app_check` | `checked` | boolean | check, uncheck |
-| `app_check` | `device` | string | _global_ --device |
-| `app_check` | `driver` | string | _global_ --driver |
-| `app_check` | `target` | string | check, uncheck |
 | `app_clear_data` | `app` | string | clear-data |
 | `app_clear_data` | `content` | string | — |
 | `app_clear_data` | `device` | string | _global_ --device |
@@ -269,6 +265,10 @@ command mentions them.
 | `app_session` | `device` | string | _global_ --device |
 | `app_session` | `driver` | string | _global_ --driver |
 | `app_session` | `platform` | string | session |
+| `app_set` | `device` | string | _global_ --device |
+| `app_set` | `driver` | string | _global_ --driver |
+| `app_set` | `target` | string | set, unset |
+| `app_set` | `value` | boolean | set, unset |
 | `app_shake` | `device` | string | _global_ --device |
 | `app_shake` | `driver` | string | _global_ --driver |
 | `app_shutdown` | `name` | string | shutdown |
@@ -376,7 +376,6 @@ arguments and the two global flags.
 | `biometric` | app_biometric | — | action |
 | `boot` | app_boot | --window | name, window |
 | `call` | app_call | --number | action, number |
-| `check` | app_check | — | checked, target |
 | `clear-data` | app_clear_data | --bundle | app, path |
 | `clipboard` | app_clipboard | — | text |
 | `context` | app_context | — | context |
@@ -425,6 +424,7 @@ arguments and the two global flags.
 | `screenshot` | app_screenshot | --output | path |
 | `scroll-to` | app_scroll_to | --direction | direction, target |
 | `session` | app_session | --app --platform | action, app, platform |
+| `set` | app_set | — | target, value |
 | `shake` | app_shake | — | — |
 | `show-report` | — | — | darwin, windows |
 | `shutdown` | app_shutdown | — | name |
@@ -447,8 +447,8 @@ arguments and the two global flags.
 | `trace` | app_trace | --name --no-maps --no-screenshots --output | action, maps, name, path, screenshots |
 | `type` | app_type | — | target, text |
 | `ui` | — | --port | — |
-| `uncheck` | app_check | — | checked, target |
 | `uninstall` | app_uninstall | — | app |
+| `unset` | app_set | — | target, value |
 | `up` | — | — | — |
 | `upload` | app_upload | --app --device-path --name | app, device_path, name, path |
 | `wait` | app_wait_for | --count --exact --for --not --text --timeout | condition, count, exact, not, target, text, timeout_ms |

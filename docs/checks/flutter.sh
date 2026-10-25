@@ -60,8 +60,8 @@ row "type" "the app got both fields; the password not echoed"
 
 $M tap "label=Tap me" >/dev/null
 $M text | grep -q "Taps: 1" || fail "the tap did not reach the app"
-$M uncheck "label=Notifications" >/dev/null
-$M check "label=Remember me" >/dev/null
+$M unset "label=Notifications" >/dev/null
+$M set "label=Remember me" >/dev/null
 $M map | grep -q "Notifications (switch, unchecked)" || fail "the switch did not reach unchecked"
 row "act" "a counted tap; a switch unchecked, a checkbox checked"
 

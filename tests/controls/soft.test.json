@@ -6,7 +6,7 @@
       {"tap": "label=Form Demo"},
       {"wait_for": {"target": "testid=termsCheck", "condition": "checked", "timeout_ms": 1500}, "soft": true,
         "description": "terms start unchecked, so this cannot hold"},
-      {"check": "testid=darkSwitch"},
+      {"set": "testid=darkSwitch"},
       {"expect": {"tool": "app_state", "arguments": {"app": "dev.mobium.mobiumapp"}, "field": "state",
         "equals": "background", "timeout_ms": 1500}, "soft": true,
         "description": "the app is in front, so this cannot hold"},

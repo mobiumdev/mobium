@@ -270,7 +270,7 @@ this repository are written that way:
   "tests": [
     {"name": "a checkbox reaches the state asked for", "steps": [
       {"wait_for": {"target": "testid=termsCheck", "condition": "unchecked"}},
-      {"check": "testid=termsCheck"},
+      {"set": "testid=termsCheck"},
       {"wait_for": {"target": "testid=termsCheck", "condition": "checked"}},
       {"wait_for": {"target": "testid=notifyCheck", "condition": "checked", "not": true}}
     ]}

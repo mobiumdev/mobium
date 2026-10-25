@@ -1321,8 +1321,13 @@ export class Device {
    * checked state is refused rather than tapped, and a radio cannot be
    * unchecked — a group is cleared by choosing a different member.
    */
-  async check(target, checked = true) {
-    return (await this.#data('app_check', { target, checked })) || {}
+  async set(target, value = true) {
+    return (await this.#data('app_set', { target, value })) || {}
+  }
+
+  /** set(target, false): a checkbox cleared, a switch turned off. */
+  async unset(target) {
+    return this.set(target, false)
   }
 
   /**

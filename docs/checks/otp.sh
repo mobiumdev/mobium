@@ -99,7 +99,7 @@ print(m.group(1) if m else '')")
   done
   if [ -z "$CODE" ]; then
     # The fallback the screen offers: the code on screen.
-    $M check testid=otpShowCode >/dev/null
+    $M set testid=otpShowCode >/dev/null
     CODE=$($M text testid=otpCodeShown | grep -o '[0-9]\{6\}')
     VIA="the screen"
   elif [ "$PLATFORM" = android ]; then

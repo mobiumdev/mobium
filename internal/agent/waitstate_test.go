@@ -55,7 +55,7 @@ func TestWaitForCheckedAndUnchecked(t *testing.T) {
 }
 
 // Nothing without a checked state will ever have one, so the wait is refused
-// at once rather than timing out — as app_check refuses it.
+// at once rather than timing out — as app_set refuses it.
 func TestWaitForCheckedRefusesAButton(t *testing.T) {
 	h, sess, f := withFake(t, field(t, "android.widget.Button", `text="Go"`))
 	_, err := wait(h, sess, map[string]interface{}{"target": "testid=f", "condition": "checked", "timeout_ms": 5000})

@@ -163,7 +163,7 @@ sleep 4
 # leave the screen before the verdict. That is a miss, not a pass: it is
 # tried again with a new burst, up to three, and anything but "still moving"
 # or a piece gone fails.
-$M check testid=confettiExposed >/dev/null
+$M set testid=confettiExposed >/dev/null
 tries=0
 while :; do
   tries=$((tries + 1))
@@ -187,7 +187,7 @@ e.sort(key=lambda x: x["bounds"]["y1"]); print(e[0]["label"].replace(" ","") if 
 done
 row "never still" "a falling piece refused as still moving ($tries burst$( [ $tries = 1 ] || echo s))"
 sleep 10
-$M uncheck testid=confettiExposed >/dev/null
+$M unset testid=confettiExposed >/dev/null
 
 fi
 

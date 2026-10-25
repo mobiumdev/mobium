@@ -41,11 +41,11 @@ func writePython(b *builder, calls []call) error {
 			} else {
 				b.line("device.long_press(%s)", q(str(a, "target")))
 			}
-		case "app_check":
-			if has(a, "checked") && !flag(a, "checked") {
-				b.line("device.check(%s, checked=False)", q(str(a, "target")))
+		case "app_set":
+			if has(a, "value") && !flag(a, "value") {
+				b.line("device.unset(%s)", q(str(a, "target")))
 			} else {
-				b.line("device.check(%s)", q(str(a, "target")))
+				b.line("device.set(%s)", q(str(a, "target")))
 			}
 		case "app_swipe":
 			if has(a, "target") {
@@ -129,11 +129,11 @@ func writeJavaScript(b *builder, calls []call) error {
 			} else {
 				b.line("await device.longPress(%s)", q(str(a, "target")))
 			}
-		case "app_check":
-			if has(a, "checked") && !flag(a, "checked") {
-				b.line("await device.check(%s, false)", q(str(a, "target")))
+		case "app_set":
+			if has(a, "value") && !flag(a, "value") {
+				b.line("await device.unset(%s)", q(str(a, "target")))
 			} else {
-				b.line("await device.check(%s)", q(str(a, "target")))
+				b.line("await device.set(%s)", q(str(a, "target")))
 			}
 		case "app_swipe":
 			if has(a, "target") {
@@ -238,8 +238,8 @@ func writeGo(b *builder, calls []call) error {
 			} else {
 				do("dev.LongPress(ctx, %s, 0)", q(str(a, "target")))
 			}
-		case "app_check":
-			do("dev.Check(ctx, %s, %t)", q(str(a, "target")), !has(a, "checked") || flag(a, "checked"))
+		case "app_set":
+			do("dev.Set(ctx, %s, %t)", q(str(a, "target")), !has(a, "value") || flag(a, "value"))
 		case "app_swipe":
 			if has(a, "target") {
 				do("dev.SwipeOn(ctx, %s, %s)", q(str(a, "target")), q(str(a, "direction")))
@@ -360,8 +360,8 @@ func writeJava(b *builder, calls []call) error {
 			} else {
 				body.line("device.longPress(%s);", q(str(a, "target")))
 			}
-		case "app_check":
-			body.line("device.check(%s, %t);", q(str(a, "target")), !has(a, "checked") || flag(a, "checked"))
+		case "app_set":
+			body.line("device.set(%s, %t);", q(str(a, "target")), !has(a, "value") || flag(a, "value"))
 		case "app_swipe":
 			if has(a, "target") {
 				body.line("device.swipe(%s, %s);", q(str(a, "target")), q(str(a, "direction")))
@@ -451,11 +451,11 @@ func writeDotnet(b *builder, calls []call) error {
 			} else {
 				body.line("device.LongPress(%s);", q(str(a, "target")))
 			}
-		case "app_check":
-			if has(a, "checked") && !flag(a, "checked") {
-				body.line("device.Check(%s, false);", q(str(a, "target")))
+		case "app_set":
+			if has(a, "value") && !flag(a, "value") {
+				body.line("device.Unset(%s);", q(str(a, "target")))
 			} else {
-				body.line("device.Check(%s);", q(str(a, "target")))
+				body.line("device.Set(%s);", q(str(a, "target")))
 			}
 		case "app_swipe":
 			if has(a, "target") {

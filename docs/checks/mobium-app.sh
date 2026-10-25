@@ -670,24 +670,24 @@ echo "    radio group    choosing one cleared the other                   ok"
 # --- reaching a state rather than toggling ----------------------------------
 # `check` and `uncheck` set a state; `tap` flips whatever is there. The
 # difference only shows on the second call, which is why it is made twice.
-$M check 'testid=termsCheck' | grep -q 'is now checked' || fail "check did not tick the box"
-$M check 'testid=termsCheck' | grep -q 'is already checked' \
+$M set 'testid=termsCheck' | grep -q 'is now checked' || fail "check did not tick the box"
+$M set 'testid=termsCheck' | grep -q 'is already checked' \
   || fail "checking an already-checked box did not report it as a no-op"
 $M map | grep -q 'Accept terms (checkbox, checked)' \
   || fail "the second check toggled the box off again"
 echo "    check          idempotent: the second call changed nothing      ok"
 
-$M uncheck 'testid=termsCheck' | grep -q 'is now unchecked' || fail "uncheck did not clear the box"
-$M uncheck 'testid=termsCheck' | grep -q 'is already unchecked' \
+$M unset 'testid=termsCheck' | grep -q 'is now unchecked' || fail "uncheck did not clear the box"
+$M unset 'testid=termsCheck' | grep -q 'is already unchecked' \
   || fail "unchecking an already-clear box did not report it as a no-op"
 echo "    uncheck        idempotent the other way                         ok"
 
 # Refusing is half the tool. Tapping a button and calling it checked would be
 # the failure this project is organized against, and a radio is not something
 # that gets unchecked -- its group is cleared by choosing another member.
-$M check 'testid=backBtn' 2>&1 | grep -q 'no checked state' \
+$M set 'testid=backBtn' 2>&1 | grep -q 'no checked state' \
   || fail "a button was accepted as a checkbox"
-$M uncheck 'testid=planFree' 2>&1 | grep -q 'cannot be unchecked' \
+$M unset 'testid=planFree' 2>&1 | grep -q 'cannot be unchecked' \
   || fail "unchecking a radio was accepted"
 echo "    check refuses  a button and an unchecked radio, with reasons    ok"
 
@@ -701,12 +701,12 @@ luma() { # the luminance of a background point near the right edge, 0-255
   python3 "$ROOT/docs/checks/pixel.py" "$TMPSHOT" 0.97 0.85
 }
 TMPSHOT="$(mktemp -t mobium-theme).png"
-$M check 'testid=darkSwitch' >/dev/null
+$M set 'testid=darkSwitch' >/dev/null
 sleep 1
 $M map | grep -q 'Dark mode (switch, checked)' || fail "the switch reads unchecked after checking it"
 readText "checking the switch" | grep -q 'theme=dark' || fail "the switch was set and the app did not see it"
 [ "$(luma)" -lt 60 ] || fail "the app says theme=dark and the screen is not dark"
-$M uncheck 'testid=darkSwitch' >/dev/null
+$M unset 'testid=darkSwitch' >/dev/null
 sleep 1
 readText "unchecking the switch" | grep -q 'theme=light' || fail "the switch was cleared and the app stayed dark"
 [ "$(luma)" -gt 200 ] || fail "the app says theme=light and the screen is not light"

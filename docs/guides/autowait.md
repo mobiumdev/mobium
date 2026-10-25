@@ -181,7 +181,7 @@ On the Form Demo, a wait that cannot hold says what it saw:
 $ mobium wait testid=termsCheck --for checked --timeout 2s
 error: timed out after 2.017s waiting for testid=termsCheck to become checked — it is unchecked
 
-$ mobium check testid=termsCheck
+$ mobium set testid=termsCheck
 testid=termsCheck is now checked
 ```
 

@@ -106,7 +106,7 @@ $M wait "text=Dynamic color" --for "$other" >/dev/null
 back=check; [ "$was" = unchecked ] && back=uncheck
 $M $back "text=Dynamic color" | grep -q "is now $was" || fail "could not put Dynamic color back to $was"
 set +e
-$M check "text=Display language" >/dev/null 2>&1; st=$?
+$M set "text=Display language" >/dev/null 2>&1; st=$?
 set -e
 [ $st -eq 2 ] || fail "a row with no state was not refused (exit $st)"
 row "switch" "set by its words, read back, put back; a plain row refused"
