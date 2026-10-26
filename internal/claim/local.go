@@ -32,7 +32,13 @@ type Local struct {
 	http     *http.Client
 	messages []map[string]interface{}
 	tools    []map[string]interface{}
+	nudges   int
 }
+
+// maxNudges is how many times a model that answers in prose is asked again
+// for its verdict: mistral-small read one call and then wrote its answer as
+// text on every claim, which the loop can only take as no verdict.
+const maxNudges = 2
 
 // NewLocal is a session on model, served at MOBIUM_AI_BASE_URL or Ollama's.
 func NewLocal(model string) *Local {
@@ -73,6 +79,18 @@ func (l *Local) Next(ctx context.Context, results []Result) (Step, error) {
 }
 
 func (l *Local) send(ctx context.Context) (Step, error) {
+	for {
+		step, err := l.ask(ctx)
+		if err != nil || len(step.Calls) > 0 || l.nudges >= maxNudges {
+			return step, err
+		}
+		l.nudges++
+		l.messages = append(l.messages, map[string]interface{}{"role": "user", "content": "Answer through the tools, not in text: " +
+			"read more of the recording if you need to, and finish by calling " + verdictTool + " exactly once."})
+	}
+}
+
+func (l *Local) ask(ctx context.Context) (Step, error) {
 	body, _ := json.Marshal(map[string]interface{}{
 		"model": l.Model, "messages": l.messages, "tools": l.tools, "temperature": 0,
 	})

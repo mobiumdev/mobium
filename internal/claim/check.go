@@ -166,7 +166,8 @@ func Validate(t *Trace, claim string, input json.RawMessage) (Verdict, error) {
 		return v, mobiumerr.New(mobiumerr.InvalidArgument, "the evidence cites %s, which the recording does not hold", strings.Join(unknown, ", "))
 	}
 	if len(cited) == 0 {
-		return v, mobiumerr.New(mobiumerr.InvalidArgument, "%s needs evidence citing at least one call of the recording, by its id (call@3)", v.Status)
+		return v, mobiumerr.New(mobiumerr.InvalidArgument, "%s needs evidence citing at least one call of the recording, by its id inside "+
+			"an observation's summary, such as \"call@3: the screen after it shows Card 3 face up\"", v.Status)
 	}
 	return v, nil
 }
@@ -175,6 +176,23 @@ func parseVerdict(input json.RawMessage, claim string) (Verdict, error) {
 	var v Verdict
 	if err := json.Unmarshal(input, &v); err != nil {
 		return v, mobiumerr.New(mobiumerr.InvalidArgument, "not a JSON object with status, summary and evidence")
+	}
+	// A key the schema has not got is not read, so it is refused rather than
+	// ignored: mistral-small cited calls in a "call" key, three times over,
+	// and was told only that it cited none.
+	var raw struct {
+		Evidence []map[string]json.RawMessage `json:"evidence"`
+	}
+	if json.Unmarshal(input, &raw) != nil {
+		return v, mobiumerr.New(mobiumerr.InvalidArgument, "evidence is not a list of objects with type and summary")
+	}
+	for i, e := range raw.Evidence {
+		for k := range e {
+			if k != "type" && k != "summary" {
+				return v, mobiumerr.New(mobiumerr.InvalidArgument, "evidence %d has %q, which is not read: an observation is type and summary only, "+
+					"and a call it cites goes in the summary, such as \"call@3: the screen after it shows Card 3 face up\"", i+1, k)
+			}
+		}
 	}
 	v.Claim = claim
 	switch v.Status {

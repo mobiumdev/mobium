@@ -188,6 +188,8 @@ func TestAVerdictMustCiteCallsTheRecordingHolds(t *testing.T) {
 		"cites no call":       {`{"status":"failed","summary":"s","evidence":[{"type":"observation","summary":"it looked unchecked"}]}`, false},
 		"cites a call absent": {`{"status":"passed","summary":"s","evidence":[{"type":"observation","summary":"call@99 shows it"}]}`, false},
 		"inconclusive, none":  {`{"status":"inconclusive","summary":"cannot tell","evidence":[]}`, true},
+		// mistral-small's shape: the id in a key of its own, which is not read
+		"cites in a key": {`{"status":"passed","summary":"s","evidence":[{"type":"observation","call":"` + id + `","summary":"` + id + ` shows it"}]}`, false},
 	} {
 		_, err := Validate(tr, "the box is ticked", json.RawMessage(c.input))
 		if (err == nil) != c.ok {
