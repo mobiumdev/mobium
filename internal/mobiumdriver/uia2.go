@@ -435,7 +435,7 @@ func (u *UIA2) SetSliderPosition(ctx context.Context, n *uitree.Node, position f
 	if _, _, ok := uitree.RangeThumb(n); ok {
 		return dragThumb(ctx, n, position, thumbDrive{
 			inset: func(*uitree.Node) int { return u.dp(ctx, rangeTrackInsetDp) },
-			slop:  u.dp(ctx, touchSlopDp), edge: u.dp(ctx, edgeGestureDp),
+			slop:  u.dp(ctx, touchSlopDp), edge: u.dp(ctx, edgeGestureDp), maxGain: u.thumbMaxGain(),
 			drag: func(x1, y1, x2, y2 int) error {
 				return u.w3c.pointerSequence(ctx, thumbDrag(x1, y1, x2, y2))
 			},
@@ -444,6 +444,16 @@ func (u *UIA2) SetSliderPosition(ctx context.Context, n *uitree.Node, position f
 	}
 	x, y := sliderTouch(n.Bounds, u.dp(ctx, 16), position)
 	return u.Tap(ctx, x, y)
+}
+
+// thumbMaxGain is how far a drag may carry a thumb for each pixel of
+// finger before a drag has shown it: on Horizon OS a Compose app's panel,
+// drawn 2.48 times its size, magnified drags by about that (CHALLENGES 367).
+func (u *UIA2) thumbMaxGain() float64 {
+	if u.windowed {
+		return 3
+	}
+	return 1
 }
 
 // sliderTouch is the point on a seek bar's track at position, the track

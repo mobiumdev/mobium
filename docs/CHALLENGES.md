@@ -7991,7 +7991,42 @@ the two left, one was the test's: on a panel, Add to Cart sat below the
 fold (morpho-market#5). The other is a drag on a Quest panel moving a slider's
 thumb about 2.5 times as far as the finger — the app's window is 500x800
 pixels, drawn 2.48 times that size — and a thumb's node clipped to its
-track. Not fixed: being measured.
+track. Measured and fixed in 368.
+
+### 368. A thumb that missed was reported as moved
+
+**Found by:** measuring 367's drag on the Meta Spatial Simulator. `fill
+"Range end" 0.25` on Morpho Market's $0–$60 price range answered "moved …
+it reads 0.0", exit 0, at $0. Three things, the last two on every
+platform:
+- **The gain is the app's, not the platform's.** On the same panel a
+  React Native drag landed exactly — 417 pixels of finger, 136dp of travel
+  in MobiumApp's Drag witness, which is 417 / 2.48 at 200dpi — while
+  Compose's slider moved 2.4 times as far as the finger past a lag that is
+  not the 8dp slop. A correction applied to every drag on Horizon OS would
+  have broken every app but Compose's. And `uiautomator dump` gives the
+  panel in the window's own pixels (411–911 across), where UiAutomator2
+  and every tap use the screen's (416–1648).
+- **The correction loop ended in success whatever it read.** After three
+  drags it returned without asking where the thumb was, and a thumb carried
+  onto the other one hid it — the tree then held one thumb, no two-thumb
+  slider, and the loop took that for done too.
+- **Corrected by a gain alone, every drag stopped one to three $1 steps
+  off**, the lag putting each the same distance past.
+
+**Fixed:** a fill learns how a thumb follows the finger from its own drags
+— gain and lag, by least squares over the drags that stopped at no stop —
+and plans the next from it, from where the drag takes hold. A thumb that
+has not reached the position after five drags is refused as
+not_confirmed, saying where it stopped and the gain measured; so is one
+that can no longer be read as a thumb. On Horizon OS a first drag toward
+the other thumb stops short of where a gain of 3 would carry it. On the
+simulator 23 fills in 24 landed exactly and the 24th was refused one step
+off; Morpho Market's suite passed 26 of 26, from 25. On the Android 15
+emulator every fill landed in one drag, in the time it took before. A
+plain drag (`drag`, `swipe`) is not corrected: what the app does with it is
+the app's, and Morpho Match's sort level, built to drop a card where its
+drag carried it, still fails there.
 
 ## Findings that were not defects
 
