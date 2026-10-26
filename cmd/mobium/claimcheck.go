@@ -29,7 +29,7 @@ func newClaimCheckCmd() *cobra.Command {
 			return runTool("app_check", call)
 		},
 	}
-	cmd.Flags().StringVarP(&record, "input", "i", "", "The recording: the .zip `mobium trace stop` saved")
+	cmd.Flags().StringVarP(&record, "input", "i", "", "The recording: the .zip that mobium trace stop saved")
 	cmd.Flags().StringVar(&model, "model", "", "The model that judges (default claude-opus-5-5, not yet measured); openai:<name> for one served through the OpenAI-compatible API, Ollama on this machine by default, such as openai:qwen2.5:14b")
 	_ = cmd.MarkFlagRequired("input")
 	return cmd

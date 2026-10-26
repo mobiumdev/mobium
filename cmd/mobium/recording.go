@@ -47,7 +47,7 @@ func newRecordingCmd() *cobra.Command {
 			return runTool("app_recording", call)
 		},
 	}
-	cmd.Flags().StringVarP(&record, "input", "i", "", "The recording: the .zip `mobium trace stop` saved")
+	cmd.Flags().StringVarP(&record, "input", "i", "", "The recording: the .zip that mobium trace stop saved")
 	cmd.Flags().IntVar(&offset, "offset", 0, "Where a page of calls or search hits starts")
 	cmd.Flags().StringVarP(&output, "output", "o", "", "Where to save a screenshot (default <id>.jpg)")
 	_ = cmd.MarkFlagRequired("input")
