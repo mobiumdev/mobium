@@ -203,6 +203,12 @@ answers — with swiping right as a watch's back
 ([docs/checks/wear-os.sh](docs/checks/wear-os.sh)). Not yet a real watch,
 and not the crown: `press` has no rotary input.
 
+**Meta Quest's 2D apps** are Android too: since 2026-10-25 the Android
+backends drive the panels on the Meta Spatial Simulator, Meta's Horizon OS
+emulator, where every app is a panel and every panel stays open. Not yet a
+real headset, and not immersive apps, which publish no accessibility tree
+([docs/HORIZON-OS.md](docs/HORIZON-OS.md)).
+
 **Windows is not supported yet.** Everything that needs no device, the
 named-pipe daemon transport included, passes in CI on a Windows runner, and
 since 2026-10-22 an Android emulator and a phone have been driven from a
@@ -381,6 +387,7 @@ protocol.
 | [docs/THREAT-MODEL.md](docs/THREAT-MODEL.md) | what can go wrong when an agent drives a phone, and what is done and open |
 | [docs/upstream/](docs/upstream/README.md) | problems in projects Mobium depends on, written up with a patch |
 | [docs/WINDOWS.md](docs/WINDOWS.md) | the state of Windows support |
+| [docs/HORIZON-OS.md](docs/HORIZON-OS.md) | Meta Quest's 2D apps on Horizon OS: what is driven on the simulator, and what is not yet |
 | [docs/ROADMAP.md](docs/ROADMAP.md) | what is next |
 | [docs/RELEASE-CHECKLIST.md](docs/RELEASE-CHECKLIST.md) | the device checks CI cannot run |
 | [examples/drivers/PROTOCOL.md](examples/drivers/PROTOCOL.md) | the protocol a third-party driver speaks |
