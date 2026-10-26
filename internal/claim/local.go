@@ -22,13 +22,15 @@ import (
 const LocalPrefix = "local:"
 
 // DefaultLocalURL is Ollama's OpenAI-compatible endpoint; MOBIUM_AI_BASE_URL
-// names another.
+// names another, and MOBIUM_AI_API_KEY is sent to it as a bearer token when
+// it wants one.
 const DefaultLocalURL = "http://127.0.0.1:11434/v1"
 
 // Local is a Session on a local model.
 type Local struct {
 	Model    string
 	base     string
+	key      string
 	http     *http.Client
 	messages []map[string]interface{}
 	tools    []map[string]interface{}
@@ -46,7 +48,7 @@ func NewLocal(model string) *Local {
 	if base == "" {
 		base = DefaultLocalURL
 	}
-	return &Local{Model: model, base: base, http: &http.Client{Timeout: 10 * time.Minute}}
+	return &Local{Model: model, base: base, key: os.Getenv("MOBIUM_AI_API_KEY"), http: &http.Client{Timeout: 10 * time.Minute}}
 }
 
 // Begin starts the conversation.
@@ -99,6 +101,9 @@ func (l *Local) ask(ctx context.Context) (Step, error) {
 		return Step{}, mobiumerr.New(mobiumerr.InvalidArgument, "the local model's address %s: %w", l.base, err)
 	}
 	req.Header.Set("Content-Type", "application/json")
+	if l.key != "" {
+		req.Header.Set("Authorization", "Bearer "+l.key)
+	}
 	resp, err := l.http.Do(req)
 	if err != nil {
 		return Step{}, mobiumerr.New(mobiumerr.ToolchainMissing, "no local model answered at %s: %w", l.base, err).
@@ -107,9 +112,7 @@ func (l *Local) ask(ctx context.Context) (Step, error) {
 	defer resp.Body.Close()
 	raw, _ := io.ReadAll(io.LimitReader(resp.Body, 16<<20))
 	if resp.StatusCode != http.StatusOK {
-		return Step{}, mobiumerr.New(mobiumerr.ToolchainMissing, "the local model %s refused the request (%d): %s",
-			l.Model, resp.StatusCode, clip(string(raw), 300)).
-			WithRemedy(fmt.Sprintf("check the model is installed (`ollama list`); %s names one, after %q", l.Model, LocalPrefix))
+		return Step{}, l.refused(resp.StatusCode, clip(string(raw), 300))
 	}
 	var out struct {
 		Choices []struct {
@@ -132,4 +135,21 @@ func (l *Local) ask(ctx context.Context) (Step, error) {
 		step.Calls = append(step.Calls, ToolCall{ID: id, Name: name, Input: json.RawMessage(args)})
 	}
 	return step, nil
+}
+
+// refused names why the server turned a request down, with a remedy that
+// fits: a rate limit sent "check the model is installed (`ollama list`)",
+// which cannot help.
+func (l *Local) refused(status int, body string) error {
+	msg := fmt.Sprintf("the model %s at %s refused the request (%d): %s", l.Model, l.base, status, body)
+	switch {
+	case status == http.StatusTooManyRequests || status >= 500:
+		return mobiumerr.New(mobiumerr.Timeout, "%s", msg).
+			WithRemedy("the server is busy or rate-limited: wait a minute and run the check again, or name another model")
+	case status == http.StatusUnauthorized || status == http.StatusForbidden:
+		return mobiumerr.New(mobiumerr.ToolchainMissing, "%s", msg).
+			WithRemedy("set MOBIUM_AI_API_KEY to a key " + l.base + " accepts, then `mobium daemon stop` so the daemon reads it")
+	}
+	return mobiumerr.New(mobiumerr.ToolchainMissing, "%s", msg).
+		WithRemedy(fmt.Sprintf("check %s names a model %s serves (for Ollama, `ollama list`), after %q", l.Model, l.base, LocalPrefix))
 }

@@ -5,7 +5,10 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
+
+	"github.com/mobiumdev/mobium/internal/mobiumerr"
 )
 
 // A local model that answers in prose is asked again for its verdict, and
@@ -22,6 +25,9 @@ func TestALocalModelAnsweringInProseIsAskedAgain(t *testing.T) {
 				Messages []map[string]interface{} `json:"messages"`
 			}
 			json.NewDecoder(r.Body).Decode(&req)
+			if got := r.Header.Get("Authorization"); got != "Bearer k" {
+				t.Errorf("authorization: %q", got)
+			}
 			last = req.Messages
 			asked++
 			msg := map[string]interface{}{"role": "assistant", "content": "The claim is true."}
@@ -32,6 +38,7 @@ func TestALocalModelAnsweringInProseIsAskedAgain(t *testing.T) {
 			json.NewEncoder(w).Encode(map[string]interface{}{"choices": []interface{}{map[string]interface{}{"message": msg}}})
 		}))
 		t.Setenv("MOBIUM_AI_BASE_URL", srv.URL)
+		t.Setenv("MOBIUM_AI_API_KEY", "k")
 		step, err := NewLocal("m").Begin(context.Background(), "system", "claim", nil)
 		srv.Close()
 		if err != nil {
@@ -42,6 +49,30 @@ func TestALocalModelAnsweringInProseIsAskedAgain(t *testing.T) {
 		}
 		if tc.prose == 1 && (len(last) != 4 || last[3]["role"] != "user") {
 			t.Errorf("the second ask did not carry the request for a verdict: %v", last)
+		}
+	}
+}
+
+// A refusal's remedy fits its cause: a rate limit is waited out, a key is
+// set, and only a missing model sends the caller to its list.
+func TestARefusalNamesARemedyThatFits(t *testing.T) {
+	for status, want := range map[int]struct {
+		code   mobiumerr.Code
+		remedy string
+	}{
+		429: {mobiumerr.Timeout, "wait a minute"},
+		503: {mobiumerr.Timeout, "wait a minute"},
+		401: {mobiumerr.ToolchainMissing, "MOBIUM_AI_API_KEY"},
+		404: {mobiumerr.ToolchainMissing, "ollama list"},
+	} {
+		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(status)
+		}))
+		t.Setenv("MOBIUM_AI_BASE_URL", srv.URL)
+		_, err := NewLocal("m").Begin(context.Background(), "system", "claim", nil)
+		srv.Close()
+		if mobiumerr.CodeOf(err) != want.code || !strings.Contains(mobiumerr.Text(err), want.remedy) {
+			t.Errorf("%d: %s", status, mobiumerr.Text(err))
 		}
 	}
 }
