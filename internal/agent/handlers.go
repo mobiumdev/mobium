@@ -3,6 +3,7 @@ package agent
 import (
 	"context"
 	"encoding/base64"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/mobiumdev/mobium/internal/mobiumerr"
@@ -228,6 +229,43 @@ func settleWindowFromEnv() time.Duration {
 		return settleWindow
 	}
 	return time.Duration(ms) * time.Millisecond
+}
+
+// statelessTools touch no handler state and no device: they read a file and,
+// for a check, ask a model. They run outside the lock every other call takes,
+// with a deadline of their own: a check on a local model thought for five
+// minutes, held the lock throughout so every other call waited behind it,
+// and was cut off by the device deadline at four.
+var statelessTools = map[string]bool{"app_check": true, "app_recording": true, "app_verdict": true}
+
+// statelessTimeout bounds a stateless call: a check's whole conversation.
+const statelessTimeout = 30 * time.Minute
+
+// Stateless reports a tool that runs outside the handlers' lock.
+func Stateless(name string) bool { return statelessTools[name] }
+
+// StatelessRequest reports a tools/call of a stateless tool, which a front
+// door may run beside other calls rather than after them.
+func StatelessRequest(req Request) bool {
+	if req.Method != "tools/call" {
+		return false
+	}
+	var p ToolsCallParams
+	return json.Unmarshal(req.Params, &p) == nil && Stateless(p.Name)
+}
+
+func (h *Handlers) callStateless(name string, args map[string]interface{}) (*ToolsCallResult, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), statelessTimeout)
+	defer cancel()
+	switch name {
+	case "app_check":
+		return h.claimCheck(ctx, args)
+	case "app_recording":
+		return h.recording(ctx, args)
+	case "app_verdict":
+		return h.verdict(ctx, args)
+	}
+	return nil, mobiumerr.New(mobiumerr.Internal, "%s is not a stateless tool", name)
 }
 
 // Call dispatches a tool by name.

@@ -9,9 +9,12 @@ import (
 	"github.com/mobiumdev/mobium/internal/mobiumerr"
 )
 
-// newClaimSession is the model a check asks: Anthropic's, unless a test
-// gives a stand-in.
+// newClaimSession is the model a check asks: a local one for "local:<name>",
+// otherwise Anthropic's; a test gives a stand-in.
 var newClaimSession = func(model string) (claim.Session, error) {
+	if local, ok := strings.CutPrefix(model, claim.LocalPrefix); ok {
+		return claim.NewLocal(local), nil
+	}
 	if err := claim.Credentials(); err != nil {
 		return nil, err
 	}

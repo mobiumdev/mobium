@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/mobiumdev/mobium/internal/claim"
 	"github.com/mobiumdev/mobium/internal/mobiumerr"
@@ -58,5 +59,43 @@ func TestACheckJudgesARecording(t *testing.T) {
 	_, err = h.claimCheck(context.Background(), map[string]interface{}{"claim": "x"})
 	if mobiumerr.CodeOf(err) != mobiumerr.InvalidArgument || !strings.Contains(mobiumerr.Text(err), "app_trace") {
 		t.Errorf("no record: %v", err)
+	}
+}
+
+// A stateless tool runs beside a call that holds the handlers' lock: a check
+// that thinks for minutes held it, and every other call waited behind.
+func TestAStatelessCallDoesNotWaitForTheLock(t *testing.T) {
+	r := trace.New(trace.Options{Name: "x", Version: "test"})
+	id := r.Before("app_map", "map", nil)
+	r.After(id, nil, "")
+	b, _ := r.Zip()
+	p := filepath.Join(t.TempDir(), "x.zip")
+	if err := os.WriteFile(p, b, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	h := &Handlers{}
+	h.mu.Lock() // a device call in progress
+	defer h.mu.Unlock()
+	done := make(chan *ToolsCallResult, 1)
+	params, _ := json.Marshal(map[string]interface{}{"name": "app_recording",
+		"arguments": map[string]interface{}{"record": p, "read": "summary"}})
+	go func() {
+		res, _ := CallTool(params, h)
+		done <- res.(*ToolsCallResult)
+	}()
+	select {
+	case res := <-done:
+		if !strings.Contains(res.Content[0].Text, `"calls":1`) {
+			t.Errorf("summary: %q", res.Content[0].Text)
+		}
+	case <-time.After(5 * time.Second):
+		t.Fatal("app_recording waited for the lock a device call holds")
+	}
+	if !StatelessRequest(Request{Method: "tools/call", Params: params}) {
+		t.Error("app_recording is not taken for stateless")
+	}
+	tap, _ := json.Marshal(map[string]interface{}{"name": "app_tap", "arguments": map[string]interface{}{}})
+	if StatelessRequest(Request{Method: "tools/call", Params: tap}) {
+		t.Error("app_tap was taken for stateless")
 	}
 }
