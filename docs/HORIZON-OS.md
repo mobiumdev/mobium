@@ -48,7 +48,8 @@ Measured on the simulator, each with the command and its output kept:
 | WebViews over CDP | `contexts`, `context`, `eval` reach the Quest Browser and an app's own WebView; a web tap in an app's own WebView lands |
 | `screenshot` | 0.54 s, 2064×2208: one flat view of the display, not one image per eye |
 | `mobium-app.sh` | Every step through "popup setup" passes; the location steps need Location on and Google Play services (below) |
-| Morpho Market's shared suite | 25 of 26; the 26th is the drag below |
+| A two-thumb slider's `fill` | Lands: 23 fills in 24 exact, the 24th refused one $1 step off (CHALLENGES 368) |
+| Morpho Market's shared suite | 26 of 26 |
 
 ## How Horizon OS differs, and what Mobium does about it
 
@@ -78,17 +79,21 @@ confirms the foreground its own way.
 
 ## Not yet
 
-- **A drag moves about 2.5 times as far as the finger.** An app's window is
-  500×800 pixels, drawn 2.48 times that size, and a drag is magnified with
-  it while a tap lands. A slider's thumb node is also clipped to its track,
-  so its center is not the thumb's. A two-thumb slider's fill on a panel
-  read $0 and did not fail. Being measured (367).
+- **A Compose app's drag moves about 2.4 times as far as the finger.**
+  An app's window is 500×800 pixels, drawn 2.48 times that size; a React
+  Native app's drag lands exactly, a Compose app's does not, so the gain is
+  the app's and a plain `drag` or `swipe` is not corrected. A two-thumb
+  slider's `fill` learns it from its own drags and lands (368). Morpho
+  Match's sort level, which drops a card where its drag carried it, fails
+  for it.
 - **A web tap in the Quest Browser is refused**: its WebView element is
   taller than the page's viewport, the case refused in Mobile Safari for
   the same reason (CHALLENGES 47). An app's own WebView is not affected.
 - **Enter did not submit the Browser's address bar**; a tap on its
   suggestion did.
-- **The dump backend** (`--driver uiautomator`) still reads one window.
+- **The dump backend** (`--driver uiautomator`) still reads one window,
+  and in the window's own pixels, where taps are in the screen's: it
+  would tap the wrong place. Use the default driver.
 - **Horizon OS Settings** cannot be tested on the simulator: it answers only
   the action `com.oculus.action.SETTINGS`, with no launcher, and the
   simulator ships a stub in its place. `launch` of it says "is it

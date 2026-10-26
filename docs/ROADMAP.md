@@ -1205,11 +1205,10 @@ this is what is not.
   dialog, and a touch on another app's panel refused, since it only brings
   that panel forward. [HORIZON-OS.md](HORIZON-OS.md) is the state of it.
   Left, in order:
-  - **A drag's gain on a panel** (367): a window drawn 2.48 times its size
-    magnifies a drag, not a tap, and a slider's thumb node is clipped to
-    its track. Measure the gain, correct the drag by it, and make a fill
-    refuse a thumb that ended far from its target, which today reports a
-    move that did not happen.
+  - **A drag's gain on a panel**: a slider's fill learns it and lands
+    (CHALLENGES 368). A plain drag is the app's: React Native's land,
+    Compose's go 2.4 times as far. Whether a real headset does the same is
+    the open question.
   - **`mobium-app.sh` on Horizon OS**: the location steps need Location on,
     and the prompt's buttons are Horizon OS's ("Update to precise
     location", "Keep approximate location").
@@ -1217,7 +1216,7 @@ this is what is not.
     Location off, and `launch` of an app with no launcher, which says "is
     it installed?" of one that is.
   - **`devices` saying Horizon OS**, and the dump backend reading every
-    window.
+    window in the screen's pixels.
   - **The Quest Browser's web taps**, refused as Mobile Safari's were
     before its page was placed from text (CHALLENGES 47, 248).
   - **A real headset**, then immersive apps, which publish no
