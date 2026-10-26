@@ -2325,6 +2325,7 @@ func GetToolSchemas() []Tool {
 	}
 	for i := range tools {
 		tools[i].Annotations = Annotations(tools[i].Name)
+		tools[i].OutputSchema = OutputSchema(tools[i].Name)
 	}
 	return tools
 }

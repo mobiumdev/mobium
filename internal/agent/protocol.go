@@ -94,6 +94,10 @@ type Tool struct {
 	// Annotations are MCP's hints about the tool; readOnlyHint is set on
 	// every tool, from readonly.go.
 	Annotations map[string]interface{} `json:"annotations,omitempty"`
+	// OutputSchema is the shape of the structuredContent every successful
+	// call returns, generated from the code (outputschema_gen.go), and
+	// absent for a tool that does not always return one shape.
+	OutputSchema map[string]interface{} `json:"outputSchema,omitempty"`
 }
 
 type ToolsCallParams struct {
