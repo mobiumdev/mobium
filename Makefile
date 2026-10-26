@@ -150,15 +150,17 @@ java:
 # within a week.
 api:
 	@go run ./internal/apisurface/generate .
+	@go run ./internal/apisurface/outputschema . > /dev/null
 	@echo "api surface written"
 
 # api-check fails if the generated files are out of date, so a tool added
 # without regenerating them is caught in CI rather than read as truth later.
 api-check:
 	@go run ./internal/apisurface/generate .
-	@git diff --quiet -- docs/API.md docs/api/surface.json || { \
-		echo "docs/API.md or docs/api/surface.json is stale — run 'make api' and commit the result"; \
-		git --no-pager diff --stat -- docs/API.md docs/api/surface.json; \
+	@go run ./internal/apisurface/outputschema . > /dev/null
+	@git diff --quiet -- docs/API.md docs/api/surface.json internal/agent/outputschema_gen.go || { \
+		echo "docs/API.md, docs/api/surface.json or internal/agent/outputschema_gen.go is stale — run 'make api' and commit the result"; \
+		git --no-pager diff --stat -- docs/API.md docs/api/surface.json internal/agent/outputschema_gen.go; \
 		exit 1; }
 	@echo "api surface current"
 

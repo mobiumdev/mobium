@@ -152,8 +152,18 @@ cut short and its schema reduced to the argument names:
 
 Every schema says `additionalProperties: false`, so an argument a tool does
 not take is refused rather than ignored. `readOnlyHint` is on every tool:
-true for the 19 that only read — `app_map`, `app_text`, `app_state` and the
-like — and false for everything that can change the device.
+true for the 22 that only read — `app_map`, `app_text`, `app_state` and the
+like — and false for everything that can change the device; tools that act
+also say `destructiveHint` and `idempotentHint` where they can (section 7).
+
+68 of the 78 tools also carry an `outputSchema`: the shape of the
+`structuredContent` every successful call returns, so a client can check
+what it is handed. It is generated from the code by Go's type checker
+(`internal/apisurface/outputschema`, run by `make api`), and only for a
+tool that always answers with one type; the other ten, such as
+`app_screenshot`, `app_batch` and `app_logs`, answer with an image or with
+one of several shapes, and carry none. A test holds every schema to empty
+and filled values of its type, and `make ci` fails when one is out of date.
 
 ## 4. Answers: text, data and images
 
