@@ -4,13 +4,13 @@ go 1.24.0
 
 require (
 	github.com/Microsoft/go-winio v0.6.2
+	github.com/anthropics/anthropic-sdk-go v1.84.0
 	github.com/gorilla/websocket v1.5.3
 	github.com/spf13/cobra v1.10.2
 	golang.org/x/sys v0.41.0
 )
 
 require (
-	github.com/anthropics/anthropic-sdk-go v1.84.0 // indirect
 	github.com/bahlo/generic-list-go v0.2.0 // indirect
 	github.com/buger/jsonparser v1.1.2 // indirect
 	github.com/go-logr/logr v1.4.2 // indirect

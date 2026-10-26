@@ -12,9 +12,12 @@ func newClaimCheckCmd() *cobra.Command {
 			"answers PASSED, FAILED or INCONCLUSIVE with the observations it rests on.\n\n" +
 			"Inconclusive means the recording cannot settle the claim. A model's judgment\n" +
 			"is not proof: keep `wait` and test assertions for what can be asserted\n" +
-			"directly. Needs no device, needs an Anthropic credential (`ant auth login`,\n" +
-			"or ANTHROPIC_API_KEY where the daemon starts), and each check is a paid call.\n" +
-			"A check against a live device is not built yet.",
+			"directly. Needs no device. The default judge, Claude, needs an Anthropic\n" +
+			"credential (`ant auth login`, or ANTHROPIC_API_KEY where the daemon starts),\n" +
+			"and each check is a paid call; it is built but not yet measured against\n" +
+			"claims with known answers. openai:<name> judges are measured, and\n" +
+			"`recording` with `verdict` lets an agent you run be the judge.\n" +
+			"See docs/guides/verifier.md. A check against a live device is not built yet.",
 		Example: `  mobium trace start && mobium set testid=termsCheck && mobium trace stop -o form.zip
   mobium check "the terms box was ticked after the tap" -i form.zip`,
 		Args: cobra.ExactArgs(1),
@@ -27,7 +30,7 @@ func newClaimCheckCmd() *cobra.Command {
 		},
 	}
 	cmd.Flags().StringVarP(&record, "input", "i", "", "The recording: the .zip `mobium trace stop` saved")
-	cmd.Flags().StringVar(&model, "model", "", "The model that judges (default claude-opus-5-5); openai:<name> for one served through the OpenAI-compatible API, Ollama on this machine by default, such as openai:qwen2.5:14b")
+	cmd.Flags().StringVar(&model, "model", "", "The model that judges (default claude-opus-5-5, not yet measured); openai:<name> for one served through the OpenAI-compatible API, Ollama on this machine by default, such as openai:qwen2.5:14b")
 	_ = cmd.MarkFlagRequired("input")
 	return cmd
 }

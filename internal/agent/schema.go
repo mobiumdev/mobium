@@ -2229,8 +2229,10 @@ func GetToolSchemas() []Tool {
 				"observations it rests on. Inconclusive means the recording cannot settle it; nothing missing " +
 				"is taken for success. A model's judgment is not proof: keep deterministic assertions " +
 				"(app_wait_for) for what can be asserted directly, and use this for claims about what a " +
-				"person would have seen. Needs no device. Needs an Anthropic credential on the machine " +
-				"running mobium, and each check is a paid model call. A live check is not built yet.",
+				"person would have seen. Needs no device. The default judge, Claude through the Anthropic " +
+				"API, needs an Anthropic credential and each check is a paid call; it is built but not yet " +
+				"measured against claims with known answers. Judges through \"openai:<name>\" are measured " +
+				"(docs/guides/verifier.md). A live check is not built yet.",
 			InputSchema: map[string]interface{}{
 				"type": "object",
 				"properties": map[string]interface{}{
@@ -2244,7 +2246,7 @@ func GetToolSchemas() []Tool {
 					},
 					"model": map[string]interface{}{
 						"type":        "string",
-						"description": "The model that judges. Defaults to claude-opus-5-5. \"openai:<name>\" asks a model through the OpenAI-compatible API: Ollama on this machine by default, with no credential; MOBIUM_AI_BASE_URL names another server, which the recording is then sent to, and MOBIUM_AI_API_KEY its key.",
+						"description": "The model that judges. Defaults to claude-opus-5-5, not yet measured. \"openai:<name>\" asks a model through the OpenAI-compatible API: Ollama on this machine by default, with no credential; MOBIUM_AI_BASE_URL names another server, which the recording is then sent to, and MOBIUM_AI_API_KEY its key.",
 					},
 				},
 				"required":             []string{"claim", "record"},
