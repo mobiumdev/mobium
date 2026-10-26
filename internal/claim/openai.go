@@ -14,20 +14,23 @@ import (
 	"github.com/mobiumdev/mobium/internal/mobiumerr"
 )
 
-// LocalPrefix names a model served on this machine, through the
-// OpenAI-compatible chat API that Ollama, llama.cpp and LM Studio serve:
-// "local:qwen2.5:14b". Vibium's local provider, carried over. It needs no
-// credential and costs nothing, and its judgment is the model's — a small
-// one is measured against the claim set before it is trusted.
-const LocalPrefix = "local:"
+// OpenAIPrefix names a model by the API it is reached through, the
+// OpenAI-compatible chat API that Ollama, llama.cpp, LM Studio and hosted
+// services serve: "openai:qwen2.5:14b". It names the protocol, not the
+// place: by default the server is Ollama on this machine, and
+// MOBIUM_AI_BASE_URL can name one elsewhere, to which the recording is sent.
+// It was "local:" until a hosted server made that name untrue. Its judgment
+// is the model's — a model is measured against the claim set before it is
+// trusted.
+const OpenAIPrefix = "openai:"
 
-// DefaultLocalURL is Ollama's OpenAI-compatible endpoint; MOBIUM_AI_BASE_URL
-// names another, and MOBIUM_AI_API_KEY is sent to it as a bearer token when
+// DefaultOpenAIURL is Ollama's endpoint on this machine, so nothing leaves
+// it unless asked; MOBIUM_AI_BASE_URL names another, and MOBIUM_AI_API_KEY is sent to it as a bearer token when
 // it wants one.
-const DefaultLocalURL = "http://127.0.0.1:11434/v1"
+const DefaultOpenAIURL = "http://127.0.0.1:11434/v1"
 
-// Local is a Session on a local model.
-type Local struct {
+// OpenAI is a Session on a model served through the OpenAI-compatible API.
+type OpenAI struct {
 	Model    string
 	base     string
 	key      string
@@ -42,17 +45,17 @@ type Local struct {
 // text on every claim, which the loop can only take as no verdict.
 const maxNudges = 2
 
-// NewLocal is a session on model, served at MOBIUM_AI_BASE_URL or Ollama's.
-func NewLocal(model string) *Local {
+// NewOpenAI is a session on model, served at MOBIUM_AI_BASE_URL or Ollama's.
+func NewOpenAI(model string) *OpenAI {
 	base := strings.TrimRight(os.Getenv("MOBIUM_AI_BASE_URL"), "/")
 	if base == "" {
-		base = DefaultLocalURL
+		base = DefaultOpenAIURL
 	}
-	return &Local{Model: model, base: base, key: os.Getenv("MOBIUM_AI_API_KEY"), http: &http.Client{Timeout: 10 * time.Minute}}
+	return &OpenAI{Model: model, base: base, key: os.Getenv("MOBIUM_AI_API_KEY"), http: &http.Client{Timeout: 10 * time.Minute}}
 }
 
 // Begin starts the conversation.
-func (l *Local) Begin(ctx context.Context, system, claim string, tools []Tool) (Step, error) {
+func (l *OpenAI) Begin(ctx context.Context, system, claim string, tools []Tool) (Step, error) {
 	for _, t := range tools {
 		l.tools = append(l.tools, map[string]interface{}{"type": "function", "function": map[string]interface{}{
 			"name": t.Name, "description": t.Description, "parameters": t.Schema,
@@ -68,7 +71,7 @@ func (l *Local) Begin(ctx context.Context, system, claim string, tools []Tool) (
 // Next hands the model its tools' answers. A screenshot is described, not
 // sent: the chat API puts images in user turns only, and a model that
 // cannot see is told so rather than handed bytes it cannot read.
-func (l *Local) Next(ctx context.Context, results []Result) (Step, error) {
+func (l *OpenAI) Next(ctx context.Context, results []Result) (Step, error) {
 	for _, r := range results {
 		text := r.Text
 		if r.JPEG != nil {
@@ -80,7 +83,7 @@ func (l *Local) Next(ctx context.Context, results []Result) (Step, error) {
 	return l.send(ctx)
 }
 
-func (l *Local) send(ctx context.Context) (Step, error) {
+func (l *OpenAI) send(ctx context.Context) (Step, error) {
 	for {
 		step, err := l.ask(ctx)
 		if err != nil || len(step.Calls) > 0 || l.nudges >= maxNudges {
@@ -92,13 +95,13 @@ func (l *Local) send(ctx context.Context) (Step, error) {
 	}
 }
 
-func (l *Local) ask(ctx context.Context) (Step, error) {
+func (l *OpenAI) ask(ctx context.Context) (Step, error) {
 	body, _ := json.Marshal(map[string]interface{}{
 		"model": l.Model, "messages": l.messages, "tools": l.tools, "temperature": 0,
 	})
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, l.base+"/chat/completions", bytes.NewReader(body))
 	if err != nil {
-		return Step{}, mobiumerr.New(mobiumerr.InvalidArgument, "the local model's address %s: %w", l.base, err)
+		return Step{}, mobiumerr.New(mobiumerr.InvalidArgument, "the model server's address %s: %w", l.base, err)
 	}
 	req.Header.Set("Content-Type", "application/json")
 	if l.key != "" {
@@ -106,7 +109,7 @@ func (l *Local) ask(ctx context.Context) (Step, error) {
 	}
 	resp, err := l.http.Do(req)
 	if err != nil {
-		return Step{}, mobiumerr.New(mobiumerr.ToolchainMissing, "no local model answered at %s: %w", l.base, err).
+		return Step{}, mobiumerr.New(mobiumerr.ToolchainMissing, "no model server answered at %s: %w", l.base, err).
 			WithRemedy("start it (`ollama serve`), or set MOBIUM_AI_BASE_URL to where one is served, then `mobium daemon stop`")
 	}
 	defer resp.Body.Close()
@@ -120,7 +123,7 @@ func (l *Local) ask(ctx context.Context) (Step, error) {
 		} `json:"choices"`
 	}
 	if err := json.Unmarshal(raw, &out); err != nil || len(out.Choices) == 0 {
-		return Step{}, mobiumerr.New(mobiumerr.Unclassified, "the local model's answer was not a chat completion: %s", clip(string(raw), 300))
+		return Step{}, mobiumerr.New(mobiumerr.Unclassified, "the model server's answer was not a chat completion: %s", clip(string(raw), 300))
 	}
 	msg := out.Choices[0].Message
 	l.messages = append(l.messages, msg)
@@ -140,7 +143,7 @@ func (l *Local) ask(ctx context.Context) (Step, error) {
 // refused names why the server turned a request down, with a remedy that
 // fits: a rate limit sent "check the model is installed (`ollama list`)",
 // which cannot help.
-func (l *Local) refused(status int, body string) error {
+func (l *OpenAI) refused(status int, body string) error {
 	msg := fmt.Sprintf("the model %s at %s refused the request (%d): %s", l.Model, l.base, status, body)
 	switch {
 	case status == http.StatusTooManyRequests || status >= 500:
@@ -151,5 +154,5 @@ func (l *Local) refused(status int, body string) error {
 			WithRemedy("set MOBIUM_AI_API_KEY to a key " + l.base + " accepts, then `mobium daemon stop` so the daemon reads it")
 	}
 	return mobiumerr.New(mobiumerr.ToolchainMissing, "%s", msg).
-		WithRemedy(fmt.Sprintf("check %s names a model %s serves (for Ollama, `ollama list`), after %q", l.Model, l.base, LocalPrefix))
+		WithRemedy(fmt.Sprintf("check %s names a model %s serves (for Ollama, `ollama list`), after %q", l.Model, l.base, OpenAIPrefix))
 }

@@ -2244,7 +2244,7 @@ func GetToolSchemas() []Tool {
 					},
 					"model": map[string]interface{}{
 						"type":        "string",
-						"description": "The model that judges. Defaults to claude-opus-5-5. \"local:<name>\" asks a model served on this machine through the OpenAI-compatible API (Ollama's by default; MOBIUM_AI_BASE_URL names another), with no credential.",
+						"description": "The model that judges. Defaults to claude-opus-5-5. \"openai:<name>\" asks a model through the OpenAI-compatible API: Ollama on this machine by default, with no credential; MOBIUM_AI_BASE_URL names another server, which the recording is then sent to, and MOBIUM_AI_API_KEY its key.",
 					},
 				},
 				"required":             []string{"claim", "record"},

@@ -99,3 +99,11 @@ func TestAStatelessCallDoesNotWaitForTheLock(t *testing.T) {
 		t.Error("app_tap was taken for stateless")
 	}
 }
+
+// "openai:" names the API, not Anthropic's: it needs no credential.
+func TestAnOpenAIModelIsAskedThroughThatAPI(t *testing.T) {
+	s, err := newClaimSession("openai:qwen2.5:14b")
+	if o, ok := s.(*claim.OpenAI); err != nil || !ok || o.Model != "qwen2.5:14b" {
+		t.Errorf("openai:qwen2.5:14b gave %T, %v", s, err)
+	}
+}

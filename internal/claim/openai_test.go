@@ -11,9 +11,9 @@ import (
 	"github.com/mobiumdev/mobium/internal/mobiumerr"
 )
 
-// A local model that answers in prose is asked again for its verdict, and
+// A model that answers in prose is asked again for its verdict, and
 // one that keeps to prose ends the check as no verdict, not a loop.
-func TestALocalModelAnsweringInProseIsAskedAgain(t *testing.T) {
+func TestAModelAnsweringInProseIsAskedAgain(t *testing.T) {
 	for _, tc := range []struct {
 		prose int // answers in text before calling a tool
 		calls int
@@ -39,7 +39,7 @@ func TestALocalModelAnsweringInProseIsAskedAgain(t *testing.T) {
 		}))
 		t.Setenv("MOBIUM_AI_BASE_URL", srv.URL)
 		t.Setenv("MOBIUM_AI_API_KEY", "k")
-		step, err := NewLocal("m").Begin(context.Background(), "system", "claim", nil)
+		step, err := NewOpenAI("m").Begin(context.Background(), "system", "claim", nil)
 		srv.Close()
 		if err != nil {
 			t.Fatal(err)
@@ -69,7 +69,7 @@ func TestARefusalNamesARemedyThatFits(t *testing.T) {
 			w.WriteHeader(status)
 		}))
 		t.Setenv("MOBIUM_AI_BASE_URL", srv.URL)
-		_, err := NewLocal("m").Begin(context.Background(), "system", "claim", nil)
+		_, err := NewOpenAI("m").Begin(context.Background(), "system", "claim", nil)
 		srv.Close()
 		if mobiumerr.CodeOf(err) != want.code || !strings.Contains(mobiumerr.Text(err), want.remedy) {
 			t.Errorf("%d: %s", status, mobiumerr.Text(err))
