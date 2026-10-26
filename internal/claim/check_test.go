@@ -195,3 +195,27 @@ func TestAVerdictMustCiteCallsTheRecordingHolds(t *testing.T) {
 		}
 	}
 }
+
+// Every turn of the model is reported before it is asked: the CLI's read
+// gives up after two minutes of silence, and a local model's check ran past.
+func TestACheckReportsEachTurn(t *testing.T) {
+	tr, _ := Open(context.Background(), recording(t))
+	defer tr.Close()
+	id := tr.Calls[0].ID
+	s := &script{steps: [][]ToolCall{
+		{call("trace_screen", `{"id":"`+id+`"}`)},
+		{call("trace_screen", `{"id":"`+id+`"}`)},
+		{call(verdictTool, `{"status":"inconclusive","summary":"cannot tell","evidence":[]}`)},
+	}}
+	var heard []string
+	ctx := WithProgress(context.Background(), func(m string) { heard = append(heard, m) })
+	if _, err := Check(ctx, tr, "the terms box ends up ticked", s); err != nil {
+		t.Fatal(err)
+	}
+	if len(heard) != 3 || !strings.Contains(heard[2], "2 reads") {
+		t.Errorf("progress: %q", heard)
+	}
+	if _, err := Check(context.Background(), tr, "x", &script{}); err != nil {
+		t.Errorf("no progress callback: %v", err)
+	}
+}

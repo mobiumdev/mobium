@@ -75,6 +75,20 @@ var verdictSchema = object(map[string]interface{}{
 	}, "type", "summary")},
 }, "status", "summary", "evidence")
 
+type progressKey struct{}
+
+// WithProgress has Check report each step to fn: a local model can think for
+// minutes, and a caller that hears nothing takes the call for a wedged one.
+func WithProgress(ctx context.Context, fn func(string)) context.Context {
+	return context.WithValue(ctx, progressKey{}, fn)
+}
+
+func progress(ctx context.Context, format string, a ...interface{}) {
+	if fn, _ := ctx.Value(progressKey{}).(func(string)); fn != nil {
+		fn(fmt.Sprintf(format, a...))
+	}
+}
+
 // Check asks s whether claim holds in t.
 func Check(ctx context.Context, t *Trace, claim string, s Session) (Verdict, error) {
 	claim = strings.TrimSpace(claim)
@@ -83,6 +97,7 @@ func Check(ctx context.Context, t *Trace, claim string, s Session) (Verdict, err
 	}
 	tools := append(append([]Tool{}, traceTools...), Tool{verdictTool,
 		"Deliver the final verdict for the claim. Call exactly once, when verification is finished.", verdictSchema})
+	progress(ctx, "asking the model about the claim")
 	step, err := s.Begin(ctx, instruction, "Claim: "+claim, tools)
 	steps, bad := 0, 0
 	for {
@@ -119,6 +134,7 @@ func Check(ctx context.Context, t *Trace, claim string, s Session) (Verdict, err
 			return Verdict{Status: "inconclusive", Claim: claim, Steps: steps,
 				Summary: fmt.Sprintf("The step limit (%d) was reached before a verdict.", maxSteps), Evidence: []Evidence{}}, nil
 		}
+		progress(ctx, "the model has made %d reads; asking it again", steps)
 		step, err = s.Next(ctx, results)
 	}
 }

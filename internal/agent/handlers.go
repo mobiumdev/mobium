@@ -16,6 +16,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/mobiumdev/mobium/internal/claim"
 	"github.com/mobiumdev/mobium/internal/device"
 	"github.com/mobiumdev/mobium/internal/mobiumdriver"
 	"github.com/mobiumdev/mobium/internal/uitree"
@@ -254,8 +255,8 @@ func StatelessRequest(req Request) bool {
 	return json.Unmarshal(req.Params, &p) == nil && Stateless(p.Name)
 }
 
-func (h *Handlers) callStateless(name string, args map[string]interface{}) (*ToolsCallResult, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), statelessTimeout)
+func (h *Handlers) callStateless(name string, args map[string]interface{}, notify func(string)) (*ToolsCallResult, error) {
+	ctx, cancel := context.WithTimeout(claim.WithProgress(context.Background(), notify), statelessTimeout)
 	defer cancel()
 	switch name {
 	case "app_check":

@@ -285,9 +285,9 @@ func (d *Daemon) handleRequest(data []byte, notify func(string)) *agent.Response
 
 	// A tool that touches no handler state — a check, a read of a recording —
 	// runs beside the rest: a check thinks for minutes, and every device
-	// call would wait behind it.
+	// call would wait behind it. Its progress keeps the client's read open.
 	if agent.StatelessRequest(req) {
-		result, rpcErr := agent.Route(req, d.handlers, d.version, d.daemonMethods)
+		result, rpcErr := agent.CallStateless(req.Params, d.handlers, notify)
 		if req.ID == nil {
 			return nil
 		}

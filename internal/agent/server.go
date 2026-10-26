@@ -169,7 +169,7 @@ func CallTool(params json.RawMessage, h *Handlers) (interface{}, *Error) {
 		return nil, &Error{Code: InvalidParams, Message: "Invalid params", Data: err.Error()}
 	}
 	if Stateless(p.Name) {
-		res, err := h.callStateless(p.Name, p.Arguments)
+		res, err := h.callStateless(p.Name, p.Arguments, nil)
 		if err != nil {
 			return ErrorResult(err), nil
 		}
@@ -180,6 +180,21 @@ func CallTool(params json.RawMessage, h *Handlers) (interface{}, *Error) {
 		return ErrorResult(err), nil
 	}
 	return result, nil
+}
+
+// CallStateless is CallTool for a stateless tool, reporting progress to
+// notify on the caller's own connection: the daemon's callback for every
+// other call belongs to whichever request holds the lock.
+func CallStateless(params json.RawMessage, h *Handlers, notify func(string)) (interface{}, *Error) {
+	var p ToolsCallParams
+	if err := json.Unmarshal(params, &p); err != nil {
+		return nil, &Error{Code: InvalidParams, Message: "Invalid params", Data: err.Error()}
+	}
+	res, err := h.callStateless(p.Name, p.Arguments, notify)
+	if err != nil {
+		return ErrorResult(err), nil
+	}
+	return res, nil
 }
 
 // ErrorResult is a failed tool call as a result, the one way every front
