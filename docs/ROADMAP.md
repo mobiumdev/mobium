@@ -1198,6 +1198,30 @@ this is what is not.
     WebDriverAgent does with a touch on tvOS, which Mobium refuses first;
     and the `devices` list shows every Apple TV simulator, including the
     three Xcode makes when the platform is installed.
+- **Meta Quest** (measured 2026-10-25 on the Meta Spatial Simulator,
+  Horizon OS build 207, Android 14). Horizon OS's 2D apps are panels, all
+  open at once, and the Android backends drive them after CHALLENGES
+  364–367: every window read, the app in front's alone seen, a panel no
+  dialog, and a touch on another app's panel refused, since it only brings
+  that panel forward. [HORIZON-OS.md](HORIZON-OS.md) is the state of it.
+  Left, in order:
+  - **A drag's gain on a panel** (367): a window drawn 2.48 times its size
+    magnifies a drag, not a tap, and a slider's thumb node is clipped to
+    its track. Measure the gain, correct the drag by it, and make a fill
+    refuse a thumb that ended far from its target, which today reports a
+    move that did not happen.
+  - **`mobium-app.sh` on Horizon OS**: the location steps need Location on,
+    and the prompt's buttons are Horizon OS's ("Update to precise
+    location", "Keep approximate location").
+  - **Errors that name the platform's cause**: a location request with
+    Location off, and `launch` of an app with no launcher, which says "is
+    it installed?" of one that is.
+  - **`devices` saying Horizon OS**, and the dump backend reading every
+    window.
+  - **The Quest Browser's web taps**, refused as Mobile Safari's were
+    before its page was placed from text (CHALLENGES 47, 248).
+  - **A real headset**, then immersive apps, which publish no
+    accessibility tree.
 - **Fire TV** (written down 2026-09-28; measured 2026-10-01 and 10-02 on a
   Hisense TV with Fire OS 7.7.1.7, which is Android 9). Fire OS is Android —
   7 is Android 9, 8 is Android 11 — reached by `adb connect <tv>:5555` once
