@@ -238,6 +238,7 @@ $ mobium --json tap testid=noSuchButton; echo $?
 | 5 | `unsupported` | this device or driver cannot do it — retrying will not help |
 | 6 | `timeout` | it did not happen in time — the one kind worth retrying as it is |
 | 7 | `not_confirmed` | the command ran and reading back says it did not take — a finding |
+| 8 | `not_permitted` | whoever started Mobium does not allow it: read-only, or an app outside its app list — only they can change that |
 | 1 | `device_server`, `internal`, `error` | the device side failed, Mobium has a bug, or the failure is unclassified — read the message |
 
 The codes are the same in every client, as exceptions, and on the MCP wire,
@@ -258,6 +259,7 @@ break every client that catches it, so they do not change:
 | `timeout` | a wait ran out |
 | `not_confirmed` | the command said it worked and reading the state back disagreed |
 | `invalid_argument` | the request itself is wrong, or the command line was refused |
+| `not_permitted` | the policy Mobium was started with refuses it: `MOBIUM_READ_ONLY`, `MOBIUM_APPS`, or `mobium mcp --read-only`/`--apps` |
 | `device_server` | the device side failed — a device server, or adb, simctl, devicectl, lockdown — in a way no narrower code names; a server's own W3C code is in `details.w3c` |
 | `internal` | a bug in Mobium |
 | `error` | unclassified: a daemon too old to send a code, or a code a client does not know |

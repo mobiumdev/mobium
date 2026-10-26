@@ -3421,7 +3421,11 @@
       ]
     },
     {
-      "command": "mcp"
+      "command": "mcp",
+      "flags": [
+        "--apps",
+        "--read-only"
+      ]
     },
     {
       "command": "network",

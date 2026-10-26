@@ -91,6 +91,11 @@ export class NotConfirmedError extends MobiumError {
   static code = 'not_confirmed'
 }
 
+/** Whoever started Mobium does not allow this call: a read-only Mobium asked to act, or an app outside its app list. Retrying cannot help. */
+export class NotPermittedError extends MobiumError {
+  static code = 'not_permitted'
+}
+
 /** A wait ran out. */
 export class TimedOutError extends MobiumError {
   static code = 'timeout'
@@ -112,7 +117,7 @@ export class InternalError extends MobiumError {
 }
 
 const ERRORS_BY_CODE = new Map(
-  [NoDeviceError, DeviceNotReadyError, ToolchainMissingError, NoSuchElementError, AmbiguousLocatorError, ElementNotReachableError, NoSuchContextError, NoSuchAlertError, UnsupportedError, NotConfirmedError, TimedOutError, InvalidArgumentError, DeviceServerError, InternalError].map(c => [c.code, c]))
+  [NoDeviceError, DeviceNotReadyError, ToolchainMissingError, NoSuchElementError, AmbiguousLocatorError, ElementNotReachableError, NoSuchContextError, NoSuchAlertError, UnsupportedError, NotConfirmedError, NotPermittedError, TimedOutError, InvalidArgumentError, DeviceServerError, InternalError].map(c => [c.code, c]))
 
 /**
  * The exception for a failed tool call: the text as always, and the code,

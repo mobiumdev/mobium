@@ -2324,7 +2324,7 @@ func GetToolSchemas() []Tool {
 		},
 	}
 	for i := range tools {
-		tools[i].Annotations = map[string]interface{}{"readOnlyHint": readOnlyTools[tools[i].Name]}
+		tools[i].Annotations = Annotations(tools[i].Name)
 	}
 	return tools
 }

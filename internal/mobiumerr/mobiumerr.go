@@ -64,6 +64,10 @@ const (
 	// Unsupported means this backend or platform cannot do what was asked,
 	// and says why. Retrying cannot help; a different device might.
 	Unsupported Code = "unsupported"
+	// NotPermitted means the policy whoever started Mobium set refuses the
+	// call: a read-only Mobium asked to act, or an app outside its app list.
+	// Retrying cannot help; only a different policy, set where Mobium starts.
+	NotPermitted Code = "not_permitted"
 	// NotConfirmed means the command reported success and reading the state
 	// back disagreed — `pm grant` on a permission the app never declared, a
 	// keystroke iOS dropped.
@@ -87,7 +91,7 @@ var Codes = []Code{
 	Unclassified,
 	NoDevice, DeviceNotReady, ToolchainMissing,
 	NoSuchElement, AmbiguousLocator, ElementNotReachable, NoSuchContext, NoSuchAlert,
-	Unsupported, NotConfirmed, Timeout, InvalidArgument, DeviceServer, Internal,
+	Unsupported, NotConfirmed, Timeout, InvalidArgument, DeviceServer, Internal, NotPermitted,
 }
 
 // Error is a classified failure.
@@ -236,6 +240,7 @@ func FromPayload(p Payload) *Error {
 //	5  unsupported
 //	6  timeout
 //	7  not_confirmed
+//	8  not_permitted
 func ExitCode(c Code) int {
 	switch c {
 	case InvalidArgument:
@@ -250,6 +255,8 @@ func ExitCode(c Code) int {
 		return 6
 	case NotConfirmed:
 		return 7
+	case NotPermitted:
+		return 8
 	}
 	return 1
 }

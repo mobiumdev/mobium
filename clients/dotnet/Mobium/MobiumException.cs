@@ -90,6 +90,7 @@ namespace Mobium
                 case NoSuchAlertException.ErrorCode: return new NoSuchAlertException(text, tool, remedy, retryable, details);
                 case UnsupportedException.ErrorCode: return new UnsupportedException(text, tool, remedy, retryable, details);
                 case NotConfirmedException.ErrorCode: return new NotConfirmedException(text, tool, remedy, retryable, details);
+                case NotPermittedException.ErrorCode: return new NotPermittedException(text, tool, remedy, retryable, details);
                 case TimedOutException.ErrorCode: return new TimedOutException(text, tool, remedy, retryable, details);
                 case InvalidArgumentException.ErrorCode: return new InvalidArgumentException(text, tool, remedy, retryable, details);
                 case DeviceServerException.ErrorCode: return new DeviceServerException(text, tool, remedy, retryable, details);
@@ -194,6 +195,17 @@ namespace Mobium
         public const string ErrorCode = "unsupported";
 
         internal UnsupportedException(string message, string tool, string remedy, bool retryable,
+            IDictionary<string, object?>? details)
+            : base(message, tool, ErrorCode, remedy, retryable, details) { }
+    }
+
+    /// <summary>Whoever started Mobium does not allow this call: a read-only Mobium asked to act, or an app outside its app list. Retrying cannot help. Error code <c>not_permitted</c>.</summary>
+    public sealed class NotPermittedException : MobiumException
+    {
+        /// <summary>The wire code this exception stands for.</summary>
+        public const string ErrorCode = "not_permitted";
+
+        internal NotPermittedException(string message, string tool, string remedy, bool retryable,
             IDictionary<string, object?>? details)
             : base(message, tool, ErrorCode, remedy, retryable, details) { }
     }

@@ -118,6 +118,12 @@ const MetaUntraced = "dev.mobium/untraced"
 // read, and a test made from the trace asserted nothing.
 const MetaExpect = "dev.mobium/expect"
 
+// MetaPolicy is the _meta key the CLI and mobium pipe set from their own
+// environment (MOBIUM_READ_ONLY, MOBIUM_APPS), so a daemon another command
+// started without them still holds the call to them. It only ever narrows
+// the daemon's own policy: {"read_only": true, "apps": ["…"]}.
+const MetaPolicy = "dev.mobium/policy"
+
 // ToolsCallResult is what a tool returns to an MCP client.
 //
 // Content is the human- and agent-readable rendering. StructuredContent is the

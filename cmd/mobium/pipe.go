@@ -187,7 +187,7 @@ func (p *pipe) handle(line []byte) *agent.Response {
 			ServerInfo:      agent.ServerInfo{Name: "mobium", Version: version},
 		})
 	case "tools/list":
-		return reply(agent.ToolsListResult{Tools: agent.GetToolSchemas()})
+		return reply(agent.ToolsListResult{Tools: agent.ToolsFor(agent.PolicyFromEnv())})
 	case "tools/call":
 		var params agent.ToolsCallParams
 		if err := json.Unmarshal(req.Params, &params); err != nil {
