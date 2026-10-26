@@ -2161,15 +2161,35 @@ public final class Mobium implements AutoCloseable {
      * Asks an independent model whether a claim holds in a recording. The
      * model reads only the recording, in a fresh context, and answers with
      * {@code status} (passed, failed or inconclusive), {@code summary} and
-     * {@code evidence}. A model's judgment is not proof, and each check is a
-     * paid call; it needs an Anthropic credential where mobium runs.
+     * {@code evidence}. A model's judgment is not proof. This asks Claude
+     * through the Anthropic API, which needs a credential, is a paid call, and
+     * is not yet measured; {@link #check(String, String, String)} names another.
      *
      * @param claim what should be true, precisely
      * @param record the .zip a trace saved
      * @return the verdict
      */
     public Map<String, Object> check(String claim, String record) {
-        return data("app_check", args("claim", claim, "record", record));
+        return check(claim, record, null);
+    }
+
+    /**
+     * Asks a named model whether a claim holds in a recording, as
+     * {@link #check(String, String)} does.
+     *
+     * @param claim what should be true, precisely
+     * @param record the .zip a trace saved
+     * @param model {@code "openai:<name>"} for one served through the
+     *     OpenAI-compatible API (Ollama where mobium runs, unless
+     *     MOBIUM_AI_BASE_URL names another server); null for Claude
+     * @return the verdict
+     */
+    public Map<String, Object> check(String claim, String record, String model) {
+        Map<String, Object> a = args("claim", claim, "record", record);
+        if (model != null) {
+            a.put("model", model);
+        }
+        return data("app_check", a);
     }
 
     /**

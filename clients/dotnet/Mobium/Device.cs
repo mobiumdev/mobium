@@ -1397,11 +1397,18 @@ namespace Mobium
         /// Asks an independent model whether a claim holds in a recording (the
         /// .zip a trace saved). The model reads only the recording, in a fresh
         /// context, and answers with status (passed, failed or inconclusive),
-        /// summary and evidence. A model's judgment is not proof, and each
-        /// check is a paid call; it needs an Anthropic credential where mobium runs.
+        /// summary and evidence. A model's judgment is not proof. model is
+        /// "openai:&lt;name&gt;" for one served through the OpenAI-compatible API
+        /// (Ollama where mobium runs, unless MOBIUM_AI_BASE_URL names another
+        /// server); null asks Claude through the Anthropic API, which needs a
+        /// credential, is a paid call, and is not yet measured.
         /// </summary>
-        public IDictionary<string, object?> Check(string claim, string record) =>
-            Data("app_check", Args("claim", claim, "record", record));
+        public IDictionary<string, object?> Check(string claim, string record, string? model = null)
+        {
+            var a = Args("claim", claim, "record", record);
+            if (model != null) a["model"] = model;
+            return Data("app_check", a);
+        }
 
         /// <summary>
         /// Reads a recording through the verifier's views: read is summary, calls,

@@ -1244,8 +1244,11 @@ class Device:
         record is the .zip a trace saved. The model reads only the recording,
         in a fresh context, and answers {status: passed | failed |
         inconclusive, summary, evidence, ...}. A model's judgment is not
-        proof, and each check is a paid call; it needs an Anthropic
-        credential where mobium runs, and no device.
+        proof. model is "openai:<name>" for one served through the
+        OpenAI-compatible API (Ollama where mobium runs, unless
+        MOBIUM_AI_BASE_URL names another server); None asks Claude through
+        the Anthropic API, which needs a credential, is a paid call, and is
+        not yet measured. Needs no device.
         """
         args: dict[str, Any] = {"claim": claim, "record": record}
         if model is not None:

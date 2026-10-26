@@ -1885,14 +1885,28 @@ func (d *Device) SendSMS(ctx context.Context, from, text string) error {
 	return d.data(ctx, "app_sms", args, &out)
 }
 
+// CheckOptions are the optional arguments of Check.
+type CheckOptions struct {
+	// Model is the model that judges: "openai:<name>" for one served through
+	// the OpenAI-compatible API (Ollama on the machine running mobium, unless
+	// MOBIUM_AI_BASE_URL names another server). Empty asks Claude through the
+	// Anthropic API, which needs a credential, is a paid call, and is not yet
+	// measured against claims with known answers.
+	Model string
+}
+
 // Check asks an independent model whether claim holds in a recording: the
 // .zip a trace saved. The model reads only the recording, in a fresh
 // context, and answers passed, failed or inconclusive with the observations
-// it rests on. A model's judgment is not proof, and each check is a paid
-// call; it needs an Anthropic credential where mobium runs, and no device.
-func (d *Device) Check(ctx context.Context, claim, record string) (CheckVerdict, error) {
+// it rests on. A model's judgment is not proof. It needs no device; opts
+// may be nil.
+func (d *Device) Check(ctx context.Context, claim, record string, opts *CheckOptions) (CheckVerdict, error) {
+	args := map[string]any{"claim": claim, "record": record}
+	if opts != nil && opts.Model != "" {
+		args["model"] = opts.Model
+	}
 	var out CheckVerdict
-	err := d.data(ctx, "app_check", map[string]any{"claim": claim, "record": record}, &out)
+	err := d.data(ctx, "app_check", args, &out)
 	return out, err
 }
 

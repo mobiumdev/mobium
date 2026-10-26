@@ -1530,8 +1530,11 @@ export class Device {
    * Ask an independent model whether a claim holds in a recording: the .zip
    * a trace saved. The model reads only the recording, in a fresh context,
    * and answers { status: 'passed' | 'failed' | 'inconclusive', summary,
-   * evidence, ... }. A model's judgment is not proof, and each check is a
-   * paid call; it needs an Anthropic credential where mobium runs.
+   * evidence, ... }. A model's judgment is not proof. options.model is
+   * 'openai:<name>' for one served through the OpenAI-compatible API (Ollama
+   * where mobium runs, unless MOBIUM_AI_BASE_URL names another server);
+   * without it, Claude through the Anthropic API, which needs a credential,
+   * is a paid call, and is not yet measured.
    */
   async check(claim, record, options = {}) {
     const args = { claim, record }
