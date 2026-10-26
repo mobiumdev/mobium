@@ -1885,6 +1885,74 @@ func (d *Device) SendSMS(ctx context.Context, from, text string) error {
 	return d.data(ctx, "app_sms", args, &out)
 }
 
+// CheckOptions are the optional arguments of Check.
+type CheckOptions struct {
+	// Model is the model that judges: "openai:<name>" for one served through
+	// the OpenAI-compatible API (Ollama on the machine running mobium, unless
+	// MOBIUM_AI_BASE_URL names another server). Empty asks Claude through the
+	// Anthropic API, which needs a credential, is a paid call, and is not yet
+	// measured against claims with known answers.
+	Model string
+}
+
+// Check asks an independent model whether claim holds in a recording: the
+// .zip a trace saved. The model reads only the recording, in a fresh
+// context, and answers passed, failed or inconclusive with the observations
+// it rests on. A model's judgment is not proof. It needs no device; opts
+// may be nil.
+func (d *Device) Check(ctx context.Context, claim, record string, opts *CheckOptions) (CheckVerdict, error) {
+	args := map[string]any{"claim": claim, "record": record}
+	if opts != nil && opts.Model != "" {
+		args["model"] = opts.Model
+	}
+	var out CheckVerdict
+	err := d.data(ctx, "app_check", args, &out)
+	return out, err
+}
+
+// Recording reads a recording through the verifier's views: read is summary,
+// calls, call, screen, screenshot or search, and args carries id, offset,
+// query or a screenshot's path. With Verdict it lets the caller judge a
+// claim itself, with no model credential.
+func (d *Device) Recording(ctx context.Context, record, read string, args map[string]any) (map[string]any, error) {
+	call := map[string]any{"record": record, "read": read}
+	for k, v := range args {
+		call[k] = v
+	}
+	out := map[string]any{}
+	err := d.data(ctx, "app_recording", call, &out)
+	return out, err
+}
+
+// Verdict gives a verdict on a claim about a recording and has it held to
+// the verifier's rules: passed or failed needs evidence citing a call the
+// recording holds, by id (call@3). Each observation is one string.
+func (d *Device) Verdict(ctx context.Context, claim, record, status, summary string, evidence ...string) (map[string]any, error) {
+	ev := make([]map[string]any, 0, len(evidence))
+	for _, e := range evidence {
+		ev = append(ev, map[string]any{"type": "observation", "summary": e})
+	}
+	out := map[string]any{}
+	err := d.data(ctx, "app_verdict", map[string]any{
+		"claim": claim, "record": record, "status": status, "summary": summary, "evidence": ev,
+	}, &out)
+	return out, err
+}
+
+// CheckVerdict is Check's answer.
+type CheckVerdict struct {
+	Status   string `json:"status"`
+	Claim    string `json:"claim"`
+	Summary  string `json:"summary"`
+	Evidence []struct {
+		Type    string `json:"type"`
+		Summary string `json:"summary"`
+	} `json:"evidence"`
+	Record string `json:"record"`
+	Model  string `json:"model"`
+	Steps  int    `json:"steps"`
+}
+
 // Doctor checks the environment and returns its report.
 //
 // Needs no device: its whole job is to be runnable when nothing works yet, so

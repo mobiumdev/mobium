@@ -1,0 +1,158 @@
+package claim
+
+import (
+	"bytes"
+	"context"
+	"encoding/json"
+	"fmt"
+	"io"
+	"net/http"
+	"os"
+	"strings"
+	"time"
+
+	"github.com/mobiumdev/mobium/internal/mobiumerr"
+)
+
+// OpenAIPrefix names a model by the API it is reached through, the
+// OpenAI-compatible chat API that Ollama, llama.cpp, LM Studio and hosted
+// services serve: "openai:qwen2.5:14b". It names the protocol, not the
+// place: by default the server is Ollama on this machine, and
+// MOBIUM_AI_BASE_URL can name one elsewhere, to which the recording is sent.
+// It was "local:" until a hosted server made that name untrue. Its judgment
+// is the model's — a model is measured against the claim set before it is
+// trusted.
+const OpenAIPrefix = "openai:"
+
+// DefaultOpenAIURL is Ollama's endpoint on this machine, so nothing leaves
+// it unless asked; MOBIUM_AI_BASE_URL names another, and MOBIUM_AI_API_KEY is sent to it as a bearer token when
+// it wants one.
+const DefaultOpenAIURL = "http://127.0.0.1:11434/v1"
+
+// OpenAI is a Session on a model served through the OpenAI-compatible API.
+type OpenAI struct {
+	Model    string
+	base     string
+	key      string
+	http     *http.Client
+	messages []map[string]interface{}
+	tools    []map[string]interface{}
+	nudges   int
+}
+
+// maxNudges is how many times a model that answers in prose is asked again
+// for its verdict: mistral-small read one call and then wrote its answer as
+// text on every claim, which the loop can only take as no verdict.
+const maxNudges = 2
+
+// NewOpenAI is a session on model, served at MOBIUM_AI_BASE_URL or Ollama's.
+func NewOpenAI(model string) *OpenAI {
+	base := strings.TrimRight(os.Getenv("MOBIUM_AI_BASE_URL"), "/")
+	if base == "" {
+		base = DefaultOpenAIURL
+	}
+	return &OpenAI{Model: model, base: base, key: os.Getenv("MOBIUM_AI_API_KEY"), http: &http.Client{Timeout: 10 * time.Minute}}
+}
+
+// Begin starts the conversation.
+func (l *OpenAI) Begin(ctx context.Context, system, claim string, tools []Tool) (Step, error) {
+	for _, t := range tools {
+		l.tools = append(l.tools, map[string]interface{}{"type": "function", "function": map[string]interface{}{
+			"name": t.Name, "description": t.Description, "parameters": t.Schema,
+		}})
+	}
+	l.messages = []map[string]interface{}{
+		{"role": "system", "content": system},
+		{"role": "user", "content": claim},
+	}
+	return l.send(ctx)
+}
+
+// Next hands the model its tools' answers. A screenshot is described, not
+// sent: the chat API puts images in user turns only, and a model that
+// cannot see is told so rather than handed bytes it cannot read.
+func (l *OpenAI) Next(ctx context.Context, results []Result) (Step, error) {
+	for _, r := range results {
+		text := r.Text
+		if r.JPEG != nil {
+			text += " (a screenshot was kept, but this model cannot be shown images: judge from the screen's text, " +
+				"or answer inconclusive if only the image could settle it)"
+		}
+		l.messages = append(l.messages, map[string]interface{}{"role": "tool", "tool_call_id": r.CallID, "content": text})
+	}
+	return l.send(ctx)
+}
+
+func (l *OpenAI) send(ctx context.Context) (Step, error) {
+	for {
+		step, err := l.ask(ctx)
+		if err != nil || len(step.Calls) > 0 || l.nudges >= maxNudges {
+			return step, err
+		}
+		l.nudges++
+		l.messages = append(l.messages, map[string]interface{}{"role": "user", "content": "Answer through the tools, not in text: " +
+			"read more of the recording if you need to, and finish by calling " + verdictTool + " exactly once."})
+	}
+}
+
+func (l *OpenAI) ask(ctx context.Context) (Step, error) {
+	body, _ := json.Marshal(map[string]interface{}{
+		"model": l.Model, "messages": l.messages, "tools": l.tools, "temperature": 0,
+	})
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, l.base+"/chat/completions", bytes.NewReader(body))
+	if err != nil {
+		return Step{}, mobiumerr.New(mobiumerr.InvalidArgument, "the model server's address %s: %w", l.base, err)
+	}
+	req.Header.Set("Content-Type", "application/json")
+	if l.key != "" {
+		req.Header.Set("Authorization", "Bearer "+l.key)
+	}
+	resp, err := l.http.Do(req)
+	if err != nil {
+		return Step{}, mobiumerr.New(mobiumerr.ToolchainMissing, "no model server answered at %s: %w", l.base, err).
+			WithRemedy("start it (`ollama serve`), or set MOBIUM_AI_BASE_URL to where one is served, then `mobium daemon stop`")
+	}
+	defer resp.Body.Close()
+	raw, _ := io.ReadAll(io.LimitReader(resp.Body, 16<<20))
+	if resp.StatusCode != http.StatusOK {
+		return Step{}, l.refused(resp.StatusCode, clip(string(raw), 300))
+	}
+	var out struct {
+		Choices []struct {
+			Message map[string]interface{} `json:"message"`
+		} `json:"choices"`
+	}
+	if err := json.Unmarshal(raw, &out); err != nil || len(out.Choices) == 0 {
+		return Step{}, mobiumerr.New(mobiumerr.Unclassified, "the model server's answer was not a chat completion: %s", clip(string(raw), 300))
+	}
+	msg := out.Choices[0].Message
+	l.messages = append(l.messages, msg)
+	var step Step
+	calls, _ := msg["tool_calls"].([]interface{})
+	for _, c := range calls {
+		cm, _ := c.(map[string]interface{})
+		fn, _ := cm["function"].(map[string]interface{})
+		args, _ := fn["arguments"].(string)
+		id, _ := cm["id"].(string)
+		name, _ := fn["name"].(string)
+		step.Calls = append(step.Calls, ToolCall{ID: id, Name: name, Input: json.RawMessage(args)})
+	}
+	return step, nil
+}
+
+// refused names why the server turned a request down, with a remedy that
+// fits: a rate limit sent "check the model is installed (`ollama list`)",
+// which cannot help.
+func (l *OpenAI) refused(status int, body string) error {
+	msg := fmt.Sprintf("the model %s at %s refused the request (%d): %s", l.Model, l.base, status, body)
+	switch {
+	case status == http.StatusTooManyRequests || status >= 500:
+		return mobiumerr.New(mobiumerr.Timeout, "%s", msg).
+			WithRemedy("the server is busy or rate-limited: wait a minute and run the check again, or name another model")
+	case status == http.StatusUnauthorized || status == http.StatusForbidden:
+		return mobiumerr.New(mobiumerr.ToolchainMissing, "%s", msg).
+			WithRemedy("set MOBIUM_AI_API_KEY to a key " + l.base + " accepts, then `mobium daemon stop` so the daemon reads it")
+	}
+	return mobiumerr.New(mobiumerr.ToolchainMissing, "%s", msg).
+		WithRemedy(fmt.Sprintf("check %s names a model %s serves (for Ollama, `ollama list`), after %q", l.Model, l.base, OpenAIPrefix))
+}

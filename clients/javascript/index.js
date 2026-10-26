@@ -1527,6 +1527,41 @@ export class Device {
   }
 
   /**
+   * Ask an independent model whether a claim holds in a recording: the .zip
+   * a trace saved. The model reads only the recording, in a fresh context,
+   * and answers { status: 'passed' | 'failed' | 'inconclusive', summary,
+   * evidence, ... }. A model's judgment is not proof. options.model is
+   * 'openai:<name>' for one served through the OpenAI-compatible API (Ollama
+   * where mobium runs, unless MOBIUM_AI_BASE_URL names another server);
+   * without it, Claude through the Anthropic API, which needs a credential,
+   * is a paid call, and is not yet measured.
+   */
+  async check(claim, record, options = {}) {
+    const args = { claim, record }
+    if (options.model) args.model = options.model
+    return (await this.#data('app_check', args)) || {}
+  }
+
+  /**
+   * Read a recording through the verifier's views: read is summary, calls,
+   * call, screen, screenshot or search; options are id, offset, query or a
+   * screenshot's path. With verdict() it lets the caller judge a claim itself.
+   */
+  async recording(record, read, options = {}) {
+    return (await this.#data('app_recording', { record, read, ...options })) || {}
+  }
+
+  /**
+   * Give a verdict on a claim about a recording, held to the verifier's
+   * rules: passed or failed needs evidence citing a call the recording
+   * holds, by id (call@3). Each observation is one string.
+   */
+  async verdict(claim, record, status, summary, evidence = []) {
+    const ev = evidence.map((summary) => ({ type: 'observation', summary }))
+    return (await this.#data('app_verdict', { claim, record, status, summary, evidence: ev })) || {}
+  }
+
+  /**
    * Console output from the current WebView since the last call, including
    * uncaught errors and unhandled promise rejections.
    *

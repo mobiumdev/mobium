@@ -2157,6 +2157,78 @@ public final class Mobium implements AutoCloseable {
      */
     public String doctor() { return prose("app_doctor", args()); }
 
+    /**
+     * Asks an independent model whether a claim holds in a recording. The
+     * model reads only the recording, in a fresh context, and answers with
+     * {@code status} (passed, failed or inconclusive), {@code summary} and
+     * {@code evidence}. A model's judgment is not proof. This asks Claude
+     * through the Anthropic API, which needs a credential, is a paid call, and
+     * is not yet measured; {@link #check(String, String, String)} names another.
+     *
+     * @param claim what should be true, precisely
+     * @param record the .zip a trace saved
+     * @return the verdict
+     */
+    public Map<String, Object> check(String claim, String record) {
+        return check(claim, record, null);
+    }
+
+    /**
+     * Asks a named model whether a claim holds in a recording, as
+     * {@link #check(String, String)} does.
+     *
+     * @param claim what should be true, precisely
+     * @param record the .zip a trace saved
+     * @param model {@code "openai:<name>"} for one served through the
+     *     OpenAI-compatible API (Ollama where mobium runs, unless
+     *     MOBIUM_AI_BASE_URL names another server); null for Claude
+     * @return the verdict
+     */
+    public Map<String, Object> check(String claim, String record, String model) {
+        Map<String, Object> a = args("claim", claim, "record", record);
+        if (model != null) {
+            a.put("model", model);
+        }
+        return data("app_check", a);
+    }
+
+    /**
+     * Reads a recording through the verifier's views. With {@link #verdict}
+     * it lets the caller judge a claim itself, with no model credential.
+     *
+     * @param record the .zip a trace saved
+     * @param read summary, calls, call, screen, screenshot or search
+     * @param id a call's id for call, screen and screenshot, such as {@code "call@3"}; or null
+     * @return the view
+     */
+    public Map<String, Object> recording(String record, String read, String id) {
+        Map<String, Object> a = args("record", record, "read", read);
+        if (id != null) {
+            a.put("search".equals(read) ? "query" : "id", id);
+        }
+        return data("app_recording", a);
+    }
+
+    /**
+     * Gives a verdict on a claim about a recording, held to the verifier's
+     * rules: passed or failed needs evidence citing a call the recording
+     * holds, by id (call@3).
+     *
+     * @param claim the claim judged
+     * @param record the recording it was judged on
+     * @param status passed, failed or inconclusive
+     * @param summary the verdict in a sentence or two
+     * @param evidence each observation, citing its call
+     * @return the verdict as accepted
+     */
+    public Map<String, Object> verdict(String claim, String record, String status, String summary, String... evidence) {
+        java.util.List<Object> ev = new java.util.ArrayList<>();
+        for (String e : evidence) {
+            ev.add(args("type", "observation", "summary", e));
+        }
+        return data("app_verdict", args("claim", claim, "record", record, "status", status, "summary", summary, "evidence", ev));
+    }
+
     // -- plumbing ----------------------------------------------------------
 
     /**

@@ -1393,6 +1393,47 @@ namespace Mobium
         /// </summary>
         public string Doctor() => Prose("app_doctor", Args());
 
+        /// <summary>
+        /// Asks an independent model whether a claim holds in a recording (the
+        /// .zip a trace saved). The model reads only the recording, in a fresh
+        /// context, and answers with status (passed, failed or inconclusive),
+        /// summary and evidence. A model's judgment is not proof. model is
+        /// "openai:&lt;name&gt;" for one served through the OpenAI-compatible API
+        /// (Ollama where mobium runs, unless MOBIUM_AI_BASE_URL names another
+        /// server); null asks Claude through the Anthropic API, which needs a
+        /// credential, is a paid call, and is not yet measured.
+        /// </summary>
+        public IDictionary<string, object?> Check(string claim, string record, string? model = null)
+        {
+            var a = Args("claim", claim, "record", record);
+            if (model != null) a["model"] = model;
+            return Data("app_check", a);
+        }
+
+        /// <summary>
+        /// Reads a recording through the verifier's views: read is summary, calls,
+        /// call, screen, screenshot or search; id is a call's id, or a search's
+        /// query. With Verdict it lets the caller judge a claim itself.
+        /// </summary>
+        public IDictionary<string, object?> Recording(string record, string read, string? id = null)
+        {
+            var a = Args("record", record, "read", read);
+            if (id != null) a[read == "search" ? "query" : "id"] = id;
+            return Data("app_recording", a);
+        }
+
+        /// <summary>
+        /// Gives a verdict on a claim about a recording, held to the verifier's
+        /// rules: passed or failed needs evidence citing a call the recording
+        /// holds, by id (call@3). Each observation is one string.
+        /// </summary>
+        public IDictionary<string, object?> Verdict(string claim, string record, string status, string summary, params string[] evidence)
+        {
+            var ev = new List<object?>();
+            foreach (var e in evidence) ev.Add(Args("type", "observation", "summary", e));
+            return Data("app_verdict", Args("claim", claim, "record", record, "status", status, "summary", summary, "evidence", ev));
+        }
+
         // -- plumbing ----------------------------------------------------------
 
         /// <summary>

@@ -245,6 +245,16 @@ func fakeTool(name string, args map[string]any, scenario string) map[string]any 
 			}
 		}
 		return text(name+" ok", view)
+	case "app_check":
+		if path := os.Getenv(fakeArgsLogEnv); path != "" {
+			if f, err := os.OpenFile(path, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o600); err == nil {
+				line, _ := json.Marshal(map[string]any{"tool": name, "arguments": args})
+				f.Write(append(line, '\n'))
+				f.Close()
+			}
+		}
+		return text("PASSED: ticked", map[string]any{"status": "passed", "claim": args["claim"], "summary": "ticked",
+			"evidence": []any{}, "record": args["record"], "steps": 1})
 	case "app_trace":
 		if path := os.Getenv(fakeArgsLogEnv); path != "" {
 			if f, err := os.OpenFile(path, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o600); err == nil {
@@ -883,5 +893,26 @@ func TestTraceSendsOnlyWhatIsSet(t *testing.T) {
 	}
 	if n := len(sent()); n != 4 {
 		t.Errorf("%d calls reached the tool, want the refused one kept back", n)
+	}
+}
+
+func TestCheckSendsItsModelOnlyWhenSet(t *testing.T) {
+	dev, sent := sentArgs(t, "")
+	ctx := context.Background()
+	if _, err := dev.Check(ctx, "the box was ticked", "run.zip", nil); err != nil {
+		t.Fatalf("check: %v", err)
+	}
+	if _, err := dev.Check(ctx, "the box was ticked", "run.zip", &CheckOptions{Model: "openai:qwen2.5:14b"}); err != nil {
+		t.Fatalf("check with a model: %v", err)
+	}
+	calls := sent()
+	if len(calls) != 2 {
+		t.Fatalf("calls = %v", calls)
+	}
+	if _, ok := calls[0]["model"]; ok || len(calls[0]) != 2 {
+		t.Errorf("with no options sent %v, want the claim and record alone", calls[0])
+	}
+	if calls[1]["model"] != "openai:qwen2.5:14b" {
+		t.Errorf("with a model sent %v", calls[1])
 	}
 }

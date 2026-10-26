@@ -12,5 +12,6 @@ real device, with every command and line of output what mobium printed.
 | [Gray box](graybox.md) | an app that says when it is busy: `launch --gray-box`, every action waiting for the app to be idle, and the lines an app writes to say so |
 | [Test runner](test-runner.md) | `mobium test`: a config, a test file, a failure with its evidence, retries and flaky, several devices, CI — and the step shorthand, soft assertions, a trace and a debugger, one test over several cases with `each`, and a page to run tests from with `--ui` |
 | [Inspector](inspector.md) | `mobium inspect`: the screen with every element outlined, the locator for any of them, trying a locator, and recording what you do as a test |
+| [The verifier](verifier.md) | `mobium check`, `recording` and `verdict`: a claim about a recorded session judged passed, failed or inconclusive, by a model or by you, with the calls it rests on, and how good each judge measured |
 | [Network conditions](network.md) | taking an Android device offline or slowing it down, reading back what it really has, and doing it inside a test |
 | [Another machine's devices, and a grid](grid.md) | `--remote` to one node over SSH, and `MOBIUM_GRID` to share several nodes' devices between runs |

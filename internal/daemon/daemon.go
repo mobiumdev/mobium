@@ -283,6 +283,20 @@ func (d *Daemon) handleRequest(data []byte, notify func(string)) *agent.Response
 		}}
 	}
 
+	// A tool that touches no handler state — a check, a read of a recording —
+	// runs beside the rest: a check thinks for minutes, and every device
+	// call would wait behind it. Its progress keeps the client's read open.
+	if agent.StatelessRequest(req) {
+		result, rpcErr := agent.CallStateless(req.Params, d.handlers, notify)
+		if req.ID == nil {
+			return nil
+		}
+		if rpcErr != nil {
+			return &agent.Response{JSONRPC: "2.0", ID: req.ID, Error: rpcErr}
+		}
+		return &agent.Response{JSONRPC: "2.0", ID: req.ID, Result: result}
+	}
+
 	// The handlers are not safe for concurrent use, and two CLI commands can
 	// arrive at once. The progress callback targets this request's
 	// connection, so it is installed and cleared under the same lock.

@@ -1238,6 +1238,40 @@ class Device:
         """
         return self._data("app_doctor") or {}
 
+    def check(self, claim: str, record: str, model: str | None = None) -> dict:
+        """Ask an independent model whether claim holds in a recording.
+
+        record is the .zip a trace saved. The model reads only the recording,
+        in a fresh context, and answers {status: passed | failed |
+        inconclusive, summary, evidence, ...}. A model's judgment is not
+        proof. model is "openai:<name>" for one served through the
+        OpenAI-compatible API (Ollama where mobium runs, unless
+        MOBIUM_AI_BASE_URL names another server); None asks Claude through
+        the Anthropic API, which needs a credential, is a paid call, and is
+        not yet measured. Needs no device.
+        """
+        args: dict[str, Any] = {"claim": claim, "record": record}
+        if model is not None:
+            args["model"] = model
+        return self._data("app_check", args) or {}
+
+    def recording(self, record: str, read: str, **args: Any) -> dict:
+        """Read a recording through the verifier's views.
+
+        read is summary, calls, call, screen, screenshot or search; args are
+        id, offset, query or a screenshot's path. With verdict() it lets the
+        caller judge a claim itself, with no model credential.
+        """
+        return self._data("app_recording", {"record": record, "read": read, **args}) or {}
+
+    def verdict(self, claim: str, record: str, status: str, summary: str, *evidence: str) -> dict:
+        """Give a verdict on a claim about a recording, held to the verifier's
+        rules: passed or failed needs evidence citing a call the recording
+        holds, by id (call@3). Each observation is one string."""
+        ev = [{"type": "observation", "summary": e} for e in evidence]
+        return self._data("app_verdict", {"claim": claim, "record": record, "status": status,
+                                          "summary": summary, "evidence": ev}) or {}
+
     def logs(self, level: str | None = None) -> list[dict]:
         """Console output from the current WebView since the last call.
 
