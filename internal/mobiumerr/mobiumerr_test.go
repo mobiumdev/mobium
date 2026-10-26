@@ -74,7 +74,7 @@ func TestEveryCodeHasAnExitStatusGroup(t *testing.T) {
 			t.Errorf("%s listed twice", c)
 		}
 		seen[c] = true
-		if s := ExitCode(c); s < 1 || s > 7 {
+		if s := ExitCode(c); s < 1 || s > 8 {
 			t.Errorf("%s exits %d", c, s)
 		}
 	}

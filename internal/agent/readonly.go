@@ -85,3 +85,71 @@ func IsReadCall(name string, args map[string]interface{}) bool {
 	}
 	return true
 }
+
+// destructiveTools may delete what Mobium cannot give back — an app, its
+// data, its permissions — or end something running: MCP's destructiveHint,
+// true. additiveTools change only what Mobium puts back when the session
+// ends, or add: destructiveHint false. An acting tool in neither, such as
+// app_tap, says nothing, and MCP's default — it may destroy — stands: a tap
+// can press Delete, and claiming otherwise would be a promise Mobium cannot
+// keep.
+var destructiveTools = map[string]bool{
+	"app_uninstall": true, "app_clear_data": true, "app_reset_permissions": true, "app_revoke": true,
+	"app_shutdown": true, "app_terminate": true, "app_storage": true, "app_cookies": true,
+}
+
+var additiveTools = map[string]bool{
+	"app_boot": true, "app_launch": true, "app_install": true, "app_grant": true,
+	"app_appearance": true, "app_orientation": true, "app_locale": true, "app_timezone": true,
+	"app_network": true, "app_location": true, "app_accessibility": true,
+	"app_record": true, "app_audio": true, "app_trace": true, "app_screen": true,
+}
+
+// idempotentTools reach a state, so calling one twice with the same arguments
+// does what calling it once did: MCP's idempotentHint. app_set is the reason
+// the tool exists; the settings are states, not toggles; lock and unlock are
+// states rather than a power button.
+var idempotentTools = map[string]bool{
+	"app_set": true, "app_launch": true, "app_terminate": true, "app_grant": true, "app_revoke": true,
+	"app_reset_permissions": true, "app_clear_data": true, "app_uninstall": true, "app_lock": true,
+	"app_boot": true, "app_shutdown": true,
+	"app_appearance": true, "app_orientation": true, "app_locale": true, "app_timezone": true,
+	"app_network": true, "app_location": true, "app_accessibility": true,
+}
+
+// Annotations are a tool's MCP hints. readOnlyHint is always given; the
+// other two only for a tool that acts, since MCP reads them only then.
+func Annotations(name string) map[string]interface{} {
+	a := map[string]interface{}{"readOnlyHint": readOnlyTools[name]}
+	if readOnlyTools[name] {
+		return a
+	}
+	switch {
+	case destructiveTools[name]:
+		a["destructiveHint"] = true
+	case additiveTools[name]:
+		a["destructiveHint"] = false
+	}
+	if idempotentTools[name] {
+		a["idempotentHint"] = true
+	}
+	return a
+}
+
+// ToolsFor is the tools a policy leaves an agent able to call: under
+// read-only, those that can read — every read-only tool and every tool that
+// reads unless told to act — so an agent is not offered what it would be
+// refused.
+func ToolsFor(p Policy) []Tool {
+	all := GetToolSchemas()
+	if !p.ReadOnly {
+		return all
+	}
+	out := make([]Tool, 0, len(all))
+	for _, t := range all {
+		if _, reads := readUnless[t.Name]; readOnlyTools[t.Name] || reads {
+			out = append(out, t)
+		}
+	}
+	return out
+}

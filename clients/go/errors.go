@@ -29,6 +29,7 @@ const (
 	CodeInvalidArgument     Code = "invalid_argument"
 	CodeDeviceServer        Code = "device_server"
 	CodeInternal            Code = "internal"
+	CodeNotPermitted        Code = "not_permitted"
 )
 
 var (
@@ -48,6 +49,8 @@ var (
 	ErrInvalidArgument = &Error{Code: CodeInvalidArgument}
 	ErrDeviceServer    = &Error{Code: CodeDeviceServer}
 	ErrInternal        = &Error{Code: CodeInternal}
+	// ErrNotPermitted: whoever started Mobium does not allow this call: a read-only Mobium asked to act, or an app outside its app list. Retrying cannot help.
+	ErrNotPermitted = &Error{Code: CodeNotPermitted}
 )
 
 // Is makes the sentinels above match by code.

@@ -422,7 +422,7 @@ arguments and the two global flags.
 | `logs` | app_logs | --app --level --lines --source | app, level, lines, source |
 | `long-press` | app_long_press | --duration | duration_ms, target, x, y |
 | `map` | app_map | --diff | diff |
-| `mcp` | — | — | — |
+| `mcp` | — | --apps --read-only | — |
 | `network` | app_network | --download --latency --no-proxy --offline --online --proxy --reset --upload | download_kbps, latency_ms, offline, proxy, reset, upload_kbps |
 | `notifications` | app_notifications | --post --shade --tag --title | shade, tag, text, title |
 | `open` | app_open_url | — | url |

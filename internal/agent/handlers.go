@@ -77,6 +77,13 @@ type Handlers struct {
 	// and the trace went with it — the stop that followed found none.
 	heldTraces map[string]*sessionTrace
 
+	// policy is what whoever started Mobium allows (policy.go): read-only,
+	// an app list. Every dispatch is held to it.
+	policy Policy
+	// callPolicy is the running call's own (MetaPolicy), narrowing policy
+	// for that call alone.
+	callPolicy Policy
+
 	// defaultDevice pins every call to one serial when set from the command
 	// line, so a --device flag survives into the daemon for that call.
 	defaultDevice string
@@ -122,6 +129,7 @@ type Handlers struct {
 // NewHandlers creates the tool layer.
 func NewHandlers() *Handlers {
 	return &Handlers{
+		policy:        PolicyFromEnv(),
 		refs:          map[string]*refTable{},
 		lastMaps:      map[string]*lastMap{},
 		sessions:      map[string]*session{},
@@ -290,6 +298,7 @@ func (h *Handlers) CallMeta(name string, args, meta map[string]interface{}) (*To
 
 	h.handled = nil
 	h.idled = nil
+	h.callPolicy = policyOfMeta(meta)
 	callStart := time.Now()
 	defer func() {
 		h.prevCall = device.Previous{Start: callStart, End: time.Now(), Acted: !IsReadCall(name, args)}
@@ -313,8 +322,12 @@ func (h *Handlers) CallMeta(name string, args, meta map[string]interface{}) (*To
 	return h.reportIdle(h.reportHandled(res, err))
 }
 
-// dispatch runs one tool by name.
+// dispatch runs one tool by name, if the policy allows it. A batch is held
+// to the policy step by step, since each step comes back through here.
 func (h *Handlers) dispatch(ctx context.Context, name string, args map[string]interface{}) (*ToolsCallResult, error) {
+	if err := h.permitCall(ctx, name, args); err != nil {
+		return nil, err
+	}
 	switch name {
 	case "app_devices":
 		return h.devices(ctx)

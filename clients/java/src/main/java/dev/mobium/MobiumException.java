@@ -132,6 +132,7 @@ public class MobiumException extends RuntimeException {
             case NoSuchAlertException.CODE: return new NoSuchAlertException(text, tool, remedy, retryable, details);
             case UnsupportedException.CODE: return new UnsupportedException(text, tool, remedy, retryable, details);
             case NotConfirmedException.CODE: return new NotConfirmedException(text, tool, remedy, retryable, details);
+            case NotPermittedException.CODE: return new NotPermittedException(text, tool, remedy, retryable, details);
             case TimedOutException.CODE: return new TimedOutException(text, tool, remedy, retryable, details);
             case InvalidArgumentException.CODE: return new InvalidArgumentException(text, tool, remedy, retryable, details);
             case DeviceServerException.CODE: return new DeviceServerException(text, tool, remedy, retryable, details);

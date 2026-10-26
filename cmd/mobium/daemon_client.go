@@ -47,6 +47,14 @@ func daemonCallMeta(tool string, args, meta map[string]interface{}) (*agent.Tool
 		return nil, err
 	}
 
+	// The policy this command's environment sets travels with the call, so a
+	// daemon another command started without it still holds the call to it.
+	if pm := agent.PolicyMeta(agent.PolicyFromEnv()); pm != nil {
+		if meta == nil {
+			meta = map[string]interface{}{}
+		}
+		meta[agent.MetaPolicy] = pm
+	}
 	result, err := daemon.CallMeta(tool, args, meta)
 	if err == nil {
 		return finish(result)

@@ -19,6 +19,7 @@ they say so. The full tool list is generated: [API.md](../API.md).
 - [4. Answers: text, data and images](#4-answers-text-data-and-images)
 - [5. Failures](#5-failures)
 - [6. Sessions, and sharing a device](#6-sessions-and-sharing-a-device)
+- [7. Limiting what an agent can do](#7-limiting-what-an-agent-can-do)
 - [Which front door](#which-front-door)
 
 ## 1. Connect it
@@ -285,6 +286,49 @@ Everything an agent changes for a session — network conditions,
 accessibility settings — is put back when the session ends: an
 `app_session` with `action: "end"`, or the server's exit when the client
 disconnects.
+
+## 7. Limiting what an agent can do
+
+Two limits, set by whoever starts Mobium and never by a call, so the agent
+cannot lift them:
+
+```sh
+claude mcp add mobium -- mobium mcp --read-only            # look, never act
+claude mcp add mobium -- mobium mcp --apps dev.mobium.shop  # act only in this app
+```
+
+**`--read-only`** refuses every call that acts, and `tools/list` offers only
+the tools that can read, 36 of the 78. A tool that reads unless told to act,
+such as `app_alert`, is offered and refuses only the acting form:
+
+```
+app_tap acts, and this Mobium allows only reading (MOBIUM_READ_ONLY, or mobium mcp --read-only)
+next: read the screen with app_map, app_text or app_screenshot; acting needs Mobium started without the read-only setting, which only whoever starts it can change
+```
+
+**`--apps`**, a comma-separated list, is the only apps a call may name
+(`app_launch`, `app_clear_data`, …) and the only apps an action on the
+screen may act on: a tap with another app in front is refused, while the
+system's own UI over an allowed app, such as a permission prompt, can be
+answered. `app_install` is refused under a list, since an app file's package
+is not known until it is installed. Device settings, Home and Back stay
+allowed; `--read-only` is the limit for those.
+
+A refusal is `not_permitted` (exit status 8 on the command line), checked
+before anything reaches a device, and each step of an `app_batch` is
+checked on its own. `MOBIUM_READ_ONLY=1` and `MOBIUM_APPS` in the
+environment set the same limits for the daemon, the command line and the
+clients, and travel with each call, so a daemon another command started
+without them still holds the call to them. Limits only add up: two app
+lists allow only the apps both name.
+
+Every tool's annotations say what it may do: `readOnlyHint` on all of them,
+and on tools that act, `destructiveHint` true for those that delete or end
+something (`app_uninstall`, `app_clear_data`, `app_shutdown`, …), false for
+those whose change the session puts back or that only add, and
+`idempotentHint` where a second call changes nothing (`app_set`, the
+settings). A tap says neither: it can press Delete, and MCP's default, that
+it may destroy, stands.
 
 ## Which front door
 

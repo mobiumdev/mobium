@@ -22,6 +22,7 @@ from ._errors import (
     NoSuchContextError,
     NoSuchElementError,
     NotConfirmedError,
+    NotPermittedError,
     TimedOutError,
     ToolchainMissingError,
     UnsupportedError,
@@ -31,7 +32,7 @@ __all__ = [
     "start", "connect", "Session", "Device", "DeviceInfo", "Element", "Bounds",
     "MobiumError", "NoDeviceError", "DeviceNotReadyError", "ToolchainMissingError",
     "NoSuchElementError", "AmbiguousLocatorError", "ElementNotReachableError",
-    "NoSuchContextError", "NoSuchAlertError", "UnsupportedError", "NotConfirmedError",
+    "NoSuchContextError", "NoSuchAlertError", "UnsupportedError", "NotConfirmedError", "NotPermittedError",
     "TimedOutError", "InvalidArgumentError", "DeviceServerError", "InternalError",
 ]
 __version__ = "0.1.0"

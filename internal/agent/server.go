@@ -150,7 +150,7 @@ func Route(req Request, h *Handlers, version string,
 	case "initialized", "notifications/initialized":
 		return nil, nil
 	case "tools/list":
-		return ToolsListResult{Tools: GetToolSchemas()}, nil
+		return ToolsListResult{Tools: ToolsFor(h.Policy())}, nil
 	case "tools/call":
 		return CallTool(req.Params, h)
 	default:
@@ -218,6 +218,9 @@ func ErrorResult(err error) ToolsCallResult {
 
 // SetBackend chooses the Android driver implementation.
 func (s *Server) SetBackend(b Backend) { s.handlers.SetBackend(b) }
+
+// SetPolicy narrows what the server's agent may do (policy.go).
+func (s *Server) SetPolicy(p Policy) { s.handlers.SetPolicy(p) }
 
 // SetProgress installs a callback for slow one-time setup.
 func (s *Server) SetProgress(fn func(string)) { s.handlers.SetProgress(fn) }

@@ -448,6 +448,7 @@ export class NoSuchContextError extends MobiumError {}
 export class NoSuchAlertError extends MobiumError {}
 export class UnsupportedError extends MobiumError {}
 export class NotConfirmedError extends MobiumError {}
+export class NotPermittedError extends MobiumError {}
 export class TimedOutError extends MobiumError {}
 export class InvalidArgumentError extends MobiumError {}
 export class DeviceServerError extends MobiumError {}

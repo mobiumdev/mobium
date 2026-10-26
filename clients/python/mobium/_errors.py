@@ -92,6 +92,11 @@ class NotConfirmedError(MobiumError):
     code = "not_confirmed"
 
 
+class NotPermittedError(MobiumError):
+    """Whoever started Mobium does not allow this call: a read-only Mobium asked to act, or an app outside its app list. Retrying cannot help."""
+    code = "not_permitted"
+
+
 class TimedOutError(MobiumError):
     """A wait ran out. Named TimedOut so it does not shadow the builtin TimeoutError."""
     code = "timeout"
