@@ -1,0 +1,82 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<!-- Outfit (SIL Open Font License) for the two lines of text; the name itself is the original wordmark. -->
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@350;400&display=block">
+<style>
+html,body{margin:0;width:1584px;height:396px;overflow:hidden;background:#141826}
+#stage{position:relative;width:1584px;height:396px;overflow:hidden;background:#141826;font-family:Outfit,sans-serif}
+.glow{position:absolute;border-radius:50%;pointer-events:none}
+.fog{position:absolute;border-radius:50%;pointer-events:none;background:radial-gradient(closest-side,rgba(150,165,220,.22),rgba(150,165,220,0));filter:blur(18px)}
+.petal{position:absolute;left:0;top:0;width:250px;height:247px;will-change:transform,filter,opacity}
+#mark{position:absolute;left:318px;top:74px;width:250px;height:247px}
+.txt{position:absolute;left:628px;color:#e8ecf7;white-space:nowrap}
+#wm{top:96px;height:112px}
+#tag{top:228px;font-size:36px;font-weight:350;letter-spacing:.005em;color:#d7ddef}
+#plat{top:282px;font-size:25px;font-weight:400;letter-spacing:.06em;color:#97a3c6}
+#plat b{font-weight:400;color:#01CBDD;padding:0 .35em}
+</style></head>
+<body><div id="stage">
+  <div class="glow" style="left:180px;top:-260px;width:760px;height:760px;background:radial-gradient(closest-side,rgba(88,50,250,.20),rgba(88,50,250,0))"></div>
+  <div class="glow" style="left:820px;top:-200px;width:900px;height:800px;background:radial-gradient(closest-side,rgba(1,203,221,.12),rgba(1,203,221,0))"></div>
+  <div id="fogs"></div>
+  <div id="mark"></div>
+  <img id="wm" class="txt" src="../mobium-wordmark-white.png" alt="">
+  <div id="tag" class="txt">Mobile app automation for AI agents and people</div>
+  <div id="plat" class="txt">Android<b>·</b>iOS<b>·</b>TV<b>·</b>Wear OS<b>·</b>Meta Quest</div>
+</div>
+<script>
+// The four shapes of assets/branding/mobium-mark.svg, unchanged, one per element.
+const defs = {
+  footL: ['#763CFB','#5832FA',337,530,'M337,450 C617,490 563,819 337,805 Z'],
+  wingL: ['#4C59FC','#3552FD',334,624,'M342,226 C490,235 640,380 624,584 C440,428 296,480 342,226 Z'],
+  wingR: ['#0F70FC','#00BAFC',632,919,'M914,226 C766,235 616,380 632,584 C816,428 960,480 914,226 Z'],
+  footR: ['#02BCC1','#01CBDD',726,917,'M919,450 C639,490 693,819 919,805 Z'],
+};
+// The order traces the M: up the left foot, over both wings, down the right foot.
+// dx, dy: where each one drifts in from, outward from the center.
+const order = [['footL',-46,34],['wingL',-40,-38],['wingR',40,-38],['footR',46,34]];
+const mark = document.getElementById('mark');
+for (const [k] of order) {
+  const [c0,c1,x0,x1,d] = defs[k];
+  mark.insertAdjacentHTML('beforeend',
+    `<svg id="${k}" class="petal" viewBox="0 0 586 580"><defs><linearGradient id="g${k}" x1="${x0}" y1="0" x2="${x1}" y2="0" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="${c0}"/><stop offset="1" stop-color="${c1}"/></linearGradient></defs><g transform="translate(-334,-226)"><path fill="url(#g${k})" d="${d}"/></g></svg>`);
+}
+const fogs = document.getElementById('fogs');
+const F = [[300,120,520,300,.9,.37],[640,40,600,340,-.6,.23],[980,160,640,300,.7,.51],[120,220,480,260,-.8,.11],[1220,40,520,320,.5,.71]];
+F.forEach(()=>fogs.insertAdjacentHTML('beforeend','<div class="fog"></div>'));
+
+const clamp = (x)=>Math.max(0,Math.min(1,x));
+const out3 = (x)=>1-Math.pow(1-x,3);
+const inout = (x)=>x<.5?2*x*x:1-Math.pow(-2*x+2,2)/2;
+const TOTAL = 8.0, FADE0 = 7.25;
+// One element emerging from the fog: blur clears, it slides home, it gains opacity.
+function emerge(el, t, start, dur, dx, dy, blur, scale0) {
+  const p = out3(clamp((t-start)/dur));
+  const q = clamp((t-FADE0)/(TOTAL-FADE0));       // the loop's return into the fog
+  const o = clamp(p*1.15) * (1-inout(q));
+  const b = blur*(1-p) + 14*inout(q);
+  const s = scale0 + (1-scale0)*p;
+  el.style.opacity = o.toFixed(4);
+  el.style.filter = `blur(${b.toFixed(2)}px)`;
+  el.style.transform = `translate(${(dx*(1-p)).toFixed(2)}px,${(dy*(1-p)).toFixed(2)}px) scale(${s.toFixed(4)})`;
+}
+function render(t) {
+  order.forEach(([k,dx,dy],i)=>emerge(document.getElementById(k), t, 0.35+0.5*i, 1.0, dx, dy, 18, 0.9));
+  emerge(document.getElementById('wm'),   t, 2.55, 0.95, 36, 0, 12, 1);
+  emerge(document.getElementById('tag'),  t, 3.25, 0.85, 28, 0, 9, 1);
+  emerge(document.getElementById('plat'), t, 3.7, 0.85, 28, 0, 8, 1);
+  // The fog: thick while the stage is empty, thinning as the mark arrives, back for the loop.
+  const thin = out3(clamp((t-0.2)/3.2)), back = inout(clamp((t-FADE0)/(TOTAL-FADE0)));
+  const dens = 1 - 0.72*thin + 0.72*back;
+  [...fogs.children].forEach((el,i)=>{
+    const [x,y,w,h,v,ph] = F[i];
+    const a = 2*Math.PI*(t/TOTAL) + ph*6.283;     // whole cycles per loop, so it joins up
+    el.style.left = (x + 40*Math.sin(a)*v) + 'px';
+    el.style.top = (y + 14*Math.cos(a*1)) + 'px';
+    el.style.width = w+'px'; el.style.height = h+'px';
+    el.style.opacity = (dens*(0.75+0.25*Math.sin(a+ph))).toFixed(3);
+  });
+}
+const t = parseFloat((location.hash||'#7').slice(1));
+render(t);
+</script></body></html>

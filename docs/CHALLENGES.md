@@ -7,14 +7,20 @@ the source.
 
 The pattern across them is the reason the document exists: **almost nothing
 here was found by reading code or by a test written from imagination.** Of
-253 defects, 213 were found only by running against a real device. The other
-forty — 4, 5, 6, 14, 23, 24, 32, 35, 36, 39, 44, 50, 53, 54, 57, 66, 89,
-99, 100, 121, 123, 129, 130, 133, 134, 139, 140, 141, 142, 144, 150, 158, 162,
-164, 165, 172, 222, 231, 232 and 243 — came from reading code, the compiler, a test, a linter,
+369 defects, 304 were found only by running against a real device. Nine
+more — 255, 280, 282, 327, 329, 353, 355, 356 and 359 — were met while
+running against one, though the fault lay in a check, the host or Mobium's own
+design rather than in the platform. The other fifty-six — 4, 5, 6, 14, 23,
+24, 32, 35, 36, 39, 44, 50, 53, 54, 57, 66, 89, 99, 100, 121, 123, 129, 130,
+133, 134, 139, 140, 141, 142, 144, 150, 158, 162, 164, 165, 172, 222, 231, 232,
+243, 274, 278, 279, 286, 287, 305, 306, 308, 309, 310, 313, 314, 321, 361, 362
+and 363 — came from reading code, the compiler, a test, a linter,
 cross-checking a computed number against a screenshot, using the tooling on
 itself, typing a negative number at a command line, and driving the clients
 against a stand-in daemon, CI on Windows, following the quick start from
-a fresh clone, and type-checking — or writing — the documentation site's examples.
+a fresh clone, type-checking — or writing — the documentation site's examples,
+reviewing the questions of the documentation's evaluation set, synthesized
+sounds, and the host's own shell.
 
 Read it before writing a test that asserts platform behavior.
 
