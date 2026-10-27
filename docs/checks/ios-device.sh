@@ -99,7 +99,7 @@ echo "    type           search field holds what was typed                      
 
 # A screenshot in pixels, like the simulator's — devicectl has none, so it
 # comes from WebDriverAgent.
-shot="$(mktemp -t mobium-shot).png"
+shot="$CHECK_TMP/shot.png"
 $M screenshot -o "$shot" >/dev/null
 python3 -c "import sys; sys.exit(0 if open(sys.argv[1],'rb').read(8) == b'\\x89PNG\\r\\n\\x1a\\n' else 1)" "$shot" \
   || fail "the screenshot is not a PNG"
@@ -141,7 +141,7 @@ echo "    orientation    a turn Settings refuses is refused, and taken back     
 
 # Recording is not refused: a phone records from WebDriverAgent's screen
 # stream (record.sh has the whole check). Two seconds are about twenty frames.
-vid="$(mktemp -t mobium-rec).mp4"
+vid="$CHECK_TMP/rec.mp4"
 $M record start >/dev/null
 sleep 2
 frames=$($M record stop -o "$vid" --json | python3 -c "import json,sys; print(json.load(sys.stdin)['frames'])")

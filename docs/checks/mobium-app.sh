@@ -353,7 +353,7 @@ done
 echo "    location       an injected position reached the app            ok"
 
 # --- a route, which is the only thing a single position cannot prove --------
-GPX="$(mktemp -t mobium-route).gpx"
+GPX="$CHECK_TMP/route.gpx"
 cat > "$GPX" <<'EOF'
 <?xml version="1.0" encoding="UTF-8"?>
 <gpx version="1.1" creator="mobium-check" xmlns="http://www.topografix.com/GPX/1/1">
@@ -700,7 +700,7 @@ luma() { # the luminance of a background point near the right edge, 0-255
   $M screenshot -o "$TMPSHOT" >/dev/null
   python3 "$ROOT/docs/checks/pixel.py" "$TMPSHOT" 0.97 0.85
 }
-TMPSHOT="$(mktemp -t mobium-theme).png"
+TMPSHOT="$CHECK_TMP/theme.png"
 $M set 'testid=darkSwitch' >/dev/null
 sleep 1
 $M map | grep -q 'Dark mode (switch, checked)' || fail "the switch reads unchecked after checking it"
