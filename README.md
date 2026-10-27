@@ -161,7 +161,9 @@ app may, and reporting "empty" would be a different and usually false claim.
 
 Verified on devices, not only compiled: a Pixel 7 emulator on Android 15 and
 Android 17, a Pixel 8 Pro on Android 17, an iPhone 17 Pro simulator on iOS
-26.5, and an iPhone 15 Plus on iOS 26.6.2. The end-to-end flows in
+26.5 and an iPhone 18 Pro simulator on iOS 27.0, and an iPhone 15 Plus on iOS
+26.6.2 and, since its update, iOS 27.0.1. TVs, Wear OS and Meta Quest are
+below. The end-to-end flows in
 [docs/checks/](docs/checks/) each drive a real device and assert on what
 happened rather than on an exit code.
 
