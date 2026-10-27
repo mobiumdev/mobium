@@ -1,8 +1,10 @@
 package device
 
 import (
+	"context"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strconv"
 	"strings"
 	"testing"
@@ -294,6 +296,40 @@ func TestShellQuote(t *testing.T) {
 	} {
 		if got := shellQuote(tc.in); got != tc.want {
 			t.Errorf("shellQuote(%q) = %s, want %s", tc.in, got, tc.want)
+		}
+	}
+}
+
+// A deep link reaches the device whole. adb joins its arguments and the
+// device's shell parses the line, which this fake adb does too, printing
+// what `am` would have been given. Unquoted, `&` cut the link at the first
+// query parameter after it and nothing said so. CHALLENGES 369.
+func TestOpenURLReachesTheDeviceWhole(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("the fake adb is a shell script")
+	}
+	dir := t.TempDir()
+	got := filepath.Join(dir, "got")
+	fake := filepath.Join(dir, "adb")
+	script := "#!/bin/sh\nshift; shift  # shell am\nsh -c \"printf '%s\\n' $*\" > " + got + "; wait\n"
+	if err := os.WriteFile(fake, []byte(script), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	a := &ADB{Path: fake}
+	for _, url := range []string{
+		"morphomatch://duo?player=A&server=http://10.0.2.2:8788",
+		"https://example.com/a b?q=it's;x=$HOME|y",
+	} {
+		if err := a.OpenURL(context.Background(), url); err != nil {
+			t.Fatal(err)
+		}
+		out, err := os.ReadFile(got)
+		if err != nil {
+			t.Fatal(err)
+		}
+		lines := strings.Split(strings.TrimSpace(string(out)), "\n")
+		if last := lines[len(lines)-1]; last != url {
+			t.Errorf("am was given %q\nwant %q", last, url)
 		}
 	}
 }

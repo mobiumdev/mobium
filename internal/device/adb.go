@@ -682,9 +682,12 @@ func (a *ADB) heldByPlayProtect(ctx context.Context, stop context.CancelFunc) bo
 	}
 }
 
-// OpenURL opens a URL or deep link.
+// OpenURL opens a URL or deep link. The URL is quoted: the device's shell
+// parses the command, and a query's `&` sent the rest of the link to the
+// background, so `?player=A&server=...` opened `?player=A` and reported it
+// opened. CHALLENGES 369.
 func (a *ADB) OpenURL(ctx context.Context, url string) error {
-	out, err := a.Shell(ctx, "am", "start", "-a", "android.intent.action.VIEW", "-d", url)
+	out, err := a.Shell(ctx, "am", "start", "-a", "android.intent.action.VIEW", "-d", shellQuote(url))
 	if err != nil {
 		return err
 	}

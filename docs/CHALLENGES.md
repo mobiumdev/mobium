@@ -8028,6 +8028,28 @@ plain drag (`drag`, `swipe`) is not corrected: what the app does with it is
 the app's, and Morpho Match's sort level, built to drop a card where its
 drag carried it, still fails there.
 
+
+### 369. A deep link was cut at its first `&`, and opened anyway
+
+**Found by:** Morpho Match's two-player game, whose link is
+`morphomatch://duo?player=A&server=http://10.0.2.2:8788`. A test that ran
+its own server on 8788 found both devices still playing the game on the
+default port, 8787, with nothing on either screen to say so. `ADB.OpenURL`
+passed the link to `adb shell` unquoted, and the device's shell is what
+parses that line: `&` sent `am start … -d morphomatch://duo?player=A` to
+the background and ran `server=…` as an assignment. `am` reported the
+intent delivered, and `open` reported it opened. Every Android link with a
+second query parameter had lost it since `open` was written; the game's
+scripts passed only because the app's default was the port they used.
+`;`, `|`, `$` and a space cut or changed a link the same way.
+
+**Fixed:** the link goes through `shellQuote`, as a notification's text has
+since CHALLENGES 52. The test is a fake adb that parses its arguments as
+the device's shell does and prints what `am` was given; without the fix it
+was given `morphomatch://duo?player=A`, and nothing at all for a link
+holding `;` and `$`. On the Android 15 emulator and the Meta Spatial
+Simulator, the game's server on 8788 was reached from both, its outage
+test passed in both orders, and its other three scripts still pass.
 ## Findings that were not defects
 
 Worth recording because each one closed off an approach that looked obvious.
