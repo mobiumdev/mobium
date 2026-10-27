@@ -9,6 +9,11 @@
 | [favicon.svg](favicon.svg) | The mark at tab size |
 | [mobium-logo.png](mobium-logo.png) | The original: glyph over the wordmark, on white, 1254² |
 | [mobium-logo-variants.png](mobium-logo-variants.png) | The original's three settings — light, dark, app icon |
+| [mobium-banner.gif](mobium-banner.gif) | The repository README's banner: the mark's four shapes come out of a fog one by one, then the name and two lines of text; loops, 8 s, 1000×250 |
+| [mobium-banner.mp4](mobium-banner.mp4) | The same at full size, 1584×396 (a LinkedIn cover's size), 30 fps, no audio |
+| [mobium-banner.png](mobium-banner.png) | Its last frame as a still, 1584×396, for anywhere a cover cannot move |
+| [mobium-wordmark-white.png](mobium-wordmark-white.png) | The original wordmark in white with its blue dot, on transparent — taken from mobium-logo.png, for dark grounds |
+| [banner/](banner/) | The banner's source, `banner.html`, and `render.sh`, which rebuilds the three files above |
 
 ## Palette
 
@@ -116,6 +121,21 @@ there than everywhere else is not worth the smaller file.
 The glyph is an **M** built from four leaves that read as a butterfly — the
 two upper wings form the peaks, the two lower shapes the legs. Blue-violet to
 cyan, left to right.
+
+## The banner
+
+`banner/banner.html` draws one frame for the time in its URL's hash, and
+`banner/render.sh` asks headless Chrome for 240 of them and has ffmpeg encode
+them — free tools only, and the same source gives the same bytes: a rebuild
+compared equal to the files committed. The four shapes are mobium-mark.svg's
+paths and gradients, copied unchanged, and they arrive in the order that traces
+the M — left foot, left wing, right wing, right foot — each drifting in from
+outside the mark as its blur clears. The name is the original wordmark, not a
+font set to look like it (see above); the two lines under it are set in Outfit,
+under the SIL Open Font License. The ground is the dark one, `#141826`.
+
+On a LinkedIn profile the photo covers the cover's lower left, which is why the
+lockup sits right of center.
 
 ## Motto
 
