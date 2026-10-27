@@ -98,6 +98,18 @@ if [ -f "$CHECK_SELF" ]; then
   CHECK_SUM=$(cksum < "$CHECK_SELF")
 fi
 
+# kill_matching PATTERN ends this machine's processes whose command line
+# contains PATTERN, and fails when there were none. pkill -f does it on
+# macOS and Linux; Git Bash on Windows has no pkill, and its ps shows no
+# arguments, so there the command line is read from Windows itself.
+kill_matching() {
+  case "$(uname -s)" in
+    MINGW*|MSYS*|CYGWIN*)
+      PATTERN="$1" powershell.exe -NoProfile -Command '$n = 0; Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -and $_.CommandLine.Contains($env:PATTERN) -and $_.ProcessId -ne $PID } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue; $n++ }; if ($n -eq 0) { exit 1 }' ;;
+    *) pkill -f "$1" ;;
+  esac
+}
+
 # check_platform android|ios DEV refuses a device of the other kind, by name,
 # with exit 2. An Android check given a simulator tried to launch Google's
 # Calculator there, and an iOS one given an emulator failed listing its apps

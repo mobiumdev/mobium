@@ -129,9 +129,9 @@ fi
 if [ -n "$STREAM" ]; then
   demo
   case "$STREAM" in
-    android) pkill -f "logcat -v epoch -T" || fail "no gray-box logcat to stop" ;;
-    ios-sim) pkill -f "log stream --style ndjson --level default --predicate subsystem == \"dev.mobium.graybox\"" ||
-           pkill -f "dev.mobium.graybox" || fail "no gray-box log stream to stop" ;;
+    android) kill_matching "logcat -v epoch -T" || fail "no gray-box logcat to stop" ;;
+    ios-sim) kill_matching "log stream --style ndjson --level default --predicate subsystem == \"dev.mobium.graybox\"" ||
+           kill_matching "dev.mobium.graybox" || fail "no gray-box log stream to stop" ;;
   esac
   sleep 0.5
   said=$($M tap testid=busyRowC)

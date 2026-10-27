@@ -55,6 +55,15 @@ if [ "$KIND" = phone ]; then
 else
   REQ="Open Calculator"; APP=com.google.android.calculator; START=dev.mobium.mobiumapp
 fi
+# The request needs its app on the device. Google's Calculator is on phones
+# but on no emulator image; without it the check refuses rather than fails
+# for a cause that is not the assistant's. The list is read on its own, so a
+# device that cannot list its apps fails as that (CHALLENGES 269).
+apps=$($M apps 2>&1) || fail "listing the apps: $apps"
+if ! echo "$apps" | grep -q "$APP"; then
+  echo "$(basename "$0") asks the assistant to open $APP, which $DEV does not have — install it first" >&2
+  exit 2
+fi
 $M terminate $APP >/dev/null 2>&1 || true
 $M launch $START >/dev/null
 at_exit "$M terminate $APP >/dev/null 2>&1 || true"

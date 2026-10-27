@@ -19,6 +19,21 @@ mid-transition). That laptop's emulator also froze under
 Chrome four times in one evening, with plain adb dropping it as well: an 8 GB
 machine is short of what a headless emulator and Chrome need together.
 
+**Run again on 2026-10-27**, on main at d36ce9e, Windows 11 build 26200:
+`go test ./...` passes; `mobium mcp` lists 78 tools; the quick start passes
+in Windows PowerShell 5.1 and PowerShell 7.6; `clients.sh` passed all five
+clients in one run; `dialogs` passes; a deep link with `&`, spaces, `$`,
+`;`, `|` and single quotes reaches the device whole (CHALLENGES 369); and
+`mobium shutdown` ended a frozen emulator in 11 s. Of the rest, three
+failed on the checks themselves, written for macOS — `mktemp -t` and
+`pkill` (mobium-app, graybox-edges), and a Calculator no emulator image
+has (assistant) — and the reference driver did not retry uiautomator's
+transient "null root node" (external-driver); all four are fixed. Still
+unexplained: tv-app, speech and codegen. The emulator froze or exited
+under Chrome twice more; with `-gpu host` the laptop's GPU drew the screen,
+but qemu held more memory idle (3.1 GB against 2.0–2.4) and still exited in
+the first Chrome round.
+
 Before that, since 2026-09-27 CI runs on a GitHub-hosted Windows runner:
 both modules' tests pass there, the named-pipe transport's acceptance tests
 below pass five times a run, and the built `mobium.exe` answers `doctor` and
@@ -225,6 +240,16 @@ how.
   The checks set the first in `lib.sh`, with `PYTHONUTF8=1`, since Windows'
   Python reads a file as cp1252 by default.
   CHALLENGES 361.
+- **Windows PowerShell 5.1 drops double quotes inside an argument**
+  (measured 2026-10-27): `mobium open "x://y?d=`"dq`""` reaches `mobium.exe`
+  as `x://y?d=dq`, before Mobium sees it. PowerShell 7.3 and later pass it
+  whole, as do MCP and the clients, which send arguments as data. In 5.1,
+  avoid double quotes in a value or use PowerShell 7.
+- **Memory.** On an 8 GB laptop a headless emulator with 2 GB of RAM holds 2.0–
+  2.4 GB on the host, and opening Chrome in it brought it to 3.6 GB with
+  0.7 GB free; Windows then trims its working set and the emulator freezes or
+  exits without a word. `-gpu host` does not help. Give such a machine more
+  memory, or drive browser-heavy checks on a phone.
 
 ---
 
@@ -341,7 +366,7 @@ nobody suspected, which is the most valuable thing this exercise can find.
 ```powershell
 '{"jsonrpc":"2.0","id":1,"method":"tools/list"}' | .\bin\mobium.exe mcp
 ```
-Expect 75 tools — [API.md](API.md) is generated from the source and is the
+Expect 78 tools — [API.md](API.md) is generated from the source and is the
 live number if this one has drifted again. It has before.
 
 Then, with an emulator running:

@@ -35,6 +35,7 @@ import json
 import os
 import subprocess
 import sys
+import time
 import xml.etree.ElementTree as ET
 
 PROTOCOL_VERSION = "1"
@@ -187,8 +188,19 @@ class Driver:
         # goes to stdout, "ERROR: could not get idle state." to stderr, and it
         # exits 0 either way. Reading only stdout turns a diagnosable failure
         # into "no output".
+        # "null root node" is uiautomator's own transient failure, met while
+        # the screen is mid-transition; mobium's built-in backend retries it
+        # the same way (internal/mobiumdriver/android.go, snapshotRetries).
+        for attempt in range(3):
+            out, err = self._dump()
+            if DUMP_PATH in out or "null root node" not in out + err or attempt == 2:
+                break
+            time.sleep(0.7)
+        return self._read_dump(out, err)
+
+    def _dump(self):
         try:
-            out, err = self.adb.shell2("uiautomator", "dump", DUMP_PATH)
+            return self.adb.shell2("uiautomator", "dump", DUMP_PATH)
         except DriverError as e:
             # UiAutomation belongs to one client at a time, and a dump while
             # another holds it fails with nothing on either stream — read
@@ -202,6 +214,8 @@ class Driver:
                     "UiAutomator2 server, `mobium daemon stop`)"
                 ) from e
             raise
+
+    def _read_dump(self, out, err):
         if DUMP_PATH not in out:
             reason = " ".join(x for x in (out.strip(), err) if x) or "no output"
             if "idle state" in reason:
