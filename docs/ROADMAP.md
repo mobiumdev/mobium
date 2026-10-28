@@ -272,9 +272,9 @@ this is what is not.
   unexplained then are fixed (#291, #292, CHALLENGES 370–371), Mobium's
   `windows/arm64` build has driven a device from Windows on ARM (#293,
   #294), and the checks a person at the machine runs passed on the
-  v0.1.0-rc1 prerelease. Windows is not yet declared supported: left are
-  three defects the machine checks found, and full emulator sweeps, which
-  the 8 GB laptop cannot hold with Chrome open.
+  v0.1.0-rc1 prerelease, and the three defects they found are fixed (#297,
+  CHALLENGES 373–375). Windows is not yet declared supported: left are full
+  emulator sweeps, which the 8 GB laptop cannot hold with Chrome open.
   [WINDOWS.md](WINDOWS.md) is the state of it.
 - **Published client packages.** Every client builds, as its registry would
   receive it, into a package that carries the LICENSE, a README and full
