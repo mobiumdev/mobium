@@ -7,8 +7,8 @@ the source.
 
 The pattern across them is the reason the document exists: **almost nothing
 here was found by reading code or by a test written from imagination.** Of
-369 defects, 304 were found only by running against a real device. Nine
-more — 255, 280, 282, 327, 329, 353, 355, 356 and 359 — were met while
+371 defects, 305 were found only by running against a real device. Ten
+more — 255, 280, 282, 327, 329, 353, 355, 356, 359 and 371 — were met while
 running against one, though the fault lay in a check, the host or Mobium's own
 design rather than in the platform. The other fifty-six — 4, 5, 6, 14, 23,
 24, 32, 35, 36, 39, 44, 50, 53, 54, 57, 66, 89, 99, 100, 121, 123, 129, 130,
@@ -8056,6 +8056,67 @@ was given `morphomatch://duo?player=A`, and nothing at all for a link
 holding `;` and `$`. On the Android 15 emulator and the Meta Spatial
 Simulator, the game's server on 8788 was reached from both, its outage
 test passed in both orders, and its other three scripts still pass.
+
+### 370. A row cut off at the list's edge was refused as named by its label
+
+**Found by:** codegen.sh on a Windows laptop's Android 15 emulator, which
+failed now and then with `app_scroll_to` refusing `text="Table Demo"`:
+"no element matches text="Table Demo", but label="Table Demo" does". The
+Go program failed once and the recording replayed by `mobium test` once,
+the same step in each, and Python and JavaScript passed it. Caught twice
+in eight runs with the bounds read at the refusal: MobiumApp's Table Demo
+row at y 2377–2400 and 2369–2400, 23 and 31 pixels of it on screen, and
+no text node at all. Android clips a row's bounds to its list and leaves
+out of the tree what lies past the edge, so the row kept its label and
+lost the text inside it. A near miss — the target on screen under other
+words — ends a scroll at once (226), and this one was not on screen yet:
+the laptop's slower swipes stopped short where the Mac's carried on. A
+wait first tried for it, on the theory that the row was still rendering,
+still failed one run in five, and was dropped.
+
+**Fixed:** a near miss whose element is cut off at its list's edge is
+scrolled for, the first read and every one after a swipe. Cut off is
+clippedAt's test, as for the pager's cards (169): flush against the edge
+and shorter than a sibling of its kind. A near miss in view is still
+refused at once. The test is MobiumApp's list as Android reported it; it
+fails without the fix with the laptop's error. On the laptop, 25 runs of
+the scroll-to from a fresh launch found the row 25 times, and codegen.sh
+passed twice.
+
+### 371. Four checks failed on Windows for causes in themselves
+
+**Found by:** a sweep of the checks on a Windows laptop (Windows 11 build
+26200), after #291's fixes. Each failure named a cause that was not
+Mobium's:
+
+- **speech.sh** said the icon with no name was not spoken as a bare
+  Button while the list it printed held one. Python on Windows ends a
+  printed line with `\r\n`; Git Bash drops the `\r` inside `$(...)`, which
+  is why every `[ "$(… json …)" = True ]` passed, but not on a pipe, so
+  `said | grep -qx Button` compared `Button\r`. Measured: `python3 -c
+  'print("Button")' | od -c` ends `\r \n`, and grep -x finds nothing.
+- **speech.sh** stopped listening as soon as the tap on Log in returned,
+  and the app announces after its sign-in delay: on the laptop's slow
+  emulator the stop came first, and "the app's announcement was not
+  heard" with no steps at all, one run in two.
+- **codegen.sh** wrote the .NET client's path into the generated
+  project as `/c/Users/…`, which MSBuild cannot read — "The type or
+  namespace name 'Mobium' could not be found" — and looked for a JDK only
+  where macOS keeps one, so its Java program had never run on Windows.
+- **tv-app.sh** ran on a phone emulator, where MobiumTV's grid shows half
+  its columns and Tile 3 is never in the tree.
+
+**Fixed:** lib.sh gives Python a sitecustomize of the check's own on
+Windows that puts its output on `\n`, so no check needs to know; speech.sh
+waits for the sign-in error on screen and a second more before it stops
+listening; codegen.sh writes the clients' path as Windows reads it, the
+way its go.mod already was, and takes the JDK from JAVA_HOME there;
+tv-app.sh asks for `android.software.leanback` or
+`amazon.hardware.fire_tv` and refuses a device with neither, exit 2. On
+the laptop: speech.sh passed four runs in four, codegen.sh ran all five
+languages and `mobium test` twice, and tv-app.sh refused the phone
+emulator; on the Mac, tv-app.sh passed on the Android TV emulator, whose
+leanback reads true, and refused the phone emulator.
 ## Findings that were not defects
 
 Worth recording because each one closed off an approach that looked obvious.

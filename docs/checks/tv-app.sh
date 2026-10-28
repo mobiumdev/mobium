@@ -50,7 +50,14 @@ case "$DEV" in
     echo "$devs" | grep -q "^$DEV .*apple tv simulator" || {
       echo "$(basename "$0") is for a TV, and $DEV is not an Apple TV simulator" >&2; exit 2; }
     TVOS=1 ;;
-  *) check_platform android "$DEV"; TVOS= ;;
+  *) check_platform android "$DEV"; TVOS=
+    # A phone runs MobiumTV too, but its screen shows half the grid, and
+    # Tile 3 is never in the tree: the check failed on a phone emulator for a
+    # cause that was the device's (measured on Windows, 2026-10-27).
+    tv=$(adb -s "$DEV" shell 'pm has-feature android.software.leanback; pm has-feature amazon.hardware.fire_tv' 2>&1 | tr -d '\r') ||
+      fail "cannot ask $DEV whether it is a TV: $tv"
+    echo "$tv" | grep -qx true || {
+      echo "$(basename "$0") is for a TV, and $DEV is not one: it has neither android.software.leanback nor amazon.hardware.fire_tv" >&2; exit 2; } ;;
 esac
 check_lock "$DEV"
 row() { printf '    %-12s %-60s ok\n' "$1" "$2"; }

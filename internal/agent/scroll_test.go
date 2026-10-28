@@ -1172,3 +1172,74 @@ func TestASidewaysScrollSwipesTheRowThatSaysItScrollsSideways(t *testing.T) {
 		t.Errorf("with no direction the largest is still the grid: %+v", c)
 	}
 }
+
+// cutRowDriver is MobiumApp's home list as Android reported it on a slow
+// emulator: before a swipe the Table Demo row is cut off at the bottom edge,
+// 23 pixels of it, with its label and no text node; after one, it is whole
+// and its text is there.
+type cutRowDriver struct{ swipes int }
+
+func (d *cutRowDriver) Snapshot(ctx context.Context) (*uitree.Tree, error) {
+	row := `<node index="2" content-desc="Table Demo" class="android.view.ViewGroup" clickable="true" enabled="true" bounds="[42,2377][1038,2400]" />`
+	if d.swipes > 0 {
+		row = `<node index="2" content-desc="Table Demo" class="android.view.ViewGroup" clickable="true" enabled="true" bounds="[42,1900][1038,2031]">` +
+			`<node index="0" text="Table Demo" class="android.widget.TextView" enabled="true" bounds="[78,1936][1002,1993]" /></node>`
+	}
+	xml := `<?xml version='1.0' encoding='UTF-8'?><hierarchy rotation="0">` +
+		`<node index="0" class="android.widget.FrameLayout" bounds="[0,0][1080,2400]">` +
+		`<node index="0" class="android.widget.ScrollView" scrollable="true" bounds="[0,120][1080,2400]">` +
+		`<node index="0" class="android.view.ViewGroup" bounds="[0,120][1080,2400]">` +
+		fmt.Sprintf(`<node index="0" content-desc="Pager Demo" text="row %d" class="android.view.ViewGroup" clickable="true" enabled="true" bounds="[42,2100][1038,2231]" />`, d.swipes) +
+		`<node index="1" content-desc="Slider Demo" class="android.view.ViewGroup" clickable="true" enabled="true" bounds="[42,2240][1038,2371]" />` +
+		row + `</node></node></node></hierarchy>`
+	return uitree.ParseAndroid([]byte(xml))
+}
+func (d *cutRowDriver) Screenshot(ctx context.Context) ([]byte, error) { return nil, nil }
+func (d *cutRowDriver) Tap(ctx context.Context, x, y int) error        { return nil }
+func (d *cutRowDriver) Name() string                                   { return "cut-row-fake" }
+func (d *cutRowDriver) LongPress(ctx context.Context, x, y int, _ time.Duration) error {
+	return nil
+}
+func (d *cutRowDriver) Swipe(ctx context.Context, x1, y1, x2, y2 int, _ time.Duration) error {
+	d.swipes++
+	return nil
+}
+
+// A near miss on a row cut off at the list's edge is scrolled for, not
+// refused naming label=: its text was past the edge, out of the tree
+// (CHALLENGES 370). Without nearMissCut this fails.
+func TestScrollToScrollsForANearMissCutOffAtTheEdge(t *testing.T) {
+	d := &cutRowDriver{}
+	h := NewHandlers()
+	h.implicitWait, h.settleWindow = 0, 0
+	s := &session{dev: fakeDevice(), driver: d, backend: BackendDump}
+	h.sessions["fake"] = s
+	_, err := scrollTo(h, s, map[string]interface{}{"target": `text="Table Demo"`})
+	if err != nil {
+		t.Fatalf("a row cut off at the edge was refused: %v", err)
+	}
+	if d.swipes == 0 {
+		t.Error("found without a swipe: the fixture did not cut the row off")
+	}
+}
+
+// A near miss on a row wholly in view is still refused at once, naming the
+// locator that works: there is nothing to scroll for.
+func TestScrollToStillRefusesANearMissInView(t *testing.T) {
+	d := &cutRowDriver{swipes: 1}
+	h := NewHandlers()
+	h.implicitWait, h.settleWindow = 0, 0
+	s := &session{dev: fakeDevice(), driver: d, backend: BackendDump}
+	h.sessions["fake"] = s
+	_, err := scrollTo(h, s, map[string]interface{}{"target": `label="Slider Demo"`})
+	if err != nil {
+		t.Fatalf("the plain row should resolve: %v", err)
+	}
+	_, err = scrollTo(h, s, map[string]interface{}{"target": `text="Slider Demo"`})
+	if err == nil || !isNearMiss(err) {
+		t.Fatalf("want the near-miss refusal for a row in view, got %v", err)
+	}
+	if d.swipes != 1 {
+		t.Errorf("a near miss in view was scrolled for: %d swipes", d.swipes-1)
+	}
+}
