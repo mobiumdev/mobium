@@ -7,20 +7,20 @@ the source.
 
 The pattern across them is the reason the document exists: **almost nothing
 here was found by reading code or by a test written from imagination.** Of
-371 defects, 305 were found only by running against a real device. Ten
+372 defects, 305 were found only by running against a real device. Ten
 more — 255, 280, 282, 327, 329, 353, 355, 356, 359 and 371 — were met while
 running against one, though the fault lay in a check, the host or Mobium's own
-design rather than in the platform. The other fifty-six — 4, 5, 6, 14, 23,
+design rather than in the platform. The other fifty-seven — 4, 5, 6, 14, 23,
 24, 32, 35, 36, 39, 44, 50, 53, 54, 57, 66, 89, 99, 100, 121, 123, 129, 130,
 133, 134, 139, 140, 141, 142, 144, 150, 158, 162, 164, 165, 172, 222, 231, 232,
-243, 274, 278, 279, 286, 287, 305, 306, 308, 309, 310, 313, 314, 321, 361, 362
-and 363 — came from reading code, the compiler, a test, a linter,
+243, 274, 278, 279, 286, 287, 305, 306, 308, 309, 310, 313, 314, 321, 361, 362,
+363 and 372 — came from reading code, the compiler, a test, a linter,
 cross-checking a computed number against a screenshot, using the tooling on
 itself, typing a negative number at a command line, and driving the clients
 against a stand-in daemon, CI on Windows, following the quick start from
 a fresh clone, type-checking — or writing — the documentation site's examples,
 reviewing the questions of the documentation's evaluation set, synthesized
-sounds, and the host's own shell.
+sounds, the host's own shell, and a clean Windows machine.
 
 Read it before writing a test that asserts platform behavior.
 
@@ -8117,6 +8117,26 @@ the laptop: speech.sh passed four runs in four, codegen.sh ran all five
 languages and `mobium test` twice, and tv-app.sh refused the phone
 emulator; on the Mac, tv-app.sh passed on the Android TV emulator, whose
 leanback reads true, and refused the phone emulator.
+
+### 372. A clean Windows machine was told to run Homebrew, and offered an iOS simulator
+
+**Found by:** the first run of the `windows/arm64` build, which every
+release ships, on a clean Windows 11 on ARM (build 26300) in a UTM virtual
+machine: no Android SDK, no Go until it was installed to build Mobium there.
+`doctor` and `devices`, with no adb, said to install platform-tools "e.g.
+`brew install --cask android-platform-tools`" — a macOS command, and the
+only one named — and `devices` began "Start an Android emulator or an iOS
+simulator", with the note under it saying iOS needs a Mac. On every machine
+that had run Mobium before, adb was there and neither line was ever printed.
+
+**Fixed:** the adb remedy names the install of the machine it runs on: on
+Windows `winget install --id Google.PlatformTools` and a new terminal, on
+macOS Homebrew, and Android Studio's SDK Manager or Google's download
+everywhere. `devices` offers an iOS simulator only on macOS. On the VM,
+`winget install --id Google.PlatformTools` put adb on PATH and turned
+`doctor`'s line to ok; the fixed binary, run there with adb hidden, printed
+both new lines. Tests hold each platform to its own install.
+
 ## Findings that were not defects
 
 Worth recording because each one closed off an approach that looked obvious.

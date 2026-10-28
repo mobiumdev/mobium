@@ -260,3 +260,15 @@ func TestPickOneTreatsNoBoundsAsOffScreen(t *testing.T) {
 		t.Errorf("suggests re-mapping, which cannot bring an off-screen row into view: %v", err)
 	}
 }
+
+// An iOS simulator is offered only where one can run.
+func TestNoDevicesOffersOnlyWhatThisMachineCanStart(t *testing.T) {
+	if !strings.Contains(noDevices("darwin"), "iOS simulator") {
+		t.Errorf("a Mac is not offered an iOS simulator: %q", noDevices("darwin"))
+	}
+	for _, goos := range []string{"windows", "linux"} {
+		if strings.Contains(noDevices(goos), "iOS") {
+			t.Errorf("%s is offered an iOS simulator: %q", goos, noDevices(goos))
+		}
+	}
+}

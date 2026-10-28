@@ -114,6 +114,25 @@ func TestErrNoADBIsActionable(t *testing.T) {
 	}
 }
 
+// Each platform is told its own install, and only its own: a clean Windows
+// machine was told to run Homebrew.
+func TestErrNoADBNamesThisPlatformsInstall(t *testing.T) {
+	for goos, want := range map[string]string{
+		"darwin": "brew install", "windows": "winget install --id Google.PlatformTools", "linux": "SDK Manager",
+	} {
+		msg := noADB(goos).Error()
+		if !strings.Contains(msg, want) {
+			t.Errorf("%s: want %q in %q", goos, want, msg)
+		}
+		if goos != "darwin" && strings.Contains(msg, "brew") {
+			t.Errorf("%s is told to use Homebrew: %q", goos, msg)
+		}
+		if goos != "windows" && strings.Contains(msg, "winget") {
+			t.Errorf("%s is told to use winget: %q", goos, msg)
+		}
+	}
+}
+
 func TestADBArgsPinSerial(t *testing.T) {
 	a := &ADB{Path: "adb", Serial: "emulator-5554"}
 	got := a.args("shell", "input", "tap", "1", "2")
