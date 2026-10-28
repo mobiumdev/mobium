@@ -3,11 +3,9 @@
 **Status, 2026-10-27: devices driven from Windows; not yet declared
 supported.** Every check that failed on the laptop without explanation on
 2026-10-22 is explained and fixed (#291, #292), and the checks a person at
-the machine runs passed on the v0.1.0-rc1 prerelease (below). Left: three
-defects those checks found (`doctor` and an unreadable SDK folder, Windows
-PowerShell 5.1 dropping an empty argument, and Ctrl-C leaving the daemon
-busy), and full emulator sweeps, which an 8 GB laptop cannot hold with
-Chrome open.
+the machine runs passed on the v0.1.0-rc1 prerelease (below), and the
+three defects they found are fixed (#297, CHALLENGES 373–375). Left: full
+emulator sweeps, which an 8 GB laptop cannot hold with Chrome open.
 
 **At the machine, 2026-10-27.** On the laptop's own keyboard, with
 v0.1.0-rc1 downloaded from its GitHub prerelease in Edge. As a standard
@@ -21,20 +19,24 @@ Git Bash's rewrite of a device path was refused, naming the rewrite and both
 remedies; accented text (é, è, ç) printed correctly in Windows PowerShell 5.1;
 and the daemon survived its terminal window being closed and was found again,
 same pid, from a new one. As the administrator who owns the SDK: an emulator
-booted with its window, answered, and shut down by name. Three defects:
+booted with its window, answered, and shut down by name. Three defects,
+each fixed in #297:
 
 - `doctor` failed "android sdk root" for that standard user, saying the SDK
   folder "has no platform-tools directory", and advised `sdkmanager`, which
   that user does not have. The folder exists: a machine-wide ANDROID_HOME
   points into another user's profile, which this user cannot read. It also
-  counted as a problem for someone driving only a phone.
+  counted as a problem for someone driving only a phone. Now it is a note
+  that names the folder as another account's.
 - `mobium locale <app> ""`, which makes an app follow the device again, did
   nothing in Windows PowerShell 5.1: 5.1 drops an empty argument, so Mobium
   read the app's language instead and the app stayed in French. cmd passes it.
+  Now `mobium locale <app> device` resets it, in any shell.
 - Ctrl-C during `mobium wait … --timeout 60s` ended the command at once, but
   the daemon went on running the wait: the next `daemon status` and `map`
   each failed with `write request: i/o timeout`, and the daemon answered
-  again, same pid, only once the wait's 60 seconds were up.
+  again, same pid, only once the wait's 60 seconds were up. The Mac had it
+  too. Now a call is canceled when its client goes away.
 
 On the Windows 11 laptop (24H2, i7-8565U, 8 GB), an Android 15
 emulator and a Pixel 8 Pro over USB were driven through `mobium mcp`, the CLI
