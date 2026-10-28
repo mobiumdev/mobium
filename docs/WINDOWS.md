@@ -27,7 +27,12 @@ stops. The clean machine found two messages that assumed a Mac: `doctor`
 told a user without adb to run Homebrew, and `devices` offered an iOS
 simulator; each now names what works on the machine it runs on. A Windows
 guest on Apple Silicon gets no virtualization of its own, so no emulator
-runs there; a device would be reached over the network.
+runs there; a device is reached over the network. The Mac's Android 15
+emulator, reached with `adb connect` through a relay on the VM's private
+network, was driven from the ARM64 build at 6be6a2b: the CLI quick start
+(`map` 0.57 s cold, 0.13 s warm), an MCP `app_map` call, and the Go
+client's end-to-end test all passed. The other four clients were not run
+there.
 
 **Run again on 2026-10-27**, on main at d36ce9e, Windows 11 build 26200:
 `go test ./...` passes; `mobium mcp` lists 78 tools; the quick start passes
