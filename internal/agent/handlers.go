@@ -111,6 +111,10 @@ type Handlers struct {
 	// UiAutomator2 server) so a first run does not look like a hang.
 	progress func(string)
 
+	// callParent, when set, is the parent of the next call's context: the
+	// daemon cancels it when the client that asked goes away (SetCallParent).
+	callParent context.Context
+
 	// dialogRules are the declared answers to dialogs, by device serial —
 	// kept here rather than on a session so they outlive one being
 	// restarted. handled is what they answered during the current call,
@@ -161,6 +165,16 @@ func (h *Handlers) SetBackend(b Backend) {
 func (h *Handlers) SetProgress(fn func(string)) {
 	h.mu.Lock()
 	h.progress = fn
+	h.mu.Unlock()
+}
+
+// SetCallParent makes ctx the parent of each call's context until it is set
+// again; context.Background() is none. The daemon sets the one its client's connection
+// cancels: Ctrl-C ended `mobium wait` while the daemon went on waiting, and
+// answered nothing else until the wait ran out (CHALLENGES 375).
+func (h *Handlers) SetCallParent(ctx context.Context) {
+	h.mu.Lock()
+	h.callParent = ctx
 	h.mu.Unlock()
 }
 
@@ -291,7 +305,11 @@ func (h *Handlers) CallMeta(name string, args, meta map[string]interface{}) (*To
 
 	// A batch has no deadline of its own: each of its steps has the whole
 	// call timeout, as it would called alone.
-	ctx, cancel := context.WithCancel(context.Background())
+	parent := h.callParent
+	if parent == nil {
+		parent = context.Background()
+	}
+	ctx, cancel := context.WithCancel(parent)
 	if name != "app_batch" {
 		ctx, cancel = context.WithTimeout(ctx, callTimeout)
 	}

@@ -258,7 +258,16 @@ func (d *Daemon) handleConnection(conn net.Conn) {
 		fmt.Fprintf(conn, "%s\n", payload)
 	}
 
-	resp := d.handleRequest(line, notify)
+	// A client sends one line and then only reads, so a read here returns
+	// when it goes away — Ctrl-C, a killed script — and the call it asked for
+	// is canceled. Unwatched, an interrupted `mobium wait` held the daemon
+	// until its timeout: everything else waited behind it, and on Windows,
+	// where a named pipe takes a write only when it is read, the next command
+	// failed with "write request: i/o timeout" (CHALLENGES 375).
+	callCtx, cancelCall := watchClient(conn)
+	defer cancelCall()
+
+	resp := d.handleRequest(callCtx, line, notify)
 	if resp == nil {
 		return
 	}
@@ -270,7 +279,20 @@ func (d *Daemon) handleConnection(conn net.Conn) {
 	fmt.Fprintf(conn, "%s\n", data)
 }
 
-func (d *Daemon) handleRequest(data []byte, notify func(string)) *agent.Response {
+// watchClient returns a context canceled when the client on conn goes away.
+// It reads conn to find out, so it is called only once the request is read.
+func watchClient(conn net.Conn) (context.Context, context.CancelFunc) {
+	ctx, cancel := context.WithCancel(context.Background())
+	conn.SetReadDeadline(time.Time{})
+	go func() {
+		var b [1]byte
+		conn.Read(b[:])
+		cancel()
+	}()
+	return ctx, cancel
+}
+
+func (d *Daemon) handleRequest(callCtx context.Context, data []byte, notify func(string)) *agent.Response {
 	var req agent.Request
 	if err := json.Unmarshal(data, &req); err != nil {
 		return &agent.Response{JSONRPC: "2.0", Error: &agent.Error{
@@ -302,7 +324,9 @@ func (d *Daemon) handleRequest(data []byte, notify func(string)) *agent.Response
 	// connection, so it is installed and cleared under the same lock.
 	d.mu.Lock()
 	d.handlers.SetProgress(notify)
+	d.handlers.SetCallParent(callCtx)
 	result, rpcErr := agent.Route(req, d.handlers, d.version, d.daemonMethods)
+	d.handlers.SetCallParent(context.Background())
 	d.handlers.SetProgress(nil)
 	d.mu.Unlock()
 

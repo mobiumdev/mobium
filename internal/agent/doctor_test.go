@@ -3,6 +3,7 @@ package agent
 import (
 	"context"
 	"os"
+	"path/filepath"
 	"runtime"
 	"strings"
 	"testing"
@@ -70,11 +71,42 @@ func TestDoctorNamesTheRealCauseOfTheSDKRootTrap(t *testing.T) {
 	if found == nil {
 		t.Fatal("no sdk root check")
 	}
-	if found.Status != statusProblem {
+	// A note, not a problem: only starting an emulator needs it (CHALLENGES 373).
+	if found.Status == statusOK {
 		t.Fatalf("an SDK root with no platform-tools passed: %+v", found)
 	}
-	if !strings.Contains(found.Fix, "Broken AVD system path") {
-		t.Errorf("the fix does not connect it to the error a user actually sees: %q", found.Fix)
+	if found.Status == statusProblem {
+		t.Errorf("a missing platform-tools fails doctor for someone driving a phone: %+v", found)
+	}
+	if !strings.Contains(found.Detail, "Broken AVD system path") {
+		t.Errorf("it does not connect it to the error a user actually sees: %q", found.Detail)
+	}
+	if !strings.Contains(found.Detail, "SDK Manager") {
+		t.Errorf("it names no install that works without sdkmanager on PATH: %q", found.Detail)
+	}
+}
+
+// Another account's SDK, which this one cannot read, is called that — not a
+// folder with no platform-tools in it, which it is not (CHALLENGES 373).
+func TestDoctorCallsAnUnreadableSDKRootUnreadable(t *testing.T) {
+	if runtime.GOOS == "windows" || os.Geteuid() == 0 {
+		t.Skip("needs a folder this process cannot read: POSIX permissions, not root")
+	}
+	root := t.TempDir()
+	if err := os.Mkdir(filepath.Join(root, "platform-tools"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Chmod(root, 0o000); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { os.Chmod(root, 0o755) })
+
+	c := sdkRootCheck(root)
+	if c.Status == statusProblem {
+		t.Errorf("an unreadable SDK root fails doctor: %+v", c)
+	}
+	if !strings.Contains(c.Detail, "cannot be read by this account") || strings.Contains(c.Detail, "has no platform-tools") {
+		t.Errorf("an unreadable SDK root is not called unreadable: %q", c.Detail)
 	}
 }
 

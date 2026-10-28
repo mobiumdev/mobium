@@ -2,7 +2,9 @@ package agent
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"io/fs"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -103,22 +105,39 @@ func checkADB(ctx context.Context) DoctorCheck {
 // validates its SDK root by looking for a platform-tools directory inside it,
 // and dies with "Broken AVD system path" when it is missing — while adb is on
 // PATH and working, which sends you looking somewhere else entirely.
+//
+// It is a note, not a problem: the SDK root matters only for starting an
+// emulator, and a phone is driven without one — adb has its own check above.
+// It was a problem until a standard user on a Windows laptop was told the
+// root "has no platform-tools directory" and to run `sdkmanager`: the root
+// was another account's, named by a machine-wide ANDROID_HOME, and this
+// account could not read it (CHALLENGES 373).
 func checkSDKRoot() DoctorCheck {
 	root := device.EnvPath("ANDROID_SDK_ROOT")
 	if root == "" {
 		root = device.EnvPath("ANDROID_HOME")
 	}
+	return sdkRootCheck(root)
+}
+
+func sdkRootCheck(root string) DoctorCheck {
+	const why = " — only needed to start emulators, not to drive a phone or a running emulator"
 	if root == "" {
-		return note("android sdk root",
-			"ANDROID_SDK_ROOT is not set — only needed to start emulators, not to drive them")
+		return note("android sdk root", "ANDROID_SDK_ROOT is not set"+why)
 	}
-	if _, err := os.Stat(filepath.Join(root, "platform-tools")); err != nil {
-		return bad("android sdk root", root+" has no platform-tools directory",
-			"Run `sdkmanager platform-tools` so it installs *into the SDK root*. Having adb on "+
-				"PATH is not enough: the emulator checks for this directory and fails with "+
-				"\"Broken AVD system path\", which names the wrong cause.")
+	_, err := os.Stat(filepath.Join(root, "platform-tools"))
+	switch {
+	case err == nil:
+		return ok("android sdk root", root)
+	case errors.Is(err, fs.ErrPermission):
+		return note("android sdk root", root+" cannot be read by this account, so it is another account's SDK"+why+
+			"; to start one here, set ANDROID_HOME for this account to an SDK of its own")
+	default:
+		return note("android sdk root", root+" has no platform-tools directory, and an emulator started from it fails with "+
+			"\"Broken AVD system path\", which names the wrong cause. Install platform-tools into it: Android Studio → "+
+			"SDK Manager → SDK Tools → Android SDK Platform-Tools, or `sdkmanager platform-tools` from "+
+			filepath.Join(root, "cmdline-tools", "latest", "bin"))
 	}
-	return ok("android sdk root", root)
 }
 
 func checkAndroidDevices(ctx context.Context) DoctorCheck {
