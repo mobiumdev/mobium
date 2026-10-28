@@ -69,6 +69,24 @@ network, was driven from the ARM64 build at 6be6a2b: the CLI quick start
 client's end-to-end test all passed. The other four clients were not run
 there.
 
+**Windows on ARM again, 2026-10-28**, on main at 827f1c9, in a new virtual
+machine — the first stopped booting after a Windows Update it took the day
+before, and a reinstall into the same machine hung the same way; a new one
+did not. `go test ./...` passes, both modules, once Git's
+`C:\Program Files\Git\usr\bin` is on PATH for the fakes' `sh`; `doctor`
+finds everything; `mobium mcp` lists 78 tools; the daemon starts on its
+pipe by itself and stops. What runs on Windows is Mobium — the `windows/arm64`
+binary, its daemon, adb and the clients; the emulator is the Mac's, reached
+through the relay, since the guest can run none. Against an Android 15
+emulator and then an Android 17 one (API 37), the CLI quick start passed
+(`wait` 37 ms and 48 ms) and `clients.sh` passed all five clients — Python,
+JavaScript, Go, Java and .NET — each with the runtime winget installs for
+ARM64. The first `clients.sh` failed Python for the machine: on a clean
+Windows `python3` is the Microsoft Store's placeholder, which exits 49, and
+python.org's installer gives `python` alone; the client passed under
+`python`, and the checks now run `python` for `python3` when the
+placeholder is all there is (CHALLENGES, "Environment traps").
+
 **Run again on 2026-10-27**, on main at d36ce9e, Windows 11 build 26200:
 `go test ./...` passes; `mobium mcp` lists 78 tools; the quick start passes
 in Windows PowerShell 5.1 and PowerShell 7.6; `clients.sh` passed all five
