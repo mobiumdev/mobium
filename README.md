@@ -5,8 +5,9 @@
 *Mutatis mutandis.*
 
 **Mobile app automation for AI agents and people.** Android emulators, Android
-phones, iOS simulators and iPhones, driven through one tool layer from a single
-Go binary with no runtime dependencies.
+phones, iOS simulators and iPhones — and TVs, Wear OS and Meta Quest's 2D app
+panels — driven through one tool layer from a single Go binary with no runtime
+dependencies.
 
 ```sh
 mobium launch com.example.shop && mobium map && mobium tap @e5 && mobium map
@@ -36,8 +37,10 @@ person driving an emulator for it. People get the same commands.
 
 Requirements:
 
-- **Go 1.24+**, to install it — prebuilt binaries arrive with the first
-  release ([SETUP.md](docs/SETUP.md#installing-a-release))
+- **A prebuilt binary** for macOS, Linux or Windows, amd64 or arm64, from a
+  release — v0.1.0-rc1 is the first, a release candidate
+  ([SETUP.md](docs/SETUP.md#installing-a-release)) — or **Go 1.24+** to
+  install it with `go install`
 - **Android:** platform-tools on `PATH` (or `ANDROID_HOME`, or
   `MOBIUM_ADB_PATH`), and an emulator or a phone with USB debugging on
 - **iOS:** full Xcode and a booted simulator — or an iPhone on a cable, with
@@ -50,7 +53,7 @@ mobium doctor       # checks the environment; needs no device and no daemon
 
 ```
 $ mobium devices
-emulator-5554    device     (emulator, model: sdk_gphone64_arm64)
+emulator-5554    device     (android emulator, model: sdk_gphone64_arm64, Android 15 (API 35), navigation: gestures)
 
 $ mobium map
 @e1 Navigate up (button)
@@ -136,14 +139,17 @@ the wrong string.
 | | |
 | --- | --- |
 | Reading | `map`, and `map --diff` for what an action changed; `text`, `find`, `screenshot`, the raw `source` with passwords hidden, WebView contexts |
-| Acting | tap, double tap, type, swipe, long press, drag and drop, two-finger zoom and rotate; `check`/`uncheck` reach a state and confirm it |
-| Waiting | `wait` for appear, disappear, text, enabled or disabled |
+| Acting | tap, double tap, type and `fill`, swipe, long press, drag and drop, two-finger zoom and rotate, a second finger while one holds; `set`/`unset` reach a checkbox's or a switch's state and confirm it; the soft keyboard |
+| Waiting | `wait` for visible or hidden, text or value, enabled or disabled, checked or unchecked, focused, or a count — or, with `--not`, for it to stop being so |
 | Devices | `devices` lists them; `boot` starts an emulator or a simulator and answers once it is up, `shutdown` stops one after ending its session — an agent with no shell can start a device |
 | Apps | launch, terminate, install, uninstall, list, clear data, open a URL or deep link, foreground app, any app's state, backgrounding and resuming |
 | Files | `upload` and `download` between this machine and where the device keeps downloads — the Download folder on Android, an app's Documents on iOS — or, with `--device-path`, a file or folder at any path: a shell path on Android, an app's private data for a debuggable build, an app's data container on iOS |
 | Device state | permissions, appearance, accessibility settings for the session (reduce motion, bold text, contrast, text size and more; a simulator and Android), orientation, per-app language, hardware buttons and a TV remote's D-pad and media keys, shake and biometrics (enroll, then a matching or a stranger's face or finger) on emulators and simulators, screen lock, simulated calls and messages, notifications, timezone and the device's clock, battery, clipboard, geolocation and routes |
 | Dialogs | `alert` reads, answers and types into a system or app dialog; `dialogs` declares answers for one that gets in an action's way |
 | Diagnostics | device logs, crash reports and ANRs, screen recording, a session `trace` in Vibium's record format, for player.vibium.dev, `hit-test` — which view UIKit would really give a tap, below accessibility (iOS; before every tap with `launch --hit-test` on a simulator), `audit` — Apple's own accessibility audit of the screen (iOS), `doctor` |
+| Assistive tech and media | `speech` says what the screen reader says, about one element or walking the screen; `assistant` asks Siri or Google's assistant in typed text and reports what came back; `audio` captures what the device plays and says what it held ([ACCESSIBILITY.md](docs/ACCESSIBILITY.md)) |
+| Network | offline, latency, bandwidth, and on Android a proxy between the app and its servers ([PROXY.md](docs/PROXY.md)) |
+| Tests and checking | `mobium test` runs JSON tests on the devices a config names; `inspect` records what you do as a test; `check` has an independent model judge a claim about a recorded session ([the verifier](docs/guides/verifier.md)) |
 | Batches | `batch` runs a known sequence of calls in one, each checked before the first runs, stopping at the first failure |
 
 [docs/API.md](docs/API.md) lists every tool and which front door reaches it,
@@ -211,11 +217,15 @@ emulator, where every app is a panel and every panel stays open. Not yet a
 real headset, and not immersive apps, which publish no accessibility tree
 ([docs/HORIZON-OS.md](docs/HORIZON-OS.md)).
 
-**Windows is not supported yet.** Everything that needs no device, the
-named-pipe daemon transport included, passes in CI on a Windows runner, and
-since 2026-10-22 an Android emulator and a phone have been driven from a
-Windows laptop, through the CLI, MCP and all five clients. What is left
-before it is supported is in [docs/WINDOWS.md](docs/WINDOWS.md).
+**Windows is not declared supported yet.** Everything that
+needs no device, the named-pipe daemon transport included, passes in CI on a
+Windows runner; since 2026-10-22 an Android emulator and a phone have been
+driven from a Windows laptop, through the CLI, MCP and all five clients; and
+on 2026-10-27 the checks a person at the machine runs passed on the
+v0.1.0-rc1 prerelease, as a standard user, and the `windows/arm64` build
+drove a device from Windows on ARM. Left is a full sweep of the device checks
+on an emulator, which needs a machine with more than 8 GB
+([docs/WINDOWS.md](docs/WINDOWS.md)).
 
 Both device-side agents are pinned by version, verified against checksums
 compiled into the binary, and refused on a mismatch.
@@ -389,6 +399,8 @@ protocol.
 | [docs/THREAT-MODEL.md](docs/THREAT-MODEL.md) | what can go wrong when an agent drives a phone, and what is done and open |
 | [docs/upstream/](docs/upstream/README.md) | problems in projects Mobium depends on, written up with a patch |
 | [docs/WINDOWS.md](docs/WINDOWS.md) | the state of Windows support |
+| [docs/ACCESSIBILITY.md](docs/ACCESSIBILITY.md) | screen readers, speech and voice assistants: what was measured and what Mobium does with them |
+| [docs/PROXY.md](docs/PROXY.md) | a proxy between the app and its servers, and driving Charles |
 | [docs/HORIZON-OS.md](docs/HORIZON-OS.md) | Meta Quest's 2D apps on Horizon OS: what is driven on the simulator, and what is not yet |
 | [docs/ROADMAP.md](docs/ROADMAP.md) | what is next |
 | [docs/RELEASE-CHECKLIST.md](docs/RELEASE-CHECKLIST.md) | the device checks CI cannot run |
