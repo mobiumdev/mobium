@@ -124,7 +124,12 @@ jobs:
       - name: Create the release
         env:
           GH_TOKEN: ${{ github.token }}
+        # A tag with a pre-release part, v0.1.0-rc1, is a prerelease and never
+        # Latest: a release candidate is for checking the download a user gets,
+        # not for anyone to take for the release.
         run: |
-          gh release create "$GITHUB_REF_NAME" dist/* \
+          pre=""
+          case "$GITHUB_REF_NAME" in *-*) pre="--prerelease --latest=false" ;; esac
+          gh release create "$GITHUB_REF_NAME" dist/* $pre \
             --repo "$GITHUB_REPOSITORY" --verify-tag --title "mobium ${GITHUB_REF_NAME}" \
             --notes "Prebuilt mobium for macOS, Linux and Windows, amd64 and arm64, and mobium-${GITHUB_REF_NAME#v}.mcpb, the MCP bundle for macOS and Linux. Check a download against SHA256SUMS. The macOS binaries are not notarized; see docs/SETUP.md."
