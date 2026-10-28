@@ -49,7 +49,20 @@ case "$(uname -s)" in
     mkdir -p "$CHECK_TMP/py"
     printf 'import sys\nfor s in (sys.stdout, sys.stderr):\n    s.reconfigure(newline="\\n")\n' > "$CHECK_TMP/py/sitecustomize.py"
     PYTHONPATH="$(cygpath -w "$CHECK_TMP/py")${PYTHONPATH:+;$PYTHONPATH}"
-    export PYTHONPATH ;;
+    export PYTHONPATH
+    # On a clean Windows `python3` is the Microsoft Store's placeholder,
+    # which exits 49 under Git Bash saying Python is not installed, and
+    # python.org's installer provides `python` alone: clients.sh failed its
+    # Python client, which passed under `python` (Windows on ARM,
+    # 2026-10-28). Every check says python3, so the check's own python3
+    # runs python.
+    if ! python3 -c '' >/dev/null 2>&1 && python -c '' >/dev/null 2>&1; then
+      mkdir -p "$CHECK_TMP/bin"
+      printf '#!/bin/sh\nexec python "$@"\n' > "$CHECK_TMP/bin/python3"
+      chmod +x "$CHECK_TMP/bin/python3"
+      PATH="$CHECK_TMP/bin:$PATH"
+      export PATH
+    fi ;;
 esac
 CHECK_LOCK=""
 _check_handlers=""

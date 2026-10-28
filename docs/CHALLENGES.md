@@ -8638,7 +8638,9 @@ its cause.
   `C:\Program Files\Git\usr\bin` on PATH for `go test`. `python3` there
   is the Microsoft Store's placeholder, which exits 9009 saying Python is not
   installed, while python.org's installer provides `python` alone; the plist
-  and codegen tests now look for a Python that runs. And doctor's
+  and codegen tests now look for a Python that runs, and since 2026-10-28
+  so do the checks: `lib.sh` gives a check a `python3` that runs `python`
+  when the placeholder is all there is. And doctor's
   empty-machine test emptied PATH and `ANDROID_HOME` but not the home
   directory, where Android Studio puts the SDK, so it found adb there; it
   now hides `HOME` and `USERPROFILE` too. GitHub's Windows runner has none
