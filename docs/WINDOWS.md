@@ -1,7 +1,42 @@
 # Windows support
 
-**Status: devices driven from Windows since 2026-10-22; not yet declared
-supported.** On a Windows 11 laptop (24H2, i7-8565U, 8 GB), an Android 15
+**Status, 2026-10-27: devices driven from Windows; not yet declared
+supported.** Every check that failed on the laptop without explanation on
+2026-10-22 is explained and fixed (#291, #292), and the checks a person at
+the machine runs passed on the v0.1.0-rc1 prerelease (below). Left: three
+defects those checks found (`doctor` and an unreadable SDK folder, Windows
+PowerShell 5.1 dropping an empty argument, and Ctrl-C leaving the daemon
+busy), and full emulator sweeps, which an 8 GB laptop cannot hold with
+Chrome open.
+
+**At the machine, 2026-10-27.** On the laptop's own keyboard, with
+v0.1.0-rc1 downloaded from its GitHub prerelease in Edge. As a standard
+(non-administrator) user: the archive's SHA256 matched; `mobium.exe` ran
+from a folder with a space in its name, on the user's PATH; `doctor`, with
+no adb, named `winget install --id Google.PlatformTools`, and adb was found
+once it was installed; a Pixel 8 Pro whose USB authorizations had been
+revoked was listed as unauthorized, then as a device once allowed; the quick
+start passed in Windows PowerShell 5.1 and in cmd (`wait` 372 and 328 ms);
+Git Bash's rewrite of a device path was refused, naming the rewrite and both
+remedies; accented text (é, è, ç) printed correctly in Windows PowerShell 5.1;
+and the daemon survived its terminal window being closed and was found again,
+same pid, from a new one. As the administrator who owns the SDK: an emulator
+booted with its window, answered, and shut down by name. Three defects:
+
+- `doctor` failed "android sdk root" for that standard user, saying the SDK
+  folder "has no platform-tools directory", and advised `sdkmanager`, which
+  that user does not have. The folder exists: a machine-wide ANDROID_HOME
+  points into another user's profile, which this user cannot read. It also
+  counted as a problem for someone driving only a phone.
+- `mobium locale <app> ""`, which makes an app follow the device again, did
+  nothing in Windows PowerShell 5.1: 5.1 drops an empty argument, so Mobium
+  read the app's language instead and the app stayed in French. cmd passes it.
+- Ctrl-C during `mobium wait … --timeout 60s` ended the command at once, but
+  the daemon went on running the wait: the next `daemon status` and `map`
+  each failed with `write request: i/o timeout`, and the daemon answered
+  again, same pid, only once the wait's 60 seconds were up.
+
+On the Windows 11 laptop (24H2, i7-8565U, 8 GB), an Android 15
 emulator and a Pixel 8 Pro over USB were driven through `mobium mcp`, the CLI
 over the named pipe, and all five clients, which passed every step on both.
 A sweep of the checks on the emulator found six things, all fixed: the
@@ -9,13 +44,11 @@ daemon dying with the SSH session that started it (#264, CHALLENGES 359),
 tests that a real Windows development machine broke (#265), two checks that
 raced a slow emulator (#266), clients refusing a path without `.exe` (#267),
 a frozen emulator `mobium shutdown` could not end (#268, 360), and Git Bash
-rewriting device paths (#269, 361). Left before Windows is supported: the
-checks a person at the machine runs (installing, consoles, Ctrl-C, closing
-the window, a windowed emulator, Claude Desktop), and seven checks whose
-failures are not yet explained — dialogs, mobium-app, tv-app, speech,
-graybox-edges, assistant and codegen — and `external-driver`, which passed
-one run in two (the reference driver does not retry a read taken
-mid-transition). That laptop's emulator also froze under
+rewriting device paths (#269, 361). Left then: the checks a person at the
+machine runs, and seven checks whose failures were not yet explained —
+dialogs, mobium-app, tv-app, speech, graybox-edges, assistant and codegen —
+and `external-driver`, one run in two; all explained and fixed by 2026-10-27.
+That laptop's emulator also froze under
 Chrome four times in one evening, with plain adb dropping it as well: an 8 GB
 machine is short of what a headless emulator and Chrome need together.
 

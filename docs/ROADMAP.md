@@ -268,9 +268,14 @@ this is what is not.
   there found four defects (CHALLENGES 139–142). Since 2026-10-22 devices
   are driven from a Windows laptop — an Android 15 emulator and a Pixel 8
   Pro, through the CLI, MCP and all five clients — and that run found three
-  more (359–361, #264–#269). Windows is not yet declared supported: left are
-  the checks a person at the machine runs and eight check failures not yet
-  explained. [WINDOWS.md](WINDOWS.md) is the state of it.
+  more (359–361, #264–#269). Since 2026-10-27 the eight check failures left
+  unexplained then are fixed (#291, #292, CHALLENGES 370–371), Mobium's
+  `windows/arm64` build has driven a device from Windows on ARM (#293,
+  #294), and the checks a person at the machine runs passed on the
+  v0.1.0-rc1 prerelease. Windows is not yet declared supported: left are
+  three defects the machine checks found, and full emulator sweeps, which
+  the 8 GB laptop cannot hold with Chrome open.
+  [WINDOWS.md](WINDOWS.md) is the state of it.
 - **Published client packages.** Every client builds, as its registry would
   receive it, into a package that carries the LICENSE, a README and full
   metadata, and each has been installed from that package into a clean project
