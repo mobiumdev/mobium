@@ -9,6 +9,7 @@ import (
 	"github.com/mobiumdev/mobium/internal/mobiumerr"
 	"os"
 	"path/filepath"
+	"runtime"
 	"slices"
 	"sort"
 	"strconv"
@@ -597,7 +598,7 @@ func (h *Handlers) devices(ctx context.Context) (*ToolsCallResult, error) {
 	view.Notes = notes
 
 	if len(lines) == 0 {
-		msg := "No devices found. Start an Android emulator or an iOS simulator, then try again."
+		msg := noDevices(runtime.GOOS)
 		if len(notes) > 0 {
 			msg += "\n\n" + strings.Join(notes, "\n")
 		}
@@ -608,6 +609,16 @@ func (h *Handlers) devices(ctx context.Context) (*ToolsCallResult, error) {
 		out += "\n\n" + strings.Join(notes, "\n")
 	}
 	return Result(out, view), nil
+}
+
+// noDevices is what devices says when it lists none. An iOS simulator needs a
+// Mac, so elsewhere it is not offered: on Windows the line said to start one,
+// and the note under it said it could not be done there (2026-10-27).
+func noDevices(goos string) string {
+	if goos == "darwin" {
+		return "No devices found. Start an Android emulator or an iOS simulator, then try again."
+	}
+	return "No devices found. Start an Android emulator or connect an Android phone, then try again."
 }
 
 func (h *Handlers) mapScreen(ctx context.Context, args map[string]interface{}) (*ToolsCallResult, error) {

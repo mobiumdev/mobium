@@ -20,10 +20,25 @@ import (
 )
 
 // ErrNoADB is returned when the Android platform-tools are not installed.
-var ErrNoADB = mobiumerr.New(mobiumerr.ToolchainMissing,
-	"adb not found — install Android platform-tools and either put adb on PATH "+
-		"or set ANDROID_HOME (e.g. `brew install --cask android-platform-tools`, "+
-		"or Android Studio → SDK Manager → Android SDK Platform-Tools)")
+var ErrNoADB = noADB(runtime.GOOS)
+
+// noADB names the install that works on goos. It named Homebrew everywhere,
+// and on a clean Windows machine doctor told the user to run a macOS
+// command; winget's package puts adb on PATH, measured on Windows 11 on ARM
+// (2026-10-27).
+func noADB(goos string) error {
+	how := "Android Studio → SDK Manager → Android SDK Platform-Tools, or Google's download " +
+		"at https://developer.android.com/tools/releases/platform-tools"
+	switch goos {
+	case "darwin":
+		how = "`brew install --cask android-platform-tools`, or " + how
+	case "windows":
+		how = "`winget install --id Google.PlatformTools` and a new terminal, or " + how
+	}
+	return mobiumerr.New(mobiumerr.ToolchainMissing,
+		"adb not found — install Android platform-tools and either put adb on PATH "+
+			"or set ANDROID_HOME (e.g. %s)", how)
+}
 
 // ErrNoDevice is returned when adb works but nothing is attached.
 var ErrNoDevice = mobiumerr.New(mobiumerr.NoDevice,

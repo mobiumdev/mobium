@@ -19,6 +19,16 @@ mid-transition). That laptop's emulator also froze under
 Chrome four times in one evening, with plain adb dropping it as well: an 8 GB
 machine is short of what a headless emulator and Chrome need together.
 
+**Windows on ARM, 2026-10-27**, a clean Windows 11 on ARM (build 26300)
+in a UTM virtual machine on an Apple Silicon Mac, with Mobium built there
+for `windows/arm64`: `go test ./...` passes, `mobium mcp` lists 78 tools,
+`doctor` answers, and the daemon starts on its named pipe, answers and
+stops. The clean machine found two messages that assumed a Mac: `doctor`
+told a user without adb to run Homebrew, and `devices` offered an iOS
+simulator; each now names what works on the machine it runs on. A Windows
+guest on Apple Silicon gets no virtualization of its own, so no emulator
+runs there; a device would be reached over the network.
+
 **Run again on 2026-10-27**, on main at d36ce9e, Windows 11 build 26200:
 `go test ./...` passes; `mobium mcp` lists 78 tools; the quick start passes
 in Windows PowerShell 5.1 and PowerShell 7.6; `clients.sh` passed all five
@@ -304,6 +314,16 @@ go version                      # needs 1.24+
 ```
 
 ### 2. Android
+
+To drive a phone or a TV, adb alone is enough:
+
+```powershell
+winget install --id Google.PlatformTools
+```
+
+It puts `adb` on PATH for the next terminal; `mobium doctor` then reads
+`ok adb` (measured on a clean Windows 11 on ARM, 2026-10-27). For
+emulators, Android Studio:
 
 ```powershell
 winget install Google.AndroidStudio
