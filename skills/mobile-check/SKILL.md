@@ -348,7 +348,7 @@ mobium orientation                  # which way, and is it pinned?
 mobium orientation landscape        # turn it and pin it
 mobium orientation auto             # follow the sensor again
 mobium locale org.wikipedia ja-JP   # run one app in Japanese
-mobium locale org.wikipedia ""      # back to the device language
+mobium locale org.wikipedia device  # back to the device language
 ```
 
 Both invalidate the refs from the last `map` — a rotation re-lays out every

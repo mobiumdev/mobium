@@ -185,6 +185,10 @@ func TestLocaleArgumentAcceptsBothShapes(t *testing.T) {
 		{"en-GB,ja-JP", []string{"en-GB", "ja-JP"}},
 		{" ja-JP , en ", []string{"ja-JP", "en"}},
 		{"", nil},
+		// The word that survives Windows PowerShell 5.1, which drops "" (CHALLENGES 374).
+		{"device", nil},
+		{" Device ", nil},
+		{[]interface{}{"device"}, nil},
 		{[]interface{}{"ja-JP", "en"}, []string{"ja-JP", "en"}},
 		{[]interface{}{"ja-JP", 7, ""}, []string{"ja-JP"}},
 	} {

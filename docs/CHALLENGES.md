@@ -7,20 +7,21 @@ the source.
 
 The pattern across them is the reason the document exists: **almost nothing
 here was found by reading code or by a test written from imagination.** Of
-372 defects, 305 were found only by running against a real device. Ten
-more — 255, 280, 282, 327, 329, 353, 355, 356, 359 and 371 — were met while
+375 defects, 305 were found only by running against a real device. Eleven
+more — 255, 280, 282, 327, 329, 353, 355, 356, 359, 371 and 375 — were met while
 running against one, though the fault lay in a check, the host or Mobium's own
-design rather than in the platform. The other fifty-seven — 4, 5, 6, 14, 23,
+design rather than in the platform. The other fifty-nine — 4, 5, 6, 14, 23,
 24, 32, 35, 36, 39, 44, 50, 53, 54, 57, 66, 89, 99, 100, 121, 123, 129, 130,
 133, 134, 139, 140, 141, 142, 144, 150, 158, 162, 164, 165, 172, 222, 231, 232,
 243, 274, 278, 279, 286, 287, 305, 306, 308, 309, 310, 313, 314, 321, 361, 362,
-363 and 372 — came from reading code, the compiler, a test, a linter,
+363, 372, 373 and 374 — came from reading code, the compiler, a test, a linter,
 cross-checking a computed number against a screenshot, using the tooling on
 itself, typing a negative number at a command line, and driving the clients
 against a stand-in daemon, CI on Windows, following the quick start from
 a fresh clone, type-checking — or writing — the documentation site's examples,
 reviewing the questions of the documentation's evaluation set, synthesized
-sounds, the host's own shell, and a clean Windows machine.
+sounds, the host's own shell, a clean Windows machine, and a person at a
+Windows laptop's keyboard.
 
 Read it before writing a test that asserts platform behavior.
 
@@ -8136,6 +8137,64 @@ everywhere. `devices` offers an iOS simulator only on macOS. On the VM,
 `winget install --id Google.PlatformTools` put adb on PATH and turned
 `doctor`'s line to ok; the fixed binary, run there with adb hidden, printed
 both new lines. Tests hold each platform to its own install.
+
+### 373. doctor failed a phone-only setup for an SDK folder it could not read
+
+**Found by:** the checks at a Windows laptop's keyboard, as a standard user
+with v0.1.0-rc1. `doctor` reported one problem: "android sdk root —
+C:\Users\begun\AppData\Local\Android\Sdk has no platform-tools directory",
+with the fix `sdkmanager platform-tools`, which that account did not have.
+The folder had one: a machine-wide ANDROID_HOME, left by Android Studio for
+the administrator, pointed into the administrator's profile, which a
+standard user cannot read, and any error from `os.Stat` was read as missing.
+It was also a FAIL for someone driving only a phone, who needs no SDK root.
+
+**Fixed:** a folder that cannot be read is said to be another account's,
+and the SDK root is a note, not a problem: it matters only for starting an
+emulator, and adb has its own check. A missing platform-tools names Android
+Studio's SDK Manager, and `sdkmanager` with the folder it lives in. Run on
+the laptop as a non-elevated process against a folder denied to it, the line
+read "cannot be read by this account, so it is another account's SDK" — over
+SSH an elevated token's backup privilege read straight past the denial, so
+the measurement had to be made without it. Tests hold both wordings.
+
+### 374. Windows PowerShell 5.1 dropped the empty argument that resets an app's language
+
+**Found by:** the same session. `mobium locale com.android.settings ""`,
+meant to make Settings follow the phone again after it was pinned to French,
+answered "com.android.settings is pinned to fr-FR (the device is en-US)":
+Windows PowerShell 5.1 drops an empty argument before the program sees it, so
+mobium was asked to read the language, not clear it, and the phone's
+Settings stayed in French. cmd, PowerShell 7 and every client pass it.
+
+**Fixed:** the word `device`, in any case, also clears the pin, in the tool
+itself, so the CLI, MCP and the five clients take it alike; no language tag
+is "device". The help, the schema and the skill name it first. On the Mac's
+emulator and from Windows PowerShell 5.1 on the laptop's, `locale
+com.android.settings device` answered "now follows the device (en-US)",
+and reading it back agreed.
+
+### 375. Ctrl-C ended a command, and the daemon went on running its call
+
+**Found by:** the same session: Ctrl-C during `mobium wait … --timeout 60s`
+ended the command at once, but the next `daemon status` and `map` failed
+with "write request: i/o timeout", and the daemon answered again, same pid,
+only after the wait's 60 seconds. Not Windows's: on the Mac, with a real
+SIGINT (a shell's background job ignores one, which first made it look
+fine), `daemon status` waited 26 seconds behind an interrupted 30-second
+wait. The daemon read a request and never looked at its connection again,
+so a client that went away left its call running, and every other call
+waited behind its lock; a named pipe, which takes a write only as it is
+read, turned that wait into a write timeout on Windows.
+
+**Fixed:** once the request is read, the daemon watches the connection, and
+a client that goes away cancels its call (watchClient); the handlers take
+that as the parent of the call's context. On the Mac, `daemon status` after
+a real SIGINT answered in 0.0 s, three runs in three, and an uninterrupted
+wait still timed out as asked. On the laptop, with the client ended four
+seconds into a 30-second wait, `daemon status` answered in 0.1 s and `map`
+worked, twice. The test closes a client's end of a pipe and wants the call
+canceled, and not before.
 
 ## Findings that were not defects
 

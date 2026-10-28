@@ -86,7 +86,21 @@ func (h *Handlers) localeOn(ctx context.Context, s *session, args map[string]int
 
 // parseLocaleArg accepts a string or a list, since "two languages in order of
 // preference" is a real thing an app honors.
+// parseLocaleArg reads the tags to pin, in order. None — an empty string, or
+// the word "device" — follows the device again. The word is there because an
+// empty argument does not survive every shell: Windows PowerShell 5.1 drops
+// "" before mobium.exe sees it, so `mobium locale <app> ""` read the app's
+// language instead and left it pinned (CHALLENGES 374). No language tag is
+// "device": a tag's language part is two or three letters, or registered.
 func parseLocaleArg(raw interface{}) []string {
+	if s, ok := raw.(string); ok && strings.EqualFold(strings.TrimSpace(s), "device") {
+		return nil
+	}
+	if a, ok := raw.([]interface{}); ok && len(a) == 1 {
+		if s, ok := a[0].(string); ok && strings.EqualFold(strings.TrimSpace(s), "device") {
+			return nil
+		}
+	}
 	var out []string
 	switch v := raw.(type) {
 	case string:

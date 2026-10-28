@@ -1512,7 +1512,7 @@ func GetToolSchemas() []Tool {
 			Description: "Read or set the language one app runs in. Per app, not for the " +
 				"device: it is reversible, immediate, and it is the question actually being " +
 				"asked. Call with just an app to read; pass a language tag such as \"ja-JP\" " +
-				"to pin it, or an empty string to follow the device again. Android 13+. " +
+				"to pin it, or \"device\" (or an empty string) to follow the device again. Android 13+. " +
 				"What is confirmed is that the device stored the tag — whether the app has " +
 				"a translation for it is not something Android reports, so check the screen. " +
 				"Changing it invalidates the refs from the previous screen, and the app has " +
@@ -1527,7 +1527,7 @@ func GetToolSchemas() []Tool {
 					"locale": map[string]interface{}{
 						"type": "string",
 						"description": "A BCP-47 tag such as \"ja-JP\", or several separated " +
-							"by commas in order of preference. Empty string clears the pin. " +
+							"by commas in order of preference. \"device\", or an empty string, clears the pin. " +
 							"Omit to read.",
 					},
 				}),
