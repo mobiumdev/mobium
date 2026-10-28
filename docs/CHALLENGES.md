@@ -8117,6 +8117,7 @@ the laptop: speech.sh passed four runs in four, codegen.sh ran all five
 languages and `mobium test` twice, and tv-app.sh refused the phone
 emulator; on the Mac, tv-app.sh passed on the Android TV emulator, whose
 leanback reads true, and refused the phone emulator.
+
 ### 372. A clean Windows machine was told to run Homebrew, and offered an iOS simulator
 
 **Found by:** the first run of the `windows/arm64` build, which every
