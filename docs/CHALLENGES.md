@@ -7,7 +7,7 @@ the source.
 
 The pattern across them is the reason the document exists: **almost nothing
 here was found by reading code or by a test written from imagination.** Of
-375 defects, 305 were found only by running against a real device. Eleven
+376 defects, 306 were found only by running against a real device. Eleven
 more — 255, 280, 282, 327, 329, 353, 355, 356, 359, 371 and 375 — were met while
 running against one, though the fault lay in a check, the host or Mobium's own
 design rather than in the platform. The other fifty-nine — 4, 5, 6, 14, 23,
@@ -8195,6 +8195,28 @@ wait still timed out as asked. On the laptop, with the client ended four
 seconds into a 30-second wait, `daemon status` answered in 0.1 s and `map`
 worked, twice. The test closes a client's end of a pipe and wants the call
 canceled, and not before.
+
+### 376. An emulator slow to exit was reported as one whose console did not answer
+
+**Found by:** `mobium shutdown emulator-5554` on a Windows laptop, which
+answered "emulator-5554 did not answer its console (adb emu kill: <nil> OK:
+killing emulator, bye bye OK), and its process is not named by any
+discovery file" — the console had answered, and the emulator was gone
+seconds later. Timed there after `adb emu kill`: the console answered in
+0.09 s, the emulator deleted its discovery file within 2 s, and its process
+lived on until about 20.6 s, adb listing it until 21 s — three runs in
+three; two more exits took 3 and 9.5 s. On the Mac it is gone in 2.4 s.
+Shutdown waits emuKillWait, 10 s, for adb to stop listing the emulator, and
+past that ends it through the process its discovery file names (285): an
+exit slower than the wait found no file, and the error blamed the console
+whatever it had said.
+
+**Fixed:** a console that answered and a discovery file already gone mean
+the emulator is exiting, and shutdown waits it out within its minute; the
+console is said not to have answered only when it did not. On the laptop
+the fixed build shut the emulator down in 3.0 and 21.5 s, nothing left. The
+test is an adb whose emulator answers and stays listed past the wait with no
+discovery file; with the old decision it fails as on the laptop.
 
 ## Findings that were not defects
 

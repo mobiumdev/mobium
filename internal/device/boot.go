@@ -3,6 +3,7 @@ package device
 import (
 	"bufio"
 	"context"
+	"errors"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -263,9 +264,23 @@ func ShutdownEmulator(ctx context.Context, serial string) error {
 		cancel()
 	}
 	if listed(ctx) {
-		if err := killEmulatorProcess(serial, emulatorDiscoveryDirs()); err != nil {
-			return mobiumerr.New(mobiumerr.DeviceServer, "%s did not answer its console (adb emu kill: %v %s), "+
-				"and %v", serial, killErr, strings.TrimSpace(string(out)), err)
+		if err := killEmulatorProcess(serial, discoveryDirs()); err != nil {
+			// An emulator deletes its discovery file as it exits, so a console
+			// that said it was killing it and a file already gone mean it is on
+			// its way out, only slower than emuKillWait: on a Windows laptop
+			// adb listed one for longer, and shutdown said it "did not answer
+			// its console" while quoting "OK: killing emulator, bye bye" — it
+			// was gone seconds later (CHALLENGES 376). That is waited out.
+			answered := killErr == nil
+			if !(answered && errors.Is(err, errNoDiscoveryFile)) {
+				said := strings.TrimSpace(string(out))
+				if answered {
+					return mobiumerr.New(mobiumerr.DeviceServer, "%s answered its console (%s) and was still listed "+
+						"after %s, and %v", serial, said, emuKillWait, err)
+				}
+				return mobiumerr.New(mobiumerr.DeviceServer, "%s did not answer its console (adb emu kill: %v %s), "+
+					"and %v", serial, killErr, said, err)
+			}
 		}
 	}
 	return waitGone(ctx, func(ctx context.Context) bool {
@@ -398,6 +413,14 @@ func contains(xs []string, x string) bool {
 	return false
 }
 
+// errNoDiscoveryFile is killEmulatorProcess finding no discovery file for the
+// emulator — which, after its console said it was killing it, is one exiting.
+var errNoDiscoveryFile = mobiumerr.New(mobiumerr.DeviceServer, "its process is not named by any discovery file")
+
+// discoveryDirs is where emulators' discovery files are read from; a test
+// points it at its own folder, away from any real emulator's.
+var discoveryDirs = emulatorDiscoveryDirs
+
 // killEmulatorProcess ends the emulator adb calls serial through its process,
 // the one its discovery file names — only once the system says that process
 // is an emulator, since a file left by one that died can name a number
@@ -406,7 +429,7 @@ func contains(xs []string, x string) bool {
 func killEmulatorProcess(serial string, dirs []string) error {
 	pid := emulatorPID(serial, dirs)
 	if pid == 0 {
-		return mobiumerr.New(mobiumerr.DeviceServer, "its process is not named by any discovery file")
+		return errNoDiscoveryFile
 	}
 	// The program's name, not its path: macOS's ps gives the whole path, and
 	// a directory named for an emulator made a plain sleep look like one.
