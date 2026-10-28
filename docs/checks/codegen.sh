@@ -95,6 +95,17 @@ reset() { $M terminate "$APP" >/dev/null 2>&1 || true; }
 MOBIUM_BIN_PATH="$ROOT/bin/mobium"; export MOBIUM_BIN_PATH
 CLIENTS="$ROOT/clients"
 JAVA_HOME_GUESS="$(/usr/libexec/java_home 2>/dev/null || echo /opt/homebrew/opt/openjdk@21/libexec/openjdk.jdk/Contents/Home)"
+# A path written into a file that a Windows tool reads itself — go.mod, a
+# .csproj — is never converted by Git Bash: there it is written C:/..., not
+# /c/.... And Windows has no java_home: there the JDK is JAVA_HOME's. Without
+# these the .NET program could not find its client and Java was skipped
+# (Windows, 2026-10-27).
+NATIVE_CLIENTS="$CLIENTS"
+case "$(uname -s)" in
+  MINGW*|MSYS*|CYGWIN*)
+    NATIVE_CLIENTS="$(cygpath -m "$CLIENTS")"
+    [ -n "${JAVA_HOME:-}" ] && JAVA_HOME_GUESS="$(cygpath -u "$JAVA_HOME")" ;;
+esac
 DOTNET="$(command -v dotnet 2>/dev/null || echo "$HOME/.dotnet/dotnet")"
 case "$DRIVER" in *wda*) ON="--driver wda" ;; *) ON= ;; esac
 
@@ -126,11 +137,7 @@ row "javascript" "ran, and its wait for Item 2's outcome held"
 reset
 mkdir -p "$TMP/go" && cp "$TMP/go.src" "$TMP/go/main.go"
 point "$TMP/go/main.go" "mobium.Start(ctx)" "mobium.Start(ctx, mobium.WithDevice(\"$DEV\")$WDA_GO)"
-# go reads go.mod itself, so Git Bash never converts the path in it: on
-# Windows it is written C:/..., not /c/....
-GOCLIENTS="$CLIENTS"
-case "$(uname -s)" in MINGW*|MSYS*|CYGWIN*) GOCLIENTS="$(cygpath -m "$CLIENTS")" ;; esac
-printf 'module recorded\n\ngo 1.22\n\nrequire github.com/mobiumdev/mobium/clients/go v0.0.0\n\nreplace github.com/mobiumdev/mobium/clients/go => %s/go\n' "$GOCLIENTS" > "$TMP/go/go.mod"
+printf 'module recorded\n\ngo 1.22\n\nrequire github.com/mobiumdev/mobium/clients/go v0.0.0\n\nreplace github.com/mobiumdev/mobium/clients/go => %s/go\n' "$NATIVE_CLIENTS" > "$TMP/go/go.mod"
 (cd "$TMP/go" && GOFLAGS=-mod=mod GOWORK=off go run .) || fail "the Go program failed"
 row "go" "ran, and its wait for Item 2's outcome held"
 
@@ -154,7 +161,7 @@ if [ -x "$DOTNET" ]; then
   cat > "$TMP/cs/recorded.csproj" <<EOF
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup><OutputType>Exe</OutputType><TargetFramework>net10.0</TargetFramework><Nullable>enable</Nullable></PropertyGroup>
-  <ItemGroup><ProjectReference Include="$CLIENTS/dotnet/Mobium/Mobium.csproj" /></ItemGroup>
+  <ItemGroup><ProjectReference Include="$NATIVE_CLIENTS/dotnet/Mobium/Mobium.csproj" /></ItemGroup>
 </Project>
 EOF
   "$DOTNET" run --project "$TMP/cs/recorded.csproj" || fail "the .NET program failed"

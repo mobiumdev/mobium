@@ -164,8 +164,14 @@ esac
 row "password" "the cursor on a typed password field: the sentence withheld"
 
 # Listening around a wrong sign-in: the app announces it, on both platforms.
+# The app announces after its sign-in delay, as the error appears; stopping
+# as soon as the tap returned heard nothing on a slow emulator (Windows,
+# 2026-10-27). So the error is waited for, and TalkBack given a second to
+# say it, before listening stops.
 $M speech --listen start >/dev/null
 $M tap testid=loginBtn >/dev/null
+$M wait testid=loginError --timeout 15s >/dev/null || fail "the wrong sign-in showed no error"
+sleep 1
 ann=$($M speech --listen stop --json) || fail "listening around Log in failed: $ann"
 echo "$ann" | grep -q "$PASSWORD" && fail "the password is in what listening answered"
 if [ "$KIND" = phone ]; then want="any(s['said'] == 'Incorrect username or password.' for s in d['steps'])"

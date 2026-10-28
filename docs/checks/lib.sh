@@ -40,6 +40,17 @@ export MOBIUM_SESSION
 export MSYS2_ARG_CONV_EXCL="/data/;/sdcard/;/storage/;/system/;/proc/" PYTHONUTF8=1
 
 CHECK_TMP="$(mktemp -d "${TMPDIR:-/tmp}/mobium-check.XXXXXX")"
+# Python on Windows ends each printed line with \r\n. Git Bash drops the \r
+# inside $(...) but not on a pipe, so `python3 ... | grep -x Button` matched
+# nothing for a line that read Button (speech.sh, measured 2026-10-27). A
+# sitecustomize of the check's own puts Python's output on \n, as on a Mac.
+case "$(uname -s)" in
+  MINGW*|MSYS*|CYGWIN*)
+    mkdir -p "$CHECK_TMP/py"
+    printf 'import sys\nfor s in (sys.stdout, sys.stderr):\n    s.reconfigure(newline="\\n")\n' > "$CHECK_TMP/py/sitecustomize.py"
+    PYTHONPATH="$(cygpath -w "$CHECK_TMP/py")${PYTHONPATH:+;$PYTHONPATH}"
+    export PYTHONPATH ;;
+esac
 CHECK_LOCK=""
 _check_handlers=""
 

@@ -199,6 +199,9 @@ func (h *Handlers) scrollIntoView(ctx context.Context, s *session, loc uitree.Lo
 	if resolveErr == nil {
 		return n, tree, 0, nil
 	}
+	if nearMissCut(loc, tree, dir, resolveErr) {
+		resolveErr = errOffScreen
+	}
 	// Two of them is not none of them, and no amount of scrolling turns one
 	// into the other. Verified on an iPhone 17 Pro: a Settings cell and the
 	// static text inside it carry the same label, so `label=Privacy &
@@ -345,6 +348,9 @@ func (h *Handlers) scrollIntoView(ctx context.Context, s *session, loc uitree.Lo
 		n, resolveErr := resolvedAndVisible(pick, tree, container)
 		if resolveErr == nil {
 			return n, tree, i, nil
+		}
+		if nearMissCut(loc, tree, dir, resolveErr) {
+			resolveErr = errOffScreen
 		}
 		if lostAmongLookAlikes(resolveErr) || !matchedNothing(resolveErr) && !errors.Is(resolveErr, errOffScreen) {
 			return nil, nil, i, resolveErr
@@ -563,6 +569,41 @@ func clippedAt(n *uitree.Node, clo, chi int, extent func(*uitree.Node) (int, int
 		}
 	}
 	return false
+}
+
+// nearMissCut reports a near miss whose element is cut off at the edge of the
+// list that holds it. Android clips a row's bounds to its list and leaves out
+// of the tree what lies past the edge, so a row 23 pixels into view keeps its
+// label and loses the text inside it: scroll-to for text="Table Demo" was
+// refused, naming label=, with MobiumApp's row at y 2377–2400 and no text
+// node at all — two runs in eight on a Windows laptop's emulator, where the
+// swipes stopped short (CHALLENGES 370). Cut off is clippedAt's test, as for
+// the pager's cards (CHALLENGES 169). Such a target is not on screen under
+// other words: it is not on screen yet, and is scrolled for.
+func nearMissCut(loc uitree.Locator, tree *uitree.Tree, dir string, resolveErr error) bool {
+	if !isNearMiss(resolveErr) {
+		return false
+	}
+	alt := nearMiss(loc, tree)
+	if alt == nil {
+		return false
+	}
+	m := alt.Resolve(tree)
+	if len(m) != 1 {
+		return false
+	}
+	c := scrollContainerOf(m[0])
+	if c == nil {
+		return false
+	}
+	extent := func(n *uitree.Node) (int, int) {
+		if horizontal(dir) {
+			return n.Bounds.X1, n.Bounds.X2
+		}
+		return n.Bounds.Y1, n.Bounds.Y2
+	}
+	clo, chi := extent(c)
+	return clippedAt(m[0], clo, chi, extent)
 }
 
 // maxReveal bounds revealWhole: a third of the container a swipe brings in

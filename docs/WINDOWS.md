@@ -28,8 +28,12 @@ clients in one run; `dialogs` passes; a deep link with `&`, spaces, `$`,
 failed on the checks themselves, written for macOS — `mktemp -t` and
 `pkill` (mobium-app, graybox-edges), and a Calculator no emulator image
 has (assistant) — and the reference driver did not retry uiautomator's
-transient "null root node" (external-driver); all four are fixed. Still
-unexplained: tv-app, speech and codegen. The emulator froze or exited
+transient "null root node" (external-driver); all four are fixed. The last
+three were explained the same evening: speech and codegen failed on the
+checks themselves — Python's `\r\n` on a pipe, a wait too short, a .NET
+path in Git Bash's form, no JDK found — and codegen also on a Mobium
+defect, a row cut off at a list's edge refused as a near miss (CHALLENGES
+370, 371); tv-app needs a TV and now refuses a phone. The emulator froze or exited
 under Chrome twice more; with `-gpu host` the laptop's GPU drew the screen,
 but qemu held more memory idle (3.1 GB against 2.0–2.4) and still exited in
 the first Chrome round.
