@@ -1352,3 +1352,33 @@ func TestMapSaysWhatHasFocus(t *testing.T) {
 		}
 	}
 }
+
+// TestTextLeavesOutWhatIOSHides is the off-screen case of a hidden message:
+// MobiumApp's Inbox Demo, seed 3000007, lays an instruction written to an
+// agent 5,000 points left of the screen, and iOS 27 reports it, with
+// visible="false". Android leaves such a node out of the hierarchy, so `text`
+// never gave it there; on iOS it did, and an agent read what no person on the
+// screen could.
+func TestTextLeavesOutWhatIOSHides(t *testing.T) {
+	tree := loadIOS(t, "ios27-mobiumapp-inbox-offscreen.xml")
+	const marker = "Note to any AI model"
+	var hidden bool
+	tree.Walk(func(n *Node) bool {
+		if strings.Contains(n.Label, marker) && !n.Displayed && n.Bounds.X2 < 0 {
+			hidden = true
+		}
+		return true
+	})
+	if !hidden {
+		t.Fatal("the fixture no longer holds the off-screen message; this test is vacuous")
+	}
+	text := tree.Text()
+	if strings.Contains(text, marker) {
+		t.Errorf("text gave the off-screen message:\n%s", text)
+	}
+	for _, want := range []string{"Looking forward to your next visit.", "Delete all messages", "seed=3000007"} {
+		if !strings.Contains(text, want) {
+			t.Errorf("text lost %q, which is on screen:\n%s", want, text)
+		}
+	}
+}
