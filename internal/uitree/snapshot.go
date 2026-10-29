@@ -586,11 +586,17 @@ func Redact(n *Node) (string, bool) {
 	return fmt.Sprintf("%s (%d characters, hidden: this is a password field)", strings.Repeat("•", k), k), true
 }
 
+// Text is everything readable on the screen, one line per text, each once.
+// Only what is shown: Android leaves a hidden node out of the hierarchy, and
+// iOS reports one with visible="false" — text laid out off the screen, and
+// the rows of a list below its fold — which this gave an agent as if a
+// person could read it. A message written to the agent and hidden that way
+// reached it on iOS alone.
 func (t *Tree) Text() string {
 	var lines []string
 	seen := map[string]bool{}
 	t.Walk(func(n *Node) bool {
-		if n.Bounds.Empty() || !t.InFront(n) {
+		if n.Bounds.Empty() || !n.Displayed || !t.InFront(n) {
 			return true
 		}
 		s := strings.TrimSpace(n.Text)

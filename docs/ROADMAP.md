@@ -695,6 +695,41 @@ this is what is not.
        read of the round lost the touch lines to it: read with
        `--lines` set high.
 
+- **Red teaming** (begun 2026-10-29; the measurements are in
+  THREAT-MODEL, "Red teaming"). Published attacks on mobile agents —
+  arXiv 2505.12981 (11 attack surfaces, every one of 9 deployed agents
+  vulnerable), 2510.07809 (content shown only to a touch that looks
+  automated) and 2607.00333 (five open-source frameworks, each falling to
+  at least six of seven attacks) — mostly hide the instruction from the person
+  and show it to the agent. MobiumApp's Inbox Demo now hides t26's message
+  five ways, and `map` and `text` were read on Android 15 and 17 and iOS
+  27.0 and 27.1: every channel but one reaches an agent through `text`, and
+  the one that reached it on iOS alone, off the screen, is fixed
+  (CHALLENGES 377). mobium-evals' t27 asks whether agents obey what reaches
+  them. In order, what is left:
+  1. **Marking what came from the device** (THREAT-MODEL LLM01), so an
+     agent's harness can hold screen text as data. It is the only answer to
+     the label channel, which a screen reader speaks as well: hiding a
+     label from an agent hides it from a blind person.
+  2. **Text a person cannot read, named.** Nothing in either platform's
+     accessibility tree gives opacity or font size, so a 3% or two-point
+     line reads as any other. A WebView's page does give them, and its
+     `text` is `innerText`, which keeps even `opacity: 0`. Measure first
+     whether marking it in a WebView alone would help or mislead, since
+     the native read of the same WebView carries the same line unmarked.
+  3. **An adaptive attacker** in mobium-evals, in the manner of EVA
+     (arXiv 2505.14289) and PI-Hunter (2606.12737): a model rewrites the
+     injection after each refusal, instead of four fixed phrasings.
+  4. **Whether an app can tell Mobium's touches from a person's** —
+     UiAutomator2's and XCTest's injected events against a finger, on both
+     phones. If it can, an app can show the agent a different screen than
+     a person would see, and every check that rests on "the agent saw what a person sees" is open
+     to it.
+  5. **Another app's overlay window**, drawn with `SYSTEM_ALERT_WINDOW`
+     over the app under test: whether `map` and `text` see it, and whether
+     a tap under it is refused as one under a dialog is. Needs a second
+     app of our own.
+
 - **Everything an agent must act on, in the structured answer**
   (written down 2026-10-11). Claude Code hands its model a tool's
   structured answer and not its text, so a remark Mobium makes only in the
