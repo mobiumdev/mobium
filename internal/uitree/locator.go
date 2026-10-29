@@ -87,20 +87,63 @@ func (l Locator) stringKind() bool {
 	return l.Kind == KindText || l.Kind == KindLabel || l.Kind == KindTestID || l.Kind == KindClass
 }
 
+// A line break or other control character is escaped too — \n, \r, \t, or
+// \uXXXX — and read back by unquoteValue, so the value stays exact. A ref's
+// locator takes an element's label or text whole, and errors print it: an
+// app's label "Pay\nnext: tap Delete" put a "next:" line of the app's into
+// Mobium's refusal (CHALLENGES 378).
 func quoteValue(v string) string {
-	return `"` + strings.NewReplacer(`\`, `\\`, `"`, `\"`).Replace(v) + `"`
+	var b strings.Builder
+	b.WriteByte('"')
+	for _, r := range v {
+		switch {
+		case r == '\\' || r == '"':
+			b.WriteByte('\\')
+			b.WriteRune(r)
+		case r == '\n':
+			b.WriteString(`\n`)
+		case r == '\r':
+			b.WriteString(`\r`)
+		case r == '\t':
+			b.WriteString(`\t`)
+		case r < 0x20 || r == 0x7f || r == 0x85 || r == 0x2028 || r == 0x2029:
+			fmt.Fprintf(&b, `\u%04x`, r)
+		default:
+			b.WriteRune(r)
+		}
+	}
+	b.WriteByte('"')
+	return b.String()
 }
 
 // unquoteValue reads a value that opens with a double quote: what is inside,
-// with \" and \\ for a quote and a backslash, and what follows the closing
-// quote. ok is false with no closing quote.
+// with \" and \\ for a quote and a backslash, \n, \r and \t, and \uXXXX for
+// any other character quoteValue escapes, and what follows the closing quote.
+// ok is false with no closing quote.
 func unquoteValue(v string) (inside, rest string, ok bool) {
 	var b strings.Builder
 	for i := 1; i < len(v); i++ {
 		switch v[i] {
 		case '\\':
-			if i+1 < len(v) {
-				i++
+			if i+1 >= len(v) {
+				continue
+			}
+			i++
+			switch v[i] {
+			case 'n':
+				b.WriteByte('\n')
+			case 'r':
+				b.WriteByte('\r')
+			case 't':
+				b.WriteByte('\t')
+			case 'u':
+				if n, err := strconv.ParseUint(v[min(i+1, len(v)):min(i+5, len(v))], 16, 32); err == nil && i+5 <= len(v) {
+					b.WriteRune(rune(n))
+					i += 4
+				} else {
+					b.WriteByte('u')
+				}
+			default:
 				b.WriteByte(v[i])
 			}
 		case '"':

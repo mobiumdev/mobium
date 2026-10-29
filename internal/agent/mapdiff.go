@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"strings"
 	"time"
+
+	"github.com/mobiumdev/mobium/internal/uitree"
 )
 
 // map --diff: what changed on the screen since the last map of it. An agent
@@ -186,10 +188,10 @@ func elementLine(e ElementView, withRef bool) string {
 	if e.Disabled {
 		tags = append(tags, "disabled")
 	}
-	if e.Value != "" {
-		tags = append(tags, e.Value)
+	if v := uitree.OneLine(e.Value); v != "" {
+		tags = append(tags, v)
 	}
-	s := e.Label
+	s := uitree.OneLine(e.Label)
 	if len(tags) > 0 {
 		s += " (" + strings.Join(tags, ", ") + ")"
 	}
@@ -296,7 +298,7 @@ func diffText(d MapDiffView, total int) string {
 		}
 		var labels []string
 		for _, c := range group {
-			labels = append(labels, c.After.Ref+" "+c.After.Label)
+			labels = append(labels, c.After.Ref+" "+uitree.OneLine(c.After.Label))
 		}
 		lines = append(lines, fmt.Sprintf("~ %d elements moved together, %s: %s", len(group), direction(k.dx, k.dy),
 			strings.Join(labels, ", ")))

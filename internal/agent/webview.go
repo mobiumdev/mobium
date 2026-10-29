@@ -374,13 +374,15 @@ func (h *Handlers) listWeb(ctx context.Context, s *session, els []webview.Elemen
 			continue
 		}
 
-		label := e.Label
+		// A field's value is the page's — a textarea's holds newlines — and
+		// printed whole it began lines of its own (CHALLENGES 378).
+		label := uitree.OneLine(e.Label)
 		if label == "" {
 			label = e.Tag
 		}
 		line := fmt.Sprintf("%s %s (%s)", ref, label, role)
-		if e.Value != "" {
-			line = fmt.Sprintf("%s %s (%s, %s)", ref, label, role, e.Value)
+		if v := uitree.OneLine(e.Value); v != "" {
+			line = fmt.Sprintf("%s %s (%s, %s)", ref, label, role, v)
 		}
 		if e.Frame != "" {
 			// Which frame it is in: MobiumApp's three frames each hold a
