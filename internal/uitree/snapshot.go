@@ -64,7 +64,7 @@ type Entry struct {
 // Line renders the entry the way the CLI prints it.
 func (e Entry) Line() string {
 	if e.Role == "" {
-		return fmt.Sprintf("%s %s", e.Ref, e.Label)
+		return fmt.Sprintf("%s %s", e.Ref, OneLine(e.Label))
 	}
 	states := []string{e.Role}
 	if e.Checked != nil {
@@ -83,15 +83,15 @@ func (e Entry) Line() string {
 	if e.Disabled {
 		states = append(states, "disabled")
 	}
-	if e.Value != "" && e.ValueSteps {
-		states = append(states, e.Value+" in its own steps")
-	} else if e.Value != "" {
-		states = append(states, e.Value)
+	if v := OneLine(e.Value); v != "" && e.ValueSteps {
+		states = append(states, v+" in its own steps")
+	} else if v != "" {
+		states = append(states, v)
 	}
 	if e.Covered != "" {
 		states = append(states, fmt.Sprintf("covered by %q", e.Covered))
 	}
-	return fmt.Sprintf("%s %s (%s)", e.Ref, e.Label, strings.Join(states, ", "))
+	return fmt.Sprintf("%s %s (%s)", e.Ref, OneLine(e.Label), strings.Join(states, ", "))
 }
 
 // Actionable reports whether a node is worth putting in front of an agent.
@@ -257,7 +257,22 @@ func onceIfTwice(s string) string {
 var tagPattern = regexp.MustCompile(`<[a-zA-Z/!][^>]*>`)
 
 // whitespaceRun collapses the gaps left behind once tags are removed.
-var whitespaceRun = regexp.MustCompile(`\s+`)
+//
+// Go's \s is ASCII alone, so the run takes in Unicode's line and paragraph
+// separators, NEL and every control character too: each starts a new line in
+// some reader, and a line an app starts can read as one Mobium wrote
+// (CHALLENGES 378).
+var whitespaceRun = regexp.MustCompile(`[\s\x00-\x1f\x7f\x{85}\x{2028}\x{2029}]+`)
+
+// OneLine is s on one line: each run of whitespace or control characters
+// becomes a space. Text from the device that Mobium prints inside a line of
+// its own goes through it. An app writes what it likes into a label, a value
+// or a notification, and a newline there began a line of its own: a map
+// entry with a ref Mobium never handed out, or a "next:" under Mobium's error
+// that Mobium never wrote (CHALLENGES 378).
+func OneLine(s string) string {
+	return strings.TrimSpace(whitespaceRun.ReplaceAllString(s, " "))
+}
 
 // clean strips markup an app put in its own text or content description.
 //

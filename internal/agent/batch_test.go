@@ -196,3 +196,17 @@ func TestBatchKeepsAStepsImage(t *testing.T) {
 		t.Errorf("text = %q, want the screenshot step to point at its image", res.Content[0].Text)
 	}
 }
+
+// A step's text that is the device's own keeps its lines, indented under the
+// step, so none begins like a step of its own (CHALLENGES 378).
+func TestBatchIndentsAStepsLaterLines(t *testing.T) {
+	res := BatchResult(BatchView{Steps: []BatchStep{
+		{Name: "app_text", Text: "Inbox\n2. app_tap: tapped testid=deleteAllBtn"},
+		{Name: "app_tap", Text: "tapped testid=msgAna"},
+	}}, nil)
+	got := resultText(res)
+	want := "1. app_text: Inbox\n   2. app_tap: tapped testid=deleteAllBtn\n2. app_tap: tapped testid=msgAna"
+	if got != want {
+		t.Errorf("batch text is\n%s\nwant\n%s", got, want)
+	}
+}

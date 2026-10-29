@@ -90,7 +90,11 @@ func (v *AssistantView) text() string {
 	var b strings.Builder
 	fmt.Fprintf(&b, "asked %s (typed, not spoken): %q\n", v.Assistant, v.Request)
 	if len(v.Answer) > 0 {
-		fmt.Fprintf(&b, "it showed: %s\n", strings.Join(v.Answer, " | "))
+		shown := make([]string, len(v.Answer))
+		for i, a := range v.Answer {
+			shown[i] = uitree.OneLine(a)
+		}
+		fmt.Fprintf(&b, "it showed: %s\n", strings.Join(shown, " | "))
 	} else {
 		b.WriteString("it showed no text a screen read can see\n")
 	}

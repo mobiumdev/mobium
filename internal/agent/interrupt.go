@@ -8,6 +8,7 @@ import (
 
 	"github.com/mobiumdev/mobium/internal/device"
 	"github.com/mobiumdev/mobium/internal/mobiumdriver"
+	"github.com/mobiumdev/mobium/internal/uitree"
 )
 
 // call is app_call: a simulated incoming call.
@@ -228,12 +229,15 @@ func (h *Handlers) notificationsOn(ctx context.Context, s *session, args map[str
 	}
 	lines := make([]string, 0, len(list))
 	for _, n := range list {
+		// One line each: a notification's text is the sending app's, and its
+		// newline would start a line that reads as another notification
+		// (CHALLENGES 378). The view keeps it whole.
 		line := n.Package
-		if n.Title != "" {
-			line += "  " + n.Title
+		if t := uitree.OneLine(n.Title); t != "" {
+			line += "  " + t
 		}
-		if n.Text != "" {
-			line += " — " + n.Text
+		if t := uitree.OneLine(n.Text); t != "" {
+			line += " — " + t
 		}
 		lines = append(lines, line)
 	}

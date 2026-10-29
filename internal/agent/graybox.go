@@ -12,6 +12,7 @@ import (
 
 	"github.com/mobiumdev/mobium/internal/mobiumdriver"
 	"github.com/mobiumdev/mobium/internal/mobiumerr"
+	"github.com/mobiumdev/mobium/internal/uitree"
 )
 
 // Gray box: an app launched with gray_box, and built with Mobium's gray-box
@@ -225,7 +226,7 @@ func (h *Handlers) hook(ctx context.Context, args map[string]interface{}) (*Tool
 			return nil, mobiumerr.New(mobiumerr.InvalidArgument, "the app has %s", answer.Payload).
 				WithDetail("hook", name)
 		}
-		return nil, mobiumerr.New(mobiumerr.DeviceServer, "hook %s failed in the app: %s", name, answer.Payload).
+		return nil, mobiumerr.New(mobiumerr.DeviceServer, "hook %s failed in the app: %s", name, uitree.OneLine(answer.Payload)).
 			WithDetail("hook", name).WithDetail("hook_error", answer.Payload)
 	}
 	var result interface{}

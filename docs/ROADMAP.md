@@ -710,7 +710,25 @@ this is what is not.
   1. **Marking what came from the device** (THREAT-MODEL LLM01), so an
      agent's harness can hold screen text as data. It is the only answer to
      the label channel, which a screen reader speaks as well: hiding a
-     label from an agent hides it from a blind person.
+     label from an agent hides it from a blind person. Begun 2026-10-29:
+     - **Done:** Mobium's own lines cannot be forged. An app's line break
+       began a line of its own in a map entry, a refusal's quoted locator
+       (a second `next:`), notifications and a batch; every such path is
+       one line now (CHALLENGES 378, t28).
+     - **Next, a positive control.** t26, t27 and t28 have not had one
+       agent obey in 90 trials run by hand, the nightly's aside, so a
+       marking would measure as no change whether it works or not. A larger local model through mobium-evals'
+       second driver, or the adaptive attacker below, until one obeys.
+     - **Then the marking, measured against it.** MCP has no standard for
+       it — tool annotations are themselves untrusted, content annotations
+       carry only audience and priority. Candidates, cheapest first: every
+       device-derived property tagged in the generated `outputSchema`
+       (`"x-mobium-source": "device"`), so a harness can fence those fields
+       itself, at no cost to the text; and, in the text, device blocks
+       (`text`, `source`, logs) fenced with a marker made fresh for each
+       call, since a fixed one an app can print (Microsoft's spotlighting,
+       arXiv 2403.14720). The structured half first, since Claude Code
+       hands its model the structured answer.
   2. **Text a person cannot read, named.** Nothing in either platform's
      accessibility tree gives opacity or font size, so a 3% or two-point
      line reads as any other. A WebView's page does give them, and its

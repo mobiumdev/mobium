@@ -101,7 +101,11 @@ func BatchResult(view BatchView, images []Content) *ToolsCallResult {
 				text = fmt.Sprintf("image %d below", n)
 			}
 		}
-		lines = append(lines, fmt.Sprintf("%d. %s: %s", i+1, st.Name, text))
+		// A step's text can be the device's own, lines and all — app_text's
+		// is — so its later lines are indented under the step: at the left
+		// edge, "3. app_tap: done" read as a step that never ran
+		// (CHALLENGES 378).
+		lines = append(lines, fmt.Sprintf("%d. %s: %s", i+1, st.Name, strings.ReplaceAll(text, "\n", "\n   ")))
 	}
 	res := Result(strings.Join(lines, "\n"), view)
 	res.Content = append(res.Content, images...)
