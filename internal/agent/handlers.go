@@ -84,6 +84,9 @@ type Handlers struct {
 	// callPolicy is the running call's own (MetaPolicy), narrowing policy
 	// for that call alone.
 	callPolicy Policy
+	// markDeviceText adds device_text to answers carrying the app's words
+	// (provenance.go).
+	markDeviceText bool
 
 	// defaultDevice pins every call to one serial when set from the command
 	// line, so a --device flag survives into the daemon for that call.
@@ -134,18 +137,19 @@ type Handlers struct {
 // NewHandlers creates the tool layer.
 func NewHandlers() *Handlers {
 	return &Handlers{
-		policy:        PolicyFromEnv(),
-		refs:          map[string]*refTable{},
-		lastMaps:      map[string]*lastMap{},
-		sessions:      map[string]*session{},
-		heldTraces:    map[string]*sessionTrace{},
-		dialogRules:   map[string][]dialogRule{},
-		netBaseline:   map[string]networkBaseline{},
-		backend:       DefaultBackend,
-		implicitWait:  implicitWait,
-		settleWindow:  settleWindowFromEnv(),
-		lightAbove:    lightAboveFromEnv(),
-		settleTimeout: settleTimeout,
+		policy:         PolicyFromEnv(),
+		markDeviceText: markDeviceTextFromEnv(),
+		refs:           map[string]*refTable{},
+		lastMaps:       map[string]*lastMap{},
+		sessions:       map[string]*session{},
+		heldTraces:     map[string]*sessionTrace{},
+		dialogRules:    map[string][]dialogRule{},
+		netBaseline:    map[string]networkBaseline{},
+		backend:        DefaultBackend,
+		implicitWait:   implicitWait,
+		settleWindow:   settleWindowFromEnv(),
+		lightAbove:     lightAboveFromEnv(),
+		settleTimeout:  settleTimeout,
 	}
 }
 

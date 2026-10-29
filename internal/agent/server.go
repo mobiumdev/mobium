@@ -179,6 +179,9 @@ func CallTool(params json.RawMessage, h *Handlers) (interface{}, *Error) {
 	if err != nil {
 		return ErrorResult(err), nil
 	}
+	if h.marksDeviceText() {
+		result = markDeviceText(p.Name, result)
+	}
 	return result, nil
 }
 
@@ -221,6 +224,10 @@ func (s *Server) SetBackend(b Backend) { s.handlers.SetBackend(b) }
 
 // SetPolicy narrows what the server's agent may do (policy.go).
 func (s *Server) SetPolicy(p Policy) { s.handlers.SetPolicy(p) }
+
+// SetMarkDeviceText adds device_text to answers carrying the app's own words
+// (provenance.go).
+func (s *Server) SetMarkDeviceText(on bool) { s.handlers.SetMarkDeviceText(on) }
 
 // SetProgress installs a callback for slow one-time setup.
 func (s *Server) SetProgress(fn func(string)) { s.handlers.SetProgress(fn) }

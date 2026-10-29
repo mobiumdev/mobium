@@ -3424,6 +3424,7 @@
       "command": "mcp",
       "flags": [
         "--apps",
+        "--mark-device-text",
         "--read-only"
       ]
     },
