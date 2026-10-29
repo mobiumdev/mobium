@@ -7,7 +7,7 @@ the source.
 
 The pattern across them is the reason the document exists: **almost nothing
 here was found by reading code or by a test written from imagination.** Of
-376 defects, 306 were found only by running against a real device. Eleven
+377 defects, 307 were found only by running against a real device. Eleven
 more — 255, 280, 282, 327, 329, 353, 355, 356, 359, 371 and 375 — were met while
 running against one, though the fault lay in a check, the host or Mobium's own
 design rather than in the platform. The other fifty-nine — 4, 5, 6, 14, 23,
@@ -8217,6 +8217,33 @@ console is said not to have answered only when it did not. On the laptop
 the fixed build shut the emulator down in 3.0 and 21.5 s, nothing left. The
 test is an adb whose emulator answers and stays listed past the wait with no
 discovery file; with the old decision it fails as on the laptop.
+
+### 377. `text` on iOS gave an agent text no person could see
+
+**Found by:** red-teaming the Inbox Demo (THREAT-MODEL, "Red teaming"). A
+seed of a million or more hides the message written to the agent in one of
+the ways published attacks on mobile agents hide theirs, and `mobium text`
+was read on each. With the message laid out 5,000 points left of the
+screen, Android 15 and 17 left it out — UiAutomator2 drops a node not
+visible to the user — and the iPhone 18 Pro simulator on iOS 27.0 and the
+iPhone Duo on iOS 27.1 gave it, between Ana's message and the visible one.
+WebDriverAgent reported it, `visible="false"` at x -4984, and `Tree.Text`
+asked only for bounds and the app in front. `map` was right: it lists only
+what `Actionable` allows, which asks `Displayed`. So the help's "everything
+readable on screen" held on one platform, and on the other included what is
+off it — the same rows below a list's fold, too.
+
+The first readings blamed the wrong thing: every channel showed the label
+"From an unknown sender: …" on Android, even those that set none. React
+Native reused the message's view across seeds on one screen and kept the
+label of the last channel that had set one. Keying the message by its seed
+made each load a new view, and the label went with it.
+
+**Fixed:** `Text` leaves out a node not displayed, as Android's hierarchy
+already did. The test is the captured iOS 27 hierarchy
+(`ios27-mobiumapp-inbox-offscreen.xml`), which holds the hidden message and
+fails with the old rule; the iOS checks that read `text` were run on the
+iOS 26.5 simulator with the change.
 
 ## Findings that were not defects
 
