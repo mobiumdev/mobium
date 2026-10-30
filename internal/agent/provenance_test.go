@@ -91,3 +91,35 @@ func TestCallToolMarksOnlyWhenAsked(t *testing.T) {
 		t.Error("SetMarkDeviceText did not turn it on")
 	}
 }
+
+// A screenshot is the app's words too, and cannot carry a field: a note
+// follows the last image, once.
+func TestMarkDeviceTextNotesImages(t *testing.T) {
+	shot := &ToolsCallResult{Content: []Content{{Type: "image", Data: "x", MimeType: "image/png"}}}
+	got := markDeviceText("app_screenshot", shot)
+	if len(got.Content) != 2 || got.Content[1].Type != "text" || got.Content[1].Text != deviceImageNote {
+		t.Fatalf("screenshot marked as %+v", got.Content)
+	}
+	if len(shot.Content) != 1 {
+		t.Error("the answer passed in was changed in place")
+	}
+	batch := BatchResult(BatchView{Steps: []BatchStep{{Name: "app_screenshot", Image: true}, {Name: "app_screenshot", Image: true}}},
+		[]Content{{Type: "image", Data: "a"}, {Type: "image", Data: "b"}})
+	got = markDeviceText("app_batch", batch)
+	notes := 0
+	for _, c := range got.Content {
+		if c.Text == deviceImageNote {
+			notes++
+		}
+	}
+	if notes != 1 || got.Content[len(got.Content)-1].Text != deviceImageNote {
+		t.Errorf("a batch of two screenshots got %d notes: %+v", notes, got.Content)
+	}
+	if _, ok := got.StructuredContent.(map[string]interface{})["device_text"]; !ok {
+		t.Error("the batch's structured answer lost its device_text")
+	}
+	plain := TextResult("no image")
+	if got := markDeviceText("app_text", plain); len(got.Content) != 1 {
+		t.Error("an answer with no image grew a note")
+	}
+}

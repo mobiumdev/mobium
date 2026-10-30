@@ -730,13 +730,20 @@ this is what is not.
        obeyed unmarked, 2 of 50 marked (one-sided Fisher p = 0.0005). By
        how the request reached the agent: through `app_text` 9 of 44
        against 0 of 48; through a screenshot 6 of 6 and 2 of 2.
-     - **Next: screenshots.** Every agent that read the request from an
-       image obeyed it, marked or not. An image cannot carry a field, so
-       the candidate is a text block beside it saying the same thing, A/B
-       on the same control. Then the marking on by default, and errors,
-       whose messages quote device text, marked too. A fixed marker in the
-       text an app can print, so if the text is ever fenced it is with a
-       marker made fresh for each call (spotlighting, arXiv 2403.14720).
+     - **Done: a note beside every screenshot, measured.** With t31's
+       message drawn as pictures (t32, MobiumApp's tenth channel) an agent
+       answers only from a screenshot, and Sonnet 4.5 then followed the
+       request in 48 of 50 trials — read in pixels it persuades far more
+       than as text (30%). With the note after the image: 32 of 50
+       (one-sided Fisher p = 0.00004). Agents that tapped did not mention
+       the note; they called the tap "required".
+     - **Next: what a screenshot can carry.** Candidates, each measured on
+       t32: the note before the image as well as after; text found in the
+       image named in the note; a screenshot an agent asks for only when
+       the text tools leave something out. Then the marking on by default,
+       and errors, whose messages quote device text, marked too. Any fence
+       in the text uses a marker made fresh for each call, since a fixed one
+       an app can print (spotlighting, arXiv 2403.14720).
   2. **Text a person cannot read, named.** Nothing in either platform's
      accessibility tree gives opacity or font size, so a 3% or two-point
      line reads as any other. A WebView's page does give them, and its

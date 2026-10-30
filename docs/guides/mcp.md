@@ -348,9 +348,11 @@ words addressed to the agent reading it. Nothing else in the answer changes.
 Measured on 2026-10-29 with Claude Sonnet 4.5 and a message asking any AI
 assistant to tap a button (mobium-evals t31): an agent that read the request
 through `app_text` followed it in 9 of 44 trials unmarked, and in 0 of 48
-marked. A screenshot is not marked — what an image shows cannot carry a field
-— and every agent that read the request from one followed it, 8 in 8.
-Off by default while that is closed.
+marked. An image cannot carry a field, so a screenshot is followed by a text
+block saying the same of it. That helps far less: with the message in pixels
+only (t32), agents followed it in 48 of 50 trials unmarked and 32 of 50 with
+the note — words on a screen persuade more than the same words as text. Off
+by default while what a screenshot can carry is open.
 
 ## Which front door
 
