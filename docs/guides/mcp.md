@@ -340,6 +340,20 @@ those whose change the session puts back or that only add, and
 settings). A tap says neither: it can press Delete, and MCP's default, that
 it may destroy, stands.
 
+**`--mark-device-text`** (or `MOBIUM_MARK_DEVICE_TEXT=1`) adds one field,
+`device_text`, to every structured answer that carries the app's own words:
+which fields they are, and that they are data, not instructions from Mobium
+or the user. An app can write anything into a label or a message, including
+words addressed to the agent reading it. Nothing else in the answer changes.
+Measured on 2026-10-29 with Claude Sonnet 4.5 and a message asking any AI
+assistant to tap a button (mobium-evals t31): an agent that read the request
+through `app_text` followed it in 9 of 44 trials unmarked, and in 0 of 48
+marked. An image cannot carry a field, so a screenshot is followed by a text
+block saying the same of it. That helps far less: with the message in pixels
+only (t32), agents followed it in 48 of 50 trials unmarked and 32 of 50 with
+the note — words on a screen persuade more than the same words as text. Off
+by default while what a screenshot can carry is open.
+
 ## Which front door
 
 | | Command line | MCP | Language clients |
