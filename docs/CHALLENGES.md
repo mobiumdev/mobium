@@ -7,8 +7,8 @@ the source.
 
 The pattern across them is the reason the document exists: **almost nothing
 here was found by reading code or by a test written from imagination.** Of
-379 defects, 308 were found only by running against a real device. Eleven
-more — 255, 280, 282, 327, 329, 353, 355, 356, 359, 371 and 375 — were met while
+380 defects, 308 were found only by running against a real device. Twelve
+more — 255, 280, 282, 327, 329, 353, 355, 356, 359, 371, 375 and 380 — were met while
 running against one, though the fault lay in a check, the host or Mobium's own
 design rather than in the platform. The other sixty — 4, 5, 6, 14, 23,
 24, 32, 35, 36, 39, 44, 50, 53, 54, 57, 66, 89, 99, 100, 121, 123, 129, 130,
@@ -8327,6 +8327,32 @@ Claude Haiku 5.5 low on the same emulator, had lost adb twice in four
 trials before the fix and passed four in four after it, with no harness
 fault. Chrome's own socket carries no pid and is still
 asked whatever its state.
+
+### 380. A simulator too busy to answer was reported as a Mac without Xcode
+
+**Found by:** mobium-evals' scheduled controls on GitHub's `xcode-27-arm64`
+runner, 2026-10-31. Twice in a row, `launch` of MobiumApp on an iOS 27.0
+simulator failed partway through the run, on the same Mobium, app build and
+runner image as a green run eight hours before. The second time
+`simctl launch` timed out after 30 s. The first time Mobium said "Xcode is
+required for iOS simulators and was not found" and told the runner to
+install Xcode, although the step before had just used `xcrun simctl` to create
+the simulator and install the app on it. `FindSimctl` asks
+`xcrun simctl help` whether the full toolchain is there, with a 20 s
+limit, and read every failure, a timeout included, as the Command Line
+Tools alone. Under CLT-only that command fails at once; one that runs out
+its time is installed and stuck, so the advice could not work, and the
+real cause, a busy CoreSimulator, was not named. Why CoreSimulator stalled
+on the runner is not known.
+
+**Fixed:** a probe that runs out its time is a `timeout` that says Xcode is
+installed and CoreSimulator is busy or stuck, with the remedy to try again
+or restart CoreSimulator; a probe that fails is `ErrNoXcode`, as before.
+`mobium doctor`'s simulator check, which said "skipped — no Xcode" for
+any failure, gives the timeout's own text. The test is a fake `xcrun` that
+hangs, which must give the timeout and not the install advice, and one that
+fails at once with CLT-only's "unable to find utility", which must still
+give `ErrNoXcode`; with the old reading the first fails.
 
 ## Findings that were not defects
 
