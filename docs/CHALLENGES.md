@@ -7,7 +7,7 @@ the source.
 
 The pattern across them is the reason the document exists: **almost nothing
 here was found by reading code or by a test written from imagination.** Of
-378 defects, 307 were found only by running against a real device. Eleven
+379 defects, 308 were found only by running against a real device. Eleven
 more — 255, 280, 282, 327, 329, 353, 355, 356, 359, 371 and 375 — were met while
 running against one, though the fault lay in a check, the host or Mobium's own
 design rather than in the platform. The other sixty — 4, 5, 6, 14, 23,
@@ -8293,6 +8293,40 @@ reached the agent in 3 of 18 — most never tapped, since `map` already said
 app, not from you". After it, in none. So these models give no positive
 control here, and the fix is measured by what reaches them, not by what
 they did.
+
+### 379. A frozen app's WebView stopped adb on the Android 15 emulator
+
+**Found by:** mobium-evals' nightly, which every night from 2026-10-27 to
+10-30 lost its Android 15 emulator partway through: after an agent's
+trial, the harness's `contexts` or `context WEBVIEW_…` ran out its 90 s,
+`adb shell` stopped answering, and the emulator had to be killed. Android
+17, four nights in four, never did. Reproduced by hand on the `mobium-test` AVD (Android 15,
+WebView 124): besides MobiumApp's socket, `/proc/net/unix` held
+`webview_devtools_remote_1578`, the Google app's `:search` process. Frozen
+by Android's cached-apps freezer (`am freeze` does the same on demand;
+`/sys/fs/cgroup/uid_*/pid_<pid>/cgroup.freeze` reads 1), its socket
+accepts a connection and never answers: a GET to `/json/version` through a
+forward got nothing in 12 s. `Contexts` asks every socket, each GET waits
+out its 10 s, so a listing took 21 s, then 20 s, and the third never
+returned — `adb shell echo` timed out from then on, while the adb server
+and the emulator's console still answered: adbd in the guest had stopped,
+having logged "timeout expired while flushing socket" every 10 s before.
+Forwards to the frozen socket were left behind, their removal running
+after the timeout. Six GETs alone, abandoned, did not stop adbd; Mobium's
+third listing did.
+
+**Fixed:** `Sockets` reads the freezer state of every socket's process in
+one shell call, and `Contexts` and `ContextsOf` leave a frozen one alone:
+a frozen app is not on screen, so no context an agent wants is in it.
+Where the cgroup file cannot be read nothing counts as frozen, as before.
+With the Google app frozen, the fixed `contexts` took 0.1 s five times in
+five, adb answering after each and no forward left. The test is an adb
+whose socket list holds a frozen process and a live one; the frozen one
+must never be forwarded. mobium-evals' t18 and t19, twice each under
+Claude Haiku 5.5 low on the same emulator, had lost adb twice in four
+trials before the fix and passed four in four after it, with no harness
+fault. Chrome's own socket carries no pid and is still
+asked whatever its state.
 
 ## Findings that were not defects
 
