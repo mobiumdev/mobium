@@ -37,6 +37,9 @@ type Socket struct {
 	Package string
 	// PID is the owning process when the socket name carries it.
 	PID string
+	// Frozen is a process Android's cached-apps freezer holds: its socket
+	// accepts a connection and never answers it (CHALLENGES 379).
+	Frozen bool
 }
 
 // Context is one attachable web target inside an app.
@@ -95,7 +98,43 @@ func Sockets(ctx context.Context, adb *device.ADB) ([]Socket, error) {
 		sockets = append(sockets, s)
 	}
 	sort.Slice(sockets, func(i, j int) bool { return sockets[i].Name < sockets[j].Name })
+	frozen := frozenPIDs(ctx, adb, sockets)
+	for i := range sockets {
+		sockets[i].Frozen = frozen[sockets[i].PID]
+	}
 	return sockets, nil
+}
+
+// frozenPIDs reads, in one shell call, which of the sockets' processes the
+// cached-apps freezer holds. On the Android 15 emulator a WebView in the
+// Google app's :search process, cached and frozen, took each GET to its
+// socket to the 10 s timeout, and after a few such listings adbd stopped
+// answering at all, so the nightly's emulator had to be killed (CHALLENGES
+// 379). A frozen process is not one an agent can be looking at, so its
+// socket is left alone. Where the cgroup file cannot be read nothing is
+// frozen, which is how it was before.
+func frozenPIDs(ctx context.Context, adb *device.ADB, sockets []Socket) map[string]bool {
+	var pids []string
+	for _, s := range sockets {
+		if s.PID != "" {
+			pids = append(pids, s.PID)
+		}
+	}
+	frozen := map[string]bool{}
+	if len(pids) == 0 {
+		return frozen
+	}
+	out, err := adb.Shell(ctx, "for p in "+strings.Join(pids, " ")+
+		`; do echo "$p $(cat /sys/fs/cgroup/uid_*/pid_$p/cgroup.freeze 2>/dev/null)"; done`)
+	if err != nil {
+		return frozen
+	}
+	for _, line := range strings.Split(string(out), "\n") {
+		if f := strings.Fields(line); len(f) == 2 && f[1] == "1" {
+			frozen[f[0]] = true
+		}
+	}
+	return frozen
 }
 
 // listTimeout bounds the HTTP calls to a forwarded devtools socket.
@@ -129,6 +168,9 @@ func Contexts(ctx context.Context, adb *device.ADB) ([]Context, error) {
 
 	var out []Context
 	for _, s := range sockets {
+		if s.Frozen {
+			continue
+		}
 		found, err := contextsOn(ctx, adb, s)
 		if err != nil {
 			// One unreachable socket must not hide the others: a WebView can
@@ -158,7 +200,7 @@ func ContextsOf(ctx context.Context, adb *device.ADB, pkg string) ([]Context, er
 	}
 	var out []Context
 	for _, s := range sockets {
-		if s.Package != pkg && (s.PID == "" || !pids[s.PID]) {
+		if s.Frozen || s.Package != pkg && (s.PID == "" || !pids[s.PID]) {
 			continue
 		}
 		found, err := contextsOn(ctx, adb, s)
