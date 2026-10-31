@@ -49,7 +49,7 @@ jobs:
       # pinned, checksum-verified Maven and the pinned plugins; the client
       # itself has no dependencies. The cache keeps those downloads between
       # runs.
-      - uses: actions/setup-java@v5
+      - uses: actions/setup-java@v6
         with:
           distribution: temurin
           java-version: '17'
@@ -59,7 +59,7 @@ jobs:
       # The .NET client targets netstandard2.0 and its tests run on the
       # SDK's own runtime, so the SDK is all that is needed -- no NuGet
       # restore, because the client has no dependencies.
-      - uses: actions/setup-dotnet@v5
+      - uses: actions/setup-dotnet@v6
         with:
           dotnet-version: '10.0.x'
 
@@ -93,7 +93,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
-      - uses: actions/setup-dotnet@v5
+      - uses: actions/setup-dotnet@v6
         with:
           dotnet-version: '10.0.x'
 
