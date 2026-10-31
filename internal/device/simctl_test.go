@@ -1,8 +1,14 @@
 package device
 
 import (
+	"errors"
+	"runtime"
 	"strings"
 	"testing"
+	"time"
+
+	"github.com/mobiumdev/mobium/internal/fakecmd"
+	"github.com/mobiumdev/mobium/internal/mobiumerr"
 )
 
 const simctlJSON = `{
@@ -107,5 +113,45 @@ func TestSimulatorTV(t *testing.T) {
 		if got := (Simulator{Runtime: runtime}).TV(); got != want {
 			t.Errorf("%s: TV() = %v, want %v", runtime, got, want)
 		}
+	}
+}
+
+// A simctl that does not answer is installed: telling its machine to install
+// Xcode was advice that could not work (CHALLENGES 380). A missing simctl,
+// which fails at once, still gets ErrNoXcode.
+func TestFindSimctlTellsSlowFromMissing(t *testing.T) {
+	if runtime.GOOS != "darwin" {
+		t.Skip("FindSimctl probes xcrun only on macOS")
+	}
+	t.Setenv("MOBIUM_XCRUN_PATH", "")
+	old := simctlProbeTimeout
+	simctlProbeTimeout = 2 * time.Second
+	t.Cleanup(func() { simctlProbeTimeout = old })
+
+	for _, tc := range []struct {
+		name, body string
+		check      func(error) bool
+	}{
+		{"hangs", "exec /bin/sleep 30\n", func(err error) bool {
+			return mobiumerr.CodeOf(err) == mobiumerr.Timeout && !strings.Contains(err.Error(), "Install Xcode") &&
+				strings.Contains(mobiumerr.Text(err), "CoreSimulator")
+		}},
+		{"missing", "echo 'xcrun: error: unable to find utility \"simctl\"' >&2; exit 72\n", func(err error) bool {
+			return errors.Is(err, ErrNoXcode)
+		}},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			dir := t.TempDir()
+			fakecmd.Script(t, dir, "xcrun", tc.body)
+			t.Setenv("PATH", dir)
+			start := time.Now()
+			_, err := FindSimctl()
+			if err == nil || !tc.check(err) {
+				t.Fatalf("FindSimctl() = %v", err)
+			}
+			if time.Since(start) > 10*time.Second {
+				t.Errorf("FindSimctl took %s; the probe's timeout is %s", time.Since(start), simctlProbeTimeout)
+			}
+		})
 	}
 }

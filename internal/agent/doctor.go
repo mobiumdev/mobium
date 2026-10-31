@@ -250,7 +250,10 @@ func checkXcode(ctx context.Context) DoctorCheck {
 
 func checkSimulators(ctx context.Context) DoctorCheck {
 	if _, err := device.FindSimctl(); err != nil {
-		return note("ios simulators", "skipped — no Xcode")
+		if errors.Is(err, device.ErrNoXcode) {
+			return note("ios simulators", "skipped — no Xcode")
+		}
+		return note("ios simulators", "skipped — "+err.Error())
 	}
 	sims, err := device.Simulators(ctx)
 	if err != nil {

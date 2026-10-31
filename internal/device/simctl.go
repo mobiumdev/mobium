@@ -66,12 +66,33 @@ func FindSimctl() (string, error) {
 
 	// xcrun exists under the Command Line Tools too, so its presence proves
 	// nothing; asking it for simctl is the actual test.
-	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), simctlProbeTimeout)
 	defer cancel()
 	if err := exec.CommandContext(ctx, xcrun, "simctl", "help").Run(); err != nil {
+		// A simctl that does not answer is there: CLT-only fails at once.
+		// Telling that machine to install Xcode is advice that cannot work
+		// (CHALLENGES 380).
+		if ctx.Err() == context.DeadlineExceeded {
+			return "", errSimctlSlow(simctlProbeTimeout)
+		}
 		return "", ErrNoXcode
 	}
 	return xcrun, nil
+}
+
+// simctlProbeTimeout bounds FindSimctl's `xcrun simctl help`; a variable so
+// a test can wait less.
+var simctlProbeTimeout = 20 * time.Second
+
+// errSimctlSlow is FindSimctl's error when simctl is installed but did not
+// answer: CoreSimulator is busy or stuck, which waiting or restarting it
+// cures and installing Xcode does not.
+func errSimctlSlow(d time.Duration) error {
+	return mobiumerr.New(mobiumerr.Timeout,
+		"`xcrun simctl help` did not answer in %s: Xcode is installed, but CoreSimulator "+
+			"is busy or stuck", d).
+		WithRemedy("try again; if it keeps timing out, run `killall -9 com.apple.CoreSimulator.CoreSimulatorService` " +
+			"(the next simctl command starts it again) or restart the Mac")
 }
 
 // NewSimctl locates the toolchain and pins it to a simulator UDID.
