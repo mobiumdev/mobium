@@ -8788,5 +8788,18 @@ its cause.
   administrator rights and is what `clients/dotnet/README.md` points at. Same
   shape as the Xcode trap above, and the same shape as every device tool here:
   **the exit code is not the result.**
+- **The iOS 27 simulators cannot show the Allow Paste prompt.** Measured
+  2026-11-03 on the iOS 27.0 (iPhone 18 Pro) and 27.1 (iPhone Duo)
+  runtimes: `pasted` decides the read needs the user ("Paste requires user
+  authorization. Prompting..."), SpringBoard refuses to post its alert
+  ("Entitlement com.apple.springboard.CFUserNotification is required"),
+  and the app's read fails as `PBErrorDomain Code=13`, an empty string with
+  nothing on the screen. Not the seeding: text copied with Settings' own
+  Copy did the same, and a `simctl pbcopy` round trip reads back. Not the
+  app: MobiumApp on Expo SDK 57 and 58 alike, fresh installs. The iOS 26.5
+  runtime prompts, and `dialogs.sh` passes its paste step there. So
+  `dialogs.sh` reports the step NOT CHECKED on that log line only, and
+  fails on any other missing prompt. A real iPhone is not measured: its
+  clipboard cannot be seeded from outside, and the step is skipped there.
 
 ---

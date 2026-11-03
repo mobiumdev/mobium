@@ -210,12 +210,38 @@ CLIP='seeded by mobium'
 # below <button>: bring a button under the fold into view, once the screen
 # has come up — a scroll sent while it is still arriving scrolls Home.
 below() { $M wait testid=dialogOutcome >/dev/null; $M scroll-to "testid=$1" >/dev/null; }
+# paste_can_prompt: false only when a tap on Paste raised no prompt and the
+# simulator's log says why — SpringBoard refusing to post pasted's alert.
+# A prompt that does come up is dismissed, and the steps below raise it again.
+paste_can_prompt() {
+  since=$(date '+%Y-%m-%d %H:%M:%S')
+  fresh; below pasteBtn; $M tap testid=pasteBtn >/dev/null
+  i=0
+  while [ $i -lt 8 ]; do
+    if $M alert 2>/dev/null | grep -q 'a dialog is on screen'; then
+      $M alert dismiss >/dev/null; return 0
+    fi
+    i=$((i + 1)); sleep 1
+  done
+  xcrun simctl spawn "$DEV" log show --start "$since" --style compact \
+      --predicate 'process == "SpringBoard" AND eventMessage CONTAINS "CFUserNotification authorization failure: pasted"' 2>/dev/null \
+    | grep -q 'authorization failure: pasted' && return 1
+  return 0
+}
 if [ -n "$PHONE" ] && [ "$PLATFORM" = ios ]; then
   # An iPhone's clipboard cannot be written from outside, so nothing can put
   # another app's text there for the prompt to be about.
   printf '    %-18s %s\n' "paste" "NOT CHECKED — an iPhone's clipboard cannot be seeded from outside"
 elif ! $M clipboard "$CLIP" >/dev/null; then
   fail "the clipboard could not be seeded"
+elif [ "$PLATFORM" = ios ] && ! paste_can_prompt; then
+  # The iOS 27 simulator runtimes cannot show the prompt at all: pasted asks
+  # SpringBoard to post it, SpringBoard refuses pasted for lacking an
+  # entitlement, and the read fails as not authorized with nothing on the
+  # screen. Text copied inside Settings does the same, so it is not the
+  # seeding; iOS 26.5's runtime prompts. Named only on that log line, so
+  # any other missing prompt still fails below.
+  printf '    %-18s %s\n' "paste" "NOT CHECKED — this simulator's SpringBoard refuses pasted's prompt (iOS 27)"
 elif [ "$PLATFORM" = ios ]; then
   fresh; below pasteBtn; raise pasteBtn; $M alert dismiss >/dev/null; sleep 1; outcome "paste: empty, or not allowed"
   fresh; below pasteBtn; raise pasteBtn; $M alert accept >/dev/null; sleep 1; outcome "paste: ${#CLIP} characters"
