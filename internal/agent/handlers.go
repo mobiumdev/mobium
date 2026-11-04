@@ -2052,12 +2052,17 @@ func (h *Handlers) resolveNodeOnce(ctx context.Context, s *session, target strin
 	// for something that exists nowhere leaves the list scrolled. Bounded by
 	// maxScrolls, and skipped on a screen with nothing scrollable, so an
 	// ordinary miss stays cheap.
-	n, t, scrolls, serr := h.scrollIntoView(ctx, s, loc, "down", true, h.refName(s.dev.Serial, target))
+	// From the screen just read: reading it again cost 0.65 s on an iOS
+	// simulator, a tenth of a second after this read.
+	n, t, scrolls, serr := h.scrollIntoViewFrom(ctx, s, tree, loc, "down", true, h.refName(s.dev.Serial, target))
 	if serr != nil {
 		if resolveErr != nil {
 			// Android leaves out what the keyboard covers, so a target under
 			// it is a plain miss there; say the keyboard is up when it is.
-			if kb, ok := mobiumdriver.AsKeyboard(s.driver); ok && mobiumerr.CodeOf(resolveErr) == mobiumerr.NoSuchElement && !isNearMiss(resolveErr) {
+			// Not iOS, whose tree holds the keyboard and refuses a target
+			// under it before here: asking cost 0.54 s a miss there.
+			android := tree == nil || tree.Root == nil || !uitree.IsIOS(tree.Root)
+			if kb, ok := mobiumdriver.AsKeyboard(s.driver); ok && android && mobiumerr.CodeOf(resolveErr) == mobiumerr.NoSuchElement && !isNearMiss(resolveErr) {
 				if shown, kerr := kb.KeyboardShown(ctx); kerr == nil && shown {
 					return nil, nil, keyboardOver(loc, false)
 				}
