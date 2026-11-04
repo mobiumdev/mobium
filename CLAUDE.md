@@ -49,3 +49,11 @@ about it:
 - Claims about a device are checked on a device: a `docs/checks/` script, or a measurement you can show. A guide's commands and output are ones that actually ran
 - **A real phone is somebody's.** Never print its private data — location, notifications, network names, the device's name — assert whether, not what. Read a check for device-wide changes before running it on a phone, and put back what it changes
 - American spelling everywhere; `make ci` enforces it
+
+## Writing Style
+
+- Write short sentences.
+- Use RFC 2119 keywords (MUST, SHOULD, MAY) for obligations.
+- Commits MUST have an imperative subject. The body MUST carry only facts the diff cannot show: what was measured, on which device, and what was ruled out.
+- Comments MUST only clarify code that needs it. Comments MUST NOT narrate. Existing long comment blocks are not license to add more.
+- A defect's story belongs in its docs/CHALLENGES.md entry. Code and commits SHOULD cite the entry by number rather than retell it.
