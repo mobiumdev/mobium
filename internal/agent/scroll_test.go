@@ -985,12 +985,12 @@ func TestShiftIsWhatTheRowsMoved(t *testing.T) {
 // the end it says nothing of the kind. CHALLENGES 310.
 func TestTheStartOfAListSaysItMayHaveRefreshed(t *testing.T) {
 	loc, _ := uitree.ParseLocator("text=Nowhere")
-	up, _ := mobiumerr.As(endOfList(loc, nil, "up", 6, false))
+	up, _ := mobiumerr.As(endOfList(loc, nil, "up", 6, 6))
 	if !strings.Contains(up.Error(), "start of the list") || !strings.Contains(up.Error(), "refreshing") ||
 		up.Details["may_have_refreshed"] != true {
 		t.Errorf("up: %v %v", up, up.Details)
 	}
-	down, _ := mobiumerr.As(endOfList(loc, nil, "down", 3, false))
+	down, _ := mobiumerr.As(endOfList(loc, nil, "down", 3, 2))
 	if !strings.Contains(down.Error(), "end of the list") || down.Details["may_have_refreshed"] != nil {
 		t.Errorf("down: %v %v", down, down.Details)
 	}
@@ -1241,5 +1241,30 @@ func TestScrollToStillRefusesANearMissInView(t *testing.T) {
 	}
 	if d.swipes != 1 {
 		t.Errorf("a near miss in view was scrolled for: %d swipes", d.swipes-1)
+	}
+}
+
+// A tap that scrolled for its target and found nothing says how far the list
+// moved: it is left at its end, and "on the current screen" hid that.
+// mobiumdev/mobium#324.
+func TestATapThatMissesSaysItScrolled(t *testing.T) {
+	h, sess, d := withList(t, rows(30))
+	_, err := tap(h, sess, map[string]interface{}{"target": "text=Nowhere"})
+	e, ok := mobiumerr.As(err)
+	if !ok || e.Code != mobiumerr.NoSuchElement {
+		t.Fatalf("tap: %v, want no_such_element", err)
+	}
+	if d.swipes == 0 || !strings.Contains(e.Message, "scrolled down to the end of the list") {
+		t.Errorf("swiped %d times, and said %q", d.swipes, e.Message)
+	}
+	if e.Details["scrolls"] == nil || e.Details["locator"] != "text=Nowhere" || e.Remedy == "" {
+		t.Errorf("details %v, remedy %q", e.Details, e.Remedy)
+	}
+
+	// Nothing scrolled: the miss is as it was.
+	h, sess, _ = withList(t, rows(3))
+	_, err = tap(h, sess, map[string]interface{}{"target": "text=Nowhere"})
+	if strings.Contains(err.Error(), "scrolled") {
+		t.Errorf("a list that fits said it scrolled: %v", err)
 	}
 }
