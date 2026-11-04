@@ -36,6 +36,7 @@ func (h *Handlers) doctor(ctx context.Context, args map[string]interface{}) (*To
 	if runtime.GOOS == "darwin" {
 		add(checkXcode(ctx))
 		add(checkSimulators(ctx))
+		add(checkSimulatorRunner())
 	}
 	add(checkSocketPath())
 	add(checkAgentCache())
@@ -270,6 +271,18 @@ func checkSimulators(ctx context.Context) DoctorCheck {
 			fmt.Sprintf("%d available, none booted — `xcrun simctl boot <udid>`", len(sims)))
 	}
 	return ok("ios simulators", "booted: "+strings.Join(booted, ", "))
+}
+
+// checkSimulatorRunner names the WebDriverAgent runner a simulator session
+// installs, which is the Mac's architecture, not the build's: an Intel Mac
+// was once given the arm64 runner, which cannot start there (CHALLENGES 381).
+func checkSimulatorRunner() DoctorCheck {
+	switch arch := device.SimulatorArch(); arch {
+	case "x86_64":
+		return ok("simulator runner", "WebDriverAgent "+device.WDAVersion+" for x86_64 — an Intel Mac")
+	default:
+		return ok("simulator runner", "WebDriverAgent "+device.WDAVersion+" for "+arch+" — Apple Silicon")
+	}
 }
 
 // checkSocketPath guards the 104-byte limit the OS puts on a Unix socket

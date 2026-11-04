@@ -13,6 +13,7 @@ note  android sdk root       ANDROID_SDK_ROOT is not set — only needed to star
 note  android devices        none running — start an emulator or plug in a phone
 ok    xcode                  /usr/bin/xcrun
 note  ios simulators         11 available, none booted — `xcrun simctl boot <udid>`
+ok    simulator runner       WebDriverAgent 16.12.8 for arm64 — Apple Silicon
 ok    daemon socket          ~/.mobium/daemon/mobium.sock (46 bytes of ~104)
 ok    device agents          cached: uiautomator2, webdriveragent
 note  third-party drivers    none on PATH — a driver is an executable named mobium-driver-<name>, used with --driver <name>
@@ -435,7 +436,11 @@ weaker.
 
 ## iOS simulator
 
-Needs full Xcode, not just the Command Line Tools.
+Needs full Xcode, not just the Command Line Tools. On Apple Silicon and on
+an Intel Mac alike: the WebDriverAgent runner Mobium installs is the one
+built for the Mac's simulators, which `mobium doctor`'s "simulator runner"
+line names. An Intel Mac's has not yet been run on one (CHALLENGES 381),
+and it is limited to the Xcode versions that still run on Intel macOS.
 
 ```sh
 xcode-select -p                      # should be inside Xcode.app

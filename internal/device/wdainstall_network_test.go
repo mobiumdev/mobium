@@ -2,6 +2,7 @@ package device
 
 import (
 	"context"
+	"debug/macho"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -70,6 +71,52 @@ func TestNetworkEnsureWDARunner(t *testing.T) {
 	if len(progress) != 0 {
 		t.Errorf("a cached runner was re-downloaded: %v", progress)
 	}
+}
+
+// TestNetworkWDARunnersAreTheirArchitecture downloads every pinned simulator
+// runner and reads its executable's Mach-O header: the checksum proves the
+// file is the one pinned, this that the one pinned runs where it is used.
+// The arm64 runner holds no x86_64 code at all (CHALLENGES 381).
+func TestNetworkWDARunnersAreTheirArchitecture(t *testing.T) {
+	skipUnlessNetwork(t)
+	t.Setenv("MOBIUM_HOME", shortTempDir(t))
+	want := map[string]macho.Cpu{"arm64": macho.CpuArm64, "x86_64": macho.CpuAmd64}
+	for _, r := range []wdaRunner{wdaSimArm64, wdaTVSimArm64, wdaSimX86, wdaTVSimX86} {
+		app, err := ensureRunner(context.Background(), r, nil)
+		if err != nil {
+			t.Fatalf("%s: %v", r.artifact.name, err)
+		}
+		for _, bin := range []string{r.exe, r.testBinary} {
+			cpus, err := machoCpus(filepath.Join(app, bin))
+			if err != nil {
+				t.Errorf("%s: %s: %v", r.artifact.name, bin, err)
+				continue
+			}
+			if len(cpus) != 1 || cpus[0] != want[r.arch] {
+				t.Errorf("%s: %s is %v, want %s alone", r.artifact.name, bin, cpus, r.arch)
+			}
+		}
+	}
+}
+
+// machoCpus is the architectures a Mach-O file holds: a universal file's
+// slices, or a thin one's own. The runners' executables are universal files
+// of one slice; their test bundles are thin.
+func machoCpus(path string) ([]macho.Cpu, error) {
+	if fat, err := macho.OpenFat(path); err == nil {
+		defer fat.Close()
+		var cpus []macho.Cpu
+		for _, a := range fat.Arches {
+			cpus = append(cpus, a.Cpu)
+		}
+		return cpus, nil
+	}
+	f, err := macho.Open(path)
+	if err != nil {
+		return nil, err
+	}
+	defer f.Close()
+	return []macho.Cpu{f.Cpu}, nil
 }
 
 func TestNetworkUIA2APKsMatchTheirPins(t *testing.T) {

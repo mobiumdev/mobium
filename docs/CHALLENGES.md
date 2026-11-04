@@ -7,14 +7,14 @@ the source.
 
 The pattern across them is the reason the document exists: **almost nothing
 here was found by reading code or by a test written from imagination.** Of
-380 defects, 308 were found only by running against a real device. Twelve
+381 defects, 308 were found only by running against a real device. Twelve
 more — 255, 280, 282, 327, 329, 353, 355, 356, 359, 371, 375 and 380 — were met while
 running against one, though the fault lay in a check, the host or Mobium's own
-design rather than in the platform. The other sixty — 4, 5, 6, 14, 23,
+design rather than in the platform. The other sixty-one — 4, 5, 6, 14, 23,
 24, 32, 35, 36, 39, 44, 50, 53, 54, 57, 66, 89, 99, 100, 121, 123, 129, 130,
 133, 134, 139, 140, 141, 142, 144, 150, 158, 162, 164, 165, 172, 222, 231, 232,
 243, 274, 278, 279, 286, 287, 305, 306, 308, 309, 310, 313, 314, 321, 361, 362,
-363, 372, 373, 374 and 378 — came from reading code, the compiler, a test, a linter,
+363, 372, 373, 374, 378 and 381 — came from reading code, the compiler, a test, a linter,
 cross-checking a computed number against a screenshot, using the tooling on
 itself, typing a negative number at a command line, and driving the clients
 against a stand-in daemon, CI on Windows, following the quick start from
@@ -8353,6 +8353,31 @@ any failure, gives the timeout's own text. The test is a fake `xcrun` that
 hangs, which must give the timeout and not the install advice, and one that
 fails at once with CLT-only's "unable to find utility", which must still
 give `ErrNoXcode`; with the old reading the first fails.
+
+### 381. An Intel Mac was given a simulator runner it cannot start
+
+**Found by:** reading the code, 2026-11-03, asked whether an Intel iMac
+could drive a simulator. Not run on one: there is no Intel Mac here.
+`internal/device/wdainstall.go` pinned one prebuilt WebDriverAgent runner
+for iOS simulators and one for tvOS, both `-Sim-arm64`, and chose between
+them by TV or not, never by the Mac. Each archive holds one architecture —
+`lipo -archs` on the arm64 runner's executable and test bundle says
+`arm64` alone — and an Intel Mac's simulators are x86_64, so every
+simulator session there would fail at its first step, with nothing in
+`doctor` or the docs to say why. The same pinned release publishes
+`-Sim-x86_64` builds of both.
+
+**Fixed:** both x86_64 runners are pinned with their checksums, and the
+runner is chosen by the hardware: `hw.optional.arm64` is 1 on Apple
+Silicon, measured under Rosetta too, where an amd64 build's
+`runtime.GOARCH` and `uname -m` both say Intel while every simulator is
+still arm64; an Intel Mac has no such key, or reads 0. An Intel Mac's
+runner unpacks into its own folder, since both share an app name.
+`mobium doctor` names the runner it will use. A unit test gives each
+architecture its own runner and fails with the old choice; a network test
+downloads all four and reads each executable's Mach-O header, and fails
+when the architectures are swapped. What it still needs is a session on
+an Intel Mac's simulator.
 
 ## Findings that were not defects
 
