@@ -15,7 +15,7 @@ ok    xcode                  /usr/bin/xcrun
 note  ios simulators         11 available, none booted — `xcrun simctl boot <udid>`
 ok    simulator runner       WebDriverAgent 16.12.8 for arm64 — Apple Silicon
 ok    daemon socket          ~/.mobium/daemon/mobium.sock (46 bytes of ~104)
-ok    device agents          cached: uiautomator2, webdriveragent
+ok    device agents          cached: uiautomator2 10.6.6, webdriveragent 16.12.8 (iOS simulators, arm64), webdriveragent 16.12.8 (Apple TV simulators, arm64)
 note  third-party drivers    none on PATH — a driver is an executable named mobium-driver-<name>, used with --driver <name>
 
 everything mobium needs is here
@@ -439,8 +439,8 @@ weaker.
 Needs full Xcode, not just the Command Line Tools. On Apple Silicon and on
 an Intel Mac alike: the WebDriverAgent runner Mobium installs is the one
 built for the Mac's simulators, which `mobium doctor`'s "simulator runner"
-line names. An Intel Mac's has not yet been run on one (CHALLENGES 381),
-and it is limited to the Xcode versions that still run on Intel macOS.
+line names. An Intel Mac's has been run on one (CHALLENGES 381); it is
+limited to the Xcode versions that still run on Intel macOS.
 
 ```sh
 xcode-select -p                      # should be inside Xcode.app

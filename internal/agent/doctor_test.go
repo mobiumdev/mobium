@@ -8,6 +8,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/mobiumdev/mobium/internal/device"
 	"github.com/mobiumdev/mobium/internal/fakecmd"
 )
 
@@ -200,5 +201,47 @@ func TestDriverNameFollowsThePlatformsIdeaOfExecutable(t *testing.T) {
 			t.Errorf("driverName(%q, %o, %s) = %q, %v; want %q, %v",
 				c.file, c.mode, c.goos, got, driver, c.want, c.driver)
 		}
+	}
+}
+
+// A cache holding another architecture's simulator runner, or another
+// version's, is not this Mac's: doctor said "cached" for any folder with
+// anything in it, and on an Intel Mac that had run rc1 the next install
+// downloaded the x86_64 runner (CHALLENGES 382).
+func TestAgentCacheCountsOnlyThisMacsRunner(t *testing.T) {
+	if runtime.GOOS != "darwin" {
+		t.Skip("the simulator runners are asked about only on a Mac")
+	}
+	home := t.TempDir()
+	t.Setenv("MOBIUM_HOME", home)
+	runner := func(dir string) {
+		app := filepath.Join(home, "webdriveragent", dir, "WebDriverAgentRunner-Runner.app")
+		if err := os.MkdirAll(app, 0o755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(filepath.Join(app, "WebDriverAgentRunner-Runner"), nil, 0o755); err != nil {
+			t.Fatal(err)
+		}
+	}
+	other, this := filepath.Join(device.WDAVersion, "x86_64"), device.WDAVersion
+	if device.SimulatorArch() == "x86_64" {
+		other, this = this, other
+	}
+	runner(other)
+	runner("16.0.0") // an older version's folder
+
+	c := checkAgentCache()
+	if c.Status != statusNote || !strings.Contains(c.Detail, "nothing cached") {
+		t.Fatalf("only another Mac's runner and an old version cached, got %s: %q", c.Status, c.Detail)
+	}
+
+	runner(this)
+	c = checkAgentCache()
+	want := "cached: webdriveragent " + device.WDAVersion + " (iOS simulators, " + device.SimulatorArch() + ")"
+	if c.Status != statusOK || !strings.HasPrefix(c.Detail, want) {
+		t.Errorf("this Mac's runner cached, got %s: %q, want it to begin %q", c.Status, c.Detail, want)
+	}
+	if !strings.Contains(c.Detail, "not yet, downloaded on first use: uiautomator2") {
+		t.Errorf("the missing server is not named: %q", c.Detail)
 	}
 }

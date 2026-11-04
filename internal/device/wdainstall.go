@@ -170,6 +170,20 @@ func (r wdaRunner) cacheDir() string {
 	return WDACacheDir()
 }
 
+// WDARunnerCached reports whether the runner a simulator session on this Mac
+// would install, iOS's or with tv the Apple TV's, is already unpacked: the
+// same test EnsureWDARunner makes before it downloads. A cache holding only
+// another architecture's runner, or another version's, is not this Mac's —
+// an Intel Mac that ran rc1 first has the arm64 one (CHALLENGES 382).
+func WDARunnerCached(tv bool) bool {
+	return wdaRunnerCached(wdaRunnerFor(tv))
+}
+
+func wdaRunnerCached(r wdaRunner) bool {
+	_, err := os.Stat(filepath.Join(r.cacheDir(), r.app, r.exe))
+	return err == nil
+}
+
 // EnsureWDARunner downloads and unpacks the runner for an iOS simulator, or
 // with tv for an Apple TV simulator, returning the .app path.
 func EnsureWDARunner(ctx context.Context, tv bool, progress func(string)) (string, error) {
@@ -181,7 +195,7 @@ func ensureRunner(ctx context.Context, r wdaRunner, progress func(string)) (stri
 	appPath := filepath.Join(dir, r.app)
 
 	// An unpacked runner with its executable present is ready to install.
-	if _, err := os.Stat(filepath.Join(appPath, r.exe)); err == nil {
+	if wdaRunnerCached(r) {
 		return appPath, nil
 	}
 	if err := os.MkdirAll(dir, 0o755); err != nil {
