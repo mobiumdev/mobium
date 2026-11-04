@@ -146,7 +146,8 @@ func (h *Handlers) sessionStart(ctx context.Context, args map[string]interface{}
 			return nil, fmt.Errorf("the session on %s is open, but stopping %s before launching it failed: %w", view.Device, app, err)
 		}
 		delete(h.refs, s.dev.Serial)
-		if _, err := h.launchAppOn(ctx, s, map[string]interface{}{"app": app}); err != nil {
+		res, err := h.launchAppOn(ctx, s, map[string]interface{}{"app": app})
+		if err != nil {
 			// The session is open and stays open: the caller asked for both,
 			// and a launch that failed is theirs to retry or to quit.
 			return nil, fmt.Errorf("the session on %s is open, but launching %s failed: %w", view.Device, app, err)
@@ -154,6 +155,9 @@ func (h *Handlers) sessionStart(ctx context.Context, args map[string]interface{}
 		view.App = app
 		s.launched = app
 		text += "; " + app + " was launched fresh and is in the foreground"
+		if v, ok := res.StructuredContent.(AppView); ok && v.NotDrawn {
+			text += fmt.Sprintf(", but has drawn nothing to act on after %s; map again in a moment", drawnWait)
+		}
 	}
 	return Result(text, view), nil
 }

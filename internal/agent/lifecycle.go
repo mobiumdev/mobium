@@ -12,6 +12,7 @@ import (
 	"github.com/mobiumdev/mobium/internal/device"
 	"github.com/mobiumdev/mobium/internal/mobiumdriver"
 	"github.com/mobiumdev/mobium/internal/mobiumerr"
+	"github.com/mobiumdev/mobium/internal/uitree"
 )
 
 // AppView is the result of app_current, app_launch and app_terminate.
@@ -19,6 +20,9 @@ type AppView struct {
 	App     string `json:"app"`
 	Device  string `json:"device"`
 	Context string `json:"context,omitempty"`
+	// NotDrawn says the app came to the front and had drawn nothing to act
+	// on when the launch stopped waiting.
+	NotDrawn bool `json:"not_drawn,omitempty"`
 }
 
 // InstallView is the result of app_install.
@@ -248,7 +252,11 @@ func (h *Handlers) launchAppOn(ctx context.Context, s *session, args map[string]
 			return nil, err
 		}
 	}
+	drawn := app != id || h.awaitDrawn(ctx, s)
 	msg := fmt.Sprintf("launched %s", id)
+	if !drawn {
+		msg += fmt.Sprintf(", and it is in front but has drawn nothing to act on after %s; map again in a moment", drawnWait)
+	}
 	if boolArg(args, "hit_test") {
 		msg += ", with the hit probe: every action on an element in it asks UIKit first"
 	}
@@ -282,7 +290,54 @@ func (h *Handlers) launchAppOn(ctx context.Context, s *session, args map[string]
 			}
 		}
 	}
-	return Result(msg, AppView{App: id, Device: s.dev.Serial}), nil
+	return Result(msg, AppView{App: id, Device: s.dev.Serial, NotDrawn: !drawn}), nil
+}
+
+// awaitDrawn waits, up to settleAfterStart, for the app in front to hold
+// something to act on, and reports whether it did. Only for a driver that
+// reads which app is in front without reading the screen: on iOS an app is
+// in front before it draws, and MobiumApp's first map found nothing for
+// 1.5 s on an Intel Mac (mobiumdev/mobium#320). The other drivers waited on
+// the screen already. A light read is enough: it can only add elements, and
+// a blank screen has none.
+// drawnWait bounds awaitDrawn. A variable so a test can shorten it.
+var drawnWait = settleAfterStart
+
+func (h *Handlers) awaitDrawn(ctx context.Context, s *session) bool {
+	if _, ok := mobiumdriver.AsForegroundReader(s.driver); !ok {
+		return true
+	}
+	drawn := false
+	_ = pollUntil(ctx, drawnWait, func(ctx context.Context) (bool, error) {
+		var t *uitree.Tree
+		if lr, ok := mobiumdriver.AsLightReader(s.driver); ok {
+			if lt, ok, err := lr.LightSnapshot(ctx); err == nil && ok {
+				t = lt
+			}
+		}
+		if t == nil {
+			ft, err := s.driver.Snapshot(ctx)
+			if err != nil {
+				return false, nil
+			}
+			t = ft
+		}
+		drawn = t != nil && t.Root != nil && hasActionable(t.Root)
+		return drawn, nil
+	})
+	return drawn
+}
+
+func hasActionable(n *uitree.Node) bool {
+	if uitree.Actionable(n) {
+		return true
+	}
+	for _, c := range n.Children {
+		if hasActionable(c) {
+			return true
+		}
+	}
+	return false
 }
 
 func (h *Handlers) terminateApp(ctx context.Context, args map[string]interface{}) (*ToolsCallResult, error) {

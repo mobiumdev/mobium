@@ -7,7 +7,7 @@ the source.
 
 The pattern across them is the reason the document exists: **almost nothing
 here was found by reading code or by a test written from imagination.** Of
-384 defects, 309 were found only by running against a real device. Fourteen
+385 defects, 310 were found only by running against a real device. Fourteen
 more — 255, 280, 282, 327, 329, 353, 355, 356, 359, 371, 375, 380, 382 and 384 — were met while
 running against one, though the fault lay in a check, the host or Mobium's own
 design rather than in the platform. The other sixty-one — 4, 5, 6, 14, 23,
@@ -8461,6 +8461,29 @@ out of the tree stays `no_such_element` — nothing matched, and the keyboard
 is only the likely reason — with `keyboard: true`. A test gives each of the
 eight covers and fails on the old code for all eight; the CLI guide,
 autowait, the skill and all five clients say which code is which.
+### 385. An iOS launch returned before the app had drawn anything
+
+**Found by:** a person on an Intel iMac, 2026-11-03 (mobiumdev/mobium#320).
+On an iPhone 17 Pro simulator, iOS 26.5, `start`, `session start --app` and
+`launch` of MobiumApp returned with nothing on screen: the first `map`
+found 0 elements, 5 times in 5, and 13 about 1.5 s later. Settings drew at
+once. Android waited on the screen and was never empty. Reproduced here on
+Apple Silicon: 2 empty first maps in 5.
+
+On iOS a launch waited only for the app to be in front, which it is before
+it draws.
+
+**Fixed:** after an iOS launch, Mobium waits up to 3 s for the app to hold
+something to act on, with a light read. If nothing is drawn by then, the
+launch says so and sets `not_drawn`. Measured here: 0 empty first maps in 5;
+`start` took 0.4 s longer for MobiumApp and 0.25 s for Settings. A test whose
+app draws after three blank reads fails without the wait.
+
+The read is not kept for the next `map`. It is a light read, which takes
+hidden elements as shown, and `map` gives only what is shown (377). A full
+read kept instead would cost what the light read saves, and goes stale:
+Settings' first `map` had 13 elements and one a second later 12, Passcode
+under the floating search field.
 
 ## Findings that were not defects
 
