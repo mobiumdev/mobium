@@ -77,6 +77,7 @@ func (l Locator) String() string {
 
 // Element is one actionable thing on screen.
 type Element struct {
+	// Ref is the @e1 handle, empty for a match the map filters out.
 	Ref     string   `json:"ref"`
 	Label   string   `json:"label"`
 	Role    string   `json:"role,omitempty"`
@@ -473,7 +474,8 @@ type WaitOptions struct {
 // WaitFor blocks until the screen agrees, instead of sleeping.
 //
 // On success the screen is remapped, so the returned element already has a ref
-// that can be tapped without calling Map first. Waiting for something to go
+// that can be tapped without calling Map first. Its ref is empty when the map
+// filters it out, as a plain text in a list. Waiting for something to go
 // away returns a nil element and a nil error, since there is nothing left to
 // point at. If the condition never holds the error says what was on screen
 // instead, which is usually the answer.

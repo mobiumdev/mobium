@@ -7,8 +7,8 @@ the source.
 
 The pattern across them is the reason the document exists: **almost nothing
 here was found by reading code or by a test written from imagination.** Of
-386 defects, 310 were found only by running against a real device. Fifteen
-more — 255, 280, 282, 327, 329, 353, 355, 356, 359, 371, 375, 380, 382, 384 and 386 — were met while
+387 defects, 310 were found only by running against a real device. Sixteen
+more — 255, 280, 282, 327, 329, 353, 355, 356, 359, 371, 375, 380, 382, 384, 386 and 387 — were met while
 running against one, though the fault lay in a check, the host or Mobium's own
 design rather than in the platform. The other sixty-one — 4, 5, 6, 14, 23,
 24, 32, 35, 36, 39, 44, 50, 53, 54, 57, 66, 89, 99, 100, 121, 123, 129, 130,
@@ -8501,6 +8501,28 @@ view", with `locator`, `scrolls` and `moved` in details and a remedy that
 scrolls back. A list that fits takes one swipe that moves nothing; that miss
 stays as it was. Measured here on both devices: the issue's repro names the
 4 scrolls. A test fails on the old call site with the issue's message.
+
+### 387. A wait for a text in a list answered with the list
+
+**Found by:** a person writing a client test, 2026-11-04
+(mobiumdev/mobium#329), on MobiumApp's Dialog Demo on the Android 15 emulator
+and the iOS 26.5 simulator. `wait testid=dialogOutcome` answered `@e2
+ScrollView (list)`, and the ref tapped the list's center. The walk to the
+nearest mapped ancestor is right for a text in a clickable row. A plain text
+has no such row, so the walk ended at the list. `scroll-to` shares the walk.
+
+**Fixed:** the walk stops at a list, unless the list is what matched. The
+match is reported with no ref, as `find` reports it: `(no ref) nothing yet
+[42,515][1038,572]`, and an element with `ref` empty in every client. It is
+labeled as `map` labels: cleaned, bounded, and never a password. `app_scroll_to`
+is marked as device text.
+
+**Measured:** a sweep waited on the first 14 visible texts of each screen, across
+9 Android apps and 8 iOS apps, Compose, SwiftUI and Flutter among them. On `main`,
+22 answers on Android and 18 on iOS were the list, from MobiumApp and iOS Settings
+alone. With the fix, 0 of 203 and 0 of 193. All five clients and MCP took the
+empty ref on the Android 15 emulator. `wait-states.sh` fails on `main` on both
+devices and passes with the fix.
 
 ## Findings that were not defects
 

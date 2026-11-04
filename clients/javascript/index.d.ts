@@ -20,7 +20,7 @@ export interface Bounds {
 
 /** One actionable thing on screen, from `map()` or `find()`. */
 export interface Element {
-  /** The `@e1` handle, valid only for the screen it came from. */
+  /** The `@e1` handle, valid only for the screen it came from. Empty for a match the map filters out. */
   ref: string
   /** What a person would call it. */
   label: string

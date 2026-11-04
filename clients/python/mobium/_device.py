@@ -36,6 +36,7 @@ class Element:
     """One actionable element on screen."""
 
     ref: str
+    """The @e1 handle, valid only for the screen it came from; empty for a match the map filters out."""
     label: str
     role: str = ""
     bounds: Bounds = Bounds(0, 0, 0, 0)
@@ -53,7 +54,8 @@ class Element:
     """What a slider reads, as the app states it ("80%", "1.2"); empty for anything else."""
 
     def __str__(self) -> str:
-        return f"{self.ref} {self.label} ({self.role})" if self.role else f"{self.ref} {self.label}"
+        name = f"{self.ref} {self.label}".strip()
+        return f"{name} ({self.role})" if self.role else name
 
 
 @dataclass(frozen=True)
@@ -341,7 +343,8 @@ class Device:
         if it never happens, saying what was on screen instead.
 
         On success the screen is remapped, so the element returned already has
-        a ref that can be tapped without calling map() first. Nothing is
+        a ref that can be tapped without calling map() first. Its ref is empty
+        when the map filters it out, as a plain text in a list. Nothing is
         returned when waiting for something to go away.
         """
         args: dict[str, Any] = {

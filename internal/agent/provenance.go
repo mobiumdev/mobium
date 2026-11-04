@@ -38,6 +38,7 @@ var deviceTextFields = map[string][]string{
 	"app_text":          {"text"},
 	"app_source":        {"source"},
 	"app_wait_for":      {"element.label", "element.value", "element.locator.value"},
+	"app_scroll_to":     {"element.label", "element.value", "element.locator.value"},
 	"app_alert":         {"text", "buttons[]", "pressed"},
 	"app_notifications": {"notifications[].title", "notifications[].text"},
 	"app_clipboard":     {"text"},

@@ -218,7 +218,8 @@ Every condition:
 
 The default timeout is 10 seconds, `--timeout` changes it, up to two minutes.
 A successful wait remaps the screen, so the element it found already has a
-ref: `mobium tap @e3` straight after, with no `map` in between.
+ref: `mobium tap @e3` straight after, with no `map` in between. A match the
+map filters out, such as a plain text in a list, answers `(no ref)`.
 
 ## 6. Reading a refusal from code
 

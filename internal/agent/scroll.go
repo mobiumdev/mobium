@@ -155,6 +155,10 @@ func (h *Handlers) scrollToOn(ctx context.Context, s *session, args map[string]i
 		ev := elementView(e)
 		view.Element = &ev
 		msg += " — " + e.Line()
+	} else {
+		line, ev := noRefElement(node)
+		view.Element = &ev
+		msg += " — " + line
 	}
 	return Result(msg, view), nil
 }

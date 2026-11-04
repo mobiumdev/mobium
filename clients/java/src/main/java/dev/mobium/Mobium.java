@@ -402,7 +402,8 @@ public final class Mobium implements AutoCloseable {
      * Blocks until the screen agrees, instead of sleeping.
      *
      * <p>On success the screen is remapped, so the element returned already
-     * has a ref that can be tapped without calling {@link #map()} first.
+     * has a ref that can be tapped without calling {@link #map()} first. Its
+     * ref is empty when the map filters it out, as a plain text in a list.
      * Waiting for something to go away returns {@code null}: there is nothing
      * left to point at. If the condition never holds, the exception says what
      * was on screen instead, which is usually the answer.

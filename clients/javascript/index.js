@@ -627,7 +627,8 @@ export class Device {
    * it never happens, saying what was on screen instead.
    *
    * On success the screen is remapped, so the element returned already has a
-   * ref that can be tapped without calling map() first. Nothing is returned
+   * ref that can be tapped without calling map() first. Its ref is empty when
+   * the map filters it out, as a plain text in a list. Nothing is returned
    * when waiting for something to go away.
    */
   async waitFor(target, { condition = 'visible', text, timeoutMs = 10000, not, exact, count } = {}) {
