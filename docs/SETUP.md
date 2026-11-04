@@ -41,14 +41,14 @@ no Xcode on a machine doing Android work is normal, not a problem.
 
 ## Installing a release
 
-From the first tagged release on, each one carries mobium prebuilt for
+Every release, from v0.1.0-rc1 on, carries mobium prebuilt for
 macOS, Linux and Windows, on amd64 and arm64, so installing it needs no Go:
 `mobium_<version>_<os>_<arch>.tar.gz` (`.zip` for Windows), each holding the
 binary, the license and its notices, and the README, and `SHA256SUMS` over
 all of them. The binary is static — nothing else to install with it.
 
 ```sh
-v=0.1.0; os=darwin; arch=arm64          # or linux / windows, amd64
+v=0.1.0-rc1; os=darwin; arch=arm64      # the release you want; os linux, arch amd64 (Windows: the .zip)
 base=https://github.com/mobiumdev/mobium/releases/download/v$v
 curl -LO "$base/mobium_${v}_${os}_${arch}.tar.gz" -LO "$base/SHA256SUMS"
 shasum -a 256 -c --ignore-missing SHA256SUMS   # must say OK
