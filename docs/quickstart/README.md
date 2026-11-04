@@ -42,8 +42,27 @@ what it printed.
 
 ## 1. Install mobium
 
-Until the first release there are no prebuilt binaries: mobium installs with
-**Go 1.24 or later** ([go.dev/dl](https://go.dev/dl/)), and needs nothing else.
+Take a prebuilt binary from a
+[release](https://github.com/mobiumdev/mobium/releases) — v0.1.0-rc1 is the
+first, a release candidate — for macOS, Linux or Windows, on amd64 or arm64.
+It is one static file and needs nothing else. On macOS or Linux, with your
+system and the release you want:
+
+```sh
+v=0.1.0-rc1; os=darwin; arch=arm64          # os: darwin or linux; arch: arm64 or amd64
+base=https://github.com/mobiumdev/mobium/releases/download/v$v
+curl -LO "$base/mobium_${v}_${os}_${arch}.tar.gz" -LO "$base/SHA256SUMS"
+shasum -a 256 -c --ignore-missing SHA256SUMS   # must say OK
+tar -xzf "mobium_${v}_${os}_${arch}.tar.gz"
+mv "mobium_${v}_${os}_${arch}/mobium" /usr/local/bin/   # or anywhere on PATH
+mobium --version
+```
+
+On macOS, download with `curl`, not a browser: the binaries are not
+notarized, and macOS blocks one a browser saved.
+[SETUP.md](../SETUP.md#installing-a-release) has that in full, and Windows.
+
+Or install it with **Go 1.24 or later** ([go.dev/dl](https://go.dev/dl/)):
 
 ```sh
 go install github.com/mobiumdev/mobium/cmd/mobium@latest
