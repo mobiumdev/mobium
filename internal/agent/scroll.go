@@ -185,11 +185,19 @@ func plural(n int) string {
 // loop follows the element by it rather than by the ref's position once the
 // two part (refPicker).
 func (h *Handlers) scrollIntoView(ctx context.Context, s *session, loc uitree.Locator, dir string, followTarget bool, name string) (*uitree.Node, *uitree.Tree, int, error) {
+	return h.scrollIntoViewFrom(ctx, s, nil, loc, dir, followTarget, name)
+}
+
+// scrollIntoViewFrom is scrollIntoView from a screen the caller has just
+// read, which it starts from instead of reading again; nil reads it.
+func (h *Handlers) scrollIntoViewFrom(ctx context.Context, s *session, tree *uitree.Tree, loc uitree.Locator, dir string, followTarget bool, name string) (*uitree.Node, *uitree.Tree, int, error) {
 	follow := &follower{loc: loc, name: name}
 	pick := picker(follow.pick)
-	tree, err := s.driver.Snapshot(ctx)
-	if err != nil {
-		return nil, nil, 0, err
+	var err error
+	if tree == nil {
+		if tree, err = s.driver.Snapshot(ctx); err != nil {
+			return nil, nil, 0, err
+		}
 	}
 
 	// Already there? Resolve against the container it will be measured
@@ -237,7 +245,7 @@ func (h *Handlers) scrollIntoView(ctx context.Context, s *session, loc uitree.Lo
 	if container == nil {
 		// A dialog already up is the whole screen on Android, with nothing
 		// in it that scrolls: answer it by a rule and look again, or name it.
-		handled, derr := h.dialogOverScroll(ctx, s, loc)
+		handled, derr := h.dialogOverScroll(ctx, s, loc, tree)
 		if derr != nil {
 			return nil, nil, 0, derr
 		}
@@ -322,7 +330,7 @@ func (h *Handlers) scrollIntoView(ctx context.Context, s *session, loc uitree.Lo
 		}
 		answered := false // a rule answered a dialog, which took this swipe
 		if now := tree.Package(); app != "" && now != "" && now != app {
-			handled, derr := h.dialogOverScroll(ctx, s, loc)
+			handled, derr := h.dialogOverScroll(ctx, s, loc, tree)
 			if derr != nil {
 				return nil, nil, i, derr
 			}
@@ -390,7 +398,7 @@ func (h *Handlers) scrollIntoView(ctx context.Context, s *session, loc uitree.Lo
 				}
 			}
 			if d*10 < base*6 && atStart(container, horizontal(dir)) {
-				if held, derr := h.dialogOverScroll(ctx, s, loc); derr != nil {
+				if held, derr := h.dialogOverScroll(ctx, s, loc, tree); derr != nil {
 					return nil, nil, i, derr
 				} else if held {
 					prev = read(container) // the swipe went to the dialog: not the end
@@ -433,7 +441,7 @@ func (h *Handlers) scrollIntoView(ctx context.Context, s *session, loc uitree.Lo
 				// swipe was, and swiping on pulled again — twice on an iOS
 				// simulator, for one search. CHALLENGES 310.
 				if !moved(now, after) {
-					if held, derr := h.dialogOverScroll(ctx, s, loc); derr != nil {
+					if held, derr := h.dialogOverScroll(ctx, s, loc, tree); derr != nil {
 						return nil, nil, i, derr
 					} else if held {
 						prev = read(container) // the swipe went to the dialog: not the end
@@ -444,7 +452,7 @@ func (h *Handlers) scrollIntoView(ctx context.Context, s *session, loc uitree.Lo
 				prev = after
 				continue
 			}
-			if held, derr := h.dialogOverScroll(ctx, s, loc); derr != nil {
+			if held, derr := h.dialogOverScroll(ctx, s, loc, tree); derr != nil {
 				return nil, nil, i, derr
 			} else if held {
 				prev = read(container) // the swipe went to the dialog: not the end
@@ -1250,8 +1258,12 @@ func endOfList(loc uitree.Locator, resolveErr error, dir string, scrolls, moved 
 // on (app_dialogs promises any action with a target); without one the
 // refusal names the dialog. It reports whether a rule answered one, and asks
 // nothing on a scroll that found what it looked for. CHALLENGES 328.
-func (h *Handlers) dialogOverScroll(ctx context.Context, s *session, loc uitree.Locator) (bool, error) {
-	text, err := h.dialogText(ctx, s)
+//
+// tree is the screen as last read, which an app's own dialog is looked for
+// in rather than reading it again: 0.6 s at the end of every search on an
+// iOS simulator.
+func (h *Handlers) dialogOverScroll(ctx context.Context, s *session, loc uitree.Locator, tree *uitree.Tree) (bool, error) {
+	text, err := h.dialogTextIn(ctx, s, tree)
 	if err != nil || text == "" {
 		return false, nil
 	}

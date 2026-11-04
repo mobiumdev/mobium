@@ -168,15 +168,23 @@ func (h *Handlers) answerByRule(ctx context.Context, s *session) (bool, error) {
 // An app's own dialog, which the platform's alert endpoint does not know, is
 // read from the hierarchy, so a rule answers a Jetpack Compose dialog too.
 func (h *Handlers) dialogText(ctx context.Context, s *session) (string, error) {
+	return h.dialogTextIn(ctx, s, nil)
+}
+
+// dialogTextIn is dialogText looking for an app's own dialog in tree, a
+// read just taken, or in a fresh read when tree is nil.
+func (h *Handlers) dialogTextIn(ctx context.Context, s *session, tree *uitree.Tree) (string, error) {
 	a, ok := mobiumdriver.AsAlerts(s.driver)
 	if !ok {
 		return "", nil
 	}
 	text, err := a.AlertText(ctx)
 	if errors.Is(err, mobiumdriver.ErrNoAlert) || mobiumerr.CodeOf(err) == mobiumerr.NoSuchAlert {
-		tree, serr := s.driver.Snapshot(ctx)
-		if serr != nil {
-			return "", nil
+		if tree == nil {
+			var serr error
+			if tree, serr = s.driver.Snapshot(ctx); serr != nil {
+				return "", nil
+			}
 		}
 		return appDialogText(tree), nil
 	}
