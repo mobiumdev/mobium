@@ -3,19 +3,25 @@ package device
 import (
 	"archive/zip"
 	"context"
+	"errors"
 	"fmt"
 	"github.com/mobiumdev/mobium/internal/mobiumerr"
 	"io"
 	"net"
 	"os"
+	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strings"
+	"sync"
 )
 
 // WebDriverAgent's LICENSE file is BSD-3-Clause. Its project publishes a prebuilt runner
-// for arm64 simulators, so mobium downloads that rather than requiring an
-// xcodebuild of WDA from source — the step that makes an iOS setup slow and
-// version-fragile.
+// for simulators, one for Apple Silicon and one for Intel, so mobium downloads
+// that rather than requiring an xcodebuild of WDA from source — the step that
+// makes an iOS setup slow and version-fragile. Each build holds its own
+// architecture alone: the arm64 runner cannot start on an Intel Mac's
+// simulators, and was for a time the only one mobium installed (CHALLENGES 381).
 //
 // Pinned, not tracked, for the same reason as the UiAutomator2 server: a
 // device-side agent that changes underneath you is the drift this tool exists
@@ -33,13 +39,15 @@ const (
 	WDAPort = 8100
 )
 
-// wdaRunner is one prebuilt runner for Apple Silicon simulators: the archive,
-// the app inside it, and WebDriverAgent's own test bundle inside that.
+// wdaRunner is one prebuilt simulator runner: the archive, the app inside it,
+// WebDriverAgent's own test bundle inside that, and the architecture it was
+// built for.
 type wdaRunner struct {
 	artifact   uia2Artifact
 	app        string
 	exe        string
 	testBinary string
+	arch       string
 }
 
 // wdaSimArm64 is the runner for iOS simulators.
@@ -52,6 +60,20 @@ var wdaSimArm64 = wdaRunner{
 	app:        "WebDriverAgentRunner-Runner.app",
 	exe:        "WebDriverAgentRunner-Runner",
 	testBinary: "PlugIns/WebDriverAgentRunner.xctest/WebDriverAgentRunner",
+	arch:       "arm64",
+}
+
+// wdaSimX86 is the runner for iOS simulators on an Intel Mac.
+var wdaSimX86 = wdaRunner{
+	artifact: uia2Artifact{
+		name:   "WebDriverAgentRunner-Build-Sim-x86_64.zip",
+		url:    wdaRelease + "/WebDriverAgentRunner-Build-Sim-x86_64.zip",
+		sha256: "bf683d59a8ffc031031ddeeb3d5edf9556f3060692694904edcf4b8aa5ba05a2",
+	},
+	app:        "WebDriverAgentRunner-Runner.app",
+	exe:        "WebDriverAgentRunner-Runner",
+	testBinary: "PlugIns/WebDriverAgentRunner.xctest/WebDriverAgentRunner",
+	arch:       "x86_64",
 }
 
 // wdaTVSimArm64 is the runner for Apple TV simulators, from the same
@@ -66,25 +88,96 @@ var wdaTVSimArm64 = wdaRunner{
 	app:        "WebDriverAgentRunner_tvOS-Runner.app",
 	exe:        "WebDriverAgentRunner_tvOS-Runner",
 	testBinary: "PlugIns/WebDriverAgentRunner_tvOS.xctest/WebDriverAgentRunner_tvOS",
+	arch:       "arm64",
 }
 
+// wdaTVSimX86 is the runner for Apple TV simulators on an Intel Mac.
+var wdaTVSimX86 = wdaRunner{
+	artifact: uia2Artifact{
+		name:   "WebDriverAgentRunner_tvOS-Build-Sim-x86_64.zip",
+		url:    wdaRelease + "/WebDriverAgentRunner_tvOS-Build-Sim-x86_64.zip",
+		sha256: "ed92aafe73a63a7427b8f287a2b85085ddc861d2653573d50f66febcd421000e",
+	},
+	app:        "WebDriverAgentRunner_tvOS-Runner.app",
+	exe:        "WebDriverAgentRunner_tvOS-Runner",
+	testBinary: "PlugIns/WebDriverAgentRunner_tvOS.xctest/WebDriverAgentRunner_tvOS",
+	arch:       "x86_64",
+}
+
+// wdaRunnerFor is the runner for this Mac's simulators.
 func wdaRunnerFor(tv bool) wdaRunner {
-	if tv {
+	return wdaRunnerForArch(tv, SimulatorArch())
+}
+
+func wdaRunnerForArch(tv bool, arch string) wdaRunner {
+	switch {
+	case tv && arch == "x86_64":
+		return wdaTVSimX86
+	case tv:
 		return wdaTVSimArm64
+	case arch == "x86_64":
+		return wdaSimX86
+	default:
+		return wdaSimArm64
 	}
-	return wdaSimArm64
+}
+
+// SimulatorArch is the architecture this Mac's simulators run: "arm64" on
+// Apple Silicon, "x86_64" on an Intel Mac.
+//
+// It is the hardware's, never the build's. An amd64 build of mobium runs on
+// Apple Silicon under Rosetta, where runtime.GOARCH says amd64 and `uname -m`
+// says x86_64 while every simulator is still arm64. hw.optional.arm64 is 1 on
+// Apple Silicon under Rosetta too, measured; an Intel Mac has no such key, or
+// reads 0.
+var SimulatorArch = sync.OnceValue(func() string {
+	out, err := exec.Command("/usr/sbin/sysctl", "-n", "hw.optional.arm64").Output()
+	return simulatorArch(string(out), err, runtime.GOARCH)
+})
+
+// simulatorArch reads sysctl's answer. Only when sysctl could not be asked
+// at all does it fall back to the build's architecture.
+func simulatorArch(sysctl string, err error, goarch string) string {
+	switch strings.TrimSpace(sysctl) {
+	case "1":
+		return "arm64"
+	case "0":
+		return "x86_64"
+	}
+	var exitErr *exec.ExitError
+	if err != nil && errors.As(err, &exitErr) {
+		// An unknown oid: a Mac that predates Apple Silicon.
+		return "x86_64"
+	}
+	if goarch == "amd64" {
+		return "x86_64"
+	}
+	return "arm64"
 }
 
 // WDACacheDir is where the downloaded runner lives, one directory per version.
+// An Intel Mac's runner is in an x86_64 folder inside it, so a cache carried
+// from one Mac to another never hands over the other architecture's runner
+// under the same app name.
 func WDACacheDir() string {
 	return filepath.Join(cacheRoot(), "webdriveragent", WDAVersion)
+}
+
+func (r wdaRunner) cacheDir() string {
+	if r.arch == "x86_64" {
+		return filepath.Join(WDACacheDir(), "x86_64")
+	}
+	return WDACacheDir()
 }
 
 // EnsureWDARunner downloads and unpacks the runner for an iOS simulator, or
 // with tv for an Apple TV simulator, returning the .app path.
 func EnsureWDARunner(ctx context.Context, tv bool, progress func(string)) (string, error) {
-	r := wdaRunnerFor(tv)
-	dir := WDACacheDir()
+	return ensureRunner(ctx, wdaRunnerFor(tv), progress)
+}
+
+func ensureRunner(ctx context.Context, r wdaRunner, progress func(string)) (string, error) {
+	dir := r.cacheDir()
 	appPath := filepath.Join(dir, r.app)
 
 	// An unpacked runner with its executable present is ready to install.
@@ -98,7 +191,7 @@ func EnsureWDARunner(ctx context.Context, tv bool, progress func(string)) (strin
 	zipPath := filepath.Join(dir, r.artifact.name)
 	if ok, _ := fileMatches(zipPath, r.artifact.sha256); !ok {
 		if progress != nil {
-			progress(fmt.Sprintf("downloading WebDriverAgent %s", WDAVersion))
+			progress(fmt.Sprintf("downloading WebDriverAgent %s for %s simulators", WDAVersion, r.arch))
 		}
 		if err := download(ctx, r.artifact, zipPath); err != nil {
 			return "", err

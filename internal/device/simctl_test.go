@@ -2,6 +2,7 @@ package device
 
 import (
 	"errors"
+	"os/exec"
 	"runtime"
 	"strings"
 	"testing"
@@ -82,7 +83,7 @@ func TestErrNoXcodeIsActionable(t *testing.T) {
 }
 
 func TestWDAArtifactIsPinnedAndChecksummed(t *testing.T) {
-	for _, r := range []wdaRunner{wdaSimArm64, wdaTVSimArm64} {
+	for _, r := range []wdaRunner{wdaSimArm64, wdaTVSimArm64, wdaSimX86, wdaTVSimX86} {
 		a := r.artifact
 		if len(a.sha256) != 64 {
 			t.Errorf("%s: checksum is %d chars", a.name, len(a.sha256))
@@ -96,15 +97,64 @@ func TestWDAArtifactIsPinnedAndChecksummed(t *testing.T) {
 		if !strings.Contains(a.url, "Sim") {
 			t.Errorf("WDA url %q is not the simulator build", a.url)
 		}
+		if !strings.HasSuffix(a.name, "-Sim-"+r.arch+".zip") || !strings.HasSuffix(a.url, "/"+a.name) {
+			t.Errorf("%s is not the %s build its runner says it is", a.name, r.arch)
+		}
 		if !strings.HasPrefix(r.testBinary, "PlugIns/") || !strings.HasPrefix(r.app, r.exe) {
 			t.Errorf("%s: app %q, executable %q and test binary %q do not agree", a.name, r.app, r.exe, r.testBinary)
 		}
 	}
 	// The tvOS runner is its own build: the iOS one installs on an Apple TV
-	// simulator and never starts.
-	if !strings.Contains(wdaTVSimArm64.artifact.url, "tvOS") || wdaRunnerFor(true) != wdaTVSimArm64 ||
-		wdaRunnerFor(false) != wdaSimArm64 {
+	// simulator and never starts. And each architecture gets its own: an
+	// arm64 runner holds no x86_64 code, so an Intel Mac's simulators could
+	// not start it (CHALLENGES 381).
+	for _, c := range []struct {
+		tv   bool
+		arch string
+		want wdaRunner
+	}{
+		{false, "arm64", wdaSimArm64},
+		{true, "arm64", wdaTVSimArm64},
+		{false, "x86_64", wdaSimX86},
+		{true, "x86_64", wdaTVSimX86},
+	} {
+		if got := wdaRunnerForArch(c.tv, c.arch); got != c.want {
+			t.Errorf("tv=%v on %s: given %s, want %s", c.tv, c.arch, got.artifact.name, c.want.artifact.name)
+		}
+	}
+	if !strings.Contains(wdaTVSimArm64.artifact.url, "tvOS") || !strings.Contains(wdaTVSimX86.artifact.url, "tvOS") {
 		t.Error("an Apple TV simulator is not given the tvOS runner")
+	}
+	// Two runners share an app name, so they must not share a folder: a
+	// cache carried from an Intel Mac would otherwise be installed as is.
+	if wdaSimX86.cacheDir() == wdaSimArm64.cacheDir() || wdaSimArm64.cacheDir() != WDACacheDir() {
+		t.Errorf("runner folders: arm64 %q, x86_64 %q", wdaSimArm64.cacheDir(), wdaSimX86.cacheDir())
+	}
+}
+
+func TestSimulatorArch(t *testing.T) {
+	unknownOID := exec.Command("sh", "-c", "exit 1").Run()
+	for _, c := range []struct {
+		name   string
+		sysctl string
+		err    error
+		goarch string
+		want   string
+	}{
+		{"Apple Silicon", "1\n", nil, "arm64", "arm64"},
+		// An amd64 build under Rosetta: the build is amd64, the simulators
+		// are not. Measured: hw.optional.arm64 is 1 there too.
+		{"Apple Silicon under Rosetta", "1\n", nil, "amd64", "arm64"},
+		{"Intel, key present", "0\n", nil, "amd64", "x86_64"},
+		{"Intel, key unknown", "", unknownOID, "amd64", "x86_64"},
+		// sysctl could not be run at all: nothing is known of the hardware,
+		// so the build's architecture is the best guess left.
+		{"no sysctl, arm64 build", "", exec.ErrNotFound, "arm64", "arm64"},
+		{"no sysctl, amd64 build", "", exec.ErrNotFound, "amd64", "x86_64"},
+	} {
+		if got := simulatorArch(c.sysctl, c.err, c.goarch); got != c.want {
+			t.Errorf("%s: %q", c.name, got)
+		}
 	}
 }
 
