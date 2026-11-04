@@ -7,8 +7,8 @@ the source.
 
 The pattern across them is the reason the document exists: **almost nothing
 here was found by reading code or by a test written from imagination.** Of
-385 defects, 310 were found only by running against a real device. Fourteen
-more — 255, 280, 282, 327, 329, 353, 355, 356, 359, 371, 375, 380, 382 and 384 — were met while
+386 defects, 310 were found only by running against a real device. Fifteen
+more — 255, 280, 282, 327, 329, 353, 355, 356, 359, 371, 375, 380, 382, 384 and 386 — were met while
 running against one, though the fault lay in a check, the host or Mobium's own
 design rather than in the platform. The other sixty-one — 4, 5, 6, 14, 23,
 24, 32, 35, 36, 39, 44, 50, 53, 54, 57, 66, 89, 99, 100, 121, 123, 129, 130,
@@ -8484,6 +8484,23 @@ hidden elements as shown, and `map` gives only what is shown (377). A full
 read kept instead would cost what the light read saves, and goes stale:
 Settings' first `map` had 13 elements and one a second later 12, Passcode
 under the floating search field.
+
+### 386. A tap that missed left the list at its end and said "on the current screen"
+
+**Found by:** a person on an Intel iMac, 2026-11-03 (mobiumdev/mobium#324),
+on MobiumApp's Table Demo on the Android 15 emulator and the iOS 26.5
+simulator, 6 misses in 6 on each. A tap whose target exists nowhere scrolls
+down for it and leaves the list at its end, rows 20–30 where 1–11 had been.
+The error said "no element matches … on the current screen", so a locator
+counting what is shown, such as `,nth=`, then counted other rows. The tap
+dropped the scroll's own error.
+
+**Fixed:** a miss whose search moved the list returns the scroll's error,
+"scrolled down to the end of the list (N scrolls) without bringing it into
+view", with `locator`, `scrolls` and `moved` in details and a remedy that
+scrolls back. A list that fits takes one swipe that moves nothing; that miss
+stays as it was. Measured here on both devices: the issue's repro names the
+4 scrolls. A test fails on the old call site with the issue's message.
 
 ## Findings that were not defects
 

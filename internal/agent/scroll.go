@@ -396,7 +396,7 @@ func (h *Handlers) scrollIntoView(ctx context.Context, s *session, loc uitree.Lo
 					prev = read(container) // the swipe went to the dialog: not the end
 					continue
 				}
-				return nil, nil, i, endOfList(loc, resolveErr, dir, i, true)
+				return nil, nil, i, endOfList(loc, resolveErr, dir, i, i)
 			}
 		}
 		if !nudged && measured && d > 0 {
@@ -439,7 +439,7 @@ func (h *Handlers) scrollIntoView(ctx context.Context, s *session, loc uitree.Lo
 						prev = read(container) // the swipe went to the dialog: not the end
 						continue
 					}
-					return nil, nil, i, endOfList(loc, resolveErr, dir, i, towardStart(dir))
+					return nil, nil, i, endOfList(loc, resolveErr, dir, i, i)
 				}
 				prev = after
 				continue
@@ -450,7 +450,8 @@ func (h *Handlers) scrollIntoView(ctx context.Context, s *session, loc uitree.Lo
 				prev = read(container) // the swipe went to the dialog: not the end
 				continue
 			}
-			return nil, nil, i, endOfList(loc, resolveErr, dir, i, false)
+			// This swipe moved nothing: the ones before it did.
+			return nil, nil, i, endOfList(loc, resolveErr, dir, i, i-1)
 		}
 		prev = now
 	}
@@ -1225,15 +1226,20 @@ func (h *Handlers) scrollToWeb(ctx context.Context, s *session, target string) (
 // was answered cannot be read from outside — on iOS nothing of the refresh
 // is in the tree once the screen is read — so it is said as what may have
 // happened, in the text and the structured answer both. CHALLENGES 310.
-func endOfList(loc uitree.Locator, resolveErr error, dir string, scrolls int, _ bool) error {
+// moved is how many of the scrolls moved the list; details carries it.
+func endOfList(loc uitree.Locator, resolveErr error, dir string, scrolls, moved int) error {
+	if moved < 0 {
+		moved = 0
+	}
 	if !towardStart(dir) {
 		return mobiumerr.New(mobiumerr.NoSuchElement, "%s — scrolled %s to the end of the list (%d scroll%s) without "+
-			"bringing it into view", whyNot(loc, resolveErr), dir, scrolls, plural(scrolls)).WithDetail("scrolls", scrolls)
+			"bringing it into view", whyNot(loc, resolveErr), dir, scrolls, plural(scrolls)).
+			WithDetail("scrolls", scrolls).WithDetail("moved", moved)
 	}
 	return mobiumerr.New(mobiumerr.NoSuchElement, "%s — scrolled %s to the start of the list (%d scroll%s) without "+
 		"bringing it into view; at the start of a list the last swipe is a pull, which an app may answer by "+
 		"refreshing what it shows", whyNot(loc, resolveErr), dir, scrolls, plural(scrolls)).
-		WithDetail("scrolls", scrolls).WithDetail("may_have_refreshed", true)
+		WithDetail("scrolls", scrolls).WithDetail("moved", moved).WithDetail("may_have_refreshed", true)
 }
 
 // dialogOverScroll is asked when a scroll finds nothing to scroll, or its

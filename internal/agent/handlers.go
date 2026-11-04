@@ -1232,6 +1232,17 @@ func covered(err error) bool {
 	return ok && e.Code == mobiumerr.ElementNotReachable && e.Details["check"] == checkReceivesEvents
 }
 
+// listMoved reports whether a scroll that failed left the screen moved. An
+// end-of-list miss says how many swipes moved the list; a list that fits on
+// screen takes one swipe that moves nothing. Any other refusal after a swipe
+// is taken as moved.
+func listMoved(e *mobiumerr.Error, scrolls int) bool {
+	if m, ok := e.Details["moved"].(int); ok {
+		return m > 0
+	}
+	return scrolls > 0
+}
+
 // The checks an action makes before it touches anything, named as a
 // WebView's checks are and as Vibium names them.
 const (
@@ -2041,7 +2052,7 @@ func (h *Handlers) resolveNodeOnce(ctx context.Context, s *session, target strin
 	// for something that exists nowhere leaves the list scrolled. Bounded by
 	// maxScrolls, and skipped on a screen with nothing scrollable, so an
 	// ordinary miss stays cheap.
-	n, t, _, serr := h.scrollIntoView(ctx, s, loc, "down", true, h.refName(s.dev.Serial, target))
+	n, t, scrolls, serr := h.scrollIntoView(ctx, s, loc, "down", true, h.refName(s.dev.Serial, target))
 	if serr != nil {
 		if resolveErr != nil {
 			// Android leaves out what the keyboard covers, so a target under
@@ -2050,6 +2061,16 @@ func (h *Handlers) resolveNodeOnce(ctx context.Context, s *session, target strin
 				if shown, kerr := kb.KeyboardShown(ctx); kerr == nil && shown {
 					return nil, nil, keyboardOver(loc, false)
 				}
+			}
+			// The search moved the list, so the miss says how far, and the
+			// next locator that counts what is shown counts other rows.
+			// mobiumdev/mobium#324.
+			if e, ok := mobiumerr.As(serr); ok && listMoved(e, scrolls) {
+				if e.Remedy == "" {
+					e = e.WithRemedy("the list was left where the search ended: app_scroll_to with direction " +
+						"up, or app_swipe, to go back, then app_map")
+				}
+				return nil, nil, e.WithDetail("locator", loc.String())
 			}
 			return nil, nil, resolveErr
 		}
