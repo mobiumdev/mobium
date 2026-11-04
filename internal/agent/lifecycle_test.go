@@ -208,3 +208,56 @@ func textOf(res *ToolsCallResult) string {
 	}
 	return b.String()
 }
+
+// blankLaunchDriver is an iOS app that is in front at once and draws its
+// first screen only after a few reads, as MobiumApp did for 1.5 s on an
+// Intel Mac (mobiumdev/mobium#320).
+type blankLaunchDriver struct {
+	fakeDriver
+	t     *testing.T
+	blank int
+	reads int
+}
+
+func (d *blankLaunchDriver) Snapshot(ctx context.Context) (*uitree.Tree, error) {
+	d.reads++
+	if d.reads <= d.blank {
+		return screen(d.t, ""), nil
+	}
+	return screen(d.t, "Login Demo"), nil
+}
+
+func (d *blankLaunchDriver) ForegroundApp(ctx context.Context) (string, error) {
+	return "dev.mobium.mobiumapp", nil
+}
+func (d *blankLaunchDriver) Launch(ctx context.Context, app string) error    { return nil }
+func (d *blankLaunchDriver) Terminate(ctx context.Context, app string) error { return nil }
+func (d *blankLaunchDriver) Install(ctx context.Context, path string) error  { return nil }
+func (d *blankLaunchDriver) OpenURL(ctx context.Context, url string) error   { return nil }
+
+// A launch on iOS returns once the app has drawn something to act on, not
+// when it is merely in front; one that never draws says so.
+func TestALaunchWaitsForTheAppToDraw(t *testing.T) {
+	defer func(w time.Duration) { drawnWait = w }(drawnWait)
+	drawnWait = 600 * time.Millisecond
+	launch := func(blank int) (*ToolsCallResult, *blankLaunchDriver) {
+		d := &blankLaunchDriver{t: t, blank: blank}
+		h := NewHandlers()
+		s := &session{dev: fakeDevice(), driver: d}
+		res, err := launchOn(h, s, map[string]interface{}{"app": "dev.mobium.mobiumapp"})
+		if err != nil {
+			t.Fatalf("launch: %v", err)
+		}
+		return res, d
+	}
+
+	res, d := launch(3)
+	if d.reads < 4 || res.StructuredContent.(AppView).NotDrawn || strings.Contains(textOf(res), "drawn nothing") {
+		t.Errorf("drawn after 3 blank reads: %d reads, %q", d.reads, textOf(res))
+	}
+
+	res, _ = launch(1000)
+	if !res.StructuredContent.(AppView).NotDrawn || !strings.Contains(textOf(res), "has drawn nothing to act on") {
+		t.Errorf("never drawn: %q", textOf(res))
+	}
+}
