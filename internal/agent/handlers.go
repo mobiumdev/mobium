@@ -2110,6 +2110,7 @@ func (h *Handlers) settle(ctx context.Context, s *session, loc uitree.Locator,
 	}
 	deadline := time.Now().Add(h.settleTimeout)
 	was := node.Bounds
+	askedDialog := false
 
 	wait := h.settleWindow - lastRead
 	if b, ok := mobiumdriver.AsElementBounder(s.driver); ok {
@@ -2151,8 +2152,25 @@ func (h *Handlers) settle(ctx context.Context, s *session, loc uitree.Locator,
 		}
 		n, perr := pickOne(loc, t)
 		if perr != nil {
-			// It resolved a moment ago and does not now. Something is still
-			// changing, and the resolution error is the honest report.
+			// It resolved a moment ago and does not now. On Android that is
+			// how a dialog arriving looks — the hierarchy becomes its window
+			// alone — and only resolution asked for one, so a rule for it
+			// was never consulted and the tap failed in 0.7 s
+			// (mobiumdev/mobium#316). Asked once: a dialog is refused as in
+			// the way, which resolveNode answers by rule; a target back on
+			// screen settles again. Otherwise something is still changing,
+			// and the resolution error is the honest report.
+			if matchedNothing(perr) && !askedDialog {
+				askedDialog = true
+				back, derr := h.dialogArriving(ctx, s, loc)
+				if derr != nil {
+					return nil, nil, derr
+				}
+				if back != nil {
+					was, wait = back.Bounds, h.settleWindow
+					continue
+				}
+			}
 			return nil, nil, perr
 		}
 		if n.Bounds == was {
@@ -2165,6 +2183,38 @@ func (h *Handlers) settle(ctx context.Context, s *session, loc uitree.Locator,
 				WithDetail("locator", loc.String())
 		}
 		was = n.Bounds
+	}
+}
+
+// dialogArriving watches, for the action's wait, a screen that has just lost
+// its target: a dialog that comes up is refused as in the way, as resolution
+// refuses one; the target back on screen is returned, and settling goes on;
+// neither returns nothing, and the caller reports the miss. It never
+// scrolls: the screen may be another one by now.
+func (h *Handlers) dialogArriving(ctx context.Context, s *session, loc uitree.Locator) (*uitree.Node, error) {
+	deadline := time.Now().Add(h.implicitWait)
+	for {
+		if a, ok := mobiumdriver.AsAlerts(s.driver); ok {
+			if text, err := a.AlertText(ctx); err == nil {
+				return nil, dialogOver(text, loc, false)
+			}
+		}
+		if t, err := s.driver.Snapshot(ctx); err == nil {
+			if text := appDialogText(t); text != "" {
+				return nil, appDialogOver(text, loc, t.Root != nil && !uitree.IsIOS(t.Root))
+			}
+			if n, perr := pickOne(loc, t); perr == nil {
+				return n, nil
+			}
+		}
+		if time.Now().After(deadline) {
+			return nil, nil
+		}
+		select {
+		case <-ctx.Done():
+			return nil, ctx.Err()
+		case <-time.After(150 * time.Millisecond):
+		}
 	}
 }
 
