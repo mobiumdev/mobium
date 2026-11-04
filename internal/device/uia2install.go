@@ -93,6 +93,18 @@ func EnsureUIA2APKs(ctx context.Context, progress func(string)) ([]string, error
 	return out, nil
 }
 
+// UIA2Cached reports whether both pinned server APKs are already here and
+// match their checksums: the same test EnsureUIA2APKs makes before it
+// downloads, so an older version's folder does not count.
+func UIA2Cached() bool {
+	for _, a := range uia2Artifacts {
+		if ok, _ := fileMatches(filepath.Join(UIA2CacheDir(), a.name), a.sha256); !ok {
+			return false
+		}
+	}
+	return true
+}
+
 func fileMatches(path, want string) (bool, error) {
 	got, err := fileSHA256(path)
 	return got == want, err

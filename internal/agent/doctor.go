@@ -303,23 +303,35 @@ func checkSocketPath() DoctorCheck {
 }
 
 // checkAgentCache reports what has already been downloaded, so a slow first
-// run is explicable before it happens rather than after.
+// run is explicable before it happens rather than after. Each agent counts
+// only as the exact pinned build a session would use: a folder holding
+// anything at all said "cached" on an Intel Mac whose cache held only the
+// arm64 simulator runner, and the next install downloaded the x86_64 one
+// (CHALLENGES 382). The simulator runners are asked about only on a Mac.
 func checkAgentCache() DoctorCheck {
-	home := paths.Root()
-	var have []string
-	for name, dir := range map[string]string{
-		"uiautomator2":   "uiautomator2",
-		"webdriveragent": "webdriveragent",
-	} {
-		if entries, err := os.ReadDir(filepath.Join(home, dir)); err == nil && len(entries) > 0 {
+	var have, missing []string
+	count := func(name string, cached bool) {
+		if cached {
 			have = append(have, name)
+		} else {
+			missing = append(missing, name)
 		}
+	}
+	count("uiautomator2 "+device.UIA2Version, device.UIA2Cached())
+	if runtime.GOOS == "darwin" {
+		arch := device.SimulatorArch()
+		count("webdriveragent "+device.WDAVersion+" (iOS simulators, "+arch+")", device.WDARunnerCached(false))
+		count("webdriveragent "+device.WDAVersion+" (Apple TV simulators, "+arch+")", device.WDARunnerCached(true))
 	}
 	if len(have) == 0 {
 		return note("device agents",
 			"nothing cached yet — the first run downloads a server for the platform, which takes a moment")
 	}
-	return ok("device agents", "cached: "+strings.Join(have, ", "))
+	detail := "cached: " + strings.Join(have, ", ")
+	if len(missing) > 0 {
+		detail += "; not yet, downloaded on first use: " + strings.Join(missing, ", ")
+	}
+	return ok("device agents", detail)
 }
 
 // checkExternalDrivers reports third-party drivers found on PATH.

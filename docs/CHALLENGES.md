@@ -7,8 +7,8 @@ the source.
 
 The pattern across them is the reason the document exists: **almost nothing
 here was found by reading code or by a test written from imagination.** Of
-381 defects, 308 were found only by running against a real device. Twelve
-more — 255, 280, 282, 327, 329, 353, 355, 356, 359, 371, 375 and 380 — were met while
+382 defects, 308 were found only by running against a real device. Thirteen
+more — 255, 280, 282, 327, 329, 353, 355, 356, 359, 371, 375, 380 and 382 — were met while
 running against one, though the fault lay in a check, the host or Mobium's own
 design rather than in the platform. The other sixty-one — 4, 5, 6, 14, 23,
 24, 32, 35, 36, 39, 44, 50, 53, 54, 57, 66, 89, 99, 100, 121, 123, 129, 130,
@@ -8376,8 +8376,36 @@ runner unpacks into its own folder, since both share an app name.
 `mobium doctor` names the runner it will use. A unit test gives each
 architecture its own runner and fails with the old choice; a network test
 downloads all four and reads each executable's Mach-O header, and fails
-when the architectures are swapped. What it still needs is a session on
-an Intel Mac's simulator.
+when the architectures are swapped.
+
+**Run on an Intel Mac, 2026-11-03:** an iMac with a Core i9-10910, macOS
+26.7, Xcode 26.5 and an iPhone 17 Pro simulator on iOS 26.5, Mobium at
+60f464c (mobiumdev/mobium#312). `doctor` named the x86_64 runner, the first
+install downloaded it, and a whole session passed — `map`, `fill` with a
+password, `tap`, `wait`, `text`, `screenshot` — and so did the Python suites
+(17 tests, two in WebViews), the gray box with hooks and `mobium test`.
+Not covered: the tvOS x86_64 runner, with no tvOS runtime there, and
+Rosetta, with no Apple Silicon Mac there. The same run found 382.
+
+### 382. doctor called the simulator runner cached when only another Mac's was
+
+**Found by:** the Intel Mac run of 381, 2026-11-03. That iMac had run rc1
+first, so `~/.mobium/webdriveragent/` held the arm64 runner, which cannot
+start there. `doctor` printed `ok  device agents  cached: webdriveragent,
+uiautomator2` before the x86_64 runner had been downloaded, and the next
+`install` downloaded it. The check asked only whether each agent's folder
+held anything at all — an older version's folder, or another
+architecture's runner, counted — so the line that exists to explain a slow
+first run predicted a fast one.
+
+**Fixed:** each agent counts only as the exact pinned build a session would
+use, by the same test its download makes first: both UiAutomator2 APKs at
+their checksums, and the runner for this Mac's simulators, iOS's and the
+Apple TV's, unpacked in its own folder. `doctor` names each with its version
+and, for a runner, the architecture, and lists what a first run will still
+download. The test caches another architecture's runner and an older
+version's and expects nothing to be called cached; with the old check it
+fails on the very line that iMac printed.
 
 ## Findings that were not defects
 
