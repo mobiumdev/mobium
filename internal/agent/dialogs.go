@@ -95,7 +95,7 @@ func (h *Handlers) dialogsOn(s *session, args map[string]interface{}) (*ToolsCal
 // the target, which a rule might answer.
 func dialogInTheWay(err error) bool {
 	e, ok := mobiumerr.As(err)
-	return ok && e.Code == mobiumerr.DeviceNotReady && e.Details["dialog"] != nil
+	return ok && e.Code == mobiumerr.ElementNotReachable && e.Details["dialog"] != nil
 }
 
 // answerByRule answers the dialog on screen if a rule covers it, and reports

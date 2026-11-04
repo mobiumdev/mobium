@@ -99,7 +99,7 @@ func TestATargetUnderADialogIsRefused(t *testing.T) {
 	}
 	under, _ := uitree.ParseLocator("testid=logoutBtn")
 	_, err = pickOne(under, tree)
-	if mobiumerr.CodeOf(err) != mobiumerr.DeviceNotReady || !strings.Contains(err.Error(), "Save Password?") {
+	if mobiumerr.CodeOf(err) != mobiumerr.ElementNotReachable || !strings.Contains(err.Error(), "Save Password?") {
 		t.Errorf("a button under the sheet: %v", err)
 	}
 	if e, _ := mobiumerr.As(err); e == nil || e.Remedy == "" {
@@ -130,7 +130,7 @@ func TestATargetBehindAnotherScreenIsRefused(t *testing.T) {
 	}
 	behind, _ := uitree.ParseLocator("label=Timeline")
 	_, err = pickOne(behind, tree)
-	if mobiumerr.CodeOf(err) != mobiumerr.DeviceNotReady || !strings.Contains(err.Error(), "another screen") {
+	if mobiumerr.CodeOf(err) != mobiumerr.ElementNotReachable || !strings.Contains(err.Error(), "another screen") {
 		t.Errorf("the tab behind the viewer: %v", err)
 	}
 	if e, _ := mobiumerr.As(err); e == nil || !strings.Contains(e.Remedy, "app_map") {
@@ -164,7 +164,7 @@ func TestARefusalBehindAMenuNamesAPointOutsideIt(t *testing.T) {
 		}
 		behind, _ := uitree.ParseLocator("label=Trending")
 		_, err = pickOne(behind, tree)
-		if mobiumerr.CodeOf(err) != mobiumerr.DeviceNotReady {
+		if mobiumerr.CodeOf(err) != mobiumerr.ElementNotReachable {
 			t.Errorf("%s: the title behind was %v", c.file, err)
 			continue
 		}
@@ -231,7 +231,7 @@ func TestTheKeyboardRemedyNamesRealArguments(t *testing.T) {
 		}
 	}
 	// Covered is a refusal, and not scrolled for; a miss stays a miss.
-	if c := mobiumerr.CodeOf(keyboardOver(loc, true)); c != mobiumerr.DeviceNotReady {
+	if c := mobiumerr.CodeOf(keyboardOver(loc, true)); c != mobiumerr.ElementNotReachable {
 		t.Errorf("covered: %s", c)
 	}
 	if c := mobiumerr.CodeOf(keyboardOver(loc, false)); c != mobiumerr.NoSuchElement {
@@ -265,7 +265,7 @@ func TestATargetUnderTheKeyboardIsRefused(t *testing.T) {
 	}
 	loc, _ := uitree.ParseLocator("testid=coveredBtn")
 	_, err = pickOne(loc, tree)
-	if mobiumerr.CodeOf(err) != mobiumerr.DeviceNotReady || !strings.Contains(err.Error(), "keyboard") {
+	if mobiumerr.CodeOf(err) != mobiumerr.ElementNotReachable || !strings.Contains(err.Error(), "keyboard") {
 		t.Errorf("a button under the keyboard: %v", err)
 	}
 	if matchedNothing(err) {
@@ -293,7 +293,7 @@ func TestTheKeyboardIsNamedBeforeAScreenInFront(t *testing.T) {
 	}
 	loc, _ := uitree.ParseLocator("testid=addToCart")
 	_, err = pickOne(loc, tree)
-	if mobiumerr.CodeOf(err) != mobiumerr.DeviceNotReady || !strings.Contains(err.Error(), "keyboard") {
+	if mobiumerr.CodeOf(err) != mobiumerr.ElementNotReachable || !strings.Contains(err.Error(), "keyboard") {
 		t.Errorf("a button under the keyboard: %v", err)
 	}
 }
@@ -329,7 +329,7 @@ func TestAnAndroidTargetUnderTheKeyboardIsRefused(t *testing.T) {
 	s := &session{dev: fakeDevice(), driver: d}
 
 	err := h.keyboardOverTarget(context.Background(), s, left, tree, "testid=left")
-	if mobiumerr.CodeOf(err) != mobiumerr.DeviceNotReady || !strings.Contains(err.Error(), "keyboard") {
+	if mobiumerr.CodeOf(err) != mobiumerr.ElementNotReachable || !strings.Contains(err.Error(), "keyboard") {
 		t.Errorf("a target under the toolbar: %v", err)
 	}
 	if err := h.keyboardOverTarget(context.Background(), s, middle, tree, "testid=middle"); err != nil {
@@ -392,7 +392,7 @@ func TestAnAndroidTargetUnderTheClipboardPreviewWaits(t *testing.T) {
 	s.driver = d
 	clipboardPreviewTimeout = 400 * time.Millisecond
 	err := h.waitOutClipboardPreview(context.Background(), s, under, "label=Dialog Demo")
-	if mobiumerr.CodeOf(err) != mobiumerr.DeviceNotReady || !strings.Contains(err.Error(), "clipboard preview") {
+	if mobiumerr.CodeOf(err) != mobiumerr.ElementNotReachable || !strings.Contains(err.Error(), "clipboard preview") {
 		t.Errorf("a preview that stayed: %v", err)
 	}
 }

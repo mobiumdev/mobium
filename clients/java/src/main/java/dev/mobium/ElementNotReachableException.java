@@ -3,7 +3,9 @@ package dev.mobium;
 import java.util.Map;
 
 /**
- * The element was found and cannot be touched where it is, usually off screen.
+ * The element cannot be touched where it is: off screen, or something is over it — a dialog, the
+ * keyboard, another screen, a control. A cover has {@code details.get("check")} {@code "receivesEvents"}
+ * and names itself in details: dialog, keyboard, screen, cover, siri, assistant or clipboard_preview.
  *
  * <p>Error code {@code element_not_reachable}. See {@link MobiumException}.
  */

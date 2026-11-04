@@ -111,7 +111,7 @@ namespace Mobium
             : base(message, tool, ErrorCode, remedy, retryable, details) { }
     }
 
-    /// <summary>The device is there and cannot be driven yet: locked, not trusted, Developer Mode off. Error code <c>device_not_ready</c>.</summary>
+    /// <summary>The device is there and cannot be driven yet: locked, not trusted, Developer Mode off, not answering. The device only: a dialog or the keyboard over a target is <see cref="ElementNotReachableException"/>. Error code <c>device_not_ready</c>.</summary>
     public sealed class DeviceNotReadyException : MobiumException
     {
         /// <summary>The wire code this exception stands for.</summary>
@@ -155,7 +155,7 @@ namespace Mobium
             : base(message, tool, ErrorCode, remedy, retryable, details) { }
     }
 
-    /// <summary>The element was found and cannot be touched where it is, usually off screen. Error code <c>element_not_reachable</c>.</summary>
+    /// <summary>The element cannot be touched where it is: off screen, or something is over it — a dialog, the keyboard, another screen, a control. A cover has details["check"] "receivesEvents" and names itself in details: dialog, keyboard, screen, cover, siri, assistant or clipboard_preview. Error code <c>element_not_reachable</c>.</summary>
     public sealed class ElementNotReachableException : MobiumException
     {
         /// <summary>The wire code this exception stands for.</summary>

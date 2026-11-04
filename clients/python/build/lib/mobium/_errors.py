@@ -48,7 +48,10 @@ class NoDeviceError(MobiumError):
 
 
 class DeviceNotReadyError(MobiumError):
-    """The device is there and cannot be driven yet — locked, not trusted, Developer Mode off."""
+    """The device is there and cannot be driven yet — locked, not trusted, Developer Mode off, not answering.
+
+    The device only: a dialog or the keyboard over a target is ElementNotReachableError.
+    """
     code = "device_not_ready"
 
 
@@ -68,7 +71,13 @@ class AmbiguousLocatorError(MobiumError):
 
 
 class ElementNotReachableError(MobiumError):
-    """The element was found and cannot be touched where it is — usually off screen."""
+    """The element cannot be touched where it is: off screen, or something is over it.
+
+    A dialog, the keyboard, another screen or a control the app drew is a cover:
+    ``details["check"]`` is ``"receivesEvents"``, and ``details`` names it —
+    ``dialog``, ``keyboard``, ``screen``, ``cover``, ``siri``, ``assistant`` or
+    ``clipboard_preview``.
+    """
     code = "element_not_reachable"
 
 

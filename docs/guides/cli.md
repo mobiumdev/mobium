@@ -233,8 +233,8 @@ $ mobium --json tap testid=noSuchButton; echo $?
 | --- | --- | --- |
 | 0 | — | it did what was asked, and checked |
 | 2 | `invalid_argument` | the command was wrong — nothing on any device could make it work |
-| 3 | `no_device`, `device_not_ready`, `toolchain_missing` | no device, or one not ready: locked, a dialog up, a tool missing |
-| 4 | `no_such_element`, `ambiguous_locator`, `element_not_reachable`, `no_such_context`, `no_such_alert` | the target was not there, was two things, or could not be reached |
+| 3 | `no_device`, `device_not_ready`, `toolchain_missing` | no device, or one not ready: locked, not answering, a tool missing |
+| 4 | `no_such_element`, `ambiguous_locator`, `element_not_reachable`, `no_such_context`, `no_such_alert` | the target was not there, was two things, or could not be reached — a dialog or the keyboard over it included |
 | 5 | `unsupported` | this device or driver cannot do it — retrying will not help |
 | 6 | `timeout` | it did not happen in time — the one kind worth retrying as it is |
 | 7 | `not_confirmed` | the command ran and reading back says it did not take — a finding |
@@ -248,11 +248,11 @@ break every client that catches it, so they do not change:
 | Code | Means |
 | --- | --- |
 | `no_device` | nothing to drive |
-| `device_not_ready` | there, and not drivable yet: locked, not trusted, Developer Mode off |
+| `device_not_ready` | there, and not drivable yet: locked, not trusted, Developer Mode off, not answering — the device only |
 | `toolchain_missing` | missing on this machine: adb, Xcode, a signing certificate, a device agent that would not download or build |
 | `no_such_element` | a locator or ref matched nothing on screen; worth scrolling for |
 | `ambiguous_locator` | matched more than one; narrow it — Mobium never guesses |
-| `element_not_reachable` | found, and not touchable where it is |
+| `element_not_reachable` | not touchable where it is: off the screen, or covered — by a dialog, the keyboard, another screen or a control, each named in `details` with `check: receivesEvents` |
 | `no_such_context` | a WebView context that is not there |
 | `no_such_alert` | a dialog was expected and none is up |
 | `unsupported` | this backend or platform cannot, and says why |

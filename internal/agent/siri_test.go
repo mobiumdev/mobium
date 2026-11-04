@@ -77,9 +77,9 @@ func TestATapBehindSiriThatStaysIsRefusedNamingSiri(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), callTimeout)
 	defer cancel()
 	_, err := h.tapOn(ctx, s, map[string]interface{}{"target": "label=Pro"})
-	if mobiumerr.CodeOf(err) != mobiumerr.DeviceNotReady || !strings.Contains(err.Error(), "Siri's panel") ||
+	if mobiumerr.CodeOf(err) != mobiumerr.ElementNotReachable || !strings.Contains(err.Error(), "Siri's panel") ||
 		!strings.Contains(err.Error(), "still there after") {
-		t.Fatalf("tap with Siri staying answered %v, want device_not_ready naming Siri's panel and the wait", err)
+		t.Fatalf("tap with Siri staying answered %v, want element_not_reachable naming Siri's panel and the wait", err)
 	}
 	// A panel that outlasted the wait will not go — on a simulator it never
 	// does — so the remedy is Home, never waiting again. CHALLENGES 351.

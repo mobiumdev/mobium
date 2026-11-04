@@ -3,7 +3,8 @@ package dev.mobium;
 import java.util.Map;
 
 /**
- * The device is there and cannot be driven yet: locked, not trusted, Developer Mode off.
+ * The device is there and cannot be driven yet: locked, not trusted, Developer Mode off, not answering.
+ * The device only: a dialog or the keyboard over a target is {@link ElementNotReachableException}.
  *
  * <p>Error code {@code device_not_ready}. See {@link MobiumException}.
  */
