@@ -41,7 +41,8 @@ const (
 	NoDevice Code = "no_device"
 	// DeviceNotReady means the device is there and cannot be driven yet — a
 	// locked phone, one not trusted, Developer Mode off, an emulator still
-	// booting.
+	// booting or not answering. The device only: something on its screen in
+	// the way of a target is ElementNotReachable.
 	DeviceNotReady Code = "device_not_ready"
 	// ToolchainMissing means something on this machine is missing: adb, Xcode,
 	// a signing certificate.
@@ -53,8 +54,11 @@ const (
 	// AmbiguousLocator means a locator matched more than one element. Never
 	// resolved by guessing; the caller narrows it.
 	AmbiguousLocator Code = "ambiguous_locator"
-	// ElementNotReachable means the element was found and cannot be touched
-	// where it is.
+	// ElementNotReachable means the element cannot be touched where it is:
+	// off the screen where nothing scrolls, or something is over it — a
+	// control, a dialog, the keyboard, another screen. A cover carries the
+	// check receivesEvents and what covers it in details: cover, dialog,
+	// keyboard, screen, siri, assistant or clipboard_preview.
 	ElementNotReachable Code = "element_not_reachable"
 	// NoSuchContext means a WebView context that is not there.
 	NoSuchContext Code = "no_such_context"

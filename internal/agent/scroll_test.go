@@ -1093,8 +1093,8 @@ func TestADialogWhileScrollingIsNamedOrAnswered(t *testing.T) {
 				}
 				return
 			}
-			if mobiumerr.CodeOf(err) != mobiumerr.DeviceNotReady || !strings.Contains(err.Error(), "take pictures") {
-				t.Fatalf("want device_not_ready naming the dialog, got %v", err)
+			if mobiumerr.CodeOf(err) != mobiumerr.ElementNotReachable || !strings.Contains(err.Error(), "take pictures") {
+				t.Fatalf("want element_not_reachable naming the dialog, got %v", err)
 			}
 			if strings.Contains(err.Error(), "other axis") || strings.Contains(err.Error(), "nothing on this screen scrolls") {
 				t.Errorf("still blames the list: %v", err)
@@ -1139,8 +1139,8 @@ func TestAListHeldByAnAlertIsNotItsEnd(t *testing.T) {
 	s := &session{dev: fakeDevice(), driver: d, backend: BackendDump}
 	h.sessions["fake"] = s
 	_, err := scrollTo(h, s, map[string]interface{}{"target": "text=Row 22"})
-	if mobiumerr.CodeOf(err) != mobiumerr.DeviceNotReady || !strings.Contains(err.Error(), "access the Camera") {
-		t.Fatalf("want device_not_ready naming the alert, got %v", err)
+	if mobiumerr.CodeOf(err) != mobiumerr.ElementNotReachable || !strings.Contains(err.Error(), "access the Camera") {
+		t.Fatalf("want element_not_reachable naming the alert, got %v", err)
 	}
 	if strings.Contains(err.Error(), "end of the list") || strings.Contains(err.Error(), "start of the list") {
 		t.Errorf("still blames the list: %v", err)

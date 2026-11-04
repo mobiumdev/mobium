@@ -1210,7 +1210,7 @@ func knownRefs(t *refTable) string {
 // of its own here before Mobium had error codes; it is the code now, so a client
 // can tell the two apart as well.
 func matchedNothing(err error) bool {
-	if isNearMiss(err) {
+	if isNearMiss(err) || covered(err) {
 		return false
 	}
 	switch mobiumerr.CodeOf(err) {
@@ -1218,6 +1218,18 @@ func matchedNothing(err error) bool {
 		return true
 	}
 	return false
+}
+
+// covered reports the refusal for a target something is over — a control
+// the app drew, a dialog, the keyboard, another screen, Siri's panel — which
+// is element_not_reachable with the receivesEvents check, on both platforms.
+// It is not a miss: the target is there, and scrolling for it would move
+// the screen under a dialog. Until mobiumdev/mobium#318 a dialog, the
+// keyboard and the rest were device_not_ready, which also means a frozen
+// device, so nothing could tell the two apart by the code.
+func covered(err error) bool {
+	e, ok := mobiumerr.As(err)
+	return ok && e.Code == mobiumerr.ElementNotReachable && e.Details["check"] == checkReceivesEvents
 }
 
 // The checks an action makes before it touches anything, named as a
@@ -1261,15 +1273,16 @@ func failedCheck(code mobiumerr.Code, target any, check, reason, advice string) 
 func dialogOver(dialog string, loc uitree.Locator, covered bool) error {
 	dialog = strings.TrimSpace(strings.SplitN(dialog, "\n", 2)[0])
 	if covered {
-		return failedCheck(mobiumerr.DeviceNotReady, loc, checkReceivesEvents,
+		return failedCheck(mobiumerr.ElementNotReachable, loc, checkReceivesEvents,
 			fmt.Sprintf("a dialog is over the app — %q — and it is underneath", dialog), "answer the dialog first").
 			WithRemedy(dialogRemedy).
 			WithDetail("locator", loc.String()).
 			WithDetail("dialog", dialog)
 	}
-	msg := "a dialog is over the app — %q — and nothing on it matches %s; if the target is behind it, " +
-		"answer the dialog first, and if it is one of the dialog's buttons, take its ref from app_map"
-	return mobiumerr.New(mobiumerr.DeviceNotReady, msg, dialog, loc).
+	return failedCheck(mobiumerr.ElementNotReachable, loc, checkReceivesEvents,
+		fmt.Sprintf("a dialog is over the app — %q — and nothing on it matches", dialog),
+		"if the target is behind it, answer the dialog first, and if it is one of the dialog's buttons, take "+
+			"its ref from app_map").
 		WithRemedy(dialogRemedy).
 		WithDetail("locator", loc.String()).
 		WithDetail("dialog", dialog)
@@ -1289,7 +1302,7 @@ func screenOver(loc uitree.Locator, tree *uitree.Tree) error {
 		hint += "; " + outside
 		remedy += "; " + outside
 	}
-	return failedCheck(mobiumerr.DeviceNotReady, loc, checkReceivesEvents,
+	return failedCheck(mobiumerr.ElementNotReachable, loc, checkReceivesEvents,
 		"another screen of the app is in front of it", hint).
 		WithRemedy(remedy).
 		WithDetail("locator", loc.String()).
@@ -1314,15 +1327,16 @@ const dialogRemedy = "app_alert lists the dialog's buttons; press one with app_a
 // left the Clock where it was (CHALLENGES 225). iOS has no back.
 func appDialogOver(dialog string, loc uitree.Locator, android bool) error {
 	dialog = strings.TrimSpace(strings.SplitN(dialog, "\n", 2)[0])
-	msg := "a dialog is over the app — %q — and nothing on it matches %s; if the target is behind it, " +
-		"answer the dialog first, and if it is one of the dialog's buttons, take its ref from app_map"
+	advice := "if the target is behind it, answer the dialog first, and if it is one of the dialog's buttons, " +
+		"take its ref from app_map"
 	remedy := "press one of the dialog's buttons with app_alert button, by its caption or its position from 1, " +
 		"or declare an answer with app_dialogs"
 	if android {
-		msg += "; if it is a menu, app_press back closes it"
+		advice += "; if it is a menu, app_press back closes it"
 		remedy = "app_press back closes a menu, or a dialog that can be canceled; otherwise " + remedy
 	}
-	return mobiumerr.New(mobiumerr.DeviceNotReady, msg, dialog, loc).
+	return failedCheck(mobiumerr.ElementNotReachable, loc, checkReceivesEvents,
+		fmt.Sprintf("a dialog is over the app — %q — and nothing on it matches", dialog), advice).
 		WithRemedy(remedy).
 		WithDetail("locator", loc.String()).
 		WithDetail("dialog", dialog)
@@ -1342,16 +1356,20 @@ const hideKeyboard = "`mobium keyboard --hide` (app_keyboard with hide); on an i
 func keyboardOver(loc uitree.Locator, covered bool) error {
 	remedy := "hide the keyboard: app_keyboard with hide, or with key \"enter\" on an iPhone"
 	if covered {
-		return failedCheck(mobiumerr.DeviceNotReady, loc, checkReceivesEvents, "the keyboard is over it",
+		return failedCheck(mobiumerr.ElementNotReachable, loc, checkReceivesEvents, "the keyboard is over it",
 			"hide it first: "+hideKeyboard).
 			WithRemedy(remedy).
-			WithDetail("locator", loc.String())
+			WithDetail("locator", loc.String()).
+			WithDetail("keyboard", true)
 	}
 	msg := "no element matches %s, and the keyboard is up — it may be covering it; hide it and try again: " +
 		hideKeyboard
+	// Still a miss, as it was: nothing matched, and the keyboard is only the
+	// likely reason. keyboard says it was up.
 	return mobiumerr.New(mobiumerr.NoSuchElement, msg, loc).
 		WithRemedy("hide the keyboard: app_keyboard with hide, or with key \"enter\" on an iPhone").
-		WithDetail("locator", loc.String())
+		WithDetail("locator", loc.String()).
+		WithDetail("keyboard", true)
 }
 
 // nonEditableRoles are the roles that are certainly not a text field. Typing
@@ -1788,11 +1806,12 @@ func (h *Handlers) waitOutClipboardPreview(ctx context.Context, s *session, n *u
 			if lerr != nil {
 				loc = uitree.Locator{Kind: uitree.KindText, Value: target}
 			}
-			return failedCheck(mobiumerr.DeviceNotReady, loc, checkReceivesEvents,
+			return failedCheck(mobiumerr.ElementNotReachable, loc, checkReceivesEvents,
 				fmt.Sprintf("Android's clipboard preview is over it, and was still there after %s", clipboardPreviewTimeout),
 				"it closes by itself a few seconds after the clipboard is written, and back does not close it").
 				WithRemedy("wait a few seconds and try again").
-				WithDetail("locator", loc.String())
+				WithDetail("locator", loc.String()).
+				WithDetail("clipboard_preview", true)
 		}
 		select {
 		case <-ctx.Done():
@@ -1834,8 +1853,8 @@ func (h *Handlers) waitOutSiri(ctx context.Context, s *session) (bool, error) {
 // cannot help while the panel is up. waited is how long it was waited for,
 // zero before the wait.
 func siriOver(loc uitree.Locator, waited time.Duration) error {
-	msg := fmt.Sprintf("Siri's panel is in front of the app, and nothing on it matches %s; it closes by itself "+
-		"about eight seconds after Siri answers", loc)
+	msg := "Siri's panel is in front of the app, and nothing on it matches; it closes by itself " +
+		"about eight seconds after Siri answers"
 	remedy := "wait for Siri's panel to close, or close it with app_press home, which brings the app back, then try again"
 	if waited > 0 {
 		// A panel that outlasts the wait is one that will not go: on a
@@ -1846,7 +1865,7 @@ func siriOver(loc uitree.Locator, waited time.Duration) error {
 		msg += fmt.Sprintf(", and was still there after %s", waited)
 		remedy = "close Siri's panel with app_press home, which brings the app back, then try again"
 	}
-	return mobiumerr.New(mobiumerr.DeviceNotReady, "%s", msg).
+	return failedCheck(mobiumerr.ElementNotReachable, loc, checkReceivesEvents, msg, "").
 		WithRemedy(remedy).
 		WithDetail("locator", loc.String()).
 		WithDetail("siri", true)
@@ -1857,8 +1876,9 @@ func siriOver(loc uitree.Locator, waited time.Duration) error {
 // again, which cannot help while the overlay is up — and it does not go by
 // itself, so nothing waits for it.
 func assistantOver(name string, loc uitree.Locator) error {
-	return mobiumerr.New(mobiumerr.DeviceNotReady, "%s is open over the app, and nothing on it matches %s; "+
-		"it stays until it is closed", name, loc).
+	return failedCheck(mobiumerr.ElementNotReachable, loc, checkReceivesEvents,
+		name+" is open over the app, and nothing on it matches; it stays until it is closed",
+		"app_press back closes it, then try again").
 		WithRemedy("app_press back closes it, then try again").
 		WithDetail("locator", loc.String()).
 		WithDetail("assistant", name)
@@ -1867,7 +1887,7 @@ func assistantOver(name string, loc uitree.Locator) error {
 // siriInTheWay reports the refusal siriOver makes, which resolveNode waits on.
 func siriInTheWay(err error) bool {
 	e, ok := mobiumerr.As(err)
-	return ok && e.Code == mobiumerr.DeviceNotReady && e.Details["siri"] != nil
+	return ok && e.Code == mobiumerr.ElementNotReachable && e.Details["siri"] != nil
 }
 
 // resolveNodeOnce is resolveNode without the dialog rules.

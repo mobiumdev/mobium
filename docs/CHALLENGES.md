@@ -7,8 +7,8 @@ the source.
 
 The pattern across them is the reason the document exists: **almost nothing
 here was found by reading code or by a test written from imagination.** Of
-383 defects, 309 were found only by running against a real device. Thirteen
-more — 255, 280, 282, 327, 329, 353, 355, 356, 359, 371, 375, 380 and 382 — were met while
+384 defects, 309 were found only by running against a real device. Fourteen
+more — 255, 280, 282, 327, 329, 353, 355, 356, 359, 371, 375, 380, 382 and 384 — were met while
 running against one, though the fault lay in a check, the host or Mobium's own
 design rather than in the platform. The other sixty-one — 4, 5, 6, 14, 23,
 24, 32, 35, 36, 39, 44, 50, 53, 54, 57, 66, 89, 99, 100, 121, 123, 129, 130,
@@ -8434,6 +8434,33 @@ The Late Alert at the same timings: 0 failures in 20, the rule answering it
 where the race hit (`hits: 1`, then `one-button: OK`). A test whose dialog
 comes up between the first read and the second fails on the old code with
 the issue's own message. `dialogs.sh` passes on the emulator.
+
+### 384. A dialog in the way had the code of a frozen device
+
+**Found by:** a person comparing refusals on an Intel iMac, 2026-11-03
+(mobiumdev/mobium#318), on the Android 15 emulator and the iOS 26.5
+simulator, `main` and rc1. A target under a control the app drew was
+`element_not_reachable`, exit 4; under a dialog, or under the keyboard on
+iOS, `device_not_ready`, exit 3 — the code a frozen emulator gets. On iOS all
+three carried `check: receivesEvents`; Android's dialog refusal carried no
+check at all. So a CI rule of "on exit 3, restart the device and retry"
+restarted an emulator for an unexpected dialog, and met the same dialog; a
+client classifying by `details.check` worked on iOS and missed Android's
+dialog; and the skill told an agent to ask the user to unlock a device for
+it. `device_not_ready` was documented as the device alone.
+
+**Fixed:** everything over a target is one refusal, on both platforms:
+`element_not_reachable`, `check: receivesEvents`, and what covers it in
+`details` — `cover`, `dialog` (an alert, an app's own dialog, one over a
+WebView's page), `keyboard`, `screen`, `siri`, `assistant`,
+`clipboard_preview`. `device_not_ready` is the device only. A cover is never
+a miss: the test for whether a target may be scrolled for counted every
+`element_not_reachable` as one, and now leaves covers out, so a target under
+a dialog is still never scrolled for. The keyboard over a target Android left
+out of the tree stays `no_such_element` — nothing matched, and the keyboard
+is only the likely reason — with `keyboard: true`. A test gives each of the
+eight covers and fails on the old code for all eight; the CLI guide,
+autowait, the skill and all five clients say which code is which.
 
 ## Findings that were not defects
 

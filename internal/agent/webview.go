@@ -925,8 +925,9 @@ func (h *Handlers) webFill(ctx context.Context, s *session, target string,
 // webDialogOver is the refusal for a tap into a page that a dialog covers.
 func webDialogOver(dialog, ctxName string) error {
 	dialog = strings.TrimSpace(strings.SplitN(dialog, "\n", 2)[0])
-	return mobiumerr.New(mobiumerr.DeviceNotReady, "a dialog is over the app — %q — so the page of %s is "+
+	return mobiumerr.New(mobiumerr.ElementNotReachable, "a dialog is over the app — %q — so the page of %s is "+
 		"underneath it and a tap into the page would land on the dialog", dialog, ctxName).
+		WithDetail("check", checkReceivesEvents).
 		WithRemedy("answer the dialog first: app_context NATIVE_APP and tap one of its buttons from app_map, "+
 			"or declare an answer with app_dialogs").
 		WithDetail("dialog", dialog)

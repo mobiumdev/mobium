@@ -468,8 +468,8 @@ parsing the sentence: `--json` prints it (`"code": "no_such_element"`, with a
 | Exit | Codes | What to do |
 | --- | --- | --- |
 | 2 | `invalid_argument` | fix the command; retrying it unchanged cannot help |
-| 3 | `no_device`, `device_not_ready`, `toolchain_missing` | ask the user: start or unlock a device, install a tool |
-| 4 | `no_such_element`, `ambiguous_locator`, `element_not_reachable`, `no_such_context`, `no_such_alert` | re-map, narrow the locator, or scroll |
+| 3 | `no_device`, `device_not_ready`, `toolchain_missing` | ask the user: start, unlock or restart a device, install a tool |
+| 4 | `no_such_element`, `ambiguous_locator`, `element_not_reachable`, `no_such_context`, `no_such_alert` | re-map, narrow the locator, or scroll; with `check: receivesEvents`, deal with what `details` names over the target — answer the dialog, hide the keyboard — never restart the device for it |
 | 5 | `unsupported` | this device or backend cannot; do not retry |
 | 6 | `timeout` | the one kind worth retrying as it is |
 | 7 | `not_confirmed` | the command claimed success and the device disagrees — report it, it is a finding |

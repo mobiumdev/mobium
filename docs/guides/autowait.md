@@ -126,7 +126,11 @@ tapped testid=halfTarget at (650, 975); its center is covered by "half cover", s
 
 It aimed around the cover and said so. A system dialog, an iOS sheet and the
 on-screen keyboard are covers too, refused the same way, with the remedy for
-each: answer the dialog, hide the keyboard.
+each: answer the dialog, hide the keyboard. Every cover is the same refusal on
+both platforms — `element_not_reachable`, exit 4, `check: receivesEvents`, and
+what covers it in `details` (`cover`, `dialog`, `keyboard`, `screen`) — so
+a script tells a dialog in the way from a device that stopped answering,
+which is `device_not_ready`.
 
 `map` says the same before anything is tapped. A target a control covers at
 every point — one a tap would be refused for — is marked with what covers it,

@@ -46,7 +46,7 @@ export class NoDeviceError extends MobiumError {
   static code = 'no_device'
 }
 
-/** The device is there and cannot be driven yet: locked, not trusted, Developer Mode off. */
+/** The device is there and cannot be driven yet: locked, not trusted, Developer Mode off, not answering. The device only: a dialog or the keyboard over a target is ElementNotReachableError. */
 export class DeviceNotReadyError extends MobiumError {
   static code = 'device_not_ready'
 }
@@ -66,7 +66,7 @@ export class AmbiguousLocatorError extends MobiumError {
   static code = 'ambiguous_locator'
 }
 
-/** The element was found and cannot be touched where it is, usually off screen. */
+/** The element cannot be touched where it is: off screen, or something is over it — a dialog, the keyboard, another screen, a control. A cover has details.check "receivesEvents" and names itself in details: dialog, keyboard, screen, cover, siri, assistant or clipboard_preview. */
 export class ElementNotReachableError extends MobiumError {
   static code = 'element_not_reachable'
 }

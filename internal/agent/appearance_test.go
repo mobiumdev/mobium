@@ -909,7 +909,7 @@ func TestAFailedReadOnALockedDeviceSaysSo(t *testing.T) {
 // the app stopped reporting its WebView. CHALLENGES 268.
 func TestATapIntoAPageUnderADialogNamesTheDialog(t *testing.T) {
 	err := webDialogOver("Chrome notifications make things easier\nYou'll be able to…", "WEBVIEW_com.android.chrome")
-	if mobiumerr.CodeOf(err) != mobiumerr.DeviceNotReady {
+	if mobiumerr.CodeOf(err) != mobiumerr.ElementNotReachable {
 		t.Errorf("code %s", mobiumerr.CodeOf(err))
 	}
 	said := err.Error()
