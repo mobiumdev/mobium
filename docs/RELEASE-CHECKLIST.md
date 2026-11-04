@@ -313,23 +313,53 @@ after checking both ([packaging/mcp](../packaging/mcp/README.md)). Publishing
 the entry is a person's step, under the name `dev.mobium/mobium`, which the
 registry grants to whoever proves control of `mobium.dev`.
 
-Once, before the first publish:
+**Not yet published** (checked 2026-11-03): the registry has no
+`dev.mobium/mobium`, and `mobium.dev`, on Spaceship's name servers, has no
+TXT record of any kind. v0.1.0-rc1's release carries both files. Publish
+first with v0.1.0, not a release candidate: an rc that is the only version
+listed may be what the registry shows as the latest, and a published
+version cannot be published again with other contents.
 
-- [ ] An Ed25519 key, made with OpenSSL 3 (macOS's own `openssl` cannot):
-      `/opt/homebrew/opt/openssl@3/bin/openssl genpkey -algorithm Ed25519 -out mcp-registry.pem`,
-      kept out of every repository
-- [ ] Its TXT record on the **apex** of `mobium.dev` — not under a selector —
-      as `mcp-publisher` prints it:
-      `mobium.dev. IN TXT "v=MCPv1; k=ed25519; p=<public key>"`, beside the
-      Maven Central record already there
+Once, before the first publish — these are the domain owner's, since the key
+is what proves control of the domain:
+
+- [ ] An Ed25519 key, made with OpenSSL 3 (macOS's own `openssl` cannot),
+      kept out of every repository:
+
+      mkdir -p ~/.config/mcp-registry && cd ~/.config/mcp-registry
+      /opt/homebrew/opt/openssl@3/bin/openssl genpkey -algorithm Ed25519 -out mcp-registry.pem
+      chmod 600 mcp-registry.pem
+
+- [ ] Its public key, for the DNS record:
+
+      /opt/homebrew/opt/openssl@3/bin/openssl pkey -in mcp-registry.pem -pubout -outform DER | tail -c 32 | base64
+
+- [ ] A TXT record on the **apex** of `mobium.dev` (host `@`, not a
+      selector or subdomain): `v=MCPv1; k=ed25519; p=<public key>`
+- [ ] Seen from outside: `dig +short TXT mobium.dev @1.1.1.1` prints it
 
 Each release, after the release workflow has attached the assets:
 
 - [ ] `mcp-publisher` v1.8.1 or later, checked against the release's
-      `registry_<version>_checksums.txt`
-- [ ] `mcp-publisher login dns --domain mobium.dev --private-key <hex>`
-- [ ] Download the release's `server.json` and, beside it,
-      `mcp-publisher publish`
+      checksums before it is run:
+
+      b=https://github.com/modelcontextprotocol/registry/releases/download/v1.8.1
+      curl -fsSLO "$b/mcp-publisher_darwin_arm64.tar.gz" && curl -fsSLO "$b/registry_1.8.1_checksums.txt"
+      grep ' mcp-publisher_darwin_arm64.tar.gz$' registry_1.8.1_checksums.txt | shasum -a 256 -c
+      tar -xzf mcp-publisher_darwin_arm64.tar.gz mcp-publisher
+
+- [ ] Log in, the private key read from its file so it never reaches the
+      shell's history:
+
+      ./mcp-publisher login dns --domain mobium.dev --private-key \
+        "$(/opt/homebrew/opt/openssl@3/bin/openssl pkey -in ~/.config/mcp-registry/mcp-registry.pem -outform DER | tail -c 32 | xxd -p -c 64)"
+
+- [ ] The release's own `server.json`, never one built locally, published
+      from its folder:
+
+      gh release download v<version> -R mobiumdev/mobium -p server.json
+      ./mcp-publisher publish
+
 - [ ] The entry is there:
       `curl -s "https://registry.modelcontextprotocol.io/v0/servers?search=mobium" | grep -o '"dev.mobium/mobium"[^}]*"version":"[^"]*"'`
       shows the new version. Search matches the part of a name after the
