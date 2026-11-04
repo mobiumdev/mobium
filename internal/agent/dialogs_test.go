@@ -6,6 +6,7 @@ import (
 	"os"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/mobiumdev/mobium/internal/device"
 	"github.com/mobiumdev/mobium/internal/mobiumdriver"
@@ -191,5 +192,76 @@ func TestAnAppsOwnDialogIsReadAndAnswered(t *testing.T) {
 	ht, _ := uitree.ParseAndroid(home)
 	if got := appDialogText(ht); got != "" {
 		t.Errorf("the app's own screen read as a dialog: %q", got)
+	}
+}
+
+// arrivingDriver is a dialog that comes up between resolving a tap's target
+// and tapping it: the first read is the app's screen, every read after is
+// the dialog's window alone until a button on it is pressed, and the alert
+// endpoint knows of it only from the second read on — as it opens.
+type arrivingDriver struct {
+	alertDriver
+	app, dialog *uitree.Tree
+	reads       int
+}
+
+func (d *arrivingDriver) Snapshot(ctx context.Context) (*uitree.Tree, error) {
+	d.reads++
+	if d.reads == 1 || d.answered != "" {
+		return d.app, nil
+	}
+	return d.dialog, nil
+}
+
+func (d *arrivingDriver) AlertText(ctx context.Context) (string, error) {
+	if d.reads < 2 {
+		return "", mobiumdriver.ErrNoAlert
+	}
+	return d.alertDriver.AlertText(ctx)
+}
+
+// A tap whose target goes while it settles, because a dialog is arriving,
+// asks for the dialog and answers a rule for it, then taps its target. It
+// failed no_such_element in 0.7 s on Android, the rule never consulted
+// (mobiumdev/mobium#316).
+func TestADialogArrivingWhileATapSettlesIsAnsweredByRule(t *testing.T) {
+	dialogXML := `<?xml version='1.0' encoding='UTF-8'?><hierarchy rotation="0">` +
+		`<node index="0" class="android.widget.FrameLayout" bounds="[100,900][980,1500]">` +
+		`<node index="0" text="Discard changes?" resource-id="android:id/alertTitle" class="android.widget.TextView" bounds="[150,950][900,1020]" />` +
+		`<node index="1" text="Keep editing" resource-id="android:id/button2" class="android.widget.Button" clickable="true" enabled="true" bounds="[300,1380][620,1460]" />` +
+		`<node index="2" text="Discard" resource-id="android:id/button1" class="android.widget.Button" clickable="true" enabled="true" bounds="[640,1380][940,1460]" />` +
+		`</node></hierarchy>`
+	dialog, err := uitree.ParseAndroid([]byte(dialogXML))
+	if err != nil {
+		t.Fatal(err)
+	}
+	fresh := func() (*Handlers, *session, *arrivingDriver) {
+		d := &arrivingDriver{alertDriver: alertDriver{text: "Discard changes?\nYour edits are not saved."},
+			app: screen(t, "One Button"), dialog: dialog}
+		h := NewHandlers()
+		h.implicitWait = 300 * time.Millisecond
+		s := &session{dev: fakeDevice(), driver: d}
+		return h, s, d
+	}
+
+	h, s, d := fresh()
+	h.dialogsOn(s, map[string]interface{}{"when": "Discard changes?", "press": "Keep editing"})
+	res, err := h.reportHandled(tap(h, s, map[string]interface{}{"target": "text=One Button"}))
+	if err != nil {
+		t.Fatalf("the tap failed instead of answering the rule: %v", err)
+	}
+	if !strings.Contains(res.Content[0].Text, `pressed "Keep editing"`) {
+		t.Errorf("the rule's answer is not reported: %q", res.Content[0].Text)
+	}
+	// Keep editing at its center, then One Button at its own.
+	if len(d.tapped) != 2 || d.tapped[0] != "460,1420" || d.tapped[1] != "200,240" {
+		t.Errorf("tapped %v, want Keep editing and then One Button", d.tapped)
+	}
+
+	// No rule: the refusal names the dialog, not "the screen may have changed".
+	h, s, d = fresh()
+	_, err = tap(h, s, map[string]interface{}{"target": "text=One Button"})
+	if err == nil || !strings.Contains(err.Error(), "Discard changes?") || len(d.tapped) != 0 {
+		t.Errorf("with no rule: %v, tapped %v", err, d.tapped)
 	}
 }

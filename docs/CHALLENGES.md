@@ -7,7 +7,7 @@ the source.
 
 The pattern across them is the reason the document exists: **almost nothing
 here was found by reading code or by a test written from imagination.** Of
-382 defects, 308 were found only by running against a real device. Thirteen
+383 defects, 309 were found only by running against a real device. Thirteen
 more — 255, 280, 282, 327, 329, 353, 355, 356, 359, 371, 375, 380 and 382 — were met while
 running against one, though the fault lay in a check, the host or Mobium's own
 design rather than in the platform. The other sixty-one — 4, 5, 6, 14, 23,
@@ -8406,6 +8406,34 @@ and, for a runner, the architecture, and lists what a first run will still
 download. The test caches another architecture's runner and an older
 version's and expects nothing to be called cached; with the old check it
 fails on the very line that iMac printed.
+
+### 383. A dialog that arrived while a tap settled was never offered to its rule
+
+**Found by:** a person on an Intel iMac, 2026-11-03 (mobiumdev/mobium#316):
+on an Android 15 emulator, with a rule declared for MobiumApp's two-button
+alert, a tap sent at once after the tap that raises it failed
+`no_such_element` in 0.7 s, seven times in eight, on rc1 and on `main`.
+The same two taps from two CLI processes, slower to start, were answered
+by the rule, and so was every run on the iOS simulator. On Apple Silicon
+the alert was up before the second tap's first read, and it passed eight in
+eight; the race was reproduced here with the Late Alert, the second tap sent
+1.90–2.00 s after its button: 4 failures in 10, each in 0.6–0.7 s.
+
+The target resolved on the app's screen; `settle`, which reads again to see
+that it has stopped moving, then found only the dialog's window — what
+Android's hierarchy holds once one is up — and returned the miss as it was.
+Only resolution, after its whole wait, asked whether a dialog was in the
+way, so a rule was never consulted, and the remedy, "the screen may have
+changed, run app_map again", was not the answer.
+
+**Fixed:** a target lost while settling is watched for the action's wait: a
+dialog coming up is refused as in the way, which an action answers by rule
+and then resolves again; the target back settles again; otherwise the miss
+is reported as before, and nothing scrolls, since the screen may be another.
+The Late Alert at the same timings: 0 failures in 20, the rule answering it
+where the race hit (`hits: 1`, then `one-button: OK`). A test whose dialog
+comes up between the first read and the second fails on the old code with
+the issue's own message. `dialogs.sh` passes on the emulator.
 
 ## Findings that were not defects
 

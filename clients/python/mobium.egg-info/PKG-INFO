@@ -1,0 +1,81 @@
+Metadata-Version: 2.4
+Name: mobium
+Version: 0.1.0
+Summary: Drive mobile apps on Android emulators, Android phones, iOS simulators and iPhones. No dependencies.
+Author: Lana Begunova
+License-Expression: Apache-2.0
+Project-URL: Homepage, https://github.com/mobiumdev/mobium
+Project-URL: Documentation, https://github.com/mobiumdev/mobium/blob/main/docs/quickstart/python.md
+Project-URL: Source, https://github.com/mobiumdev/mobium/tree/main/clients/python
+Project-URL: Issues, https://github.com/mobiumdev/mobium/issues
+Keywords: mobile,automation,testing,android,ios,uiautomator2,webdriveragent,mcp
+Classifier: Development Status :: 3 - Alpha
+Classifier: Intended Audience :: Developers
+Classifier: Operating System :: MacOS
+Classifier: Operating System :: POSIX :: Linux
+Classifier: Programming Language :: Python :: 3
+Classifier: Programming Language :: Python :: 3 :: Only
+Classifier: Topic :: Software Development :: Testing
+Classifier: Topic :: Software Development :: Testing :: Acceptance
+Classifier: Typing :: Typed
+Requires-Python: >=3.9
+Description-Content-Type: text/markdown
+License-File: LICENSE
+License-File: NOTICE
+Dynamic: license-file
+
+# Mobium for Python
+
+Drive mobile apps on Android emulators, Android phones, iOS simulators and
+iPhones — map the screen, tap, type, wait and screenshot — through the same
+tools as the [mobium](https://github.com/mobiumdev/mobium) command line and
+MCP server. No dependencies.
+
+```python
+from mobium import start
+
+with start(platform="android", app="com.android.settings") as device:
+    for element in device.map()[:5]:
+        print(element)                      # @e5 Network & internet ... (button)
+    row = next(e for e in device.map() if e.label.startswith("Network & internet"))
+    device.tap(row.ref)
+    device.wait_for("text=Internet")
+    device.screenshot("settings.png")
+# the with block has quit: the session on the device is over
+```
+
+`start()` opens a session on the device and launches the app fresh;
+`quit()` — or leaving the `with` block — ends it.
+`platform="ios"` drives an iOS simulator or iPhone the same way.
+
+## Requirements
+
+- Python 3.9 or later.
+- **The `mobium` binary**, on your `PATH` or named by `MOBIUM_BIN_PATH`. This
+  package is a client for it. Install it with Go 1.24+:
+
+  ```sh
+  go install github.com/mobiumdev/mobium/cmd/mobium@latest
+  ```
+
+- A device: an Android emulator or phone, or on macOS an iOS simulator or
+  iPhone. `mobium doctor` checks the setup and names the fix for anything
+  missing.
+
+## Documentation
+
+- [Quick start for Python](https://github.com/mobiumdev/mobium/blob/main/docs/quickstart/python.md)
+  — from nothing to a running script, on Android and iOS
+- [Every tool](https://github.com/mobiumdev/mobium/blob/main/docs/API.md) and
+  [setting up devices](https://github.com/mobiumdev/mobium/blob/main/docs/SETUP.md)
+
+## Errors
+
+Every failure raises `MobiumError` or a subclass named for its code —
+`NoSuchElementError`, `AmbiguousLocatorError`, `TimedOutError` (not
+`TimeoutError`, which is Python's) and the rest, the same set in every Mobium
+client — with `.code`, `.remedy` and `.retryable`.
+
+## License
+
+Apache License 2.0; see LICENSE and NOTICE.
