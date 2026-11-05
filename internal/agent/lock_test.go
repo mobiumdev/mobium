@@ -171,3 +171,39 @@ func TestScrollToDoesNotSwipeALockScreen(t *testing.T) {
 		t.Errorf("err = %v, want device_not_ready", err)
 	}
 }
+
+// A lock screen holds nothing of the app, so a target absent from it has not
+// gone. iOS answered "is hidden", exit 0. CHALLENGES 391.
+func TestAWaitForAbsenceIsRefusedOnALockScreen(t *testing.T) {
+	for name, args := range map[string]map[string]interface{}{
+		"hidden": {"target": "text=Login", "condition": "hidden", "timeout_ms": 100},
+		"not":    {"target": "text=Login", "not": true, "timeout_ms": 100},
+		"none":   {"target": "text=Login", "condition": "count", "count": 0, "timeout_ms": 100},
+		"timed":  {"target": "text=Login", "timeout_ms": 100},
+	} {
+		h, s, _ := withLock(t, true, keyguard(t))
+		_, err := wait(h, s, args)
+		if mobiumerr.CodeOf(err) != mobiumerr.DeviceNotReady || !strings.Contains(err.Error(), "mobium lock unlock") {
+			t.Errorf("%s: err = %v, want device_not_ready naming the unlock", name, err)
+		}
+	}
+}
+
+func TestAWaitForAbsenceStaysOnAnUnlockedShell(t *testing.T) {
+	h, s, _ := withLock(t, false, keyguard(t))
+	if _, err := wait(h, s, map[string]interface{}{"target": "text=Login", "condition": "hidden", "timeout_ms": 100}); err != nil {
+		t.Errorf("hidden: %v", err)
+	}
+	if _, err := wait(h, s, map[string]interface{}{"target": "text=Login", "timeout_ms": 100}); mobiumerr.CodeOf(err) != mobiumerr.Timeout {
+		t.Errorf("visible: %v, want timeout", err)
+	}
+}
+
+func TestAFindMissOnALockScreenNamesTheLock(t *testing.T) {
+	h, s, _ := withLock(t, true, keyguard(t))
+	h.defaultDevice = s.dev.Serial
+	_, err := h.find(context.Background(), map[string]interface{}{"locator": "text=Login", "device": s.dev.Serial})
+	if mobiumerr.CodeOf(err) != mobiumerr.DeviceNotReady {
+		t.Errorf("err = %v", err)
+	}
+}

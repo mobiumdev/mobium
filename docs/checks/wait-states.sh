@@ -126,5 +126,14 @@ r=$($M wait role=list) || fail "the list itself: $r"
 echo "$r" | grep -q '@e[0-9].*(list' || fail "the list itself lost its ref: $r"
 row "answer" "a text has no ref; a row and a list keep theirs"
 
+# React Native on iOS puts this testID on a plain view around the list, on the
+# same rectangle (CHALLENGES 392). Android puts it on the list.
+open "Table Demo"
+r=$($M wait testid=table) || fail "a list's wrapper: $r"
+echo "$r" | grep -q '@e[0-9].*(list' || fail "a wrapper on its list's rectangle has no ref: $r"
+r=$($M find testid=table) || fail "find a list's wrapper: $r"
+echo "$r" | grep -q '@e[0-9].*(list' || fail "find gave a wrapper on its list's rectangle no ref: $r"
+row "wrapper" "on its list's rectangle, it has the list's ref"
+
 $M terminate $APP >/dev/null 2>&1 || true
 echo PASS

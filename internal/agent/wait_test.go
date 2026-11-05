@@ -546,3 +546,45 @@ func TestScrollToAPlainTextInAListHasNoRef(t *testing.T) {
 		t.Errorf("element = %+v, want the text with no ref", got)
 	}
 }
+
+// wrapperScreen is React Native on iOS's shape: a testID on a plain view around
+// the control. CHALLENGES 392.
+func wrapperScreen(t *testing.T) *uitree.Tree {
+	t.Helper()
+	tree, err := uitree.ParseAndroid([]byte(`<?xml version='1.0' encoding='UTF-8'?><hierarchy rotation="0">` +
+		`<node index="0" class="android.widget.FrameLayout" bounds="[0,0][1080,2400]">` +
+		`<node index="0" resource-id="same" class="android.view.View" enabled="true" bounds="[0,100][1080,1100]">` +
+		`<node index="0" class="android.widget.ScrollView" scrollable="true" enabled="true" bounds="[0,100][1080,1100]" />` +
+		`</node>` +
+		`<node index="1" resource-id="around" class="android.view.View" enabled="true" bounds="[0,1200][1080,1800]">` +
+		`<node index="0" text="Pay" class="android.widget.Button" clickable="true" enabled="true" bounds="[100,1300][400,1400]" />` +
+		`</node></node></hierarchy>`))
+	if err != nil {
+		t.Fatalf("parse fixture: %v", err)
+	}
+	return tree
+}
+
+func TestAWrapperOnItsControlsRectangleHasItsRef(t *testing.T) {
+	h, sess, _ := withFake(t, wrapperScreen(t))
+	res, err := wait(h, sess, map[string]interface{}{"target": "testid=same", "timeout_ms": 1000})
+	if err != nil {
+		t.Fatalf("wait: %v", err)
+	}
+	if got := res.StructuredContent.(WaitView).Element; got == nil || got.Ref == "" || got.Role != "list" {
+		t.Errorf("element = %+v, want the list's ref", got)
+	}
+}
+
+// Its ref would touch the button, not the wrapper that matched: #329's defect
+// from the other side.
+func TestAWrapperAroundASmallerControlHasNoRef(t *testing.T) {
+	h, sess, _ := withFake(t, wrapperScreen(t))
+	res, err := wait(h, sess, map[string]interface{}{"target": "testid=around", "timeout_ms": 1000})
+	if err != nil {
+		t.Fatalf("wait: %v", err)
+	}
+	if got := res.StructuredContent.(WaitView).Element; got == nil || got.Ref != "" {
+		t.Errorf("element = %+v, want no ref", got)
+	}
+}
