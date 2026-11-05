@@ -5,7 +5,8 @@ import java.util.Map;
 /**
  * One actionable thing on screen.
  *
- * @param ref     the {@code @e1} handle, valid only for the screen it came from
+ * @param ref     the {@code @e1} handle, valid only for the screen it came from;
+ *                empty for a match the map filters out
  * @param label   what a person would call it
  * @param role    button, input, list and so on; empty if Mobium could not say
  * @param locator how the ref resolves on a later screen, as {@code kind=value}
@@ -45,6 +46,7 @@ public record Element(String ref, String label, String role,
     }
 
     @Override public String toString() {
-        return role.isEmpty() ? ref + " " + label : ref + " " + label + " (" + role + ")";
+        String name = (ref + " " + label).strip();
+        return role.isEmpty() ? name : name + " (" + role + ")";
     }
 }

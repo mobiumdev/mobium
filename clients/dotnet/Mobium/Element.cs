@@ -5,7 +5,7 @@ namespace Mobium
     /// <summary>One actionable thing on screen.</summary>
     public sealed class Element
     {
-        /// <summary>The <c>@e1</c> handle, valid only for the screen it came from.</summary>
+        /// <summary>The <c>@e1</c> handle, valid only for the screen it came from. Empty for a match the map filters out.</summary>
         public string Ref { get; }
 
         /// <summary>What a person would call it.</summary>
@@ -66,7 +66,10 @@ namespace Mobium
         }
 
         /// <summary>The ref and label, with the role in brackets when there is one.</summary>
-        public override string ToString() =>
-            string.IsNullOrEmpty(Role) ? Ref + " " + Label : Ref + " " + Label + " (" + Role + ")";
+        public override string ToString()
+        {
+            var name = (Ref + " " + Label).Trim();
+            return string.IsNullOrEmpty(Role) ? name : name + " (" + Role + ")";
+        }
     }
 }

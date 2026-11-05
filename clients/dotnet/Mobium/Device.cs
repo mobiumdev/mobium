@@ -198,7 +198,8 @@ namespace Mobium
         /// <summary>
         /// Blocks until the screen agrees, instead of sleeping. On success the
         /// screen is remapped, so the element returned already has a ref that
-        /// can be tapped. Waiting for something to go away returns
+        /// can be tapped. Its ref is empty when the map filters it out, as a
+        /// plain text in a list. Waiting for something to go away returns
         /// <c>null</c>: there is nothing left to point at.
         /// </summary>
         public Element? WaitFor(string target, Until condition) =>

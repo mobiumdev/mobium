@@ -1064,13 +1064,9 @@ func (h *Handlers) find(ctx context.Context, args map[string]interface{}) (*Tool
 			view.Elements = append(view.Elements, elementView(e))
 			continue
 		}
-		// Matched something the map filters out — a label, say. Still worth
-		// reporting, but it has no ref to act on.
-		lines = append(lines, fmt.Sprintf("(no ref) %s %s", uitree.OneLine(n.Text+" "+n.Label), n.Bounds))
-		view.Elements = append(view.Elements, ElementView{
-			Label:  strings.TrimSpace(n.Text + " " + n.Label),
-			Bounds: boundsView(n.Bounds),
-		})
+		line, ev := noRefElement(n)
+		lines = append(lines, line)
+		view.Elements = append(view.Elements, ev)
 	}
 	if len(lines) == 0 {
 		return Result(fmt.Sprintf("No element matches %s", loc), view), nil

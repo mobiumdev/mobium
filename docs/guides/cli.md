@@ -289,7 +289,7 @@ $ mobium batch steps.json
 2. app_fill: typed "mobium" into testid=username
 3. app_fill: typed 7 characters into testid=password, a password field — not echoed
 4. app_tap: tapped testid=loginBtn at (540, 1457)
-5. app_wait_for: testid=welcomeText is visible after 1.622s
+5. app_wait_for: testid=welcomeText is visible after 1.637s — (no ref) Welcome, mobium! [42,334][1038,412]
 ```
 
 ![The Login Demo after the batch: "Welcome, mobium! You are logged in."](images/cli-3-welcome.jpg)

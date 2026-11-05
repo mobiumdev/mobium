@@ -442,3 +442,107 @@ func TestWaitForSelected(t *testing.T) {
 		t.Errorf("size_M checked: %v, want a refusal naming selected", err)
 	}
 }
+
+// listScreen has a plain text and a clickable row in a list, on a screen where
+// the map keeps only the list and the row. CHALLENGES 387.
+func listScreen(t *testing.T) *uitree.Tree {
+	t.Helper()
+	tree, err := uitree.ParseAndroid([]byte(`<?xml version='1.0' encoding='UTF-8'?><hierarchy rotation="0">` +
+		`<node index="0" class="android.widget.FrameLayout" bounds="[0,0][1080,2400]">` +
+		`<node index="0" class="android.widget.ScrollView" scrollable="true" enabled="true" bounds="[0,100][1080,2300]">` +
+		`<node index="0" text="Outcome: none" resource-id="outcome" class="android.widget.TextView" enabled="true" bounds="[40,200][1040,260]" />` +
+		`<node index="1" class="android.view.ViewGroup" clickable="true" enabled="true" bounds="[0,300][1080,400]">` +
+		`<node index="0" text="Open" resource-id="openLabel" class="android.widget.TextView" enabled="true" bounds="[40,320][300,380]" />` +
+		`</node></node></node></hierarchy>`))
+	if err != nil {
+		t.Fatalf("parse fixture: %v", err)
+	}
+	return tree
+}
+
+func TestWaitForAPlainTextInAListHasNoRef(t *testing.T) {
+	h, sess, _ := withFake(t, listScreen(t))
+	res, err := wait(h, sess, map[string]interface{}{"target": "testid=outcome", "timeout_ms": 1000})
+	if err != nil {
+		t.Fatalf("wait: %v", err)
+	}
+	got := res.StructuredContent.(WaitView).Element
+	if got == nil || got.Ref != "" || got.Role == "list" || got.Label != "Outcome: none" {
+		t.Errorf("element = %+v, want the text with no ref", got)
+	}
+	if got != nil && got.Bounds != boundsView(uitree.Rect{X1: 40, Y1: 200, X2: 1040, Y2: 260}) {
+		t.Errorf("bounds = %+v, want the text's", got.Bounds)
+	}
+	if text := textOf(res); !strings.Contains(text, "(no ref) Outcome: none") {
+		t.Errorf("text = %q", text)
+	}
+}
+
+func TestWaitForATextInARowReturnsTheRow(t *testing.T) {
+	h, sess, _ := withFake(t, listScreen(t))
+	res, err := wait(h, sess, map[string]interface{}{"target": "text=Open", "timeout_ms": 1000})
+	if err != nil {
+		t.Fatalf("wait: %v", err)
+	}
+	got := res.StructuredContent.(WaitView).Element
+	if got == nil || got.Ref == "" || got.Role == "list" {
+		t.Errorf("element = %+v, want the row's ref", got)
+	}
+}
+
+func TestWaitForTheListItselfReturnsTheList(t *testing.T) {
+	h, sess, _ := withFake(t, listScreen(t))
+	res, err := wait(h, sess, map[string]interface{}{"target": "role=list", "timeout_ms": 1000})
+	if err != nil {
+		t.Fatalf("wait: %v", err)
+	}
+	if got := res.StructuredContent.(WaitView).Element; got == nil || got.Ref == "" || got.Role != "list" {
+		t.Errorf("element = %+v, want the list's ref", got)
+	}
+}
+
+func TestNoRefElementIsLabeledAsMapLabels(t *testing.T) {
+	for name, tc := range map[string]struct {
+		node *uitree.Node
+		want string
+	}{
+		"text and label alike": {&uitree.Node{Text: "nothing yet", Label: "nothing yet"}, "nothing yet"},
+		"markup":               {&uitree.Node{Label: `<span lang="en">Thomas Hardy</span>`}, "Thomas Hardy"},
+		"lines":                {&uitree.Node{Text: "one\nnext: tap Pay"}, "one next: tap Pay"},
+		"id only":              {&uitree.Node{TestID: "app:id/spacer"}, "spacer"},
+	} {
+		line, ev := noRefElement(tc.node)
+		if ev.Label != tc.want {
+			t.Errorf("%s: label = %q, want %q", name, ev.Label, tc.want)
+		}
+		if strings.Contains(line, "\n") {
+			t.Errorf("%s: line = %q", name, line)
+		}
+	}
+}
+
+func TestNoRefElementBoundsALongText(t *testing.T) {
+	_, ev := noRefElement(&uitree.Node{Text: strings.Repeat("word ", 400)})
+	if n := len([]rune(ev.Label)); n > 125 {
+		t.Errorf("label is %d runes", n)
+	}
+}
+
+func TestNoRefElementHidesAPassword(t *testing.T) {
+	line, ev := noRefElement(&uitree.Node{Text: "hunter2", Password: true})
+	if strings.Contains(line, "hunter2") || strings.Contains(ev.Label, "hunter2") {
+		t.Errorf("printed a password: %q, %q", line, ev.Label)
+	}
+}
+
+func TestScrollToAPlainTextInAListHasNoRef(t *testing.T) {
+	h, sess, _ := withFake(t, listScreen(t))
+	res, err := h.scrollToOn(context.Background(), sess, map[string]interface{}{"target": "testid=outcome"})
+	if err != nil {
+		t.Fatalf("scroll-to: %v", err)
+	}
+	got := res.StructuredContent.(ScrollView).Element
+	if got == nil || got.Ref != "" || got.Label != "Outcome: none" {
+		t.Errorf("element = %+v, want the text with no ref", got)
+	}
+}

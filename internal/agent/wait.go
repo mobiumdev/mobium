@@ -343,6 +343,10 @@ func (h *Handlers) waitOn(ctx context.Context, s *session, args map[string]inter
 			ev := elementView(e)
 			view.Element = &ev
 			msg = fmt.Sprintf("%s — %s", msg, e.Line())
+		} else {
+			line, ev := noRefElement(matched)
+			view.Element = &ev
+			msg = fmt.Sprintf("%s — %s", msg, line)
 		}
 	}
 	return Result(msg, view), nil
@@ -525,7 +529,9 @@ func nodeText(n *uitree.Node) string {
 // parent — so an exact match on the node found nothing, and the wait reported
 // no element even though the ref table it had just written contained the row.
 // Walking up to the nearest mapped ancestor is what makes the returned ref
-// the one a caller would have used anyway.
+// the one a caller would have used anyway. The walk stops at a list, which
+// holds the node but is not it: a tap on its ref lands on its center.
+// CHALLENGES 387.
 func (h *Handlers) rememberRefs(serial string, tree *uitree.Tree, want *uitree.Node) (uitree.Entry, bool) {
 	entries := tree.Map()
 	table := &refTable{entries: map[string]uitree.Locator{}, taken: time.Now()}
@@ -537,11 +543,24 @@ func (h *Handlers) rememberRefs(serial string, tree *uitree.Tree, want *uitree.N
 	h.refs[serial] = table
 
 	for n := want; n != nil; n = n.Parent {
-		if e, ok := byNode[n]; ok {
-			return e, true
+		e, ok := byNode[n]
+		if !ok {
+			continue
 		}
+		if n != want && e.Role == "list" {
+			break
+		}
+		return e, true
 	}
 	return uitree.Entry{}, false
+}
+
+// noRefElement reports a match the map filters out, a label say, which has no
+// ref to act on.
+func noRefElement(n *uitree.Node) (string, ElementView) {
+	label := uitree.Describe(n)
+	return fmt.Sprintf("(no ref) %s %s", uitree.OneLine(label), n.Bounds),
+		ElementView{Label: label, Bounds: boundsView(n.Bounds)}
 }
 
 // WaitView is the result of app_wait_for.
@@ -550,7 +569,7 @@ type WaitView struct {
 	Condition string `json:"condition"`
 	WaitedMs  int    `json:"waited_ms"`
 	// Element is the element that satisfied the wait, absent when waiting for
-	// something to go away or when the map filters the match out.
+	// something to go away. Its ref is empty when the map filters it out.
 	Element *ElementView `json:"element,omitempty"`
 }
 

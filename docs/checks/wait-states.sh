@@ -114,5 +114,17 @@ row "value" "whole, not part; empty past the placeholder"
 refused "a password's value" "never read" wait testid=password --for value --text x --timeout 5s
 row "password" "refused, and nothing compared"
 
+# --- what a wait answers with (CHALLENGES 387) --------------------------------
+open "Dialog Demo"
+r=$($M wait testid=dialogOutcome) || fail "a text in a list: $r"
+echo "$r" | grep -q '(no ref)' || fail "a text in a list did not answer with no ref: $r"
+r=$($M scroll-to testid=dialogOutcome --direction up) || fail "scroll-to a text in a list: $r"
+echo "$r" | grep -q '(no ref)' || fail "scroll-to a text in a list did not answer with no ref: $r"
+r=$($M wait testid=twoButtonBtn) || fail "a row: $r"
+echo "$r" | grep -q '@e[0-9]' || fail "a row lost its ref: $r"
+r=$($M wait role=list) || fail "the list itself: $r"
+echo "$r" | grep -q '@e[0-9].*(list' || fail "the list itself lost its ref: $r"
+row "answer" "a text has no ref; a row and a list keep theirs"
+
 $M terminate $APP >/dev/null 2>&1 || true
 echo PASS
