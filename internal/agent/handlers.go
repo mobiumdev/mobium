@@ -1064,6 +1064,9 @@ func (h *Handlers) text(ctx context.Context, args map[string]interface{}) (*Tool
 	}
 	node, err := pickToRead(loc, tree)
 	if err != nil {
+		if matchedNothing(err) && h.lockedNote(ctx, s, tree) != "" {
+			return nil, lockedOver(loc)
+		}
 		// Android leaves out what the keyboard covers, so a label under it
 		// is a plain miss there, and "run app_map again" cannot find it;
 		// hiding the keyboard can.
@@ -1130,11 +1133,19 @@ func (h *Handlers) find(ctx context.Context, args map[string]interface{}) (*Tool
 			view.Elements = append(view.Elements, elementView(e))
 			continue
 		}
+		if e, ok := sameRectEntry(byNode, n); ok {
+			lines = append(lines, e.Line())
+			view.Elements = append(view.Elements, elementView(e))
+			continue
+		}
 		line, ev := noRefElement(n)
 		lines = append(lines, line)
 		view.Elements = append(view.Elements, ev)
 	}
 	if len(lines) == 0 {
+		if h.lockedNote(ctx, s, tree) != "" {
+			return nil, lockedOver(loc)
+		}
 		return Result(fmt.Sprintf("No element matches %s", loc), view), nil
 	}
 	return Result(strings.Join(lines, "\n"), view), nil

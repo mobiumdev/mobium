@@ -7,7 +7,7 @@ the source.
 
 The pattern across them is the reason the document exists: **almost nothing
 here was found by reading code or by a test written from imagination.** Of
-390 defects, 312 were found only by running against a real device. Seventeen
+392 defects, 314 were found only by running against a real device. Seventeen
 more — 255, 280, 282, 327, 329, 353, 355, 356, 359, 371, 375, 380, 382, 384, 386, 387 and 388 — were met while
 running against one, though the fault lay in a check, the host or Mobium's own
 design rather than in the platform. The other sixty-one — 4, 5, 6, 14, 23,
@@ -8643,6 +8643,36 @@ splits 2 in 14: breaks that small go unseen. A synthetic spliced tone holds to 1
 kHz at -42 dBFS, and above 1320 Hz neither version split, since a break bends a
 higher tone less. Not measured: a tone from anything but MobiumApp (Chrome played
 nothing), and any other host. Not run on a phone, which captures no samples.
+
+### 391. A wait for something to go said it had, on a locked iPhone simulator
+
+**Found by:** a person verifying 389 on an Intel iMac, 2026-11-05
+(mobiumdev/mobium#327), who saw `wait` time out saying only "it is not on screen"
+with an iOS simulator locked. Trying every form of `wait` then found worse. iOS
+reads a lock screen, so a target is simply absent from it: `wait --for hidden`,
+`--not` and `--count 0` answered `is hidden`, exit 0, about an app nobody could
+see. Android cannot read a sleeping screen, and refused them all.
+
+**Fixed:** a wait that holds because its target is absent, or that times out, asks
+whether the device is locked when the system shell is in front, and answers
+`device_not_ready`. So do `find` and `text` on a miss. A wait to show still waits
+out its timeout, for a person unlocking by hand. On an unlocked home screen all of
+these answer as they did, and `lock.sh` fails on `main` and passes here.
+
+### 392. A list's testID on iOS gave no ref, where Android's gave the list
+
+**Found by:** the same verification (mobiumdev/mobium#329). `wait testid=table`
+answered `@e2 table (list)` on Android and `(no ref) table` on the iOS 26.5
+simulator. Not 387's doing: before it, iOS answered with no element at all. React
+Native on iOS puts the testID on a plain view around its ScrollView, on exactly the
+same rectangle, 16,213 370x611 points, and on Android on the ScrollView itself.
+
+**Fixed:** a match the map filters out takes the ref of the one mapped element
+inside it on its own rectangle, in `wait`, `scroll-to` and `find`. Only on the same
+rectangle, or a ref would touch something other than what matched, which is 387
+from the other side: a wrapper around a smaller button still has no ref. A sweep of
+test IDs in 14 screens of real apps on both platforms gave list refs only to such
+containers. iOS still labels it `ScrollView` where Android says `table`.
 
 ## Findings that were not defects
 

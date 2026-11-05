@@ -55,11 +55,18 @@ if $M find testid=username 2>/dev/null | grep -q 'username (input)'; then
 fi
 row "tap" "refused, and it reached nothing"
 
+# A lock screen holds nothing of the app: a target missing from it has not gone.
+fresh
+refused "a wait to be hidden" wait "label=Login Demo" --for hidden --timeout 2s
+refused "a wait for it not to show" wait "label=Login Demo" --not --timeout 2s
+refused "a wait for none" wait "label=Login Demo" --for count --count 0 --timeout 2s
+refused "a wait to show" wait "label=Login Demo" --timeout 2s
+refused "a find" find "label=Login Demo"
+refused "a text" text "label=Login Demo"
+row "read" "names the lock, and absence is not claimed"
+
 fresh
 if [ "$PLATFORM" = android ]; then
-  refused "a read" find testid=username
-  row "read" "names the lock, not a changing screen"
-  fresh
   refused "a swipe at a point" swipe 540 1500 540 1000
   refused "a long press at a point" long-press 540 1500
   row "at a point" "refused: the screen is off"

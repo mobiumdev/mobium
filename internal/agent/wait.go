@@ -312,6 +312,12 @@ func (h *Handlers) waitOn(ctx context.Context, s *session, args map[string]inter
 	})
 
 	waited := time.Since(started)
+	// A lock screen holds nothing of the app: a target absent from it has not
+	// gone, and one the wait timed out on was never going to come. CHALLENGES 391.
+	absent := err == nil && matched == nil && (cond != condCount || count == 0)
+	if (absent || errors.Is(err, errPollTimeout)) && tree != nil && h.lockedNote(ctx, s, tree) != "" {
+		return nil, lockedOver(loc)
+	}
 	if err != nil {
 		if errors.Is(err, errPollTimeout) {
 			return nil, mobiumerr.New(mobiumerr.Timeout, "timed out after %s waiting for %s to %s — %s",
@@ -552,7 +558,31 @@ func (h *Handlers) rememberRefs(serial string, tree *uitree.Tree, want *uitree.N
 		}
 		return e, true
 	}
-	return uitree.Entry{}, false
+	return sameRectEntry(byNode, want)
+}
+
+// sameRectEntry is the one mapped element inside n on n's own rectangle: a plain
+// wrapper is that element, as React Native on iOS puts a testID on a view around
+// its ScrollView. A smaller one is not, since its ref would touch something other
+// than what matched. CHALLENGES 392.
+func sameRectEntry(byNode map[*uitree.Node]uitree.Entry, n *uitree.Node) (uitree.Entry, bool) {
+	if n == nil || n.Bounds.Empty() {
+		return uitree.Entry{}, false
+	}
+	var found uitree.Entry
+	count := 0
+	var walk func(*uitree.Node)
+	walk = func(c *uitree.Node) {
+		for _, k := range c.Children {
+			if e, ok := byNode[k]; ok && k.Bounds == n.Bounds {
+				found = e
+				count++
+			}
+			walk(k)
+		}
+	}
+	walk(n)
+	return found, count == 1
 }
 
 // noRefElement reports a match the map filters out, a label say, which has no
