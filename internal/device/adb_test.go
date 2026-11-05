@@ -455,3 +455,17 @@ func TestForwardsToPicksOneDevicesForwardsToOnePort(t *testing.T) {
 		t.Errorf("no forwards read as %v", got)
 	}
 }
+
+// CHALLENGES 389.
+func TestGoingToSleep(t *testing.T) {
+	for dumpsys, want := range map[string]bool{
+		"      interactiveState=INTERACTIVE_STATE_GOING_TO_SLEEP\n": true,
+		"      interactiveState=INTERACTIVE_STATE_SLEEP\n":          false,
+		"      interactiveState=INTERACTIVE_STATE_AWAKE\n":          false,
+		"an Android that does not print the field\n":                false,
+	} {
+		if got := goingToSleep([]byte(dumpsys)); got != want {
+			t.Errorf("goingToSleep(%q) = %v", dumpsys, got)
+		}
+	}
+}

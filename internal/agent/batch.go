@@ -118,7 +118,7 @@ func (h *Handlers) batchStep(ctx context.Context, st batchStep) (*ToolsCallResul
 	ctx, cancel := context.WithTimeout(ctx, callTimeout)
 	defer cancel()
 	h.handled = nil
-	res, err := h.reportHandled(h.dispatch(ctx, st.name, st.args))
+	res, err := h.reportHandled(h.callTool(ctx, st.name, st.args))
 	h.handled = nil
 	return res, err
 }

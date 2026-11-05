@@ -83,6 +83,9 @@ func (h *Handlers) dragOn(ctx context.Context, s *session, args map[string]inter
 	}
 
 	if coords {
+		if err := h.refuseAsleep(ctx, s); err != nil {
+			return nil, err
+		}
 		if err := dragger.Drag(ctx, x1, y1, x2, y2, hold, move); err != nil {
 			return nil, err
 		}

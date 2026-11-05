@@ -7,7 +7,7 @@ the source.
 
 The pattern across them is the reason the document exists: **almost nothing
 here was found by reading code or by a test written from imagination.** Of
-388 defects, 310 were found only by running against a real device. Seventeen
+389 defects, 311 were found only by running against a real device. Seventeen
 more — 255, 280, 282, 327, 329, 353, 355, 356, 359, 371, 375, 380, 382, 384, 386, 387 and 388 — were met while
 running against one, though the fault lay in a check, the host or Mobium's own
 design rather than in the platform. The other sixty-one — 4, 5, 6, 14, 23,
@@ -8550,6 +8550,44 @@ TalkBack here does not log at VERBOSE.
 **Still so:** a client's `start()` reuses a session the CLI opened, and its quit
 ends it, so `mobium record` cannot film a client's run. It now warns, and the
 CLI's stop names why. `mobium test` over a running recording kept it, 1 run.
+
+### 389. A tap straight after a lock was reported, and reached nothing
+
+**Found by:** a person, 2026-11-04 (mobiumdev/mobium#327), on MobiumApp on the
+Android 15 emulator and the iOS 26.5 simulator. `dumpsys power` says asleep at
+once, so `lock lock` answered. Reads went on showing the app for about half a
+second, then hung for 10 seconds and failed. A tap in that half second answered
+`tapped`, exit 0. Going through every action found the rest: on Android, a
+swipe, long press or drag at a point touched a screen that was off and answered
+done, since no read stands in front of them; and `find`, `wait`, `scroll-to`,
+`swipe up`, `keyboard --text` and `current` blamed a changing screen, exit 1. On
+iOS, reads showed the app for a moment too: `scroll-to` swiped the lock screen,
+which can unlock it, and a miss said only "no element matches".
+
+**Fixed:** `lock lock` waits until the lock is what a read will see: on Android
+for `dumpsys window`'s `interactiveState` to leave
+`INTERACTIVE_STATE_GOING_TO_SLEEP`, about 0.55 s; on iOS for SpringBoard in front.
+Each is bounded at 3 s. Any tool that fails reading on a locked device answers
+`device_not_ready`, in one place, `lockedFailure`. A touch at a point asks whether
+the screen is off, one `dumpsys power`, 57 ms for the refusal. A miss or a
+`scroll-to` with the system shell in front asks whether the device is locked.
+
+"Asleep" is not "locked": a lock screen that is up takes touches, a swipe up or a
+PIN pad, so nothing refuses those. iOS's lock screen stays on and is never asked.
+
+**Measured:** tap after lock, 8 of 8 exit 3 on Android 15 and 17, none landing,
+where Android 15 gave 8 of 8 false successes. On iOS, tap 10 of 10 exit 3, and
+`scroll-to` 8 of 8 exit 3 still locked. `lock.sh` fails on `main` and passes here.
+Unlocked point gestures still land, and a tap straight after `lock unlock` landed
+6 of 6. A lock screen that stays awake on Android was not measured: the Android
+15 emulator showed none.
+
+**Still so:** a device put to sleep by anything else, then tapped by element
+within that half second, reports the tap: 4 of 4 with `input keyevent
+KEYCODE_SLEEP`. Asking before every touch would close it for 45 ms of a 250 ms
+tap on the emulator. `press back` and `press home` on a sleeping Android answer
+after 20 s, saying what they could not read. A read on a sleeping Android takes
+10 s to fail, so these refusals do too.
 
 ## Findings that were not defects
 

@@ -221,6 +221,10 @@ func (h *Handlers) scrollIntoViewFrom(ctx context.Context, s *session, tree *uit
 	if lostAmongLookAlikes(resolveErr) || !matchedNothing(resolveErr) && !errors.Is(resolveErr, errOffScreen) {
 		return nil, nil, 0, resolveErr
 	}
+	// A swipe up on a lock screen unlocks it. CHALLENGES 389.
+	if h.lockedNote(ctx, s, tree) != "" {
+		return nil, nil, 0, lockedOver(loc)
+	}
 	// A screen in the middle of changing can read, for a moment, as having
 	// nothing that scrolls: measured on Settings, a scroll-to 60ms after
 	// pressing back failed 3 times in 15, and the list was there a moment
