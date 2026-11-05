@@ -7,7 +7,7 @@ the source.
 
 The pattern across them is the reason the document exists: **almost nothing
 here was found by reading code or by a test written from imagination.** Of
-389 defects, 311 were found only by running against a real device. Seventeen
+390 defects, 312 were found only by running against a real device. Seventeen
 more — 255, 280, 282, 327, 329, 353, 355, 356, 359, 371, 375, 380, 382, 384, 386, 387 and 388 — were met while
 running against one, though the fault lay in a check, the host or Mobium's own
 design rather than in the platform. The other sixty-one — 4, 5, 6, 14, 23,
@@ -8589,6 +8589,60 @@ KEYCODE_SLEEP`. Asking before every touch would close it for 45 ms of a 250 ms
 tap on the emulator. `press back` and `press home` on a sleeping Android answer
 after 20 s, saying what they could not read. A read on a sleeping Android takes
 10 s to fail, so these refusals do too.
+
+### 390. A steady tone was heard as two sounds
+
+**Found by:** a sweep of `audio.sh` (mobiumdev/mobium#334), which passed 1 of 6 on
+an Android 15 emulator started by hand, on `main` as much as on a branch. `440 Hz
+0.4-0.7s`, then `440 Hz 0.8-2.4s`, for one 2-second tone.
+
+Four explanations were measured and dropped. Packets were not late: none arrived
+more than 60ms after the last, and no silence was padded in. They were not short:
+the stream ran at the full 48 kHz. There was no dropout, which the issue guessed:
+the tone sounded unbroken, and only 2 of 31 off-pitch windows held a run of zeros.
+The packet's `timestamp` could not have helped: it tracks arrival to within a
+millisecond, so it says when a packet was sent.
+
+The samples hold the cause. The waveform has pairs of breaks 33 samples apart, the
+tone's phase jumping across them, 113 degrees at 440 Hz. An FFT across them read
+430 Hz for 440, and 2%, 8.8 Hz there, is what holds one sound together.
+
+**The breaks are the emulator's host audio output.** The same app and the same
+tones gave 151 breaks in 48 s on an emulator started by hand, and none on one from
+`mobium boot`, which passes `-no-audio`. They cluster after audio starts: captures
+in a row held 26, 10, 2, 0, 0, 0. That is why a loop of captures rarely split and
+the check, whose tones come early, usually did. `-no-audio` is not a cure that
+reaches everyone: `docs/SETUP.md` showed the hand start.
+
+**Fixed:** `steadyPitch` cuts a window at each break and takes the median of the
+stretches, which holds if one hides a break too small to see. Stretches that are
+not one sound are two notes, read whole as before, so a melody and a real pitch
+change still split. `docs/SETUP.md` now boots with `mobium boot`, and says what a
+hand start costs.
+
+Two more, found on the way. `-port` leaves an emulator with no discovery file and
+no control port, even with `-grpc-use-token`, measured on emulator 37.1.11; two
+`mobium boot`s take 5554 and 5556 by themselves and both capture. `SETUP.md` said to
+pass it, and the refusal blamed `-no-grpc` alone. And `audio.sh` took a tone's own
+first instant, a pitchless sound touching it, for a sound in the pause, failing
+both versions now and then; a sound inside the pause still fails it.
+
+**Measured:** `audio.sh` by hand, `main` 1 of 6 and this 6 of 6, in turn on one
+emulator before the pause fix made it 5 of 6 and after. On `-no-audio`, 4 of 4, and
+Android 17 passes. `audio-sim.sh` passes. Real captures by hand, `main` then this:
+
+| Level | Split captures | Windows over 0.5 Hz off |
+| --- | --- | --- |
+| -42 dBFS, 36 captures | 1, then 0 | 85 of 747, then 14 |
+| -46 dBFS, 16 captures | 2, then 0 | 32 of 327, then 6 |
+| -49 dBFS, 16 captures | 3, then 0 | 50 of 329, then 10 |
+| -62 dBFS, 14 captures | 5, then 2 | 32 of 283, then 10 |
+
+**Still so:** at -62 dBFS, the quietest step that sounds here, a tone by hand still
+splits 2 in 14: breaks that small go unseen. A synthetic spliced tone holds to 18
+kHz at -42 dBFS, and above 1320 Hz neither version split, since a break bends a
+higher tone less. Not measured: a tone from anything but MobiumApp (Chrome played
+nothing), and any other host. Not run on a phone, which captures no samples.
 
 ## Findings that were not defects
 

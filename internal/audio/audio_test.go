@@ -186,3 +186,73 @@ func TestAnalyzeAOneSidedClickHasNoPitch(t *testing.T) {
 		t.Errorf("60 Hz: %+v", got)
 	}
 }
+
+// spliced is a tone as the Android 15 emulator's stream carries it: every 1666
+// samples, 33 samples that break its phase. CHALLENGES 390.
+func spliced(hz float64, seconds, offset, amp float64, rate int) []int16 {
+	out := make([]int16, 0, int(seconds*float64(rate)))
+	phase := 2 * math.Pi * offset
+	step := 2 * math.Pi * hz / float64(rate)
+	for i := 0; i < int(seconds*float64(rate)); i++ {
+		if i%1666 == 0 && i > 0 {
+			phase += 33 * step
+		}
+		out = append(out, int16(amp*math.Sin(phase)))
+		phase += step
+	}
+	return out
+}
+
+func TestASplicedToneIsOneSound(t *testing.T) {
+	for _, hz := range []float64{220, 440, 660, 880, 1320, 3520, 10000} {
+		for _, offset := range []float64{0, 0.13, 0.37, 0.71} {
+			segs := Analyze(spliced(hz, 2, offset, 387, 48000), 48000)
+			var sounds []Segment
+			for _, s := range segs {
+				if s.Sound {
+					sounds = append(sounds, s)
+				}
+			}
+			if len(sounds) != 1 {
+				t.Errorf("%.0f Hz, offset %.2f: heard %d sounds: %+v", hz, offset, len(sounds), sounds)
+				continue
+			}
+			if d := math.Abs(sounds[0].Hz - hz); d > hz*0.005 {
+				t.Errorf("%.0f Hz, offset %.2f: heard %.1f Hz", hz, offset, sounds[0].Hz)
+			}
+		}
+	}
+}
+
+// A quiet tone's breaks are too small to see them all, so its reading stays bent
+// by some of them. It must stay within a semitone's half of the tone.
+func TestAQuietSplicedToneStaysNearItsPitch(t *testing.T) {
+	for _, amp := range []float64{60, 30} {
+		for _, hz := range []float64{220, 440, 880} {
+			for _, offset := range []float64{0, 0.13, 0.37, 0.71} {
+				x := spliced(hz, 2, offset, amp, 48000)
+				for at := 0; at+4800 <= len(x); at += 4800 {
+					if got := steadyPitch(x[at:at+4800], 48000); math.Abs(got-hz) > hz*0.03 {
+						t.Fatalf("%.0f Hz at amplitude %.0f: read %.1f", hz, amp, got)
+					}
+				}
+			}
+		}
+	}
+}
+
+// Two notes in one window are not a splice to read past: a real change still
+// splits the sound.
+func TestAPitchChangeStillSplitsTheSound(t *testing.T) {
+	a := spliced(440, 1, 0, 387, 48000)
+	b := spliced(880, 1, 0, 387, 48000)
+	var sounds []Segment
+	for _, s := range Analyze(append(a, b...), 48000) {
+		if s.Sound {
+			sounds = append(sounds, s)
+		}
+	}
+	if len(sounds) < 2 || math.Abs(sounds[0].Hz-440) > 3 || math.Abs(sounds[len(sounds)-1].Hz-880) > 5 {
+		t.Errorf("heard %+v", sounds)
+	}
+}

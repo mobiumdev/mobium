@@ -191,7 +191,10 @@ import json, sys
 segs = json.load(open(sys.argv[1]))["timeline"]
 tones = [s for s in segs if s["sound"] and (s["to"] - s["from"]) / 1e9 > 0.2]
 gap = (tones[1]["from"] - tones[0]["to"]) / 1e9
-quiet = [s for s in segs if s["from"] >= tones[0]["to"] and s["to"] <= tones[1]["from"]]
+# A tone starting at the end of a tenth of a second is a sound with no pitch
+# there, touching the tone. It is the tone, not a sound in the pause.
+quiet = [s for s in segs if s["from"] >= tones[0]["to"] and s["to"] <= tones[1]["from"]
+         and not (s["to"] - s["from"] <= 100000000 and (s["to"] == tones[1]["from"] or s["from"] == tones[0]["to"]))]
 if not (0.8 <= gap <= 1.2 and all(not s["sound"] for s in quiet)):
     sys.exit("heard " + ", ".join("%.1f-%.1fs %s" % (s["from"] / 1e9, s["to"] / 1e9,
         ("%.0f Hz" % s.get("hz", 0)) if s["sound"] else "silence") for s in segs))

@@ -156,8 +156,81 @@ func read(x []int16, rate int) window {
 	if first < 0 || last-first < rate/200 {
 		return window{level: level}
 	}
-	return window{level: level, hz: pitch(x[first:last+1], rate)}
+	return window{level: level, hz: steadyPitch(x[first:last+1], rate)}
 }
+
+// steadyPitch is the pitch of x, read past breaks in its waveform. The Android
+// 15 emulator's stream breaks a tone's phase every 35ms or so, and an FFT across
+// the breaks bends the pitch past what holds one sound together. Stretches of one
+// sound give their median, since one may hold a break too small to see. Stretches
+// that are not one sound are two notes, and x is read whole, as it always was.
+// CHALLENGES 390.
+func steadyPitch(x []int16, rate int) float64 {
+	shortest := rate / minStretch
+	var read []float64
+	for _, part := range stretches(x) {
+		if len(part) < shortest {
+			break
+		}
+		hz := pitch(part, rate)
+		if hz == 0 {
+			return pitch(x, rate)
+		}
+		read = append(read, hz)
+	}
+	if len(read) < 2 {
+		return pitch(x, rate)
+	}
+	sort.Float64s(read)
+	if !samePitch(read[0], read[len(read)-1]) {
+		return pitch(x, rate)
+	}
+	return read[len(read)/2]
+}
+
+// stretches cuts x at each break in its waveform, longest first.
+func stretches(x []int16) [][]int16 {
+	if len(x) < 3 {
+		return [][]int16{x}
+	}
+	bends := make([]int, len(x)-2)
+	for i := range bends {
+		b := int(x[i+2]) - 2*int(x[i+1]) + int(x[i])
+		if b < 0 {
+			b = -b
+		}
+		bends[i] = b
+	}
+	sorted := append([]int(nil), bends...)
+	sort.Ints(sorted)
+	limit := max(minBreak, breakOverTypical*sorted[len(sorted)/2])
+
+	var parts [][]int16
+	from := 0
+	for i, b := range bends {
+		if b > limit {
+			if i > from {
+				parts = append(parts, x[from:i])
+			}
+			from = i + 3
+		}
+	}
+	if from < len(x) {
+		parts = append(parts, x[from:])
+	}
+	sort.SliceStable(parts, func(a, b int) bool { return len(parts[a]) > len(parts[b]) })
+	return parts
+}
+
+const (
+	// A break bends the waveform this many times more than a typical sample
+	// of it does, and by at least minBreak counts: rounding reaches a few.
+	breakOverTypical = 8
+	minBreak         = 6
+	// minStretch is the shortest stretch read for a pitch, as a fraction of a
+	// second: 20ms.
+	minStretch = 50
+)
 
 // edge is the amplitude that marks where sound begins inside a window: well
 // above the quiet floor's few counts, and below a tone at the sound floor.
