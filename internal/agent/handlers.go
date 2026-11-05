@@ -332,7 +332,7 @@ func (h *Handlers) CallMeta(name string, args, meta map[string]interface{}) (*To
 		if s := h.tracedSession(args); s != nil {
 			t := s.trace
 			id := traceBefore(t, name, args, meta[MetaExpect])
-			res, err := h.dispatch(ctx, name, args)
+			res, err := h.callTool(ctx, name, args)
 			res, err = h.reportIdle(h.reportHandled(res, err))
 			// A call that ended the session ended the trace with it.
 			if s.trace == t {
@@ -341,12 +341,47 @@ func (h *Handlers) CallMeta(name string, args, meta map[string]interface{}) (*To
 			return res, err
 		}
 	}
-	res, err := h.dispatch(ctx, name, args)
+	res, err := h.callTool(ctx, name, args)
 	return h.reportIdle(h.reportHandled(res, err))
 }
 
 // dispatch runs one tool by name, if the policy allows it. A batch is held
 // to the policy step by step, since each step comes back through here.
+func (h *Handlers) callTool(ctx context.Context, name string, args map[string]interface{}) (*ToolsCallResult, error) {
+	res, err := h.dispatch(ctx, name, args)
+	return res, h.lockedFailure(ctx, name, args, err)
+}
+
+// lockedFailure names the lock when a tool failed for want of a screen to read:
+// the read blames a changing screen. CHALLENGES 389.
+func (h *Handlers) lockedFailure(ctx context.Context, name string, args map[string]interface{}, err error) error {
+	if code := mobiumerr.CodeOf(err); code != mobiumerr.Unclassified && code != mobiumerr.DeviceServer {
+		return err
+	}
+	switch name {
+	case "app_lock", "app_session", "app_shutdown", "app_boot", "app_batch":
+		return err
+	}
+	serial := stringArg(args, "device")
+	if serial == "" {
+		serial = h.defaultDevice
+	}
+	var open *session
+	for _, s := range h.sessions {
+		if serial != "" && s.dev.Serial != serial {
+			continue
+		}
+		if open != nil {
+			return err
+		}
+		open = s
+	}
+	if open == nil {
+		return err
+	}
+	return h.lockedRead(ctx, open, err)
+}
+
 func (h *Handlers) dispatch(ctx context.Context, name string, args map[string]interface{}) (*ToolsCallResult, error) {
 	if err := h.permitCall(ctx, name, args); err != nil {
 		return nil, err
@@ -769,6 +804,28 @@ func (h *Handlers) lockedRead(ctx context.Context, s *session, err error) error 
 		"or password, or unlock it by hand").WithDetail("read_error", err.Error())
 }
 
+// refuseAsleep refuses a touch on a screen that is off, which reaches nothing.
+// For a touch at a point, which no read stands in front of. CHALLENGES 389.
+func (h *Handlers) refuseAsleep(ctx context.Context, s *session) error {
+	sl, ok := mobiumdriver.AsScreenSleeper(s.driver)
+	if !ok {
+		return nil
+	}
+	if asleep, err := sl.ScreenAsleep(ctx); err != nil || !asleep {
+		return nil
+	}
+	return mobiumerr.New(mobiumerr.DeviceNotReady, "the screen is off, so a touch reaches nothing — run `mobium "+
+		"lock unlock` (app_lock with state \"unlock\"), which wakes it and unlocks a device with no PIN, pattern "+
+		"or password")
+}
+
+// lockedOver refuses a target that a lock screen stands in front of.
+func lockedOver(loc uitree.Locator) error {
+	return mobiumerr.New(mobiumerr.DeviceNotReady, "%s is not on the screen because the device is locked — run "+
+		"`mobium lock unlock` (app_lock with state \"unlock\"), which unlocks a device with no PIN, pattern or "+
+		"password, or unlock it by hand", loc)
+}
+
 // inferredNote says when which elements are shown was worked out from where
 // they are, on a screen too large for iOS to be asked (CHALLENGES 258): an
 // element something covers may be listed, and a tap on it is refused by
@@ -881,12 +938,21 @@ func (h *Handlers) tapOn(ctx context.Context, s *session, args map[string]interf
 		}
 		// A point off the screen touches nothing, and an iPhone simulator
 		// answered a tap at (50000, 50000) as done (CHALLENGES 187).
-		if tree, err := driver.Snapshot(ctx); err == nil && tree.Root != nil {
+		tree, err := driver.Snapshot(ctx)
+		if err != nil {
+			if lerr := h.lockedRead(ctx, s, err); mobiumerr.CodeOf(lerr) == mobiumerr.DeviceNotReady {
+				return nil, lerr
+			}
+		}
+		if err == nil && tree.Root != nil {
 			if b := tree.Root.Bounds; !b.Empty() && (x < b.X1 || y < b.Y1 || x >= b.X2 || y >= b.Y2) {
 				return nil, mobiumerr.New(mobiumerr.InvalidArgument, "(%d, %d) is off the screen, which is %s in device "+
 					"pixels — a touch there reaches nothing", x, y, b).
 					WithRemedy("give a point on the screen, or tap an element by its ref or locator")
 			}
+		}
+		if err := h.refuseAsleep(ctx, s); err != nil {
+			return nil, err
 		}
 		if err := touch(ctx, x, y); err != nil {
 			return nil, err
@@ -2004,6 +2070,10 @@ func (h *Handlers) resolveNodeOnce(ctx context.Context, s *session, target strin
 		if text := appDialogText(tree); text != "" {
 			return nil, nil, appDialogOver(text, loc, tree.Root != nil && !uitree.IsIOS(tree.Root))
 		}
+		// The lock screen, which holds nothing of the app. CHALLENGES 389.
+		if tree != nil && h.lockedNote(ctx, s, tree) != "" {
+			return nil, nil, lockedOver(loc)
+		}
 
 	default:
 		// It resolved, which is not the same as being reachable. A row
@@ -2188,7 +2258,7 @@ func (h *Handlers) settle(ctx context.Context, s *session, loc uitree.Locator,
 			// it: this is the snapshot taken *because* something might be
 			// moving, which is exactly when the hierarchy is unreadable.
 			if time.Now().After(deadline) {
-				return nil, nil, err
+				return nil, nil, h.lockedRead(ctx, s, err)
 			}
 			continue
 		}
@@ -2564,6 +2634,9 @@ func (h *Handlers) swipe(ctx context.Context, args map[string]interface{}) (*Too
 		if err := h.awaitAppIdle(ctx, s, fmt.Sprintf("(%d,%d) to (%d,%d)", x1, y1, x2, y2)); err != nil {
 			return nil, err
 		}
+		if err := h.refuseAsleep(ctx, s); err != nil {
+			return nil, err
+		}
 		if err := gest.Swipe(ctx, x1, y1, x2, y2, duration); err != nil {
 			return nil, err
 		}
@@ -2665,6 +2738,9 @@ func (h *Handlers) longPress(ctx context.Context, args map[string]interface{}) (
 			return nil, mobiumerr.New(mobiumerr.InvalidArgument, "app_long_press needs a target or both x and y")
 		}
 		if err := h.awaitAppIdle(ctx, s, fmt.Sprintf("(%d, %d)", x, y)); err != nil {
+			return nil, err
+		}
+		if err := h.refuseAsleep(ctx, s); err != nil {
 			return nil, err
 		}
 		if err := gest.LongPress(ctx, x, y, duration); err != nil {

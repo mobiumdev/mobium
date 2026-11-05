@@ -259,6 +259,12 @@ func AsScreenLock(d Driver) (ScreenLock, bool) {
 	return s, ok && has(d, CapScreenLock)
 }
 
+// AsScreenSleeper returns the driver's asleep question, if it has one.
+func AsScreenSleeper(d Driver) (ScreenSleeper, bool) {
+	s, ok := d.(ScreenSleeper)
+	return s, ok && has(d, CapScreenLock)
+}
+
 // AsInterruptions returns the driver's call and message support, if it has any.
 func AsInterruptions(d Driver) (Interruptions, bool) {
 	i, ok := d.(Interruptions)

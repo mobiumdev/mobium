@@ -6,6 +6,7 @@ import (
 	"github.com/mobiumdev/mobium/internal/mobiumerr"
 	"sort"
 	"strings"
+	"time"
 )
 
 // Mobium's hardware button vocabulary.
@@ -72,6 +73,12 @@ type Buttons interface {
 type ScreenLock interface {
 	ScreenLocked(ctx context.Context) (bool, error)
 	SetScreenLocked(ctx context.Context, locked bool) error
+}
+
+// ScreenSleeper reports a screen that is off, which a touch cannot reach. Only
+// Android: an iOS lock screen stays on, and takes touches.
+type ScreenSleeper interface {
+	ScreenAsleep(ctx context.Context) (bool, error)
 }
 
 // androidKeycodes maps the vocabulary to what `input keyevent` understands.
@@ -146,6 +153,11 @@ func (a *Android) ScreenLocked(ctx context.Context) (bool, error) {
 	return a.adb.ScreenLocked(ctx)
 }
 
+// ScreenAsleep reports the screen off.
+func (a *Android) ScreenAsleep(ctx context.Context) (bool, error) {
+	return a.adb.ScreenAsleep(ctx)
+}
+
 // SetScreenLocked locks or unlocks the screen and confirms it.
 func (a *Android) SetScreenLocked(ctx context.Context, locked bool) error {
 	return a.adb.SetScreenLocked(ctx, locked)
@@ -162,6 +174,11 @@ func (u *UIA2) SupportedButtons() []string { return androidButtons() }
 // ScreenLocked reports whether the screen is off or showing the lock screen.
 func (u *UIA2) ScreenLocked(ctx context.Context) (bool, error) {
 	return u.adb.ScreenLocked(ctx)
+}
+
+// ScreenAsleep reports the screen off.
+func (u *UIA2) ScreenAsleep(ctx context.Context) (bool, error) {
+	return u.adb.ScreenAsleep(ctx)
 }
 
 // SetScreenLocked locks or unlocks the screen and confirms it.
@@ -296,5 +313,27 @@ func (w *WDA) SetScreenLocked(ctx context.Context, locked bool) error {
 			map[bool]string{true: "lock", false: "unlock"}[locked],
 			map[bool]string{true: "locked", false: "unlocked"}[got])
 	}
+	if locked {
+		w.awaitLockScreen(ctx)
+	}
 	return nil
 }
+
+// awaitLockScreen waits for SpringBoard to come in front. /wda/locked says yes
+// at once, while reads go on showing the app, and a scroll-to swiped there.
+// CHALLENGES 389.
+func (w *WDA) awaitLockScreen(ctx context.Context) {
+	deadline := time.Now().Add(lockScreenBudget)
+	for time.Now().Before(deadline) && ctx.Err() == nil {
+		if w.foregroundBundle(ctx) == springboardBundleID {
+			return
+		}
+		select {
+		case <-ctx.Done():
+		case <-time.After(50 * time.Millisecond):
+		}
+	}
+}
+
+// lockScreenBudget bounds awaitLockScreen.
+const lockScreenBudget = 3 * time.Second

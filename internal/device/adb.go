@@ -1282,6 +1282,48 @@ func (a *ADB) ScreenLocked(ctx context.Context) (bool, error) {
 	return false, nil
 }
 
+// screenSleepBudget bounds awaitSleep: a device still on its way to sleep after
+// it is locked as asked. Measured at about 0.55 s on the Android 15 emulator.
+const screenSleepBudget = 3 * time.Second
+
+// ScreenAsleep reports the screen off. A lock screen that is up is awake, and
+// takes touches. It costs one dumpsys, where ScreenLocked may cost two.
+func (a *ADB) ScreenAsleep(ctx context.Context) (bool, error) {
+	power, err := a.Shell(ctx, "dumpsys", "power")
+	if err != nil {
+		return false, err
+	}
+	m := wakefulnessRe.FindSubmatch(power)
+	if m == nil {
+		return false, mobiumerr.New(mobiumerr.DeviceServer, "could not read whether the device is awake")
+	}
+	return !strings.EqualFold(string(m[1]), "Awake"), nil
+}
+
+// awaitSleep waits for the device to finish going to sleep. Wakefulness changes
+// at once, while reads go on showing the app for about half a second, and a tap
+// then is reported and reaches nothing. CHALLENGES 389.
+func (a *ADB) awaitSleep(ctx context.Context) {
+	deadline := time.Now().Add(screenSleepBudget)
+	for time.Now().Before(deadline) {
+		win, err := a.Shell(ctx, "dumpsys", "window")
+		if err != nil || !goingToSleep(win) {
+			return
+		}
+		select {
+		case <-ctx.Done():
+			return
+		case <-time.After(50 * time.Millisecond):
+		}
+	}
+}
+
+// goingToSleep reports a device on its way to sleep. An Android without the
+// field answers false, and nothing is waited for.
+func goingToSleep(dumpsysWindow []byte) bool {
+	return bytes.Contains(dumpsysWindow, []byte("interactiveState=INTERACTIVE_STATE_GOING_TO_SLEEP"))
+}
+
 // SetScreenLocked puts the screen to sleep or wakes it, and confirms it.
 //
 // KEYCODE_SLEEP and KEYCODE_WAKEUP are used rather than KEYCODE_POWER because
@@ -1311,6 +1353,9 @@ func (a *ADB) SetScreenLocked(ctx context.Context, locked bool) error {
 			return err
 		}
 		if got == locked {
+			if locked {
+				a.awaitSleep(ctx)
+			}
 			return nil
 		}
 		if time.Now().After(deadline) {
