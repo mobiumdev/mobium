@@ -8540,7 +8540,8 @@ trace and a speech listen too: a trace was lost at session end with no word.
 
 A recording and a trace leave audio's note (280), so a later status or stop names
 the cause instead of "nothing is recording": another client's quit, `daemon stop`,
-a driver switch, a shutdown.
+a driver switch, a shutdown. `clean-stop.sh` counted the new notes as a daemon left
+running until it learned them too, as it had to for audio's.
 
 **Measured:** with a running recording, all five clients on the Android 15
 emulator; Python, exit without quit and a trace on the iOS 26.5 simulator. pytest
