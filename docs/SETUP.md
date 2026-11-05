@@ -257,8 +257,8 @@ Wear OS images are on the stable channel, Wear OS 3 to 6.1, and 7.0 at API
 sdkmanager "system-images;android-35-ext15;android-wear;arm64-v8a"   # Wear OS 5.1
 avdmanager create avd -n mobium-wear -d wearos_large_round \
   -k "system-images;android-35-ext15;android-wear;arm64-v8a"
-emulator -avd mobium-wear -port 5558 -no-snapshot-load -no-boot-anim &
-docs/checks/wear-os.sh emulator-5558
+mobium boot mobium-wear
+docs/checks/wear-os.sh <the serial it names>
 ```
 
 `avdmanager` prints "Could not load devices" for another image's
@@ -269,9 +269,15 @@ too. The crown has no command yet.
 ### Running two at once
 
 ```sh
-emulator -avd mobium-test    -no-snapshot-save -no-boot-anim &            # 5554
-emulator -avd mobium-test-17 -no-snapshot-save -no-boot-anim -port 5556 & # 5556
+mobium boot mobium-test      # emulator-5554
+mobium boot mobium-test-17   # emulator-5556
 ```
+
+Each takes the next free port by itself. Started by hand, do not pass `-port`:
+measured on emulator 37, it leaves no control port, so `mobium audio` is refused.
+By hand, also pass `-no-audio`, as `mobium boot` does. Without it the host's audio
+output breaks up what a capture hears: 151 breaks in 48 s of the same tones where
+`-no-audio` had none. CHALLENGES 390.
 
 Then pass `--device emulator-5556` to every command, or give a client the
 device option. With two ready, a call that names no device is refused, so

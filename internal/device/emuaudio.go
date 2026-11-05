@@ -149,7 +149,7 @@ func findEmulatorEndpoint(serial string, dirs []string) (emulatorEndpoint, error
 		// it says it is running — so the remedy names the stop as well.
 		// CHALLENGES 284.
 		return emulatorEndpoint{}, mobiumerr.New(mobiumerr.DeviceNotReady, "%s has no control port Mobium "+
-			"can find (looked in %s) — it was started with -no-grpc, or by an emulator older than 33",
+			"can find (looked in %s) — it was started with -port or -no-grpc, or by an emulator older than 33",
 			serial, strings.Join(dirs, ", ")).
 			WithRemedy(fmt.Sprintf("restart it: `mobium shutdown %s`, then `mobium boot <its AVD>`, which "+
 				"starts it with the control port on", serial))
