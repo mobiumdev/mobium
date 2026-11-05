@@ -107,6 +107,7 @@ namespace Mobium.Tests
                     {
                         view["device"] = (string?)args?["device"] ?? "";
                         view["ended"] = true;
+                        if (mode == "discards") view["discarded"] = new JsonArray("the screen recording");
                     }
                     Reply(stdout, id, new JsonObject
                     {

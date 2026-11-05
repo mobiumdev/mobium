@@ -86,6 +86,8 @@ type ShutdownView struct {
 	Device string `json:"device"`
 	// SessionEnded says this daemon had a session on it, ended first.
 	SessionEnded bool `json:"session_ended"`
+	// Discarded names what ending that session threw away unsaved.
+	Discarded []string `json:"discarded,omitempty"`
 }
 
 // shutdown ends this daemon's session on the device, then the device: the
@@ -110,6 +112,7 @@ func (h *Handlers) shutdown(ctx context.Context, args map[string]interface{}) (*
 	view := ShutdownView{Device: serial}
 	for key, s := range h.sessions {
 		if key == serial || s.dev.Serial == serial {
+			view.Discarded = append(view.Discarded, s.discards()...)
 			s.closeWhy = "the device was shut down"
 			s.close()
 			delete(h.sessions, key)
@@ -125,7 +128,7 @@ func (h *Handlers) shutdown(ctx context.Context, args map[string]interface{}) (*
 	if err != nil {
 		return nil, err
 	}
-	return Result(fmt.Sprintf("shut down %s", serial), view), nil
+	return Result(fmt.Sprintf("shut down %s", serial)+discardedText(view.Discarded), view), nil
 }
 
 // shutdownTarget resolves a name to a running emulator's serial or a booted

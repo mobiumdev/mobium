@@ -63,6 +63,9 @@ func (h *Handlers) traceTool(ctx context.Context, args map[string]interface{}) (
 	switch action := stringArg(args, "action"); action {
 	case "", "status":
 		if s.trace == nil {
+			if lost := lostNote(traceNoteKind, "trace", s.dev.Serial); lost != "" {
+				return Result("not tracing — "+lost, view), nil
+			}
 			return Result("not tracing", view), nil
 		}
 		view.Tracing, view.Calls = true, s.trace.rec.Calls()
@@ -84,11 +87,17 @@ func (h *Handlers) traceTool(ctx context.Context, args map[string]interface{}) (
 		t.rec = trace.New(trace.Options{Name: stringArg(args, "name"), Device: s.dev.Serial,
 			Platform: platformOf(s), Version: Version})
 		s.trace = t
+		writeNote(traceNoteKind, s.dev.Serial, audioNote{PID: os.Getpid(), Started: t.started})
 		view.Tracing = true
 		return Result("tracing: every call on "+s.dev.Serial+" is recorded until app_trace stop", view), nil
 
 	case "stop":
 		if s.trace == nil {
+			if lost := lostNote(traceNoteKind, "trace", s.dev.Serial); lost != "" {
+				removeNote(traceNoteKind, s.dev.Serial)
+				return nil, mobiumerr.New(mobiumerr.Internal, "%s", lost).WithRemedy("a trace lives in the daemon " +
+					"that started it: start a new one, and stop it before the session or the daemon ends")
+			}
 			return nil, mobiumerr.New(mobiumerr.InvalidArgument, "no trace is running on %s — start one with "+
 				"app_trace start", s.dev.Serial)
 		}
@@ -99,6 +108,7 @@ func (h *Handlers) traceTool(ctx context.Context, args map[string]interface{}) (
 		}
 		t := s.trace
 		s.trace = nil
+		removeNote(traceNoteKind, s.dev.Serial)
 		raw, err := t.rec.Zip()
 		if err != nil {
 			return nil, mobiumerr.New(mobiumerr.DeviceServer, "writing the trace: %w", err)

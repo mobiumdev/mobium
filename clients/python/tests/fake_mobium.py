@@ -73,6 +73,8 @@ for line in sys.stdin:
                     "driver": "wda" if platform == "ios" else "uiautomator2", "app": args.get("app", ""), "sessions": []}
         elif action == "end":
             view = {"action": "end", "device": args.get("device", ""), "ended": True, "sessions": []}
+            if os.environ.get("MOBIUM_FAKE") == "discards":
+                view["discarded"] = ["the screen recording"]
         else:
             view = {"action": "status", "sessions": []}
         send({"jsonrpc": "2.0", "id": i, "result": {"content": [{"type": "text", "text": action or "status"}],

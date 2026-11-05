@@ -27,16 +27,26 @@ type audioNote struct {
 	Why     string    `json:"why,omitempty"`
 }
 
-func audioNotePath(serial string) string {
+// A screen recording and a trace live in the daemon too, and leave the same
+// note. CHALLENGES 388.
+const (
+	audioNoteKind     = "audio"
+	recordingNoteKind = "recording"
+	traceNoteKind     = "trace"
+)
+
+func notePath(kind, serial string) string {
 	name := paths.SessionName()
 	if name == "" {
 		name = "default"
 	}
 	// SessionDir's last segment is the serial made safe for a path.
-	return filepath.Join(paths.DaemonDir(), "audio-"+name+"-"+filepath.Base(paths.SessionDir(serial))+".json")
+	return filepath.Join(paths.DaemonDir(), kind+"-"+name+"-"+filepath.Base(paths.SessionDir(serial))+".json")
 }
 
-func writeAudioNote(serial string, n audioNote) {
+func writeAudioNote(serial string, n audioNote) { writeNote(audioNoteKind, serial, n) }
+
+func writeNote(kind, serial string, n audioNote) {
 	data, err := json.Marshal(n)
 	if err != nil {
 		return
@@ -44,15 +54,19 @@ func writeAudioNote(serial string, n audioNote) {
 	if err := os.MkdirAll(paths.DaemonDir(), 0o700); err != nil {
 		return
 	}
-	_ = os.WriteFile(audioNotePath(serial), data, 0o600)
+	_ = os.WriteFile(notePath(kind, serial), data, 0o600)
 }
 
-func removeAudioNote(serial string) { _ = os.Remove(audioNotePath(serial)) }
+func removeAudioNote(serial string) { removeNote(audioNoteKind, serial) }
+
+func removeNote(kind, serial string) { _ = os.Remove(notePath(kind, serial)) }
 
 // lostAudio says what became of a capture on this device that this daemon
 // does not hold, or "" when none was lost.
-func lostAudio(serial string) string {
-	data, err := os.ReadFile(audioNotePath(serial))
+func lostAudio(serial string) string { return lostNote(audioNoteKind, "capture", serial) }
+
+func lostNote(kind, what, serial string) string {
+	data, err := os.ReadFile(notePath(kind, serial))
 	if err != nil {
 		return ""
 	}
@@ -68,13 +82,15 @@ func lostAudio(serial string) string {
 	default:
 		why = "its session was closed"
 	}
-	return fmt.Sprintf("the capture started at %s, %s ago, was lost: %s", n.Started.Format("15:04:05"),
+	return fmt.Sprintf("the %s started at %s, %s ago, was lost: %s", what, n.Started.Format("15:04:05"),
 		time.Since(n.Started).Round(time.Second), why)
 }
 
 // endAudioNote records why a capture ended other than by a stop.
-func endAudioNote(serial, why string) {
-	data, err := os.ReadFile(audioNotePath(serial))
+func endAudioNote(serial, why string) { endNote(audioNoteKind, serial, why) }
+
+func endNote(kind, serial, why string) {
+	data, err := os.ReadFile(notePath(kind, serial))
 	if err != nil {
 		return
 	}
@@ -83,5 +99,5 @@ func endAudioNote(serial, why string) {
 		return
 	}
 	n.Why = why
-	writeAudioNote(serial, n)
+	writeNote(kind, serial, n)
 }

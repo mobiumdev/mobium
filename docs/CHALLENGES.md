@@ -7,8 +7,8 @@ the source.
 
 The pattern across them is the reason the document exists: **almost nothing
 here was found by reading code or by a test written from imagination.** Of
-387 defects, 310 were found only by running against a real device. Sixteen
-more — 255, 280, 282, 327, 329, 353, 355, 356, 359, 371, 375, 380, 382, 384, 386 and 387 — were met while
+388 defects, 310 were found only by running against a real device. Seventeen
+more — 255, 280, 282, 327, 329, 353, 355, 356, 359, 371, 375, 380, 382, 384, 386, 387 and 388 — were met while
 running against one, though the fault lay in a check, the host or Mobium's own
 design rather than in the platform. The other sixty-one — 4, 5, 6, 14, 23,
 24, 32, 35, 36, 39, 44, 50, 53, 54, 57, 66, 89, 99, 100, 121, 123, 129, 130,
@@ -8523,6 +8523,33 @@ is marked as device text.
 alone. With the fix, 0 of 203 and 0 of 193. All five clients and MCP took the
 empty ref on the Android 15 emulator. `wait-states.sh` fails on `main` on both
 devices and passes with the fix.
+### 388. A client's quit discarded a recording without a word
+
+**Found by:** a person recording a pytest run, 2026-11-04
+(mobiumdev/mobium#328), on the Android 15 emulator and the iOS 26.5 simulator.
+283 made `session end` say what it discards, but only in its text. Every client
+makes that call and drops the answer, so a recording was lost at exit 0.
+
+**Fixed:** `app_session` and `app_shutdown` answer `discarded`, and each client's
+quit warns: Python and JavaScript a `MobiumWarning`, Go the standard logger, Java
+the `dev.mobium` logger, .NET standard error. Python shows a warning once per
+place by default, so three lost recordings warned once; it now warns each time,
+and `-W ignore` still silences it. A client that exits without quit, `kill -9`
+included, has the pipe say it on standard error. The list now names a running
+trace and a speech listen too: a trace was lost at session end with no word.
+
+A recording and a trace leave audio's note (280), so a later status or stop names
+the cause instead of "nothing is recording": another client's quit, `daemon stop`,
+a driver switch, a shutdown.
+
+**Measured:** with a running recording, all five clients on the Android 15
+emulator; Python, exit without quit and a trace on the iOS 26.5 simulator. pytest
+shows the warning in its summary. A speech listen is covered by a test alone:
+TalkBack here does not log at VERBOSE.
+
+**Still so:** a client's `start()` reuses a session the CLI opened, and its quit
+ends it, so `mobium record` cannot film a client's run. It now warns, and the
+CLI's stop names why. `mobium test` over a running recording kept it, 1 run.
 
 ## Findings that were not defects
 

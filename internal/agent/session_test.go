@@ -345,10 +345,16 @@ func TestEndingSaysWhatItDiscarded(t *testing.T) {
 	if !strings.Contains(text, "the audio capture running for") || !strings.Contains(text, "was discarded, unsaved — stop it first") {
 		t.Errorf("end said %q", text)
 	}
+	if got := res.StructuredContent.(SessionView).Discarded; len(got) != 1 || !strings.HasPrefix(got[0], "the audio capture running for") {
+		t.Errorf("discarded = %q", got)
+	}
 	if got := lostAudio("emulator-5554"); !strings.HasSuffix(got, "the session was ended") {
 		t.Errorf("a later status: %q", got)
 	}
 	res, _ = h.sessionTool(context.Background(), map[string]interface{}{"action": "end", "device": "emulator-5556"})
+	if got := res.StructuredContent.(SessionView).Discarded; got != nil {
+		t.Errorf("a session holding nothing discarded %q", got)
+	}
 	if strings.Contains(res.Content[0].Text, "discarded") {
 		t.Errorf("a session holding nothing said it discarded something: %q", res.Content[0].Text)
 	}
@@ -366,5 +372,28 @@ func TestNotAnsweringADBNamesTheDevice(t *testing.T) {
 		if e == nil || e.Code != mobiumerr.DeviceNotReady || strings.Contains(e.Error(), "--driver") || !strings.Contains(e.Remedy, want) {
 			t.Errorf("%s: %v (remedy %q)", serial, e, e.Remedy)
 		}
+	}
+}
+
+// CHALLENGES 388.
+func TestEndingASessionNamesEverythingItDiscards(t *testing.T) {
+	t.Setenv("MOBIUM_HOME", t.TempDir())
+	h := twoSessions()
+	s := h.sessions["emulator-5554"]
+	s.recording = &fakeRecording{}
+	s.trace = &sessionTrace{started: time.Now()}
+	s.listening = &speechListen{}
+	res, err := h.sessionTool(context.Background(), map[string]interface{}{"action": "end", "device": "emulator-5554"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	got := strings.Join(res.StructuredContent.(SessionView).Discarded, "|")
+	for _, want := range []string{"the screen recording", "the trace running for", "what the screen reader said"} {
+		if !strings.Contains(got, want) {
+			t.Errorf("discarded %q, want %q", got, want)
+		}
+	}
+	if text := res.Content[0].Text; !strings.Contains(text, "were discarded, unsaved") {
+		t.Errorf("end said %q", text)
 	}
 }

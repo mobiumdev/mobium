@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"encoding/json"
 	"fmt"
+	"io"
 	"os"
 	"os/signal"
 	"sort"
@@ -101,6 +102,7 @@ type pipe struct {
 	owned    map[string]bool // devices whose session this client started
 	detached bool
 	released bool
+	stderr   io.Writer // os.Stderr unless a test sets it
 }
 
 func newPipe(call func(string, map[string]interface{}, map[string]interface{}) (*agent.ToolsCallResult, error)) *pipe {
@@ -125,10 +127,38 @@ func (p *pipe) release() {
 	p.mu.Unlock()
 	sort.Strings(devices)
 	for _, d := range devices {
-		if _, err := p.call("app_session", map[string]interface{}{"action": "end", "device": d}, nil); err != nil {
+		res, err := p.call("app_session", map[string]interface{}{"action": "end", "device": d}, nil)
+		for _, what := range discardedBy(res) {
+			fmt.Fprintf(p.stderrOr(), "mobium: the client went away, and ending its session on %s discarded %s, unsaved\n", d, what)
+		}
+		if err != nil {
 			fmt.Fprintf(os.Stderr, "mobium pipe: the client went away and its session on %s could not be ended: %v\n", d, err)
 		}
 	}
+}
+
+// discardedBy reads what an app_session end threw away.
+func discardedBy(result *agent.ToolsCallResult) []string {
+	if result == nil || result.IsError {
+		return nil
+	}
+	data, err := json.Marshal(result.StructuredContent)
+	if err != nil {
+		return nil
+	}
+	var view agent.SessionView
+	if json.Unmarshal(data, &view) != nil {
+		return nil
+	}
+	return view.Discarded
+}
+
+// stderrOr is where the pipe tells the client's person something.
+func (p *pipe) stderrOr() io.Writer {
+	if p.stderr != nil {
+		return p.stderr
+	}
+	return os.Stderr
 }
 
 // track follows app_session through a call, so the pipe knows which sessions

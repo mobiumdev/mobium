@@ -2,10 +2,12 @@ package mobium
 
 import (
 	"bufio"
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -146,7 +148,11 @@ func fakeTool(name string, args map[string]any, scenario string) map[string]any 
 			return text("session started", map[string]any{"action": "start", "device": "fake-device",
 				"platform": platform, "driver": driver, "app": app, "sessions": []any{}})
 		case "end":
-			return text("session ended", map[string]any{"action": "end", "device": args["device"], "ended": true, "sessions": []any{}})
+			view := map[string]any{"action": "end", "device": args["device"], "ended": true, "sessions": []any{}}
+			if os.Getenv(mobiumFakeEnv) == "discards" {
+				view["discarded"] = []any{"the screen recording"}
+			}
+			return text("session ended", view)
 		default:
 			return text("no session is open", map[string]any{"action": "status", "sessions": []any{}})
 		}
@@ -641,6 +647,38 @@ func TestStartOpensTheSessionAndQuitEndsIt(t *testing.T) {
 	}
 	if _, err := dev.Map(ctx); err == nil {
 		t.Error("a call after quit succeeded")
+	}
+}
+
+func TestQuitSaysWhatItDiscarded(t *testing.T) {
+	ctx := context.Background()
+	var logged bytes.Buffer
+	log.SetOutput(&logged)
+	defer log.SetOutput(os.Stderr)
+
+	t.Setenv(mobiumFakeEnv, "discards")
+	dev, err := Start(ctx, WithBinary(os.Args[0]))
+	if err != nil {
+		t.Fatalf("start: %v", err)
+	}
+	if err := dev.Quit(ctx); err != nil {
+		t.Fatalf("quit: %v", err)
+	}
+	if !strings.Contains(logged.String(), "the screen recording was discarded") {
+		t.Errorf("logged %q", logged.String())
+	}
+
+	logged.Reset()
+	t.Setenv(mobiumFakeEnv, "1")
+	dev, err = Start(ctx, WithBinary(os.Args[0]))
+	if err != nil {
+		t.Fatalf("start: %v", err)
+	}
+	if err := dev.Quit(ctx); err != nil {
+		t.Fatalf("quit: %v", err)
+	}
+	if logged.Len() != 0 {
+		t.Errorf("logged %q with nothing discarded", logged.String())
 	}
 }
 
