@@ -32,6 +32,9 @@ type SessionView struct {
 	// open, where something can: a real Android phone's UiAutomator2 server
 	// listens on the phone's network as well as adb (CHALLENGES 154).
 	Exposure string `json:"exposure,omitempty"`
+	// Discarded names what end threw away unsaved: a screen recording, an
+	// audio capture. CHALLENGES 388.
+	Discarded []string `json:"discarded,omitempty"`
 	// Ended says end closed a session; false means there was none to close.
 	Ended    bool          `json:"ended"`
 	Sessions []SessionInfo `json:"sessions"`
@@ -201,14 +204,8 @@ func (h *Handlers) sessionEnd(args map[string]interface{}) (*ToolsCallResult, er
 	restored := h.restoreNetwork(s)
 	// What the end discards, said with it: the capture went without a word,
 	// and only a later status told anyone. CHALLENGES 283.
-	var discarded []string
-	if s.audio != nil {
-		discarded = append(discarded, fmt.Sprintf("the audio capture running for %s",
-			time.Since(s.audio.Started()).Round(time.Second)))
-	}
-	if s.recording != nil {
-		discarded = append(discarded, "the screen recording")
-	}
+	discarded := s.discards()
+	view.Discarded = discarded
 	s.closeWhy = "the session was ended"
 	s.close()
 	delete(h.sessions, keys[0])
@@ -223,13 +220,7 @@ func (h *Handlers) sessionEnd(args map[string]interface{}) (*ToolsCallResult, er
 	if restored {
 		text += "; the network is as it was before app_network changed it"
 	}
-	if len(discarded) > 0 {
-		verb, it := " was", "it"
-		if len(discarded) > 1 {
-			verb, it = " were", "them"
-		}
-		text += "; " + strings.Join(discarded, " and ") + verb + " discarded, unsaved — stop " + it + " first to keep " + it
-	}
+	text += discardedText(discarded)
 	switch {
 	case stopped == nil && s.launched != "":
 		view.Terminated = s.launched
@@ -239,6 +230,19 @@ func (h *Handlers) sessionEnd(args map[string]interface{}) (*ToolsCallResult, er
 		text += fmt.Sprintf("; %s, which the session launched, could not be stopped: %v", s.launched, stopped)
 	}
 	return Result(text, view), nil
+}
+
+// discardedText is what a tool that ended a session says about discarded, or
+// "" when there is nothing to say.
+func discardedText(discarded []string) string {
+	if len(discarded) == 0 {
+		return ""
+	}
+	verb, it := " was", "it"
+	if len(discarded) > 1 {
+		verb, it = " were", "them"
+	}
+	return "; " + strings.Join(discarded, " and ") + verb + " discarded, unsaved — stop " + it + " first to keep " + it
 }
 
 // endTerminateTimeout bounds stopping the launched app on the way out, so an

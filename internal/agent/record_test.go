@@ -103,3 +103,49 @@ func TestRecordMakesTheFolder(t *testing.T) {
 		t.Fatalf("the folder was not made: %v", err)
 	}
 }
+
+// A stop after the session went says what became of the recording, and says it
+// once. CHALLENGES 388.
+func TestARecordingLostWithItsSessionIsNamed(t *testing.T) {
+	t.Setenv("MOBIUM_HOME", t.TempDir())
+	call, s := withRecorder(t, &fakeRecording{})
+	if _, err := call(map[string]interface{}{"action": "start"}); err != nil {
+		t.Fatal(err)
+	}
+	s.closeWhy = "the daemon was stopped"
+	s.close()
+	res, err := call(map[string]interface{}{})
+	if err != nil || !strings.Contains(textOf(res), "was lost: the daemon was stopped") {
+		t.Errorf("status: %v, %q", err, textOf(res))
+	}
+	_, err = call(map[string]interface{}{"action": "stop", "path": "/tmp/x.mp4"})
+	if err == nil || !strings.Contains(err.Error(), "was lost: the daemon was stopped") {
+		t.Errorf("stop: %v", err)
+	}
+	_, err = call(map[string]interface{}{"action": "stop", "path": "/tmp/x.mp4"})
+	if err == nil || !strings.Contains(err.Error(), "nothing is recording") {
+		t.Errorf("a second stop: %v", err)
+	}
+}
+
+// A stop refused for its missing path leaves the recording, so nothing may say
+// it was lost. CHALLENGES 388.
+func TestARecordingStoppedCleanlyLeavesNoNote(t *testing.T) {
+	t.Setenv("MOBIUM_HOME", t.TempDir())
+	call, s := withRecorder(t, &fakeRecording{info: device.MP4Info{Frames: 1, Duration: time.Second}})
+	if _, err := call(map[string]interface{}{"action": "start"}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := call(map[string]interface{}{"action": "stop"}); err == nil {
+		t.Fatal("a stop with no path was accepted")
+	}
+	if lost := lostNote(recordingNoteKind, "recording", s.dev.Serial); lost == "" {
+		t.Error("a running recording left no note")
+	}
+	if _, err := call(map[string]interface{}{"action": "stop", "path": t.TempDir() + "/x.mp4"}); err != nil {
+		t.Fatal(err)
+	}
+	if lost := lostNote(recordingNoteKind, "recording", s.dev.Serial); lost != "" {
+		t.Errorf("a saved recording reads as %q", lost)
+	}
+}

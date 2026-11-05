@@ -8,7 +8,7 @@
         device.tap("@e1")
 """
 
-from ._device import Bounds, Device, DeviceInfo, Element, Session, connect, start
+from ._device import Bounds, Device, DeviceInfo, Element, MobiumWarning, Session, connect, start
 from ._errors import (
     AmbiguousLocatorError,
     DeviceNotReadyError,

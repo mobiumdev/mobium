@@ -53,6 +53,7 @@ async function handle(msg) {
       view = { action: 'start', device: 'fake-device', platform, driver: platform === 'ios' ? 'wda' : 'uiautomator2', app: args.app || '', sessions: [] }
     } else if (args.action === 'end') {
       view = { action: 'end', device: args.device || '', ended: true, sessions: [] }
+      if (mode === 'discards') view.discarded = ['the screen recording']
     } else {
       view = { action: 'status', sessions: [] }
     }

@@ -62,6 +62,7 @@ public final class Tests {
         closeIsIdempotentAndEndsAWaitingCall();
         anAnswerWithNoIdFailsTheCallInFlight();
         startOpensTheSessionAndQuitEndsIt();
+        quitWarnsAboutWhatItDiscarded();
         filesSendTheirArgumentsAndDecodeTheAnswer();
         mapDiffSendsDiffAndReturnsTheDiff();
 
@@ -472,6 +473,29 @@ public final class Tests {
             yes("saying the request was unreadable", e != null && e.getMessage().contains("could not read the request"));
             eq("and the connection is still in step", "app_current",
                     Json.str(Connection.dataOf(c.call("app_current", null)), "tool"));
+        }
+    }
+
+    static void quitWarnsAboutWhatItDiscarded() {
+        List<String> warned = new ArrayList<>();
+        java.util.logging.Logger log = java.util.logging.Logger.getLogger("dev.mobium");
+        java.util.logging.Handler handler = new java.util.logging.Handler() {
+            @Override public void publish(java.util.logging.LogRecord r) { warned.add(r.getMessage()); }
+            @Override public void flush() { }
+            @Override public void close() { }
+        };
+        log.addHandler(handler);
+        log.setUseParentHandlers(false);
+        try {
+            Mobium.builder().binary(FakeProcess.launcher("discards", null)).platform("android").start().quit();
+            yes("quit warns about the recording",
+                    warned.size() == 1 && warned.get(0).contains("the screen recording was discarded"));
+            warned.clear();
+            Mobium.builder().binary(FakeProcess.launcher("ok", null)).platform("android").start().quit();
+            yes("quit warns about nothing when nothing was discarded", warned.isEmpty());
+        } finally {
+            log.removeHandler(handler);
+            log.setUseParentHandlers(true);
         }
     }
 

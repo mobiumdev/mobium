@@ -39,6 +39,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log"
 	"os"
 	"strings"
 	"time"
@@ -216,6 +217,9 @@ func (d *Device) Session() *Session { return d.started }
 // too. Quitting a session that is not open succeeds, and a second Quit — a
 // deferred one after an explicit one, say — does nothing.
 //
+// A running recording or audio capture is discarded, and said so through the
+// standard logger.
+//
 // A program that exits without Quit or Close has the sessions it started
 // ended for it, the same way: mobium sees the client go.
 func (d *Device) Quit(ctx context.Context) error {
@@ -227,7 +231,13 @@ func (d *Device) Quit(ctx context.Context) error {
 	if d.started != nil {
 		args["device"] = d.started.Device
 	}
-	err := d.act(ctx, "app_session", args)
+	var ended struct {
+		Discarded []string `json:"discarded"`
+	}
+	err := d.data(ctx, "app_session", args, &ended)
+	for _, what := range ended.Discarded {
+		log.Printf("mobium: %s was discarded, unsaved: stop it before Quit to keep it", what)
+	}
 	if cerr := d.Close(); err == nil {
 		err = cerr
 	}

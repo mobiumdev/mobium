@@ -3,10 +3,20 @@
 from __future__ import annotations
 
 import base64
+import warnings
 from dataclasses import dataclass
 from typing import Any
 
 from ._rpc import Connection, MobiumError, find_binary, _data_of, _text_of
+
+
+class MobiumWarning(UserWarning):
+    """Something was lost that nothing raised for: a recording quit() discarded."""
+
+
+# Python shows a warning once per place by default, and every recording a
+# process lost comes from the same place. Appended, so -W and pytest still win.
+warnings.filterwarnings("always", category=MobiumWarning, append=True)
 
 
 @dataclass(frozen=True)
@@ -185,13 +195,17 @@ class Device:
         """End the session on the device and close the connection.
 
         The teardown is the daemon's own: accessibility settings put back, a
-        recording or route stopped, WebViews detached, the device-side server
-        stopped, and the app start() launched, if any, stopped too. Quitting a
+        route stopped, WebViews detached, the device-side server stopped, and
+        the app start() launched, if any, stopped too. A running recording or
+        audio capture is discarded, with a UserWarning. Quitting a
         session that is not open succeeds, and a second quit -- say, a with
         block ending after an explicit one -- does nothing. A script that exits
         without quit() or close() has the sessions it started ended for it:
         mobium sees the client go.
         """
+        self._end(stacklevel=3)
+
+    def _end(self, stacklevel: int) -> None:
         if self._quit:
             return
         self._quit = True
@@ -199,7 +213,10 @@ class Device:
         if self.session is not None:
             args["device"] = self.session.device
         try:
-            self._call("app_session", args)
+            ended = self._data("app_session", args) or {}
+            for what in ended.get("discarded", []):
+                warnings.warn(f"{what} was discarded, unsaved: stop it before quit() to keep it",
+                              MobiumWarning, stacklevel=stacklevel)
         finally:
             self.close()
 
@@ -215,7 +232,7 @@ class Device:
         # block; one from connect() only closes, leaving the session to
         # whoever opened it.
         if self.session is not None:
-            self.quit()
+            self._end(stacklevel=3)
         else:
             self.close()
 

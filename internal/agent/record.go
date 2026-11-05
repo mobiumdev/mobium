@@ -36,6 +36,9 @@ func (h *Handlers) recordOn(ctx context.Context, s *session, args map[string]int
 	switch action := stringArg(args, "action"); action {
 	case "", "status":
 		if s.recording == nil {
+			if lost := lostNote(recordingNoteKind, "recording", s.dev.Serial); lost != "" {
+				return Result("not recording — "+lost, view), nil
+			}
 			return Result("not recording", view), nil
 		}
 		view.Recording = true
@@ -56,11 +59,17 @@ func (h *Handlers) recordOn(ctx context.Context, s *session, args map[string]int
 			return nil, err
 		}
 		s.recording = r
+		writeNote(recordingNoteKind, s.dev.Serial, audioNote{PID: os.Getpid(), Started: r.Started()})
 		view.Recording = true
 		return Result("recording — stop it with action \"stop\" and a path", view), nil
 
 	case "stop":
 		if s.recording == nil {
+			if lost := lostNote(recordingNoteKind, "recording", s.dev.Serial); lost != "" {
+				removeNote(recordingNoteKind, s.dev.Serial)
+				return nil, mobiumerr.New(mobiumerr.Internal, "%s", lost).WithRemedy("a recording lives in the " +
+					"session that started it: start a new one, and stop it before the session or the daemon ends")
+			}
 			return nil, mobiumerr.New(mobiumerr.InvalidArgument, "nothing is recording — start with action \"start\"")
 		}
 		path := stringArg(args, "path")
@@ -88,6 +97,7 @@ func (h *Handlers) recordOn(ctx context.Context, s *session, args map[string]int
 		}
 		r := s.recording
 		s.recording = nil
+		removeNote(recordingNoteKind, s.dev.Serial)
 		view.Elapsed = time.Since(r.Started()).Round(time.Millisecond)
 		info, err := r.Stop(ctx, path)
 		if err != nil {

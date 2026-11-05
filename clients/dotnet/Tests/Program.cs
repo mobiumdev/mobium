@@ -66,6 +66,7 @@ namespace Mobium.Tests
             DisposeIsIdempotentAndEndsAWaitingCall();
             AnAnswerWithNoIdFailsTheCallInFlight();
             StartOpensTheSessionAndQuitEndsIt();
+            QuitWarnsAboutWhatItDiscarded();
             UploadSendsOnlyWhatWasGiven();
             DownloadSavesDecodesOrLists();
             MapDiffSendsDiffAndReadsWhatChanged();
@@ -609,6 +610,27 @@ namespace Mobium.Tests
             Yes("an answer with no id fails the call as InvalidArgumentException", e != null);
             Yes("saying the request was unreadable", e != null && e.Message.Contains("could not read the request"));
             Eq("and the connection is still in step", "app_current", Json.Str(d.Call("app_current", null), "tool"));
+        }
+
+        private static void QuitWarnsAboutWhatItDiscarded()
+        {
+            var stderr = Console.Error;
+            var written = new StringWriter();
+            Console.SetError(written);
+            try
+            {
+                Environment.SetEnvironmentVariable("MOBIUM_FAKE", "discards");
+                Device.Builder().Binary(FakeBinary()).Platform("android").Start().Quit();
+                Yes("quit warns about the recording", written.ToString().Contains("the screen recording was discarded"));
+                written.GetStringBuilder().Clear();
+                Environment.SetEnvironmentVariable("MOBIUM_FAKE", "ok");
+                Device.Builder().Binary(FakeBinary()).Platform("android").Start().Quit();
+                Yes("quit warns about nothing when nothing was discarded", written.ToString().Length == 0);
+            }
+            finally
+            {
+                Console.SetError(stderr);
+            }
         }
 
         private static void StartOpensTheSessionAndQuitEndsIt()

@@ -1828,7 +1828,8 @@ export class Device {
   /**
    * Ends the session on the device and closes the connection. The teardown is the daemon's own: accessibility settings put
    * back, a recording or route stopped, WebViews detached, the device-side
-   * server stopped, and the app start() launched, if any, stopped too.
+   * server stopped, and the app start() launched, if any, stopped too. A
+   * running recording or audio capture is discarded, with a MobiumWarning.
    * Quitting a session that is not open succeeds, and a second quit does
    * nothing. A script that exits without quit() or close() has the sessions
    * it started ended for it: mobium sees the client go.
@@ -1840,7 +1841,10 @@ export class Device {
     const args = { action: 'end' }
     if (this.session) args.device = this.session.device
     try {
-      await this.conn.callTool('app_session', args)
+      const ended = (await this.conn.callTool('app_session', args)).structuredContent || {}
+      for (const what of ended.discarded || []) {
+        process.emitWarning(`${what} was discarded, unsaved: stop it before quit() to keep it`, 'MobiumWarning')
+      }
     } finally {
       await this.close()
     }

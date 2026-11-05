@@ -110,6 +110,7 @@ final class FakeMobium {
                 } else if (action.equals("end")) {
                     view.put("device", Json.str(a, "device"));
                     view.put("ended", true);
+                    if (mode.equals("discards")) view.put("discarded", List.of("the screen recording"));
                 }
                 view.put("sessions", List.of());
                 reply(out, id, Map.of("content", List.of(Map.of("type", "text", "text", "session")), "structuredContent", view));

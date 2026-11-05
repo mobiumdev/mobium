@@ -9,6 +9,7 @@ import java.util.Base64;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.logging.Logger;
 
 /**
  * Drives mobile apps on Android emulators, Android phones, iOS simulators
@@ -38,6 +39,8 @@ import java.util.Map;
  * that is waiting.
  */
 public final class Mobium implements AutoCloseable {
+
+    private static final Logger LOG = Logger.getLogger("dev.mobium");
 
     private final Connection conn;
     // What start() opened, so quit() ends that device's session even when
@@ -2258,8 +2261,10 @@ public final class Mobium implements AutoCloseable {
      * server stopped, and the app {@code start()} launched, if any, stopped
      * too. Quitting a session that is not open succeeds, and a second quit --
      * say, try-with-resources closing after an explicit one -- does nothing.
-     * A program that exits without quitting or closing has the sessions it
-     * started ended for it: mobium sees the client go.
+     * A running recording or audio capture is discarded, with a warning on
+     * the {@code dev.mobium} logger. A program that exits without quitting or
+     * closing has the sessions it started ended for it: mobium sees the client
+     * go.
      */
     public void quit() {
         if (quit) return;
@@ -2268,7 +2273,9 @@ public final class Mobium implements AutoCloseable {
         args.put("action", "end");
         if (session != null) args.put("device", session.device());
         try {
-            conn.call("app_session", args);
+            for (Object what : Json.asArray(data("app_session", args).get("discarded"))) {
+                LOG.warning(what + " was discarded, unsaved: stop it before quit() to keep it");
+            }
         } finally {
             conn.close();
         }

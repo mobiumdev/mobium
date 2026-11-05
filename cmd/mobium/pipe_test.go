@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"strings"
 	"testing"
@@ -103,8 +104,9 @@ func TestPipeResponsesAreValidJSON(t *testing.T) {
 
 // fakeDaemon answers app_session as the daemon does, and records every call.
 type fakeDaemon struct {
-	calls []string
-	open  map[string]bool
+	calls     []string
+	open      map[string]bool
+	discarded []string
 }
 
 func (f *fakeDaemon) call(tool string, args, _ map[string]interface{}) (*agent.ToolsCallResult, error) {
@@ -121,6 +123,7 @@ func (f *fakeDaemon) call(tool string, args, _ map[string]interface{}) (*agent.T
 		f.open[device] = true
 	case "end":
 		view.Ended = f.open[device]
+		view.Discarded = f.discarded
 		delete(f.open, device)
 	}
 	return agent.Result(action, view), nil
@@ -190,5 +193,29 @@ func TestPipeLeavesWhatItDidNotStartOrWasToldToKeep(t *testing.T) {
 	p.release()
 	if got := f.ended(); len(got) != 0 {
 		t.Errorf("a detached client's session was ended: %v", got)
+	}
+}
+
+// A client that exits without quit never reads the answer, so the pipe says
+// what its leaving threw away. CHALLENGES 388.
+func TestPipeSaysWhatTheClientsGoingDiscarded(t *testing.T) {
+	f := &fakeDaemon{open: map[string]bool{}, discarded: []string{"the screen recording"}}
+	var said bytes.Buffer
+	p := newPipe(f.call)
+	p.stderr = &said
+	p.handle([]byte(startCall("emulator-5554")))
+	p.release()
+	if !strings.Contains(said.String(), "discarded the screen recording, unsaved") {
+		t.Errorf("said %q", said.String())
+	}
+
+	f = &fakeDaemon{open: map[string]bool{}}
+	said.Reset()
+	p = newPipe(f.call)
+	p.stderr = &said
+	p.handle([]byte(startCall("emulator-5554")))
+	p.release()
+	if said.Len() != 0 {
+		t.Errorf("said %q with nothing discarded", said.String())
 	}
 }

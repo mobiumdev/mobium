@@ -214,6 +214,34 @@ func (s *session) closeWeb() {
 	s.webApp, s.webAppID = "", ""
 }
 
+// whyClosed says why the session is closing, for what it discards to say.
+func (s *session) whyClosed() string {
+	if s.closeWhy != "" {
+		return s.closeWhy
+	}
+	return "its session was closed"
+}
+
+// discards names what ending the session throws away unsaved. CHALLENGES 283,
+// 388.
+func (s *session) discards() []string {
+	var out []string
+	if s.audio != nil {
+		out = append(out, fmt.Sprintf("the audio capture running for %s",
+			time.Since(s.audio.Started()).Round(time.Second)))
+	}
+	if s.recording != nil {
+		out = append(out, "the screen recording")
+	}
+	if s.trace != nil {
+		out = append(out, fmt.Sprintf("the trace running for %s", time.Since(s.trace.started).Round(time.Second)))
+	}
+	if s.listening != nil {
+		out = append(out, "what the screen reader said since speech --listen start")
+	}
+	return out
+}
+
 // close releases a backend that owns a device-side process.
 func (s *session) close() {
 	// Finished cleanly and kept nowhere: a recorder that is killed leaves an
@@ -224,6 +252,11 @@ func (s *session) close() {
 		s.recording.Discard(ctx)
 		cancel()
 		s.recording = nil
+		endNote(recordingNoteKind, s.dev.Serial, s.whyClosed())
+	}
+	if s.trace != nil {
+		s.trace = nil
+		endNote(traceNoteKind, s.dev.Serial, s.whyClosed())
 	}
 	if s.listening != nil {
 		s.listening.end()
@@ -234,11 +267,7 @@ func (s *session) close() {
 		s.audio.Discard(ctx)
 		cancel()
 		s.audio = nil
-		why := s.closeWhy
-		if why == "" {
-			why = "its session was closed"
-		}
-		endAudioNote(s.dev.Serial, why)
+		endAudioNote(s.dev.Serial, s.whyClosed())
 	}
 	s.stopRoute()
 	// Before the driver closes: an undo needs the device to reach.

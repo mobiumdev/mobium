@@ -144,6 +144,24 @@ const within = (p, ms) => Promise.race([settle(p), new Promise((r) => setTimeout
   check(after.ok === false && /closed/.test(after.e.message), `a call after close does not say it was closed: ${JSON.stringify(after)}`)
 }
 
+// -- quit warns about what it discarded -------------------------------------
+{
+  const warned = []
+  const listen = (w) => { if (w.name === 'MobiumWarning') warned.push(w.message) }
+  process.on('warning', listen)
+  process.env.MOBIUM_FAKE = 'discards'
+  await (await m.start({ platform: 'android', binary: FAKE })).quit()
+  await new Promise((resolve) => setImmediate(resolve))
+  check(warned.length === 1 && warned[0].includes('the screen recording was discarded'),
+    `quit did not warn about the recording: ${JSON.stringify(warned)}`)
+  warned.length = 0
+  process.env.MOBIUM_FAKE = 'ok'
+  await (await m.start({ platform: 'android', binary: FAKE })).quit()
+  await new Promise((resolve) => setImmediate(resolve))
+  check(warned.length === 0, `quit warned with nothing discarded: ${JSON.stringify(warned)}`)
+  process.off('warning', listen)
+}
+
 // -- start opens the session, quit ends it --------------------------------
 {
   process.env.MOBIUM_FAKE = 'ok'

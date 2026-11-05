@@ -9,6 +9,7 @@ import sys
 import tempfile
 import threading
 import time
+import warnings
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent.parent))
 
@@ -232,6 +233,33 @@ d.quit()
 check(raises(Exception, d.quit) is None, "a second quit raised")
 check(raises(MobiumError, d.map) is not None, "a call after quit succeeded")
 check(connect(binary=FAKE).session is None, "connect reported a session it did not start")
+
+# -- quit warns about what it discarded ---------------------------------------
+os.environ["MOBIUM_FAKE"] = "discards"
+d = start(platform="android", binary=FAKE)
+with warnings.catch_warnings(record=True) as caught:
+    warnings.simplefilter("always")
+    d.quit()
+check(len(caught) == 1 and "the screen recording was discarded" in str(caught[0].message),
+      f"quit did not warn about the recording: {[str(w.message) for w in caught]}")
+os.environ["MOBIUM_FAKE"] = "ok"
+d = start(platform="android", binary=FAKE)
+with warnings.catch_warnings(record=True) as caught:
+    warnings.simplefilter("always")
+    d.quit()
+check(not caught, f"quit warned with nothing discarded: {[str(w.message) for w in caught]}")
+
+# Every time: Python shows a warning once per place unless told otherwise.
+os.environ["MOBIUM_FAKE"] = "discards"
+shown = []
+keep = warnings.showwarning
+warnings.showwarning = lambda message, *a, **k: shown.append(str(message))
+for _ in range(3):
+    with start(platform="android", binary=FAKE):
+        pass
+warnings.showwarning = keep
+check(len(shown) == 3, f"three discards warned {len(shown)} times")
+os.environ["MOBIUM_FAKE"] = "ok"
 
 # -- a with block around start() quits on the way out ------------------------
 with start(platform="android", binary=FAKE) as d:
