@@ -282,10 +282,11 @@ if [ -d "$state/daemon" ]; then
   # it waits for the next status or stop to report it (CHALLENGES 280).
   # Counted as one, it made this check fail with nothing running, and
   # --quit could not clear it. CHALLENGES 285.
-  n=$(ls -A "$state/daemon" 2>/dev/null | grep -v '^audio-.*\.json$' | wc -l | tr -d ' ')
+  notes='^(audio|recording|trace)-.*\.json$'
+  n=$(ls -A "$state/daemon" 2>/dev/null | grep -Ev "$notes" | wc -l | tr -d ' ')
   [ "$n" = "0" ] && note "daemon socket/pid" "cleared" || bad "daemon socket/pid" "$n file(s) left"
-  lost=$(ls -A "$state/daemon" 2>/dev/null | grep -c '^audio-.*\.json$')
-  [ "$lost" = "0" ] || note "lost audio captures" "$lost noted, for the next status or stop to report"
+  lost=$(ls -A "$state/daemon" 2>/dev/null | grep -Ec "$notes")
+  [ "$lost" = "0" ] || note "lost captures" "$lost noted, for the next status or stop to report"
 fi
 
 echo
