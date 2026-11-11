@@ -57,7 +57,7 @@ func TestFindEmulatorEndpointMissing(t *testing.T) {
 	if e, _ := mobiumerr.As(err); !strings.Contains(e.Remedy, "`mobium shutdown emulator-5554`, then `mobium boot") {
 		t.Fatalf("remedy %q", e.Remedy)
 	}
-	if _, err := findEmulatorEndpoint("3C191FDJG001QX", []string{dir}); mobiumerr.CodeOf(err) != mobiumerr.Unsupported {
+	if _, err := findEmulatorEndpoint("1A2B3C4D5E6F7G", []string{dir}); mobiumerr.CodeOf(err) != mobiumerr.Unsupported {
 		t.Fatalf("a phone: got %v", err)
 	}
 }

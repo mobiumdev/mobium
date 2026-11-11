@@ -366,7 +366,7 @@ func TestNotAnsweringADBNamesTheDevice(t *testing.T) {
 	cause := mobiumerr.New(mobiumerr.Timeout, "adb shell true timed out after 30s").WithDetail(device.ADBTimeoutKey, "shell true")
 	for serial, want := range map[string]string{
 		"emulator-5554":  "`mobium shutdown emulator-5554`, which ends a frozen emulator too",
-		"3C191FDJG001QX": "`adb -s 3C191FDJG001QX shell true`",
+		"1A2B3C4D5E6F7G": "`adb -s 1A2B3C4D5E6F7G shell true`",
 	} {
 		e, _ := mobiumerr.As(notAnsweringADB(serial, cause))
 		if e == nil || e.Code != mobiumerr.DeviceNotReady || strings.Contains(e.Error(), "--driver") || !strings.Contains(e.Remedy, want) {
