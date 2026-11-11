@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 
@@ -43,7 +44,8 @@ func (a *ADB) ClearAppData(ctx context.Context, pkg string) (ClearedData, error)
 	if _, err := a.Shell(ctx, "pm", "path", shellQuote(pkg)); err != nil {
 		return ClearedData{}, mobiumerr.New(mobiumerr.InvalidArgument, "%s is not installed on this device", pkg)
 	}
-	out, err := a.Shell(ctx, "pm", "clear", shellQuote(pkg))
+	userFlag, user := a.userArgs(ctx)
+	out, err := a.Shell(ctx, append(append([]string{"pm", "clear"}, userFlag...), shellQuote(pkg))...)
 	if err != nil {
 		return ClearedData{}, mobiumerr.New(mobiumerr.DeviceServer, "pm clear %s: %w", pkg, err)
 	}
@@ -57,6 +59,9 @@ func (a *ADB) ClearAppData(ctx context.Context, pkg string) (ClearedData, error)
 		Kept:    []string{"the app itself"},
 	}
 	ext := "/sdcard/Android/data/" + pkg
+	if user != 0 {
+		ext = "/storage/emulated/" + strconv.Itoa(user) + "/Android/data/" + pkg
+	}
 	left, diag, err := a.ShellDiagnostics(ctx, "ls", "-A", shellQuote(ext))
 	switch {
 	case err == nil && strings.TrimSpace(string(left)) != "":

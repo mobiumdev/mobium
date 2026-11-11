@@ -231,11 +231,37 @@ func describe(n *Node) string {
 		if s := descendantText(n, 3); s != "" {
 			return truncate(s)
 		}
+		if s := coveredSiblingText(n); s != "" {
+			return truncate(s)
+		}
 	}
 	if s := n.ShortTestID(); s != "" {
 		return s
 	}
 	return n.ShortClass()
+}
+
+// coveredSiblingText is the text a clickable with none of its own lies over:
+// that of the nodes beside it, under the same parent, wholly inside its
+// bounds. A car's list item is a nameless touch interceptor over a sibling
+// holding its title, and "Allow" mapped as car_ui_list_item_touch_interceptor
+// (CHALLENGES 399).
+func coveredSiblingText(n *Node) string {
+	if !n.Clickable || n.Parent == nil || n.Bounds.Empty() {
+		return ""
+	}
+	var parts []string
+	for _, sib := range n.Parent.Children {
+		if sib == n || Actionable(sib) || sib.Bounds.Empty() || !enclosesRect(n.Bounds, sib.Bounds) {
+			continue
+		}
+		if s := clean(sib.Text); s != "" {
+			parts = append(parts, s)
+		} else if s := descendantText(sib, 2); s != "" {
+			parts = append(parts, s)
+		}
+	}
+	return strings.Join(parts, " ")
 }
 
 // onceIfTwice is a label that is one phrase said twice, said once. WebKit

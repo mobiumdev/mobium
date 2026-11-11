@@ -203,41 +203,11 @@ func appDialogText(t *uitree.Tree) string {
 	if d == nil {
 		return ""
 	}
-	if words := dialogWords(d); words != "" {
+	if words := uitree.DialogWords(d); words != "" {
 		return words
 	}
 	// Only buttons: still a dialog in the way, with nothing to quote.
 	return "an untitled dialog"
-}
-
-// dialogWords is what a dialog or popover says — its texts in order, title
-// first, one to a line — leaving out its buttons' captions, or "" when it
-// has only buttons.
-func dialogWords(d *uitree.Node) string {
-	var parts []string
-	var walk func(n *uitree.Node)
-	walk = func(n *uitree.Node) {
-		// A button's words are its caption, not what the dialog says: a
-		// platform alert's text is its title and message alone.
-		if n.Clickable {
-			return
-		}
-		text := strings.TrimSpace(n.Text)
-		if masked, ok := uitree.Redact(n); ok {
-			text = masked
-		}
-		if text == "" {
-			text = strings.TrimSpace(n.Label)
-		}
-		if text != "" {
-			parts = append(parts, text)
-		}
-		for _, c := range n.Children {
-			walk(c)
-		}
-	}
-	walk(d)
-	return strings.Join(parts, "\n")
 }
 
 // popoverNote says that a popover is in front, what it says, and how it
@@ -263,7 +233,7 @@ func popoverNote(t *uitree.Tree) string {
 		return ""
 	}
 	note := "a popover is in front"
-	if words := strings.ReplaceAll(dialogWords(p), "\n", " — "); words != "" {
+	if words := strings.ReplaceAll(uitree.DialogWords(p), "\n", " — "); words != "" {
 		note += fmt.Sprintf(": %q", words)
 	}
 	return note + fmt.Sprintf(" — iOS reports what is behind it hidden until it closes, and it closes when "+

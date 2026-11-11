@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/mobiumdev/mobium/internal/mobiumerr"
+	"github.com/mobiumdev/mobium/internal/uitree"
 )
 
 // Both device-side servers implement the W3C alert endpoints, so both backends
@@ -12,8 +13,25 @@ import (
 // label: the platforms differ in what the dialog says and agree on how to
 // answer it.
 
-// AlertText reports what a system dialog says.
-func (u *UIA2) AlertText(ctx context.Context) (string, error) { return u.w3c.alertText(ctx) }
+// AlertText reports what a system dialog says. On a car the endpoint
+// quotes text from the instrument cluster's display too, so a dialog in the
+// hierarchy is quoted from its own nodes (CHALLENGES 398).
+func (u *UIA2) AlertText(ctx context.Context) (string, error) {
+	text, err := u.w3c.alertText(ctx)
+	if err != nil || u.bars == nil {
+		return text, err
+	}
+	tree, err := u.Snapshot(ctx)
+	if err != nil {
+		return "", err
+	}
+	if d := tree.Dialog(); d != nil {
+		if words := uitree.DialogWords(d); words != "" {
+			return words, nil
+		}
+	}
+	return text, nil
+}
 
 // AnswerAlert accepts or dismisses a system dialog.
 func (u *UIA2) AnswerAlert(ctx context.Context, accept bool) error {

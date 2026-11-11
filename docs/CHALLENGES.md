@@ -7,7 +7,7 @@ the source.
 
 The pattern across them is the reason the document exists: **almost nothing
 here was found by reading code or by a test written from imagination.** Of
-392 defects, 314 were found only by running against a real device. Seventeen
+399 defects, 321 were found only by running against a real device. Seventeen
 more — 255, 280, 282, 327, 329, 353, 355, 356, 359, 371, 375, 380, 382, 384, 386, 387 and 388 — were met while
 running against one, though the fault lay in a check, the host or Mobium's own
 design rather than in the platform. The other sixty-one — 4, 5, 6, 14, 23,
@@ -8673,6 +8673,110 @@ rectangle, or a ref would touch something other than what matched, which is 387
 from the other side: a wrapper around a smaller button still has no ref. A sweep of
 test IDs in 14 screens of real apps on both platforms gave list refs only to such
 containers. iOS still labels it `ScrollView` where Android says `table`.
+
+### 393. A car's home screen mapped as nothing
+
+**Found by:** asked whether Mobium drives a car, on the Android Automotive 15
+emulator (AVD on `automotive_1024p_landscape`, 1024x768). `map` on the home
+screen answered "No actionable elements found" over a screen of climate
+controls, an app grid and a dock. The car's screen is several windows: the top
+and bottom bars (`com.android.systemui`, user 0), the launcher and a maps panel
+embedded in it (user 10), and two more displays for the instrument cluster.
+UiAutomator2 read the active window alone, the empty maps placeholder.
+
+**Fixed:** `ro.build.characteristics` holding `automotive` makes the device
+windowed, as Horizon OS is (CHALLENGES 364): UiAutomator2 reads every window.
+The `uiautomator` driver still reads one window, so on a car it maps only the
+app.
+
+### 394. Read as windows, a car's system bars hid the app
+
+**Found by:** the same emulator, once 393 read every window. The app grid
+mapped as the bars alone, and `current` answered `com.android.systemui`. The
+windowed rule takes the topmost window as the app in front and keeps every other
+app's out of `map`, which is right on a Quest, where a touch on a panel behind
+only raises it. A car's bars are always on top, and both they and the app take
+touches.
+
+**Fixed:** the bars' package is the tree's `SystemBars`: never the app in
+front, and always reachable. The input method's window is `KeyboardPackage`:
+never the app in front either, it covers what lies under it, and it is left out
+of `map`, as a phone's hierarchy never holds it. Its keys were in `map` with the
+bars treated as chrome alone.
+
+### 395. An app's dialog on a car was no dialog
+
+**Found by:** Morpho Market's "Remove Wait For It Mug?" dialog on the car
+emulator. `map` listed Cancel and Remove; `app_alert` said no dialog was on
+screen. While the dialog is up the hierarchy holds the bars and the dialog's
+window, 443x206 at 290,271, and not the app's window behind it, so the windowed
+rule found no panel the dialog lay in.
+
+**Fixed:** with system bars, a window in front is a dialog when it spans
+neither the full height nor the full width of the screen less the bars.
+Filling that area was the first rule, and it read MobiumApp's main screen as a
+dialog: the car letterboxes a portrait app to 576x768 at 224,0, which keeps the
+height whole. The first form also read the keyboard, a full-width window, as
+"an untitled dialog"; it keeps the width whole, and is not the app in front
+(394). Neither a bottom sheet nor a car's portrait screen has been seen.
+
+### 396. An untargeted swipe had no screen to cross
+
+**Found by:** `mobium swipe up` on the car emulator: "could not determine the
+screen size to swipe across". The hierarchy's root adopts its window's bounds
+only when there is one window. With several it had none, and about ten places
+read the root's bounds as the screen: the swipe, `back`'s edge, `zoom`'s center,
+the tap's bounds check and the scroll limit among them. A phone with a popup
+window open has two windows too.
+
+**Fixed:** a root with no bounds takes the screen's: the display UiAutomator2
+names, widened to every window on it (CHALLENGES 326).
+
+### 397. grant, clear-data and an app's logs acted for user 0 on a car
+
+**Found by:** `clear-data` on the car emulator reported "cleared" and
+"/sdcard/Android/data/dev.mobium.shop (read back empty)", and Morpho Market
+relaunched with its cart still holding a mug. A car's apps run as user 10, the
+driver; `pm` acts for user 0 unless told. `pm clear --user 10` emptied the cart.
+Then, with CAMERA revoked for both users, `mobium grant dev.mobium.mobiumapp
+camera` reported it granted, and `dumpsys package` showed it granted to user 0
+and still denied to user 10: the read-back took the first per-user block, user
+0's. And `logs --app` filtered by uid 10252, user 0's, while the app ran as
+1010252: none of its own lines against 4,273 under that uid.
+
+**Fixed:** `am get-current-user` names the user in front. When it is not 0,
+`pm clear`, `pm grant`/`revoke` and `pm clear-permission-flags` pass `--user`,
+the permission read starts at that user's section of `dumpsys package` and
+refuses a package with none, and the app's uid is that user's. A phone runs the
+same commands as before. User 10's shared storage cannot be listed from the
+shell, "Permission denied", so `clear-data` no longer claims it read it.
+Per-app locale was right already: `cmd locale` acts for the current user.
+
+### 398. app_alert quoted the instrument cluster
+
+**Found by:** MobiumApp's late alert on the car emulator: `app_alert` found it,
+with SIGN OUT and STAY, titled "100\n31\n0\n0.0\nP\nR\nN\nD", which is
+nowhere in the hierarchy. It is the cluster's gear selector and gauges, on
+another display. UiAutomator2's alert endpoint finds the dialog and quotes the
+text it gathers across displays. Answering through it pressed the right buttons.
+
+**Fixed:** on a car, a dialog the hierarchy holds is quoted from its own nodes.
+The endpoint still finds and answers it.
+
+### 399. A car's permission prompt had buttons with no names
+
+**Found by:** MobiumApp's notification prompt on the car emulator. Its buttons
+mapped as `car_ui_list_item_touch_interceptor` twice, and its text read
+"Allow MobiumApp to send you notifications?\nAllow\nDon’t allow". A car's
+list item is a nameless clickable laid over a sibling that holds its title. The
+alert endpoint cannot press its buttons: "The expected button cannot be
+detected on the alert".
+
+**Fixed:** a clickable with no name of its own, from itself or what it holds,
+is named by the text of the siblings wholly under it, and a dialog's text
+leaves that text out. `alert --button "Don’t allow"` presses it, and MobiumApp
+received "notifications: denied". `accept` and `dismiss` stay refused, as
+they are for any dialog whose buttons the platform does not mark.
 
 ## Findings that were not defects
 

@@ -157,6 +157,13 @@ type Tree struct {
 	// Windowed is set when the hierarchy holds every window on the display,
 	// bottom first, each root marked Window (MarkWindows).
 	Windowed bool
+	// SystemBars names the packages whose windows lie over every app on a
+	// windowed display and take touches with it: a car's top and bottom bars.
+	// They are never the app in front (CHALLENGES 394).
+	SystemBars []string
+	// KeyboardPackage is the package of the input method, whose window covers the
+	// app beneath it but is not mapped, as a phone's hierarchy never holds it.
+	KeyboardPackage string
 }
 
 var boundsRe = regexp.MustCompile(`\[(-?\d+),(-?\d+)\]\[(-?\d+),(-?\d+)\]`)
@@ -266,6 +273,11 @@ func ParseAndroid(data []byte) (*Tree, error) {
 	if !tree.Screen.Empty() {
 		for _, w := range root.Children {
 			tree.Screen = tree.Screen.union(w.Bounds)
+		}
+		// Several windows leave the root with no bounds of its own, and an
+		// untargeted swipe had no screen to cross (CHALLENGES 396).
+		if root.Bounds.Empty() {
+			root.Bounds = tree.Screen
 		}
 	}
 	foldCheckableRows(root)

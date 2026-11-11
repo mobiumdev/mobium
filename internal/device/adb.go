@@ -732,11 +732,10 @@ var runtimePermsRe = regexp.MustCompile(`^\s+(android\.permission\.[A-Z_0-9]+|[a
 // com.android.settings and BODY_SENSORS. Anything that trusts the command
 // instead of reading the state back is reporting its own hope.
 func (a *ADB) RuntimePermissions(ctx context.Context, pkg string) (map[string]bool, error) {
-	out, err := a.Shell(ctx, "dumpsys", "package", pkg)
+	text, err := a.packageDump(ctx, pkg)
 	if err != nil {
 		return nil, err
 	}
-	text := string(out)
 	if strings.Contains(text, "Unable to find package") {
 		return nil, mobiumerr.New(mobiumerr.InvalidArgument, "%s is not installed", pkg).
 			WithRemedy("app_list_apps lists the installed apps by package id; app_launch takes that id, not the name on the screen")
@@ -755,8 +754,8 @@ func (a *ADB) RuntimePermissions(ctx context.Context, pkg string) (map[string]bo
 		m := runtimePermsRe.FindStringSubmatch(line)
 		if m == nil {
 			// The block ends at the first line that is not a permission. It
-			// appears once per user on a multi-user device; taking only the
-			// first is right, since that is the user adb is acting as.
+			// appears once per user; packageDump starts at the foreground
+			// user's.
 			if strings.TrimSpace(line) != "" {
 				break
 			}
@@ -785,7 +784,7 @@ func (a *ADB) SetPermission(ctx context.Context, pkg, perm string, grant bool) e
 	if grant {
 		verb = "grant"
 	}
-	out, diag, err := a.ShellDiagnostics(ctx, "pm", verb, pkg, perm)
+	out, diag, err := a.ShellDiagnostics(ctx, a.pmArgs(ctx, verb, pkg, perm)...)
 	if err != nil {
 		return err
 	}
@@ -1190,6 +1189,32 @@ func (a *ADB) HorizonOS(ctx context.Context) (bool, error) {
 		return false, err
 	}
 	return strings.TrimSpace(string(out)) != "", nil
+}
+
+// Automotive reports whether the device runs Android Automotive, whose
+// screen is the app's window between system bars that are windows of their
+// own (CHALLENGES 393). Known by `ro.build.characteristics`, which holds
+// "automotive" on the Android 15 car emulator.
+func (a *ADB) Automotive(ctx context.Context) (bool, error) {
+	out, err := a.Shell(ctx, "getprop", "ro.build.characteristics")
+	if err != nil {
+		return false, err
+	}
+	return strings.Contains(string(out), "automotive"), nil
+}
+
+// InputMethodPackage is the package of the device's default keyboard, or ""
+// when it names none.
+func (a *ADB) InputMethodPackage(ctx context.Context) string {
+	out, err := a.Shell(ctx, "settings", "get", "secure", "default_input_method")
+	if err != nil {
+		return ""
+	}
+	pkg, _, ok := strings.Cut(strings.TrimSpace(string(out)), "/")
+	if !ok {
+		return ""
+	}
+	return pkg
 }
 
 // DeviceLocale reports the device's own locale, which an app follows unless it
