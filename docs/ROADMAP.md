@@ -37,8 +37,15 @@ this is what is not.
      three-button navigation; the car's back button on the screen's
      left edge is not mapped. Not tried: the `uiautomator` driver on a car,
      which reads one window; the instrument cluster's displays; a car's
-     portrait screen; Android Auto, whose head unit has no hierarchy; CarPlay
-     in the iOS simulator.
+     portrait screen; Android Auto, whose head unit has no hierarchy.
+     **CarPlay is not reachable in Xcode 27.1's simulator** (looked for
+     2026-11-11, iPhone 18 Pro on iOS 27.0): DeviceHub, which replaces
+     Simulator.app, has no CarPlay or external-display item in any menu or
+     panel, and `simctl io enumerate` lists LCD, Resizable, TVOut and
+     Wireless screens, none of them CarPlay; a screenshot of the external
+     one hangs. Left: Apple's standalone CarPlay Simulator, which drives a
+     real iPhone, or an older Xcode's Simulator.app. Seen on the way:
+     `boot --window` is ignored for a simulator, which boots with no window.
   3. **`press-tap` and `press-drag` on Android 16 and later**, refused
      since CHALLENGES 86: the refusals and comments said a restart would
      recover a device left with fingers down, which 86 measured it does
