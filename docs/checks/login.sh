@@ -72,15 +72,15 @@ save_password() {
 # choice. Nothing of either is printed: they name the account.
 save_password_android() {
   sleep 1   # either one slides in; it can be found before a tap reaches it
-  if $M find "text=Not now" >/dev/null 2>&1; then
+  if shows "text=Not now"; then
     $M tap "text=Not now" >/dev/null || fail "a save-password sheet is up and Not now could not be pressed"
-  elif $M find "label=Never,role=button" >/dev/null 2>&1 || $M find "text=Never" >/dev/null 2>&1; then
+  elif shows "label=Never,role=button" || shows "text=Never"; then
     $M tap "label=Close,role=button" >/dev/null || fail "a save-password dialog is up and Close could not be pressed"
   else
     return 1
   fi
   sleep 1
-  { $M find "text=Not now" || $M find "label=Never,role=button" || $M find "text=Never"; } >/dev/null 2>&1 &&
+  { shows "text=Not now" || shows "label=Never,role=button" || shows "text=Never"; } &&
     fail "the save-password offer is still up after it was answered"
   row "save password" "Android offered to save it; answered without saving, the offer gone"
 }

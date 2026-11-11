@@ -67,6 +67,12 @@ esac
 CHECK_LOCK=""
 _check_handlers=""
 
+# shows <locator>: whether `$M find` matched it. find answers "No element
+# matches" with status 0, so a check that branches on its status cannot fail.
+shows() {
+  ! $M find "$1" 2>&1 | grep -q '^No element matches'
+}
+
 at_exit() {
   # Newest first.
   _check_handlers="$1

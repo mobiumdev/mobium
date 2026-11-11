@@ -113,8 +113,7 @@ runtime (Settings → Components). Then boot a simulator by name:
 
 ```sh
 xcrun simctl list devices available | grep iPhone    # pick one
-mobium boot "iPhone 17 Pro"
-open -a Simulator                                    # to watch it; optional
+mobium boot "iPhone 17 Pro" --window                # --window to watch it; optional
 ```
 
 ### iPhone (macOS)

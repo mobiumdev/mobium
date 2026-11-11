@@ -410,7 +410,7 @@ func nodeFrom(e xml.StartElement, parent *Node, sibling int) *Node {
 
 	n := &Node{
 		Text:          attr(e, "text"),
-		Label:         attr(e, "content-desc"),
+		Label:         androidLabel(attr(e, "content-desc")),
 		TestID:        attr(e, "resource-id"),
 		Class:         class,
 		Package:       attr(e, "package"),
@@ -452,6 +452,19 @@ func nodeFrom(e xml.StartElement, parent *Node, sibling int) *Node {
 		n.ValueSteps = n.Value != ""
 	}
 	return n
+}
+
+// carUIMarker is the prefix of the ids car-ui writes into a container's
+// content-desc for the rotary controller, such as ROTARY_CONTAINER on car
+// Settings' list: a marker, not a name, and `text` read it out as the
+// screen's first line (CHALLENGES 402).
+const carUIMarker = "com.android.car.ui.utils."
+
+func androidLabel(desc string) string {
+	if strings.HasPrefix(desc, carUIMarker) {
+		return ""
+	}
+	return desc
 }
 
 // insideWebView reports a node a WebView draws for its page.

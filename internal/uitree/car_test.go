@@ -1,6 +1,7 @@
 package uitree
 
 import (
+	"os"
 	"strings"
 	"testing"
 )
@@ -37,6 +38,10 @@ func TestCarAppGridIsTheAppInFront(t *testing.T) {
 		if _, ok := got[want]; !ok {
 			t.Errorf("map has no %q", want)
 		}
+	}
+	// Each tile once: its icon is part of it (CHALLENGES 401).
+	if _, ok := got["app_icon"]; ok {
+		t.Error("map lists a tile's icon as a control of its own")
 	}
 	if d := tree.Dialog(); d != nil {
 		t.Errorf("the app grid read as a dialog: %s", d.Path)
@@ -132,5 +137,42 @@ func TestCarPermissionPrompt(t *testing.T) {
 	}
 	if words := DialogWords(d); words != "Allow MobiumApp to send you notifications?" {
 		t.Errorf("the prompt says %q", words)
+	}
+}
+
+// car-ui marks a list for the rotary controller with an id in its
+// content-desc, which is no name (CHALLENGES 402).
+func TestCarUIMarkerIsNoLabel(t *testing.T) {
+	raw, err := os.ReadFile("testdata/car-settings.xml")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(raw), "com.android.car.ui.utils.ROTARY_CONTAINER") {
+		t.Fatal("control: the capture should hold the marker")
+	}
+	tree := carFixture(t, "car-settings.xml")
+	tree.Walk(func(n *Node) bool {
+		if strings.Contains(n.Label, "ROTARY") {
+			t.Errorf("%s keeps the marker as its label", n.Path)
+		}
+		return true
+	})
+	for _, e := range tree.Map() {
+		if strings.Contains(e.Label, "ROTARY") {
+			t.Errorf("map lists %q", e.Label)
+		}
+	}
+}
+
+// The car's back button says it is not clickable, and a tap on it goes back
+// (CHALLENGES 404).
+func TestCarBackButtonIsMapped(t *testing.T) {
+	tree := carFixture(t, "car-mobiumapp-letterboxed.xml")
+	e, ok := mapLabels(tree)["Back Button"]
+	if !ok {
+		t.Fatal("map has no Back Button")
+	}
+	if e.Node.Clickable {
+		t.Fatal("control: the capture should hold a back button that says it is not clickable")
 	}
 }

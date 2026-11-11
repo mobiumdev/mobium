@@ -64,7 +64,7 @@ func GetToolSchemas() []Tool {
 					},
 					"window": map[string]interface{}{
 						"type":        "boolean",
-						"description": "Show the emulator's window. Default false: headless.",
+						"description": "Show the emulator's window, or open the simulator in DeviceHub or Simulator.app. Default false: headless.",
 					},
 				},
 				"required":             []string{"name"},

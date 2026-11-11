@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
+	"time"
 
 	"github.com/mobiumdev/mobium/internal/device"
 	"github.com/mobiumdev/mobium/internal/mobiumerr"
@@ -18,12 +19,42 @@ import (
 // could not start a device at all. A real phone is refused by both: it is
 // somebody's.
 
+// bootHeartbeat is how often a boot says it is still going. Each notice
+// moves the client's read deadline on: the client waits 120 seconds for an
+// answer, and a boot waits up to 210 (CHALLENGES 400).
+var bootHeartbeat = 30 * time.Second
+
+// heartbeat reports what is going on every interval until the returned
+// function is called. It does nothing where no one hears progress.
+func (h *Handlers) heartbeat(what string, interval time.Duration) func() {
+	notify := h.progress
+	if notify == nil {
+		return func() {}
+	}
+	done := make(chan struct{})
+	go func() {
+		start := time.Now()
+		t := time.NewTicker(interval)
+		defer t.Stop()
+		for {
+			select {
+			case <-done:
+				return
+			case <-t.C:
+				notify(fmt.Sprintf("%s: %s so far", what, time.Since(start).Round(time.Second)))
+			}
+		}
+	}()
+	return func() { close(done) }
+}
+
 // BootView is app_boot's answer.
 type BootView = device.Booted
 
 // bootAVDs and bootSimulators are what a name could be, replaceable in tests.
 var (
 	bootAVDs      = device.AVDs
+	showSimulator = device.ShowSimulator
 	bootSimulator = func(ctx context.Context, name string) bool {
 		if runtime.GOOS != "darwin" {
 			return false
@@ -49,6 +80,7 @@ func (h *Handlers) boot(ctx context.Context, args map[string]interface{}) (*Tool
 	isSim := bootSimulator(ctx, name)
 	var b device.Booted
 	var err error
+	defer h.heartbeat("booting "+name, bootHeartbeat)()
 	switch {
 	case isAVD && isSim:
 		return nil, mobiumerr.New(mobiumerr.InvalidArgument, "%q names both an AVD and a simulator — give the "+
@@ -58,6 +90,9 @@ func (h *Handlers) boot(ctx context.Context, args map[string]interface{}) (*Tool
 		b, err = device.BootEmulator(ctx, name, boolArg(args, "window"), log)
 	case isSim:
 		b, err = device.BootSimulator(ctx, name)
+		if err == nil && boolArg(args, "window") {
+			b.Note, err = showSimulator(ctx, b.Serial, b.Name)
+		}
 	case avdErr != nil:
 		// The emulator could not be found or asked, and the name is not a
 		// simulator: say that, not "no AVDs" — a daemon started without
@@ -77,6 +112,9 @@ func (h *Handlers) boot(ctx context.Context, args map[string]interface{}) (*Tool
 	msg := fmt.Sprintf("booted %s as %s in %s", b.Name, b.Serial, b.Took)
 	if b.Already {
 		msg = fmt.Sprintf("%s was already running, as %s", b.Name, b.Serial)
+	}
+	if b.Note != "" {
+		msg += "\n" + b.Note
 	}
 	return Result(msg, BootView(b)), nil
 }

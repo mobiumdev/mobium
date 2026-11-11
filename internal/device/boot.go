@@ -111,6 +111,8 @@ type Booted struct {
 	// Already says it was running before it was asked for.
 	Already bool   `json:"already"`
 	Took    string `json:"took,omitempty"`
+	// Note is what a person must still do to see it, when anything.
+	Note string `json:"note,omitempty"`
 }
 
 // BootEmulator starts the AVD named avd and waits until Android has booted:
@@ -203,12 +205,36 @@ func windowFocused(ctx context.Context, a *ADB) bool {
 	if err != nil {
 		return false
 	}
-	for _, l := range strings.Split(string(out), "\n") {
-		if l = strings.TrimSpace(l); strings.HasPrefix(l, "mCurrentFocus=") {
+	return focusedIn(string(out))
+}
+
+// focusedIn reads the main display's focus from `dumpsys window`. A car lists
+// a section for each display, and its first, an instrument cluster's display
+// 3, has no focus ever, so a boot waiting on the first line never ended
+// (CHALLENGES 400). Display 0's section decides, where there are sections.
+func focusedIn(dump string) bool {
+	first, inMain, sections := "", false, false
+	for _, l := range strings.Split(dump, "\n") {
+		l = strings.TrimSpace(l)
+		if strings.HasPrefix(l, "Display: mDisplayId=") {
+			sections = true
+			inMain = strings.HasPrefix(l, "Display: mDisplayId=0 ") || l == "Display: mDisplayId=0"
+			continue
+		}
+		if !strings.HasPrefix(l, "mCurrentFocus=") {
+			continue
+		}
+		if inMain {
 			return !strings.Contains(l, "=null")
 		}
+		if first == "" {
+			first = l
+		}
 	}
-	return false
+	if sections {
+		return false
+	}
+	return first != "" && !strings.Contains(first, "=null")
 }
 
 // ShutdownEmulator stops a running emulator and waits until adb no longer

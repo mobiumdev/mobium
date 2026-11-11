@@ -7,8 +7,8 @@ the source.
 
 The pattern across them is the reason the document exists: **almost nothing
 here was found by reading code or by a test written from imagination.** Of
-399 defects, 321 were found only by running against a real device. Seventeen
-more — 255, 280, 282, 327, 329, 353, 355, 356, 359, 371, 375, 380, 382, 384, 386, 387 and 388 — were met while
+406 defects, 327 were found only by running against a real device. Eighteen
+more — 255, 280, 282, 327, 329, 353, 355, 356, 359, 371, 375, 380, 382, 384, 386, 387, 388 and 406 — were met while
 running against one, though the fault lay in a check, the host or Mobium's own
 design rather than in the platform. The other sixty-one — 4, 5, 6, 14, 23,
 24, 32, 35, 36, 39, 44, 50, 53, 54, 57, 66, 89, 99, 100, 121, 123, 129, 130,
@@ -8778,9 +8778,101 @@ leaves that text out. `alert --button "Don’t allow"` presses it, and MobiumApp
 received "notifications: denied". `accept` and `dismiss` stay refused, as
 they are for any dialog whose buttons the platform does not mark.
 
+### 400. boot never answered on a car
+
+**Found by:** `mobium boot mobium-auto` on the Android Automotive 15
+emulator: "read response: … i/o timeout" after 120 seconds, and with the
+client's deadline moved on, "did not finish booting within 3m30s", while the
+emulator had booted. A boot waits for boot completed and then for a focused
+window, read from the first `mCurrentFocus` line of `dumpsys window`. A car
+lists a section for each display, and the first is an instrument cluster's,
+display 3, whose focus is null for good. The device's uptime when it was
+looked at, 212 seconds, was first taken for the time a boot takes and the
+limits raised to fit; that was wrong, and is undone.
+
+**Fixed:** the main display's section, display 0's, decides. The same cold
+boot of the car then answered in 11 seconds. A boot also reports "booting
+mobium-auto: 30s so far" every 30 seconds: the client waits 120 seconds for an
+answer, and a boot waits up to 210.
+
+### 401. A car launcher's tile mapped twice
+
+**Found by:** the car's app grid: Calendar, then `app_icon`, for every tile. A
+tile is a clickable `app_item` holding a clickable, nameless `app_icon` image
+over the tile's name.
+
+**Fixed:** a clickable with no words of its own or inside it, held by a
+clickable parent that has words, is the parent's picture, as the iOS parser
+already holds for an inaccessible button in a labeled one (CHALLENGES 244). Of
+every captured hierarchy, it changes the car's app grid alone: 14 tiles.
+
+### 402. text read car-ui's marker as the screen's first line
+
+**Found by:** `mobium text` in car Settings opened with
+`com.android.car.ui.utils.ROTARY_CONTAINER`, and `map` named the list by it.
+car-ui writes that id into a container's content-desc for the rotary
+controller. It names nothing.
+
+**Fixed:** a content-desc in car-ui's `com.android.car.ui.utils.` namespace is
+not read as a label.
+
+### 403. A car said it had three-button navigation
+
+**Found by:** `mobium devices` on the car emulator: "navigation: three-button".
+`navigation_mode` reads 0 there. A car has its own bars and a back button laid
+over the app. A swipe in from the left edge, of the screen or of a letterboxed
+app, changed nothing; the back key went back.
+
+**Fixed:** a car's navigation is "car bars", and `press back --gesture` is
+refused there, naming the back key, as with buttons.
+
+### 404. A car's back button was not in map
+
+**Found by:** the car's back button, at the left edge over every app, was
+never mapped. It is an ImageButton named "Back Button" that reports
+`clickable=false`, `focusable=true`. A tap on it went back in MobiumApp.
+
+**Fixed:** a focusable, enabled button with a name is a control even when it
+reports itself not clickable. Of every captured hierarchy, it adds the car's
+back button alone.
+
+### 405. boot --window opened no window for a simulator
+
+**Found by:** `mobium boot "iPhone 18 Pro" --window` booted the simulator and
+showed nothing: the flag was read only for an emulator. Xcode 27.1 has no
+Simulator.app. DeviceHub, inside Xcode.app, shows simulators, and ignores
+Simulator.app's `-CurrentDeviceUDID`. It opens on the device it last showed,
+kept as `lastSelectedDeviceIdentifier` in `com.apple.dt.Devices`.
+
+**Fixed:** `--window` opens the simulator: in Simulator.app with
+`-CurrentDeviceUDID` where Xcode has one, else in DeviceHub, with that
+preference written before it starts. DeviceHub then opened on the iPhone 18
+Pro. A DeviceHub already running is not quit, since quitting it shut down the
+simulator it showed; it is brought forward, and the answer names the device to
+pick in its sidebar.
+
+### 406. Checks branched on find's status, which no match leaves 0
+
+**Found by:** `automotive.sh` failing "the car's back button did not go back"
+after it had gone back. `mobium find` answers "No element matches" with status
+0, so `while $M find …` never ended, and `$M find … || fail` could not fail.
+`audit.sh` guarded a finding's locator the same way, twice, and `login.sh`
+took the save-password branch whether or not the sheet was up.
+
+**Fixed:** `shows`, in `lib.sh`, reads `find`'s answer. `lib-selftest.sh`
+holds it to both answers. `login.sh` and `audit.sh` passed on the Pixel 7 AVD,
+and `audit.sh` on the iPhone 18 Pro simulator.
+
 ## Findings that were not defects
 
 Worth recording because each one closed off an approach that looked obvious.
+
+- **A car's climate control drops a press.** On the Android Automotive 15
+  emulator, ten presses of Lower temperature a second apart moved it nine
+  steps, from `adb shell input tap` and from Mobium alike. A first count said
+  `adb` lost two of ten raising; it had reached 82, the top, where a press
+  does nothing. `automotive.sh` presses once more when a press is dropped,
+  and says so.
 
 - **Predictive back on Android 15 closes a React Native app.** MobiumApp
   built with predictive back turned on went back to closing on every back
@@ -9162,6 +9254,11 @@ Worth recording because each one closed off an approach that looked obvious.
 
 None of these is a Mobium defect; each cost real time and no error named
 its cause.
+
+- **Xcode 27.1 has no Simulator.app.** DeviceHub, in
+  `Xcode.app/Contents/Applications`, replaces it, with no CarPlay or external
+  display in any menu or panel; `simctl io enumerate` lists no CarPlay screen.
+  Quitting DeviceHub shut down the simulator it showed.
 
 - **`platform-tools` must be installed into the SDK root** with `sdkmanager`,
   not only as the Homebrew cask. The emulator validates the SDK root by looking

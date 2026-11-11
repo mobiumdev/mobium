@@ -11,7 +11,10 @@
 #   - an untargeted swipe had no screen to cross (396);
 #   - grant, clear-data and an app's logs acted for user 0 (397);
 #   - app_alert quoted the instrument cluster (398);
-#   - the permission prompt's buttons had no names (399).
+#   - the permission prompt's buttons had no names (399);
+#   - boot gave up on a cold car boot (400), a tile mapped twice (401),
+#     car-ui's marker read as text (402), a car said three-button
+#     navigation (403), and its back button was not mapped (404).
 #
 # Needs MobiumApp installed (mobiumdev/mobium-app). It is letterboxed on a
 # landscape car screen, which is a case the dialog rule must tell from a
@@ -59,21 +62,49 @@ echo "$out" | grep -q "Applications (button" || fail "map lists no app grid butt
 no_dialog "the home screen read as a dialog"
 row "home" "map lists the bars and the launcher; current is the launcher"
 
-# The driver's side, the first of two, reads back after a tap, and is put
-# back. Both sides share their ids, so they are taken by ref.
+# The driver's side, the first of two, moves by one after a tap, and is put
+# back. Both sides share their ids, so they are taken by ref. The emulator's
+# climate control drops a press now and then, adb's as much as Mobium's (9 of
+# 10 each, a second apart): one dropped press is pressed again, and said. At
+# its highest, 82, raising does nothing, so it is lowered instead.
 temp() { $M find testid=hvac_temperature_text | head -1 | awk '{print $2}'; }
 ref() { $M find "label=$1" | head -1 | awk '{print $1}'; }
 t=$(temp)
 case "$t" in *[!0-9]*|"") fail "the temperature reads \"$t\"" ;; esac
-at_exit "$M tap \$($M find 'label=Lower temperature' | head -1 | awk '{print \$1}') >/dev/null 2>&1 || true"
-$M tap "$(ref 'Raise temperature')" >/dev/null
-sleep 1
-t2=$(temp)
-[ "$t2" = $((t + 1)) ] || fail "raising $t gave $t2"
-row "bar" "a tap in the bottom bar raised $t to $t2"
+if [ "$t" -ge 82 ]; then button="Lower temperature"; back="Raise temperature"; want=$((t - 1))
+else button="Raise temperature"; back="Lower temperature"; want=$((t + 1)); fi
+moved() {
+  $M tap "$(ref "$button")" >/dev/null
+  i=0; while [ $i -lt 10 ]; do [ "$(temp)" = "$want" ] && return 0; sleep 0.5; i=$((i + 1)); done
+  return 1
+}
+again=""
+moved || { again=" (pressed twice: the first was dropped)"; moved; } || fail "$button from $t gave $(temp), twice"
+at_exit "$M tap \$($M find 'label=$back' | head -1 | awk '{print \$1}') >/dev/null 2>&1 || true"
+row "bar" "a tap in the bottom bar, $button, took $t to $want$again"
 
 out=$($M swipe up 2>&1) || fail "swipe: $out"
 row "swipe" "$out"
+
+$M tap 'label=Applications' >/dev/null
+$M wait 'label=Settings' --timeout 10s >/dev/null || fail "the app grid did not open"
+out=$($M map)
+n=$(echo "$out" | grep -c "app_icon") || true
+[ "$n" = 0 ] || fail "map lists $n tile icons as controls of their own"
+[ "$(echo "$out" | grep -c '^@e[0-9]* Settings (button')" -ge 1 ] || fail "map has no Settings tile: $out"
+$M tap 'label=Settings,role=button' >/dev/null 2>&1 || $M tap "$(echo "$out" | grep -m1 ' Settings (button' | awk '{print $1}')" >/dev/null
+$M wait 'label=Display' --timeout 10s >/dev/null 2>&1 || $M wait 'text=Display' --timeout 10s >/dev/null || fail "Settings did not open"
+$M text | grep -q "ROTARY" && fail "text reads car-ui's ROTARY marker as screen text"
+$M map | grep -q "ROTARY" && fail "map names a list by car-ui's ROTARY marker"
+row "launcher" "each tile maps once; Settings opens; car-ui's marker is not read as text"
+
+case "$($ROOT/bin/mobium devices 2>&1 | grep "^$DEV ")" in
+  *"navigation: car bars"*) ;;
+  *) fail "devices does not say car bars: $($ROOT/bin/mobium devices 2>&1 | grep "^$DEV ")" ;;
+esac
+st=0; out=$($M press back --gesture 2>&1) || st=$?
+[ $st -eq 5 ] || fail "a back gesture on a car exited $st, want 5 (refused): $out"
+row "navigation" "devices says car bars; a back gesture is refused for the back key"
 
 $M terminate $APP >/dev/null 2>&1 || true
 $M reset-permissions $APP >/dev/null
@@ -84,6 +115,19 @@ $M wait 'label=WebViews' --timeout 15s >/dev/null || fail "MobiumApp did not sho
 no_dialog "letterboxed MobiumApp read as a dialog"
 row "letterbox" "MobiumApp, letterboxed, is the app in front and no dialog"
 
+$M tap 'label=Dialog Demo' >/dev/null
+# The car's back button lies over the app's left edge: mapped, and a tap on
+# it goes back. It shows while an app is in front.
+i=0; until $M map | grep -q "Back Button (button"; do
+  i=$((i + 1)); [ $i -lt 6 ] || fail "map lists no car back button"; sleep 1
+done
+shows 'label=One-button alert' || fail "the Dialog Demo is not open"
+$M tap 'label=Back Button' >/dev/null
+i=0; while shows 'label=One-button alert'; do
+  i=$((i + 1)); [ $i -lt 10 ] || fail "the car's back button did not go back"; sleep 0.5
+done
+[ "$($M current)" = $APP ] || fail "the car's back button left MobiumApp"
+row "back" "the car's back button is mapped, and a tap goes back in the app"
 $M tap 'label=Dialog Demo' >/dev/null
 $M tap testid=lateAlertBtn >/dev/null
 i=0; until $M alert 2>/dev/null | grep -q 'a dialog is on screen'; do
