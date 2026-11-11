@@ -3729,7 +3729,7 @@ trip each, and now takes 16, one visit reading every switch on its page.
 **Found by:** writing the grid guide, with the iPhone 15 Plus attached to the
 Mac standing in for a node.
 
-`mobium grid status` listed the phone with "Lana Begunova's iPhone" in its
+`mobium grid status` listed the phone with "<name>'s iPhone" in its
 MODEL column. The structured answer of `app_devices` — which the grid's
 status and page, `MOBIUM_GRID_MODEL`'s matching and every client read — put a
 physical iPhone's name where its model belongs, while the CLI's own line
@@ -3974,7 +3974,7 @@ not connected was reported as MobiumApp not being installed.
 ### 175. Every phone message named its owner
 
 **Found by:** the iPhone runs above, whose output began "starting
-WebDriverAgent on Lana Begunova's iPhone".
+WebDriverAgent on <name>'s iPhone".
 
 161 took the owner's name for the phone out of `app_devices`' structured
 answer and left it in two places: the `mobium devices` line, read by the
@@ -4727,8 +4727,8 @@ that adb does not know at all now names `adb connect` too, where it named
 `mobium devices`, which cannot list a device adb was never connected to. The
 unit test uses adb's exact lines from the TV; against the old code it failed
 with the TV's own message. On the TV, with its link dropped on purpose, the
-lookup answered "no device with serial "10.0.0.77:5555" — `adb connect
-10.0.0.77:5555`, then retry".
+lookup answered "no device with serial "192.0.2.10:5555" — `adb connect
+192.0.2.10:5555`, then retry".
 
 ### 211. A Fire TV's screenshot was refused on one backend and slow on the other
 

@@ -385,15 +385,15 @@ Android 11+. The phone and the Mac must be on the same network.
 
    ```sh
    adb mdns services
-   # adb-3C19...-FIOvFv  _adb-tls-pairing._tcp  10.0.0.96:33169
-   # adb-3C19...-FIOvFv  _adb-tls-connect._tcp  10.0.0.96:43943
+   # adb-XXXXXXXX-abcdef  _adb-tls-pairing._tcp  192.0.2.20:33169
+   # adb-XXXXXXXX-abcdef  _adb-tls-connect._tcp  192.0.2.20:43943
    ```
 
 4. Pair against the **pairing** port, which is not the one on the main
    Wireless debugging screen:
 
    ```sh
-   adb pair 10.0.0.96:33169 123456
+   adb pair 192.0.2.20:33169 123456
    ```
 
 `adb pair` may answer `protocol fault (couldn't read status message)` **and

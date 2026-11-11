@@ -12,7 +12,7 @@ import (
 // unreached is the error a call gets while a device's link is down: the
 // lookup failed, so nothing was sent.
 func unreached() error {
-	return mobiumerr.New(mobiumerr.DeviceNotReady, "device 10.0.0.77:5555 is offline, not ready").
+	return mobiumerr.New(mobiumerr.DeviceNotReady, "device 192.0.2.10:5555 is offline, not ready").
 		WithDetail(device.ReachedKey, false)
 }
 
@@ -55,7 +55,7 @@ func TestAFailureThatMayHaveReachedTheDeviceIsNotRepeated(t *testing.T) {
 	calls := 0
 	f := stepsRun(t, []Step{press("select")}, true, func(string, map[string]interface{}, ...map[string]interface{}) (*agent.ToolsCallResult, error) {
 		calls++
-		return nil, mobiumerr.New(mobiumerr.DeviceNotReady, "10.0.0.77:5555 cannot be reached: device offline")
+		return nil, mobiumerr.New(mobiumerr.DeviceNotReady, "192.0.2.10:5555 cannot be reached: device offline")
 	})
 	if f == nil || calls != 1 {
 		t.Errorf("failure %+v after %d calls; want it to fail on the first", f, calls)
