@@ -237,7 +237,9 @@ docs-check:
 	@python3 docs/quickstart/build.py --check >/dev/null \
 		|| { python3 docs/quickstart/build.py --check; exit 1; }
 	@sh docs/checks/lib-selftest.sh >/dev/null || { sh docs/checks/lib-selftest.sh; exit 1; }
-	@echo "docs: spelling, anchors, quick-start pages and the checks' prelude clean"
+	@python3 docs/checks/private-data.py selftest >/dev/null || { python3 docs/checks/private-data.py selftest; exit 1; }
+	@python3 docs/checks/private-data.py scan $$(git ls-files) || exit 1
+	@echo "docs: spelling, anchors, quick-start pages, the checks' prelude and private data clean"
 
 ci: fmt-check vet lint test clients crosscompile java api-check flags-check license-check docs-check dotnet
 

@@ -7,21 +7,21 @@ the source.
 
 The pattern across them is the reason the document exists: **almost nothing
 here was found by reading code or by a test written from imagination.** Of
-406 defects, 327 were found only by running against a real device. Eighteen
+407 defects, 327 were found only by running against a real device. Eighteen
 more — 255, 280, 282, 327, 329, 353, 355, 356, 359, 371, 375, 380, 382, 384, 386, 387, 388 and 406 — were met while
 running against one, though the fault lay in a check, the host or Mobium's own
-design rather than in the platform. The other sixty-one — 4, 5, 6, 14, 23,
+design rather than in the platform. The other sixty-two — 4, 5, 6, 14, 23,
 24, 32, 35, 36, 39, 44, 50, 53, 54, 57, 66, 89, 99, 100, 121, 123, 129, 130,
 133, 134, 139, 140, 141, 142, 144, 150, 158, 162, 164, 165, 172, 222, 231, 232,
 243, 274, 278, 279, 286, 287, 305, 306, 308, 309, 310, 313, 314, 321, 361, 362,
-363, 372, 373, 374, 378 and 381 — came from reading code, the compiler, a test, a linter,
+363, 372, 373, 374, 378, 381 and 407 — came from reading code, the compiler, a test, a linter,
 cross-checking a computed number against a screenshot, using the tooling on
 itself, typing a negative number at a command line, and driving the clients
 against a stand-in daemon, CI on Windows, following the quick start from
 a fresh clone, type-checking — or writing — the documentation site's examples,
 reviewing the questions of the documentation's evaluation set, synthesized
-sounds, the host's own shell, a clean Windows machine, and a person at a
-Windows laptop's keyboard.
+sounds, the host's own shell, a clean Windows machine, a person at a
+Windows laptop's keyboard, and scanning the public repositories.
 
 Read it before writing a test that asserts platform behavior.
 
@@ -8142,7 +8142,7 @@ both new lines. Tests hold each platform to its own install.
 
 **Found by:** the checks at a Windows laptop's keyboard, as a standard user
 with v0.1.0-rc1. `doctor` reported one problem: "android sdk root —
-C:\Users\begun\AppData\Local\Android\Sdk has no platform-tools directory",
+C:\Users\you\AppData\Local\Android\Sdk has no platform-tools directory",
 with the fix `sdkmanager platform-tools`, which that account did not have.
 The folder had one: a machine-wide ANDROID_HOME, left by Android Studio for
 the administrator, pointed into the administrator's profile, which a
@@ -8862,6 +8862,28 @@ took the save-password branch whether or not the sheet was up.
 **Fixed:** `shows`, in `lib.sh`, reads `find`'s answer. `lib-selftest.sh`
 holds it to both answers. `login.sh` and `audit.sh` passed on the Pixel 7 AVD,
 and `audit.sh` on the iPhone 18 Pro simulator.
+
+### 407. A real phone's identifiers were in the public repositories
+
+**Found by:** scanning every public repository's main and history for the
+identifiers of the phones Mobium was built on, after a test was seen to name
+the Pixel 8 Pro by its serial. In the files of main: the Pixel's serial in
+three tests, the iPhone's UDID in `lib-selftest.sh`, the iPhone's device name
+in two quotes here, a Fire TV's home-network address in two tests and an
+entry here, a wireless-debugging capture in SETUP with the Pixel's address
+and the start of its serial, and a Windows home directory's name here. The
+same capture was in the RAG project's review page; the documentation site
+tracked Python bytecode, which records the path it was built in. Each came
+from a real capture or a test written beside a real device. The history keeps
+them: main refuses a rewrite, and copies of a public repository outlive one.
+
+**Fixed:** each replaced with a made-up value of the same shape; addresses
+come from 192.0.2.0/24, kept for documentation. `docs/checks/private-data.py`,
+run by `make ci`, refuses a UDID, an adb mdns name, a home network's address
+or a home path that is not on its list of made-up values, and tracked
+bytecode. It prints where and what kind, never the value, since a public
+repository's CI log is public. Its selftest holds each rule to a case it must
+flag, and a leak planted in a staged file failed `make docs-check`.
 
 ## Findings that were not defects
 
