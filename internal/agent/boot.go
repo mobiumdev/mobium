@@ -25,14 +25,16 @@ import (
 var bootHeartbeat = 30 * time.Second
 
 // heartbeat reports what is going on every interval until the returned
-// function is called. It does nothing where no one hears progress.
+// function is called, and that function returns only once no notice can
+// follow. It does nothing where no one hears progress.
 func (h *Handlers) heartbeat(what string, interval time.Duration) func() {
 	notify := h.progress
 	if notify == nil {
 		return func() {}
 	}
-	done := make(chan struct{})
+	done, finished := make(chan struct{}), make(chan struct{})
 	go func() {
+		defer close(finished)
 		start := time.Now()
 		t := time.NewTicker(interval)
 		defer t.Stop()
@@ -41,11 +43,18 @@ func (h *Handlers) heartbeat(what string, interval time.Duration) func() {
 			case <-done:
 				return
 			case <-t.C:
+				// A tick and the stop can be ready together; the stop wins,
+				// so no notice follows the answer.
+				select {
+				case <-done:
+					return
+				default:
+				}
 				notify(fmt.Sprintf("%s: %s so far", what, time.Since(start).Round(time.Second)))
 			}
 		}
 	}()
-	return func() { close(done) }
+	return func() { close(done); <-finished }
 }
 
 // BootView is app_boot's answer.

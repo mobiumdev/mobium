@@ -96,3 +96,34 @@ func TestBootHeartbeat(t *testing.T) {
 	quiet := NewHandlers()
 	quiet.heartbeat("booting", time.Millisecond)()
 }
+
+// At one tick a millisecond a tick is always waiting when the boot returns,
+// and the stop must still win: a notice after the answer reached the CLI
+// after its result on Windows, where timers are coarse.
+func TestBootHeartbeatStopsBeforeAWaitingTick(t *testing.T) {
+	h := NewHandlers()
+	for i := 0; i < 50; i++ {
+		var mu sync.Mutex
+		stopped, late := false, 0
+		h.SetProgress(func(string) {
+			mu.Lock()
+			if stopped {
+				late++
+			}
+			mu.Unlock()
+		})
+		stop := h.heartbeat("booting", time.Millisecond)
+		time.Sleep(5 * time.Millisecond)
+		stop()
+		mu.Lock()
+		stopped = true
+		mu.Unlock()
+		time.Sleep(3 * time.Millisecond)
+		mu.Lock()
+		n := late
+		mu.Unlock()
+		if n != 0 {
+			t.Fatalf("run %d: %d notices after the boot returned", i, n)
+		}
+	}
+}
