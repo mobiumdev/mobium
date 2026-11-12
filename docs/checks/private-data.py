@@ -121,15 +121,15 @@ def selftest():
     import contextlib
     import os
     import tempfile
-    secret = "10.0.0.42"
+    planted = "10.0.0.42"  # made up, in a range the scan flags
     with tempfile.TemporaryDirectory() as d:
         p = os.path.join(d, "leak.md")
         with open(p, "w") as f:
-            f.write("adb connect %s:5555\n" % secret)
+            f.write("adb connect %s:5555\n" % planted)
         buf = io.StringIO()
         with contextlib.redirect_stdout(buf):
             n = scan([p])
-        if n != 1 or secret in buf.getvalue():
+        if n != 1 or planted in buf.getvalue():
             failed += 1
             print("FAIL the report should flag one and print no value: %r" % buf.getvalue())
     if failed:
