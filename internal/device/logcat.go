@@ -228,13 +228,15 @@ func filterLog(entries []LogEntry, q LogQuery) (kept []LogEntry, skipped int) {
 	return kept, skipped
 }
 
-// AppUID is the Linux UID an installed app runs as.
+// AppUID is the Linux UID an installed app runs as, for the foreground user:
+// each user runs it under its own (CHALLENGES 397).
 //
 // `pm list packages -U <name>` matches by substring, so asking for
 // com.android.settings also returns com.android.settings.auto_generated_rro_…
 // under a different UID; only the exact name is taken.
 func (a *ADB) AppUID(ctx context.Context, pkg string) (int, error) {
-	out, err := a.Shell(ctx, "pm", "list", "packages", "-U", shellQuote(pkg))
+	user, _ := a.userArgs(ctx)
+	out, err := a.Shell(ctx, append(append([]string{"pm", "list", "packages", "-U"}, user...), shellQuote(pkg))...)
 	if err != nil {
 		return 0, err
 	}

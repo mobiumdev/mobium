@@ -86,6 +86,8 @@ var coveredCaptures = map[string]string{
 		"panel, over MobiumApp's",
 	"quest-shop-over-browser.xml": "Horizon OS, every window: Morpho Market's panel over MobiumApp's, the " +
 		"browser's and Gallery's",
+	"car-permission-prompt.xml": "a car's permission prompt draws each button's caption over its nameless " +
+		"touch interceptor, so the tap moves off the caption to the rest of the button (CHALLENGES 399)",
 }
 
 func TestTheCoverRuleLeavesOrdinaryScreensAlone(t *testing.T) {

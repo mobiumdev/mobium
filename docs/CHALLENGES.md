@@ -7,21 +7,21 @@ the source.
 
 The pattern across them is the reason the document exists: **almost nothing
 here was found by reading code or by a test written from imagination.** Of
-392 defects, 314 were found only by running against a real device. Seventeen
-more — 255, 280, 282, 327, 329, 353, 355, 356, 359, 371, 375, 380, 382, 384, 386, 387 and 388 — were met while
+407 defects, 327 were found only by running against a real device. Eighteen
+more — 255, 280, 282, 327, 329, 353, 355, 356, 359, 371, 375, 380, 382, 384, 386, 387, 388 and 406 — were met while
 running against one, though the fault lay in a check, the host or Mobium's own
-design rather than in the platform. The other sixty-one — 4, 5, 6, 14, 23,
+design rather than in the platform. The other sixty-two — 4, 5, 6, 14, 23,
 24, 32, 35, 36, 39, 44, 50, 53, 54, 57, 66, 89, 99, 100, 121, 123, 129, 130,
 133, 134, 139, 140, 141, 142, 144, 150, 158, 162, 164, 165, 172, 222, 231, 232,
 243, 274, 278, 279, 286, 287, 305, 306, 308, 309, 310, 313, 314, 321, 361, 362,
-363, 372, 373, 374, 378 and 381 — came from reading code, the compiler, a test, a linter,
+363, 372, 373, 374, 378, 381 and 407 — came from reading code, the compiler, a test, a linter,
 cross-checking a computed number against a screenshot, using the tooling on
 itself, typing a negative number at a command line, and driving the clients
 against a stand-in daemon, CI on Windows, following the quick start from
 a fresh clone, type-checking — or writing — the documentation site's examples,
 reviewing the questions of the documentation's evaluation set, synthesized
-sounds, the host's own shell, a clean Windows machine, and a person at a
-Windows laptop's keyboard.
+sounds, the host's own shell, a clean Windows machine, a person at a
+Windows laptop's keyboard, and scanning the public repositories.
 
 Read it before writing a test that asserts platform behavior.
 
@@ -3729,7 +3729,7 @@ trip each, and now takes 16, one visit reading every switch on its page.
 **Found by:** writing the grid guide, with the iPhone 15 Plus attached to the
 Mac standing in for a node.
 
-`mobium grid status` listed the phone with "Lana Begunova's iPhone" in its
+`mobium grid status` listed the phone with "<name>'s iPhone" in its
 MODEL column. The structured answer of `app_devices` — which the grid's
 status and page, `MOBIUM_GRID_MODEL`'s matching and every client read — put a
 physical iPhone's name where its model belongs, while the CLI's own line
@@ -3974,7 +3974,7 @@ not connected was reported as MobiumApp not being installed.
 ### 175. Every phone message named its owner
 
 **Found by:** the iPhone runs above, whose output began "starting
-WebDriverAgent on Lana Begunova's iPhone".
+WebDriverAgent on <name>'s iPhone".
 
 161 took the owner's name for the phone out of `app_devices`' structured
 answer and left it in two places: the `mobium devices` line, read by the
@@ -4727,8 +4727,8 @@ that adb does not know at all now names `adb connect` too, where it named
 `mobium devices`, which cannot list a device adb was never connected to. The
 unit test uses adb's exact lines from the TV; against the old code it failed
 with the TV's own message. On the TV, with its link dropped on purpose, the
-lookup answered "no device with serial "10.0.0.77:5555" — `adb connect
-10.0.0.77:5555`, then retry".
+lookup answered "no device with serial "192.0.2.10:5555" — `adb connect
+192.0.2.10:5555`, then retry".
 
 ### 211. A Fire TV's screenshot was refused on one backend and slow on the other
 
@@ -8142,7 +8142,7 @@ both new lines. Tests hold each platform to its own install.
 
 **Found by:** the checks at a Windows laptop's keyboard, as a standard user
 with v0.1.0-rc1. `doctor` reported one problem: "android sdk root —
-C:\Users\begun\AppData\Local\Android\Sdk has no platform-tools directory",
+C:\Users\you\AppData\Local\Android\Sdk has no platform-tools directory",
 with the fix `sdkmanager platform-tools`, which that account did not have.
 The folder had one: a machine-wide ANDROID_HOME, left by Android Studio for
 the administrator, pointed into the administrator's profile, which a
@@ -8674,9 +8674,227 @@ from the other side: a wrapper around a smaller button still has no ref. A sweep
 test IDs in 14 screens of real apps on both platforms gave list refs only to such
 containers. iOS still labels it `ScrollView` where Android says `table`.
 
+### 393. A car's home screen mapped as nothing
+
+**Found by:** asked whether Mobium drives a car, on the Android Automotive 15
+emulator (AVD on `automotive_1024p_landscape`, 1024x768). `map` on the home
+screen answered "No actionable elements found" over a screen of climate
+controls, an app grid and a dock. The car's screen is several windows: the top
+and bottom bars (`com.android.systemui`, user 0), the launcher and a maps panel
+embedded in it (user 10), and two more displays for the instrument cluster.
+UiAutomator2 read the active window alone, the empty maps placeholder.
+
+**Fixed:** `ro.build.characteristics` holding `automotive` makes the device
+windowed, as Horizon OS is (CHALLENGES 364): UiAutomator2 reads every window.
+The `uiautomator` driver still reads one window, so on a car it maps only the
+app.
+
+### 394. Read as windows, a car's system bars hid the app
+
+**Found by:** the same emulator, once 393 read every window. The app grid
+mapped as the bars alone, and `current` answered `com.android.systemui`. The
+windowed rule takes the topmost window as the app in front and keeps every other
+app's out of `map`, which is right on a Quest, where a touch on a panel behind
+only raises it. A car's bars are always on top, and both they and the app take
+touches.
+
+**Fixed:** the bars' package is the tree's `SystemBars`: never the app in
+front, and always reachable. The input method's window is `KeyboardPackage`:
+never the app in front either, it covers what lies under it, and it is left out
+of `map`, as a phone's hierarchy never holds it. Its keys were in `map` with the
+bars treated as chrome alone.
+
+### 395. An app's dialog on a car was no dialog
+
+**Found by:** Morpho Market's "Remove Wait For It Mug?" dialog on the car
+emulator. `map` listed Cancel and Remove; `app_alert` said no dialog was on
+screen. While the dialog is up the hierarchy holds the bars and the dialog's
+window, 443x206 at 290,271, and not the app's window behind it, so the windowed
+rule found no panel the dialog lay in.
+
+**Fixed:** with system bars, a window in front is a dialog when it spans
+neither the full height nor the full width of the screen less the bars.
+Filling that area was the first rule, and it read MobiumApp's main screen as a
+dialog: the car letterboxes a portrait app to 576x768 at 224,0, which keeps the
+height whole. The first form also read the keyboard, a full-width window, as
+"an untitled dialog"; it keeps the width whole, and is not the app in front
+(394). Neither a bottom sheet nor a car's portrait screen has been seen.
+
+### 396. An untargeted swipe had no screen to cross
+
+**Found by:** `mobium swipe up` on the car emulator: "could not determine the
+screen size to swipe across". The hierarchy's root adopts its window's bounds
+only when there is one window. With several it had none, and about ten places
+read the root's bounds as the screen: the swipe, `back`'s edge, `zoom`'s center,
+the tap's bounds check and the scroll limit among them. A phone with a popup
+window open has two windows too.
+
+**Fixed:** a root with no bounds takes the screen's: the display UiAutomator2
+names, widened to every window on it (CHALLENGES 326).
+
+### 397. grant, clear-data and an app's logs acted for user 0 on a car
+
+**Found by:** `clear-data` on the car emulator reported "cleared" and
+"/sdcard/Android/data/dev.mobium.shop (read back empty)", and Morpho Market
+relaunched with its cart still holding a mug. A car's apps run as user 10, the
+driver; `pm` acts for user 0 unless told. `pm clear --user 10` emptied the cart.
+Then, with CAMERA revoked for both users, `mobium grant dev.mobium.mobiumapp
+camera` reported it granted, and `dumpsys package` showed it granted to user 0
+and still denied to user 10: the read-back took the first per-user block, user
+0's. And `logs --app` filtered by uid 10252, user 0's, while the app ran as
+1010252: none of its own lines against 4,273 under that uid.
+
+**Fixed:** `am get-current-user` names the user in front. When it is not 0,
+`pm clear`, `pm grant`/`revoke` and `pm clear-permission-flags` pass `--user`,
+the permission read starts at that user's section of `dumpsys package` and
+refuses a package with none, and the app's uid is that user's. A phone runs the
+same commands as before. User 10's shared storage cannot be listed from the
+shell, "Permission denied", so `clear-data` no longer claims it read it.
+Per-app locale was right already: `cmd locale` acts for the current user.
+
+### 398. app_alert quoted the instrument cluster
+
+**Found by:** MobiumApp's late alert on the car emulator: `app_alert` found it,
+with SIGN OUT and STAY, titled "100\n31\n0\n0.0\nP\nR\nN\nD", which is
+nowhere in the hierarchy. It is the cluster's gear selector and gauges, on
+another display. UiAutomator2's alert endpoint finds the dialog and quotes the
+text it gathers across displays. Answering through it pressed the right buttons.
+
+**Fixed:** on a car, a dialog the hierarchy holds is quoted from its own nodes.
+The endpoint still finds and answers it.
+
+### 399. A car's permission prompt had buttons with no names
+
+**Found by:** MobiumApp's notification prompt on the car emulator. Its buttons
+mapped as `car_ui_list_item_touch_interceptor` twice, and its text read
+"Allow MobiumApp to send you notifications?\nAllow\nDon’t allow". A car's
+list item is a nameless clickable laid over a sibling that holds its title. The
+alert endpoint cannot press its buttons: "The expected button cannot be
+detected on the alert".
+
+**Fixed:** a clickable with no name of its own, from itself or what it holds,
+is named by the text of the siblings wholly under it, and a dialog's text
+leaves that text out. `alert --button "Don’t allow"` presses it, and MobiumApp
+received "notifications: denied". `accept` and `dismiss` stay refused, as
+they are for any dialog whose buttons the platform does not mark.
+
+### 400. boot never answered on a car
+
+**Found by:** `mobium boot mobium-auto` on the Android Automotive 15
+emulator: "read response: … i/o timeout" after 120 seconds, and with the
+client's deadline moved on, "did not finish booting within 3m30s", while the
+emulator had booted. A boot waits for boot completed and then for a focused
+window, read from the first `mCurrentFocus` line of `dumpsys window`. A car
+lists a section for each display, and the first is an instrument cluster's,
+display 3, whose focus is null for good. The device's uptime when it was
+looked at, 212 seconds, was first taken for the time a boot takes and the
+limits raised to fit; that was wrong, and is undone.
+
+**Fixed:** the main display's section, display 0's, decides. The same cold
+boot of the car then answered in 11 seconds. A boot also reports "booting
+mobium-auto: 30s so far" every 30 seconds: the client waits 120 seconds for an
+answer, and a boot waits up to 210.
+
+### 401. A car launcher's tile mapped twice
+
+**Found by:** the car's app grid: Calendar, then `app_icon`, for every tile. A
+tile is a clickable `app_item` holding a clickable, nameless `app_icon` image
+over the tile's name.
+
+**Fixed:** a clickable with no words of its own or inside it, held by a
+clickable parent that has words, is the parent's picture, as the iOS parser
+already holds for an inaccessible button in a labeled one (CHALLENGES 244). Of
+every captured hierarchy, it changes the car's app grid alone: 14 tiles.
+
+### 402. text read car-ui's marker as the screen's first line
+
+**Found by:** `mobium text` in car Settings opened with
+`com.android.car.ui.utils.ROTARY_CONTAINER`, and `map` named the list by it.
+car-ui writes that id into a container's content-desc for the rotary
+controller. It names nothing.
+
+**Fixed:** a content-desc in car-ui's `com.android.car.ui.utils.` namespace is
+not read as a label.
+
+### 403. A car said it had three-button navigation
+
+**Found by:** `mobium devices` on the car emulator: "navigation: three-button".
+`navigation_mode` reads 0 there. A car has its own bars and a back button laid
+over the app. A swipe in from the left edge, of the screen or of a letterboxed
+app, changed nothing; the back key went back.
+
+**Fixed:** a car's navigation is "car bars", and `press back --gesture` is
+refused there, naming the back key, as with buttons.
+
+### 404. A car's back button was not in map
+
+**Found by:** the car's back button, at the left edge over every app, was
+never mapped. It is an ImageButton named "Back Button" that reports
+`clickable=false`, `focusable=true`. A tap on it went back in MobiumApp.
+
+**Fixed:** a focusable, enabled button with a name is a control even when it
+reports itself not clickable. Of every captured hierarchy, it adds the car's
+back button alone.
+
+### 405. boot --window opened no window for a simulator
+
+**Found by:** `mobium boot "iPhone 18 Pro" --window` booted the simulator and
+showed nothing: the flag was read only for an emulator. Xcode 27.1 has no
+Simulator.app. DeviceHub, inside Xcode.app, shows simulators, and ignores
+Simulator.app's `-CurrentDeviceUDID`. It opens on the device it last showed,
+kept as `lastSelectedDeviceIdentifier` in `com.apple.dt.Devices`.
+
+**Fixed:** `--window` opens the simulator: in Simulator.app with
+`-CurrentDeviceUDID` where Xcode has one, else in DeviceHub, with that
+preference written before it starts. DeviceHub then opened on the iPhone 18
+Pro. A DeviceHub already running is not quit, since quitting it shut down the
+simulator it showed; it is brought forward, and the answer names the device to
+pick in its sidebar.
+
+### 406. Checks branched on find's status, which no match leaves 0
+
+**Found by:** `automotive.sh` failing "the car's back button did not go back"
+after it had gone back. `mobium find` answers "No element matches" with status
+0, so `while $M find …` never ended, and `$M find … || fail` could not fail.
+`audit.sh` guarded a finding's locator the same way, twice, and `login.sh`
+took the save-password branch whether or not the sheet was up.
+
+**Fixed:** `shows`, in `lib.sh`, reads `find`'s answer. `lib-selftest.sh`
+holds it to both answers. `login.sh` and `audit.sh` passed on the Pixel 7 AVD,
+and `audit.sh` on the iPhone 18 Pro simulator.
+
+### 407. A real phone's identifiers were in the public repositories
+
+**Found by:** scanning every public repository's main and history for the
+identifiers of the phones Mobium was built on, after a test was seen to name
+the Pixel 8 Pro by its serial. In the files of main: the Pixel's serial in
+three tests, the iPhone's UDID in `lib-selftest.sh`, the iPhone's device name
+in two quotes here, a Fire TV's home-network address in two tests and an
+entry here, a wireless-debugging capture in SETUP with the Pixel's address
+and the start of its serial, and a Windows home directory's name here. The
+same capture was in the RAG project's review page; the documentation site
+tracked Python bytecode, which records the path it was built in. Each came
+from a real capture or a test written beside a real device. The history keeps
+them: main refuses a rewrite, and copies of a public repository outlive one.
+
+**Fixed:** each replaced with a made-up value of the same shape; addresses
+come from 192.0.2.0/24, kept for documentation. `docs/checks/private-data.py`,
+run by `make ci`, refuses a UDID, an adb mdns name, a home network's address
+or a home path that is not on its list of made-up values, and tracked
+bytecode. It prints where and what kind, never the value, since a public
+repository's CI log is public. Its selftest holds each rule to a case it must
+flag, and a leak planted in a staged file failed `make docs-check`.
+
 ## Findings that were not defects
 
 Worth recording because each one closed off an approach that looked obvious.
+
+- **A car's climate control drops a press.** On the Android Automotive 15
+  emulator, ten presses of Lower temperature a second apart moved it nine
+  steps, from `adb shell input tap` and from Mobium alike. A first count said
+  `adb` lost two of ten raising; it had reached 82, the top, where a press
+  does nothing. `automotive.sh` presses once more when a press is dropped,
+  and says so.
 
 - **Predictive back on Android 15 closes a React Native app.** MobiumApp
   built with predictive back turned on went back to closing on every back
@@ -9058,6 +9276,11 @@ Worth recording because each one closed off an approach that looked obvious.
 
 None of these is a Mobium defect; each cost real time and no error named
 its cause.
+
+- **Xcode 27.1 has no Simulator.app.** DeviceHub, in
+  `Xcode.app/Contents/Applications`, replaces it, with no CarPlay or external
+  display in any menu or panel; `simctl io enumerate` lists no CarPlay screen.
+  Quitting DeviceHub shut down the simulator it showed.
 
 - **`platform-tools` must be installed into the SDK root** with `sdkmanager`,
   not only as the Homebrew cask. The emulator validates the SDK root by looking

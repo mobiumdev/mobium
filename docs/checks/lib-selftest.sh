@@ -47,7 +47,13 @@ out=$(sh -c '. "$1"; check_platform android 457C7DC2-C706-45D9-8D68-1D26953E28B1
 [ "$st" = 2 ] && echo "$out" | grep -q "is for an Android device" && pass "an Android check refuses a simulator" || bad "platform: exit $st, $out"
 out=$(sh -c '. "$1"; check_platform ios emulator-5554' x "$LIB" 2>&1) && bad "an iOS check took an emulator" || st=$?
 [ "$st" = 2 ] && pass "an iOS check refuses an emulator" || bad "platform: exit $st"
-sh -c '. "$1"; check_platform ios 00008120-000A75EA1ED8A01E' x "$LIB" && pass "an iPhone's UDID is iOS" || bad "an iPhone's UDID was refused"
+sh -c '. "$1"; check_platform ios 00008120-0001234567890ABC' x "$LIB" && pass "an iPhone's UDID is iOS" || bad "an iPhone's UDID was refused"
+# 7. shows reads find's answer, not its status: find answers "No element
+#    matches" with status 0, and a check guarded on the status never failed.
+out=$(sh -c '. "$1"; M=fake; fake() { echo "No element matches label=x"; }; shows label=x && echo shown || echo absent' x "$LIB")
+[ "$out" = absent ] && pass "shows: no match is absent" || bad "shows: no match read as $out"
+out=$(sh -c '. "$1"; M=fake; fake() { echo "@e3 x (button)"; }; shows label=x && echo shown || echo absent' x "$LIB")
+[ "$out" = shown ] && pass "shows: a match is shown" || bad "shows: a match read as $out"
 # 8. every check, but for these, and none sets its own EXIT
 #    trap, which would replace the prelude's. clean-stop.sh stops the
 #    caller's daemon, so it must not have one of its own; the test-runner,

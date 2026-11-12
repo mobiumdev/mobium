@@ -52,7 +52,15 @@ type UIA2 struct {
 	// windowed is a device whose apps are windows over one another, read
 	// every window at once (uitree.MarkWindows).
 	windowed bool
+	// bars and keyboard are what a car's tree takes as uitree.SystemBars and
+	// uitree.KeyboardPackage.
+	bars     []string
+	keyboard string
 }
+
+// carSystemBars is the package that draws a car's top and bottom bars, on
+// the Android Automotive 15 emulator.
+var carSystemBars = []string{"com.android.systemui"}
 
 // NewUIA2 prepares a driver. Nothing touches the device until Start.
 func NewUIA2(adb *device.ADB) *UIA2 {
@@ -123,12 +131,21 @@ func (u *UIA2) Start(ctx context.Context, progress func(string)) error {
 		u.teardownLocked(ctx)
 		return err
 	}
-	windowed, err := u.adb.HorizonOS(ctx)
+	horizon, err := u.adb.HorizonOS(ctx)
 	if err != nil {
 		u.teardownLocked(ctx)
 		return err
 	}
-	u.windowed = windowed
+	car, err := u.adb.Automotive(ctx)
+	if err != nil {
+		u.teardownLocked(ctx)
+		return err
+	}
+	u.windowed = horizon || car
+	u.bars, u.keyboard = nil, ""
+	if car {
+		u.bars, u.keyboard = carSystemBars, u.adb.InputMethodPackage(ctx)
+	}
 	if err := u.configure(ctx); err != nil {
 		u.teardownLocked(ctx)
 		return err
@@ -315,6 +332,7 @@ func (u *UIA2) Snapshot(ctx context.Context) (*uitree.Tree, error) {
 	}
 	if u.windowed {
 		tree.MarkWindows()
+		tree.SystemBars, tree.KeyboardPackage = u.bars, u.keyboard
 	}
 	return tree, nil
 }

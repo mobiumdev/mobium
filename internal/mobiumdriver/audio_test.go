@@ -38,7 +38,7 @@ func TestAndroidAudioOnAPhoneAndAnEmulator(t *testing.T) {
 		return device.StartAudioEvents(context.Background(), nil, nil), nil
 	}
 	defer func() { startEmulatorAudio = device.StartEmulatorAudio }()
-	r, err := androidAudioOn(context.Background(), phoneOrEmulator(false), "3C191FDJG001QX", "")
+	r, err := androidAudioOn(context.Background(), phoneOrEmulator(false), "1A2B3C4D5E6F7G", "")
 	if err != nil || r.Captures() || asked != "" {
 		t.Fatalf("a phone: %v, captures %v, asked %q", err, r != nil && r.Captures(), asked)
 	}

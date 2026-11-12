@@ -157,6 +157,13 @@ type Tree struct {
 	// Windowed is set when the hierarchy holds every window on the display,
 	// bottom first, each root marked Window (MarkWindows).
 	Windowed bool
+	// SystemBars names the packages whose windows lie over every app on a
+	// windowed display and take touches with it: a car's top and bottom bars.
+	// They are never the app in front (CHALLENGES 394).
+	SystemBars []string
+	// KeyboardPackage is the package of the input method, whose window covers the
+	// app beneath it but is not mapped, as a phone's hierarchy never holds it.
+	KeyboardPackage string
 }
 
 var boundsRe = regexp.MustCompile(`\[(-?\d+),(-?\d+)\]\[(-?\d+),(-?\d+)\]`)
@@ -266,6 +273,11 @@ func ParseAndroid(data []byte) (*Tree, error) {
 	if !tree.Screen.Empty() {
 		for _, w := range root.Children {
 			tree.Screen = tree.Screen.union(w.Bounds)
+		}
+		// Several windows leave the root with no bounds of its own, and an
+		// untargeted swipe had no screen to cross (CHALLENGES 396).
+		if root.Bounds.Empty() {
+			root.Bounds = tree.Screen
 		}
 	}
 	foldCheckableRows(root)
@@ -398,7 +410,7 @@ func nodeFrom(e xml.StartElement, parent *Node, sibling int) *Node {
 
 	n := &Node{
 		Text:          attr(e, "text"),
-		Label:         attr(e, "content-desc"),
+		Label:         androidLabel(attr(e, "content-desc")),
 		TestID:        attr(e, "resource-id"),
 		Class:         class,
 		Package:       attr(e, "package"),
@@ -440,6 +452,19 @@ func nodeFrom(e xml.StartElement, parent *Node, sibling int) *Node {
 		n.ValueSteps = n.Value != ""
 	}
 	return n
+}
+
+// carUIMarker is the prefix of the ids car-ui writes into a container's
+// content-desc for the rotary controller, such as ROTARY_CONTAINER on car
+// Settings' list: a marker, not a name, and `text` read it out as the
+// screen's first line (CHALLENGES 402).
+const carUIMarker = "com.android.car.ui.utils."
+
+func androidLabel(desc string) string {
+	if strings.HasPrefix(desc, carUIMarker) {
+		return ""
+	}
+	return desc
 }
 
 // insideWebView reports a node a WebView draws for its page.

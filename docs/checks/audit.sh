@@ -60,7 +60,7 @@ if [ "$KIND" = android ]; then
   [ "$got" = "LabelInName:testid=sendMismatch,RedundantDescription:testid=saveRedundant,SpeakableTextPresent:testid=iconUnnamed" ] ||
     fail "the Screen Reader Demo's findings were $got, want its nameless icon, its Save button and its Submit form alone"
   echo "$out" | json '",".join(d.get("unchecked", []))' | grep -q TextContrast || fail "contrast is not named as unchecked"
-  $M find testid=iconUnnamed >/dev/null && $M find testid=saveRedundant >/dev/null || fail "a finding's locator does not resolve"
+  shows testid=iconUnnamed && shows testid=saveRedundant || fail "a finding's locator does not resolve"
   row "spoken" "the nameless icon, Save button and Submit form, not twins"
   $M terminate $APP >/dev/null 2>&1 || true
   echo PASS; exit 0
@@ -84,7 +84,7 @@ types=$(echo "$out" | json '",".join(sorted(set(f["type"] for f in d["findings"]
 nameless=$(echo "$out" | json 'sum(1 for f in d["findings"] if not f.get("bounds"))')
 loc=$(echo "$out" | json 'next((f["locator"] for f in d["findings"] if f.get("locator","").startswith("testid=")), "")')
 if [ -n "$loc" ]; then
-  $M find "$loc" >/dev/null 2>&1 || fail "a finding's locator does not resolve"
+  shows "$loc" || fail "a finding's locator does not resolve"
 fi
 row "settings" "$n finding(s): $types; $nameless with no element; a locator resolves"
 $M terminate com.apple.Preferences >/dev/null 2>&1 || true

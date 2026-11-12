@@ -1,5 +1,7 @@
 package uitree
 
+import "strings"
+
 // A device where apps are windows over one another. Horizon OS, on the Meta
 // Spatial Simulator, keeps every app open as a panel smaller than the display,
 // over its shell's own windows: a full-screen one with the home screen, a
@@ -40,11 +42,49 @@ func (t *Tree) frontWindow() *Node {
 		return nil
 	}
 	for i := len(t.Root.Children) - 1; i >= 0; i-- {
-		if w := t.Root.Children[i]; !w.Bounds.Empty() {
+		if w := t.Root.Children[i]; !w.Bounds.Empty() && !t.isBar(w) && !t.isKeyboard(w) {
 			return w
 		}
 	}
 	return nil
+}
+
+func (t *Tree) isBar(w *Node) bool {
+	for _, p := range t.SystemBars {
+		if w.Package == p {
+			return true
+		}
+	}
+	return false
+}
+
+func (t *Tree) isKeyboard(w *Node) bool {
+	return t.KeyboardPackage != "" && w.Package == t.KeyboardPackage
+}
+
+// appArea is the screen less the system bars along its edges: what an app
+// has to draw in. False when no bar lies along an edge.
+func (t *Tree) appArea() (Rect, bool) {
+	area, found := t.Screen, false
+	for _, w := range t.Root.Children {
+		b := w.Bounds
+		if !t.isBar(w) || b.Empty() {
+			continue
+		}
+		wide := b.X1 <= area.X1 && b.X2 >= area.X2
+		tall := b.Y1 <= area.Y1 && b.Y2 >= area.Y2
+		switch {
+		case wide && b.Y1 <= area.Y1 && b.Y2 > area.Y1:
+			area.Y1, found = b.Y2, true
+		case wide && b.Y2 >= area.Y2 && b.Y1 < area.Y2:
+			area.Y2, found = b.Y1, true
+		case tall && b.X1 <= area.X1 && b.X2 > area.X1:
+			area.X1, found = b.X2, true
+		case tall && b.X2 >= area.X2 && b.X1 < area.X2:
+			area.X2, found = b.X1, true
+		}
+	}
+	return area, found && !area.Empty()
 }
 
 // windowedDialog is the window in front when it is a dialog: inside a lower
@@ -56,6 +96,18 @@ func (t *Tree) frontWindow() *Node {
 func (t *Tree) windowedDialog() *Node {
 	front := t.frontWindow()
 	if front == nil {
+		return nil
+	}
+	// Under system bars the app's own window is not in the hierarchy while
+	// its dialog is up. A letterboxed app keeps one side of the app's area
+	// whole, and a dialog neither (CHALLENGES 395).
+	if area, ok := t.appArea(); ok {
+		b := front.Bounds
+		tall := b.Y1 <= area.Y1 && b.Y2 >= area.Y2
+		wide := b.X1 <= area.X1 && b.X2 >= area.X2
+		if !tall && !wide {
+			return front
+		}
 		return nil
 	}
 	for _, w := range t.Root.Children {
@@ -93,7 +145,11 @@ func (t *Tree) behindFront(target *Node) *Node {
 	if front == nil {
 		return nil
 	}
-	if w := t.windowOf(target); w != nil && w.Package != front.Package {
+	w := t.windowOf(target)
+	if w == nil || t.isBar(w) {
+		return nil
+	}
+	if w.Package != front.Package || t.isKeyboard(w) {
 		return front
 	}
 	return nil
@@ -159,4 +215,50 @@ func (t *Tree) WalkFront(fn func(*Node) bool) {
 			return
 		}
 	}
+}
+
+// DialogWords is what a dialog or popover says — its texts in order, title
+// first, one to a line — leaving out its buttons' captions, or "" when it
+// has only buttons.
+func DialogWords(d *Node) string {
+	var parts []string
+	var walk func(n *Node)
+	walk = func(n *Node) {
+		// A button's words are its caption, not what the dialog says: a
+		// platform alert's text is its title and message alone. So is the
+		// text a nameless button lies over (coveredSiblingText).
+		if n.Clickable || underClickableSibling(n) {
+			return
+		}
+		text := strings.TrimSpace(n.Text)
+		if masked, ok := Redact(n); ok {
+			text = masked
+		}
+		if text == "" {
+			text = strings.TrimSpace(n.Label)
+		}
+		if text != "" {
+			parts = append(parts, text)
+		}
+		for _, c := range n.Children {
+			walk(c)
+		}
+	}
+	walk(d)
+	return strings.Join(parts, "\n")
+}
+
+// underClickableSibling reports whether a clickable beside n, with no text of
+// its own, lies wholly over it.
+func underClickableSibling(n *Node) bool {
+	if n.Parent == nil || n.Bounds.Empty() {
+		return false
+	}
+	for _, sib := range n.Parent.Children {
+		if sib != n && sib.Clickable && clean(sib.Text) == "" && clean(sib.Label) == "" &&
+			enclosesRect(sib.Bounds, n.Bounds) {
+			return true
+		}
+	}
+	return false
 }

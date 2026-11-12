@@ -22,7 +22,7 @@ func newBootCmd() *cobra.Command {
 			return runTool("app_boot", call)
 		},
 	}
-	cmd.Flags().BoolVar(&window, "window", false, "Show the emulator's window (default: headless)")
+	cmd.Flags().BoolVar(&window, "window", false, "Show the emulator's window, or the simulator in DeviceHub or Simulator.app (default: headless)")
 	return cmd
 }
 

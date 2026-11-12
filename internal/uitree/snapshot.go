@@ -128,7 +128,7 @@ func Actionable(n *Node) bool {
 	if !n.Displayed {
 		return false
 	}
-	if partOfToggle(n) {
+	if partOfToggle(n) || insideNamedTile(n) {
 		return false
 	}
 	if !n.Clickable && !n.LongClickable && !n.Checkable && !n.Scrollable {
@@ -136,11 +136,18 @@ func Actionable(n *Node) bool {
 		// slider: Android marks a seek bar neither clickable nor scrollable,
 		// so MobiumApp's two sliders were missing from map on the Pixel 8
 		// Pro (CHALLENGES 227).
-		if !(n.Focusable && HasRole(n, "input")) && !HasClassRole(n, "slider") {
+		// Nor a named button that says it is not clickable: a car's back
+		// button, an ImageButton, takes a tap that goes back (CHALLENGES 404).
+		if !(n.Focusable && HasRole(n, "input")) && !HasClassRole(n, "slider") && !focusableNamedButton(n) {
 			return false
 		}
 	}
 	return true
+}
+
+func focusableNamedButton(n *Node) bool {
+	return n.Focusable && n.Enabled && !IsIOS(n) && HasClassRole(n, "button") &&
+		(clean(n.Label) != "" || clean(n.Text) != "")
 }
 
 // partOfToggle reports a checkable node that takes no touch of its own,
@@ -156,6 +163,36 @@ func partOfToggle(n *Node) bool {
 	}
 	for p := n.Parent; p != nil; p = p.Parent {
 		if p.Checkable && p.Clickable {
+			return true
+		}
+	}
+	return false
+}
+
+// insideNamedTile reports a clickable with no words of its own or inside
+// it, held by a clickable parent that has words: the parent's picture, not a
+// second control. A car launcher's tile is a clickable app_item holding a
+// clickable, nameless app_icon over its name, and map listed every tile twice,
+// once as "app_icon" (CHALLENGES 401).
+func insideNamedTile(n *Node) bool {
+	p := n.Parent
+	if !n.Clickable || n.Checkable || n.Scrollable || IsIOS(n) || HasRole(n, "input") || p == nil || !p.Clickable {
+		return false
+	}
+	if hasWords(n) || !hasWords(p) || !enclosesRect(p.Bounds, n.Bounds) {
+		return false
+	}
+	return true
+}
+
+// hasWords reports whether n, or a node inside it that takes no touch of its
+// own, has text or a label.
+func hasWords(n *Node) bool {
+	if clean(n.Text) != "" || clean(n.Label) != "" {
+		return true
+	}
+	for _, c := range n.Children {
+		if !c.Clickable && hasWords(c) {
 			return true
 		}
 	}
@@ -231,11 +268,37 @@ func describe(n *Node) string {
 		if s := descendantText(n, 3); s != "" {
 			return truncate(s)
 		}
+		if s := coveredSiblingText(n); s != "" {
+			return truncate(s)
+		}
 	}
 	if s := n.ShortTestID(); s != "" {
 		return s
 	}
 	return n.ShortClass()
+}
+
+// coveredSiblingText is the text a clickable with none of its own lies over:
+// that of the nodes beside it, under the same parent, wholly inside its
+// bounds. A car's list item is a nameless touch interceptor over a sibling
+// holding its title, and "Allow" mapped as car_ui_list_item_touch_interceptor
+// (CHALLENGES 399).
+func coveredSiblingText(n *Node) string {
+	if !n.Clickable || n.Parent == nil || n.Bounds.Empty() {
+		return ""
+	}
+	var parts []string
+	for _, sib := range n.Parent.Children {
+		if sib == n || Actionable(sib) || sib.Bounds.Empty() || !enclosesRect(n.Bounds, sib.Bounds) {
+			continue
+		}
+		if s := clean(sib.Text); s != "" {
+			parts = append(parts, s)
+		} else if s := descendantText(sib, 2); s != "" {
+			parts = append(parts, s)
+		}
+	}
+	return strings.Join(parts, " ")
 }
 
 // onceIfTwice is a label that is one phrase said twice, said once. WebKit

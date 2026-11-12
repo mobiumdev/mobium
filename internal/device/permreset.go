@@ -94,15 +94,15 @@ func parseRuntimePermissions(dump string) []permissionRecord {
 }
 
 func (a *ADB) runtimePermissionRecords(ctx context.Context, pkg string) ([]permissionRecord, error) {
-	out, err := a.Shell(ctx, "dumpsys", "package", pkg)
+	out, err := a.packageDump(ctx, pkg)
 	if err != nil {
 		return nil, err
 	}
-	if strings.Contains(string(out), "Unable to find package") {
+	if strings.Contains(out, "Unable to find package") {
 		return nil, mobiumerr.New(mobiumerr.InvalidArgument, "%s is not installed", pkg).
 			WithRemedy("app_list_apps lists the installed apps by package id; app_launch takes that id, not the name on the screen")
 	}
-	return parseRuntimePermissions(string(out)), nil
+	return parseRuntimePermissions(out), nil
 }
 
 // ResetAppPermissions puts one app's runtime permissions back to asking, as a
@@ -142,7 +142,7 @@ func (a *ADB) ResetAppPermissions(ctx context.Context, pkg string) (PermissionRe
 			}
 		}
 		if p.decided() {
-			out, diag, err := a.ShellDiagnostics(ctx, "pm", "clear-permission-flags", pkg, p.name, "user-set", "user-fixed")
+			out, diag, err := a.ShellDiagnostics(ctx, a.pmArgs(ctx, "clear-permission-flags", pkg, p.name, "user-set", "user-fixed")...)
 			if err != nil {
 				return res, err
 			}

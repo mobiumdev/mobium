@@ -5,8 +5,8 @@
 *Mutatis mutandis.*
 
 **Mobile app automation for AI agents and people.** Android emulators, Android
-phones, iOS simulators and iPhones — and TVs, Wear OS and Meta Quest's 2D app
-panels — driven through one tool layer from a single Go binary with no runtime
+phones, iOS simulators and iPhones — and TVs, Wear OS, Android Automotive and
+Meta Quest's 2D app panels — driven through one tool layer from a single Go binary with no runtime
 dependencies.
 
 ```sh
@@ -168,8 +168,8 @@ app may, and reporting "empty" would be a different and usually false claim.
 Verified on devices, not only compiled: a Pixel 7 emulator on Android 15 and
 Android 17, a Pixel 8 Pro on Android 17, an iPhone 17 Pro simulator on iOS
 26.5 and an iPhone 18 Pro simulator on iOS 27.0, and an iPhone 15 Plus on iOS
-26.6.2 and, since its update, iOS 27.0.1. TVs, Wear OS and Meta Quest are
-below. The end-to-end flows in
+26.6.2 and, since its update, iOS 27.0.1. TVs, Wear OS, cars and Meta Quest
+are below. The end-to-end flows in
 [docs/checks/](docs/checks/) each drive a real device and assert on what
 happened rather than on an exit code.
 
@@ -210,6 +210,14 @@ Settings — its chips, its toggles and its own dialog, which `app_alert`
 answers — with swiping right as a watch's back
 ([docs/checks/wear-os.sh](docs/checks/wear-os.sh)). Not yet a real watch,
 and not the crown: `press` has no rotary input.
+
+**A car's screen** is Android too: since 2026-11-11 the UiAutomator2 backend
+drives the Android Automotive 15 emulator — the system bars and the app
+between them, the app's dialogs and the car's permission prompt, with the
+keyboard left out of `map` as a phone leaves it — and acts for user 10, the
+driver, as the car's apps do ([docs/checks/automotive.sh](docs/checks/automotive.sh)).
+Not yet a real car, nor the instrument cluster's displays, and the
+`uiautomator` driver reads only the app's window there.
 
 **Meta Quest's 2D apps** are Android too: since 2026-10-25 the Android
 backends drive the panels on the Meta Spatial Simulator, Meta's Horizon OS

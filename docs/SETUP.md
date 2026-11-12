@@ -147,7 +147,7 @@ emulator -avd mobium-test -no-window -no-snapshot-save -no-boot-anim -no-audio &
 ```
 
 **Unlike an iOS simulator, the window cannot be attached afterwards.** `simctl
-boot` is always headless and `open -a Simulator` shows it later; the Android
+boot` is always headless and `mobium boot <udid> --window` shows it later; the Android
 emulator decides at launch, and the console (`adb emu help`) has no command to
 raise a window. To see the screen on a `-no-window` emulator, take a
 screenshot — or restart it without the flag.
@@ -385,15 +385,15 @@ Android 11+. The phone and the Mac must be on the same network.
 
    ```sh
    adb mdns services
-   # adb-3C19...-FIOvFv  _adb-tls-pairing._tcp  10.0.0.96:33169
-   # adb-3C19...-FIOvFv  _adb-tls-connect._tcp  10.0.0.96:43943
+   # adb-XXXXXXXX-abcdef  _adb-tls-pairing._tcp  192.0.2.20:33169
+   # adb-XXXXXXXX-abcdef  _adb-tls-connect._tcp  192.0.2.20:43943
    ```
 
 4. Pair against the **pairing** port, which is not the one on the main
    Wireless debugging screen:
 
    ```sh
-   adb pair 10.0.0.96:33169 123456
+   adb pair 192.0.2.20:33169 123456
    ```
 
 `adb pair` may answer `protocol fault (couldn't read status message)` **and
@@ -455,7 +455,7 @@ xcodebuild -downloadPlatform iOS     # the runtime, if it is missing
 
 xcrun simctl list devices available
 xcrun simctl boot <udid>             # boots headless — no window appears
-open -a Simulator                    # only this puts it on screen
+mobium boot <udid> --window          # only this puts it on screen
 mobium --device <udid> map
 ```
 
@@ -464,9 +464,11 @@ has, and `mobium shutdown "iPhone 17 Pro"` ends the session and shuts it down.
 
 **`simctl boot` shows you nothing.** It starts the runtime with no window, so
 a simulator can be fully booted and driveable while the screen stays empty.
-`open -a Simulator` attaches the GUI to whatever is already booted. Mobium
-neither needs nor opens it — `xcrun simctl io <udid> screenshot` works
-headless — but it is the first thing anyone asks about.
+`mobium boot <udid> --window` opens it on screen: in Simulator.app, or from
+Xcode 27.1, which has none, in DeviceHub. A DeviceHub already open is brought
+forward and left on the device it shows, and the answer names the one to pick.
+Mobium needs no window — `xcrun simctl io <udid> screenshot` works headless —
+but it is the first thing anyone asks about.
 
 **Install Xcode from the Mac App Store.** `xcodes install` has been broken
 since 2026-09-11: Apple removed the `/olympus/v1/app/config` endpoint it uses
@@ -544,7 +546,7 @@ xcodebuild -downloadPlatform tvOS      # or Xcode > Settings > Components
 xcrun simctl create "Apple TV" \
   com.apple.CoreSimulator.SimDeviceType.Apple-TV-4K-3rd-generation-1080p \
   com.apple.CoreSimulator.SimRuntime.tvOS-26-5
-xcrun simctl boot <udid> && open -a Simulator
+mobium boot <udid> --window
 ```
 
 `mobium devices` lists it as an `apple tv simulator`, and the first command

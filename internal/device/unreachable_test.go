@@ -19,8 +19,8 @@ func TestUnreachable(t *testing.T) {
 		want           bool
 		remedy         string
 	}{
-		{"10.0.0.77:5555", "adb: device offline\n", true, "adb connect 10.0.0.77:5555"},
-		{"10.0.0.77:5555", "error: device offline\n", true, "adb connect 10.0.0.77:5555"},
+		{"192.0.2.10:5555", "adb: device offline\n", true, "adb connect 192.0.2.10:5555"},
+		{"192.0.2.10:5555", "error: device offline\n", true, "adb connect 192.0.2.10:5555"},
 		{"emulator-5554", "error: device 'emulator-5554' not found\n", true, "adb devices"},
 		{"emulator-5554", "adb: no devices/emulators found\n", true, "adb devices"},
 		// A command on the device printing similar words is not adb saying
@@ -55,7 +55,7 @@ func TestEnsureUIA2InstalledOnAnOfflineDevice(t *testing.T) {
   *install*) echo x >> `+fakecmd.Path(installs)+`; echo "adb: device offline" >&2; exit 1 ;;
   *) echo "adb: device offline" >&2; exit 1 ;;
 esac`)
-	a := &ADB{Path: bin, Serial: "10.0.0.77:5555"}
+	a := &ADB{Path: bin, Serial: "192.0.2.10:5555"}
 	err := a.EnsureUIA2Installed(context.Background(), nil)
 	if mobiumerr.CodeOf(err) != mobiumerr.DeviceNotReady {
 		t.Fatalf("got %v, want device_not_ready", err)
@@ -72,13 +72,13 @@ func netADB(t *testing.T, stayDown bool) (string, string) {
 	t.Helper()
 	dir := t.TempDir()
 	state := filepath.Join(dir, "state")
-	connect := `echo "connected to 10.0.0.77:5555"; [ -f ` + fakecmd.Path(state) + `.cut ] && echo up > ` + fakecmd.Path(state)
+	connect := `echo "connected to 192.0.2.10:5555"; [ -f ` + fakecmd.Path(state) + `.cut ] && echo up > ` + fakecmd.Path(state)
 	if stayDown {
-		connect = `echo "failed to connect to 10.0.0.77:5555"`
+		connect = `echo "failed to connect to 192.0.2.10:5555"`
 	}
 	bin := fakecmd.Script(t, dir, "adb", `case "$*" in
-  *"devices -l"*) echo "List of devices attached"; if [ -f `+fakecmd.Path(state)+` ]; then echo "10.0.0.77:5555 device product:x model:AFTHA001"; else echo "10.0.0.77:5555 offline"; fi ;;
-  *disconnect*) touch `+fakecmd.Path(state)+`.cut; echo "disconnected 10.0.0.77:5555" ;;
+  *"devices -l"*) echo "List of devices attached"; if [ -f `+fakecmd.Path(state)+` ]; then echo "192.0.2.10:5555 device product:x model:AFTHA001"; else echo "192.0.2.10:5555 offline"; fi ;;
+  *disconnect*) touch `+fakecmd.Path(state)+`.cut; echo "disconnected 192.0.2.10:5555" ;;
   *connect*) `+connect+` ;;
 esac`)
 	t.Setenv("MOBIUM_ADB_PATH", bin)
@@ -87,7 +87,7 @@ esac`)
 
 func TestSelectConnectsANetworkDeviceAgain(t *testing.T) {
 	netADB(t, false)
-	_, d, err := Select(context.Background(), "10.0.0.77:5555")
+	_, d, err := Select(context.Background(), "192.0.2.10:5555")
 	if err != nil || d == nil || !d.Ready() {
 		t.Fatalf("got %v, %+v; want the device back after one reconnect", err, d)
 	}
@@ -97,7 +97,7 @@ func TestSelectConnectsANetworkDeviceAgain(t *testing.T) {
 // call that never reached it — the mark the test runner waits on.
 func TestSelectMarksAnUnreachedDevice(t *testing.T) {
 	netADB(t, true)
-	_, _, err := Select(context.Background(), "10.0.0.77:5555")
+	_, _, err := Select(context.Background(), "192.0.2.10:5555")
 	if mobiumerr.CodeOf(err) != mobiumerr.DeviceNotReady || !Unreached(err) {
 		t.Fatalf("got %v; want device_not_ready marked as never reaching the device", err)
 	}
@@ -106,7 +106,7 @@ func TestSelectMarksAnUnreachedDevice(t *testing.T) {
 	}
 	// A failure from inside a call carries no mark: it may have reached
 	// the device.
-	if Unreached(unreachable("10.0.0.77:5555", "adb: device offline\n")) {
+	if Unreached(unreachable("192.0.2.10:5555", "adb: device offline\n")) {
 		t.Error("an error from inside a call was marked as never reaching the device")
 	}
 }

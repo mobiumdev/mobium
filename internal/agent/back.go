@@ -48,6 +48,13 @@ func (h *Handlers) gestureBack(ctx context.Context, s *session, tree *uitree.Tre
 		if err != nil {
 			return "", err
 		}
+		if mode == device.NavCar {
+			return "", mobiumerr.New(mobiumerr.Unsupported, "a car has no back gesture — measured: a swipe in "+
+				"from the left edge changed nothing. Its back button is the driver's back: `mobium press back`, "+
+				"app_press back without gesture").
+				WithRemedy("app_press back without gesture: the back button is the driver's back here").
+				WithDetail("navigation", mode)
+		}
 		if mode != device.NavGestures {
 			if mode == "" {
 				mode = "an unknown"
