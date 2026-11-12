@@ -221,7 +221,8 @@ func (a *Android) Screenshot(ctx context.Context) ([]byte, error) {
 	return png, nil
 }
 
-// maxVendorPrefix bounds the text skipped ahead of a capture's PNG.
+// maxVendorPrefix bounds the text skipped ahead of a capture's PNG, and cut
+// after it.
 const maxVendorPrefix = 4096
 
 // pngIn is the PNG in what screencap wrote, past any lines a vendor library
@@ -236,14 +237,36 @@ func pngIn(out []byte) ([]byte, bool) {
 	if i < 0 {
 		return nil, false
 	}
-	if i == 0 {
-		return out, true
+	if i > 0 {
+		prefix := out[:i]
+		if i > maxVendorPrefix || prefix[len(prefix)-1] != '\n' || bytes.IndexByte(prefix, 0) >= 0 {
+			return nil, false
+		}
 	}
-	prefix := out[:i]
-	if i > maxVendorPrefix || prefix[len(prefix)-1] != '\n' || bytes.IndexByte(prefix, 0) >= 0 {
+	return withoutTrailer(out[i:])
+}
+
+// pngEnd is the IEND chunk every PNG ends with: no data, and its CRC.
+var pngEnd = []byte{0, 0, 0, 0, 'I', 'E', 'N', 'D', 0xAE, 0x42, 0x60, 0x82}
+
+// withoutTrailer is png without text written after it. The Android
+// Automotive 15 emulator printed "FORTIFY: pthread_mutex_lock called on a
+// destroyed mutex" after 38 of 39 captures, and the files kept it
+// (CHALLENGES 408). Only a short line of text is cut, as with a prefix; a
+// capture with no IEND is left as it is.
+func withoutTrailer(png []byte) ([]byte, bool) {
+	j := bytes.LastIndex(png, pngEnd)
+	if j < 0 {
+		return png, true
+	}
+	tail := png[j+len(pngEnd):]
+	if len(tail) == 0 {
+		return png, true
+	}
+	if len(tail) > maxVendorPrefix || bytes.IndexByte(tail, 0) >= 0 {
 		return nil, false
 	}
-	return out[i:], true
+	return png[:j+len(pngEnd)], true
 }
 
 // Tap touches a point in device pixels.

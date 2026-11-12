@@ -36,3 +36,31 @@ func TestPNGInSkipsAVendorLine(t *testing.T) {
 		}
 	}
 }
+
+// The trailer is what the Android Automotive 15 emulator printed after 38 of
+// 39 captures in one test run, 2026-11-11.
+func TestPNGInCutsAVendorLineAfterIt(t *testing.T) {
+	png := append(append(append([]byte(nil), pngMagic...), "\x00\x00\x00\rIHDR"...), pngEnd...)
+	trailer := []byte("FORTIFY: pthread_mutex_lock called on a destroyed mutex (0x7ad10360c8)\n")
+	cases := []struct {
+		name string
+		in   []byte
+		ok   bool
+	}{
+		{"a whole capture", png, true},
+		{"the car's line after it", append(append([]byte(nil), png...), trailer...), true},
+		{"lines before and after it", append(append([]byte("[Warning] Multiple displays were found\n"), png...), trailer...), true},
+		{"binary after it", append(append([]byte(nil), png...), "\x00\x01junk"...), false},
+		{"too much after it", append(append([]byte(nil), png...), strings.Repeat("x", maxVendorPrefix+1)...), false},
+	}
+	for _, c := range cases {
+		got, ok := pngIn(c.in)
+		if ok != c.ok {
+			t.Errorf("%s: ok=%v, want %v", c.name, ok, c.ok)
+			continue
+		}
+		if ok && !bytes.Equal(got, png) {
+			t.Errorf("%s: got %d bytes, want the PNG's %d", c.name, len(got), len(png))
+		}
+	}
+}

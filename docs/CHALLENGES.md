@@ -7,7 +7,7 @@ the source.
 
 The pattern across them is the reason the document exists: **almost nothing
 here was found by reading code or by a test written from imagination.** Of
-407 defects, 327 were found only by running against a real device. Eighteen
+408 defects, 328 were found only by running against a real device. Eighteen
 more — 255, 280, 282, 327, 329, 353, 355, 356, 359, 371, 375, 380, 382, 384, 386, 387, 388 and 406 — were met while
 running against one, though the fault lay in a check, the host or Mobium's own
 design rather than in the platform. The other sixty-two — 4, 5, 6, 14, 23,
@@ -8884,6 +8884,20 @@ or a home path that is not on its list of made-up values, and tracked
 bytecode. It prints where and what kind, never the value, since a public
 repository's CI log is public. Its selftest holds each rule to a case it must
 flag, and a leak planted in a staged file failed `make docs-check`.
+
+### 408. A car's screenshots carried a warning after the image
+
+**Found by:** stills for Morpho Market's README, cut from a trace of checkout
+test A on the Android Automotive 15 emulator. `ffmpeg` read every one as
+damaged. 38 of the 39 screenshots, and a plain `mobium screenshot`, ended in
+"FORTIFY: pthread_mutex_lock called on a destroyed mutex", which `screencap`
+wrote to stdout after the PNG's IEND chunk; image viewers ignore it, strict
+decoders do not. The same capture opens with "[Warning] Multiple displays
+were found", which 211's rule already skips.
+
+**Fixed:** a capture is cut at its IEND chunk when a short line of text
+follows, the rule 211 applies to text before it; anything else after it is
+refused. The same screenshot then ended at its IEND.
 
 ## Findings that were not defects
 
