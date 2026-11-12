@@ -759,11 +759,20 @@ this is what is not.
        request without "to any AI model", it changed nothing (7 and 10 of
        50, p = 0.60): that attack barely works unmarked. It refused no
        request the user made (t34: 50 of 50).
-     - **Next: what a screenshot can carry.** A screenshot an agent asks
-       for only when the text tools leave something out. Then the marking
-       on by default, and errors, whose messages quote device text, marked
-       too. Any fence in the text uses a marker made fresh for each call,
-       since a fixed one an app can print (spotlighting, arXiv 2403.14720).
+     - **Done: no fence an app can print.** Checked 2026-11-11: the marking
+       is a field, not delimiters in the text, so there is no fence. Every
+       quote of an app's text in a message goes through `%q`, which escapes
+       quotes and line breaks, and every WebDriverAgent predicate refuses a
+       name or label holding `"` or `\`. `quoting_test.go` fails on a quote
+       written around a `%s` by hand. A fence added later uses a marker made
+       fresh for each call, since a fixed one an app can print
+       (spotlighting, arXiv 2403.14720).
+     - **Next, each measured first** (about 70 minutes and $16 of Claude
+       usage an A/B): a screenshot an agent asks for only when the text
+       tools leave something out (t31, marked, how often agents take one);
+       then the marking on by default, after a check that it costs no task
+       its success; then errors, whose messages quote device text, marked
+       too, which needs an attack that reaches an agent through an error.
   2. **Text a person cannot read, named.** Nothing in either platform's
      accessibility tree gives opacity or font size, so a 3% or two-point
      line reads as any other. A WebView's page does give them, and its
