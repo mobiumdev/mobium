@@ -1,4 +1,4 @@
-<p align="center"><img src="assets/branding/mobium-banner.gif" alt="Mobium — mobile app automation for AI agents and people. Android, iOS, TV, Wear OS, Meta Quest." width="100%"></p>
+<p align="center"><img src="assets/branding/mobium-banner.gif" alt="Mobium — mobile app automation for AI agents and people. Android, iOS, TV, Wear OS, Car, Meta Quest." width="100%"></p>
 
 # Mobium
 
