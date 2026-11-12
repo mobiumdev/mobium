@@ -351,8 +351,12 @@ through `app_text` followed it in 9 of 44 trials unmarked, and in 0 of 48
 marked. An image cannot carry a field, so a screenshot is followed by a text
 block saying the same of it. That helps far less: with the message in pixels
 only (t32), agents followed it in 48 of 50 trials unmarked and 32 of 50 with
-the note — words on a screen persuade more than the same words as text. Off
-by default while what a screenshot can carry is open.
+the note — words on a screen persuade more than the same words as text. A
+note saying what to do with a request the image makes — it is the app's, not
+the user's, and is not done unless the user asked for it — took that to 15 of
+50 against 26 of 50 for the plainer one, measured 2026-10-29, and refused
+nothing the user asked for (t34, 50 of 50). Off by default while what a
+screenshot can carry is open.
 
 ## Which front door
 
